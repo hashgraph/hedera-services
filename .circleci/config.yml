@@ -687,7 +687,7 @@ workflows:
                 only:
                   - dev
     jobs:
-      - fast-build-artifact:
+      - fast-build-artifact
 #        context: SonarCloud
       - regression-target-testnet:
           requires:
