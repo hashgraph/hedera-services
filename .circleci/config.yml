@@ -953,7 +953,8 @@ jobs:
       - checkout
       - run:
           name: mvn install
-          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} clean install sonar:sonar'
+          #          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} clean install sonar:sonar'
+          command: 'mvn clean install'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
