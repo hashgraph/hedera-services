@@ -688,7 +688,7 @@ workflows:
                   - dev
     jobs:
       - fast-build-artifact:
-         context: SonarCloud
+#        context: SonarCloud
       - regression-target-testnet:
           requires:
             - fast-build-artifact
@@ -840,7 +840,7 @@ workflows:
   continuous-integration:
     jobs:
       - build-artifact:
-          context: SonarCloud
+#         context: SonarCloud
           filters:
             branches:
               ignore:
