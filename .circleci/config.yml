@@ -1,0 +1,2050 @@
+version: 2.1
+
+commands:
+  ensure-env-vars:
+    description: Ensure the builtin CircleCI env vars are available
+    steps:
+      - run:
+          name: Ensure the builtin CircleCI env vars are available
+          command: |
+            /repo/.circleci/scripts/ensure-builtin-env-vars.sh
+  validate-record-streams:
+    description: Download and validate the record streaming data
+    steps:
+      - download-record-streams
+      - run-record-stream-validator
+  download-record-streams:
+    description: Fetch the record files and sigs
+    steps:
+      - run:
+          name: Fetch record stream data from testnet nodes
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+              '/repo/.circleci/scripts/download_record_stream_data.sh'
+  run-record-stream-validator:
+    description: Check the record file sigs and running hashes
+    steps:
+      - run-eet-suites:
+          dsl-args: "RecordStreamValidation"
+          ci-properties-map: "recordStreamsDir=/repo/recordstreams"
+  publish-platform-stats:
+    description: Generate the insight.py PDF and publish it (e.g. to Slack)
+    parameters:
+      source-desc:
+        type: string
+        description: Human-readable summary of the source of these stats
+        default: 'a variety of test scenarios'
+      append-to-last-stats:
+        type: string
+        description: Append to last-downloaded stats b/c node restarted
+        default: 'false'
+      publish-to-slack:
+        description: publish to slack channel
+        type: boolean
+        default: true
+    steps:
+      - run:
+          name: Fetch stats from spot nodes
+          command: |
+            /repo/.circleci/scripts/collect-node-stats.sh \
+              '<< parameters.append-to-last-stats >>'
+      - when:
+          condition: << parameters.publish-to-slack >>
+          steps:
+             - run:
+                name: Generate the insight.py PDF
+                command: |
+                    /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                       '/repo/.circleci/scripts/gen-stat-insight-pdf.sh'
+             - run:
+                name: 'Upload the PDF to Slack #hedera-regression channel'
+                command: |
+                    /repo/.circleci/scripts/publish-stats-pdf-to-slack.sh \
+                       "<< parameters.source-desc >>"
+  svc-app-slack-msg:
+    description: Send a message to Slack via the Services Regression app
+    parameters:
+      text:
+        description: Some literal content to send to Slack.
+        type: string
+      github-user:
+        description: A GitHub user to mention
+        type: string
+        default: nobody-in-particular
+      channel:
+        description: A channel ID to target.
+        type: string
+        default: CKWHL8R9A
+      readable:
+        description: Human-readable channel description.
+        type: string
+        default: 'hedera-regression'
+    steps:
+      - run:
+          name: Create a tmp file with the message text.
+          command: |
+            echo '<< parameters.text >>' > /repo/msg.txt
+      - run:
+          name: "Say '<< parameters.text >>' to #<< parameters.readable >>"
+          command: |
+            /repo/.circleci/scripts/call-svcs-app-slack.sh \
+                -t /repo/msg.txt \
+                -c << parameters.channel >> \
+                --github-user << parameters.github-user >>
+  svc-app-slack-upload:
+    description: Upload a file to Slack via the Services Regression app
+    parameters:
+      file:
+        description: Path of file to upload.
+        type: string
+      channel:
+        description: A channel ID to target.
+        type: string
+        default: CKWHL8R9A
+      readable:
+        description: Human-readable channel description.
+        type: string
+        default: 'hedera-regression'
+    steps:
+      - run:
+          name: "Upload << parameters.file >> to #<< parameters.readable >>"
+          command: |
+            /repo/.circleci/scripts/call-svcs-app-slack.sh \
+                -f << parameters.file >> \
+                -c << parameters.channel >>
+  fetch-testnet-control-assets:
+    description: Add SSH keys, HCL scripts, Ansible playbooks to start testnet
+    parameters:
+      infra-branch:
+        description: Which branch of infrastructure repo to use
+        type: string
+        default: 'master'
+    steps:
+      - attach_workspace:
+          at: /
+      - add_ssh_keys:
+          fingerprints:
+            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
+            - "e2:e4:6a:25:a2:d5:33:98:50:02:3c:40:51:16:46:3a"
+            - "1b:c8:bf:64:8e:d9:1e:25:d6:01:51:d3:ab:ed:c8:f4"
+      - run:
+          name: Checkout infrastructure repo
+          command: |
+            /repo/.circleci/scripts/clone-infra-repo.sh \
+                '<< parameters.infra-branch >>'
+  provision-testnet-hosts:
+    description: Provision hosts using Terraform
+    parameters:
+      num-hosts:
+        description: Number of hosts to provision
+        type: integer
+        default: 4
+      liveness-timeout-secs:
+        description: Secs to wait for hosts to become available on port 22
+        type: integer
+        default: 60
+      var-file:
+        description: Terraform vars to use
+        type: string
+      var-region:
+        description: Configurable region to override pre-defined in terraform config file.
+        type: string
+        default: 'us-east-1'
+      var-ami-id:
+        description: ami-id to override pre-defined. Need to be used together with var-region
+        type: string
+        default: 'ami-0578b0bee3eb885c6'
+    steps:
+      - run:
+          name: Create Terraform workspace with << parameters.num-hosts >> hosts
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/create-tf-workspace.sh \
+                    << parameters.num-hosts >> \
+                    << parameters.liveness-timeout-secs >> \
+                    << parameters.var-file >> \
+                    << parameters.var-region >> \
+                    << parameters.var-ami-id >> '
+  pause:
+    description: Pause for a given number of seconds
+    parameters:
+      forSecs:
+        type: integer
+      reason:
+        type: string
+        default: ''
+    steps:
+      - run:
+          name: Sleep for << parameters.forSecs >> secs << parameters.reason >>
+          command: sleep << parameters.forSecs >>
+
+  prepare-testnet-hosts:
+    description: Pickup an existing test net created by terraform through environment varible. No need to pass parameters here.
+    steps:
+      - run:
+          name: Prepare an existing testnet
+          command: |
+            /repo/.circleci/scripts/prepare-testnet.sh
+  deploy-testnet-nodes:
+    description: Deploy testnet nodes using Ansible
+    parameters:
+      liveness-timeout-secs:
+        description: Secs to wait for nodes to be reachable
+        type: integer
+      use-hugepage:
+        description: let ansible to deploy in hugepage mode
+        type: string
+        default: 'false'
+    steps:
+      - run:
+          name: Deploy testnet via Ansible
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/deploy-testnet.sh \
+                     << parameters.liveness-timeout-secs >> << parameters.use-hugepage >>'
+  ensure-testnet-for-reruns:
+    description: Ensure reruns from failed jobs have a testnet
+    steps:
+      - run:
+          name: Create a job-scoped testnet if none is available
+          command: |
+            /repo/.circleci/scripts/start-job-scoped-testnet-if-req.sh
+      - run:
+          name: Import certificates to Java cacerts keystore
+          command: |
+            /repo/.circleci/scripts/import-certificates-to-java-cacerts-keystore.sh
+  cleanup-rerun-testnet-if-present:
+    description: Cleanup any testnet created for a rerun job
+    steps:
+      - run:
+          name: Teardown the job-scoped testnet if present
+          command: |
+            /repo/.circleci/scripts/stop-job-scoped-testnet-if-req.sh
+  start-testnet:
+    description: Create or use a testnet for the HAPI clients to exercise
+    parameters:
+      use-existing-network:
+        description: tell Circleci to use pre-provisioned testnet instead of creating new a new one.
+        type: boolean
+        default: false
+      var-file:
+        description: Terraform vars to use
+        type: string
+        default: "ci.tfvars"
+      use-hugepage:
+        description: Tell ansible to use hugepage mode when deploying
+        type: boolean
+        default: false
+    steps:
+      - fetch-testnet-control-assets
+      - unless:
+          condition: << parameters.use-existing-network >>
+          steps:
+            - run: echo "Need to create new spot test net"
+            - provision-testnet-hosts:
+                 liveness-timeout-secs: 120
+                 var-file: '<< parameters.var-file >>'
+                 var-region: "us-west-2"
+                 var-ami-id: "ami-060b60d400852b08f"
+      - when:
+          condition: << parameters.use-existing-network >>
+          steps:
+            - run: echo "Use existing network..."
+            - prepare-testnet-hosts
+      - run:
+          name: Generate self signed certificates for nodes
+          command: |
+            /repo/.circleci/scripts/generate-self-signed-certificates.sh
+      - unless:
+          condition: << parameters.use-hugepage >>
+          steps:
+            - deploy-testnet-nodes:
+                liveness-timeout-secs: 120
+      - when:
+          condition: << parameters.use-hugepage >>
+          steps:
+            - run: echo "Use hugepage mode..."
+            - deploy-testnet-nodes:
+                liveness-timeout-secs: 120
+                use-hugepage: 'true'
+      - pause:
+          forSecs: 30
+      - run:
+          name: Disallow any postgres upgrade by apt
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/disallow-postgres-upgrade.sh'
+      - run:
+          name: Check logs to see if nodes are brought up with TLS GRPC servers
+          command: |
+            /repo/.circleci/scripts/show_logs.sh
+      - run:
+          name: Test TLS connections
+          command: |
+            /repo/.circleci/scripts/test-tls-connections.sh
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.circleci
+            - repo/certificates
+            - infrastructure
+  postgres-status:
+    description: Summarize PostgreSQL status on the nodes
+    steps:
+      - run:
+          name: Summarize postgres status
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/check-postgres-status.sh'
+  postgres-get-counts:
+    description: Get the number of binary objects in the database
+    steps:
+      - run:
+          name: Get Binary Object Counts
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/postgres-get-counts.sh'
+  postgres-verify-counts:
+    description: Verify the number of binary objects in the database
+    parameters:
+      expected-difference:
+        description: Expected difference in number of binary objects
+        type: integer
+    steps:
+      - run:
+          name: Verify Binary Object Counts
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/postgres-verify-counts.sh \
+                    << parameters.expected-difference >>'
+  reboot-testnet:
+    description: Reboot testnet nodes using Ansible
+    parameters:
+      liveness-timeout-secs:
+        description: Secs to wait for nodes to be reachable
+        type: integer
+    steps:
+      - run:
+          name: Reboot testnet via Ansible
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/reboot-testnet.sh'
+  cleanup-testnet:
+    description: Cleanup Terraform resources for the testnet
+    parameters:
+      var-file:
+        description: Terraform vars to use
+        type: string
+        default: "ci.tfvars"
+    steps:
+      - run:
+          name: Process Terraform workspace at the end
+          command: |
+            /repo/.circleci/scripts/destroy-tf-workspace.sh \
+                '<< parameters.var-file >>'
+  check-logs-for-catastrophe:
+    description: Scan the logs for any catastrophic failures in Services
+    parameters:
+      catastrophe-pattern-sh:
+        description: Command returning the Services catastrophe pattern
+        type: string
+        default: /repo/.circleci/scripts/get-catastrophe-pattern.sh
+    steps:
+      - run:
+          name: Scan logs for catastrophic failures
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/scan-logs-for-catastrophes.sh \
+                    << parameters.catastrophe-pattern-sh >>'
+  check-logs-for-iss:
+    description: Scan the logs for any invalid state signatures
+    parameters:
+      iss-pattern-sh:
+        description: A bash command returning the ISS pattern
+        type: string
+        default: /repo/.circleci/scripts/get-iss-pattern.sh
+    steps:
+      - run:
+          name: Scan logs for ISS
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/scan-logs-for-iss.sh \
+                    << parameters.iss-pattern-sh >>'
+  run-eet-suites:
+    description: Run end-to-end tests
+    parameters:
+      node-terraform-index:
+        description: Index into array of Terraform-provisioned hosts
+        type: integer
+        default: 0
+      node-account:
+        description: Seq num of the Hedera account id for specified node.
+        type: integer
+        default: 3
+      dsl-args:
+        description: Args for the EET suite runner main method
+        type: string
+      ci-properties-map:
+        description: Key=value pairs to configure suite behavior
+        type: string
+        default: ''
+      perf-run:
+        description: If in perf run, the output handling needs to be tolerant of small portion of censensus time out cases.
+        type: boolean
+        default: false
+    steps:
+      - postgres-status
+      - unless:
+          condition: << parameters.perf-run >>
+          steps:
+            - run:
+                name: Run end-to-end tests '<< parameters.dsl-args >>'
+                command: |
+                  CI_PROPERTIES_MAP="<< parameters.ci-properties-map >>" \
+                  DSL_SUITE_RUNNER_ARGS="<< parameters.dsl-args >>" \
+                  /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                      '/repo/.circleci/scripts/run-scenario-test.sh \
+                          com.hedera.services.bdd.suites.SuiteRunner \
+                          << parameters.node-terraform-index >> \
+                          << parameters.node-account >>'
+                no_output_timeout: 60m
+
+      - when:
+          condition: << parameters.perf-run >>
+          steps:
+            - run:
+                name: Run end-to-end tests '<< parameters.dsl-args >>'
+                command: |
+                  CI_PROPERTIES_MAP="<< parameters.ci-properties-map >>" \
+                  DSL_SUITE_RUNNER_ARGS="<< parameters.dsl-args >>" \
+                  /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                      '/repo/.circleci/scripts/run-umbrella-redux.sh \
+                          com.hedera.services.bdd.suites.SuiteRunner \
+                          << parameters.node-terraform-index >> \
+                          << parameters.node-account >>'
+                no_output_timeout: 60m
+      - check-logs-for-iss
+  run-property-driven-scenario-test:
+    description: |
+      Run a self-validating HAPI API scenario that takes non-standard args and
+      gets all its host information from the various properties files.
+    parameters:
+      fqcn:
+        description: Fully qualified class name of self-validating test.
+        type: string
+      args:
+        description: Command line args to use.
+        type: string
+        default: ''
+    steps:
+      - postgres-status
+      - run:
+          name: Run self-validating HAPI scenario '<< parameters.fqcn >>'
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/run-property-driven-scenario-test.sh \
+                    << parameters.fqcn >> \
+                    << parameters.args >>'
+      - check-logs-for-iss
+  run-scenario-test:
+    description: Run a self-validating HAPI API test scenario.
+    parameters:
+      fqcn:
+        description: Fully qualified class name of self-validating test.
+        type: string
+      node-terraform-index:
+        description: Index into array of Terraform-provisioned hosts.
+        type: integer
+        default: 0
+      node-account:
+        description: Seq num of the Hedera account id for specified node.
+        type: integer
+        default: 3
+      other-args:
+        description: Any other args consumed by the scenario main method.
+        type: string
+        default: ''
+    steps:
+      - postgres-status
+      - run:
+          name: Run self-validating HAPI scenario '<< parameters.fqcn >>'
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/run-scenario-test.sh \
+                    << parameters.fqcn >> \
+                    << parameters.node-terraform-index >> \
+                    << parameters.node-account >> \
+                    << parameters.other-args >>'
+      - check-logs-for-iss
+  wait-til-logs-contain:
+    description: Wait up to timeout for all host logs to (repeat) a log pattern
+    parameters:
+      log:
+        description: Which log should contain the pattern
+        type: string
+      pattern-sh:
+        description: A bash command returning the pattern to-be-present
+        type: string
+      pattern-desc:
+        description: Human-readable description of the pattern
+        type: string
+      times:
+        description: How many repetitions of the pattern should occur
+        type: integer
+        default: 1
+      timeout-secs:
+        description: Timeout for repetitions to be present on all hosts
+        type: integer
+      sleep-secs:
+        description: How long to wait between re-checking for pattern occurrences
+        type: integer
+    steps:
+      - run:
+          name: Require << parameters.times >> appearances of << parameters.pattern-desc >> in the << parameters.log >> of all hosts within << parameters.timeout-secs >> secs
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/wait-til-logs-contain.sh \
+                    << parameters.log >> \
+                    "<< parameters.pattern-sh >>" \
+                    << parameters.times >> \
+                    << parameters.timeout-secs >> \
+                    << parameters.sleep-secs >>'
+  start-freeze:
+    description: Freeze the nodes for a short time
+    parameters:
+      node-terraform-index:
+        description: Index into array of Terraform-provisioned hosts.
+        type: integer
+        default: 0
+      node-account:
+        description: Seq num of the Hedera account id for specified node.
+        type: integer
+        default: 3
+      failure-log-pattern-sh:
+        description: Pattern used to detect a scenario failure in the freeze logs
+        type: string
+    steps:
+      - postgres-status
+      - run:
+          name: Run 'freeze' test with log-based validation
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/run-freeze-test.sh \
+                    << parameters.node-terraform-index >> \
+                    << parameters.node-account >> \
+                    << parameters.failure-log-pattern-sh >>'
+      - check-logs-for-iss
+  validate-thaw:
+    description: Complete validation that the nodes were frozen and now thawed
+    parameters:
+      freeze-start-timeout-secs:
+        description: How long til the logs must all have the freeze pattern
+        type: integer
+        default: 90
+    steps:
+      - wait-til-logs-contain:
+          log: hgcaa.log
+          pattern-sh: /repo/.circleci/scripts/get-freeze-pattern.sh
+          pattern-desc: freeze pattern
+          times: 1
+          timeout-secs: << parameters.freeze-start-timeout-secs >>
+          sleep-secs: 7
+      - run:
+          name: Validate freeze began in expected window
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/validate-freeze-start.sh'
+      - wait-til-logs-contain:
+          log: hgcaa.log
+          pattern-sh: /repo/.circleci/scripts/get-thaw-message.sh
+          pattern-desc: thaw pattern
+          times: 1
+          timeout-secs: 180
+          sleep-secs: 29
+  run-umbrella-test:
+    description: Run the so-called 'umbrella' load/longevity test
+    parameters:
+      config-file:
+        description: Properties file to use under test-clients/config/
+        type: string
+        default: 'umbrellaTest.properties'
+      node-terraform-index:
+        description: Index into array of Terraform-provisioned hosts.
+        type: integer
+        default: 0
+      node-account:
+        description: Seq num of the Hedera account id for specified node.
+        type: integer
+        default: 3
+      expect-unavailable-nodes:
+        type: boolean
+        description: Flag for whether test is running against frozen nodes
+        default: false
+    steps:
+      - postgres-status
+      - run:
+          name: Run umbrella test with << parameters.config-file >> <<# parameters.expect-unavailable-nodes >>(gRPC should be UNAVAILABLE due to freeze)<</ parameters.expect-unavailable-nodes >>
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/run-umbrella-test.sh \
+                    << parameters.config-file >> \
+                    << parameters.node-terraform-index >> \
+                    << parameters.node-account >> \
+                    << parameters.expect-unavailable-nodes >>'
+          no_output_timeout: 90m
+      - check-logs-for-iss
+  restart-with-validations:
+    description: Restart the testnet, validate node logs
+    parameters:
+      active-status-timeout-secs:
+        description: How long til nodes must come active
+        type: integer
+        default: 30
+      valid-ss-timeout-secs:
+        description: How long til nodes must confirm a valid signed state
+        type: integer
+        default: 120
+    steps:
+      - postgres-status
+      - reboot-testnet:
+          liveness-timeout-secs: 60
+      - pause:
+          forSecs: 30
+      - wait-til-logs-contain:
+          log: hgcaa*.log
+          pattern-sh: /repo/.circleci/scripts/get-liveness-pattern.sh
+          pattern-desc: alive pattern
+          times: 3
+          timeout-secs: << parameters.active-status-timeout-secs >>
+          sleep-secs: 7
+      - wait-til-logs-contain:
+          log: swirlds.log
+          pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
+          pattern-desc: valid signed state hash pattern
+          times: 1
+          timeout-secs: << parameters.valid-ss-timeout-secs >>
+          sleep-secs: 7
+      - run:
+          name: Scan log of node 0.0.3 for restart lateseq
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/await-default-node-lateseq.sh \
+                    /repo/.circleci/scripts/get-lateseq-pattern.sh \
+                    60 \
+                    7'
+      - wait-til-logs-contain:
+          log: swirlds.log
+          pattern-sh: /repo/.circleci/scripts/get-first-lateseq.sh
+          pattern-desc: the same lateseq
+          times: 1
+          timeout-secs: 30
+          sleep-secs: 7
+      - check-logs-for-iss
+executors:
+  build-executor:
+    docker:
+      - image: qnswirlds/java-builder:0.1.3
+      - image: postgres:10
+        environment:
+          POSTGRES_USER: swirlds
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: fcfs
+    environment:
+      MAVEN_OPTS: -Xmx3200m
+      IN_CIRCLE_CI: true
+    working_directory: /repo
+
+  ci-test-executor:
+    parameters:
+      tf_workspace:
+        type: string
+        default: ""
+      tf_dir:
+        type: string
+        default: "/infrastructure/terraform/deployments/aws-4-node-spot-net-swirlds"
+      use_existing_network:
+        type: string
+        default: ""
+    docker:
+      - image: qnswirlds/java-builder:0.1.3
+    environment:
+      TF_DIR: << parameters.tf_dir >>
+      IN_CIRCLE_CI: true
+      ANSIBLE_SSH_KEY: ephemeral-nodes
+      USE_EXISTING_NETWORK: <<parameters.use_existing_network>>
+      TF_WORKSPACE: << parameters.tf_workspace >>
+      REPO: /repo
+      INFRASTRUCTURE_REPO: /infrastructure
+    working_directory: /repo
+
+workflows:
+  nightly-regression:
+    triggers:
+        - schedule:
+            cron: "0 5,9,13 * * *"
+            filters:
+              branches:
+                only:
+                  - dev
+    jobs:
+      - fast-build-artifact:
+         context: SonarCloud
+      - regression-target-testnet:
+          requires:
+            - fast-build-artifact
+          pre-steps:
+            - start-testnet:
+                use-existing-network: true
+                use-hugepage: true
+      ##### W-BEGIN auto-generated by RegressionWorkflowShell #####
+      - long-contract_txns6-0:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-0:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-1:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-2:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-3:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-4:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-5:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-6:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-7:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-8:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-9:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-10:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-11:
+          requires:
+            - regression-target-testnet
+      - long-crypto_txns300-12:
+          requires:
+            - regression-target-testnet
+      - long-file_ops-0:
+          requires:
+            - regression-target-testnet
+      - long-consensus_ops-0:
+          requires:
+            - regression-target-testnet
+      - long-umbrella:
+          requires:
+            - regression-target-testnet
+      - regression-validate-freeze:
+          requires:
+            - long-contract_txns6-0
+            - long-crypto_txns300-0
+            - long-crypto_txns300-1
+            - long-crypto_txns300-2
+            - long-crypto_txns300-3
+            - long-crypto_txns300-4
+            - long-crypto_txns300-5
+            - long-crypto_txns300-6
+            - long-crypto_txns300-7
+            - long-crypto_txns300-8
+            - long-crypto_txns300-9
+            - long-crypto_txns300-10
+            - long-crypto_txns300-11
+            - long-crypto_txns300-12
+            - long-file_ops-0
+            - long-consensus_ops-0
+      - short-contract_txns6-0:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-0:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-1:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-2:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-3:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-4:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-5:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-6:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-7:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-8:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-9:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-10:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-11:
+          requires:
+            - regression-validate-freeze
+      - short-crypto_txns300-12:
+          requires:
+            - regression-validate-freeze
+      - short-file_ops-0:
+          requires:
+            - regression-validate-freeze
+      - short-consensus_ops-0:
+          requires:
+            - regression-validate-freeze
+      - short-umbrella:
+          requires:
+            - regression-validate-freeze
+      - regression-run-accessory-tests:
+          requires:
+            - short-contract_txns6-0
+            - short-crypto_txns300-0
+            - short-crypto_txns300-1
+            - short-crypto_txns300-2
+            - short-crypto_txns300-3
+            - short-crypto_txns300-4
+            - short-crypto_txns300-5
+            - short-crypto_txns300-6
+            - short-crypto_txns300-7
+            - short-crypto_txns300-8
+            - short-crypto_txns300-9
+            - short-crypto_txns300-10
+            - short-crypto_txns300-11
+            - short-crypto_txns300-12
+            - short-file_ops-0
+            - short-consensus_ops-0
+
+      ##### END auto-generated by RegressionWorkflowShell #####
+  continuous-integration:
+    jobs:
+      - build-artifact:
+          context: SonarCloud
+          filters:
+            branches:
+              ignore:
+                - /.*-PERF/
+                - /.*-REGRESSION/
+      - start-singlejob-testnet:
+          requires:
+            - build-artifact
+      - run-consensus-and-crypto-scenarios:
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-file-scenarios:
+          requires:
+            - run-consensus-and-crypto-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-smart-contract-scenarios:
+          requires:
+            - run-file-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-umbrella-freeze-restart-test:
+          requires:
+            - run-smart-contract-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-update-feature:
+          requires:
+            - run-umbrella-freeze-restart-test
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-update-jar-files:
+          requires:
+            - run-update-feature
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-testnet
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-update-jar-files
+          pre-steps:
+            - attach_workspace:
+                at: /
+jobs:
+  start-singlejob-testnet:
+    executor: ci-test-executor
+    steps:
+      - start-testnet
+  cleanup-singlejob-testnet:
+    executor: ci-test-executor
+    steps:
+      - cleanup-testnet
+  start-multijob-testnet:
+    executor: ci-test-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - start-testnet:
+          var-file: "regression.tfvars"
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.circleci
+            - infrastructure
+  cleanup-multijob-testnet:
+    executor: ci-test-executor
+    steps:
+      - attach_workspace:
+          at: /
+      - cleanup-testnet:
+          var-file: "regression.tfvars"
+  build-artifact:
+    executor: build-executor
+    parameters:
+      sys-props:
+        type: string
+        description: System properties for mvn install
+        default: ''
+      mvn-args:
+        type: string
+        description: Args for mvn install
+        default: ''
+    steps:
+      - checkout
+      - run:
+          name: mvn install
+          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} clean install sonar:sonar'
+      - run:
+          name: Upload built artifacts to S3 (for Ansible download)
+          command: |
+            /repo/.circleci/scripts/package-hapi-artifacts.sh \
+                hedera-node/data/lib
+            /repo/.circleci/scripts/upload-dir-to-s3.sh \
+                hedera-node/data lib SHA-${CIRCLE_SHA1}
+      - run:
+          name: Reposition config for Ansible scripts
+          command: |
+            mkdir -p /repo/HapiApp2.0
+            cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.git
+            - repo/.circleci
+            - repo/hapiProto
+            - repo/test-clients
+            - repo/HapiApp2.0
+            - root/.m2
+            - repo/hedera-node
+  fast-build-artifact:
+    executor: build-executor
+    steps:
+      - checkout
+      - run:
+          name: mvn install
+          command: mvn clean install -DskipTests
+      - run:
+          name: Upload built artifacts to S3 (for Ansible download)
+          command: |
+            /repo/.circleci/scripts/package-hapi-artifacts.sh \
+                hedera-node/data/lib
+            /repo/.circleci/scripts/upload-dir-to-s3.sh \
+                hedera-node/data lib SHA-${CIRCLE_SHA1}
+      - run:
+          name: Reposition config for Ansible scripts
+          command: |
+            rm -rf /repo/hedera-node/src
+            mkdir -p /repo/HapiApp2.0
+            cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.git
+            - repo/.circleci
+            - repo/hapiProto
+            - repo/test-clients
+            - repo/HapiApp2.0
+            - root/.m2
+            - repo/hedera-node
+  run-bdd-test:
+    executor: ci-test-executor
+    parallelism: <<parameters.parallel-level>>
+    parameters:
+      parallel-level:
+        type: integer
+        default: 1
+      node-tf-index:
+        type: integer
+        description: index of the terraform workspace's node index
+        default: 0
+      node-account:
+        type: integer
+        default: 3
+      dsl-args-value:
+        type: string
+        description: BDD Test suite name
+        default: ''
+      ci-properties-map:
+        type: string
+        description: customized CI properties
+        default: "mins=3,tps=8,burstSize=4,allowedSecsBelow=30"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          node-terraform-index: <<parameters.node-tf-index>>
+          node-account: <<parameters.node-account>>
+          dsl-args: <<parameters.dsl-args-value>>
+          ci-properties-map: <<parameters.ci-properties-map>>
+  regression-target-testnet:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.circleci
+            - infrastructure
+
+  ##### J-BEGIN auto-generated by RegressionWorkflowShell #####
+  short-umbrella:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Set log level to WARN
+          command: /repo/.circleci/scripts/config-log4j-4reg.sh
+      - run-umbrella-test:
+          config-file: umbrella.properties.altHalfSizeOCRegPostFreeze
+  long-umbrella:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Set log level to WARN
+          command: /repo/.circleci/scripts/config-log4j-4reg.sh
+      - run-umbrella-test:
+          config-file: umbrella.properties.altHalfSizeOCRegPreFreeze
+  short-file_ops-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-file_ops-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  short-consensus_ops-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-consensus_ops-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  short-contract_txns6-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-contract_txns6-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  short-crypto_txns300-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  short-crypto_txns300-1:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  short-crypto_txns300-2:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  short-crypto_txns300-3:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  short-crypto_txns300-4:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  short-crypto_txns300-5:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  short-crypto_txns300-6:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  short-crypto_txns300-7:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  short-crypto_txns300-8:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  short-crypto_txns300-9:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  short-crypto_txns300-10:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  short-crypto_txns300-11:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  short-crypto_txns300-12:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  long-crypto_txns300-0:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-crypto_txns300-1:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  long-crypto_txns300-2:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  long-crypto_txns300-3:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  long-crypto_txns300-4:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-crypto_txns300-5:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  long-crypto_txns300-6:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  long-crypto_txns300-7:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  long-crypto_txns300-8:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 0
+          node-account: 3
+          perf-run: true
+  long-crypto_txns300-9:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 1
+          node-account: 4
+          perf-run: true
+  long-crypto_txns300-10:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  long-crypto_txns300-11:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 3
+          node-account: 6
+          perf-run: true
+  long-crypto_txns300-12:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "UmbrellaRedux"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          node-terraform-index: 2
+          node-account: 5
+          perf-run: true
+  ##### END auto-generated by RegressionWorkflowShell #####
+  regression-validate-freeze:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - publish-platform-stats:
+          source-desc: pre-freeze regression
+          publish-to-slack: false
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/ci-stats
+      - start-freeze:
+          failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
+      - validate-thaw:
+          freeze-start-timeout-secs: 120
+      - restart-with-validations:
+          valid-ss-timeout-secs: 120
+          active-status-timeout-secs: 120
+  regression-run-accessory-tests:
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-regression"
+      use_existing_network: "1"
+    steps:
+      - attach_workspace:
+          at: /
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicUpdateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicGetInfoSpecs"
+      - run-eet-suites:
+          dsl-args: "ConsensusThrottlesSpecs"
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractDeletePayable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPay
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorage
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageWithEvents
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.smartcontract.BigArray
+          other-args: '1 32'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
+      - run:
+          name: Set log level to INFO
+          command: /repo/.circleci/scripts/config-log4j-4normal.sh
+      - validate-record-streams
+      - publish-platform-stats:
+          source-desc: full regression
+          append-to-last-stats: 'true'
+  run-oc-regression:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run:
+          name: Set log level to WARN
+          command: /repo/.circleci/scripts/config-log4j-4reg.sh
+      - run-umbrella-test:
+          config-file: umbrella.properties.altOCRegPreFreeze
+      - publish-platform-stats:
+          source-desc: pre-freeze umbrella 100k
+      - start-freeze:
+          failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
+      - validate-thaw:
+          freeze-start-timeout-secs: 120
+      - restart-with-validations:
+          valid-ss-timeout-secs: 120
+          active-status-timeout-secs: 120
+      - run-umbrella-test:
+          config-file: umbrella.properties.altOCRegPostFreeze
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractDeletePayable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPay
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorage
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageWithEvents
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.smartcontract.BigArray
+          other-args: '1 32'
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
+      - run:
+          name: Set log level to INFO
+          command: /repo/.circleci/scripts/config-log4j-4normal.sh
+      - validate-record-streams
+  long-consensus-tests:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicUpdateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicGetInfoSpecs"
+      - run-eet-suites:
+          dsl-args: "ConsensusThrottlesSpecs"
+  short-consensus-tests:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicUpdateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicGetInfoSpecs"
+      - run-eet-suites:
+          dsl-args: "ConsensusThrottlesSpecs"
+
+  run-file-tests:
+    executor: ci-test-executor
+    steps:
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
+      - postgres-get-counts
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
+      - postgres-verify-counts:
+          expected-difference: 2
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.LoadTestIT
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.FilePositiveNegativeTest
+      - postgres-get-counts
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.FileServiceIT
+      - postgres-verify-counts:
+          expected-difference: 1
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.SystemDeleteIT
+      - run-eet-suites:
+          dsl-args: "FileRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "ProtectedFilesUpdateSuite"
+
+  run-consensus-and-crypto-scenarios:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicUpdateSpecs -TLS=on"
+          node-terraform-index: 1
+          node-account: 4
+      - run-eet-suites:
+          dsl-args: "TopicDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "TopicGetInfoSpecs"
+      - run-eet-suites:
+          dsl-args: "ConsensusThrottlesSpecs"
+      - run-eet-suites:
+          dsl-args: "BucketAndLegacyThrottlingSpec"
+      - run-eet-suites:
+          dsl-args: "ControlAccountsExemptForUpdates"
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.TxRecordTest
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+      - run-eet-suites:
+          dsl-args: "CryptoCreateSuite -TLS=on"
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run-eet-suites:
+          dsl-args: "CryptoRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "SuperusersAreNeverThrottled"
+  run-file-scenarios:
+    executor: ci-test-executor
+    steps:
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
+      - postgres-get-counts
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
+      - postgres-verify-counts:
+          expected-difference: 2
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.LoadTestIT
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.FilePositiveNegativeTest
+      - postgres-get-counts
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.FileServiceIT
+      - postgres-verify-counts:
+          expected-difference: 1
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.file.SystemDeleteIT
+      - run-eet-suites:
+          dsl-args: "FileRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "VersionInfoSpec"
+      - run-eet-suites:
+          dsl-args: "ProtectedFilesUpdateSuite"
+      - run-eet-suites:
+          dsl-args: "PermissionSemanticsSpec"
+      - run-eet-suites:
+          dsl-args: "SysDelSysUndelSpec"
+  run-smart-contract-scenarios:
+    executor: ci-test-executor
+    steps:
+      - run-eet-suites:
+          dsl-args: "NewOpInConstructorSpecs"
+      - run-eet-suites:
+          dsl-args: "MultipleSelfDestructsAreSafe"
+      - postgres-get-counts
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
+      - postgres-verify-counts:
+          expected-difference: 3
+      - run-eet-suites:
+          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractPay
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
+      - run-eet-suites:
+          dsl-args: "FetchSystemFiles"
+      - run:
+          name: cat /repo/test-clients/remote-system-files/appProperties.txt
+          command: |
+            cat /repo/test-clients/remote-system-files/appProperties.txt
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.smartcontract.ChildStorage
+      - run-property-driven-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
+          args: '1'
+      - run-eet-suites:
+          dsl-args: "-A DeprecatedContractKeySpecs"
+      - run-eet-suites:
+          dsl-args: "-A ThresholdRecordCreationSpecs"
+      - run-eet-suites:
+          dsl-args: "ContractRecordSanityChecks"
+  run-umbrella-freeze-restart-test:
+    executor: ci-test-executor
+    steps:
+      - run:
+          name: Set log level to WARN
+          command: /repo/.circleci/scripts/config-log4j-4reg.sh
+      - run-umbrella-test
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestBefore
+      - start-freeze:
+          failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
+      - run-umbrella-test:
+          config-file: umbrellaTest.properties.alt5k
+          expect-unavailable-nodes: true
+      - validate-thaw
+      - restart-with-validations
+      - run-scenario-test:
+          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
+      - run-umbrella-test:
+          config-file: umbrellaTest.properties.alt1k
+      - run:
+          name: Set log level to INFO
+          command: /repo/.circleci/scripts/config-log4j-4normal.sh
+      - validate-record-streams
+  run-update-feature:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run:
+          name: Set environmental variable
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/append_bash_profile.sh'
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run:
+          name: wait state is saved
+          command: |
+            sleep 60
+      - run:
+          name: Show java process
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_java_process.sh'
+      - run-eet-suites:
+          dsl-args: FreezeSuite
+      - run:
+          name: Show swirlds logs before HGCApp restart
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_logs.sh'
+      - run:
+          name: wait HGCApp restarted
+          command: |
+            sleep 300
+      - run:
+          name: Show java process
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_java_process.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_logs.sh'
+      - run-eet-suites:
+          dsl-args: "CryptoRecordSanityChecks"
+      - run:
+          name: Scan new setttings message
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/scan-expected-logs.sh "ERROR: fakeParameter is not a valid setting name" swirlds.log'
+  run-update-jar-files:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run:
+          name: Set environmental variable
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/append_bash_profile.sh'
+      - run:
+          name: Scan old string before changing jar files
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/scan-expected-logs.sh "init finished" hgcaa.log'
+      - run:
+          name: Modify main.java and build new jars
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/build_new_jars.sh'
+      - run:
+          name: Show java process before freeze
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_java_process.sh'
+      - run-eet-suites:
+          dsl-args: "UpdateServerFiles"
+      - run:
+          name: wait HGCApp restarted
+          command: |
+            sleep 300
+      - run:
+          name: Show java process
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_java_process.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_logs.sh'
+      - run:
+          name: Scan new string after restarted
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/scan-expected-logs.sh "new version jar" hgcaa.log'

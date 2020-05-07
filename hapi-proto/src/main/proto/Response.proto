@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "GetByKey.proto";
+import "GetBySolidityID.proto";
+
+import "ContractCallLocal.proto";
+import "ContractGetBytecode.proto";
+import "ContractGetInfo.proto";
+import "ContractGetRecords.proto";
+
+import "CryptoGetAccountBalance.proto";
+import "CryptoGetAccountRecords.proto";
+import "CryptoGetInfo.proto";
+import "CryptoGetLiveHash.proto";
+import "CryptoGetStakers.proto";
+
+import "FileGetContents.proto";
+import "FileGetInfo.proto";
+
+import "TransactionGetReceipt.proto";
+import "TransactionGetRecord.proto";
+import "TransactionGetFastRecord.proto";
+
+import "ConsensusGetTopicInfo.proto";
+
+import "NetworkGetVersionInfo.proto";
+
+/* A single response, which is returned from the node to the client, after the client sent the node a query. This includes all responses. */
+message Response {
+    oneof response {
+        GetByKeyResponse getByKey = 1; // Get all entities associated with a given key
+        GetBySolidityIDResponse getBySolidityID = 2; // Get the IDs in the format used in transactions, given the format used in Solidity
+
+        ContractCallLocalResponse contractCallLocal = 3; // Response to call a function of a smart contract instance
+        ContractGetBytecodeResponse contractGetBytecodeResponse = 5; // Get the bytecode for a smart contract instance
+        ContractGetInfoResponse contractGetInfo = 4; // Get information about a smart contract instance
+        ContractGetRecordsResponse contractGetRecordsResponse = 6; //Get all existing records for a smart contract instance
+
+        CryptoGetAccountBalanceResponse cryptogetAccountBalance = 7; // Get the current balance in a cryptocurrency account
+        CryptoGetAccountRecordsResponse cryptoGetAccountRecords = 8; // Get all the records that currently exist for transactions involving an account
+        CryptoGetInfoResponse cryptoGetInfo = 9; // Get all information about an account
+        CryptoGetLiveHashResponse cryptoGetLiveHash = 10; // Contains a livehash associated to an account
+        CryptoGetStakersResponse cryptoGetProxyStakers = 11; // Get all the accounts that proxy stake to a given account, and how much they proxy stake
+
+        FileGetContentsResponse fileGetContents = 12; // Get the contents of a file (the bytes stored in it)
+        FileGetInfoResponse fileGetInfo = 13; // Get information about a file, such as its expiration date
+
+        TransactionGetReceiptResponse transactionGetReceipt = 14; // Get a receipt for a transaction
+        TransactionGetRecordResponse transactionGetRecord = 15; // Get a record for a transaction
+        TransactionGetFastRecordResponse transactionGetFastRecord = 16; // Get a record for a transaction (lasts 180 seconds)
+
+        ConsensusGetTopicInfoResponse consensusGetTopicInfo = 150; // Parameters of and state of a consensus topic..
+
+        NetworkGetVersionInfoResponse networkGetVersionInfo = 151; // Semantic versions of Hedera Services and HAPI proto
+    }
+}

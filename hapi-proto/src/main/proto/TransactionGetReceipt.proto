@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "TransactionReceipt.proto";
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+
+/* Get the receipt of a transaction, given its transaction ID. Once a transaction reaches consensus, then information about whether it succeeded or failed will be available until the end of the receipt period.  Before and after the receipt period, and for a transaction that was never submitted, the receipt is unknown.  This query is free (the payment field is left empty). No State proof is available for this response*/
+message TransactionGetReceiptQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    TransactionID transactionID = 2; // The ID of the transaction for which the receipt is requested.
+}
+/* Response when the client sends the node TransactionGetReceiptQuery. If it created a new entity (account, file, or smart contract instance) then one of the three ID fields will be filled in with the ID of the new entity. Sometimes a single transaction will create more than one new entity, such as when a new contract instance is created, and this also creates the new account that it owned by that instance. No State proof is available for this response */
+message TransactionGetReceiptResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    TransactionReceipt receipt = 2; // The receipt, indicating it reached consensus (and whether it succeeded or failed) or is currently unknown (because it hasn't reached consensus yet, or the transaction has expired already), and including the ID of any new account/file/instance created by that transaction.
+}

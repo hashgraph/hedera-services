@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.service.proto.java";
+
+import "Query.proto";
+import "Response.proto";
+import "TransactionResponse.proto";
+import "Transaction.proto";
+
+/*
+Transactions and queries for the Crypto Service
+*/
+service CryptoService {
+    // Creates a new account by submitting the transaction
+    rpc createAccount (Transaction) returns (TransactionResponse);
+    // Updates an account by submitting the transaction
+    rpc updateAccount (Transaction) returns (TransactionResponse);
+    // Initiates a transfer by submitting the transaction
+    rpc cryptoTransfer (Transaction) returns (TransactionResponse);
+    // Deletes and account by submitting the transaction
+    rpc cryptoDelete (Transaction) returns (TransactionResponse);
+    // (NOT CURRENTLY SUPPORTED) Adds a livehash
+    rpc addLiveHash (Transaction) returns (TransactionResponse);
+    // (NOT CURRENTLY SUPPORTED) Deletes a livehash
+    rpc deleteLiveHash (Transaction) returns (TransactionResponse);
+    // (NOT CURRENTLY SUPPORTED) Retrieves a livehash for an account
+    rpc getLiveHash (Query) returns (Response);
+    // Retrieves the 25-hour records stored for an account
+    rpc getAccountRecords (Query) returns (Response);
+    // Retrieves the balance of an account
+    rpc cryptoGetBalance (Query) returns (Response);
+    // Retrieves the metadata of an account
+    rpc getAccountInfo (Query) returns (Response);
+    // Retrieves the latest receipt for a transaction that is either awaiting consensus, or reached consensus in the last 180 seconds
+    rpc getTransactionReceipts (Query) returns (Response);
+    // (NOT CURRENTLY SUPPORTED) Returns the records of transactions recently funded by an account
+    rpc getFastTransactionRecord (Query) returns (Response);
+    // Retrieves the record of a transaction that is either awaiting consensus, or reached consensus in the last 180 seconds
+    rpc getTxRecordByTxID (Query) returns (Response);
+    // (NOT CURRENTLY SUPPORTED) Retrieves the stakers for a node by account id
+    rpc getStakersByAccountID (Query) returns (Response);
+}

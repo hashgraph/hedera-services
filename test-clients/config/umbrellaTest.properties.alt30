@@ -1,0 +1,48 @@
+# number of threads to concurrently submit requests
+numThreads=10
+# number of requests per second
+requestPerSec=200
+# whether payer account is randomly selected
+isRandomPayer=true
+# whether node account for processing a transaction is randomly selected
+isRandomSubmission=false
+# type of file for creation
+fileTypes=txt,jpg,pdf,bin
+# size of file to create
+fileSizesK=1,2,3,4,5
+# max number of requests in K to run, no cap (i.e. run indefinitely) if value is -1.
+# Note this number can be a decimal value for fine grained control. e.g. a valuue of 0.1 translates into 100 total requests. 
+maxRequestsInK=17
+# max transfer amount. For a given transfer a random amount between 1 and the max will be selected
+maxTransferAmount=100
+# number of seed accounts to be created by genesis. These accounts are used as payers of transactions.
+numCryptoAccounts=10
+#
+#
+# API inclusions by individual APIs as comma separated list, where each entry is a pair of API name and number of calls separated by "|". 
+# If the number of calls is specified as "-1", then this API will continue to be called unless there's cap on maxRequestsInK.
+# The API choices are as follows. 
+# cryptoAPI: cryptoCreate, cryptoTransfer, cryptoUpdate, cryptoGetInfo, cryptoGetBalance, cryptoGetRecords, 
+# fileAPI: fileUpload, fileGetInfo, fileGetContent, fileUpdate, fileDelete, 
+# cryptoAPI: cryptoCreate, cryptoTransfer, cryptoUpdate, cryptoGetInfo, cryptoGetBalance, cryptoGetRecords, 
+# contractAPI: createContract, updateContract, contractCallMethod, contractCallLocalMethod, contractGetBytecode, getContractInfo, getBySolidityID, getTxRecordByContractID
+# If singleInclusions are not specified, then maxRequestsInK and groupInclusions apply
+# If both singleInclusions and groupInclusions are not specified, then maxRequestsInK apply
+#
+# singleInclusions=cryptoCreate|10000,cryptoTransfer|1000000
+#
+#
+# API inclusions by group as comma separated list.  
+# where each entry is a pair of group name and number of calls per each member API of the group separated by "|". 
+# If the number of calls is specified as "-1", then this API will continue to be called unless there's cap on maxRequestsInK.
+# The group choices include cryptoAPI,fileAPI,contractAPI.
+# Note singleInclusions and groupInclusions are additive. If there is overlap, singleInclusions specs override those of groupInclusions.
+# If groupInclusions are not specified, then maxRequestsInK and singleInclusions apply
+# If both singleInclusions and groupInclusions are not specified, then maxRequestsInK apply
+#
+groupInclusions=cryptoAPI|0,fileAPI|17000,contractAPI|0
+#
+#
+# Account key type
+accountKeyType=single,keylist,thresholdKey
+# accountKeyType=thresholdKey

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "Timestamp.proto";
+
+
+/*
+An exchange rate between hbar and cents (USD) and the time at which the exchange rate will expire, and be superseded by a new exchange rate.
+*/
+message ExchangeRate {
+    // Denominator in calculation of exchange rate between hbar and cents
+    int32 hbarEquiv = 1;
+    // Numerator in calculation of exchange rate between hbar and cents
+    int32 centEquiv = 2;
+    // Expiration time in seconds for this exchange rate
+    TimestampSeconds expirationTime = 3;
+}
+/* Two sets of exchange rates */
+message ExchangeRateSet {
+    // Current exchange rate
+    ExchangeRate currentRate = 1;
+    // Next exchange rate which will take effect when current rate expires
+    ExchangeRate nextRate = 2;
+}

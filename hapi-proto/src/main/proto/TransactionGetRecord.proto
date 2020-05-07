@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "TransactionRecord.proto";
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+
+/* Get the record for a transaction. If the transaction requested a record, then the record lasts for one hour, and a state proof is available for it. If the transaction created an account, file, or smart contract instance, then the record will contain the ID for what it created. If the transaction called a smart contract function, then the record contains the result of that call. If the transaction was a cryptocurrency transfer, then the record includes the TransferList which gives the details of that transfer. If the transaction didn't return anything that should be in the record, then the results field will be set to nothing. */
+message TransactionGetRecordQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    TransactionID transactionID = 2; // The ID of the transaction for which the record is requested.
+}
+
+/* Response when the client sends the node TransactionGetRecordQuery */
+message TransactionGetRecordResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither.
+    TransactionRecord transactionRecord = 3; // The requested record
+}
+

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.service.proto.java";
+
+import "Query.proto";
+import "Response.proto";
+import "TransactionResponse.proto";
+import "Transaction.proto";
+
+/*
+Transactions and queries for the file service.
+*/
+service FileService {
+    // Creates a file
+    rpc createFile (Transaction) returns (TransactionResponse);
+    // Updates a file
+    rpc updateFile (Transaction) returns (TransactionResponse);
+    // Deletes a file
+    rpc deleteFile (Transaction) returns (TransactionResponse);
+    // Appends to a file
+    rpc appendContent (Transaction) returns (TransactionResponse);
+    // Retrieves the file contents
+    rpc getFileContent (Query) returns (Response);
+    // Retrieves the file information
+    rpc getFileInfo (Query) returns (Response);
+    // Deletes a file if the submitting account has network admin privileges
+    rpc systemDelete (Transaction) returns (TransactionResponse);
+    // Undeletes a file if the submitting account has network admin privileges
+    rpc systemUndelete (Transaction) returns (TransactionResponse);
+}

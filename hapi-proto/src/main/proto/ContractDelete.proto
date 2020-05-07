@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+
+/*
+At consensus, marks a contract as deleted and transfers its remaining hBars, if any, to a designated receiver. After a contract is deleted, it can no longer be called.
+
+If the target contract is immutable (that is, was created without an admin key), then this transaction resolves to MODIFYING_IMMUTABLE_CONTRACT.
+
+--- Signing Requirements ---
+1. The admin key of the target contract must sign.
+2. If the transfer account or contract has receiverSigRequired, its associated key must also sign. */
+message ContractDeleteTransactionBody {
+    // The id of the contract to be deleted
+    ContractID contractID = 1;
+    oneof obtainers {
+        // The id of an account to receive any remaining hBars from the deleted contract
+		AccountID transferAccountID = 2;
+        // The id of a contract to receive any remaining hBars from the deleted contract
+	    ContractID transferContractID = 3;
+    }
+}

@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+enum ResponseCodeEnum {
+
+  OK = 0; // The transaction passed the precheck validations.
+  INVALID_TRANSACTION = 1; // For any error not handled by specific error codes listed below.
+  PAYER_ACCOUNT_NOT_FOUND = 2; //Payer account does not exist.
+  INVALID_NODE_ACCOUNT = 3; //Node Account provided does not match the node account of the node the transaction was submitted to.
+  TRANSACTION_EXPIRED = 4; // Pre-Check error when TransactionValidStart + transactionValidDuration is less than current consensus time.
+  INVALID_TRANSACTION_START = 5; // Transaction start time is greater than current consensus time
+  INVALID_TRANSACTION_DURATION = 6; //valid transaction duration is a positive non zero number that does not exceed 120 seconds
+  INVALID_SIGNATURE = 7; // The transaction signature is not valid
+  MEMO_TOO_LONG = 8; //Transaction memo size exceeded 100 bytes
+  INSUFFICIENT_TX_FEE = 9; // The fee provided in the transaction is insufficient for this type of transaction
+  INSUFFICIENT_PAYER_BALANCE = 10; // The payer account has insufficient cryptocurrency to pay the transaction fee
+  DUPLICATE_TRANSACTION = 11; // This transaction ID is a duplicate of one that was submitted to this node or reached consensus in the last 180 seconds (receipt period)
+  BUSY = 12; //If API is throttled out
+  NOT_SUPPORTED = 13; //The API is not currently supported
+
+
+  INVALID_FILE_ID = 14; //The file id is invalid or does not exist
+  INVALID_ACCOUNT_ID = 15; //The account id is invalid or does not exist
+  INVALID_CONTRACT_ID = 16; //The contract id is invalid or does not exist
+  INVALID_TRANSACTION_ID = 17; //Transaction id is not valid
+  RECEIPT_NOT_FOUND = 18; //Receipt for given transaction id does not exist
+  RECORD_NOT_FOUND = 19; //Record for given transaction id does not exist
+  INVALID_SOLIDITY_ID = 20; //The solidity id is invalid or entity with this solidity id does not exist
+
+
+  UNKNOWN = 21; // Transaction hasn't yet reached consensus, or has already expired
+  SUCCESS = 22; // The transaction succeeded
+  FAIL_INVALID = 23; // There was a system error and the transaction failed because of invalid request parameters.
+  FAIL_FEE = 24; // There was a system error while performing fee calculation, reserved for future.
+  FAIL_BALANCE = 25; // There was a system error while performing balance checks, reserved for future.
+
+
+  KEY_REQUIRED = 26; //Key not provided in the transaction body
+  BAD_ENCODING = 27; //Unsupported algorithm/encoding used for keys in the transaction
+  INSUFFICIENT_ACCOUNT_BALANCE = 28; //When the account balance is not sufficient for the transfer
+  INVALID_SOLIDITY_ADDRESS = 29; //During an update transaction when the system is not able to find the Users Solidity address
+
+
+  INSUFFICIENT_GAS = 30; //Not enough gas was supplied to execute transaction
+  CONTRACT_SIZE_LIMIT_EXCEEDED = 31; //contract byte code size is over the limit
+  LOCAL_CALL_MODIFICATION_EXCEPTION = 32; //local execution (query) is requested for a function which changes state
+  CONTRACT_REVERT_EXECUTED = 33; //Contract REVERT OPCODE executed
+  CONTRACT_EXECUTION_EXCEPTION = 34; //For any contract execution related error not handled by specific error codes listed above.
+  INVALID_RECEIVING_NODE_ACCOUNT = 35; //In Query validation, account with +ve(amount) value should be Receiving node account, the receiver account should be only one account in the list
+  MISSING_QUERY_HEADER = 36; // Header is missing in Query request
+
+
+  ACCOUNT_UPDATE_FAILED = 37; // The update of the account failed
+  INVALID_KEY_ENCODING = 38; // Provided key encoding was not supported by the system
+  NULL_SOLIDITY_ADDRESS = 39; // null solidity address
+
+  CONTRACT_UPDATE_FAILED = 40; // update of the contract failed
+  INVALID_QUERY_HEADER = 41; // the query header is invalid
+
+  INVALID_FEE_SUBMITTED = 42; // Invalid fee submitted
+  INVALID_PAYER_SIGNATURE = 43; // Payer signature is invalid
+
+
+  KEY_NOT_PROVIDED = 44; // The keys were not provided in the request.
+  INVALID_EXPIRATION_TIME = 45; // Expiration time provided in the transaction was invalid.
+  NO_WACL_KEY = 46; //WriteAccess Control Keys are not provided for the file
+  FILE_CONTENT_EMPTY = 47; //The contents of file are provided as empty.
+  INVALID_ACCOUNT_AMOUNTS = 48; // The crypto transfer credit and debit do not sum equal to 0
+  EMPTY_TRANSACTION_BODY = 49; // Transaction body provided is empty
+  INVALID_TRANSACTION_BODY = 50; // Invalid transaction body provided
+
+
+  INVALID_SIGNATURE_TYPE_MISMATCHING_KEY = 51; // the type of key (base ed25519 key, KeyList, or ThresholdKey) does not match the type of signature (base ed25519 signature, SignatureList, or ThresholdKeySignature)
+  INVALID_SIGNATURE_COUNT_MISMATCHING_KEY = 52; // the number of key (KeyList, or ThresholdKey) does not match that of signature (SignatureList, or ThresholdKeySignature). e.g. if a keyList has 3 base keys, then the corresponding signatureList should also have 3 base signatures.
+
+  EMPTY_LIVE_HASH_BODY = 53; // the livehash body is empty
+  EMPTY_LIVE_HASH = 54; // the livehash data is missing
+  EMPTY_LIVE_HASH_KEYS = 55; // the keys for a livehash are missing
+  INVALID_LIVE_HASH_SIZE = 56; // the livehash data is not the output of a SHA-384 digest
+
+  EMPTY_QUERY_BODY = 57; // the query body is empty
+  EMPTY_LIVE_HASH_QUERY = 58; // the crypto livehash query is empty
+  LIVE_HASH_NOT_FOUND = 59; // the livehash is not present
+  ACCOUNT_ID_DOES_NOT_EXIST = 60; // the account id passed has not yet been created.
+  LIVE_HASH_ALREADY_EXISTS = 61; // the livehash already exists for a given account
+
+
+  INVALID_FILE_WACL = 62; // File WACL keys are invalid
+  SERIALIZATION_FAILED = 63; // Serialization failure
+  TRANSACTION_OVERSIZE = 64; // The size of the Transaction is greater than transactionMaxBytes
+  TRANSACTION_TOO_MANY_LAYERS = 65; // The Transaction has more than 50 levels
+  CONTRACT_DELETED = 66; //Contract is marked as deleted
+
+  PLATFORM_NOT_ACTIVE = 67; // the platform node is either disconnected or lagging behind.
+  KEY_PREFIX_MISMATCH = 68; // one public key matches more than one prefixes on the signature map
+  PLATFORM_TRANSACTION_NOT_CREATED = 69; // transaction not created by platform due to either large backlog or message size exceeded transactionMaxBytes
+  INVALID_RENEWAL_PERIOD = 70; // auto renewal period is not a positive number of seconds
+  INVALID_PAYER_ACCOUNT_ID = 71; // the response code when a smart contract id is passed for a crypto API request
+  ACCOUNT_DELETED = 72; // the account has been marked as deleted
+  FILE_DELETED = 73; // the file has been marked as deleted
+  ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS = 74; // same accounts repeated in the transfer account list
+  SETTING_NEGATIVE_ACCOUNT_BALANCE = 75; // attempting to set negative balance value for crypto account
+  OBTAINER_REQUIRED =76; // when deleting smart contract that has crypto balance either transfer account or transfer smart contract is required
+  OBTAINER_SAME_CONTRACT_ID =77;//when deleting smart contract that has crypto balance you can not use the same contract id as transferContractId as the one being deleted
+  OBTAINER_DOES_NOT_EXIST = 78;//transferAccountId or transferContractId specified for contract delete does not exist
+  MODIFYING_IMMUTABLE_CONTRACT = 79; //attempting to modify (update or delete a immutable smart contract, i.e. one created without a admin key)
+  FILE_SYSTEM_EXCEPTION = 80; //Unexpected exception thrown by file system functions
+  AUTORENEW_DURATION_NOT_IN_RANGE = 81; // the duration is not a subset of [MINIMUM_AUTORENEW_DURATION,MAXIMUM_AUTORENEW_DURATION]
+  ERROR_DECODING_BYTESTRING = 82; // Decoding the smart contract binary to a byte array failed. Check that the input is a valid hex string.
+  CONTRACT_FILE_EMPTY = 83; // File to create a smart contract was of length zero
+  CONTRACT_BYTECODE_EMPTY = 84; // Bytecode for smart contract is of length zero
+  INVALID_INITIAL_BALANCE=85; // Attempt to set negative initial balance
+  INVALID_RECEIVE_RECORD_THRESHOLD=86; // attempt to set negative receive record threshold
+  INVALID_SEND_RECORD_THRESHOLD=87; // attempt to set negative send record threshold
+  ACCOUNT_IS_NOT_GENESIS_ACCOUNT = 88; // Special Account Operations should be performed by only Genesis account, return this code if it is not Genesis Account
+  PAYER_ACCOUNT_UNAUTHORIZED = 89; // The fee payer account doesn't have permission to submit such Transaction
+  INVALID_FREEZE_TRANSACTION_BODY = 90; // FreezeTransactionBody is invalid
+  FREEZE_TRANSACTION_BODY_NOT_FOUND = 91; // FreezeTransactionBody does not exist
+  TRANSFER_LIST_SIZE_LIMIT_EXCEEDED = 92; //Exceeded the number of accounts (both from and to) allowed for crypto transfer list
+  RESULT_SIZE_LIMIT_EXCEEDED = 93; // Smart contract result size greater than specified maxResultSize
+  NOT_SPECIAL_ACCOUNT = 94; //The payer account is not a special account(account 0.0.55)
+  CONTRACT_NEGATIVE_GAS = 95; // Negative gas was offered in smart contract call
+  CONTRACT_NEGATIVE_VALUE = 96; // Negative value / initial balance was specified in a smart contract call / create
+  INVALID_FEE_FILE=97; // Failed to update fee file
+  INVALID_EXCHANGE_RATE_FILE=98; // Failed to update exchange rate file
+  INSUFFICIENT_LOCAL_CALL_GAS = 99; // Payment tendered for contract local call cannot cover both the fee and the gas
+  ENTITY_NOT_ALLOWED_TO_DELETE = 100; // Entities with Entity ID below 1000 are not allowed to be deleted
+  AUTHORIZATION_FAILED = 101; // Violating one of these rules: 1) treasury account can update all entities below 0.0.1000, 2) account 0.0.50 can update all entities from 0.0.51 - 0.0.80, 3) Network Function Master Account A/c 0.0.50 - Update all Network Function accounts & perform all the Network Functions listed below, 4) Network Function Accounts: i) A/c 0.0.55 - Update Address Book files (0.0.101/102), ii) A/c 0.0.56 - Update Fee schedule (0.0.111), iii) A/c 0.0.57 - Update Exchange Rate (0.0.112).
+  FILE_UPLOADED_PROTO_INVALID = 102; // Fee Schedule Proto uploaded but not valid (append or update is required)
+  FILE_UPLOADED_PROTO_NOT_SAVED_TO_DISK = 103; // Fee Schedule Proto uploaded but not valid (append or update is required)
+  FEE_SCHEDULE_FILE_PART_UPLOADED = 104; // Fee Schedule Proto File Part uploaded
+  EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED = 105; // The change on Exchange Rate exceeds Exchange_Rate_Allowed_Percentage
+  MAX_CONTRACT_STORAGE_EXCEEDED = 106;  // Contract permanent storage exceeded the currently allowable limit
+  TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT = 107; // Transfer Account should not be same as Account to be deleted
+  TOTAL_LEDGER_BALANCE_INVALID = 108;
+  EXPIRATION_REDUCTION_NOT_ALLOWED = 110; // The expiration date/time on a smart contract may not be reduced
+  MAX_GAS_LIMIT_EXCEEDED = 111; //Gas exceeded currently allowable gas limit per transaction
+  MAX_FILE_SIZE_EXCEEDED = 112;  // File size exceeded the currently allowable limit
+  INVALID_TOPIC_ID = 150; // The Topic ID specified is not in the system.
+  INVALID_ADMIN_KEY = 155;
+  INVALID_SUBMIT_KEY = 156;
+  UNAUTHORIZED = 157; // An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey).
+  INVALID_TOPIC_MESSAGE = 158; // A ConsensusService message is empty.
+  INVALID_AUTORENEW_ACCOUNT = 159; // The autoRenewAccount specified is not a valid, active account.
+
+  // An adminKey was not specified on the topic, so there must not be an autoRenewAccount.
+  AUTORENEW_ACCOUNT_NOT_ALLOWED = 160;
+
+  // The topic has expired, was not automatically renewed, and is in a 7 day grace period before the topic will be
+  // deleted unrecoverably. This error response code will not be returned until autoRenew functionality is supported
+  // by HAPI.
+  TOPIC_EXPIRED = 162;
+}

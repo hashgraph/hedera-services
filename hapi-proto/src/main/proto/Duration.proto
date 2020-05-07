@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+/* A length of time in seconds. */
+message Duration {
+    int64 seconds = 1; // The number of seconds
+}

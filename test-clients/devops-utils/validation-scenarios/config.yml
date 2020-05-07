@@ -1,0 +1,60 @@
+networks:
+  testnet:
+    bootstrap: 50
+    nodes:
+    - {account: 3, ipv4Addr: 34.94.106.61}
+    - {account: 4, ipv4Addr: 35.237.119.55}
+    - {account: 5, ipv4Addr: 35.245.27.193}
+    - {account: 6, ipv4Addr: 34.83.112.116}
+    scenarios:
+      consensus: {persistent: 39045}
+      contract:
+        persistent: {bytecode: 39042, luckyNo: 42, num: 39043, source: Multipurpose.sol}
+      crypto: {receiver: 39038, sender: 39037}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 39040}
+  mainnet:
+    bootstrap: 950
+    nodes:
+    - {account: 3, ipv4Addr: 35.237.200.180}
+    - {account: 4, ipv4Addr: 35.186.191.247}
+    - {account: 5, ipv4Addr: 35.192.2.25}
+    - {account: 6, ipv4Addr: 35.199.161.108}
+    - {account: 7, ipv4Addr: 35.203.82.240}
+    - {account: 8, ipv4Addr: 35.236.5.219}
+    - {account: 10, ipv4Addr: 35.242.233.154}
+    - {account: 11, ipv4Addr: 35.240.118.96}
+    - {account: 12, ipv4Addr: 35.204.86.32}
+    - {account: 13, ipv4Addr: 35.234.132.107}
+    - {account: 14, ipv4Addr: 35.236.2.27}
+    - {account: 15, ipv4Addr: 35.228.11.53}
+    scenarios:
+      consensus: {persistent: 39286}
+      contract:
+        persistent: {bytecode: 39290, luckyNo: 42, num: 39291, source: Multipurpose.sol}
+      crypto: {receiver: 39281, sender: 39280}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 39283}
+  localhost:
+    bootstrap: 2
+    nodes:
+    - {account: 3, ipv4Addr: 127.0.0.1}
+    scenarios:
+      contract:
+        persistent: {bytecode: 1027, luckyNo: 42, num: 1028, source: Multipurpose.sol}
+  staging:
+    bootstrap: 2
+    nodes:
+    - {account: 3, ipv4Addr: 35.237.182.66}
+    - {account: 4, ipv4Addr: 35.245.226.22}
+    - {account: 5, ipv4Addr: 34.68.9.203}
+    - {account: 6, ipv4Addr: 34.83.131.197}
+    - {account: 7, ipv4Addr: 34.94.236.63}
+    - {account: 8, ipv4Addr: 35.203.26.115}
+    - {account: 9, ipv4Addr: 34.77.3.213}
+    - {account: 10, ipv4Addr: 35.197.237.44}
+    - {account: 11, ipv4Addr: 35.246.250.176}
+    - {account: 12, ipv4Addr: 34.90.117.105}
+    - {account: 13, ipv4Addr: 35.200.57.21}
+    - {account: 14, ipv4Addr: 34.92.120.143}
+    - {account: 15, ipv4Addr: 34.87.47.168}

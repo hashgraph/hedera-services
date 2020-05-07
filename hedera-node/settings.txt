@@ -1,0 +1,27 @@
+showInternalStats,  1
+# check if numKeepRounds 500 is too much
+roundsStale,  25
+roundsExpired, 500
+signedStateDisk,    10
+saveStatePeriod,    300
+throttleTransactionQueueSize, 6000
+# check if throttle7extra 0.2 is too much
+throttle7extra, 0.2
+# check if maxOutgoingSyncs 3 is a better option
+maxOutgoingSyncs, 2
+doUpnp, 0
+forceCpuVerification, 1
+forceCpuDigest, 1
+cpuDigestThreadRatio, 0.1
+cpuVerifierThreadRatio, 1
+csvFileName, MainNetStats
+csvAppend, 0
+checkSignedStateFromDisk, 1
+
+freezeSettings.active,          1
+freezeSettings.startHour,     	6
+freezeSettings.startMin,   		0
+freezeSettings.endHour,    		6
+freezeSettings.endMin,     		10
+
+dbBackup.active, 0

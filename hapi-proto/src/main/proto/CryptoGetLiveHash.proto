@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+import "CryptoAddLiveHash.proto";
+
+/* Requests a livehash associated to an account. */
+message CryptoGetLiveHashQuery {
+    // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    QueryHeader header = 1;
+    // The account to which the livehash is associated
+    AccountID accountID = 2;
+    // The SHA-384 data in the livehash
+    bytes hash = 3;
+}
+
+/* Returns the full livehash associated to an account, if it is present. Note that the only way to obtain a state proof exhibiting the absence of a livehash from an account is to retrieve a state proof of the entire account with its list of livehashes. */
+message CryptoGetLiveHashResponse {
+    // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    ResponseHeader header = 1;
+    // The livehash, if present
+    LiveHash liveHash = 2;
+}
+
+

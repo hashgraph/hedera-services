@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.service.proto.java";
+
+import "TransactionResponse.proto";
+import "Transaction.proto";
+
+/* The request and responses for freeze service. */
+service FreezeService {
+
+    rpc freeze (Transaction) returns (TransactionResponse); // Freezes the nodes by submitting the transaction. The grpc server returns the TransactionResponse
+}

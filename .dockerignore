@@ -1,0 +1,16 @@
+*.sh
+*.iml
+*.md
+*.sw*
+*.csv
+
+mvnw*
+LICENSE*
+
+docs/
+hapi-proto/target/
+evm-adapter/target/
+evm-adapter/output/
+hedera-node/target/
+hedera-node/output/
+test-clients/target

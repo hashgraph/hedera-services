@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "SystemDelete.proto";
+import "SystemUndelete.proto";
+import "Freeze.proto";
+
+import "ContractCall.proto";
+import "ContractCreate.proto";
+import "ContractUpdate.proto";
+
+import "CryptoAddLiveHash.proto";
+import "CryptoCreate.proto";
+import "CryptoDelete.proto";
+import "CryptoDeleteLiveHash.proto";
+import "CryptoTransfer.proto";
+import "CryptoUpdate.proto";
+
+import "FileAppend.proto";
+import "FileCreate.proto";
+import "FileDelete.proto";
+import "FileUpdate.proto";
+
+import "Duration.proto";
+import "BasicTypes.proto";
+import "ContractDelete.proto";
+
+import "ConsensusCreateTopic.proto";
+import "ConsensusUpdateTopic.proto";
+import "ConsensusDeleteTopic.proto";
+import "ConsensusSubmitMessage.proto";
+
+/* A single transaction. All transaction types are possible here. */
+message TransactionBody {
+  TransactionID transactionID = 1; // The ID for this transaction, which includes the payer's account (the account paying the transaction fee). If two transactions have the same transactionID, they won't both have an effect
+  AccountID nodeAccountID = 2; // The account of the node that submits the client's transaction to the network
+  uint64 transactionFee = 3; // The maximum transaction fee the client is willing to pay
+  Duration transactionValidDuration = 4; //The transaction is invalid if consensusTimestamp > transactionID.transactionValidStart + transactionValidDuration
+  bool generateRecord = 5 [deprecated = true]; // Should a record of this transaction be generated? (A receipt is always generated, but the record is optional)
+  string memo = 6; // Any notes or descriptions that should be put into the record (max length 100)
+  oneof data {
+    ContractCallTransactionBody contractCall = 7; // Calls a function of a contract instance
+    ContractCreateTransactionBody contractCreateInstance = 8; // Creates a contract instance
+    ContractUpdateTransactionBody contractUpdateInstance = 9; // Updates a contract
+    ContractDeleteTransactionBody contractDeleteInstance = 22; //Delete contract and transfer remaining balance into specified account
+
+    CryptoAddLiveHashTransactionBody cryptoAddLiveHash = 10; // Attach a new livehash to an account
+    CryptoCreateTransactionBody cryptoCreateAccount = 11; // Create a new cryptocurrency account
+    CryptoDeleteTransactionBody cryptoDelete = 12; // Delete a cryptocurrency account (mark as deleted, and transfer hbars out)
+    CryptoDeleteLiveHashTransactionBody cryptoDeleteLiveHash = 13; // Remove a livehash from an account
+    CryptoTransferTransactionBody cryptoTransfer = 14; // Transfer amount between accounts
+    CryptoUpdateTransactionBody cryptoUpdateAccount = 15; // Modify information such as the expiration date for an account
+
+    FileAppendTransactionBody fileAppend = 16; // Add bytes to the end of the contents of a file
+    FileCreateTransactionBody fileCreate = 17; // Create a new file
+    FileDeleteTransactionBody fileDelete = 18; // Delete a file (remove contents and mark as deleted until it expires)
+    FileUpdateTransactionBody fileUpdate = 19; // Modify information such as the expiration date for a file
+    SystemDeleteTransactionBody systemDelete = 20; // Hedera administrative deletion of a file or smart contract
+    SystemUndeleteTransactionBody systemUndelete = 21; //To undelete an entity deleted by SystemDelete
+    FreezeTransactionBody freeze = 23; // Freeze the nodes
+
+    ConsensusCreateTopicTransactionBody consensusCreateTopic = 24;
+    ConsensusUpdateTopicTransactionBody consensusUpdateTopic = 25;
+    ConsensusDeleteTopicTransactionBody consensusDeleteTopic = 26;
+    ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27;
+  }
+}

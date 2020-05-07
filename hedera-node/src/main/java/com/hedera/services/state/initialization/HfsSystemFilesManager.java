@@ -1,0 +1,325 @@
+package com.hedera.services.state.initialization;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NodeAddress;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.LongStream;
+
+import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.swirlds.common.Address.ipString;
+
+public class HfsSystemFilesManager implements SystemFilesManager {
+	private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
+	private static final String PROPERTIES_TAG = "properties";
+	private static final String PERMISSIONS_TAG = "API permissions";
+	private static final String EXCHANGE_RATES_TAG = "exchange rates";
+	private static final String FEE_SCHEDULES_TAG = "fee schedules";
+
+	private JKey systemKey;
+
+	private final AddressBook currentBook;
+	private final FileNumbers fileNumbers;
+	private final PropertySource properties;
+	private final TieredHederaFs hfs;
+	private final Supplier<JKey> keySupplier;
+	private final Consumer<ExchangeRateSet> ratesCb;
+	private final Consumer<ServicesConfigurationList> propertiesCb;
+	private final Consumer<ServicesConfigurationList> permissionsCb;
+
+	public HfsSystemFilesManager(
+			AddressBook currentBook,
+			FileNumbers fileNumbers,
+			PropertySource properties,
+			TieredHederaFs hfs,
+			Supplier<JKey> keySupplier,
+			Consumer<ExchangeRateSet> ratesCb,
+			Consumer<ServicesConfigurationList> propertiesCb,
+			Consumer<ServicesConfigurationList> permissionsCb
+	) {
+		this.hfs = hfs;
+		this.properties = properties;
+		this.currentBook = currentBook;
+		this.fileNumbers = fileNumbers;
+		this.keySupplier = keySupplier;
+
+		this.ratesCb = ratesCb;
+		this.propertiesCb = propertiesCb;
+		this.permissionsCb = permissionsCb;
+	}
+
+	@Override
+	public void createAddressBookIfMissing() {
+		writeFromBookIfMissing(fileNumbers.addressBook(), this::bioAndIpv4Contents);
+	}
+
+	@Override
+	public void createNodeDetailsIfMissing() {
+		writeFromBookIfMissing(fileNumbers.nodeDetails(), this::bioAndPubKeyContents);
+	}
+
+	@Override
+	public void loadApiPermissions() {
+		loadConfigWithJutilPropsFallback(
+				fileNumbers.apiPermissions(),
+				PERMISSIONS_TAG,
+				"bootstrap.permissions.path",
+				permissionsCb);
+	}
+
+	@Override
+	public void loadApplicationProperties() {
+		loadConfigWithJutilPropsFallback(
+				fileNumbers.applicationProperties(),
+				PROPERTIES_TAG,
+				"bootstrap.properties.path",
+				propertiesCb);
+	}
+
+	@Override
+	public void loadExchangeRates() {
+		loadProtoWithSupplierFallback(
+				fileNumbers.exchangeRates(),
+				EXCHANGE_RATES_TAG,
+				ratesCb,
+				ExchangeRateSet::parseFrom,
+				() -> defaultRates().toByteArray());
+	}
+
+	@Override
+	public void loadFeeSchedules() {
+		loadProtoWithSupplierFallback(
+				fileNumbers.feeSchedules(),
+				FEE_SCHEDULES_TAG,
+				schedules -> {},
+				CurrentAndNextFeeSchedule::parseFrom,
+				() -> defaultSchedules().toByteArray());
+	}
+
+	@FunctionalInterface
+	private interface BootstrapLoader {
+		byte[] get() throws Exception;
+	}
+
+	@FunctionalInterface
+	private interface GrpcParser<T> {
+		T parseFrom(byte[] data) throws InvalidProtocolBufferException;
+	}
+
+	private <T> T loadFrom(FileID disFid, String resource, GrpcParser<T> parser) {
+		try {
+			return parser.parseFrom(hfs.cat(disFid));
+		} catch (InvalidProtocolBufferException e) {
+			log.error("Corrupt {} in saved state, unable to continue!", resource);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void bootstrapInto(
+			FileID disFid,
+			String resource,
+			BootstrapLoader loader
+	) {
+		byte[] rawProps;
+		try {
+			rawProps = loader.get();
+		} catch (Exception e) {
+			log.error("Failed to read bootstrap {}, unable to continue!", resource);
+			throw new IllegalStateException(e);
+		}
+		materialize(disFid, systemFileInfo(), rawProps);
+	}
+
+	private void materialize(FileID fid, JFileInfo info, byte[] contents) {
+		hfs.getMetadata().put(fid, info);
+		hfs.getData().put(fid, contents);
+	}
+
+	private <T> void loadProtoWithSupplierFallback(
+			long disNum,
+			String resource,
+			Consumer<T> onSuccess,
+			GrpcParser<T> parser,
+			BootstrapLoader fallback
+	) {
+		var disFid = fileNumbers.toFid(disNum);
+		if (!hfs.exists(disFid)) {
+			bootstrapInto(disFid, resource, fallback);
+		}
+		var proto = loadFrom(disFid, resource, parser);
+		onSuccess.accept(proto);
+	}
+
+	private void loadConfigWithJutilPropsFallback(
+			long disNum,
+			String resource,
+			String jutilLocProp,
+			Consumer<ServicesConfigurationList> onSuccess
+	) {
+		var disFid = fileNumbers.toFid(disNum);
+		if (!hfs.exists(disFid)) {
+			bootstrapInto(
+					disFid,
+					resource,
+					() -> asSerializedConfig(
+							resource,
+							properties.getStringProperty(jutilLocProp)));
+		}
+		var config = loadFrom(disFid, resource, ServicesConfigurationList::parseFrom);
+		onSuccess.accept(config);
+	}
+
+	private byte[] asSerializedConfig(String resource, String propsLoc) throws IOException {
+		var jutilProps = new Properties();
+		jutilProps.load(Files.newInputStream(Paths.get(propsLoc)));
+		var config = ServicesConfigurationList.newBuilder();
+		log.info("--- Bootstrapping network {} from '{}' as below ---", resource, propsLoc);
+		jutilProps.entrySet()
+				.stream()
+				.sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
+				.peek(entry -> log.info(
+						"{} = {}",
+						String.valueOf(entry.getKey()),
+						String.valueOf(entry.getValue())))
+				.forEach(entry ->
+						config.addNameValue(Setting.newBuilder()
+								.setName(String.valueOf(entry.getKey()))
+								.setValue(String.valueOf(entry.getValue()))));
+		log.info("---------------------------------------------------");
+		return config.build().toByteArray();
+	}
+
+	private JFileInfo systemFileInfo() {
+		return new JFileInfo(
+				false,
+				new JKeyList(List.of(masterKey())),
+				properties.getLongProperty("bootstrap.systemFilesExpiry"));
+	}
+
+	private void writeFromBookIfMissing(long disNum, Supplier<byte[]> scribe) {
+		var disFid = fileNumbers.toFid(disNum);
+		if (!hfs.exists(disFid)) {
+			materialize(disFid, systemFileInfo(), scribe.get());
+		}
+	}
+
+	private byte[] bioAndIpv4Contents() {
+		var basics = NodeAddressBook.newBuilder();
+		LongStream.range(0, currentBook.getSize())
+				.mapToObj(currentBook::getAddress)
+				.map(address ->
+						basicBioEntryFrom(address)
+								.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+								.build())
+				.forEach(basics::addNodeAddress);
+		return basics.build().toByteArray();
+	}
+
+	private byte[] bioAndPubKeyContents() {
+		var details = NodeAddressBook.newBuilder();
+		LongStream.range(0, currentBook.getSize())
+				.mapToObj(currentBook::getAddress)
+				.map(address ->
+						basicBioEntryFrom(address)
+								.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
+								.build())
+				.forEach(details::addNodeAddress);
+		return details.build().toByteArray();
+	}
+
+	private NodeAddress.Builder basicBioEntryFrom(Address address) {
+		var builder = NodeAddress.newBuilder()
+				.setNodeId(address.getId())
+				.setMemo(ByteString.copyFromUtf8(address.getMemo()));
+		try {
+			builder.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
+		} catch (Exception ignore) {
+			log.warn(ignore.getMessage());
+		}
+		return builder;
+	}
+
+	private CurrentAndNextFeeSchedule defaultSchedules() throws Exception {
+		var resource = properties.getStringProperty("bootstrap.feeSchedulesJson.resource");
+
+		return loadFeeScheduleFromJson(resource);
+	}
+
+	private ExchangeRateSet defaultRates() {
+		return ExchangeRateSet.newBuilder()
+				.setCurrentRate(
+						rateFrom(
+								properties.getIntProperty("bootstrap.rates.currentCentEquiv"),
+								properties.getIntProperty("bootstrap.rates.currentHbarEquiv"),
+								properties.getLongProperty("bootstrap.rates.currentExpiry")))
+				.setNextRate(
+						rateFrom(
+								properties.getIntProperty("bootstrap.rates.nextCentEquiv"),
+								properties.getIntProperty("bootstrap.rates.nextHbarEquiv"),
+								properties.getLongProperty("bootstrap.rates.nextExpiry")))
+				.build();
+	}
+
+	private ExchangeRate rateFrom(int centEquiv, int hbarEquiv, long expiry) {
+		return ExchangeRate.newBuilder()
+				.setCentEquiv(centEquiv)
+				.setHbarEquiv(hbarEquiv)
+				.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+				.build();
+	}
+
+	private JKey masterKey() {
+		if (systemKey == null) {
+			systemKey = keySupplier.get();
+		}
+		return systemKey;
+	}
+}

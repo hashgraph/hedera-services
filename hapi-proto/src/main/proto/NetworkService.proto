@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.service.proto.java";
+
+import "Query.proto";
+import "Response.proto";
+
+/* The requests and responses for different network services. */
+service NetworkService {
+    rpc getVersionInfo (Query) returns (Response); // Retrieves the active versions of Hedera Services and HAPI proto
+}

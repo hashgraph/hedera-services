@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ (c) 2016-2019 Swirlds, Inc.
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Swirlds, Inc. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Swirlds.
+  ~
+  ~ SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Required Maven Version -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Parent Configuration -->
+	<parent>
+		<groupId>com.swirlds</groupId>
+		<artifactId>swirlds-platform</artifactId>
+		<version>0.6.5</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<!-- Project Configuration -->
+	<artifactId>swirlds-platform-regression</artifactId>
+
+	<packaging>jar</packaging>
+
+	<!-- Project Properties -->
+	<properties>
+		<!-- Maven & Java Configuration -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+
+		<!-- Dependency Versioning -->
+		<slf4j.version>1.7.25</slf4j.version>
+		<log4j.version>2.11.1</log4j.version>
+		<ormlite.version>5.1</ormlite.version>
+		<!--<derby.version>10.14.1.0</derby.version>-->
+		<xchart.version>3.5.2-SIDEWINDER</xchart.version>
+		<pdfbox.version>2.0.8</pdfbox.version>
+		<junit.version>4.12</junit.version>
+		<pdfbox.graphics2d.version>0.12</pdfbox.graphics2d.version>
+		<h2.version>1.4.197</h2.version>
+		<jama.version>1.0.3</jama.version>
+		<smile.version>1.5.1</smile.version>
+		<jsch.version>0.1.55</jsch.version>
+
+		<!-- Project Properties -->
+		<app.repo>${project.baseUri}/../sdk/data/repos/app/</app.repo>
+		<platform.repo>${project.baseUri}/../sdk/data/repos/platform/</platform.repo>
+		<sdk.dir>${project.basedir}/../sdk/</sdk.dir>
+		<jar.name>regression</jar.name>
+		<app.name>Regression</app.name>
+		<app.prefix>com.swirlds.regression.</app.prefix>
+	</properties>
+
+
+	<!-- Dependencies -->
+	<dependencies>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.sshd/sshd-core -->
+		<dependency>
+			<groupId>com.hierynomus</groupId>
+			<artifactId>sshj</artifactId>
+			<version>0.27.0</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.6</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-compress -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.18</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.4.11</version>
+		</dependency>
+
+		<!-- Apache Log4j 2.x -->
+		<!-- Apache 2.0 License -->
+		<!-- https://logging.apache.org/log4j/2.x -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>${log4j.version}</version>
+		</dependency>
+
+		<!-- JUnit 5.x -->
+		<!-- EPL 1.0 License -->
+		<!-- https://junit.org -->
+		<!-- Required for Unit Testing Only -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>5.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<version>5.3.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.9.4</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
+		<dependency>
+			<groupId>org.eclipse.jgit</groupId>
+			<artifactId>org.eclipse.jgit</artifactId>
+			<version>5.2.1.201812262042-r</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-ec2</artifactId>
+			<version>1.11.489</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-pricing</artifactId>
+			<version>1.11.489</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-common</artifactId>
+			<version>0.6.5</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.json/json -->
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20180813</version>
+		</dependency>
+
+		<!-- slack dependencies -->
+		<dependency>
+			<groupId>com.hubspot.slack</groupId>
+			<artifactId>slack-base</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.hubspot.slack</groupId>
+			<artifactId>slack-java-client</artifactId>
+			<version>1.3</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>jcl-over-slf4j</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.google.inject</groupId>
+			<artifactId>guice</artifactId>
+			<version>4.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.hubspot</groupId>
+			<artifactId>algebra</artifactId>
+			<version>1.2</version>
+		</dependency>
+
+
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-bom -->
+			<dependency>
+				<groupId>com.amazonaws</groupId>
+				<artifactId>aws-java-sdk-bom</artifactId>
+				<version>1.11.489</version>
+				<type>pom</type>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<!-- Repository Configuration -->
+	<repositories>
+		<repository>
+			<id>platform.repo</id>
+			<name>platform</name>
+			<url>${platform.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>app.repo</id>
+			<name>app</name>
+			<url>${app.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
+
+	<!-- Build Configuration -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>7.1</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.1</version>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>install</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<stripVersion>true</stripVersion>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>install</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<artifactItems>
+						<artifactItem>
+							<groupId>${project.groupId}</groupId>
+							<artifactId>${project.artifactId}</artifactId>
+							<version>${project.version}</version>
+							<type>${project.packaging}</type>
+							<destFileName>${jar.name}.${project.packaging}</destFileName>
+							<outputDirectory>${project.basedir}</outputDirectory>
+						</artifactItem>
+					</artifactItems>
+					<outputDirectory>${project.basedir}/lib</outputDirectory>
+					<excludeArtifactIds>swirlds,platform-apps</excludeArtifactIds>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${app.prefix}${app.name}Main</mainClass>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>./lib</classpathPrefix>
+							<useUniqueVersions>false</useUniqueVersions>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

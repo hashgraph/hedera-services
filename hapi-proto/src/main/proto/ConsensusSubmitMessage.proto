@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+
+message ConsensusSubmitMessageTransactionBody {
+    TopicID topicID = 1; // Topic to submit message to.
+
+    bytes message = 2; // Message to be submitted. Max size of the Transaction (including signatures) is 4kB.
+}

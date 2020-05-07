@@ -1,0 +1,23 @@
+showInternalStats,  1
+signedStateDisk,    5
+saveStatePeriod,    900
+signedStateKeep,    10
+throttleTransactionQueueSize, 100000
+maxEventQueueForCons, 1000
+throttle7extra, 0.5
+forceCpuVerification, 1
+forceCpuDigest, 1
+numConnections, 1000
+lockLogTimeout, 4000
+maxOutgoingSyncs, 4
+doUpnp, 0
+# TURN OFF for migration.
+checkSignedStateFromDisk, 1
+useLoopbackIp, 0
+roundsExpired, 500
+csvFileName, MainNetStats
+csvAppend, 0
+enableEventStreaming, true
+eventsLogPeriod, 5
+eventsLogDir, /opt/hgcapp/eventsStreams
+dbConnection.password, PASSWORD_HERE

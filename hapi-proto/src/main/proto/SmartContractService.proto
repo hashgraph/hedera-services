@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.service.proto.java";
+
+import "TransactionResponse.proto";
+import "Query.proto";
+import "Response.proto";
+import "Transaction.proto";
+
+/*
+Transactions and queries for the file service.
+*/
+service SmartContractService {
+    // Creates a contract
+    rpc createContract (Transaction) returns (TransactionResponse);
+    // Updates a contract with the content
+    rpc updateContract (Transaction) returns (TransactionResponse);
+    // Calls a contract
+    rpc contractCallMethod (Transaction) returns (TransactionResponse);
+    // Retrieves the contract information
+    rpc getContractInfo (Query) returns (Response);
+    // Calls a smart contract to be run on a single node
+    rpc contractCallLocalMethod (Query) returns (Response);
+    // Retrieves the byte code of a contract
+    rpc ContractGetBytecode (Query) returns (Response);
+    // Retrieves a contract by its Solidity address
+    rpc getBySolidityID (Query) returns (Response);
+    // Retrieves the 25-hour records stored for a contract
+    rpc getTxRecordByContractID (Query) returns (Response);
+    // Deletes a contract instance and transfers any remaining hbars to a specified receiver
+    rpc deleteContract (Transaction) returns (TransactionResponse);
+    // Deletes a contract if the submitting account has network admin privileges
+    rpc systemDelete (Transaction) returns (TransactionResponse);
+    // Undeletes a contract if the submitting account has network admin privileges
+    rpc systemUndelete (Transaction) returns (TransactionResponse);
+}

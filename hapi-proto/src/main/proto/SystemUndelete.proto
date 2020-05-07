@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+
+/*
+Undelete a file or smart contract that was deleted by SystemDelete; requires a Hedera administrative multisignature.
+*/
+message SystemUndeleteTransactionBody {
+    oneof id {
+        FileID fileID = 1; // The file ID to undelete, in the format used in transactions
+        ContractID contractID = 2; // The contract ID instance to undelete, in the format used in transactions
+    }
+}

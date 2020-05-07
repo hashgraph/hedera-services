@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+
+/* Get the deployed versions of Hedera Services and the HAPI proto in semantic version format */
+message NetworkGetVersionInfoQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+}
+
+/* Response when the client sends the node NetworkGetVersionInfoQuery */
+message NetworkGetVersionInfoResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    SemanticVersion hapiProtoVersion = 2;
+    SemanticVersion hederaServicesVersion = 3;
+}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+
+/* Get the contents of a file. The content field is empty (no bytes) if the file is empty. */
+message FileGetContentsQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    FileID fileID = 2; // The file ID of the file whose contents are requested
+}
+
+/* Response when the client sends the node FileGetContentsQuery */
+message FileGetContentsResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    message FileContents {
+        FileID fileID = 1; // The file ID of the file whose contents are being returned
+        bytes contents = 2; // The bytes contained in the file
+    }
+    FileContents fileContents = 2; // the file ID and contents (a state proof can be generated for this)
+}
+
+

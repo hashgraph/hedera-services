@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+import "CryptoAddLiveHash.proto";
+
+/* Get all accounts, claims, files, and smart contract instances whose associated keys include the given Key. The given Key must not be a contractID or a ThresholdKey. This is not yet implemented in the API, but will be in the future. */
+message GetByKeyQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    Key key = 2; // The key to search for. It must not contain a contractID nor a ThresholdSignature.
+}
+
+/* the ID for a single entity (account, livehash, file, or smart contract instance) */
+message EntityID {
+    oneof entity {
+        AccountID accountID = 1; // The Account ID for the cryptocurrency account
+        LiveHash liveHash = 2; // A uniquely identifying livehash of an acount
+        FileID fileID = 3; // The file ID of the file
+        ContractID contractID = 4; // The smart contract ID that identifies instance
+    }
+}
+/* Response when the client sends the node GetByKeyQuery */
+message GetByKeyResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    repeated EntityID entities = 2; // The list of entities that include this public key in their associated Key list
+}
+
+

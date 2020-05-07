@@ -1,0 +1,14 @@
+currentRate {
+  hbarEquiv: 30000
+  centEquiv: 120000
+  expirationTime {
+    seconds: 1581361200
+  }
+}
+nextRate {
+  hbarEquiv: 30000
+  centEquiv: 120000
+  expirationTime {
+    seconds: 1581364800
+  }
+}

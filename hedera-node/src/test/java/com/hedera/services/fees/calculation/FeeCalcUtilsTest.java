@@ -1,0 +1,146 @@
+package com.hedera.services.fees.calculation;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.swirlds.fcmap.FCMap;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+
+import java.util.Optional;
+
+import static org.mockito.BDDMockito.*;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
+import static com.hedera.services.legacy.logic.ApplicationConstants.*;
+
+@RunWith(JUnitPlatform.class)
+class FeeCalcUtilsTest {
+	private final MapKey key = new MapKey(0, 0, 1234);
+
+	@Test
+	public void returnsAccountExpiryIfAvail() {
+		// setup:
+		HederaAccount account = mock(HederaAccount.class);
+		FCMap<MapKey, HederaAccount> accounts = mock(FCMap.class);
+		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+
+		given(account.getExpirationTime()).willReturn(Long.MAX_VALUE);
+		given(accounts.get(key)).willReturn(account);
+
+		// when:
+		Timestamp actual = lookupAccountExpiry(key, accounts);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void returnsZeroFileExpiryIfUnavail() {
+		// setup:
+		StateView view = mock(StateView.class);
+		FileID fid = IdUtils.asFile("1.2.3");
+
+		given(view.attrOf(fid)).willReturn(Optional.empty());
+
+		// when:
+		Timestamp actual = lookupFileExpiry(fid, view);
+
+		// then:
+		assertEquals(ZERO_EXPIRY, actual);
+	}
+
+	@Test
+	public void returnsZeroAccountExpiryIfUnavail() {
+		// when:
+		Timestamp actual = lookupAccountExpiry(null, null);
+
+		// then:
+		assertEquals(ZERO_EXPIRY, actual);
+	}
+
+	@Test
+	public void returnsFileExpiryIfAvail() throws Exception {
+		// setup:
+		StateView view = mock(StateView.class);
+		FileID fid = IdUtils.asFile("1.2.3");
+		// and:
+		JKey wacl = JKey.mapKey(Key.newBuilder().setEd25519(ByteString.copyFrom("YUUP".getBytes())).build());
+		JFileInfo jInfo = new JFileInfo(false, wacl, Long.MAX_VALUE);
+
+		given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
+
+		// when:
+		Timestamp actual = lookupFileExpiry(fid, view);
+		// and:
+		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void constructsExpectedPath() {
+		// given:
+		FileID fid = IdUtils.asFile("1.2.3");
+		// and:
+		String expected = String.format(
+				"%s%s%d",
+				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
+				ARTIFACTS_PREFIX_FILE_CONTENT,
+				fid.getFileNum());
+
+		// when:
+		String actual = pathOf(fid);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void constructsExpectedMetaPath() {
+		// given:
+		FileID fid = IdUtils.asFile("1.2.3");
+		// and:
+		String expected = String.format(
+				"%s%s%d",
+				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
+				ARTIFACTS_PREFIX_FILE_INFO,
+				fid.getFileNum());
+
+		// when:
+		String actual = pathOfMeta(fid);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+}

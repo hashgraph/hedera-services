@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+import "TransactionRecord.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
+
+/*
+Get all the records for a smart contract instance, for any transaction (creation or call) that occurred in the last 25 hours.
+*/
+message ContractGetRecordsQuery {
+    QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
+    ContractID contractID = 2; // The smart contract instance for which the records should be retrieved
+}
+
+/* Response when the client sends the node ContractGetRecordsQuery */
+message ContractGetRecordsResponse {
+    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+    ContractID contractID = 2; // The smart contract instance that this record is for
+    repeated TransactionRecord records = 3; // List of records, each with contractCreateResult or contractCallResult as its body
+}

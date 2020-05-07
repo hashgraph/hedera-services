@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto;
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "Timestamp.proto";
+import "BasicTypes.proto";
+import "TransactionReceipt.proto";
+import "CryptoTransfer.proto";
+import "ContractCallLocal.proto";
+
+/* Response when the client sends the node TransactionGetRecordResponse */
+message TransactionRecord {
+    TransactionReceipt receipt = 1; // The status (reach consensus, or failed, or is unknown) and the ID of any new account/file/instance created.
+    bytes transactionHash = 2; // The hash of the Transaction that executed (not the hash of any Transaction that failed for having a duplicate TransactionID)
+    Timestamp consensusTimestamp = 3; // The consensus timestamp (or null if didn't reach consensus yet)
+    TransactionID transactionID = 4; // The ID of the transaction this record represents
+    string memo = 5; // The memo that was submitted as part of the transaction (max 100 bytes)
+    uint64 transactionFee = 6; // The actual transaction fee charged, not the original transactionFee value from TransactionBody
+    oneof body {
+        ContractFunctionResult contractCallResult = 7; // Record of the value returned by the smart contract function (if it completed and didn't fail) from ContractCallTransaction
+        ContractFunctionResult contractCreateResult = 8; // Record of the value returned by the smart contract constructor (if it completed and didn't fail) from ContractCreateTransaction
+    }
+    TransferList transferList = 10; // All hbar transfers as a result of this transaction, such as fees, or transfers performed by the transaction, or by a smart contract it calls, or by the creation of threshold records that it triggers.
+}
