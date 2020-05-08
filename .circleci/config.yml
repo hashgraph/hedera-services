@@ -124,10 +124,10 @@ commands:
           at: /
       - add_ssh_keys:
           fingerprints:
+            - "f6:a8:c8:5e:d3:69:bd:c9:64:4c:b9:76:9a:58:e5:bd"
             - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
             - "e2:e4:6a:25:a2:d5:33:98:50:02:3c:40:51:16:46:3a"
             - "1b:c8:bf:64:8e:d9:1e:25:d6:01:51:d3:ab:ed:c8:f4"
-            - "f6:a8:c8:5e:d3:69:bd:c9:64:4c:b9:76:9a:58:e5:bd"
       - run:
           name: Checkout infrastructure repo
           command: |
