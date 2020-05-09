@@ -16,6 +16,6 @@ else
   cat ~/.ssh/config
   set -x
   GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-    git clone git@github.com:swirlds${INFRASTRUCTURE_REPO} \
+    git clone git@github.com:swirlds${INFRASTRUCTURE_REPO}.git \
       --branch "$BRANCH"
 fi
