@@ -4,7 +4,6 @@
 
 
 PLAYBOOK_OPT="-i ./inventory/hosts-${TF_WORKSPACE} \
-      --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
       -u ubuntu \
       -e branch=${CIRCLE_BRANCH} \
       -e app_dir=${REPO} \
@@ -38,7 +37,6 @@ function ansible_clean {
   cd $ANSIBLE_DIR
   ansible-playbook \
       -i ./inventory/hosts-${TF_WORKSPACE} \
-      --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
       -u ubuntu \
       play-clean-state.yml
 }
@@ -54,7 +52,6 @@ function ansible_reboot {
   cd $ANSIBLE_DIR
   ansible-playbook \
       -i ./inventory/hosts-${TF_WORKSPACE} \
-      --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
       -u ubuntu \
       play-reboot.yml
 }
@@ -63,7 +60,6 @@ function ansible_prepare {
   cd $ANSIBLE_DIR
   ansible-playbook \
       -i ./inventory/hosts-${TF_WORKSPACE} \
-      --private-key /root/.ssh/${ANSIBLE_SSH_KEY} \
       -u ubuntu \
       play-uninstall-psql.yml
 }

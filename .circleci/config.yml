@@ -670,7 +670,6 @@ executors:
     environment:
       TF_DIR: << parameters.tf_dir >>
       IN_CIRCLE_CI: true
-      ANSIBLE_SSH_KEY: ephemeral-nodes
       USE_EXISTING_NETWORK: <<parameters.use_existing_network>>
       TF_WORKSPACE: << parameters.tf_workspace >>
       REPO: /repo
