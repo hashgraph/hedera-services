@@ -956,7 +956,7 @@ jobs:
           command: 'mvn clean install'
       - run:
           name: Upload Code Coverage
-          command: bash <(curl -s https://codecov.io/bash)
+          command: bash <(wget -O - https://codecov.io/bash)
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
