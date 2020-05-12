@@ -118,15 +118,16 @@ commands:
       infra-branch:
         description: Which branch of infrastructure repo to use
         type: string
-        default: 'master'
+        default: 'hashgraph-hedera-services'
     steps:
       - attach_workspace:
           at: /
       - add_ssh_keys:
           fingerprints:
-            - "f6:a8:c8:5e:d3:69:bd:c9:64:4c:b9:76:9a:58:e5:bd"
+            - "cf:b2:68:a6:65:3f:98:d2:78:18:45:96:b4:fa:b9:1d"
             - "1b:c8:bf:64:8e:d9:1e:25:d6:01:51:d3:ab:ed:c8:f4"
             - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
+            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
       - run:
           name: Checkout infrastructure repo
           command: |
@@ -678,16 +679,20 @@ executors:
 
 workflows:
   nightly-regression:
-    triggers:
-        - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - dev
+    # triggers:
+    #     - schedule:
+    #         cron: "0 5,9,13 * * *"
+    #         filters:
+    #           branches:
+    #             only:
+    #               - 027-D-hashgraph-hedera-services-regression
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
 #        context: SonarCloud
+          filters:
+            branches:
+              only:
+                - 027-D-hashgraph-hedera-services-regression
       - regression-target-testnet:
           requires:
             - fast-build-artifact
@@ -744,9 +749,9 @@ workflows:
       - long-consensus_ops-0:
           requires:
             - regression-target-testnet
-      - long-umbrella:
-          requires:
-            - regression-target-testnet
+      # - long-umbrella:
+      #     requires:
+      #       - regression-target-testnet
       - regression-validate-freeze:
           requires:
             - long-contract_txns6-0
@@ -813,9 +818,9 @@ workflows:
       - short-consensus_ops-0:
           requires:
             - regression-validate-freeze
-      - short-umbrella:
-          requires:
-            - regression-validate-freeze
+      # - short-umbrella:
+      #     requires:
+      #       - regression-validate-freeze
       - regression-run-accessory-tests:
           requires:
             - short-contract_txns6-0
@@ -1040,7 +1045,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -1054,7 +1059,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1068,7 +1073,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1082,7 +1087,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1090,7 +1095,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1098,7 +1103,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1106,7 +1111,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1114,7 +1119,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1122,7 +1127,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1130,7 +1135,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1138,7 +1143,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1146,7 +1151,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1154,7 +1159,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1162,7 +1167,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1170,7 +1175,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1178,7 +1183,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1186,7 +1191,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1194,14 +1199,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1209,14 +1214,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1224,14 +1229,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1239,14 +1244,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1254,14 +1259,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1269,14 +1274,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1284,14 +1289,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1299,14 +1304,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1314,14 +1319,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1329,7 +1334,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1337,7 +1342,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1345,14 +1350,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1360,14 +1365,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=2,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1375,7 +1380,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1383,7 +1388,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1391,14 +1396,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1406,14 +1411,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1421,14 +1426,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1436,14 +1441,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1451,14 +1456,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1466,14 +1471,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1481,14 +1486,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1496,14 +1501,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1511,14 +1516,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1526,7 +1531,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1534,7 +1539,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1542,14 +1547,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1557,14 +1562,14 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1573,7 +1578,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1596,7 +1601,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-regression"
+      tf_workspace: "net-hashgraph-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:

@@ -37,7 +37,6 @@ CIRCLE_USERNAME_TO_SLACK_USER = {
 
 GITHUB_COMMIT_AUTHOR = 'COMMIT_AUTHOR'
 
-
 @contextmanager
 def cd(newdir):
     prevdir = os.getcwd()
@@ -46,7 +45,6 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
-
 
 def get_github_user(sha1):
     print("What env: {}".format(os.environ.get("CIRCLECI")))
@@ -60,21 +58,25 @@ def get_github_user(sha1):
         print('Current dir: {}'.format(os.getcwd()))
         if sha1:
             result = subprocess.run(["git", "show", "-s", "--format='%ae'", sha1],
-                                stdout=subprocess.PIPE)
+                                    stdout=subprocess.PIPE)
             github_user = result.stdout.decode('ascii').strip('\'').strip('\'\n')
 
         return github_user
 
 
 def get_slack_channel(args):
-    if os.environ.get('CIRCLE_BRANCH') == 'dev-mock' and not os.environ.get("CIRCLE_USERNAME"):
+#    if os.environ.get('CIRCLE_BRANCH') == 'dev' and not os.environ.get("CIRCLE_USERNAME"):
+    if os.environ.get('CIRCLE_BRANCH') == '027-D-hashgraph-hedera-services-regression' \
+            and (not os.environ.get("CIRCLE_USERNAME" or os.environ.get("CIRCLE_USERNAME") != 'ljianghedera')):
         return 'CKWHL8R9A'
     else:
         sha1 = os.environ.get('CIRCLE_SHA1')
+        github_user = None;
         if not sha1 and args.commit_sha1:
             sha1 = args.commit_sha1
 
-        github_user = get_github_user(sha1)
+        if sha1:
+            github_user = get_github_user(sha1)
         if not github_user and args.github_user:
             github_user = args.github_user
 
@@ -96,36 +98,38 @@ def get_slack_user(args):
         return slack_user
     return args.slack_user
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--text',
-            help='Path to literal text to send to Slack',
-            dest='text')
+                        help='Path to literal text to send to Slack',
+                        dest='text')
     parser.add_argument('-f', '--file',
-            help='Path to file to upload to Slack',
-            dest='file')
+                        help='Path to file to upload to Slack',
+                        dest='file')
     parser.add_argument('-n', '--name',
-            help='Name of file to upload to Slack',
-            default='file',
-            dest='name')
+                        help='Name of file to upload to Slack',
+                        default='file',
+                        dest='name')
     parser.add_argument('-u', '--user',
-            help='Slack user to @mention in the message',
-            dest='slack_user')
+                        help='Slack user to @mention in the message',
+                        default='',
+                        dest='slack_user')
     parser.add_argument('-g', '--github-user',
-            help='GitHub user to @mention in the message (requires GITHUB_TO_SLACK_USER entry)',
-            default='',
-            dest='github_user')
+                        help='GitHub user to @mention in the message (requires GITHUB_TO_SLACK_USER entry)',
+                        default='',
+                        dest='github_user')
     parser.add_argument('-c', '--channel',
-            help='Slack ID of target channel',
-            dest='channel')
+                        help='Slack ID of target channel',
+                        default='CKWHL8R9A',
+                        dest='channel')
     parser.add_argument('-s', '--commit_sha1',
-            help='Commit hash triggering this build',
-            default='bad-commit',
-            dest='commit_sha1')
+                        help='Commit hash triggering this build',
+                        default='bad-commit',
+                        dest='commit_sha1')
     parser.add_argument('-C', '--circle_username',
-            help='The CIRCLE_USERNAME that triggers this build',
-            dest='ci_user')
-
+                        help='The CIRCLE_USERNAME that triggers this build',
+                        dest='ci_user')
 
     args = parser.parse_args(sys.argv[1:])
     if (not bool(args.text or args.file)):
@@ -133,8 +137,7 @@ if __name__ == '__main__':
         sys.exit()
 
     slack_channel = get_slack_channel(args)
-
-    print("slack channel : {}".format(slack_channel))
+    print("Channel: {}".format(slack_channel))
 
     if slack_channel == 'CKWHL8R9A' and not os.environ.get('CIRCLE_USERNAME'):
         slack_user = slack_channel
@@ -149,17 +152,20 @@ if __name__ == '__main__':
     if args.file:
         print('Sending contents of "{}" to {}'.format(args.file, slack_channel))
         response = client.files_upload(
-                channel=slack_channel,
-                file=args.file,
-                filename=args.name,
-                title=args.name)
+            channels=slack_channel,
+            file=args.file,
+            filename=args.name,
+            title=args.name)
     elif args.text:
         literal = ''
         with open(args.text) as f:
             literal = ' / '.join([ line.strip() for line in f.readlines() ])
 
         if slack_user:
-            literal = '<@{}> - {}'.format(slack_user, literal)
+            literal = '<@{} - {}>'.format(slack_user, literal)
+#   Not sure whether the following lines make thumb_pdf more unstable.
+#        else:
+#            literal = '{} - <@{}>'.format(literal, slack_channel)
 
         print('Sending "{}" to {}'.format(literal, slack_channel))
         response = client.chat_postMessage(channel=slack_channel, text=literal)
