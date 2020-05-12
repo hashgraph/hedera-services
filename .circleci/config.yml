@@ -236,7 +236,8 @@ commands:
         type: boolean
         default: false
     steps:
-      - fetch-testnet-control-assets
+      - fetch-testnet-control-assets:
+          infra-branch: "hashgraph-hedera-services"
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
