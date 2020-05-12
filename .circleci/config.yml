@@ -957,12 +957,9 @@ jobs:
       - run:
           name: Upload Code Coverage
           command: |
-            wget https://curl.haxx.se/download/curl-7.52.1.tar.gz
-            tar -xvf curl-7.52.1.tar.gz
-            cd curl-7.52.1
-            ./configure
-            make
-            make install
+            wget -O curl https://packages.ubuntu.com/bionic/curl
+            chmod +x curl
+            export PATH="$PATH:$PWD"
             bash <(wget -O - https://codecov.io/bash)
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
