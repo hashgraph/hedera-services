@@ -850,13 +850,12 @@ workflows:
   continuous-integration:
     jobs:
       - build-artifact:
-#         context: SonarCloud
+          context: SonarCloud
           filters:
             branches:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 0205-D-enable-sonar-scan
       - start-singlejob-testnet:
           requires:
             - build-artifact
@@ -965,7 +964,6 @@ jobs:
       - run:
           name: mvn install
           command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
-          # command: 'mvn clean install'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
