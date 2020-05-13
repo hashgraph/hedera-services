@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. ${REPO}/.circleci/scripts/utils.sh
+
 CI_PROPERTIES_MAP=$CI_PROPERTIES_MAP \
 DSL_SUITE_RUNNER_ARGS=$DSL_SUITE_RUNNER_ARGS \
 ${REPO}/.circleci/scripts/run-scenario-test.sh $* | tee /tmp/umbrellaRedux_test.log
