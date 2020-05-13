@@ -681,13 +681,13 @@ workflows:
   nightly-regression:
     triggers:
         - schedule:
-            cron: "0 5,9,13 * * *"
+            cron: "30 5,9,13,16,20 * * *"
             filters:
               branches:
                 only:
                   - 027-D-hashgraph-hedera-services-regression
     jobs:
-      - fast-build-artifact:
+      - fast-build-artifact
 #        context: SonarCloud
           # filters:
           #   branches:
