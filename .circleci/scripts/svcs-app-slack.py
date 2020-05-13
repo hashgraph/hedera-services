@@ -65,9 +65,7 @@ def get_github_user(sha1):
 
 
 def get_slack_channel(args):
-#    if os.environ.get('CIRCLE_BRANCH') == 'dev' and not os.environ.get("CIRCLE_USERNAME"):
-    if os.environ.get('CIRCLE_BRANCH') == '027-D-hashgraph-hedera-services-regression' \
-            and (not os.environ.get("CIRCLE_USERNAME" or os.environ.get("CIRCLE_USERNAME") != 'ljianghedera')):
+    if os.environ.get('CIRCLE_BRANCH') == 'master' and not os.environ.get("CIRCLE_USERNAME"):
         return 'CKWHL8R9A'
     else:
         sha1 = os.environ.get('CIRCLE_SHA1')
@@ -163,7 +161,7 @@ if __name__ == '__main__':
 
         if slack_user:
             literal = '<@{} - {}>'.format(slack_user, literal)
-#   Not sure whether the following lines make thumb_pdf more unstable.
+#   Not sure whether the following lines make thumb_pdf more unstable. Need more investigation
 #        else:
 #            literal = '{} - <@{}>'.format(literal, slack_channel)
 

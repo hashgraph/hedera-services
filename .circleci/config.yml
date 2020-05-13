@@ -125,9 +125,8 @@ commands:
       - add_ssh_keys:
           fingerprints:
             - "cf:b2:68:a6:65:3f:98:d2:78:18:45:96:b4:fa:b9:1d"
-            - "1b:c8:bf:64:8e:d9:1e:25:d6:01:51:d3:ab:ed:c8:f4"
-            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
             - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
+            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
       - run:
           name: Checkout infrastructure repo
           command: |
@@ -237,7 +236,8 @@ commands:
         type: boolean
         default: false
     steps:
-      - fetch-testnet-control-assets
+      - fetch-testnet-control-assets:
+          infra-branch: "hashgraph-hedera-services"
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
@@ -681,18 +681,14 @@ workflows:
   nightly-regression:
     triggers:
         - schedule:
-            cron: "30 5,9,13,16,20 * * *"
+            cron: "0 5,9,13 * * *"
             filters:
               branches:
                 only:
-                  - 027-D-hashgraph-hedera-services-regression
+                  - master
     jobs:
       - fast-build-artifact
 #        context: SonarCloud
-          # filters:
-          #   branches:
-          #     only:
-          #       - 027-D-hashgraph-hedera-services-regression
       - regression-target-testnet:
           requires:
             - fast-build-artifact
