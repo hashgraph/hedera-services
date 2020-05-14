@@ -19,7 +19,7 @@ OpenJDK12 is strongly recommended.
 ## PostgreSQL dependency
 The current implementation of Swirlds Platform has a non-negotiable dependency
 on PostgreSQL. Use the included
-[Docker-based PostgreSQL setup guide](docs/POSTGRESQL_SETUP_GUIDE.md)
+[Docker-based PostgreSQL setup guide](docs/postgresql-setup-guide.md)
 to ensure your local environment includes an appropriately configured
 PostgreSQL instance.
 

@@ -8,7 +8,7 @@ This document describes the standard Swirlds/Hedera configuration for the Postgr
 2. On Windows, you may be forced to log off after the installation completes.
 3. On Windows, if Hyper-V and Containers features are disabled, you will see the prompt below. Save your work, press Ok, and wait for your computer to restart.
 
-![](enable-Hyper-V-and-Containers.png)
+![](enable-hyper-v-and-containers.png)
 
 ### Create a local folder to use with PostgreSQL
 ```
