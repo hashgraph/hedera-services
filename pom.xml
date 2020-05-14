@@ -49,7 +49,7 @@
     <jacoco.version>0.8.5</jacoco.version>
     <sonar.version>3.7.0.1746</sonar.version>
 
-    <sonar.organization>swirlds</sonar.organization>
+    <sonar.organization>hashgraph</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
