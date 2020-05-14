@@ -955,6 +955,12 @@ jobs:
           name: mvn install
           command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
       - run:
+          name: Upload codecov
+          command: |
+            apt-get update
+            apt-get install -y curl
+            bash <(wget -O - https://codecov.io/bash)
+      - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
             /repo/.circleci/scripts/package-hapi-artifacts.sh \
