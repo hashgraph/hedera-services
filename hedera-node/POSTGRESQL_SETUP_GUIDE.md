@@ -14,7 +14,8 @@ This document describes the standard Swirlds/Hedera configuration for the Postgr
 mkdir -p ~/Docker/Volumes/PostgreSQL/swirlds-fcfs
 ```
 
-### Execute the following docker commands from the CLI:
+### Run PostgreSQL image as a container
+Execute the following docker commands from the CLI:
 ```
 # MacOS / Linux
 docker run --name postgres -d -p 5432:5432 \
@@ -32,7 +33,9 @@ docker run --name postgres -d -p 5432:5432 ^
 --env PGDATA=/var/lib/postgresql/data/pgdata ^
 postgres:10.9-alpine
 ```
-Note: On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
+Notes:
+1. The version of PostgresSQL that is currently used: **postgres:10.9-alpine**
+2. On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
 
 ### Copy the [PostgreSQL Configuration file](postgresql.conf) into the appropriate folder
 ```
