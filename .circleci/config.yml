@@ -859,7 +859,52 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-      - run-file-scenarios:
+      # - run-file-scenarios:
+      #     requires:
+      #       - run-consensus-and-crypto-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-smart-contract-scenarios:
+      #     requires:
+      #       - run-file-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-umbrella-freeze-restart-test:
+      #     requires:
+      #       - run-smart-contract-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-update-feature:
+      #     requires:
+      #       - run-umbrella-freeze-restart-test
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-update-jar-files:
+      #     requires:
+      #       - run-update-feature
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-testnet
+      - run-network-sim:
           requires:
             - run-consensus-and-crypto-scenarios
           pre-steps:
@@ -867,43 +912,7 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-smart-contract-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-umbrella-freeze-restart-test:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-feature:
-          requires:
-            - run-umbrella-freeze-restart-test
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-jar-files:
-          requires:
-            - run-update-feature
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-testnet
+            - cleanup-testnet            
       - cleanup-singlejob-testnet:
           requires:
             - run-update-jar-files
@@ -1002,6 +1011,7 @@ jobs:
             rm -rf /repo/hedera-node/src
             mkdir -p /repo/HapiApp2.0
             cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
+            cp /repo/hedera-node/.circleci/scripts/block_ubuntu.sh /repo/HapiApp2.0
       - persist_to_workspace:
           root: /
           paths:
@@ -1831,38 +1841,38 @@ jobs:
     steps:
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicUpdateSpecs -TLS=on"
-          node-terraform-index: 1
-          node-account: 4
-      - run-eet-suites:
-          dsl-args: "TopicDeleteSpecs"
-      - run-eet-suites:
-          dsl-args: "SubmitMessageSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicGetInfoSpecs"
-      - run-eet-suites:
-          dsl-args: "ConsensusThrottlesSpecs"
-      - run-eet-suites:
-          dsl-args: "BucketAndLegacyThrottlingSpec"
-      - run-eet-suites:
-          dsl-args: "ControlAccountsExemptForUpdates"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
-      - run-eet-suites:
-          dsl-args: "CryptoCreateSuite -TLS=on"
-      - run-eet-suites:
-          dsl-args: "CryptoTransferSuite"
-      - run-eet-suites:
-          dsl-args: "CryptoRecordSanityChecks"
-      - run-eet-suites:
-          dsl-args: "SuperusersAreNeverThrottled"
+      # - run-eet-suites:
+      #     dsl-args: "TopicUpdateSpecs -TLS=on"
+      #     node-terraform-index: 1
+      #     node-account: 4
+      # - run-eet-suites:
+      #     dsl-args: "TopicDeleteSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "SubmitMessageSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "TopicGetInfoSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "ConsensusThrottlesSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "BucketAndLegacyThrottlingSpec"
+      # - run-eet-suites:
+      #     dsl-args: "ControlAccountsExemptForUpdates"
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.TxRecordTest
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+      # - run-eet-suites:
+      #     dsl-args: "CryptoCreateSuite -TLS=on"
+      # - run-eet-suites:
+      #     dsl-args: "CryptoTransferSuite"
+      # - run-eet-suites:
+      #     dsl-args: "CryptoRecordSanityChecks"
+      # - run-eet-suites:
+      #     dsl-args: "SuperusersAreNeverThrottled"
   run-file-scenarios:
     executor: ci-test-executor
     steps:
@@ -2054,3 +2064,32 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "new version jar" hgcaa.log'
+  run-network-sim:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - run:
+          name: Show java process
+          command: |
+            /repo/.circleci/scripts/show_java_process.sh
+      - run:
+          name: call script to block tcp ports
+          command: |
+            /repo/.circleci/scripts/firewall_create_rules.sh' 
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run-eet-suites:
+          dsl-args: "CryptoRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "SuperusersAreNeverThrottled"
+      - run:
+          name: call script to remove firewall rules
+          command: |
+            /repo/.circleci/scripts/firewall_flush_rules.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            repo/.circleci/scripts/show_logs.sh
