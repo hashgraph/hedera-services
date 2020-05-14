@@ -1,0 +1,6 @@
+# Codes Owners for the hedera-services repository are members of the Hedera Service Team.
+# Each line is a file pattern followed by one or more owners.
+#
+# Default owner for everything in the repo; requested for review when someone opens a 
+# pull request unless a later match takes precedence.
+*    @hedera-services-team
