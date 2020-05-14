@@ -13,6 +13,13 @@ on the Swirlds Platform.
 ## JVM
 OpenJDK12 is strongly recommended.
 
+## PostgreSQL dependency
+The current implementation of Swirlds Platform has a non-negotiable dependency
+on PostgreSQL. Use the included
+[Docker-based PostgreSQL setup guide](docs/POSTGRESQL_SETUP_GUIDE.md)
+to ensure your local environment includes an appropriately configured
+PostgreSQL instance.
+
 ## Solidity 
 Hedera Contracts support `pragma solidity <=0.5.9`.
 
@@ -24,14 +31,6 @@ start a local network of Hedera Services nodes using Docker Compose.
 ## Developer IntelliJ quickstart 
 
 *[This section presupposes basic familiarity with IntelliJ and Maven.]*
-
-### PostgreSQL dependency
-
-The current implementation Swirlds Platform has a non-negotiable dependency 
-on PostgreSQL. Use the included 
-[Docker-based setup guide](docs/PostgreSQL_Setup_Guide.docx)
-to ensure your local environment includes an appropriately configured
-PostgreSQL instance.
 
 ### Preliminaries
 
