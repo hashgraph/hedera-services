@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.hedera.services</groupId>
   <artifactId>hedera-services</artifactId>
@@ -10,12 +9,33 @@
   <description>
     Hedera Services (crypto, file, contract, consensus) on the Swirlds platform
   </description>
-  <packaging>pom</packaging>
   <inceptionYear>2018</inceptionYear>
+  <modelVersion>4.0.0</modelVersion>
+  <name>Hedera Services</name>
+  <packaging>pom</packaging>
+  <url>https://github.com/hashgraph/hedera-services</url>
   <organization>
     <name>Hedera Hashgraph, LLC</name>
     <url>https://hedera.com</url>
   </organization>
+
+  <ciManagement>
+    <system>CircleCI</system>
+    <url>https://circleci.com/gh/hashgraph/hedera-services</url>
+  </ciManagement>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/hashgraph/hedera-services/issues</url>
+  </issueManagement>
+
+    <licenses>
+      <license>
+        <distribution>repo</distribution>
+        <name>Apache License 2.0</name>
+        <url>https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
+      </license>
+    </licenses>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

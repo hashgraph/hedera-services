@@ -1,3 +1,6 @@
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-services/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-services/tree/master)
+[![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](https://codecov.io/gh/hashgraph/hedera-services)
+
 # Hedera Services 
 
 The child modules in this repository define and implement the API to the 
