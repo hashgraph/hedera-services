@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/hashgraph/hedera-services/tree/master.svg?style=shield)](https://circleci.com/gh/hashgraph/hedera-services/tree/master)
+[![CircleCI](https://circleci.com/gh/hashgraph/hedera-services/tree/master.svg?style=shield&circle-token=6628b37c62b2e1f8f7bf1274bee204dc9bc9292b)](https://circleci.com/gh/hashgraph/hedera-services/tree/master)
 [![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](https://codecov.io/gh/hashgraph/hedera-services)
 
 # Hedera Services 
