@@ -2087,4 +2087,4 @@ jobs:
       - run:
           name: Show swirlds logs after HGCApp restart
           command: |
-            repo/.circleci/scripts/show_logs.sh
+            /repo/.circleci/scripts/show_logs.sh
