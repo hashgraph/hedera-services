@@ -915,7 +915,7 @@ workflows:
             - cleanup-testnet            
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-network-sim
           pre-steps:
             - attach_workspace:
                 at: /
