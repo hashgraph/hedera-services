@@ -1013,7 +1013,7 @@ workflows:
           new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-network-sim
           pre-steps:
             - attach_workspace:
                 at: /
