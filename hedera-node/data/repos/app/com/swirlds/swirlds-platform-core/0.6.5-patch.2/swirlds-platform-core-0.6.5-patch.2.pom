@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ (c) 2016-2018 Swirlds, Inc.
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Swirlds, Inc. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Swirlds.
+  ~
+  ~ SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Required Maven Version -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Parent Configuration -->
+	<parent>
+		<groupId>com.swirlds</groupId>
+		<artifactId>swirlds-platform</artifactId>
+		<version>0.6.5-patch.2</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<!-- Project Configuration -->
+	<artifactId>swirlds-platform-core</artifactId>
+
+	<!-- Project Properties -->
+	<properties>
+		<!-- Maven and Java Configuration -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+
+		<!--var app.repo is supplied by inheritors. mvn has dynamic var binding not lexical.-->
+		<app.repo>${project.baseUri}../sdk/data/repos/app/</app.repo>
+		<platform.repo>${project.baseUri}../sdk/data/repos/platform/</platform.repo>
+	</properties>
+
+
+	<!-- Dependencies -->
+	<dependencies>
+		<!-- Swirlds -->
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-common</artifactId>
+			<version>0.6.5-patch.2</version>
+		</dependency>
+
+		<!-- OffByNull PortMapper -->
+		<dependency>
+			<groupId>com.offbynull.portmapper</groupId>
+			<artifactId>portmapper</artifactId>
+			<version>2.0.4</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-io</groupId>
+					<artifactId>commons-io</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-lang3</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-collections4</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- Apache Commons -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.9</version>
+		</dependency>
+
+		<!-- LazySodium -->
+		<dependency>
+			<groupId>com.goterl.lazycode</groupId>
+			<artifactId>lazysodium-java</artifactId>
+			<version>3.8.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>5.3.1</version>
+		</dependency>
+
+		<!-- JOCL -->
+		<dependency>
+			<groupId>org.jocl</groupId>
+			<artifactId>jocl</artifactId>
+			<version>2.0.1</version>
+		</dependency>
+
+		<!-- SLF4J -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-nop</artifactId>
+			<version>1.8.0-beta2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.8.0-beta2</version>
+		</dependency>
+
+		<!-- Log4j -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.8.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.8.2</version>
+		</dependency>
+
+		<!-- JUnit 5.x -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>5.5.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<version>5.5.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.5.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<version>5.5.0</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- BouncyCastle -->
+		<dependency>
+			<groupId>bouncycastlefips</groupId>
+			<artifactId>bcfips</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>bouncycastlefips</groupId>
+			<artifactId>bcpkixfips</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+
+		<!-- PostgreSQL & Hikari -->
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>3.3.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.2.6</version>
+		</dependency>
+
+		<!-- FlywayDB -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>5.2.4</version>
+		</dependency>
+
+		<!-- JavaFX -->
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-base</artifactId>
+			<version>12.0.2</version>
+		</dependency>
+	</dependencies>
+
+	<!-- Repository Configuration -->
+	<repositories>
+		<repository>
+			<id>platform.repo</id>
+			<name>platform</name>
+			<url>${platform.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>app.repo</id>
+			<name>app</name>
+			<url>${app.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>artifactory-central</id>
+			<name>Swirlds Artifactory-releases</name>
+			<url>https://art.swirlds.com/artifactory/swirlds</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+
+	<!-- Distribution Management -->
+	<distributionManagement>
+		<repository>
+			<id>app.repo</id>
+			<url>${app.repo}</url>
+		</repository>
+	</distributionManagement>
+
+
+	<!-- Build Configuration -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>5.2.4</version>
+				<executions>
+					<execution>
+						<id>flyway-clean</id>
+						<phase>pre-clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flyway-migrate</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>migrate</goal>
+						</goals>
+					</execution>
+				</executions>
+
+				<configuration>
+					<url>jdbc:postgresql://localhost:5432/fcfs</url>
+					<user>swirlds</user>
+					<password>password</password>
+
+					<schemas>
+						<schema>public</schema>
+					</schemas>
+
+					<placeholders>
+						<PH_BLOB_TYPE>bytea</PH_BLOB_TYPE>
+						<PH_FS_HASH_TYPE>bytea</PH_FS_HASH_TYPE>
+						<PH_FS_META_TYPE>bytea</PH_FS_META_TYPE>
+						<PH_BYTE_TYPE>smallint</PH_BYTE_TYPE>
+					</placeholders>
+					<locations>
+						<location>classpath:/com/swirlds/blob/internal/db/migration/common</location>
+						<location>classpath:/com/swirlds/blob/internal/db/migration/postgres</location>
+					</locations>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>7.1</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
+				<configuration>
+					<failIfNoTests>true</failIfNoTests>
+					<!--<argLine>-Xmx64g</argLine>-->
+					<forkCount>0</forkCount>
+					<reuseForks>true</reuseForks>
+					<excludes>
+						<exclude>**/SignedStateTest.java</exclude>
+						<exclude>**/SignedStateMgrTest.java</exclude>
+						<exclude>**/IsInFreezePeriodTest.java</exclude>
+						<exclude>**/FCFSTimingTests.java</exclude>
+						<exclude>**/SerializerTests.java</exclude>
+						<exclude>**/ChunkManagerTests.java</exclude>
+						<exclude>**/ChunkTest.java</exclude>
+						<exclude>**/FolderEntryTests.java</exclude>
+						<exclude>**/ConsensusV1Test.java</exclude>
+					</excludes>
+					<useSystemClassLoader>false</useSystemClassLoader>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.2</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Sealed>true</Sealed>
+							<Built-By>Swirlds, Inc.</Built-By>
+						</manifestEntries>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>package-test-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<excludes>
+								<exclude>logs/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.1.1</version>
+				<configuration>
+					<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+					<reportOutputDirectory>${project.basedir}/../sdk/docs</reportOutputDirectory>
+					<destDir>javadoc</destDir>
+					<excludePackageNames>
+						com.swirlds.p2p.*:com.swirlds.platform.fc.*:com.swirlds.fcmap.internal:com.swirlds.fs.internal:com.swirlds.crypto.internal:com.swirlds.platform.internal:com.swirlds.blob:com.swirlds.fcmap.list
+					</excludePackageNames>
+					<sourceFileExcludes>
+						<sourceFileExclude>com/swirlds/platform/Marshal**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/platform/CryptoStatistics**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/platform/StreamUtilities**</sourceFileExclude>
+						<sourceFileExclude>com/swirlds/crypto/CryptoMarshal**</sourceFileExclude>
+					</sourceFileExcludes>
+					<show>public</show>
+					<additionalOptions>-html4</additionalOptions>
+					<windowtitle>Swirlds Platform API</windowtitle>
+					<doctitle>Swirlds Platform API</doctitle>
+					<detectJavaApiLink>false</detectJavaApiLink>
+					<offlineLinks>
+						<offlineLink>
+							<url>https://docs.oracle.com/javase/${maven.compiler.target}/docs/api/</url>
+							<location>${project.basedir}</location>
+						</offlineLink>
+					</offlineLinks>
+				</configuration>
+			</plugin>
+		</plugins>
+
+		<testResources>
+			<testResource>
+				<directory>${project.basedir}/src/test/resources</directory>
+			</testResource>
+			<testResource>
+				<directory>${project.basedir}/../test-data</directory>
+			</testResource>
+		</testResources>
+	</build>
+
+</project>
+
