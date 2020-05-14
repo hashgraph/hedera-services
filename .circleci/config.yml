@@ -1011,7 +1011,7 @@ jobs:
             rm -rf /repo/hedera-node/src
             mkdir -p /repo/HapiApp2.0
             cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
-            cp /repo/hedera-node/.circleci/scripts/block_ubuntu.sh /repo/HapiApp2.0
+            cp /repo/.circleci/scripts/block_ubuntu.sh /repo/HapiApp2.0
       - persist_to_workspace:
           root: /
           paths:
@@ -2088,7 +2088,7 @@ jobs:
       - run:
           name: call script to remove firewall rules
           command: |
-            /repo/.circleci/scripts/firewall_flush_rules.sh'
+            /repo/.circleci/scripts/firewall_flush_rules.sh
       - run:
           name: Show swirlds logs after HGCApp restart
           command: |
