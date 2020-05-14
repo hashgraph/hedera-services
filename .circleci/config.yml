@@ -840,7 +840,7 @@ workflows:
   continuous-integration:
     jobs:
       - build-artifact:
-#         context: SonarCloud
+          context: SonarCloud
           filters:
             branches:
               ignore:
@@ -953,8 +953,7 @@ jobs:
       - checkout
       - run:
           name: mvn install
-          #          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} clean install sonar:sonar'
-          command: 'mvn clean install'
+          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
