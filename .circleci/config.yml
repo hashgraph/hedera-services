@@ -920,7 +920,52 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-      - run-file-scenarios:
+      # - run-file-scenarios:
+      #     requires:
+      #       - run-consensus-and-crypto-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-smart-contract-scenarios:
+      #     requires:
+      #       - run-file-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-umbrella-freeze-restart-test:
+      #     requires:
+      #       - run-smart-contract-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-update-feature:
+      #     requires:
+      #       - run-umbrella-freeze-restart-test
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-update-jar-files:
+      #     requires:
+      #       - run-update-feature
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-testnet
+      - run-network-sim:
           requires:
             - run-consensus-and-crypto-scenarios
           pre-steps:
@@ -1905,38 +1950,38 @@ jobs:
     steps:
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicUpdateSpecs -TLS=on"
-          node-terraform-index: 1
-          node-account: 4
-      - run-eet-suites:
-          dsl-args: "TopicDeleteSpecs"
-      - run-eet-suites:
-          dsl-args: "SubmitMessageSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicGetInfoSpecs"
-      - run-eet-suites:
-          dsl-args: "ConsensusThrottlesSpecs"
-      - run-eet-suites:
-          dsl-args: "BucketAndLegacyThrottlingSpec"
-      - run-eet-suites:
-          dsl-args: "ControlAccountsExemptForUpdates"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
-      - run-eet-suites:
-          dsl-args: "CryptoCreateSuite -TLS=on"
-      - run-eet-suites:
-          dsl-args: "CryptoTransferSuite"
-      - run-eet-suites:
-          dsl-args: "CryptoRecordSanityChecks"
-      - run-eet-suites:
-          dsl-args: "SuperusersAreNeverThrottled"
+      # - run-eet-suites:
+      #     dsl-args: "TopicUpdateSpecs -TLS=on"
+      #     node-terraform-index: 1
+      #     node-account: 4
+      # - run-eet-suites:
+      #     dsl-args: "TopicDeleteSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "SubmitMessageSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "TopicGetInfoSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "ConsensusThrottlesSpecs"
+      # - run-eet-suites:
+      #     dsl-args: "BucketAndLegacyThrottlingSpec"
+      # - run-eet-suites:
+      #     dsl-args: "ControlAccountsExemptForUpdates"
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.TxRecordTest
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+      # - run-scenario-test:
+      #     fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+      # - run-eet-suites:
+      #     dsl-args: "CryptoCreateSuite -TLS=on"
+      # - run-eet-suites:
+      #     dsl-args: "CryptoTransferSuite"
+      # - run-eet-suites:
+      #     dsl-args: "CryptoRecordSanityChecks"
+      # - run-eet-suites:
+      #     dsl-args: "SuperusersAreNeverThrottled"
   run-file-scenarios:
     executor: ci-test-executor
     steps:
