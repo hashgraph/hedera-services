@@ -1,6 +1,9 @@
 # VIM
 *.sw*
 
+# Docker Compose runtime
+compose-network/
+
 # IDEA files
 .idea
 *.iml
