@@ -1,0 +1,185 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Required Maven Version -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Parent Configuration -->
+	<parent>
+		<groupId>com.swirlds</groupId>
+		<artifactId>swirlds-platform</artifactId>
+		<version>0.6.5-patch.2</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<!-- Project Configuration -->
+	<artifactId>swirlds</artifactId>
+
+	<packaging>jar</packaging>
+
+	<!-- Project Properties -->
+	<properties>
+		<!-- Maven and Java Configuration -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+
+		<app.repo>${project.baseUri}../sdk/data/repos/app/</app.repo>
+		<platform.repo>${project.baseUri}../sdk/data/repos/platform/</platform.repo>
+	</properties>
+
+	<!-- Dependencies -->
+	<dependencies>
+		<dependency>
+			<groupId>com.swirlds</groupId>
+			<artifactId>swirlds-platform-core</artifactId>
+			<version>0.6.5-patch.2</version>
+		</dependency>
+	</dependencies>
+
+
+	<!-- Repository Configuration -->
+	<repositories>
+		<repository>
+			<id>platform.repo</id>
+			<name>platform</name>
+			<url>${platform.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>app.repo</id>
+			<name>app</name>
+			<url>${app.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
+
+	<!-- Distribution Management -->
+	<distributionManagement>
+		<repository>
+			<id>app.repo</id>
+			<url>${app.repo}</url>
+		</repository>
+	</distributionManagement>
+
+
+	<!-- Build Configuration -->
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>${project.basedir}/../sdk/</directory>
+				<includes>
+					<include>docs/license.html</include>
+					<include>docs/acknowledgments.html</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>${project.basedir}/src/main/resources/</directory>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>clean-lib-folder</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>${project.basedir}/../sdk/data/lib</directory>
+							<includes>
+								<include>**/*.jar</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/../sdk/data/apps</directory>
+							<includes>
+								<include>**/*.jar</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/../sdk/data/saved</directory>
+							<includes>
+								<include>**/*</include>
+							</includes>
+						</fileset>
+						<fileset>
+							<directory>${project.basedir}/../sdk</directory>
+							<includes>
+								<include>*.csv</include>
+								<include>swirlds.log</include>
+								<include>regression.log</include>
+								<include>remoteExperiment.tar.gz</include>
+								<include>settingsUsed.txt</include>
+								<include>*Address.txt</include>
+								<include>*Addresses.txt</include>
+							</includes>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>7.1</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.2</version>
+				<!-- the following version puts classpath dir after generated path not before -->
+				<!-- <version>3.0.2</version> -->
+				<configuration>
+					<!--
+					<finalName>swirlds</finalName>
+					<outputDirectory>${project.basedir}/../sdk/</outputDirectory>
+					-->
+					<archive>
+						<manifest>
+							<mainClass>com.swirlds.platform.Browser</mainClass>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>data/lib/</classpathPrefix>
+							<useUniqueVersions>false</useUniqueVersions>
+						</manifest>
+						<manifestEntries>
+							<Built-By>Swirlds, Inc.</Built-By>
+							<Class-Path>data/</Class-Path>
+							<Add-Opens>java.base/sun.security.jca</Add-Opens>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
