@@ -41,7 +41,7 @@ Notes:
 
 ![](../docs/authorize-drive-sharing.png)
 
-### Copy the [PostgreSQL Configuration file](postgresql.conf) into the appropriate folder
+### Copy the [PostgreSQL Configuration file](../docs/postgresql.conf) into the appropriate folder
 ```
 # MacOS / Linux
 ~/Docker/Volumes/PostgreSQL/swirlds-fcfs/pgdata
