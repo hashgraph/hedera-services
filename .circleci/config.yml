@@ -2078,7 +2078,7 @@ jobs:
       - run:
           name: call script to block tcp ports
           command: |
-            /repo/.circleci/scripts/firewall_create_rules.sh' 
+            /repo/.circleci/scripts/firewall_create_rules.sh
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
