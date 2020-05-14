@@ -1,18 +1,20 @@
 # PostgreSQL Setup Guide
 
-This document describes the standard Swirlds configuration for the PostgreSQL local development environment.
+This document describes the standard Swirlds/Hedera configuration for the PostgreSQL local development environment.
 
 ## PostgreSQL Setup for Local Development
-1.	Download and Install Docker CE: [Windows](https://hub.docker.com/editions/community/docker-ce-desktop-windows) or [MacOS X](https://hub.docker.com/editions/community/docker-ce-desktop-mac)
-a.	If prompted, choose to use Linux Containers during installation
-b.	On Windows, you may be forced to log off after the install completes.
-c.	On Windows, if Hyper-V and Containers features are disabled you will see the prompt below. Save your work, press Ok, and wait for your computer to restart.
-2.	Create a local folder to use with PostgreSQL:   [MacOS/Linux Only]
+### Download and Install Docker CE [Windows](https://hub.docker.com/editions/community/docker-ce-desktop-windows) or [MacOS X](https://hub.docker.com/editions/community/docker-ce-desktop-mac)
+1. If prompted, choose to use Linux Containers during installation.
+2. On Windows, you may be forced to log off after the installation completes.
+3. On Windows, if Hyper-V and Containers features are disabled, you will see the prompt below. Save your work, press Ok, and wait for your computer to restart.
+
+### Create a local folder to use with PostgreSQL
 ```
 # MacOS / Linux
 mkdir -p ~/Docker/Volumes/PostgreSQL/swirlds-fcfs
 ```
-3.	Execute the following docker commands from the CLI:
+
+### Execute the following docker commands from the CLI:
 ```
 # MacOS / Linux
 docker run --name postgres -d -p 5432:5432 \
@@ -30,14 +32,15 @@ docker run --name postgres -d -p 5432:5432 ^
 --env PGDATA=/var/lib/postgresql/data/pgdata ^
 postgres:10.9-alpine
 ```
-a.	On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
-4.	Copy the [PostgreSQL Configuration file](postgresql.conf) into the appropriate folder (also available in the folder beside this document):    [MacOS/Linux Only]
+Note: On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
+
+### Copy the [PostgreSQL Configuration file](postgresql.conf) into the appropriate folder
 ```
 # MacOS / Linux
 ~/Docker/Volumes/PostgreSQL/swirlds-fcfs/pgdata
-
 ```
-5.	Control your PostgresSQL container with the following commands:
+
+### Control your PostgresSQL container
 ```
 # Start Postgres
 docker start postgres
@@ -50,5 +53,4 @@ docker ps
 
 # List all Containers
 docker ps -a
-
 ```
