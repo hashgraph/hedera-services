@@ -16,10 +16,10 @@ function ctrl_c() {
 
 
 while true; do 
-    echo "Block port"
+    echo "Block port" >> exec.log
     sudo iptables -A INPUT -p tcp --destination-port 50204 -j DROP
     sleep 8
-    echo "Enable port"
+    echo "Enable port" >> exec.log
     sudo iptables --flush
     sleep 8
 done
