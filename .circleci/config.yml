@@ -130,7 +130,7 @@ commands:
       - run:
           name: Checkout infrastructure repo
           command: |
-             /repo/.circleci/scripts/clone-infra-repo.sh \
+            /repo/.circleci/scripts/clone-infra-repo.sh \
                 '<< parameters.infra-branch >>'
   provision-testnet-hosts:
     description: Provision hosts using Terraform

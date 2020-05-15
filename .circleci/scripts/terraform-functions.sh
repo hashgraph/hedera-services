@@ -137,7 +137,6 @@ function tf_destroy {
       VAR_FILE=$(cat $VAR_FILE_MEMORY_PATH)
     fi
     cd $TF_DIR
-    ci_echo "We get into $TF_DIR to do destroy"
     if [[ -z $USE_EXISTING_NETWORK ]]; then
 
       echo ">>>> [CI] >> Destroying ($VAR_FILE) with hosts ${TF_HOSTS[@]}..."
