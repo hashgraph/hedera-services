@@ -8,7 +8,6 @@ function firewall_flush_rules {
     echo "------- flush_firewall_rules = --------- "
     #kill background script
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo pkill -f block_ubuntu.sh"
-    sleep 2
 
     # make sure it being killed
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
