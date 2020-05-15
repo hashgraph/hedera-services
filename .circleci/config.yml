@@ -2076,10 +2076,10 @@ jobs:
             /repo/.circleci/scripts/firewall_create_rules.sh
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
-      - run:
-          name: sleep 5 minutes
-          command: |
-            sleep 300
+      - run-eet-suites:
+          dsl-args: "CryptoRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "SuperusersAreNeverThrottled"
       - run:
           name: call script to remove firewall rules
           command: |
