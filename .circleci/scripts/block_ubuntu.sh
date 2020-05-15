@@ -17,7 +17,7 @@ function ctrl_c() {
 
 while true; do 
     echo "Block port"
-    sudo iptables -A INPUT -p tcp --destination-port 50211 -j DROP
+    sudo iptables -A INPUT -p tcp --destination-port 50204 -j DROP
     sleep 8
     echo "Enable port"
     sudo iptables --flush
