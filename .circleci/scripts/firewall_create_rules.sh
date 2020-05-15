@@ -13,7 +13,6 @@ function firewall_creat_rules {
 
     # invoke backgroun script 
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "cd $HAPI_APP_DIR; nohup ./block_ubuntu.sh &"
-    sleep 5
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
   done
 }
