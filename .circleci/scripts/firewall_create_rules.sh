@@ -16,6 +16,9 @@ function firewall_creat_rules {
 
     sleep 2
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
+    
+    # only run block port on the first node
+    break
   done
 }
 
