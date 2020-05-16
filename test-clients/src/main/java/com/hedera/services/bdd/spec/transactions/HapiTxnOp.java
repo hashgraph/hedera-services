@@ -300,7 +300,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	public void finalizeExecFor(HapiApiSpec spec) throws Throwable {
 		boolean explicitStatSuppression = suppressStats;
 		suppressStats = true;
-		if (deferStatusResolution) {
+		if (!deferStatusResolution) {
 			resolveStatus(spec);
 			updateStateOf(spec);
 		}
