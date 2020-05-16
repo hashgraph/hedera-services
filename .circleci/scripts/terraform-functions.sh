@@ -141,11 +141,14 @@ function tf_destroy {
 
       echo ">>>> [CI] >> Destroying ($VAR_FILE) with hosts ${TF_HOSTS[@]}..."
       TF_WORKSPACE=$(ls -1 $TF_DIR/nets | grep test)
+      ci_echo "Current workspace : $TF_WORKSPACE"
+      NUM_NODES=${#TF_HOSTS[@]}
       terraform destroy -auto-approve \
           -var-file "$VAR_FILE" \
-          -var node_count=0 \
+          -var node_count=$NUM_NODES \
             && terraform workspace select default \
             && terraform workspace delete $TF_WORKSPACE
+
       touch $FOOTPRINT_PATH
       ci_echo "...finished destroying workspace!"
     else
