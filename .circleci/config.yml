@@ -246,7 +246,7 @@ commands:
                  liveness-timeout-secs: 120
                  var-file: '<< parameters.var-file >>'
                  var-region: "us-east-2"
-                 var-ami-id: "ami-03f811a143e728394"
+                 var-ami-id: "ami-052346bc2903bba20"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
