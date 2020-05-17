@@ -874,6 +874,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - CircleCI-enhancement
       - start-singlejob-testnet:
           requires:
             - build-artifact
