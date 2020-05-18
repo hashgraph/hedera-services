@@ -77,8 +77,10 @@ def get_slack_channel(args):
             github_user = get_github_user(sha1)
         if not github_user and args.github_user:
             github_user = args.github_user
-
-        channel = GITHUB_TO_SLACK_USER.get(github_user)
+        if os.environ.get('CIRCLE_BRANCH') == 'MASTER':
+            channel = GITHUB_TO_SLACK_USER.get(github_user)
+        else:
+            channel = CIRCLE_USERNAME_TO_SLACK_USER.get(os.environ.get("CIRCLE_USERNAME"))
 
     if channel:
         return channel
