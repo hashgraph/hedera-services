@@ -130,8 +130,8 @@ commands:
       - run:
           name: Checkout infrastructure repo
           command: |
-            /repo/.circleci/scripts/clone-infra-repo.sh \
-                '<< parameters.infra-branch >>'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >>'
   provision-testnet-hosts:
     description: Provision hosts using Terraform
     parameters:
@@ -184,7 +184,8 @@ commands:
       - run:
           name: Prepare an existing testnet
           command: |
-            /repo/.circleci/scripts/prepare-testnet.sh
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+               '/repo/.circleci/scripts/prepare-testnet.sh'
   deploy-testnet-nodes:
     description: Deploy testnet nodes using Ansible
     parameters:
@@ -212,7 +213,8 @@ commands:
       - run:
           name: Import certificates to Java cacerts keystore
           command: |
-            /repo/.circleci/scripts/import-certificates-to-java-cacerts-keystore.sh
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+               '/repo/.circleci/scripts/import-certificates-to-java-cacerts-keystore.sh'
   cleanup-rerun-testnet-if-present:
     description: Cleanup any testnet created for a rerun job
     steps:
@@ -653,6 +655,7 @@ executors:
     environment:
       MAVEN_OPTS: -Xmx3200m
       IN_CIRCLE_CI: true
+      REPO: /repo
     working_directory: /repo
 
   ci-test-executor:
@@ -953,7 +956,9 @@ jobs:
       - checkout
       - run:
           name: mvn install
-          command: 'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
+          command: |
+            /repo/.circleci/scripts/trap-failure-report.sh \
+              'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
       - run:
           name: Upload codecov
           command: |
@@ -963,15 +968,18 @@ jobs:
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
-            /repo/.circleci/scripts/package-hapi-artifacts.sh \
-                hedera-node/data/lib
-            /repo/.circleci/scripts/upload-dir-to-s3.sh \
-                hedera-node/data lib SHA-${CIRCLE_SHA1}
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               '/repo/.circleci/scripts/package-hapi-artifacts.sh hedera-node/data/lib'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               '/repo/.circleci/scripts/upload-dir-to-s3.sh \
+                hedera-node/data lib SHA-${CIRCLE_SHA1}'
       - run:
           name: Reposition config for Ansible scripts
           command: |
-            mkdir -p /repo/HapiApp2.0
-            cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
+            /repo/.circleci/scripts/trap-failure-report.sh \
+                'mkdir -p /repo/HapiApp2.0'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+                'cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0'
       - persist_to_workspace:
           root: /
           paths:
@@ -988,20 +996,27 @@ jobs:
       - checkout
       - run:
           name: mvn install
-          command: mvn clean install -DskipTests
+          command: |
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               'mvn clean install -DskipTests'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
-            /repo/.circleci/scripts/package-hapi-artifacts.sh \
-                hedera-node/data/lib
-            /repo/.circleci/scripts/upload-dir-to-s3.sh \
-                hedera-node/data lib SHA-${CIRCLE_SHA1}
+            /repo/.circleci/scripts/trap-failure-report.sh \
+              '/repo/.circleci/scripts/package-hapi-artifacts.sh \
+                   hedera-node/data/lib'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+              '/repo/.circleci/scripts/upload-dir-to-s3.sh \
+                hedera-node/data lib SHA-${CIRCLE_SHA1}'
       - run:
           name: Reposition config for Ansible scripts
           command: |
-            rm -rf /repo/hedera-node/src
-            mkdir -p /repo/HapiApp2.0
-            cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               'rm -rf /repo/hedera-node/src'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               'mkdir -p /repo/HapiApp2.0'
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               'cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0'
       - persist_to_workspace:
           root: /
           paths:
