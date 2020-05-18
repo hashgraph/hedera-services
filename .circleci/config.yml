@@ -697,6 +697,33 @@ executors:
     working_directory: /repo
 
 workflows:
+  # simulate-network-outrage:
+  #   jobs:
+  #     - build-artifact:
+  #         context: SonarCloud
+  #         filters:
+  #           branches:
+  #             ignore:
+  #               - /.*-PERF/
+  #               - /.*-REGRESSION/
+  #     - start-singlejob-testnet:
+  #         requires:
+  #           - build-artifact  
+  #     - run-network-sim:
+  #         requires:
+  #           - run-consensus-and-crypto-scenarios
+  #         pre-steps:
+  #           - attach_workspace:
+  #               at: /
+  #           - ensure-testnet-for-reruns
+  #         post-steps:
+  #           - cleanup-testnet            
+  #     - cleanup-singlejob-testnet:
+  #         requires:
+  #           - run-network-sim
+  #         pre-steps:
+  #           - attach_workspace:
+  #               at: /            
   nightly-regression:
     triggers:
        - schedule:
