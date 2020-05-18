@@ -245,8 +245,8 @@ commands:
             - provision-testnet-hosts:
                  liveness-timeout-secs: 120
                  var-file: '<< parameters.var-file >>'
-                 var-region: "us-west-1"
-                 var-ami-id: "ami-0339b7ecdeb547a28"
+                 var-region: "us-east-2"
+                 var-ami-id: "ami-052346bc2903bba20"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
