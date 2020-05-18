@@ -61,6 +61,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +69,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -79,6 +82,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.*;
+import static java.util.stream.Collectors.toMap;
 
 public class SuiteRunner {
 	private static final Logger log = LogManager.getLogger(SuiteRunner.class);
@@ -160,11 +164,13 @@ public class SuiteRunner {
 			expectedNetworkSize = EXPECTED_CI_NETWORK_SIZE;
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
+			var otherOverrides = arbitraryOverrides(effArgs);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
-					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1));
+					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
+					otherOverrides);
 		}
 		boolean prohibitAsync = !Stream.of(effArgs).anyMatch("-A"::equals);
 		Map<Boolean, List<String>> statefulCategories = Stream
@@ -191,6 +197,14 @@ public class SuiteRunner {
 				.filter(arg -> arg.startsWith(argPrefix))
 				.findAny()
 				.orElse(String.format("%s=%s", argPrefix, defaultValue));
+	}
+
+	private static Map<String, String> arbitraryOverrides(String[] effArgs) {
+		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*)=(.*)");
+		return Stream.of(effArgs)
+				.map(arg -> MISC_OVERRIDE_PATTERN.matcher(arg))
+				.filter(Matcher::matches)
+				.collect(toMap(m -> m.group(1), m -> m.group(2)));
 	}
 
 	private static String[] trueArgs(String[] args) {
