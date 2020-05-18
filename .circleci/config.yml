@@ -2085,3 +2085,8 @@ jobs:
           name: Show swirlds logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/show_logs.sh'
