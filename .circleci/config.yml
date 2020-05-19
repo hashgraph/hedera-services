@@ -681,7 +681,7 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "15 * * * *"
+            cron: "0,10,20,30,40,50 * * * *"
             filters:
               branches:
                 only:
