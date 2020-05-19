@@ -698,6 +698,7 @@ workflows:
           pre-steps:
             - attach_workspace:
                 at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-testnet            
