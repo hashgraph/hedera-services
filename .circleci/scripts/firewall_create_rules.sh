@@ -29,6 +29,7 @@ function firewall_creat_rules {
 function packet_loss {
   HOST=$1
   echo "Packet loss on node $HOST"
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "ifconfig -a"
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc change dev ens3 root netem loss 0.1% 25% "
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc change dev ens3 root netem corrupt 0.1% "
 
