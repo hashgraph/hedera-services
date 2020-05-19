@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+
+# repeatedly block and unblock one of the TCP port
+# used by node 
+
 set -eE
 
 

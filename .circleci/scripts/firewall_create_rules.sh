@@ -3,6 +3,7 @@
 . /repo/.circleci/scripts/terraform-functions.sh
 . /repo/.circleci/scripts/utils.sh
 
+
 function firewall_creat_rules {
 
     # running block script at the last node
@@ -12,12 +13,13 @@ function firewall_creat_rules {
 
     #copy script to remote instances
     scp -p -o StrictHostKeyChecking=no ${REPO}/.circleci/scripts/block_ubuntu.sh ubuntu@$HOST:$HAPI_APP_DIR/
-    ssh -o StrictHostKeyChecking=no ubuntu@$HOST "cd $HAPI_APP_DIR; ls -ltr"
 
     # invoke backgroun script 
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "cd $HAPI_APP_DIR; nohup ./block_ubuntu.sh &" &
 
     sleep 2
+
+    # check if the block script is running
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
 
 }

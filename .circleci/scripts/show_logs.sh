@@ -12,9 +12,7 @@ function print_downloaded_hosts_output {
     echo "------------------ exec.log ------------------"
     if [[ -f /repo/HapiApp2.0/$HOST/exec.log ]]; then
         cat  /repo/HapiApp2.0/$HOST/exec.log
-    fi 
-    echo "------------------ csv ------------------"
-    cat /repo/HapiApp2.0/$HOST/*.csv      
+    fi    
   done
 }
 

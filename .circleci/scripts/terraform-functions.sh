@@ -47,7 +47,6 @@ function tf_cleanup {
             if [ -f "$TGT_LOG" ]; then
               cp "$RAW_DIR/${NAME}-filtered.log" "$FILTERED_DIR"
             fi
-            rsycn -a ${REPO}/HapiApp2.0/$HOST/*.csv "$FILTERED_DIR"
           done
           ls -l $FILTERED_DIR
         done
