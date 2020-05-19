@@ -685,11 +685,10 @@ workflows:
     jobs:
       - build-artifact:
           context: SonarCloud
-          filters:
-            branches:
-              ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
+            filters:
+              branches:
+                only:
+                  - ci-job-network-sim
       - start-singlejob-testnet:
           requires:
             - build-artifact  
