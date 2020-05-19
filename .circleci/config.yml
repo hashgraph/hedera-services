@@ -678,13 +678,14 @@ executors:
     working_directory: /repo
 
 workflows:
-  simulate-network-outrage:
+  nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0,20,40 * * * *"
+            cron: "0 11,23 * * *"
             filters:
               branches:
                 only:
+                  - master
                   - ci-job-network-sim
     jobs:
       - build-artifact:
@@ -2097,7 +2098,7 @@ jobs:
             /repo/.circleci/scripts/firewall_create_rules.sh
       - run-eet-suites:
           dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
-          ci-properties-map: mins=5
+          ci-properties-map: mins=50
       - run:
           name: call script to remove firewall rules
           command: |
