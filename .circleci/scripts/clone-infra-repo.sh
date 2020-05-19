@@ -15,8 +15,8 @@ else
   cd /
   GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
     git clone git@github.com:swirlds${INFRASTRUCTURE_REPO}.git \
-      --branch "$BRANCH" \
-      --depth 2
+      --branch "$BRANCH"
   cd $INFRASTRUCTURE_REPO
+  git reset --hard cf09d4d21a38f2412e471a369d27a2500b9fc084
   git rev-parse HEAD
 fi
