@@ -7,7 +7,7 @@
 function firewall_creat_rules {
 
     # running block script at the last node
-    HOST=$0
+    HOST=$1
 
     echo "------- firewall_creat_rules $HOST --------- "
 
@@ -27,7 +27,7 @@ function firewall_creat_rules {
 
 # random packet loss on first node
 function packet_loss {
-  HOST=$0
+  HOST=$1
   echo "Packet loss on node $HOST"
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem loss 0.1% 25% "
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem corrupt 0.1% "
@@ -36,7 +36,7 @@ function packet_loss {
 
 
 function packet_reorder {
-  HOST=$0
+  HOST=$1
   echo "Packet reorder on node $HOST"
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem gap 5000 delay 10ms "
 
