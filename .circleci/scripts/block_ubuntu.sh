@@ -17,7 +17,9 @@ function ctrl_c() {
     exit
 }
 
+which tc >> exec.log
 
+tc >> exec.log
 
 while true; do 
     echo "Block port" >> exec.log
