@@ -685,7 +685,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  # - master
                   - ci-job-network-sim
     jobs:
       - build-artifact:
