@@ -29,8 +29,8 @@ function firewall_creat_rules {
 function packet_loss {
   HOST=$1
   echo "Packet loss on node $HOST"
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem loss 0.1% 25% "
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem corrupt 0.1% "
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc change dev ens3 root netem loss 0.1% 25% "
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc change dev ens3 root netem corrupt 0.1% "
 
 }
 
@@ -38,7 +38,7 @@ function packet_loss {
 function packet_reorder {
   HOST=$1
   echo "Packet reorder on node $HOST"
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem gap 5000 delay 10ms "
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc change dev ens3 root netem gap 5000 delay 10ms "
 
 }
 
