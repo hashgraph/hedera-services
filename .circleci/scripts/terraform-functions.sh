@@ -146,7 +146,7 @@ function tf_destroy {
       terraform destroy -auto-approve \
           -var-file "$VAR_FILE" \
           -var node_count=$NUM_NODES \
-          -var region="us-east-2" \
+          -var region="us-west-1" \
             && terraform workspace select default \
             && terraform workspace delete $TF_WORKSPACE
 
