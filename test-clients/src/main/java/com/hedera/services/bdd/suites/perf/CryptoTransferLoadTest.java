@@ -27,23 +27,17 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CryptoTransferLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
@@ -91,7 +85,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 				).then(
 						defaultLoadTest(transferBurst, settings)
-								.lasting(settings::getMins, () -> MINUTES)
 				);
 	}
 
