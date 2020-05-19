@@ -333,7 +333,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (elapsedMS <= delayMS) {
 			pause(delayMS - elapsedMS);
 		}
-		log.info("After pause" + (System.currentTimeMillis() - submitTime));
 		long beginWait = Instant.now().toEpochMilli();
 		Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
 		do {
