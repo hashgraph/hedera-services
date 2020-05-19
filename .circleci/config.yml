@@ -2102,7 +2102,7 @@ jobs:
           command: |
             /repo/.circleci/scripts/firewall_create_rules.sh
       - run-eet-suites:
-          dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=11000"
+          dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
           ci-properties-map: mins=5
       - run:
           name: call script to remove firewall rules
