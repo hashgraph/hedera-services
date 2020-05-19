@@ -328,9 +328,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	protected ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
-		log.info("Before pause");
 		pause(spec.setup().statusPreResolvePauseMs());
-		log.info("After pause");
+		log.info("After pause" + (System.currentTimeMillis() - submitTime));
 		long beginWait = Instant.now().toEpochMilli();
 		Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
 		do {
