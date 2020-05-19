@@ -7,7 +7,7 @@
 function firewall_creat_rules {
 
     # running block script at the last node
-    HOST=${TF_HOSTS[${#TF_HOSTS[@]}-1]}
+    HOST=$0
 
     echo "------- firewall_creat_rules $HOST --------- "
 
@@ -22,8 +22,29 @@ function firewall_creat_rules {
     # check if the block script is running
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
 
+
 }
 
-firewall_creat_rules
+# random packet loss on first node
+function packet_loss {
+  HOST=$0
+  echo "Packet loss on node $HOST"
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem loss 0.1% 25% "
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem corrupt 0.1% "
+
+}
 
 
+function packet_reorder {
+  HOST=$0
+  echo "Packet reorder on node $HOST"
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "tc qdisc change dev ens3 root netem gap 5000 delay 10ms "
+
+}
+
+
+firewall_creat_rules ${TF_HOSTS[${#TF_HOSTS[@]}-1]}
+
+packet_loss ${TF_HOSTS[0]}
+
+packet_loss ${TF_HOSTS[1]}
