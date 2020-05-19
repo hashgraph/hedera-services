@@ -51,7 +51,7 @@ public interface OpProvider {
 			SUCCESS,
 			LIVE_HASH_NOT_FOUND,
 			INVALID_SIGNATURE,
-			INSUFFICIENT_PAYER_BALANCE,
+			INSUFFICIENT_PAYER_BALANCE
 	};
 
 	List<HapiSpecOperation> suggestedInitializers();
@@ -78,4 +78,7 @@ public interface OpProvider {
 	default String unique(String opName, Class<?> providerType) {
 		return providerType.getSimpleName() + "-" + opName;
 	}
+
+	String FUNDING_ACCOUNT = "fundingAccount";
+	long   FUNDING_ACCOUT_INITIAL_BALANCE = 10_000_000_000_000L;
 }

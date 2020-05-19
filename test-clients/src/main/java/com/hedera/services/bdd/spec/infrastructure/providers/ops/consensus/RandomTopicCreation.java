@@ -57,10 +57,11 @@ public class RandomTopicCreation implements OpProvider {
                 int n = opNo.getAndIncrement();
                 final String newTopic = my("topic" + n);
                 var op = createTopic(newTopic)
-                                .adminKeyName(key.get())
-                                .submitKeyName(key.get())
-                                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                                .hasKnownStatusFrom(permissibleOutcomes);
+                        .payingWith(FUNDING_ACCOUNT)
+                        .adminKeyName(key.get())
+                        .submitKeyName(key.get())
+                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                        .hasKnownStatusFrom(permissibleOutcomes);
 
                 return Optional.of(op);
         }

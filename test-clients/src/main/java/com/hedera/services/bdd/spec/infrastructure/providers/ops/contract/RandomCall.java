@@ -61,6 +61,7 @@ public class RandomCall implements OpProvider {
 		}
 
 		HapiContractCall op = contractCallFrom(call.get())
+				.payingWith(FUNDING_ACCOUNT)
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes);
 

@@ -88,6 +88,7 @@ public class RandomContractDeletion implements OpProvider {
 		}
 
 		var op = contractDelete(tbd.get())
+				.payingWith(FUNDING_ACCOUNT)
 				.purging()
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes);

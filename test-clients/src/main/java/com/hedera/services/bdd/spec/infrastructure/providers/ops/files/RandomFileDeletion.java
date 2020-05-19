@@ -66,6 +66,7 @@ public class RandomFileDeletion implements OpProvider {
 		}
 
 		var op = fileDelete(tbd.get())
+				.payingWith(FUNDING_ACCOUNT)
 				.purging()
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes);

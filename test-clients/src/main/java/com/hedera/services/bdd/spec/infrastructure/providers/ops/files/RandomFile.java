@@ -77,6 +77,7 @@ public class RandomFile implements OpProvider {
 		int n = opNo.getAndIncrement();
 		final String tentativeFile = my("file" + n);
 		var op = fileCreate(tentativeFile)
+				.payingWith(FUNDING_ACCOUNT)
 				.key(String.format("WACL-%d", (n % 5) + 1))
 				.contents(contentChoices[n % contentChoices.length])
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)

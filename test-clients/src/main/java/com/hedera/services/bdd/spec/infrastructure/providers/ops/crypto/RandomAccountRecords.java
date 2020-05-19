@@ -60,6 +60,7 @@ public class RandomAccountRecords implements OpProvider {
 		}
 
 		HapiGetAccountRecords op = getAccountRecords(account.get())
+				.payingWith(FUNDING_ACCOUNT)
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 

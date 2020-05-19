@@ -57,6 +57,7 @@ public class RandomAccountInfo implements OpProvider {
 		}
 
 		var op = getAccountInfo(account.get())
+				.payingWith(FUNDING_ACCOUNT)
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 

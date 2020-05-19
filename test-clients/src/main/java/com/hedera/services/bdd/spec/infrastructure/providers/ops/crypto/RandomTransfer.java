@@ -92,6 +92,7 @@ public class RandomTransfer implements OpProvider {
 		String from = involved.get().getKey(), to = involved.get().getValue();
 
 		HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
+				.payingWith(FUNDING_ACCOUNT)
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
 

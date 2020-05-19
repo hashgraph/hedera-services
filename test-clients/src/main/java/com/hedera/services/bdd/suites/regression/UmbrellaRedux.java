@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -31,11 +32,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.FUNDING_ACCOUNT;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.FUNDING_ACCOUT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 
 public class UmbrellaRedux extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
@@ -68,7 +74,11 @@ public class UmbrellaRedux extends HapiApiSuite {
 		return HapiApiSpec.customHapiSpec("UmbrellaRedux")
 				.withProperties(Map.of(
 						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
-				.given().when().then(
+				.given(
+						cryptoCreate(FUNDING_ACCOUNT)
+								.balance(FUNDING_ACCOUT_INITIAL_BALANCE),
+						UtilVerbs.sleepFor(10000)
+				).when().then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(factoryFrom(props::get))
 								.lasting(duration::get, unit::get)

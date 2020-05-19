@@ -98,6 +98,7 @@ public class RandomContract implements OpProvider {
 		final SupportedContract choice = choices[n % choices.length];
 
 		HapiContractCreate op = contractCreate(tentativeContract)
+				.payingWith(FUNDING_ACCOUNT)
 				.adminKey(key.get())
 				.bytecode(fileFor(choice))
 				.skipAccountRegistration()

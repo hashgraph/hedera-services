@@ -81,6 +81,7 @@ public class RandomAccount implements OpProvider {
 
 		int id = opNo.getAndIncrement();
 		HapiCryptoCreate op = cryptoCreate(my("account" + id))
+				.payingWith(FUNDING_ACCOUNT)
 				.key(key.get())
 				.memo("randomlycreated" + id)
 				.balance(INITIAL_BALANCE)
