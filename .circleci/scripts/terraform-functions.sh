@@ -125,7 +125,7 @@ function tf_provision {
         -var region=$AWS_REGION \
         -var ami_id=$AWS_AMI_ID
   set_tf_hosts_list
-  echo $AWS_REGION > ${REPO}/.circleci/aws-region.used
+  echo $AWS_REGION > $AWS_REGION_USED_PATH
   wait_for_live_hosts 22 $TIMEOUT_SECS
   ci_echo "...finished creating '$TF_WORKSPACE' with $NUM_NODES hosts!"
 }
@@ -144,7 +144,7 @@ function tf_destroy {
       TF_WORKSPACE=$(ls -1 $TF_DIR/nets | grep test)
       ci_echo "Current workspace : $TF_WORKSPACE"
       NUM_NODES=${#TF_HOSTS[@]}
-      local AWS_REGION=$(cat ${REPO}/.circleci/aws-region.used)
+      local AWS_REGION=$(cat $AWS_REGION_USED_PATH)
       echo $AWS_REGION
       terraform destroy -auto-approve \
           -var-file "$VAR_FILE" \
