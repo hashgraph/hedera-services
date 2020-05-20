@@ -4,7 +4,7 @@ NUM_HOSTS=${1:-4}
 LIVENESS_TIMEOUT_SECS=${2:-120}
 VAR_FILE=${3:-'ci.tfvars'}
 AWS_REGION=${4:-'us-east-1'}
-AWS_AMI_ID=${5:-'ami-0578b0bee3eb885c6'}
+AWS_AMI_ID=${5:-''}
 
 . ${REPO}/.circleci/scripts/terraform-functions.sh
 
