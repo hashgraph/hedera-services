@@ -46,6 +46,4 @@ function packet_reorder {
 
 firewall_creat_rules ${TF_HOSTS[${#TF_HOSTS[@]}-1]}
 
-packet_loss ${TF_HOSTS[0]}
 
-packet_loss ${TF_HOSTS[1]}
