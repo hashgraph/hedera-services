@@ -16,8 +16,4 @@ else
   GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
     git clone git@github.com:swirlds${INFRASTRUCTURE_REPO}.git \
       --branch "$BRANCH"
-  cd $INFRASTRUCTURE_REPO
-  git reset --hard cf09d4d21a38f2412e471a369d27a2500b9fc084
-  git rev-parse HEAD
-  cat terraform/deployments/aws-4-node-spot-net-swirlds/ci.tfvars
 fi
