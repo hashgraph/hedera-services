@@ -116,6 +116,7 @@ function tf_provision {
   cd $TF_DIR
   ci_echo "Creating '$TF_WORKSPACE' ($VAR_FILE) with $NUM_NODES hosts..."
   echo $VAR_FILE > $VAR_FILE_MEMORY_PATH
+  echo "AWS_AMI_ID: $AWS_AMI_ID"
   terraform init
   terraform workspace select $TF_WORKSPACE || \
     terraform workspace new $TF_WORKSPACE
