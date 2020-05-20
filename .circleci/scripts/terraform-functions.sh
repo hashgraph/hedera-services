@@ -111,7 +111,7 @@ function tf_provision {
   local TIMEOUT_SECS=$2
   local VAR_FILE=$3
   local AWS_REGION=$4
-  local AWS_AMI_ID=$5
+  local AWS_AMI_ID="\"$5\""
 
   cd $TF_DIR
   ci_echo "Creating '$TF_WORKSPACE' ($VAR_FILE) with $NUM_NODES hosts..."
