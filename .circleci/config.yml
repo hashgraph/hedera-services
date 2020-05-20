@@ -149,7 +149,7 @@ commands:
       var-region:
         description: Configurable region to override pre-defined in terraform config file.
         type: string
-        default: 'us-east-1'
+        default: 'us-east-2'
       var-ami-id:
         description: ami-id to override pre-defined. Need to be used together with var-region
         type: string
