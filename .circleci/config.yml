@@ -149,7 +149,7 @@ commands:
       var-region:
         description: Configurable region to override pre-defined in terraform config file.
         type: string
-        default: 'us-east-2'
+        default: 'us-east-1'
       var-ami-id:
         description: ami-id to override pre-defined. Need to be used together with var-region
         type: string
@@ -679,14 +679,14 @@ executors:
 
 workflows:
   nightly-simulate-network-outrage:
-    # triggers:
-    #     - schedule:
-    #         cron: "0,10,20,30,40,50 * * * *"
-    #         filters:
-    #           branches:
-    #             only:
-    #               # - master
-    #               - ci-job-network-sim
+    triggers:
+        - schedule:
+            cron: "0 0,8,16 * * *"
+            filters:
+              branches:
+                only:
+                  - master
+                  - ci-job-network-sim
     jobs:
       - build-artifact:
           context: SonarCloud
@@ -2098,7 +2098,7 @@ jobs:
             /repo/.circleci/scripts/firewall_create_rules.sh
       - run-eet-suites:
           dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
-          ci-properties-map: mins=5
+          ci-properties-map: mins=50
       - run:
           name: call script to remove firewall rules
           command: |
