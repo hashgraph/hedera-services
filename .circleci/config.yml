@@ -679,14 +679,14 @@ executors:
 
 workflows:
   nightly-simulate-network-outrage:
-    triggers:
-        - schedule:
-            cron: "0,10,20,30,40,50 * * * *"
-            filters:
-              branches:
-                only:
-                  # - master
-                  - ci-job-network-sim
+    # triggers:
+    #     - schedule:
+    #         cron: "0,10,20,30,40,50 * * * *"
+    #         filters:
+    #           branches:
+    #             only:
+    #               # - master
+    #               - ci-job-network-sim
     jobs:
       - build-artifact:
           context: SonarCloud
