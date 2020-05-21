@@ -1,11 +1,13 @@
 networks:
   testnet:
     bootstrap: 50
+    ensureScenarioPayerHbars: 30
     nodes:
     - {account: 3, ipv4Addr: 34.94.106.61}
     - {account: 4, ipv4Addr: 35.237.119.55}
     - {account: 5, ipv4Addr: 35.245.27.193}
     - {account: 6, ipv4Addr: 34.83.112.116}
+    scenarioPayer: 49542
     scenarios:
       consensus: {persistent: 39045}
       contract:
@@ -15,6 +17,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39040}
   mainnet:
     bootstrap: 950
+    ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 35.237.200.180}
     - {account: 4, ipv4Addr: 35.186.191.247}
@@ -37,13 +40,20 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
   localhost:
     bootstrap: 2
+    ensureScenarioPayerHbars: 300
     nodes:
     - {account: 3, ipv4Addr: 127.0.0.1}
+    scenarioPayer: 1026
     scenarios:
+      consensus: {persistent: 1035}
       contract:
-        persistent: {bytecode: 1027, luckyNo: 42, num: 1028, source: Multipurpose.sol}
+        persistent: {bytecode: 1032, luckyNo: 42, num: 1033, source: Multipurpose.sol}
+      crypto: {receiver: 1028, sender: 1027}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 1030}
   staging:
     bootstrap: 2
+    ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 35.237.182.66}
     - {account: 4, ipv4Addr: 35.245.226.22}

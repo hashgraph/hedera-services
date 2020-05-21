@@ -49,6 +49,7 @@ import com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.ContractScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.CryptoScenario;
 
+import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYSTEM_KEYS;
 import static com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario.NOVEL_TOPIC_NAME;
 import static com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario.PERSISTENT_TOPIC_NAME;
@@ -122,6 +123,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
 
+	private static long TINYBARS_PER_HBAR = 100_000_000L;
+
 	private static String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -165,6 +168,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.of(
 					Optional.of(recordPayerBalance(startingBalance::set)),
+					Optional.ofNullable(params.getScenarios().isEmpty() ? null : ensureScenarioPayer()),
 					Optional.ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
 					Optional.ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
 					Optional.ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
@@ -224,6 +228,31 @@ public class ValidationScenarios extends HapiApiSuite {
 		}
 	}
 
+	private static HapiApiSpec ensureScenarioPayer() {
+		try {
+			ensureScenarios();
+			long minStartingBalance = targetNetwork().getEnsureScenarioPayerHbars() * TINYBARS_PER_HBAR;
+			return customHapiSpec("EnsureScenarioPayer")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+					).when( ).then(
+							ensureValidatedAccountExistence(
+									SCENARIO_PAYER_NAME,
+									minStartingBalance,
+									pemForAccount(payerOrNegativeOne(targetNetwork()).getAsLong()),
+									payerOrNegativeOne(targetNetwork()),
+									targetNetwork()::setScenarioPayer)
+					);
+		} catch (Exception e) {
+			log.warn("Unable to ensure scenario payer, failing!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
 	private static HapiApiSpec cryptoScenario() {
 		try {
 			ensureScenarios();
@@ -240,6 +269,9 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.payer", primaryPayer(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
 							ensureValidatedAccountExistence(
 									SENDER_NAME,
 									2L,
@@ -255,10 +287,12 @@ public class ValidationScenarios extends HapiApiSuite {
 							balanceSnapshot("receiverBefore", RECEIVER_NAME)
 					).when(flattened(
 							cryptoTransfer(tinyBarsFromTo(SENDER_NAME, RECEIVER_NAME, 1L))
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.via("transferTxn"),
 							withOpContext((spec, opLog) -> {
 								var lookup = getTxnRecord("transferTxn")
+										.payingWith(SCENARIO_PAYER_NAME)
 										.setNodeFrom(ValidationScenarios::nextNode)
 										.logged();
 								allRunFor(spec, lookup);
@@ -288,22 +322,30 @@ public class ValidationScenarios extends HapiApiSuite {
 				newKeyNamed("novelAccountFirstKey").shape(complex),
 				newKeyNamed("novelAccountSecondKey"),
 				cryptoCreate(NOVEL_ACCOUNT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
-						.balance(ignore -> 10 * transferFee.get())
+						.balance(ignore -> 2 * transferFee.get())
 						.key("novelAccountFirstKey"),
 				cryptoUpdate(NOVEL_ACCOUNT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.key("novelAccountSecondKey"),
 				cryptoTransfer(tinyBarsFromTo(SENDER_NAME, RECEIVER_NAME, 1L))
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.payingWith(NOVEL_ACCOUNT_NAME),
 				cryptoDelete(NOVEL_ACCOUNT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.transfer(GENESIS),
 				withOpContext((spec, opLog) ->
 						novelAccountUsed.set(HapiPropertySource.asAccountString(
 								spec.registry().getAccountID(NOVEL_ACCOUNT_NAME))))
 		};
+	}
+
+	private static LongSupplier payerOrNegativeOne(Network network) {
+		return () -> Optional.ofNullable(network.getScenarioPayer()).orElse(-1L);
 	}
 
 	private static LongSupplier senderOrNegativeOne(CryptoScenario crypto) {
@@ -342,7 +384,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				spec.keys().incorporate(name, ocKeystore);
 
 				if (info.getBalance() < minBalance) {
-					var transfer = cryptoTransfer(tinyBarsFromTo(GENESIS, name, minBalance))
+					var transfer = cryptoTransfer(tinyBarsFromTo(GENESIS, name, (minBalance - info.getBalance())))
 							.setNodeFrom(ValidationScenarios::nextNode);
 					allRunFor(spec, transfer);
 				}
@@ -375,6 +417,9 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.payer", primaryPayer(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
 							ensureValidatedFileExistence(
 									PERSISTENT_FILE_NAME,
 									file.getPersistent().getContents(),
@@ -405,19 +450,24 @@ public class ValidationScenarios extends HapiApiSuite {
 				newKeyNamed("novelFileFirstKey").shape(firstComplex),
 				newKeyNamed("novelFileSecondKey").shape(secondComplex),
 				fileCreate(NOVEL_FILE_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.key("novelFileFirstKey")
 						.contents("abcdefghijklm"),
 				fileAppend(NOVEL_FILE_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.content("nopqrstuvwxyz"),
 				getFileContents(NOVEL_FILE_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.hasContents(ignore -> "abcdefghijklmnopqrstuvwxyz".getBytes()),
 				fileUpdate(NOVEL_FILE_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.wacl("novelFileSecondKey"),
 				fileDelete(NOVEL_FILE_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.sigControl(ControlForKey.forKey(
 						NOVEL_FILE_NAME,
@@ -518,6 +568,9 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.payer", primaryPayer(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
 							ensureValidatedContractExistence(
 									PERSISTENT_CONTRACT_NAME,
 									contract.getPersistent().getLuckyNo(),
@@ -530,12 +583,15 @@ public class ValidationScenarios extends HapiApiSuite {
 									loc -> contract.getPersistent().setSource(loc))
 					).when(flattened(
 							contractCall(PERSISTENT_CONTRACT_NAME)
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.sending(1L),
 							contractCall(PERSISTENT_CONTRACT_NAME, CONSPICUOUS_DONATION_ABI, donationArgs)
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.via("donation"),
 							getTxnRecord("donation")
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.logged()
 									.has(recordWith().transfers(
@@ -559,14 +615,17 @@ public class ValidationScenarios extends HapiApiSuite {
 				newKeyNamed("firstNovelKey").shape(complex),
 				newKeyNamed("secondNovelKey"),
 				contractCreate(NOVEL_CONTRACT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.adminKey("firstNovelKey")
 						.balance(1)
 						.bytecode(() -> idLiteral(contract.getPersistent().getBytecode())),
 				contractUpdate(NOVEL_CONTRACT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.newKey("secondNovelKey"),
 				contractDelete(NOVEL_CONTRACT_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.transferAccount(PERSISTENT_CONTRACT_NAME),
 				withOpContext((spec, opLog) ->
@@ -689,7 +748,6 @@ public class ValidationScenarios extends HapiApiSuite {
 			}
 			var consensus = scenarios.getConsensus();
 			var expectedSeqNo = new AtomicLong(0);
-			KeyShape complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
 
 			return customHapiSpec("ConsensusScenario")
 					.withProperties(Map.of(
@@ -697,6 +755,9 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.payer", primaryPayer(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
 							ensureValidatedTopicExistence(
 									PERSISTENT_TOPIC_NAME,
 									pemForTopic(persistentTopicOrNegativeOne(consensus).getAsLong()),
@@ -705,11 +766,13 @@ public class ValidationScenarios extends HapiApiSuite {
 									expectedSeqNo)
 					).when(flattened(
 							submitMessageTo(PERSISTENT_TOPIC_NAME)
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.message("The particular is pounded till it is man."),
 							novelTopicIfDesired()
 					)).then(
 							getTopicInfo(PERSISTENT_TOPIC_NAME)
+									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.hasSeqNo(expectedSeqNo::get)
 									.logged()
@@ -730,21 +793,26 @@ public class ValidationScenarios extends HapiApiSuite {
 		return new HapiSpecOperation[] {
 				newKeyNamed("novelTopicAdmin").shape(complex),
 				createTopic(NOVEL_TOPIC_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.adminKeyName("novelTopicAdmin")
 						.submitKeyShape(KeyShape.SIMPLE),
 				submitMessageTo(NOVEL_TOPIC_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
-						.signedBy(GENESIS)
+						.signedBy(SCENARIO_PAYER_NAME)
 						.hasKnownStatus(INVALID_SIGNATURE),
 				updateTopic(NOVEL_TOPIC_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
-						.signedBy(GENESIS, "novelTopicAdmin")
+						.signedBy(SCENARIO_PAYER_NAME, "novelTopicAdmin")
 						.submitKey(EMPTY_KEY),
 				submitMessageTo(NOVEL_TOPIC_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode)
-						.signedBy(GENESIS),
+						.signedBy(SCENARIO_PAYER_NAME),
 				deleteTopic(NOVEL_TOPIC_NAME)
+						.payingWith(SCENARIO_PAYER_NAME)
 						.setNodeFrom(ValidationScenarios::nextNode),
 				withOpContext((spec, opLog) ->
 						novelTopicUsed.set(HapiPropertySource.asTopicString(
