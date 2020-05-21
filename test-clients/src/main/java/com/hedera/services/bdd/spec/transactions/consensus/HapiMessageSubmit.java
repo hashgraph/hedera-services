@@ -46,6 +46,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	private Optional<String> topic = Optional.empty();
 	private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
 	private Optional<String> message = Optional.empty();
+	private Optional<byte[]> messageBytes = Optional.empty();
 	private boolean clearMessage = false;
 
 	public HapiMessageSubmit(String topic) {
@@ -71,6 +72,11 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return this;
 	}
 
+	public HapiMessageSubmit message(byte [] s) {
+		messageBytes = Optional.of(s);
+		return this;
+	}
+
 	public HapiMessageSubmit clearMessage() {
 	    clearMessage = true;
 		return this;
@@ -84,6 +90,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 				.<ConsensusSubmitMessageTransactionBody, ConsensusSubmitMessageTransactionBody.Builder>body(
 					ConsensusSubmitMessageTransactionBody.class, b -> {
 							b.setTopicID(id);
+							messageBytes.ifPresent(m -> b.setMessage(ByteString.copyFrom(m)));
 							message.ifPresent(m -> b.setMessage(ByteString.copyFrom(m.getBytes())));
 							if (clearMessage) {
 								b.clearMessage();

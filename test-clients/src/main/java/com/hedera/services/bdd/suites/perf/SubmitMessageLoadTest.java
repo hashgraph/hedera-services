@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -81,7 +83,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo(topicID != null ? topicID : "topic")
-						.message("A fascinating item of general interest!")
+						.message(randomUtf8Bytes(BYTES_4K))
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
