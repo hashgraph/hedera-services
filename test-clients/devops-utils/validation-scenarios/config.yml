@@ -68,3 +68,19 @@ networks:
     - {account: 13, ipv4Addr: 35.200.57.21}
     - {account: 14, ipv4Addr: 34.92.120.143}
     - {account: 15, ipv4Addr: 34.87.47.168}
+  stagingsm:
+    bootstrap: 50
+    ensureScenarioPayerHbars: 300
+    nodes:
+    - {account: 3, ipv4Addr: 104.196.48.231}
+    - {account: 4, ipv4Addr: 35.245.168.191}
+    - {account: 5, ipv4Addr: 35.192.152.7}
+    - {account: 6, ipv4Addr: 35.203.163.15}
+    scenarioPayer: 49542
+    scenarios:
+      consensus: {persistent: 39045}
+      contract:
+        persistent: {bytecode: 39042, luckyNo: 42, num: 39043, source: Multipurpose.sol}
+      crypto: {receiver: 39038, sender: 39037}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 39040}

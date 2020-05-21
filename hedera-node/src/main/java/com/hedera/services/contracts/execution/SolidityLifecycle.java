@@ -55,7 +55,6 @@ public class SolidityLifecycle {
 
 		var status = SUCCESS;
 		var result = asHapiResult(executor.getReceipt(), executor.getCreatedContracts());
-		System.out.println("Result: " + result);
 
 		var succeededSoFar = StringUtils.isEmpty(result.getErrorMessage());
 		if (succeededSoFar) {

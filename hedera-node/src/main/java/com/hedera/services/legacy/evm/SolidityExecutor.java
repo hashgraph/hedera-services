@@ -9,9 +9,9 @@ package com.hedera.services.legacy.evm;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,8 @@ package com.hedera.services.legacy.evm;
  * ‍
  */
 
+import static com.hedera.services.contracts.execution.DomainUtils.asReceipt;
+import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -56,9 +58,12 @@ import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -244,8 +249,8 @@ public class SolidityExecutor {
 				var gasSupplied = ByteUtil.bytesToBigInteger(solidityTxn.getGasLimit());
 				errorCode = (gasSupplied.compareTo(gasLimit) < 0) ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED;
 				setError(String.format(
-								"OOG calling precompiled contract 0x%s (%s required, %s remaining)",
-								Hex.toHexString(targetAddress), gasRequired, gasLeft));
+						"OOG calling precompiled contract 0x%s (%s required, %s remaining)",
+						Hex.toHexString(targetAddress), gasRequired, gasLeft));
 				gasLeft = ZERO;
 				return;
 			} else {
@@ -253,7 +258,8 @@ public class SolidityExecutor {
 				Pair<Boolean, byte[]> out = precompiledContract.execute(solidityTxn.getData());
 				if (!out.getLeft()) {
 					errorCode = CONTRACT_EXECUTION_EXCEPTION;
-					setError(String.format("Error executing precompiled contract 0x%s", Hex.toHexString(targetAddress)));
+					setError(String.format("Error executing precompiled contract 0x%s",
+							Hex.toHexString(targetAddress)));
 					gasLeft = ZERO;
 					return;
 				}
@@ -266,7 +272,7 @@ public class SolidityExecutor {
 			} else {
 				var programInvoke = programInvokeFactory.createProgramInvoke(
 						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-				((ProgramInvokeImpl)programInvoke).setStaticCall(localCall);
+				((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
 				this.vm = new VM(config, VMHook.EMPTY);
 				this.program = new Program(
 						repository.getCodeHash(targetAddress),
@@ -329,7 +335,7 @@ public class SolidityExecutor {
 		if (!isEmpty(solidityTxn.getData())) {
 			ProgramInvoke programInvoke = programInvokeFactory.createProgramInvoke(
 					solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
-			((ProgramInvokeImpl)programInvoke).setStaticCall(localCall);
+			((ProgramInvokeImpl) programInvoke).setStaticCall(localCall);
 			this.vm = new VM(config, VMHook.EMPTY);
 			this.program = new Program(
 					null,
@@ -387,11 +393,9 @@ public class SolidityExecutor {
 						trackingRepository.saveCode(solidityTxn.getContractAddress(), result.getHReturn());
 					}
 				}
-				System.out.println("Result in Executor: " + result);
 
 				String validationError = config.getBlockchainConfig().getConfigForBlock(block.getNumber())
 						.validateTransactionChanges(NULL_BLOCK_STORE, block, solidityTxn, null);
-				System.out.println("ValidationError: " + validationError);
 				if (validationError != null) {
 					program.setRuntimeFailure(new RuntimeException(validationError));
 				}
@@ -540,13 +544,7 @@ public class SolidityExecutor {
 
 	public TransactionReceipt getReceipt() {
 		if (receipt == null) {
-			receipt = new TransactionReceipt();
-			receipt.setCumulativeGas(getGasUsed());
-			receipt.setTransaction(solidityTxn);
-			receipt.setLogInfoList(getVMLogs());
-			receipt.setGasUsed(getGasUsed());
-			receipt.setExecutionResult(getResult().getHReturn());
-			receipt.setError(errorMessage);
+			receipt = asReceipt(getGasUsed(), errorMessage, solidityTxn, getVMLogs(), getResult());
 		}
 		return receipt;
 	}
@@ -568,32 +566,25 @@ public class SolidityExecutor {
 	}
 
 	private void finalizeAnyCreatedContracts() {
-		createdContracts = Optional.ofNullable(contractCreateAdaptor.getCreatedContracts()).map(creations ->
-			creations.values()
-					.stream()
-					.flatMap(List::stream)
-					.peek(this::initNewContract)
-					.map(address -> asContract(accountParsedFromSolidityAddress(address)))
-					.sorted(comparingLong(ContractID::getShardNum)
+		Map<byte[], List<byte[]>> creations =
+				Optional.ofNullable(contractCreateAdaptor.getCreatedContracts()).orElse(Collections.emptyMap());
+		if (!creations.isEmpty()) {
+			final Consumer<byte[]> initializer = newScopedAccountInitializer(
+					startTime.getEpochSecond(),
+					PropertiesLoader.getDefaultContractDurationInSec(),
+					solidityTxn.getSender(),
+					repository);
+			createdContracts = Optional.of(
+					creations.values()
+							.stream()
+							.flatMap(List::stream)
+							.peek(initializer::accept)
+							.map(address -> asContract(accountParsedFromSolidityAddress(address)))
+							.sorted(comparingLong(ContractID::getShardNum)
 									.thenComparingLong(ContractID::getRealmNum)
 									.thenComparingLong(ContractID::getContractNum))
-					.collect(Collectors.toList()));
-	}
-
-	private void initNewContract(byte[] address) {
-		var id = accountParsedFromSolidityAddress(address);
-		var sponsor = repository.getAccount(solidityTxn.getSender());
-
-		repository.setSmartContract(address, true);
-		repository.setRealmId(address, sponsor.getRealmId());
-		repository.setShardId(address, sponsor.getShardId());
-		repository.setAccountNum(address, id.getAccountNum());
-
-		repository.setCreateTimeMs(address, startTime.getEpochSecond());
-		var expiry = RequestBuilder.getExpirationTime(
-				startTime,
-				Duration.newBuilder().setSeconds(PropertiesLoader.getDefaultContractDurationInSec()).build());
-		repository.setExpirationTime(address, expiry.getSeconds());
+							.collect(Collectors.toList()));
+		}
 	}
 
 	private void setError(String message) {
