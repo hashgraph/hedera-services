@@ -30,7 +30,7 @@ Target networks are defined via lists of nodes in the [_config.yml_](./config.ym
 
 Each target network must have a bootstrap account with a single key; the key must
 be present in PEM format under the _keys/_ directory with the naming convention 
-_<targetNetwork>-account<bootstrapNum>.pem_. **IMPORTANT**: If the PEM passphrase 
+_\{targetNetwork\}-account\{bootstrapNum\}.pem_. **IMPORTANT**: If the PEM passphrase 
 is not the string "swirlds", it must be set in the `BOOTSTRAP_PASSPHRASE` environment 
 variable.
 
