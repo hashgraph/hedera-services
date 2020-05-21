@@ -13,6 +13,8 @@ compose-network/
 *.log
 hs_err_pid*
 
+*.sh
+*.json
 .circleci/*.yml-excerpt
 hedera-node/*.sh
 hedera-node/*.csv
