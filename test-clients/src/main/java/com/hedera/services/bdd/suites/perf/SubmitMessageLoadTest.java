@@ -108,11 +108,11 @@ public class SubmitMessageLoadTest extends LoadTest {
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
 								.rechargeWindow(3)
-								.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
-								sleepFor(100)
+								sleepFor(100),
+						sleepFor(5000) //wait all other thread ready
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
