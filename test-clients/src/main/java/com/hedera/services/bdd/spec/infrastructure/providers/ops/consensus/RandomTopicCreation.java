@@ -57,7 +57,6 @@ public class RandomTopicCreation implements OpProvider {
                 int n = opNo.getAndIncrement();
                 final String newTopic = my("topic" + n);
                 var op = createTopic(newTopic)
-                        .payingWith(FUNDING_ACCOUNT)
                         .adminKeyName(key.get())
                         .submitKeyName(key.get())
                         .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)

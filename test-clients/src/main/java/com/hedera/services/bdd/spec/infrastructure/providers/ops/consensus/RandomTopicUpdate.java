@@ -47,7 +47,6 @@ public class RandomTopicUpdate implements OpProvider {
 		}
 
 		HapiTopicUpdate op =  updateTopic(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);
 	}

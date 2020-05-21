@@ -47,7 +47,6 @@ public class RandomTopicInfo implements OpProvider {
 		}
 
 		var op = QueryVerbs.getTopicInfo(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 

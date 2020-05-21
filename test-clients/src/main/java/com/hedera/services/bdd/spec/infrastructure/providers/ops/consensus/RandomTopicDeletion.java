@@ -45,7 +45,6 @@ public class RandomTopicDeletion implements OpProvider {
 			return Optional.empty();
 		}
 		HapiTopicDelete op = deleteTopic(topic.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasKnownStatusFrom(permissibleOutcomes);
 		return Optional.of(op);
 	}

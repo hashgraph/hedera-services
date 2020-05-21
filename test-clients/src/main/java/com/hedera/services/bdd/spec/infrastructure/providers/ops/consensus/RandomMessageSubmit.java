@@ -46,7 +46,6 @@ public class RandomMessageSubmit implements OpProvider {
                 }
 
                 HapiMessageSubmit op = submitMessageTo(target.get())
-                        .payingWith(FUNDING_ACCOUNT)
                         .message("Hello Hedera")
                         .hasKnownStatusFrom(permissibleOutcomes);
 

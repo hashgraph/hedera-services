@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.FUNDING_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.FUNDING_ACCOUT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -76,9 +77,12 @@ public class UmbrellaRedux extends HapiApiSuite {
 						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
 				.given(
 						cryptoCreate(FUNDING_ACCOUNT)
-								.balance(FUNDING_ACCOUT_INITIAL_BALANCE),
-						UtilVerbs.sleepFor(10000)
-				).when().then(
+								.balance(FUNDING_ACCOUT_INITIAL_BALANCE)
+								.via("createPayer"),
+						UtilVerbs.sleepFor(20000)
+				).when(
+						getTxnRecord("createPayer").logged()
+				).then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(factoryFrom(props::get))
 								.lasting(duration::get, unit::get)

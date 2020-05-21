@@ -83,7 +83,6 @@ public class RandomFileUpdate implements OpProvider {
 		}
 
 		var op = TxnVerbs.fileUpdate(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes);
 

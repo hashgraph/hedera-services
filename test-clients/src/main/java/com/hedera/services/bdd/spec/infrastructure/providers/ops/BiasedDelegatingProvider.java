@@ -116,9 +116,9 @@ public class BiasedDelegatingProvider implements OpProvider {
 		}
 		if (!shouldLogNormalFlow) {
 			if (isTxnOp) {
-				((HapiTxnOp)op).noLogging();
+				((HapiTxnOp)op).noLogging().payingWith(FUNDING_ACCOUNT);
 			} else {
-				((HapiQueryOp)op).noLogging();
+				((HapiQueryOp)op).noLogging().payingWith(FUNDING_ACCOUNT);
 			}
 		}
 	}

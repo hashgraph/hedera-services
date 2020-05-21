@@ -63,7 +63,6 @@ public class RandomAccountDeletion implements OpProvider {
 			return Optional.empty();
 		}
 		HapiCryptoDelete op = cryptoDelete(involved.get().getKey())
-				.payingWith(FUNDING_ACCOUNT)
 				.purging()
 				.transfer(involved.get().getValue())
 				.hasPrecheckFrom(permissiblePrechecks)

@@ -61,7 +61,6 @@ public class RandomCallLocal implements OpProvider {
 		}
 
 		HapiContractCallLocal op = QueryVerbs.contractCallLocalFrom(localCall.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 

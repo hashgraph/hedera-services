@@ -52,7 +52,6 @@ public class RandomReceipt implements OpProvider {
 			return Optional.empty();
 		} else {
 			HapiGetReceipt op = getReceipt(txnId)
-					.payingWith(FUNDING_ACCOUNT)
 					.hasAnswerOnlyPrecheckFrom(OK, RECEIPT_NOT_FOUND);
 			return Optional.of(op);
 		}

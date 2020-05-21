@@ -55,7 +55,6 @@ public class RandomRecord implements OpProvider {
 			return Optional.empty();
 		} else {
 			HapiGetTxnRecord op = getTxnRecord(txnId)
-					.payingWith(FUNDING_ACCOUNT)
 					.hasCostAnswerPrecheckFrom(OK, RECORD_NOT_FOUND)
 					.hasAnswerOnlyPrecheckFrom(OK, RECORD_NOT_FOUND);
 			return Optional.of(op);

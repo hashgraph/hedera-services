@@ -71,7 +71,6 @@ public class RandomAppend implements OpProvider {
 		}
 
 		var op = TxnVerbs.fileAppend(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes)
 				.content(MORE_BYTES);

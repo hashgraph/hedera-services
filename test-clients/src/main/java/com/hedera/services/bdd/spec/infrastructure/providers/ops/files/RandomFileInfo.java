@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
@@ -65,7 +64,6 @@ public class RandomFileInfo implements OpProvider {
 		}
 
 		var op = QueryVerbs.getFileInfo(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 

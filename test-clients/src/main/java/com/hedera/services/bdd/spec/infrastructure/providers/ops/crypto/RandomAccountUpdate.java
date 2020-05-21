@@ -69,7 +69,6 @@ public class RandomAccountUpdate implements OpProvider {
 		final var newKey = keys.getQualifying();
 
 		HapiCryptoUpdate op = cryptoUpdate(target.get())
-				.payingWith(FUNDING_ACCOUNT)
 				.key(newKey.get())
 				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
 				.hasKnownStatusFrom(permissibleOutcomes);
