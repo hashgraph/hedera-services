@@ -153,7 +153,7 @@ commands:
       var-ami-id:
         description: ami-id to override pre-defined. Need to be used together with var-region
         type: string
-        default: ""
+        default: \"\"
     steps:
       - run:
           name: Create Terraform workspace with << parameters.num-hosts >> hosts
