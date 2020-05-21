@@ -63,7 +63,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		}
 
 		if (args.length > (usedArgs+1)) {
-			messageSize = Integer.parseInt(args[usedArgs]);
+			messageSize = Integer.parseInt(args[usedArgs+1]);
 			log.info("Set messageSize as " + messageSize);
 		}
 
