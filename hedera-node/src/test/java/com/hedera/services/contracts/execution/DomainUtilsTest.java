@@ -75,8 +75,8 @@ class DomainUtilsTest {
 		logInfo = new LogInfo(
 				EntityIdUtils.asSolidityAddress(0, 0, primaryCreated.getContractNum()),
 				List.of(
-						new DataWord(Hex.encodeHexString("First".getBytes())),
-						new DataWord(Hex.encodeHexString("Second".getBytes()))),
+						DataWord.of(Hex.encodeHexString("First".getBytes())),
+						DataWord.of(Hex.encodeHexString("Second".getBytes()))),
 				data);
 		receipt.setLogInfoList(List.of(logInfo));
 	}

@@ -55,10 +55,11 @@ public class SolidityLifecycle {
 
 		var status = SUCCESS;
 		var result = asHapiResult(executor.getReceipt(), executor.getCreatedContracts());
+		System.out.println("Result: " + result);
 
 		var succeededSoFar = StringUtils.isEmpty(result.getErrorMessage());
 		if (succeededSoFar) {
-			if (!root.persistStorageCache(properties.getIntProperty("contracts.maxStorageKb"))) {
+			if (!root.flushStorageCacheIfTotalSizeLessThan(properties.getIntProperty("contracts.maxStorageKb"))) {
 				succeededSoFar = false;
 				status = MAX_CONTRACT_STORAGE_EXCEEDED;
 			}
@@ -70,7 +71,7 @@ public class SolidityLifecycle {
 			root.emptyStorageCache();
 		}
 
-		root.commitAndSaveRoot();
+		root.flush();
 
 		return new AbstractMap.SimpleImmutableEntry<>(result, status);
 	}

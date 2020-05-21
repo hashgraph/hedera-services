@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.datasource.DbSettings;
 import org.ethereum.datasource.DbSource;
 
 public class BlobStorageSource implements DbSource<byte[]> {
@@ -78,6 +79,11 @@ public class BlobStorageSource implements DbSource<byte[]> {
 	}
 
 	@Override
+	public void init(DbSettings settings) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void updateBatch(Map<byte[], byte[]> rows) {
 		/* No-op?! */
 	}
@@ -90,6 +96,16 @@ public class BlobStorageSource implements DbSource<byte[]> {
 	@Override
 	public Set<byte[]> keys() throws RuntimeException {
 		throw new CannotConstructKeysException("Key-set cannot be constructed for blob storage source.");
+	}
+
+	@Override
+	public void reset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public byte[] prefixLookup(byte[] key, int prefixBytes) {
+		throw new UnsupportedOperationException();
 	}
 
 	public static class CannotConstructKeysException extends RuntimeException{

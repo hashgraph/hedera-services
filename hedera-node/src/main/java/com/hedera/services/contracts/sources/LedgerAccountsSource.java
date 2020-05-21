@@ -76,9 +76,9 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 					BigInteger.ZERO,
 					BigInteger.valueOf(hederaAccount.getBalance()));
 
-			evmState.setHGShardId(id.getShardNum());
-			evmState.setHGRealmId(id.getRealmNum());
-			evmState.setHGAccountId(id.getAccountNum());
+			evmState.setShardId(id.getShardNum());
+			evmState.setRealmId(id.getRealmNum());
+			evmState.setAccountNum(id.getAccountNum());
 			evmState.setAutoRenewPeriod(hederaAccount.getAutoRenewPeriod());
 			if (hederaAccount.getProxyAccount() != null) {
 				var proxy = hederaAccount.getProxyAccount();

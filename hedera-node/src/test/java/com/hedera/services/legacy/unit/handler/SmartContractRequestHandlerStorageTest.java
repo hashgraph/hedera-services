@@ -32,6 +32,7 @@ import com.hedera.services.ledger.properties.MapValueProperty;
 import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
+import static com.hedera.services.legacy.util.SCEncoding.*;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.utils.EntityIdUtils;
@@ -121,6 +122,7 @@ import static org.mockito.Mockito.mock;
 @DisplayName("SmartContractRequestHandler Storage Test Suite")
 public class SmartContractRequestHandlerStorageTest {
   public static final String SIMPLE_STORAGE_BIN = "/testfiles/simpleStorage.bin";
+  public static final String CHILD_STORAGE_BIN = "/testfiles/ChildStorage.bin";
   public static final String SIMPLE_STORAGE_WITH_EVENTS_BIN = "/testfiles/SimpleStorageWithEvents.bin";
   public static final int SIMPLE_STORAGE_VALUE = 12345;
   private static final long payerAccount = 787L;
@@ -763,6 +765,37 @@ public class SmartContractRequestHandlerStorageTest {
     Assert.assertNotEquals(0, resultString.length());
     String inputString = new String(contractBytes);
     Assert.assertTrue("bytecode should match end of input string", inputString.endsWith(resultString));
+  }
+
+  @Test
+  @DisplayName("ChildStorage call")
+  public void childStorageCall() throws Exception {
+    byte[] contractBytes = createFile(CHILD_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    var createRecord = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    var childStorageId = createRecord.getReceipt().getContractID();
+    System.out.println("Created ChildStorage as 0.0." + childStorageId.getContractNum());
+
+    var cclQuery = getCallLocalQuery(
+            childStorageId,
+            ByteString.copyFrom(encodeVia(GET_MY_VALUE_ABI)),
+            250000L).getContractCallLocal();
+    var response = smartHandler.contractCallLocal(cclQuery, System.currentTimeMillis());
+    byte[] responseBytes = response.getFunctionResult().getContractCallResult().toByteArray();
+    System.out.println("Parent value is " + decodeSimpleResponseVia(GET_MY_VALUE_ABI, responseBytes, BigInteger.class));
+
+    var callBytes = ByteString.copyFrom(encodeVia(GROW_CHILD_ABI, 0, 1, 17));
+    body = getCallTransactionBody(childStorageId, callBytes, 250000L, 0L);
+    seqNumber.getNextSequenceNum();
+    System.out.println("");
+    System.out.println("-----");
+    ledger.begin();
+    var callRecord = smartHandler.contractCall(body, Instant.now(), seqNumber);
+    ledger.commit();
   }
 
   @Test

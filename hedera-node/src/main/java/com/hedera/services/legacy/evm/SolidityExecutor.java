@@ -84,12 +84,14 @@ import org.ethereum.vm.DataWord;
 import org.ethereum.vm.LogInfo;
 import org.ethereum.vm.PrecompiledContracts;
 import org.ethereum.vm.VM;
+import org.ethereum.vm.hook.VMHook;
 import org.ethereum.vm.program.NewAccountCreateAdapter;
 import org.ethereum.vm.program.Program;
 import org.ethereum.vm.program.ProgramResult;
 import org.ethereum.vm.program.invoke.ProgramInvoke;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactory;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactoryImpl;
+import org.ethereum.vm.program.invoke.ProgramInvokeImpl;
 import org.spongycastle.util.encoders.Hex;
 
 public class SolidityExecutor {
@@ -140,7 +142,7 @@ public class SolidityExecutor {
 
 			return asSolidityAddress(
 					0,
-					creatorHgState.getHGRealmId(),
+					creatorHgState.getRealmId(),
 					seqNo.getNextSequenceNum());
 		}
 	}
@@ -233,7 +235,7 @@ public class SolidityExecutor {
 		}
 
 		byte[] targetAddress = solidityTxn.getReceiveAddress();
-		precompiledContract = PrecompiledContracts.getContractForAddress(new DataWord(targetAddress), blockchainConfig);
+		precompiledContract = PrecompiledContracts.getContractForAddress(DataWord.of(targetAddress), blockchainConfig);
 
 		if (precompiledContract != null) {
 			var gasRequired = BigInteger.valueOf(precompiledContract.getGasForData(solidityTxn.getData()));
@@ -263,14 +265,16 @@ public class SolidityExecutor {
 				setError(String.format("Error: Bytecode is empty for contract 0x%s", Hex.toHexString(targetAddress)));
 			} else {
 				var programInvoke = programInvokeFactory.createProgramInvoke(
-						solidityTxn, block, trackingRepository, NULL_BLOCK_STORE, localCall);
-				this.vm = new VM(config);
+						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+				((ProgramInvokeImpl)programInvoke).setStaticCall(localCall);
+				this.vm = new VM(config, VMHook.EMPTY);
 				this.program = new Program(
 						repository.getCodeHash(targetAddress),
 						code,
 						programInvoke,
 						solidityTxn,
 						config,
+						VMHook.EMPTY,
 						contractCreateAdaptor,
 						fundingAddress,
 						rbh,
@@ -288,7 +292,7 @@ public class SolidityExecutor {
 	private void create() {
 		var sponsor = trackingRepository.getAccountState(solidityTxn.getSender());
 		long newSequence = seqNo.getNextSequenceNum();
-		byte[] newContractAddress = asSolidityAddress(0, sponsor.getHGRealmId(), newSequence);
+		byte[] newContractAddress = asSolidityAddress(0, sponsor.getRealmId(), newSequence);
 
 		solidityTxn.setContractAddress(newContractAddress);
 
@@ -304,9 +308,9 @@ public class SolidityExecutor {
 		trackingRepository.createAccount(newContractAddress);
 		trackingRepository.addBalance(newContractAddress, oldBalance);
 		trackingRepository.setSmartContract(newContractAddress, true);
-		trackingRepository.setHGRealmId(newContractAddress, sponsor.getHGRealmId());
-		trackingRepository.setHGShardId(newContractAddress, sponsor.getHGShardId());
-		trackingRepository.setHGAccountId(newContractAddress, newSequence);
+		trackingRepository.setRealmId(newContractAddress, sponsor.getRealmId());
+		trackingRepository.setShardId(newContractAddress, sponsor.getShardId());
+		trackingRepository.setAccountNum(newContractAddress, newSequence);
 
 		long createTimeMs = startTime.getEpochSecond();
 		if (txn != null && txn.hasContractCreateInstance()) {
@@ -324,14 +328,16 @@ public class SolidityExecutor {
 
 		if (!isEmpty(solidityTxn.getData())) {
 			ProgramInvoke programInvoke = programInvokeFactory.createProgramInvoke(
-					solidityTxn, block, trackingRepository, NULL_BLOCK_STORE, localCall);
-			this.vm = new VM(config);
+					solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
+			((ProgramInvokeImpl)programInvoke).setStaticCall(localCall);
+			this.vm = new VM(config, VMHook.EMPTY);
 			this.program = new Program(
 					null,
 					solidityTxn.getData(),
 					programInvoke,
 					solidityTxn,
 					config,
+					VMHook.EMPTY,
 					contractCreateAdaptor,
 					fundingAddress,
 					rbh,
@@ -381,17 +387,22 @@ public class SolidityExecutor {
 						trackingRepository.saveCode(solidityTxn.getContractAddress(), result.getHReturn());
 					}
 				}
+				System.out.println("Result in Executor: " + result);
 
 				String validationError = config.getBlockchainConfig().getConfigForBlock(block.getNumber())
 						.validateTransactionChanges(NULL_BLOCK_STORE, block, solidityTxn, null);
+				System.out.println("ValidationError: " + validationError);
 				if (validationError != null) {
 					program.setRuntimeFailure(new RuntimeException(validationError));
 				}
 
-				Set<AccountID> receivers = StreamSupport.stream(program.getEndowments().spliterator(), false)
-						.map(EntityIdUtils::accountParsedFromSolidityAddress)
-						.collect(Collectors.toSet());
-				boolean hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
+				boolean hasValidSigs = true;
+				if (!localCall) {
+					Set<AccountID> receivers = StreamSupport.stream(program.getEndowments().spliterator(), false)
+							.map(EntityIdUtils::accountParsedFromSolidityAddress)
+							.collect(Collectors.toSet());
+					hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
+				}
 				if (result.getException() != null || result.isRevert() || !hasValidSigs) {
 					result.getDeleteAccounts().clear();
 					result.getLogInfoList().clear();
@@ -571,12 +582,12 @@ public class SolidityExecutor {
 
 	private void initNewContract(byte[] address) {
 		var id = accountParsedFromSolidityAddress(address);
-		var sponsor = repository.getHGCAccount(solidityTxn.getSender());
+		var sponsor = repository.getAccount(solidityTxn.getSender());
 
 		repository.setSmartContract(address, true);
-		repository.setHGRealmId(address, sponsor.getHGRealmId());
-		repository.setHGShardId(address, sponsor.getHGShardId());
-		repository.setHGAccountId(address, id.getAccountNum());
+		repository.setRealmId(address, sponsor.getRealmId());
+		repository.setShardId(address, sponsor.getShardId());
+		repository.setAccountNum(address, id.getAccountNum());
 
 		repository.setCreateTimeMs(address, startTime.getEpochSecond());
 		var expiry = RequestBuilder.getExpirationTime(

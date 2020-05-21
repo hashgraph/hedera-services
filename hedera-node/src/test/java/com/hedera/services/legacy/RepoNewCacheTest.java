@@ -213,8 +213,8 @@ public class RepoNewCacheTest {
     track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
 
     // To show under debug that the two AccountStates are the same object.
-    AccountState info1 = track1.getHGCAccount(someKeyBytes);
-    AccountState info2 = repository.getHGCAccount(someKeyBytes);
+    AccountState info1 = track1.getAccount(someKeyBytes);
+    AccountState info2 = repository.getAccount(someKeyBytes);
     System.out.println("Info1 is " + info1 + ", info2 is " + info2);
 
     assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
