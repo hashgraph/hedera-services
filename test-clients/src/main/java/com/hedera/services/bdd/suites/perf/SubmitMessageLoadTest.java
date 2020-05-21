@@ -52,7 +52,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 	private static final Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
 	private static String topicID = null;
-
+	private static int messageSize = 40;
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
@@ -60,6 +60,11 @@ public class SubmitMessageLoadTest extends LoadTest {
 		if (args.length > usedArgs) {
 			topicID = args[usedArgs];
 			log.info("Set topicID as " + topicID);
+		}
+
+		if (args.length > (usedArgs+1)) {
+			messageSize = Integer.parseInt(args[usedArgs]);
+			log.info("Set messageSize as " + messageSize);
 		}
 
 		SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
@@ -83,7 +88,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo(topicID != null ? topicID : "topic")
-						.message(randomUtf8Bytes(BYTES_4K))
+						.message(randomUtf8Bytes(messageSize))
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
