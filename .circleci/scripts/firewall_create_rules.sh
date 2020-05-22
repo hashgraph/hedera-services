@@ -20,7 +20,7 @@ function firewall_creat_rules {
     sleep 2
 
     # check if the block script is running
-    ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block "
+    ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo ps -ef |grep block | grep -v grep"
 
 
 }

@@ -700,17 +700,17 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 0,8,16 * * *"
             filters:
               branches:
                 only:
                   - master
+                  - ci-job-network-sim
     jobs:
-      - build-artifact:
-          context: SonarCloud
+      - fast-build-artifact
       - start-singlejob-testnet:
           requires:
-            - build-artifact  
+            - fast-build-artifact  
       - run-network-sim:
           requires:
             - start-singlejob-testnet
