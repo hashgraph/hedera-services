@@ -1622,6 +1622,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /
+
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
       - run-eet-suites:
