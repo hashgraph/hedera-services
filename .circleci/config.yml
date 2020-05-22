@@ -153,7 +153,7 @@ commands:
       var-ami-id:
         description: ami-id to override pre-defined. Need to be used together with var-region
         type: string
-        default: 'ami-0578b0bee3eb885c6'
+        default: \"\"
     steps:
       - run:
           name: Create Terraform workspace with << parameters.num-hosts >> hosts
@@ -248,7 +248,6 @@ commands:
                  liveness-timeout-secs: 120
                  var-file: '<< parameters.var-file >>'
                  var-region: "us-west-2"
-                 var-ami-id: "ami-060b60d400852b08f"
       - when:
           condition: << parameters.use-existing-network >>
           steps:

@@ -26,3 +26,4 @@ fi
 set_tf_hosts_list
 
 VAR_FILE_MEMORY_PATH=${REPO}/.circleci/var-file-name.txt
+AWS_REGION_USED_PATH=${REPO}/.circleci/aws-region.used
