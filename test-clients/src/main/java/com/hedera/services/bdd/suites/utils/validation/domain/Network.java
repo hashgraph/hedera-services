@@ -23,7 +23,15 @@ package com.hedera.services.bdd.suites.utils.validation.domain;
 import java.util.List;
 
 public class Network {
+	public static final String SCENARIO_PAYER_NAME = "scenarioPayer";
+
+	private static final long DEFAULT_INITIAL_HBARS = 25;
+
 	long bootstrap;
+	long ensureScenarioPayerHbars = DEFAULT_INITIAL_HBARS;
+
+	Long scenarioPayer;
+
 	List<Node> nodes;
 	Scenarios scenarios;
 
@@ -49,5 +57,21 @@ public class Network {
 
 	public void setScenarios(Scenarios scenarios) {
 		this.scenarios = scenarios;
+	}
+
+	public Long getScenarioPayer() {
+		return scenarioPayer;
+	}
+
+	public void setScenarioPayer(Long scenarioPayer) {
+		this.scenarioPayer = scenarioPayer;
+	}
+
+	public long getEnsureScenarioPayerHbars() {
+		return ensureScenarioPayerHbars;
+	}
+
+	public void setEnsureScenarioPayerHbars(long ensureScenarioPayerHbars) {
+		this.ensureScenarioPayerHbars = ensureScenarioPayerHbars;
 	}
 }

@@ -233,7 +233,8 @@ public class SmartContractRequestHandler {
 		}
 		try {
 			tx = new Transaction(
-					null, biGasPrice,
+					null,
+					biGasPrice,
 					gas,
 					senderAccountEthAddress,
 					null,

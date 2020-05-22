@@ -77,7 +77,6 @@
 
   <modules>
     <module>hapi-proto</module>
-    <module>evm-adapter</module>
     <module>hedera-node</module>
     <module>test-clients</module>
   </modules>
