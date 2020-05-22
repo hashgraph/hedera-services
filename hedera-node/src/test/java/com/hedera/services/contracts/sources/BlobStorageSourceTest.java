@@ -53,6 +53,14 @@ class BlobStorageSourceTest {
 	}
 
 	@Test
+	public void unsupportedOpsThrow() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.reset());
+		assertThrows(UnsupportedOperationException.class, () -> subject.prefixLookup(new byte[0], 0));
+		assertThrows(UnsupportedOperationException.class, () -> subject.init(null));
+	}
+
+	@Test
 	public void noopsSanityCheck() {
 		// expect:
 		assertFalse(subject.flush());

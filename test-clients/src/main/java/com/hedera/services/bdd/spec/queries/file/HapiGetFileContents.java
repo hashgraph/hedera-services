@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -43,6 +44,8 @@ import org.junit.Assert;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -51,6 +54,10 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
 public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	private static final Logger log = LogManager.getLogger(HapiGetFileContents.class);
+
+	private static final Map<String, String> IMMUTABLE_MAP = Collections.emptyMap();
+
+	private Map<String, String> props = IMMUTABLE_MAP;
 
 	private boolean saveIn4kChunks = false;
 	private int sizeLookup = -1;
@@ -79,6 +86,12 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		snapshotPath = Optional.of(path);
 		return this;
 	}
+
+	public HapiGetFileContents addingConfigListTo(Map<String, String> props) {
+		this.props = props;
+		return this;
+	}
+
 	public HapiGetFileContents saveReadableTo(Function<byte[], String> parser, String path) {
 		this.parser = parser;
 		readablePath = Optional.of(path);
@@ -116,6 +129,15 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		if (verboseLoggingOn) {
 			var len = response.getFileGetContents().getFileContents().getContents().size();
 			log.info(String.format("%s contained %s bytes", fileName, len));
+		}
+		if (fileName.equals(spec.setup().appPropertiesFile()) && (props != IMMUTABLE_MAP)) {
+			byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
+			try {
+				var configList = ServicesConfigurationList.parseFrom(bytes);
+				configList.getNameValueList().forEach(setting -> props.put(setting.getName(), setting.getValue()));
+			} catch (Exception impossible) {
+				throw new IllegalStateException(impossible);
+			}
 		}
 		if (snapshotPath.isPresent()) {
 			try {

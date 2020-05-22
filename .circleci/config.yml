@@ -1934,8 +1934,8 @@ jobs:
           name: cat /repo/test-clients/remote-system-files/appProperties.txt
           command: |
             cat /repo/test-clients/remote-system-files/appProperties.txt
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.ChildStorage
+      - run-eet-suites:
+          dsl-args: "ChildStorageSpecs"
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
           args: '1'
