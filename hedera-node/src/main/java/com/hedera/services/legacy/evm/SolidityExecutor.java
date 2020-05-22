@@ -388,10 +388,13 @@ public class SolidityExecutor {
 					program.setRuntimeFailure(new RuntimeException(validationError));
 				}
 
-				Set<AccountID> receivers = StreamSupport.stream(program.getEndowments().spliterator(), false)
-						.map(EntityIdUtils::accountParsedFromSolidityAddress)
-						.collect(Collectors.toSet());
-				boolean hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
+				boolean hasValidSigs = true;
+				if (!localCall) {
+					Set<AccountID> receivers = StreamSupport.stream(program.getEndowments().spliterator(), false)
+							.map(EntityIdUtils::accountParsedFromSolidityAddress)
+							.collect(Collectors.toSet());
+					hasValidSigs = sigsVerifier.allRequiredKeysAreActive(receivers);
+				}
 				if (result.getException() != null || result.isRevert() || !hasValidSigs) {
 					result.getDeleteAccounts().clear();
 					result.getLogInfoList().clear();
