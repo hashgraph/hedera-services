@@ -103,7 +103,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			log.info(spec.logPrefix() + entity + " was actually deleted!");
 		} else {
 			long balance = response.getCryptogetAccountBalance().getBalance();
-			log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance);
+			if (!loggingOff) {
+				log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance);
+			}
 		}
 	}
 

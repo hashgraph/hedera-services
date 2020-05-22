@@ -38,86 +38,58 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class FileQueriesStressTests extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FileQueriesStressTests.class);
+public class ConsensusQueriesStressTests extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ConsensusQueriesStressTests.class);
 
 	private AtomicLong duration = new AtomicLong(30);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
 
 	public static void main(String... args) {
-		new FileQueriesStressTests().runSuiteSync();
+		new ConsensusQueriesStressTests().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						getFileInfoStress(),
-						getFileContentsStress(),
+						getTopicInfoStress(),
 				}
 		);
 	}
 
-	private HapiApiSpec getFileContentsStress() {
-		return defaultHapiSpec("getFileContentsStress")
+	private HapiApiSpec getTopicInfoStress() {
+		return defaultHapiSpec("GetTopicInfoStress")
 				.given().when().then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
-						runWithProvider(getFileContentsFactory())
+						runWithProvider(getTopicInfoFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
 				);
 	}
 
-	private HapiApiSpec getFileInfoStress() {
-		return defaultHapiSpec("getFileInfoStress")
-				.given().when().then(
-						withOpContext((spec, opLog) -> configureFromCi(spec)),
-						runWithProvider(getFileInfoFactory())
-								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
-				);
-	}
-
-	private Function<HapiApiSpec, OpProvider> getFileContentsFactory() {
-		byte[] contents = "You won't believe this!".getBytes();
+	private Function<HapiApiSpec, OpProvider> getTopicInfoFactory() {
+		var memo = "General interest only.";
 
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("something").contents(contents)
+						createTopic("about").topicMemo(memo)
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getFileContents("something")
-						.hasContents(ignore -> contents)
-						.noLogging());
-			}
-		};
-	}
-
-	private Function<HapiApiSpec, OpProvider> getFileInfoFactory() {
-		return spec -> new OpProvider() {
-			@Override
-			public List<HapiSpecOperation> suggestedInitializers() {
-				return List.of(
-						fileCreate("something").contents("You won't believe this!")
-				);
-			}
-
-			@Override
-			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getFileInfo("something").noLogging());
+				return Optional.of(getTopicInfo("about")
+						.noLogging()
+						.hasMemo(memo));
 			}
 		};
 	}

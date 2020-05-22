@@ -1622,7 +1622,18 @@ jobs:
     steps:
       - attach_workspace:
           at: /
-
+      - run-eet-suites:
+          dsl-args: "ContractQueriesStressTests"
+          ci-properties-map: "duration=30,unit=SECONDS,maxOpsPerSec=100"
+      - run-eet-suites:
+          dsl-args: "CryptoQueriesStressTests"
+          ci-properties-map: "duration=30,unit=SECONDS,maxOpsPerSec=100"
+      - run-eet-suites:
+          dsl-args: "FileQueriesStressTests"
+          ci-properties-map: "duration=30,unit=SECONDS,maxOpsPerSec=100"
+      - run-eet-suites:
+          dsl-args: "ConsensusQueriesStressTests"
+          ci-properties-map: "duration=30,unit=SECONDS,maxOpsPerSec=100"
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
       - run-eet-suites:

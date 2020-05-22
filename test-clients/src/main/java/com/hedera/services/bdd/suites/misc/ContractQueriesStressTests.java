@@ -39,20 +39,20 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ContractQueriesStressTests extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractQueriesStressTests.class);
@@ -70,9 +70,17 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 					"\"name\":\"setZeroReadOne\"," +
 					"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_getOne\",\"type\":\"uint256\"}]," +
 					"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}\n";
+	private static final String GROW_CHILD_ABI =
+			"{\"constant\":false," +
+					"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
+					"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
+					"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}]," +
+					"\"name\":\"growChild\"," +
+					"\"outputs\":[]," +
+					"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}\n";
 
-	private AtomicLong duration = new AtomicLong(1);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
+	private AtomicLong duration = new AtomicLong(30);
+	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
 
 	public static void main(String... args) {
@@ -83,15 +91,26 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						getAccountInfoStress(),
-						getAccountRecordsStress(),
-						getAccountBalanceStress(),
+						contractCallLocalStress(),
+						getContractRecordsStress(),
+						getContractBytecodeStress(),
+						getContractInfoStress(),
 				}
 		);
 	}
 
-	private HapiApiSpec getAccountBalanceStress() {
-		return defaultHapiSpec("getAccountBalanceStress")
+	private HapiApiSpec getContractInfoStress() {
+		return defaultHapiSpec("GetContractInfoStress")
+				.given().when().then(
+						withOpContext((spec, opLog) -> configureFromCi(spec)),
+						runWithProvider(getContractInfoFactory())
+								.lasting(duration::get, unit::get)
+								.maxOpsPerSec(maxOpsPerSec::get)
+				);
+	}
+
+	private HapiApiSpec getContractBytecodeStress() {
+		return defaultHapiSpec("GetAccountRecordsStress")
 				.given().when().then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(getContractBytecodeFactory())
@@ -100,8 +119,8 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec getAccountInfoStress() {
-		return defaultHapiSpec("getAccountInfoStress")
+	private HapiApiSpec contractCallLocalStress() {
+		return defaultHapiSpec("ContractCallLocalStress")
 				.given().when().then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(contractCallLocalFactory())
@@ -110,8 +129,8 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec getAccountRecordsStress() {
-		return defaultHapiSpec("getAccountRecordsStress")
+	private HapiApiSpec getContractRecordsStress() {
+		return defaultHapiSpec("GetContractRecordsStress")
 				.given().when().then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(getContractRecordsFactory())
@@ -125,16 +144,41 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						cryptoCreate("somebody").sendThreshold(1L),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 3L)),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 4L))
+						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
+						contractCreate("childStorage").bytecode("bytecode"),
+						contractCall( "childStorage", GROW_CHILD_ABI, 0, 1, 1),
+						contractCall( "childStorage", GROW_CHILD_ABI, 1, 1, 3),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("first"),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("second"),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("third")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getAccountRecords("somebody").noLogging());
+				return Optional.of(getAccountRecords("somebody")
+						.has(inOrder(
+								recordWith().txnId("first"),
+								recordWith().txnId("second"),
+								recordWith().txnId("third")))
+						.noLogging());
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> getContractInfoFactory() {
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
+						contractCreate("childStorage").bytecode("bytecode")
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				return Optional.of(getContractInfo("childStorage").noLogging());
 			}
 		};
 	}

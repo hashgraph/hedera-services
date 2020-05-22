@@ -111,7 +111,9 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (expectations.isPresent()) {
 			ContractFunctionResult actual = response.getContractCallLocal().getFunctionResult();
-			log.info(Hex.toHexString(actual.getContractCallResult().toByteArray()));
+			if (!loggingOff) {
+				log.info(Hex.toHexString(actual.getContractCallResult().toByteArray()));
+			}
 			ErroringAsserts<ContractFunctionResult> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actual);
 			rethrowSummaryError(log, "Bad local call result!", errors);

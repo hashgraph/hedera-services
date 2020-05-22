@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
@@ -46,13 +48,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CryptoQueriesStressTests extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoQueriesStressTests.class);
 
-	private AtomicLong duration = new AtomicLong(1);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
+	private AtomicLong duration = new AtomicLong(30);
+	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
 
 	public static void main(String... args) {
@@ -106,15 +108,20 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
 						cryptoCreate("somebody").sendThreshold(1L),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 3L)),
-						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 4L))
+						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)).via("first"),
+						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 3L)).via("second"),
+						cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 4L)).via("third")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				return Optional.of(getAccountRecords("somebody").noLogging());
+				return Optional.of(getAccountRecords("somebody")
+						.has(inOrder(
+								recordWith().txnId("first"),
+								recordWith().txnId("second"),
+								recordWith().txnId("third")))
+						.noLogging());
 			}
 		};
 	}
