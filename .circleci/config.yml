@@ -681,17 +681,17 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 0,8,16 * * *"
             filters:
               branches:
                 only:
                   - master
+                  - ci-job-network-sim
     jobs:
-      - build-artifact:
-          context: SonarCloud
+      - fast-build-artifact
       - start-singlejob-testnet:
           requires:
-            - build-artifact  
+            - fast-build-artifact  
       - run-network-sim:
           requires:
             - start-singlejob-testnet
@@ -2094,14 +2094,16 @@ jobs:
       - run:
           name: call script to block tcp ports
           command: |
-            /repo/.circleci/scripts/firewall_create_rules.sh
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_create_rules.sh'
       - run-eet-suites:
           dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
           ci-properties-map: mins=50
       - run:
           name: call script to remove firewall rules
           command: |
-            /repo/.circleci/scripts/firewall_flush_rules.sh
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_flush_rules.sh'
       - run:
           name: Show swirlds logs after HGCApp restart
           command: |
