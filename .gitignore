@@ -1,3 +1,6 @@
+# Key files
+*.pem
+
 # VIM
 *.sw*
 
@@ -49,18 +52,11 @@ test-clients/*.bin
 test-clients/output/
 test-clients/devops-utils/validation-scenarios/logs/
 test-clients/devops-utils/validation-scenarios/output/
-test-clients/devops-utils/validation-scenarios/keys/testnet-account50.pem
-test-clients/devops-utils/validation-scenarios/keys/stagingsm-account50.pem
-test-clients/devops-utils/validation-scenarios/keys/mainnet-account950.pem
 test-clients/devops-utils/sysfiles-update/svctools.tar.gz
-test-clients/devops-utils/sysfiles-update/defaultSysFile.pem
 test-clients/devops-utils/sysfiles-update/certs/*.crt
 test-clients/devops-utils/sysfiles-update/run/SysFilesUpdate.jar
 test-clients/devops-utils/sysfiles-update/b64GenesisKeyPair.txt
-test-clients/src/main/resource/mainnet-account950.pem
-test-clients/src/main/resource/test-KeyStore-50.pem
 test-clients/src/main/resource/TestnetStartupAccount.txt
-test-clients/src/main/resource/testnet-account50.pem
 test-clients/saved/
 test-clients/target/
 test-clients/record-snapshots/
