@@ -53,9 +53,9 @@ function tf_cleanup {
         tar -zcvf ${REPO}/diagnostics/logs-${CIRCLE_BUILD_NUM}.tgz \
           ${REPO}/diagnostics/filtered-logs
 
-        ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-          -n logs-${CIRCLE_BUILD_NUM}.tgz \
-          -f ${REPO}/diagnostics/logs-${CIRCLE_BUILD_NUM}.tgz
+#        ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
+#          -n logs-${CIRCLE_BUILD_NUM}.tgz \
+#          -f ${REPO}/diagnostics/logs-${CIRCLE_BUILD_NUM}.tgz
       fi
 
       summarize_postgresql_status

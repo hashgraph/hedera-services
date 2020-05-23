@@ -80,5 +80,5 @@ public interface OpProvider {
 	}
 
 	String FUNDING_ACCOUNT = "fundingAccount";
-	long   FUNDING_ACCOUT_INITIAL_BALANCE = 10_000_000_000_000L;
+	long   FUNDING_ACCOUT_INITIAL_BALANCE = 5_000_000_000_000L;
 }

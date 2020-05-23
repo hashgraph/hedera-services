@@ -118,7 +118,7 @@ commands:
       infra-branch:
         description: Which branch of infrastructure repo to use
         type: string
-        default: 'master'
+        default: 'hashgraph-hedera-services'
     steps:
       - attach_workspace:
           at: /
@@ -681,15 +681,20 @@ executors:
 
 workflows:
   nightly-regression:
-    triggers:
-        - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - master
+#    triggers:
+#        - schedule:
+#            cron: "0 1,5,9,13,17,21 * * *"
+#            filters:
+#              branches:
+#                only:
+#                  - master
+#                  - 0223-D-fix-dup-transaction-in-regression
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
+          filters:
+            branches:
+              only:
+                - 0223-D-fix-dup-transaction-in-regression
       - regression-target-testnet:
           requires:
             - fast-build-artifact
