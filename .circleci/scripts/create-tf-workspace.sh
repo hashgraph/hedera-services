@@ -8,4 +8,5 @@ AWS_AMI_ID=${5:-''}
 
 . ${REPO}/.circleci/scripts/terraform-functions.sh
 
-tf_provision $NUM_HOSTS $LIVENESS_TIMEOUT_SECS $VAR_FILE $AWS_REGION $AWS_AMI_ID
+tf_provision $NUM_HOSTS $LIVENESS_TIMEOUT_SECS $VAR_FILE $AWS_REGION $AWS_AMI_ID \
+   | tee -a ${REPO}/test-clients/output/hapi-client.log

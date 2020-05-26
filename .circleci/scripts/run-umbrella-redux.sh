@@ -2,6 +2,8 @@
 
 . ${REPO}/.circleci/scripts/utils.sh
 
+cat /dev/null > ${REPO}/test-clients/output/hapi-client.log
+
 CI_PROPERTIES_MAP=$CI_PROPERTIES_MAP \
 DSL_SUITE_RUNNER_ARGS=$DSL_SUITE_RUNNER_ARGS \
 ${REPO}/.circleci/scripts/run-scenario-test.sh $* | tee /tmp/client.log

@@ -682,6 +682,9 @@ public class SmartContractBitcarbon {
       // Add a Minter to the list of Minters
       txRec = callMintersadd(crAccount, mintersContractId, ResponseCodeEnum.SUCCESS,
           ARBITRARY_ADDRESS, "Peter", jurisdictionCode);
+
+    // Marker message for regression report
+    log.info("Regression summary: This run is successful.");
   }
 
   private byte[] parseJurisdictionsAddEvent(TransactionRecord addRecord) {

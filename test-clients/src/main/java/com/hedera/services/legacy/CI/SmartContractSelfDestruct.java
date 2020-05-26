@@ -580,11 +580,12 @@ public class SmartContractSelfDestruct {
 			AccountInfo accInfoAfterKill = getCryptoGetAccountInfo(crAccount, accountToSendMoney);
 			Assert.assertEquals(accInfoAfterKill.getBalance()  , currentBalanceAfterUpdate + currReciveBalance);
 			cntInf = getContractInfo(crAccount,payTestContractId,ResponseCodeEnum.CONTRACT_DELETED,ResponseCodeEnum.SUCCESS);
-	      }
-	    }
+          }
 
-
-	  }
+          // Marker message for regression report
+          log.info("Regression summary: This run is successful.");
+        }
+      }
 
 
 	  private ContractInfo getContractInfo(AccountID payerAccount,
