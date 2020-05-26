@@ -2082,6 +2082,8 @@ jobs:
         default: ci-test-executor
     executor: << parameters.runner >>
     steps:
+      - attach_workspace:
+          at: /    
       - run:
           name: call script to block tcp ports
           command: |
