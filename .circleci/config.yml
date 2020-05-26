@@ -698,7 +698,6 @@ workflows:
             - start-testnet:
                 use-existing-network: true
                 use-hugepage: true 
-            - regression-target-testnet  
       - run-update-feature:
           requires:
             - regression-target-testnet
@@ -915,7 +914,7 @@ workflows:
             - cleanup-testnet
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-umbrella-freeze-restart-test
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1983,8 +1982,8 @@ jobs:
         default: ci-test-executor
     executor: << parameters.runner >>
     steps:
-       - attach_workspace:
-          at: /   
+      - attach_workspace:
+          at: /
       - run:
           name: Set environmental variable
           command: |
@@ -2037,7 +2036,7 @@ jobs:
     executor: << parameters.runner >>
     steps:
       - attach_workspace:
-          at: /    
+          at: /
       - run:
           name: Set environmental variable
           command: |
