@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. /repo/.circleci/scripts/terraform-functions.sh
-. /repo/.circleci/scripts/utils.sh
+. ${REPO}/.circleci/scripts/terraform-functions.sh
+. ${REPO}/.circleci/scripts/utils.sh
 
 function show_java_process {
   for HOST in ${TF_HOSTS[@]}; do
@@ -12,4 +12,3 @@ function show_java_process {
 }
 
 show_java_process
-
