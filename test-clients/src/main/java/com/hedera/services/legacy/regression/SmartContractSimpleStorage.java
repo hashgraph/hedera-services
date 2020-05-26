@@ -597,6 +597,9 @@ public class SmartContractSimpleStorage {
         Assert.assertTrue("Second record should be contract call",
             recordsByContractID.get(1).hasContractCallResult());
       }
+
+      // Marker message for regression report
+      log.info("Regression summary: This run is successful.");
     }
   }
 

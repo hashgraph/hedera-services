@@ -46,7 +46,7 @@ if [ ! -f "$CLIENT_RESOURCES_REBUILD_FINGERPRINT" ]; then
   mvn -q clean package
   touch $CLIENT_RESOURCES_REBUILD_FINGERPRINT
 fi
-ci_echo "Running $FCQN vs $ALL_NODES (suggested ${NODE}:0.0.${NODE_ACCOUNT})..."
+ci_echo "Running legacy scenario $FCQN vs $ALL_NODES (suggested ${NODE}:0.0.${NODE_ACCOUNT})..."
 
 
 NODES=$ALL_NODES \
@@ -54,3 +54,4 @@ NODES=$ALL_NODES \
     -Dexec.mainClass=$FCQN \
     -Dexec.args="$NODE $NODE_ACCOUNT $OTHER_ARGS" \
     -Dexec.cleanupDaemonThreads=false
+ci_echo "End of running legacy scenario $FCQN test."

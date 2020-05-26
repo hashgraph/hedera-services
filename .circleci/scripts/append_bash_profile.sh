@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. /repo/.circleci/scripts/terraform-functions.sh
-. /repo/.circleci/scripts/utils.sh
+. ${REPO}/.circleci/scripts/terraform-functions.sh
+. ${REPO}/.circleci/scripts/utils.sh
 
 function append_bash_profile {
   for HOST in ${TF_HOSTS[@]}; do
@@ -12,6 +12,3 @@ function append_bash_profile {
 }
 
 append_bash_profile "export CI_AWS=launch_by_ci"
-
-
-

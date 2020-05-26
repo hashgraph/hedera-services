@@ -17,10 +17,10 @@ echo "FAST_START_PREFIX: $FAST_START_PREFIX"
 download_node_output
 
 for HOST in ${TF_HOSTS[@]}; do
-  ci_echo "Checking freeze start for $HOST now..."
+  ci_echo "Checking freeze start for $HOST now..." | tee -a ${REPO}/test-clients/output/hapi-client.log
   LOG="${REPO}/HapiApp2.0/$HOST/output/hgcaa.log"
   LINE=$(grep -e 'current platform status = MAINTENANCE' $LOG | tail -1)
-  ci_echo "$LINE"
+  ci_echo "$LINE" | tee -a ${REPO}/test-clients/output/hapi-client.log
   FREEZE_START_PREFIX=${LINE:11:7}
   OUTCOME='failed'
   if [ $FREEZE_START_PREFIX = $SLOW_START_PREFIX ]; then
@@ -30,7 +30,10 @@ for HOST in ${TF_HOSTS[@]}; do
     OUTCOME='passed'
   fi
   if [ $OUTCOME = "failed" ]; then
-    ci_echo "'$HOST last froze @ ${LINE}---unacceptable!'"
+    ci_echo "'$HOST last froze @ ${LINE}---unacceptable!'" \
+       | tee -a ${REPO}/test-clients/output/hapi-client.log
     exit 1
   fi
 done
+
+ci_echo "All hosts froze successfully." | tee -a ${REPO}/test-clients/output/hapi-client.log
