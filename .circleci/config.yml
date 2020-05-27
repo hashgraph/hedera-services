@@ -683,7 +683,7 @@ workflows:
   nightly-update-feature:
     triggers:
         - schedule:
-            cron: "0 * * * *"
+            cron: "0 1-23/2 * * *"
             filters:
               branches:
                 only:
@@ -703,7 +703,7 @@ workflows:
             - regression-target-testnet
       - run-update-jar-files:
           requires:
-            - regression-target-testnet
+            - run-update-feature
   nightly-regression:
     triggers:
         - schedule:
