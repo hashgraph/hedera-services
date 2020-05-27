@@ -689,16 +689,25 @@ workflows:
                   - ci-job-network-sim
     jobs:
       - fast-build-artifact
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           requires:
-            - fast-build-artifact
-          pre-steps:
-            - start-testnet:
-                use-existing-network: false
-                use-hugepage: true 
+            - build-artifact
       - run-network-sim:
           requires:
-            - regression-target-testnet         
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-testnet           
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-network-sim
+          pre-steps:
+            - attach_workspace:
+                at: /     
   nightly-regression:
     triggers:
         - schedule:
