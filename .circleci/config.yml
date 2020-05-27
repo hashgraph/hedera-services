@@ -690,10 +690,11 @@ workflows:
                   - master
                   - ci-nightly-update-feature
     jobs:
-      - fast-build-artifact
+    # don't use fast build since it will remove src directory
+      - build-artifact
       - start-singlejob-testnet:
           requires:
-            - fast-build-artifact
+            - build-artifact
       - run-update-feature:
           requires:
             - start-singlejob-testnet
