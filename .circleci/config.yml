@@ -683,7 +683,7 @@ workflows:
   nightly-update-feature:
     triggers:
         - schedule:
-            cron: "0 1-23/2 * * *"
+            cron: "0 * * * *"
             filters:
               branches:
                 only:
@@ -696,7 +696,7 @@ workflows:
             - fast-build-artifact
           pre-steps:
             - start-testnet:
-                use-existing-network: true
+                use-existing-network: false
                 use-hugepage: true 
       - run-update-feature:
           requires:
