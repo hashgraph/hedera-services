@@ -681,7 +681,7 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0 */2 * * *"
+            cron: "0 * * * *"
             filters:
               branches:
                 only:
@@ -694,7 +694,7 @@ workflows:
             - fast-build-artifact
           pre-steps:
             - start-testnet:
-                use-existing-network: true
+                use-existing-network: false
                 use-hugepage: true 
       - run-network-sim:
           requires:
