@@ -6,9 +6,9 @@ CI_PROPERTIES_MAP=$CI_PROPERTIES_MAP \
 DSL_SUITE_RUNNER_ARGS=$DSL_SUITE_RUNNER_ARGS \
 ${REPO}/.circleci/scripts/run-scenario-test.sh $* | tee /tmp/client.log
 
-if [[ ${PIPESTATUS[0]} = '0' ]]
+if [[ ${PIPESTATUS[0]} = '0' ]]; then
     echo "SUCCESS" > status.txt
-then
+else
     echo "FAIL" > status.txt
 fi
 
