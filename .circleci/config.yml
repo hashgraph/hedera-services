@@ -691,7 +691,7 @@ workflows:
       - fast-build-artifact
       - start-singlejob-testnet:
           requires:
-            - build-artifact
+            - fast-build-artifact
       - run-network-sim:
           requires:
             - start-singlejob-testnet
