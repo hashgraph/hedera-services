@@ -691,19 +691,34 @@ workflows:
                   - ci-nightly-update-feature
     jobs:
       - fast-build-artifact
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           requires:
             - fast-build-artifact
-          pre-steps:
-            - start-testnet:
-                use-existing-network: false
-                use-hugepage: true 
       - run-update-feature:
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
       - run-update-jar-files:
           requires:
             - run-update-feature
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-testnet            
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-update-jar-files
+          pre-steps:
+            - attach_workspace:
+                at: /            
   nightly-regression:
     triggers:
         - schedule:
