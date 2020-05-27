@@ -1997,8 +1997,6 @@ jobs:
         default: ci-test-executor
     executor: << parameters.runner >>
     steps:
-      - attach_workspace:
-          at: /
       - run:
           name: Set environmental variable
           command: |
@@ -2050,8 +2048,6 @@ jobs:
         default: ci-test-executor
     executor: << parameters.runner >>
     steps:
-      - attach_workspace:
-          at: /
       - run:
           name: Set environmental variable
           command: |
