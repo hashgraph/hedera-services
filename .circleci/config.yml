@@ -851,58 +851,59 @@ workflows:
       - start-singlejob-testnet:
           requires:
             - build-artifact
-      - run-consensus-and-crypto-scenarios:
+      # - run-consensus-and-crypto-scenarios:
+      #     requires:
+      #       - start-singlejob-testnet
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - run: /repo/.circleci/scripts/echo-env.sh
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-file-scenarios:
+      #     requires:
+      #       - run-consensus-and-crypto-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-smart-contract-scenarios:
+      #     requires:
+      #       - run-file-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-umbrella-freeze-restart-test:
+      #     requires:
+      #       - run-smart-contract-scenarios
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      # - run-update-feature:
+      #     requires:
+      #       - run-umbrella-freeze-restart-test
+      #     pre-steps:
+      #       - attach_workspace:
+      #           at: /
+      #       - ensure-testnet-for-reruns
+      #     post-steps:
+      #       - cleanup-rerun-testnet-if-present
+      - run-update-jar-files:
           requires:
             - start-singlejob-testnet
           pre-steps:
             - attach_workspace:
                 at: /
             - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-file-scenarios:
-          requires:
-            - run-consensus-and-crypto-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-smart-contract-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-umbrella-freeze-restart-test:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-feature:
-          requires:
-            - run-umbrella-freeze-restart-test
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-jar-files:
-          requires:
-            - run-update-feature
-          pre-steps:
-            - attach_workspace:
-                at: /
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-testnet
@@ -2041,7 +2042,7 @@ jobs:
           name: Modify main.java and build new jars
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
-            '/repo/.circleci/scripts/build_new_jars.sh'
+            '/repo/.circleci/scripts/build_new_jars.sh "new version jar"'
       - run:
           name: Show java process before freeze
           command: |

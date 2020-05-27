@@ -11,7 +11,7 @@ function updateServiceMainJava
 {
 
     # replace a line in ServicesMain.java
-    sed -i -e s/'init finished'/'new version jar'/g  ${REPO}/hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+    sed -i -e s/'init finished'/"$1"/g  ${REPO}/hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
     # rebuild jar files and use timestamp to tell which jar files have been updated
     cd ${REPO}/hedera-node
@@ -41,4 +41,4 @@ function updateServiceMainJava
 
 cd $TEST_CLIENTS_DIR
 
-updateServiceMainJava
+updateServiceMainJava "$1"
