@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. /repo/.circleci/scripts/terraform-functions.sh
-. /repo/.circleci/scripts/utils.sh
+. ${REPO}/.circleci/scripts/terraform-functions.sh
+. ${REPO}/.circleci/scripts/utils.sh
 
 
 echo "Build new jars and found changed files and copy to test-clients/updateFiles/"
@@ -29,7 +29,7 @@ function updateServiceMainJava
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
     find . -type f -name "*.jar" -newermt "$beforeTime" -exec cp --parents {} $TARGET_DIR \;
-    
+
     cd -
 
     echo "Update files after build have been copied to $TARGET_DIR"

@@ -12,3 +12,6 @@ ${REPO}/.circleci/scripts/call-svcs-app-slack.sh -t "$STATS_PARENT_DIR/msg.txt"
 ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
   -f $INSIGHT_PY_PDF_PATH \
   -n SelectedPlatformStats
+
+${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
+        -t ${REPO}/${CLIENT_DIR}/regression-test-summary.txt
