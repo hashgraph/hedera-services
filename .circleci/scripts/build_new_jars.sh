@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. /repo/.circleci/scripts/terraform-functions.sh
-. /repo/.circleci/scripts/utils.sh
+. ${REPO}/.circleci/scripts/terraform-functions.sh
+. ${REPO}/.circleci/scripts/utils.sh
 
 
 echo "Build new jars and found changed files and copy to test-clients/updateFiles/"
@@ -11,7 +11,7 @@ function updateServiceMainJava
 {
 
     # replace a line in ServicesMain.java
-    sed -i -e s/'init finished'/'new version jar'/g  ${REPO}/hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+    sed -i -e s/'init finished'/"$1"/g  ${REPO}/hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
     # rebuild jar files and use timestamp to tell which jar files have been updated
     cd ${REPO}/hedera-node
@@ -29,7 +29,7 @@ function updateServiceMainJava
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
     find . -type f -name "*.jar" -newermt "$beforeTime" -exec cp --parents {} $TARGET_DIR \;
-    
+
     cd -
 
     echo "Update files after build have been copied to $TARGET_DIR"
@@ -41,4 +41,4 @@ function updateServiceMainJava
 
 cd $TEST_CLIENTS_DIR
 
-updateServiceMainJava
+updateServiceMainJava "$1"

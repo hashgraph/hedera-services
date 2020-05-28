@@ -43,7 +43,7 @@ while true; do
   fi
   SECS_WAITED=$((SECS_WAITED+SLEEP_SECS))
   if [ $SECS_WAITED -lt $TIMEOUT_SECS ]; then
-    ci_echo "Sleeping $SLEEP_SECS secs now..."
+    ci_echo "Sleeping $SLEEP_SECS secs at `date` ..."
     sleep $SLEEP_SECS
   else
     break
