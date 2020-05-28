@@ -17,25 +17,23 @@ Prefer the latter until you want to test a change you have made to the source co
 
 ### From GCR
 
-_**TODO - need signoff on image and credentials to push to `grc.io/hedera/`**_
-
 Clone this repository:
 ```
-git clone git@github.com:swirlds/services-hedera.git
+git clone git@github.com:hashgraph/hedera-services.git
 cd services-hedera
 ```
 
 Ensure the Docker Compose [.env file](../.env) has the following contents:
 ```
 TAG=0.5.0
-REGISTRY_PREFIX=gcr.io/hedera/
+REGISTRY_PREFIX=gcr.io/hedera-registry/
 ```
 
 ### Building locally
 
 First, clone this repository:
 ```
-git clone git@github.com:swirlds/services-hedera.git
+git clone git@github.com:hashgraph/hedera-services.git
 cd services-hedera
 ```
 

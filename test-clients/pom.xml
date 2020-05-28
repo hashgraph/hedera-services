@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.hedera.services</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
   </parent>
 
   <properties>
@@ -24,6 +24,7 @@
     <commons-collections4.version>4.0</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.26</snakeyaml.version>
+    <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -120,6 +121,11 @@
 
   <repositories>
     <repository>
+      <id>ossrh-staging</id>
+      <name>Staging repo</name>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1119</url>
+    </repository>
+    <repository>
       <id>Ethereum</id>
       <name>Ethereum</name>
       <url>https://dl.bintray.com/ethereum/maven/</url>
@@ -173,14 +179,9 @@
       <version>${commons-collections4.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.services</groupId>
-      <artifactId>evm-adapter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>ch.qos.logback</groupId>
-          <artifactId>logback-classic</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>com.hedera.hashgraph</groupId>
+      <artifactId>ethereumj-core</artifactId>
+      <version>${ethereum-core.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

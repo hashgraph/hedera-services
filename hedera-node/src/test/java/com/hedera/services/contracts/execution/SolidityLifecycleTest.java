@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,7 +78,7 @@ class SolidityLifecycleTest {
 		properties = mock(PropertySource.class);
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(maxStorageKb);
 		root = mock(ServicesRepositoryRoot.class);
-		given(root.persistStorageCache(maxStorageKb)).willReturn(true);
+		given(root.flushStorageCacheIfTotalSizeLessThan(maxStorageKb)).willReturn(true);
 
 		subject = new SolidityLifecycle(properties);
 	}
@@ -163,8 +163,8 @@ class SolidityLifecycleTest {
 		inOrder.verify(executor).go();
 		inOrder.verify(executor).finalizeExecution();
 		// and:
-		inOrder.verify(root).persistStorageCache(maxStorageKb);
-		inOrder.verify(root).commitAndSaveRoot();
+		inOrder.verify(root).flushStorageCacheIfTotalSizeLessThan(maxStorageKb);
+		inOrder.verify(root).flush();
 		// and:
 		Assertions.assertEquals(expected, result.getKey());
 		Assertions.assertEquals(ResponseCodeEnum.SUCCESS, result.getValue());
@@ -173,7 +173,7 @@ class SolidityLifecycleTest {
 	@Test
 	public void errorsOutIfCannotPersist() {
 		givenNoCreation();
-		given(root.persistStorageCache(maxStorageKb)).willReturn(false);
+		given(root.flushStorageCacheIfTotalSizeLessThan(maxStorageKb)).willReturn(false);
 
 		// when:
 		var result = subject.run(executor, root);
@@ -207,7 +207,7 @@ class SolidityLifecycleTest {
 		var result = subject.run(executor, root);
 
 		// then:
-		verify(root, never()).persistStorageCache(anyInt());
+		verify(root, never()).flushStorageCacheIfTotalSizeLessThan(anyInt());
 		verify(root).emptyStorageCache();
 		// and:
 		Assertions.assertEquals(expected, result.getKey());

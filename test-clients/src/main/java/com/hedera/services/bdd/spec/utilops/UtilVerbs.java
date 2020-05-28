@@ -113,6 +113,10 @@ public class UtilVerbs {
 		return new SpecKeyFromPem(pemLoc);
 	}
 
+	public static SpecKeyFromPem keyFromPem(Supplier<String> pemLocFn) {
+		return new SpecKeyFromPem(pemLocFn);
+	}
+
 	public static NewSpecKey newKeyNamed(String key) {
 		return new NewSpecKey(key);
 	}

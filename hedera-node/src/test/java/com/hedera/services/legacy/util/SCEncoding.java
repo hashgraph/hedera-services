@@ -50,6 +50,30 @@ public class SCEncoding {
   private static final String SC_OPSAR_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"_one\",\"type\":\"uint256\"},{\"name\":\"_two\",\"type\":\"uint256\"}],\"name\":\"opSar\",\"outputs\":[{\"name\":\"_resp\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"}";
   private static final String SC_OPEXTCODEHASH_ABI = "{\"constant\":true,\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"opExtCodeHash\",\"outputs\":[{\"name\":\"_resp\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 
+  public static final String GET_MY_VALUE_ABI =
+          "{\"constant\":true,\"inputs\":[],\"name\":\"getMyValue\"," +
+                  "\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_get\",\"type\":\"uint256\"}]," +
+                  "\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}\n";
+  public static final String GROW_CHILD_ABI =
+          "{\"constant\":false," +
+                  "\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
+                  "{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
+                  "{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}]," +
+                  "\"name\":\"growChild\"," +
+                  "\"outputs\":[]," +
+                  "\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}\n";
+
+  public static byte[] encodeVia(String abi, Object... args) {
+    CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
+    return function.encode(args);
+  }
+
+  public static <T> T decodeSimpleResponseVia(String abi, byte[] response, Class<T> responseType) {
+    CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
+    Object[] results = function.decodeResult(response);
+    return responseType.cast(results[0]);
+  }
+
   /*
   Functions for simpleStorage.bin: set and get the value
    */

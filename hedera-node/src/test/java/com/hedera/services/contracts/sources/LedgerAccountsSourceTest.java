@@ -131,9 +131,9 @@ class LedgerAccountsSourceTest {
 		// then:
 		assertEquals(autoRenew, evmState.getAutoRenewPeriod());
 		assertEquals(BigInteger.valueOf(balance), evmState.getBalance());
-		assertEquals(1, evmState.getHGShardId());
-		assertEquals(2, evmState.getHGRealmId());
-		assertEquals(13257, evmState.getHGAccountId());
+		assertEquals(1, evmState.getShardId());
+		assertEquals(2, evmState.getRealmId());
+		assertEquals(13257, evmState.getAccountNum());
 		assertEquals(1, evmState.getProxyAccountShard());
 		assertEquals(2, evmState.getProxyAccountRealm());
 		assertEquals(3, evmState.getProxyAccountNum());

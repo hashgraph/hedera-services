@@ -101,7 +101,7 @@ public class NettyServerManager {
 			String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
 			List<String> ciphers = Arrays.asList(
 					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-					"TLS_RSA_WITH_AES_256_GCM_SHA384"
+					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
 			);
 			SslContextBuilder contextBuilder =
 					GrpcSslContexts.configure(SslContextBuilder.forServer(certChain, privateKey));
