@@ -927,10 +927,28 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-update-feature:
+          requires:
+            - run-umbrella-freeze-restart-test
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+      - run-update-jar-files:
+          requires:
+            - run-update-feature
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
             - cleanup-testnet
       - cleanup-singlejob-testnet:
           requires:
-            - run-umbrella-freeze-restart-test
+            - run-update-jar-files
           pre-steps:
             - attach_workspace:
                 at: /
