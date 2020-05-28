@@ -924,6 +924,7 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-testnet
+          new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
             - run-update-jar-files
@@ -2043,6 +2044,10 @@ jobs:
       runner:
         type: executor
         default: ci-test-executor
+      new-marker:
+        type: string
+        description: New string to indicate the chang of source code and jar
+        default: 'new version jar'
     executor: << parameters.runner >>
     steps:
       - run:
@@ -2059,7 +2064,7 @@ jobs:
           name: Modify main.java and build new jars
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
-            '/repo/.circleci/scripts/build_new_jars.sh'
+            '/repo/.circleci/scripts/build_new_jars.sh "<< parameters.new-marker >>"'
       - run:
           name: Show java process before freeze
           command: |
@@ -2085,4 +2090,4 @@ jobs:
           name: Scan new string after restarted
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
-            '/repo/.circleci/scripts/scan-expected-logs.sh "new version jar" hgcaa.log'
+            '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
