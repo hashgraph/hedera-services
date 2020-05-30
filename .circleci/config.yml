@@ -700,21 +700,26 @@ workflows:
   nightly-update-feature:
     triggers:
         - schedule:
-            cron: "0 * * * *"
+            cron: "0 13 * * *"
             filters:
               branches:
                 only:
                   - master
                   - ci-nightly-update-feature
     jobs:
-    # don't use fast build since it will remove src directory
-      - build-artifact
-      - start-singlejob-testnet:
+      - fast-build-artifact
+      - regression-target-testnet:
           requires:
-            - build-artifact
+            - fast-build-artifact
+          pre-steps:
+            - start-testnet:
+                use-existing-network: true
+                use-hugepage: true
+          post-steps:
+            - cleanup-client-log-storage
       - run-update-feature:
           requires:
-            - start-singlejob-testnet
+            - regression-target-testnet
           pre-steps:
             - attach_workspace:
                 at: /
@@ -730,13 +735,7 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-testnet            
-      - cleanup-singlejob-testnet:
-          requires:
-            - run-update-jar-files
-          pre-steps:
-            - attach_workspace:
-                at: /
+            - cleanup-testnet
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
@@ -1081,8 +1080,6 @@ jobs:
       - run:
           name: Reposition config for Ansible scripts
           command: |
-            /repo/.circleci/scripts/trap-failure-report.sh \
-               'rm -rf /repo/hedera-node/src'
             /repo/.circleci/scripts/trap-failure-report.sh \
                'mkdir -p /repo/HapiApp2.0'
             /repo/.circleci/scripts/trap-failure-report.sh \
