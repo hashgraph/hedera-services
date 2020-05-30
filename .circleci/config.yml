@@ -975,7 +975,6 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-testnet
-          new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
             - run-umbrella-freeze-restart-test
