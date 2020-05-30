@@ -975,29 +975,11 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-feature:
-          requires:
-            - run-umbrella-freeze-restart-test
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-jar-files:
-          requires:
-            - run-update-feature
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
             - cleanup-testnet
           new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-umbrella-freeze-restart-test
           pre-steps:
             - attach_workspace:
                 at: /
