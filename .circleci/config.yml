@@ -700,33 +700,25 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 14 * * *"
             filters:
               branches:
                 only:
                   - master
-                  - ci-job-network-sim
     jobs:
       - fast-build-artifact
-      - start-singlejob-testnet:
+      - regression-target-testnet:
           requires:
             - fast-build-artifact
+          pre-steps:
+            - start-testnet:
+                use-existing-network: true
+                use-hugepage: true
+          post-steps:
+            - cleanup-client-log-storage
       - run-network-sim:
           requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-testnet           
-      - cleanup-singlejob-testnet:
-          requires:
-            - run-network-sim
-          pre-steps:
-            - attach_workspace:
-                at: /     
+            - regression-target-testnet
   nightly-regression:
     triggers:
        - schedule:
