@@ -697,6 +697,36 @@ executors:
     working_directory: /repo
 
 workflows:
+  nightly-simulate-network-outrage:
+    triggers:
+        - schedule:
+            cron: "0 0,12 * * *"
+            filters:
+              branches:
+                only:
+                  - master
+                  - ci-job-network-sim
+    jobs:
+      - fast-build-artifact
+      - start-singlejob-testnet:
+          requires:
+            - fast-build-artifact
+      - run-network-sim:
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-testnet           
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-network-sim
+          pre-steps:
+            - attach_workspace:
+                at: /     
   nightly-regression:
     triggers:
        - schedule:
@@ -2091,3 +2121,29 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+  run-network-sim:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - attach_workspace:
+          at: /    
+      - run:
+          name: call script to block tcp ports
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_create_rules.sh'
+      - run-eet-suites:
+          dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
+          ci-properties-map: mins=50
+      - run:
+          name: call script to remove firewall rules
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_flush_rules.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/show_logs.sh

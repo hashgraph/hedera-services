@@ -123,6 +123,8 @@ public class RunLoadTest extends UtilOp {
 		long defaultSleepMS = (long) (opSource.get().length * 1000 / _targetTps);
 
 		boolean reported = false;
+		Stopwatch statDuration = duration;
+		int submitOps = 0; // submitted tran during the stat window
 		while (duration.elapsed(_ofUnit) < _testDuration) {
 			int numOpsThen = spec.numLedgerOps();
 			HapiSpecOperation[] ops = opSource.get();
@@ -130,26 +132,27 @@ public class RunLoadTest extends UtilOp {
 			int numOpsNow = spec.numLedgerOps();
 			//should not use spec.numLedgerOps() since spec shared by all load test threads
 			//log.info("size {} Added {}", ops.length, (numOpsNow - numOpsThen));
+			submitOps += ops.length;
 			totalOps += ops.length;
 
-			long elapsedMS = duration.elapsed(MILLISECONDS);
-			currentTPS = totalOps / (elapsedMS * 0.001f);
-			//log.info("Thread {} elapsedMS {} totalOps {} currentTPS {} ", Thread.currentThread().getName(), elapsedMS, totalOps, currentTPS);
+			long elapsedMS = statDuration.elapsed(MILLISECONDS);
+			currentTPS = submitOps / (elapsedMS * 0.001f);
+			//log.info("Thread {} elapsedMS {} submitOps {} currentTPS {} ", Thread.currentThread().getName(), elapsedMS, submitOps, currentTPS);
 
-			if (duration.elapsed(SECONDS) % 10 == 0) { //report periodically
+			if (statDuration.elapsed(SECONDS) % 10 == 0) { //report periodically
 				if (!reported) {
 					log.info("Thread {} ops {} current TPS {}", Thread.currentThread().getName(),
-							totalOps, currentTPS);
+							submitOps, currentTPS);
 					reported = true;
-					totalOps = 0;
-					duration = createStarted();
+					submitOps = 0;
+					statDuration = createStarted();
 				}
 			} else {
 				reported = false;
 			}
 			try {
 				if (currentTPS > _targetTps) {
-					long pauseMillieSeconds = (long) ((totalOps / (float) _targetTps) * 1000 - elapsedMS);
+					long pauseMillieSeconds = (long) ((submitOps / (float) _targetTps) * 1000 - elapsedMS);
 					//log.info("Thread {} pauseMillieSeconds {}", Thread.currentThread().getName(), pauseMillieSeconds);
 					Thread.sleep(Math.max(5, pauseMillieSeconds));
 				}
