@@ -700,7 +700,7 @@ workflows:
   nightly-update-feature:
     triggers:
         - schedule:
-            cron: "0 13 * * *"
+            cron: "0 15 * * *"
             filters:
               branches:
                 only:
