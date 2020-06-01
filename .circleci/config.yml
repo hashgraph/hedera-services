@@ -705,7 +705,7 @@ workflows:
               branches:
                 only:
                   - master
-                  - ci-job-network-sim
+                  - ci-job-network-loss
     jobs:
       - fast-build-artifact
       - start-singlejob-testnet:
