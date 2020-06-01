@@ -700,7 +700,7 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "*/15 * * * *"
             filters:
               branches:
                 only:
