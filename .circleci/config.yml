@@ -720,17 +720,17 @@ workflows:
             - run: /repo/.circleci/scripts/echo-env.sh
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-testnet           
+            - cleanup-testnet
       - cleanup-singlejob-testnet:
           requires:
             - run-network-sim
           pre-steps:
             - attach_workspace:
-                at: /     
+                at: /
   nightly-regression:
     triggers:
        - schedule:
-           cron: "0 1,5,9,13 * * *"
+           cron: "0 5,9,13 * * *"
            filters:
              branches:
                only:
@@ -1150,7 +1150,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -1164,7 +1164,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1178,7 +1178,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1192,7 +1192,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1208,7 +1208,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1224,7 +1224,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1240,7 +1240,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1256,7 +1256,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1272,7 +1272,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1288,7 +1288,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1304,7 +1304,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1319,7 +1319,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1334,7 +1334,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1349,7 +1349,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1364,7 +1364,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1379,7 +1379,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1394,7 +1394,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1409,7 +1409,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1424,7 +1424,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1439,7 +1439,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1455,7 +1455,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1470,7 +1470,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1485,7 +1485,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1501,7 +1501,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1516,7 +1516,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1531,7 +1531,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1546,7 +1546,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1561,7 +1561,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1576,7 +1576,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1591,7 +1591,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1606,7 +1606,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1621,7 +1621,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1636,7 +1636,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1652,7 +1652,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1667,7 +1667,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1683,7 +1683,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1706,7 +1706,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2050,7 +2050,9 @@ jobs:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
       - validate-thaw
-      - restart-with-validations
+      - restart-with-validations:
+          valid-ss-timeout-secs: 180
+          active-status-timeout-secs: 180
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
