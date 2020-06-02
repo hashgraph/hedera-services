@@ -25,16 +25,20 @@ function firewall_creat_rules {
 
 }
 
-# random packet loss on first node
 function packet_loss {
   HOST=$1
   echo "Packet loss on node $HOST"
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "ifconfig -a"
   ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc add dev ens3 root netem loss 0.1% 25% "
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc add dev ens3 root netem corrupt 0.1% "
 
 }
 
+
+function packet_corruption  {
+  HOST=$1
+  echo "Packet loss on node $HOST"
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc add dev ens3 root netem corrupt 0.1% "
+
+}
 
 function packet_reorder {
   HOST=$1
@@ -50,4 +54,7 @@ firewall_creat_rules ${TF_HOSTS[${#TF_HOSTS[@]}-1]}
 packet_loss ${TF_HOSTS[0]}
 
 # the last node delay packet
-packet_loss ${TF_HOSTS[1]}
+packet_corruption ${TF_HOSTS[1]}
+
+# the last node delay packet
+packet_reorder ${TF_HOSTS[2]}
