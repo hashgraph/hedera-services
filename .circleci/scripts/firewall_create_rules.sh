@@ -43,7 +43,7 @@ function packet_corruption  {
 function packet_reorder {
   HOST=$1
   echo "Packet reorder on node $HOST"
-  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc add dev ens3 root netem gap 5000 delay 10ms "
+  ssh -o StrictHostKeyChecking=no ubuntu@$HOST "sudo tc qdisc add dev ens3 root netem reorder 0.01% gap 5000 delay 10ms "
 
 }
 
