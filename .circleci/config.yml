@@ -700,11 +700,11 @@ workflows:
   nightly-simulate-network-outrage:
     triggers:
         - schedule:
-            cron: "0,15,30,45 * * * *"
+            cron: "0,30 9,10,12 * * *"
             filters:
               branches:
                 only:
-                  - master
+#                  - master
                   - ci-test-network-loss
     jobs:
       - fast-build-artifact
