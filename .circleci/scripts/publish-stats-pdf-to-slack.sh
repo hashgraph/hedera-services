@@ -14,4 +14,4 @@ ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
   -n SelectedPlatformStats
 
 ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-        -t ${REPO}/${CLIENT_DIR}/regression-test-summary.txt
+        -f ${CLIENT_LOG_DIR}/regression-test-summary.txt

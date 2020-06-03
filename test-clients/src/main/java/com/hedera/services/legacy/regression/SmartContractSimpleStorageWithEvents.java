@@ -518,6 +518,9 @@ public class SmartContractSimpleStorageWithEvents {
           log.info("Contract get/set iteration " + i + " completed successfully==>");
         }
       }
+
+      // Marker message for regression report
+      log.info("Regression summary: This run is successful.");
     }
   }
 

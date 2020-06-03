@@ -61,7 +61,7 @@ function download_node_output() {
     touch "$TARGET_DIR/account0.0.$ACCOUNT_NO"
     ACCOUNT_NO=$((ACCOUNT_NO+1))
     scp -p -o StrictHostKeyChecking=no \
-      ubuntu@$HOST:$HAPI_APP_DIR/*.log $TARGET_DIR
+      ubuntu@$HOST:$HAPI_APP_DIR/output/*.log $TARGET_DIR
     scp -p -o StrictHostKeyChecking=no \
       ubuntu@$HOST:$HAPI_APP_DIR/*.csv $TARGET_DIR
     scp -q -p -r -o StrictHostKeyChecking=no \
