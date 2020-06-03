@@ -123,11 +123,12 @@ def report_regression_status(overall_status):
 
         f.writelines(' Overall Status: {}\n'.format(overall_status))
         f.writelines('\n---------------- ITEMIZED REPORT --------------------\n')
+        f.writelines("{0:30s}\t{1:10s}\n".format("JOB NAME", "STATUS"))
         for key, value in each_job_status.items():
             if value:
                 status = "Passed"
             elif not value:
-                status = "Failed"
+                status = "FAILED"
             else:
                 status = "Not run"
 

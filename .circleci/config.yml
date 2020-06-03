@@ -754,20 +754,20 @@ workflows:
             - attach_workspace:
                 at: /
   nightly-regression:
-    triggers:
-        - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - master
-                  - 0241-E-Refactor-CircleCi-build-scripts
+    # triggers:
+    #     - schedule:
+    #         cron: "0 5,9,13 * * *"
+    #         filters:
+    #           branches:
+    #             only:
+    #               - master
+    #               - 0241-E-Refactor-CircleCi-build-scripts
     jobs:
       - fast-build-artifact:
-         # filters:
-         #   branches:
-         #     only:
-         #       - 0241-E-Refactor-CircleCi-build-scripts
+         filters:
+           branches:
+             only:
+               - 0241-E-Refactor-CircleCi-build-scripts
          post-steps:
             - save-this-job-client-logs
       - regression-target-testnet:
@@ -828,9 +828,9 @@ workflows:
       - long-consensus_ops-0:
           requires:
             - regression-target-testnet
-      - long-umbrella:
-          requires:
-            - regression-target-testnet
+      # - long-umbrella:
+      #     requires:
+      #       - regression-target-testnet
       - regression-validate-freeze:
           requires:
             - long-contract_txns6-0
@@ -992,6 +992,7 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-testnet
+          new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
             - run-update-jar-files
@@ -1209,7 +1210,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1225,7 +1226,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1241,7 +1242,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1257,7 +1258,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-consensus_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1273,7 +1274,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1289,7 +1290,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-contract_txns6.properties,maxOpsPerSec=10"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1305,7 +1306,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1320,7 +1321,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1335,7 +1336,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1350,7 +1351,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1365,7 +1366,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1380,7 +1381,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1395,7 +1396,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1410,7 +1411,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1425,7 +1426,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1440,7 +1441,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1456,7 +1457,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1471,7 +1472,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1486,7 +1487,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=5,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1502,7 +1503,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1517,7 +1518,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1532,7 +1533,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1547,7 +1548,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1562,7 +1563,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1577,7 +1578,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1592,7 +1593,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1607,7 +1608,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1622,7 +1623,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1637,7 +1638,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 1
           node-account: 4
           perf-run: true
@@ -1653,7 +1654,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -1668,7 +1669,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 3
           node-account: 6
           perf-run: true
@@ -1683,7 +1684,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
+          ci-properties-map: "duration=12,unit=MINUTES,props=regression-crypto_txns300.properties,maxOpsPerSec=315,maxPendingOps=1000,backoffSleepSecs=30"
           node-terraform-index: 2
           node-account: 5
           perf-run: true
@@ -2071,7 +2072,9 @@ jobs:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
       - validate-thaw
-      - restart-with-validations
+      - restart-with-validations:
+          valid-ss-timeout-secs: 180
+          active-status-timeout-secs: 180
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
@@ -2136,6 +2139,10 @@ jobs:
       runner:
         type: executor
         default: ci-test-executor
+      new-marker:
+        type: string
+        description: New string to indicate the chang of source code and jar
+        default: 'new version jar'
     executor: << parameters.runner >>
     steps:
       - run:
@@ -2152,7 +2159,7 @@ jobs:
           name: Modify main.java and build new jars
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
-            '/repo/.circleci/scripts/build_new_jars.sh'
+            '/repo/.circleci/scripts/build_new_jars.sh "<< parameters.new-marker >>"'
       - run:
           name: Show java process before freeze
           command: |
@@ -2178,4 +2185,30 @@ jobs:
           name: Scan new string after restarted
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
-            '/repo/.circleci/scripts/scan-expected-logs.sh "new version jar" hgcaa.log'
+            '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+  run-network-sim:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: call script to block tcp ports
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_create_rules.sh'
+      - run-eet-suites:
+          dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
+          ci-properties-map: mins=50
+      - run:
+          name: call script to remove firewall rules
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_flush_rules.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/show_logs.sh

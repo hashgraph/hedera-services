@@ -297,13 +297,21 @@ public class HapiApiSpec implements Runnable {
 	private static String tlsFromCi;
 	private static String nodeSelectorFromCi;
 	private static String defaultNodeAccount;
+	private static Map<String, String> otherOverrides;
 	private static boolean runningInCi = false;
-	public static void runInCiMode(String nodes, String suggestedNode, String envTls, String envNodeSelector) {
+	public static void runInCiMode(
+			String nodes,
+			String suggestedNode,
+			String envTls,
+			String envNodeSelector,
+			Map<String, String> overrides
+	) {
 		runningInCi = true;
 		tlsFromCi = envTls;
 		dynamicNodes = nodes;
 		defaultNodeAccount = String.format("0.0.%s", suggestedNode);
 		nodeSelectorFromCi = envNodeSelector;
+		otherOverrides = overrides;
 	}
 	public static Def.Given defaultHapiSpec(String name) {
 		Stream prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
@@ -329,12 +337,14 @@ public class HapiApiSpec implements Runnable {
 					.collect(joining(","));
 			String ciPropertiesMap = Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
 			log.info("CI_PROPERTIES_MAP: " + ciPropertiesMap);
-			ciPropsSource = Map.of(
-					"node.selector", nodeSelectorFromCi,
-					"nodes", dynamicNodes,
-					"default.node", defaultNodeAccount,
-					"ci.properties.map", ciPropertiesMap,
-					"tls", tlsFromCi);
+			ciPropsSource = new HashMap<String, String>() {{
+					this.put("node.selector", nodeSelectorFromCi);
+					this.put("nodes", dynamicNodes);
+					this.put("default.node", defaultNodeAccount);
+					this.put("ci.properties.map", ciPropertiesMap);
+					this.put("tls", tlsFromCi);
+			}};
+			ciPropsSource.putAll(otherOverrides);
 		}
 		return ciPropsSource;
 	}
