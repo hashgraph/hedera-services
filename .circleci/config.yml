@@ -560,12 +560,16 @@ commands:
         description: How long til the logs must all have the freeze pattern
         type: integer
         default: 90
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
     steps:
       - wait-til-logs-contain:
           log: hgcaa.log
           pattern-sh: /repo/.circleci/scripts/get-freeze-pattern.sh
           pattern-desc: freeze pattern
-          times: 1
+          times: << parameters.freeze-pattern-count >>
           timeout-secs: << parameters.freeze-start-timeout-secs >>
           sleep-secs: 7
       - run:
@@ -2036,6 +2040,11 @@ jobs:
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
   run-umbrella-freeze-restart-test:
+    parameters:
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
     executor: ci-test-executor
     steps:
       - run:
@@ -2049,7 +2058,8 @@ jobs:
       - run-umbrella-test:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
-      - validate-thaw
+      - validate-thaw:
+          freeze-pattern-count: << parameters.freeze-pattern-count >>
       - restart-with-validations:
           valid-ss-timeout-secs: 180
           active-status-timeout-secs: 180
