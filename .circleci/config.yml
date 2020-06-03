@@ -870,6 +870,7 @@ workflows:
           requires:
             - build-artifact
       - run-umbrella-freeze-restart-test:
+          name: freeze-restart-first-round
           requires:
             - start-singlejob-testnet
           pre-steps:
@@ -879,9 +880,20 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-second-round
+          requires:
+            - freeze-restart-first-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
       - cleanup-singlejob-testnet:
           requires:
-            - run-umbrella-freeze-restart-test
+            - freeze-restart-second-round
           pre-steps:
             - attach_workspace:
                 at: /
