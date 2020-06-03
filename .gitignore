@@ -21,6 +21,7 @@ hs_err_pid*
 .circleci/*.yml-excerpt
 hedera-node/*.sh
 hedera-node/*.csv
+hedera-node/swirlds.jar
 hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
