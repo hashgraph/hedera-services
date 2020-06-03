@@ -3,14 +3,7 @@
 . ${REPO}/.circleci/scripts/ansible-functions.sh
 . ${REPO}/.circleci/scripts/terraform-functions.sh
 
-upload_certificates_to_nodes | tee -a ${REPO}/test-clients/output/hapi-client.log
-
-HOSTS_LIST_PATH="$TF_DIR/nets/$TF_WORKSPACE/hosts_list"
-if [ -f $HOSTS_LIST_PATH ]; then
-    TF_HOSTS=($(cat $HOSTS_LIST_PATH))
-    echo "AWS EC2 Instance List: ${TF_HOSTS[@]}" >> ${REPO}/test-clients/output/hapi-client.log
-    echo "AWS EC2 Instance List: ${TF_HOSTS[@]}" | tee -a ${REPO}/test-clients/output/hapi-client.log
-fi
+upload_certificates_to_nodes
 
 TIMEOUT_SECS=${1:-60}
 USE_HUGEPAGE=${2:-false}
