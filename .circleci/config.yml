@@ -914,6 +914,7 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 1
       - run-umbrella-freeze-restart-test:
           name: freeze-restart-second-round
           requires:
@@ -925,6 +926,7 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 2
       - cleanup-singlejob-testnet:
           requires:
             - freeze-restart-second-round
