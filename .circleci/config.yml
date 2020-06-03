@@ -627,6 +627,10 @@ commands:
         description: How long til nodes must confirm a valid signed state
         type: integer
         default: 120
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
     steps:
       - postgres-status
       - reboot-testnet:
@@ -637,7 +641,7 @@ commands:
           log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-liveness-pattern.sh
           pattern-desc: alive pattern
-          times: 3
+          times: << parameters.liveness-pattern-count >>
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
@@ -2047,6 +2051,10 @@ jobs:
         description: How many repetitions of the freeze pattern should occur
         type: integer
         default: 1
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
     executor: ci-test-executor
     steps:
       - run:
@@ -2065,6 +2073,7 @@ jobs:
       - restart-with-validations:
           valid-ss-timeout-secs: 180
           active-status-timeout-secs: 180
+          liveness-pattern-count: << parameters.liveness-pattern-count >>
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
