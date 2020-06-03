@@ -10,5 +10,4 @@ cd ${REPO}/test-clients/output
 /usr/local/bin/aws s3 cp hapi-client.log s3://${SWIRLD_S3_BUCKET}/${TARGET_DIR}/${CIRCLE_BRANCH}/${CIRCLE_STAGE}/hapi-client.log
 
 # Clean up. Otherwise the content may remain in the next stage
-#rm -f hapi-client.log
 cat /dev/null > hapi-client.log
