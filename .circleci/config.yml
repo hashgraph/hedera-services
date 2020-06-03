@@ -1835,7 +1835,6 @@ jobs:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
       - validate-record-streams
-#          perf-run: true
       - save-this-job-client-logs
       - publish-platform-stats:
           source-desc: full regression
