@@ -16,3 +16,4 @@ tar -zcvf $TGZ_ARTIFACT_PATH ./$TAR_DIR
 /usr/local/bin/aws s3 cp \
   $TGZ_ARTIFACT_PATH \
   s3://${SWIRLD_S3_BUCKET}/${CIRCLE_BRANCH}/$TGZ_ARTIFACT
+#  | tee /repo/test-clients/output/hapi-client.log

@@ -1,0 +1,5 @@
+{
+  "umbrella_test_success_pattern" : [
+    "ALL_API                  | \\d+     | \\d+        "
+  ]
+}

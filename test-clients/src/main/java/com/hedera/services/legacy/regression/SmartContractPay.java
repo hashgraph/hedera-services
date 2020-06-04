@@ -637,6 +637,9 @@ public class SmartContractPay {
           log.info("Contract deposit / getBalance / transfer " + i + " completed successfully==>");
         }
       }
+
+      // Marker message for regression report
+      log.info("Regression summary: This run is successful.");
     }
 
 

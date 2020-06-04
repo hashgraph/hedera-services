@@ -479,6 +479,9 @@ public class SmartContractCallLocal {
     log.info("Test: state changing call");
     invokeCallContractLocal(crAccount, sampleStorageContractId, GAS_REQUIRED_SET,
         ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION, setValueFunction);
+
+    // Marker message for regression report
+    log.info("Regression summary: This run is successful.");
   }
 
 
