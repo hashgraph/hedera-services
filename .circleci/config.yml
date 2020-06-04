@@ -631,6 +631,10 @@ commands:
         description: How many repetitions of the liveness pattern should occur
         type: integer
         default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
     steps:
       - postgres-status
       - reboot-testnet:
@@ -648,7 +652,7 @@ commands:
           log: swirlds.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
           pattern-desc: valid signed state hash pattern
-          times: 1
+          times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
           sleep-secs: 7
       - run:
