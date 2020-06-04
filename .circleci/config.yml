@@ -924,6 +924,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           freeze-pattern-count: 1
           liveness-pattern-count: 3
+          signed-state-pattern-count: 1
       - run-umbrella-freeze-restart-test:
           name: freeze-restart-second-round
           requires:
@@ -937,6 +938,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           freeze-pattern-count: 2
           liveness-pattern-count: 5
+          signed-state-pattern-count: 2
       - cleanup-singlejob-testnet:
           requires:
             - freeze-restart-second-round
@@ -2061,6 +2063,10 @@ jobs:
         description: How many repetitions of the liveness pattern should occur
         type: integer
         default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
     executor: ci-test-executor
     steps:
       - run:
@@ -2080,6 +2086,7 @@ jobs:
           valid-ss-timeout-secs: 180
           active-status-timeout-secs: 180
           liveness-pattern-count: << parameters.liveness-pattern-count >>
+          signed-state-pattern-count: << parameters.signed-state-pattern-count >>
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
