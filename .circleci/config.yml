@@ -649,10 +649,6 @@ commands:
         description: How many repetitions of the signed state pattern should occur
         type: integer
         default: 1
-      sequence-numbers-after-restart-pattern-count:
-        description: How many repetitions of the sequence numbers after restart pattern should occur
-        type: integer
-        default: 1
     steps:
       - postgres-status
       - reboot-testnet:
@@ -677,7 +673,7 @@ commands:
           log: swirlds.log
           pattern-sh: /repo/.circleci/scripts/get-lateseq-pattern.sh
           pattern-desc: last known sequence numbers after restart pattern
-          times: << parameters.sequence-numbers-after-restart-pattern-count >>
+          times: << parameters.signed-state-pattern-count >>
           timeout-secs: 60
           sleep-secs: 7
       - wait-til-logs-contain:
