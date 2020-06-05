@@ -960,7 +960,6 @@ workflows:
           post-steps:
             - publish-platform-stats:
                 source-desc: freeze restart
-                append-to-last-stats: 'true'
             - cleanup-rerun-testnet-if-present
           freeze-pattern-count: 2
           liveness-pattern-count: 5
