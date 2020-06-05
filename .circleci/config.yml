@@ -676,6 +676,14 @@ commands:
           times: << parameters.signed-state-pattern-count >>
           timeout-secs: 60
           sleep-secs: 7
+      - run:
+          name: Scan log of node 0.0.3 for restart lateseq
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+                '/repo/.circleci/scripts/await-default-node-lateseq.sh \
+                    /repo/.circleci/scripts/get-lateseq-pattern.sh \
+                    60 \
+                    7'
       - wait-til-logs-contain:
           log: swirlds.log
           pattern-sh: /repo/.circleci/scripts/get-first-lateseq.sh
