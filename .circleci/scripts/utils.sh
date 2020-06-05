@@ -98,12 +98,18 @@ function verify_binary_object_count() {
 
     num=$(cat "$file")
 
-    if [[ 'num + diff' -eq actual ]]
+    if [ -z  "$num" ]
+    then
+        num=0
+    fi
+
+    expected=$(( num + diff ))
+    if [[ ${expected} -eq ${actual} ]]
     then
       ci_echo "SUCCESS: Binary Objects counts are $actual"
     else
       ci_echo "FAILURE: Binary Object count mismatch on $HOST, Previous: $num, Current: $actual, Expected Difference: $diff"
-      exit 1
+###      exit 1
     fi
   done
 }

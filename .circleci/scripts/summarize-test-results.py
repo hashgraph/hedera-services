@@ -4,6 +4,20 @@ import os
 import json
 from collections import OrderedDict
 
+class TestJobResult:
+    def __init__(self,  status, job_url):
+        self.job_url = job_url
+        self.status = status
+
+    def summarize_test():
+        return ''
+
+    def is_successful():
+        return self.status
+
+
+
+
 REGRESSION_JOB_TYPE_SUCCESS_CRITERIA = {}
 
 EXPECTED_ORDERED_REGRESSION_JOB_TYPE = [
@@ -15,12 +29,14 @@ EXPECTED_ORDERED_REGRESSION_JOB_TYPE = [
     "long-consensus_ops",
     "long-umbrella",
     "regression-validate-freeze",
+    "validate-server-stat-1",
     "short-contract_txns6",
     "short-crypto_txns300",
     "short-file_ops",
     "short-consensus_ops",
     "short-umbrella",
-    "regression-run-accessory-tests"
+    "regression-run-accessory-tests",
+    "validate-server-stat-2",
 ]
 
 
@@ -33,12 +49,14 @@ REGRESSION_JOB_TYPE_MUST_PASS = {
     "long-consensus_ops": False,
     "long-umbrella": False,
     "regression-validate-freeze": True,
+    "validate-server-stat-1": False,   # for test only. Should be True
     "short-contract_txns6": False,
     "short-crypto_txns300": False,
     "short-file_ops": False,
     "short-consensus_ops": False,
     "short-umbrella": False,
-    "regression-run-accessory-tests": True
+    "regression-run-accessory-tests": True,
+    "validate-server-stat-2": False,   # for test only. Should be True
 }
 
 
@@ -51,7 +69,6 @@ def init():
     # with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/expected_ordered_regression_job_type.json"), "r") as f:
     #     data = json.load(f)
     #     EXPECTED_ORDERED_REGRESSION_JOB_TYPE = data["expected_ordered_regression_job_type"]
-
 
     with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/build_artifact_success_pattern.json"), "r") as f:
         data = json.load(f)
@@ -71,13 +88,13 @@ def init():
 
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-contract_txns6"] = umbrella_redux_success
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-crypto_txns300"] = umbrella_redux_success
-        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-file_ops"]       = umbrella_redux_success
-        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-consensus_ops"]  = umbrella_redux_success
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-file_ops"] = umbrella_redux_success
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-consensus_ops"] = umbrella_redux_success
 
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-contract_txns6"] = umbrella_redux_success
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-crypto_txns300"] = umbrella_redux_success
-        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-file_ops"]       = umbrella_redux_success
-        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-consensus_ops"]  = umbrella_redux_success
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-file_ops"] = umbrella_redux_success
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-consensus_ops"] = umbrella_redux_success
 
     with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/validate_freeze_success_pattern.json"), "r") as f:
         data = json.load(f)
@@ -92,47 +109,73 @@ def init():
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["long-umbrella"] = umbrella_test_success
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["short-umbrella"] = umbrella_test_success
 
-
     with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/accessory_tests_success_pattern.json"), "r") as f:
         data = json.load(f)
         accessory_tests_success = data["accessory_tests_success_pattern"]
 
         REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["regression-run-accessory-tests"] = accessory_tests_success
 
+    with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/validate_server_stat_1_success_pattern.json"), "r") as f:
+        data = json.load(f)
+        validate_server_stat_1_success = data["validate_server_stat_1_success_pattern"]
 
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["validate-server-stat-1"] = validate_server_stat_1_success
+
+    with open(os.path.join(os.environ.get("REPO"), ".circleci/scripts/resources/validate_server_stat_2_success_pattern.json"), "r") as f:
+        data = json.load(f)
+        validate_server_stat_2_success = data["validate_server_stat_2_success_pattern"]
+
+        REGRESSION_JOB_TYPE_SUCCESS_CRITERIA["validate-server-stat-2"] = validate_server_stat_2_success
 
 
 def circleci_job_succeeded(log_file, success_criteria, job_type, job):
+    status = True
+    job_url = ''
+
     with open(log_file, 'r') as f:
         log_contents = f.read()
         if success_criteria is None:
-            return True    # empty criteria means anything is fine or should it mean False for missing success criteria?
+            status = True    # empty criteria means anything is fine or should it mean False for missing success criteria?
         for i in success_criteria:
-#            print("Current pattern to be matched: {}".format(i))
-            r = re.compile( i )
+            #            print("Current pattern to be matched: {}".format(i))
+            r = re.compile(i)
             if not r.search(log_contents):
-                print("Expected message '{}' for job \"{}\" not found.".format(i, job))
-                return False
-    return True
+#                print("Expected message '{}' for job \"{}\" not found.".format(i, job))
+                status = False
+                break
+        job_url_line = re.search(r'current circleci build URL: (https://circleci.com/gh/hashgraph/hedera-services/\d+)', log_contents)
+        job_url = job_url_line.group(1)
+        print("Job {0} URL: {1}".format(job, job_url))
+
+    job_result = TestJobResult(status, job_url)
+
+    return job_result
 
 
 def report_regression_status(overall_status):
-    full_report_path = os.path.join(os.environ.get("REPO"), SUMMARY_REPORT_FILE)
+    full_report_path = os.path.join(
+        os.environ.get("REPO"), SUMMARY_REPORT_FILE)
     with open(full_report_path, 'w+') as f:
-        f.writelines('================== THIS REGRESSION TEST REPORT ===================\n')
+        f.writelines(
+            '================== THIS REGRESSION TEST REPORT ===================\n')
 
         f.writelines(' Overall Status: {}\n'.format(overall_status))
-        f.writelines('\n---------------- ITEMIZED REPORT --------------------\n')
-        f.writelines("{0:30s}\t{1:10s}\n".format("JOB NAME", "STATUS"))
+        f.writelines(
+            '\n---------------- ITEMIZED REPORT --------------------\n')
+        f.writelines("{0:28s}\t{1:4s}{2:8s}  {3:30s}\n".format(
+            "TEST JOB NAME", "    ", "STATUS", "TEST JOB URL"))
         for key, value in each_job_status.items():
-            if value:
+            if value.status:
                 status = "Passed"
-            elif not value:
+                flag = "    "
+            elif not value.status:
                 status = "FAILED"
+                flag = " ** "
             else:
                 status = "Not run"
+                flag = " ** "
 
-            f.writelines("{0:30s}\t{1:10s}\n".format(key, status))
+            f.writelines("{0:28s}\t{1:4s}{2:8s}  {3:30s}\n".format(key, flag, status, value.job_url))
 
         f.writelines('================== END REPORT ===================\n')
 
@@ -143,7 +186,8 @@ def get_AWS_testnet_IPs(log_file):
         data = f.read()
 
         match = re.search("PLAY RECAP \*+\n((.*\n){4})", data)
-        IP_lines = [line for line in match.group(1).split(sep='\n') if len(line) > 0]
+        IP_lines = [line for line in match.group(
+            1).split(sep='\n') if len(line) > 0]
         IP_PATTERN = re.compile(r'\d+[.]\d+[.]\d+[.]\d+')
         for line in IP_lines:
             IP = re.search('(\d+\.\d+\.\d+\.\d+)[ \t]+:[ \t]+ok=\d+.*', line)
@@ -232,27 +276,30 @@ if __name__ == '__main__':
             jobs = [job for job in child_log_paths if r.match(job)]
             if len(jobs) >= 1:
                 for job in jobs:
-                    log_file = os.path.join(log_parent_path, job, "hapi-client.log")
-                    success_criteria = REGRESSION_JOB_TYPE_SUCCESS_CRITERIA.get(job_type)
+                    log_file = os.path.join(
+                        log_parent_path, job, "hapi-client.log")
+                    success_criteria = REGRESSION_JOB_TYPE_SUCCESS_CRITERIA.get(
+                        job_type)
 
                     if job_type == "regression-target-testnet":
-                        success_criteria = rebuild_success_criteria(success_criteria, log_file)
+                        success_criteria = rebuild_success_criteria(
+                            success_criteria, log_file)
 
-                    current_status = circleci_job_succeeded(log_file, success_criteria, job_type, job)
-                    if not current_status:
+                    current_job_result = circleci_job_succeeded(
+                        log_file, success_criteria, job_type, job)
+                    each_job_status[job] = current_job_result
+                    if not current_job_result.status:
                         print("Job {} failed.".format(job))
-                        each_job_status[job] = False
                         if REGRESSION_JOB_TYPE_MUST_PASS[job_type]:
                             overall_status = 'Failed'
                         elif overall_status == 'Passed':
                             overall_status = 'Passed with error'
                     else:
                         print("Job {} succeeded.".format(job))
-                        each_job_status[job] = True
 
             else:
                 print("Job {} not run.".format(job_type))
-                each_job_status[job_type] = None
+                each_job_status[job_type] = TestJobResult(None, '')
                 if REGRESSION_JOB_TYPE_MUST_PASS[job_type]:
                     overall_status = 'Failed'
                 elif overall_status == 'Passed':

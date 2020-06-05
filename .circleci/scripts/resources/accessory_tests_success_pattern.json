@@ -22,7 +22,6 @@
     "SuiteRunner - TopicDeleteSpecs                 :: 1/1 suites ran OK",
     "SuiteRunner - SubmitMessageSpecs               :: 1/1 suites ran OK",
     "SuiteRunner - TopicGetInfoSpecs                :: 1/1 suites ran OK",
-    "SuiteRunner - ConsensusThrottlesSpecs          :: 1/1 suites ran OK",
-    "SuiteRunner - RecordStreamValidation           :: 1/1 suites ran OK"
+    "SuiteRunner - ConsensusThrottlesSpecs          :: 1/1 suites ran OK"
   ]
 }
