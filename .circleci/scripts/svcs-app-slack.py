@@ -70,6 +70,9 @@ def get_github_user(sha1):
 
 
 def get_slack_channel_id(args):
+    if args.channel:
+        return CHANNEL_NAME_TO_CHANNEL_ID.get(args.channel)
+
     if get_env_var('CIRCLE_BRANCH') == 'master' and not get_env_var("CIRCLE_USERNAME"):
         return 'CKWHL8R9A'
     else:
@@ -90,8 +93,6 @@ def get_slack_channel_id(args):
     if channel:
         return channel
 
-    if args.channel:
-        return args.channel
     return 'DT7EVFDA6'
 
 def get_slack_user(args):
@@ -127,8 +128,7 @@ if __name__ == '__main__':
                         default='',
                         dest='github_user')
     parser.add_argument('-c', '--channel',
-                        help='Slack ID of target channel',
-                        default='CKWHL8R9A',
+                        help='Slack channel name',
                         dest='channel')
     parser.add_argument('-s', '--commit_sha1',
                         help='Commit hash triggering this build',
