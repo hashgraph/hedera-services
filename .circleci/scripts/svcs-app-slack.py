@@ -96,6 +96,9 @@ def get_slack_channel_id(args):
     return 'DT7EVFDA6'
 
 def get_slack_user_id(args):
+    if args.slack_user_id:
+        return args.slack_user_id
+
     ci_user = get_env_var('CIRCLE_USERNAME')
     if not ci_user  and args.ci_user:
         ci_user = args.ci_user
@@ -144,14 +147,10 @@ if __name__ == '__main__':
         sys.exit()
 
     slack_channel_id = get_slack_channel_id(args)
-    print("Channel: {}".format(slack_channel_id))
+    print("slack_channel_id: {}".format(slack_channel_id))
 
-    if slack_channel_id == 'CKWHL8R9A' and not get_env_var('CIRCLE_USERNAME'):
-        slack_user_id = slack_channel_id
-    else:
-        slack_user_id = get_slack_user_id(args)
-
-    print("slack_user_id : {}".format(slack_user_id))
+    slack_user_id = get_slack_user_id(args)
+    print("slack_user_id: {}".format(slack_user_id))
 
     slack_token = os.environ['SLACK_API_TOKEN']
     client = slack.WebClient(token=slack_token)
