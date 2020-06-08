@@ -36,8 +36,8 @@ CIRCLE_USERNAME_TO_SLACK_USER = {
 }
 
 CHANNEL_NAME_TO_CHANNEL_ID = {
-    'hedera-cicd' : 'CMD3V6ZC4',
-    'hedera-regression' : 'CKWHL8R9A',
+    'hedera-cicd': 'CMD3V6ZC4',
+    'hedera-regression': 'CKWHL8R9A',
 }
 
 GITHUB_COMMIT_AUTHOR = 'COMMIT_AUTHOR'
@@ -69,7 +69,7 @@ def get_github_user(sha1):
         return github_user
 
 
-def get_slack_channel(args):
+def get_slack_channel_id(args):
     if os.environ.get('CIRCLE_BRANCH') == 'master' and not os.environ.get("CIRCLE_USERNAME"):
         return 'CKWHL8R9A'
     else:
@@ -141,11 +141,11 @@ if __name__ == '__main__':
         print('Neither --text nor --file was given to {}, exiting now!'.format(sys.argv[0]))
         sys.exit()
 
-    slack_channel = get_slack_channel(args)
-    print("Channel: {}".format(slack_channel))
+    slack_channel_id = get_slack_channel_id(args)
+    print("Channel: {}".format(slack_channel_id))
 
-    if slack_channel == 'CKWHL8R9A' and not os.environ.get('CIRCLE_USERNAME'):
-        slack_user = slack_channel
+    if slack_channel_id == 'CKWHL8R9A' and not os.environ.get('CIRCLE_USERNAME'):
+        slack_user = slack_channel_id
     else:
         slack_user = get_slack_user(args)
 
@@ -155,9 +155,9 @@ if __name__ == '__main__':
     client = slack.WebClient(token=slack_token)
     response = None
     if args.file:
-        print('Sending contents of "{}" to {}'.format(args.file, slack_channel))
+        print('Sending contents of "{}" to {}'.format(args.file, slack_channel_id))
         response = client.files_upload(
-            channels=slack_channel,
+            channels=slack_channel_id,
             file=args.file,
             filename=args.name,
             title=args.name)
@@ -170,10 +170,10 @@ if __name__ == '__main__':
             literal = '<@{} - {}>'.format(slack_user, literal)
 #   Not sure whether the following lines make thumb_pdf more unstable. Need more investigation
 #        else:
-#            literal = '{} - <@{}>'.format(literal, slack_channel)
+#            literal = '{} - <@{}>'.format(literal, slack_channel_id)
 
-        print('Sending "{}" to {}'.format(literal, slack_channel))
-        response = client.chat_postMessage(channel=slack_channel, text=literal)
+        print('Sending "{}" to {}'.format(literal, slack_channel_id))
+        response = client.chat_postMessage(channel=slack_channel_id, text=literal)
 
     if response.data:
         print(json.dumps(response.data, indent=4, sort_keys=True))
