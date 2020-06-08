@@ -95,14 +95,14 @@ def get_slack_channel_id(args):
 
     return 'DT7EVFDA6'
 
-def get_slack_user(args):
+def get_slack_user_id(args):
     ci_user = get_env_var('CIRCLE_USERNAME')
     if not ci_user  and args.ci_user:
         ci_user = args.ci_user
-    slack_user = CIRCLE_USERNAME_TO_SLACK_USER.get(ci_user)
-    if slack_user:
-        return slack_user
-    return args.slack_user
+    slack_user_id = CIRCLE_USERNAME_TO_SLACK_USER.get(ci_user)
+    if slack_user_id:
+        return slack_user_id
+    return args.slack_user_id
 
 def get_env_var(env_var):
     return os.environ.get(env_var)
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--user',
                         help='Slack user to @mention in the message',
                         default='',
-                        dest='slack_user')
+                        dest='slack_user_id')
     parser.add_argument('-g', '--github-user',
                         help='GitHub user to @mention in the message (requires GITHUB_TO_SLACK_USER entry)',
                         default='',
@@ -147,11 +147,11 @@ if __name__ == '__main__':
     print("Channel: {}".format(slack_channel_id))
 
     if slack_channel_id == 'CKWHL8R9A' and not get_env_var('CIRCLE_USERNAME'):
-        slack_user = slack_channel_id
+        slack_user_id = slack_channel_id
     else:
-        slack_user = get_slack_user(args)
+        slack_user_id = get_slack_user_id(args)
 
-    print("slack_user : {}".format(slack_user))
+    print("slack_user_id : {}".format(slack_user_id))
 
     slack_token = os.environ['SLACK_API_TOKEN']
     client = slack.WebClient(token=slack_token)
@@ -168,8 +168,8 @@ if __name__ == '__main__':
         with open(args.text) as f:
             literal = ' / '.join([ line.strip() for line in f.readlines() ])
 
-        if slack_user:
-            literal = '<@{} - {}>'.format(slack_user, literal)
+        if slack_user_id:
+            literal = '<@{} - {}>'.format(slack_user_id, literal)
 #   Not sure whether the following lines make thumb_pdf more unstable. Need more investigation
 #        else:
 #            literal = '{} - <@{}>'.format(literal, slack_channel_id)
