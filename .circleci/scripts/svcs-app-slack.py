@@ -52,8 +52,8 @@ def cd(newdir):
         os.chdir(prevdir)
 
 def get_github_user(sha1):
-    print("What env: {}".format(os.environ.get("CIRCLECI")))
-    if os.environ.get("CIRCLECI") == 'true':
+    print("What env: {}".format(get_env_var("CIRCLECI")))
+    if get_env_var("CIRCLECI") == 'true':
         os.system('echo  "\nHost github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config')
         circleci_dir = '/repo/.circleci'
     else:
@@ -70,10 +70,10 @@ def get_github_user(sha1):
 
 
 def get_slack_channel_id(args):
-    if os.environ.get('CIRCLE_BRANCH') == 'master' and not os.environ.get("CIRCLE_USERNAME"):
+    if get_env_var('CIRCLE_BRANCH') == 'master' and not get_env_var("CIRCLE_USERNAME"):
         return 'CKWHL8R9A'
     else:
-        sha1 = os.environ.get('CIRCLE_SHA1')
+        sha1 = get_env_var('CIRCLE_SHA1')
         github_user = None;
         if not sha1 and args.commit_sha1:
             sha1 = args.commit_sha1
@@ -82,10 +82,10 @@ def get_slack_channel_id(args):
             github_user = get_github_user(sha1)
         if not github_user and args.github_user:
             github_user = args.github_user
-        if os.environ.get('CIRCLE_BRANCH') == 'MASTER':
+        if get_env_var('CIRCLE_BRANCH') == 'MASTER':
             channel = GITHUB_TO_SLACK_USER.get(github_user)
         else:
-            channel = CIRCLE_USERNAME_TO_SLACK_USER.get(os.environ.get("CIRCLE_USERNAME"))
+            channel = CIRCLE_USERNAME_TO_SLACK_USER.get(get_env_var("CIRCLE_USERNAME"))
 
     if channel:
         return channel
@@ -95,7 +95,7 @@ def get_slack_channel_id(args):
     return 'DT7EVFDA6'
 
 def get_slack_user(args):
-    ci_user = os.environ.get('CIRCLE_USERNAME')
+    ci_user = get_env_var('CIRCLE_USERNAME')
     if not ci_user  and args.ci_user:
         ci_user = args.ci_user
     slack_user = CIRCLE_USERNAME_TO_SLACK_USER.get(ci_user)
@@ -103,6 +103,8 @@ def get_slack_user(args):
         return slack_user
     return args.slack_user
 
+def get_env_var(env_var):
+    return os.environ.get(env_var)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -144,7 +146,7 @@ if __name__ == '__main__':
     slack_channel_id = get_slack_channel_id(args)
     print("Channel: {}".format(slack_channel_id))
 
-    if slack_channel_id == 'CKWHL8R9A' and not os.environ.get('CIRCLE_USERNAME'):
+    if slack_channel_id == 'CKWHL8R9A' and not get_env_var('CIRCLE_USERNAME'):
         slack_user = slack_channel_id
     else:
         slack_user = get_slack_user(args)
