@@ -35,6 +35,11 @@ CIRCLE_USERNAME_TO_SLACK_USER = {
     'ljianghedera': 'UMQ7SUGBE',
 }
 
+CHANNEL_NAME_TO_CHANNEL_ID = {
+    'hedera-cicd' : 'CMD3V6ZC4',
+    'hedera-regression' : 'CKWHL8R9A',
+}
+
 GITHUB_COMMIT_AUTHOR = 'COMMIT_AUTHOR'
 
 @contextmanager
@@ -52,7 +57,7 @@ def get_github_user(sha1):
         os.system('echo  "\nHost github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config')
         circleci_dir = '/repo/.circleci'
     else:
-        circleci_dir = '~/projects/services-hedera/.circleci'
+        circleci_dir = '~/Documents/GitHub/hedera-services/.circleci'
 
     with cd(circleci_dir):
         print('Current dir: {}'.format(os.getcwd()))
