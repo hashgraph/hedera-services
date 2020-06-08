@@ -168,7 +168,7 @@ if __name__ == '__main__':
             literal = ' / '.join([ line.strip() for line in f.readlines() ])
 
         if slack_user_id:
-            literal = '<@{} - {}>'.format(slack_user_id, literal)
+            literal = '<@{}> - {}'.format(slack_user_id, literal)
 #   Not sure whether the following lines make thumb_pdf more unstable. Need more investigation
 #        else:
 #            literal = '{} - <@{}>'.format(literal, slack_channel_id)
