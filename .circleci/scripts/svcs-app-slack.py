@@ -3,8 +3,6 @@ import sys
 import json
 import slack
 import argparse
-import subprocess
-from contextlib import contextmanager
 
 GITHUB_TO_SLACK_USER = {
     'michael.tinker@hedera.com': 'UKW68U6TD',
@@ -38,35 +36,6 @@ CHANNEL_NAME_TO_CHANNEL_ID = {
     'hedera-cicd': 'CMD3V6ZC4',
     'hedera-regression': 'CKWHL8R9A',
 }
-
-GITHUB_COMMIT_AUTHOR = 'COMMIT_AUTHOR'
-
-@contextmanager
-def cd(newdir):
-    prevdir = os.getcwd()
-    os.chdir(os.path.expanduser(newdir))
-    try:
-        yield
-    finally:
-        os.chdir(prevdir)
-
-def get_github_user(sha1):
-    print("What env: {}".format(get_env_var("CIRCLECI")))
-    if get_env_var("CIRCLECI") == 'true':
-        os.system('echo  "\nHost github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config')
-        circleci_dir = '/repo/.circleci'
-    else:
-        circleci_dir = '~/Documents/GitHub/hedera-services/.circleci'
-
-    with cd(circleci_dir):
-        print('Current dir: {}'.format(os.getcwd()))
-        if sha1:
-            result = subprocess.run(["git", "show", "-s", "--format='%ae'", sha1],
-                                    stdout=subprocess.PIPE)
-            github_user = result.stdout.decode('ascii').strip('\'').strip('\'\n')
-
-        return github_user
-
 
 def get_slack_channel_id(args):
     if args.channel:
@@ -112,13 +81,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channel',
                         help='Slack channel name',
                         dest='channel')
-    parser.add_argument('-s', '--commit_sha1',
-                        help='Commit hash triggering this build',
-                        default='bad-commit',
-                        dest='commit_sha1')
-    parser.add_argument('-C', '--circle_username',
-                        help='The CIRCLE_USERNAME that triggers this build',
-                        dest='ci_user')
 
     args = parser.parse_args(sys.argv[1:])
     if (not bool(args.text or args.file)):
