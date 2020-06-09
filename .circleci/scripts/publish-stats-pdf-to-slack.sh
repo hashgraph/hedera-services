@@ -20,5 +20,5 @@ ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
 
 ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
     -c $DEFAULT_CHANNEL \
-    -f ${CLIENT_LOG_DIR}/regression-test-summary.txt \
+    -t ${CLIENT_LOG_DIR}/regression-test-summary.txt \
     -s $OVERALL_STATUS
