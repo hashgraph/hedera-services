@@ -488,6 +488,9 @@ public class SmartContractCreateContract {
     Assert.assertTrue(innerInfo.hasContractID());
     Assert.assertTrue(innerInfo.hasAccountID());
     Assert.assertTrue(innerInfo.hasExpirationTime());
+
+    // Marker message for regression report
+    log.info("Regression summary: This run is successful.");
   }
 
   private ContractInfo getContractInfo(AccountID payerAccount,

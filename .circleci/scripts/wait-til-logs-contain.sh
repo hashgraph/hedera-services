@@ -22,7 +22,8 @@ SECS_WAITED=0
 LOG_PTH=$(log_path $LOG_FILE)
 PRE="ssh -o StrictHostKeyChecking=no ubuntu"
 init_checklist $N
-echo ">>>> [CI] >> Logs all need $REQ_COUNT of '$LINE_PATTERN'..."
+echo ">>>> [CI] >> Logs all need $REQ_COUNT of '$LINE_PATTERN'..." \
+   | tee -a ${REPO}/test-clients/output/hapi-client.log
 
 while true; do
   I=0
@@ -38,19 +39,22 @@ while true; do
   done
   are_all_hosts_checked
   if [ $? -eq 0 ]; then
-    ci_echo "All $LOG_FILE had $REQ_COUNT '$LINE_PATTERN' occurrences."
+    ci_echo "All $LOG_FILE had $REQ_COUNT '$LINE_PATTERN' occurrences." \
+        | tee -a ${REPO}/test-clients/output/hapi-client.log
     exit 0
   fi
   SECS_WAITED=$((SECS_WAITED+SLEEP_SECS))
   if [ $SECS_WAITED -lt $TIMEOUT_SECS ]; then
-    ci_echo "Sleeping $SLEEP_SECS secs now..."
+    ci_echo "Sleeping $SLEEP_SECS secs at `date` ..." \
+       | tee -a ${REPO}/test-clients/output/hapi-client.log
     sleep $SLEEP_SECS
   else
     break
   fi
 done
-ci_echo "Time's up! ($TIMEOUT_SECS secs expired.)"
-ci_echo "Not all $LOG_FILE had $REQ_COUNT '$LINE_PATTERN' occurrences!"
-ci_echo ${TF_HOSTS[@]}
-ci_echo ${HOSTS_CHECKED[@]}
+ci_echo "Time's up! ($TIMEOUT_SECS secs expired.)" | tee -a ${REPO}/test-clients/output/hapi-client.log
+ci_echo "Not all $LOG_FILE had $REQ_COUNT '$LINE_PATTERN' occurrences!" \
+   | tee -a ${REPO}/test-clients/output/hapi-client.log
+ci_echo ${TF_HOSTS[@]} | tee -a ${REPO}/test-clients/output/hapi-client.log
+ci_echo ${HOSTS_CHECKED[@]} | tee -a ${REPO}/test-clients/output/hapi-client.log
 exit 1

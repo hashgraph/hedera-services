@@ -111,7 +111,6 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return TopicID.getDefaultInstance();
 	}
 
-
 	@Override
 	protected Function<HapiApiSpec, List<Key>> variableDefaultSigners() {
 		return spec -> {

@@ -56,5 +56,5 @@ else
   ${REPO}/.circleci/scripts/run-scenario-test.sh \
       com.hedera.services.legacy.regression.umbrella.UmbrellaTest \
       $TF_HOST_INDEX \
-      $NODE_ACCOUNT  
+      $NODE_ACCOUNT  | tee ${REPO}/test-clients/output/hapi-client.log
 fi

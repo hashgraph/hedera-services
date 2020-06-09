@@ -681,11 +681,11 @@ public class SmartContractPayReceivableAmount {
 		        long amountSum =  sumAmountsInTransferList(trList.getAccountAmountsList());
 		        Assert.assertEquals(0, amountSum);
 	        }
-	      }
-	    }
-
-
-	  }
+          }
+          // Marker message for regression report
+          log.info("Regression summary: This run is successful.");
+        }
+      }
 
 
 	  private ContractInfo getContractInfo(AccountID payerAccount,

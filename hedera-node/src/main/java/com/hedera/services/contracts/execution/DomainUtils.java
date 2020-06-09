@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,12 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.builder.RequestBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.ethereum.core.Block;
 import org.ethereum.core.BlockHeader;
@@ -31,14 +34,18 @@ import org.ethereum.core.BlockchainImpl;
 import org.ethereum.core.Bloom;
 import org.ethereum.core.Transaction;
 import org.ethereum.core.TransactionReceipt;
+import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.util.ByteUtil;
 import org.ethereum.vm.DataWord;
 import org.ethereum.vm.LogInfo;
+import org.ethereum.vm.program.ProgramResult;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static java.util.Collections.emptyList;
 import static org.ethereum.core.BlockchainImpl.EMPTY_LIST_HASH;
@@ -66,6 +73,43 @@ public class DomainUtils {
 				emptyList());
 	}
 
+	public static Consumer<byte[]> newScopedAccountInitializer(
+			long startTimeEpochSecs,
+			long contractDurationSecs,
+			byte[] sponsorAddress,
+			ServicesRepositoryImpl repository
+	) {
+		return address -> {
+			var id = accountParsedFromSolidityAddress(address);
+			var sponsor = repository.getAccount(sponsorAddress);
+
+			repository.setSmartContract(address, true);
+			repository.setRealmId(address, sponsor.getRealmId());
+			repository.setShardId(address, sponsor.getShardId());
+			repository.setAccountNum(address, id.getAccountNum());
+
+			repository.setCreateTimeMs(address, startTimeEpochSecs * 1_000L);
+			repository.setExpirationTime(address, startTimeEpochSecs + contractDurationSecs);
+		};
+	}
+
+	public static TransactionReceipt asReceipt(
+			long cumulativeGas,
+			String errorMsg,
+			Transaction solidityTxn,
+			List<LogInfo> vmLogs,
+			ProgramResult result
+	) {
+		var receipt = new TransactionReceipt();
+		receipt.setCumulativeGas(cumulativeGas);
+		receipt.setTransaction(solidityTxn);
+		receipt.setLogInfoList(vmLogs);
+		receipt.setGasUsed(cumulativeGas);
+		receipt.setExecutionResult(result.getHReturn());
+		receipt.setError(errorMsg);
+		return receipt;
+	}
+
 	public static ContractFunctionResult asHapiResult(
 			TransactionReceipt receipt,
 			Optional<List<ContractID>> created
@@ -85,7 +129,7 @@ public class DomainUtils {
 						.ifPresent(result::setContractCallResult);
 			}
 			Optional.ofNullable(receipt.getLogInfoList()).ifPresent(logs ->
-				logs.stream().map(DomainUtils::asHapiLog).forEach(result::addLogInfo));
+					logs.stream().map(DomainUtils::asHapiLog).forEach(result::addLogInfo));
 		}
 
 		return result.build();
