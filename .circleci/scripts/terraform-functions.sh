@@ -33,7 +33,8 @@ function tf_cleanup {
 
       ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
         -c hedera-cicd \
-        -t ${REPO}/diagnostics/slack_msg.txt
+        -t ${REPO}/diagnostics/slack_msg.txt \
+        -s E
 
       if [ -f ${REPO}/diagnostics/shouldUploadFilteredLogs ]; then
         DIAGNOSTICS_DIR=${REPO}/diagnostics/filtered-logs
