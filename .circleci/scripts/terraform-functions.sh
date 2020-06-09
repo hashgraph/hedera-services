@@ -32,7 +32,9 @@ function tf_cleanup {
         ${REPO}/HapiApp2.0 ${REPO}/diagnostics ${REPO}/.circleci/scripts/resources
 
       ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
+        -c hedera-cicd \
         -t ${REPO}/diagnostics/slack_msg.txt
+
       if [ -f ${REPO}/diagnostics/shouldUploadFilteredLogs ]; then
         DIAGNOSTICS_DIR=${REPO}/diagnostics/filtered-logs
         mkdir $DIAGNOSTICS_DIR
@@ -54,7 +56,7 @@ function tf_cleanup {
           ${REPO}/diagnostics/filtered-logs
 
         ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-          -n logs-${CIRCLE_BUILD_NUM}.tgz \
+          -c hedera-cicd \
           -f ${REPO}/diagnostics/logs-${CIRCLE_BUILD_NUM}.tgz
       fi
 
