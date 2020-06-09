@@ -155,9 +155,6 @@ if __name__ == '__main__':
 
         if slack_user_id:
             literal = '<@{}> - {}'.format(slack_user_id, literal)
-#   Not sure whether the following lines make thumb_pdf more unstable. Need more investigation
-#        else:
-#            literal = '{} - <@{}>'.format(literal, slack_channel_id)
 
         print('Sending "{}" to {}'.format(literal, slack_channel_id))
         response = client.chat_postMessage(channel=slack_channel_id, text=literal)
