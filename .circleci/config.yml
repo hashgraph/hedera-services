@@ -964,9 +964,25 @@ workflows:
           freeze-pattern-count: 2
           liveness-pattern-count: 5
           signed-state-pattern-count: 2
-      - cleanup-singlejob-testnet:
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-third-round
           requires:
             - freeze-restart-second-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - publish-platform-stats:
+                source-desc: freeze restart
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 3
+          liveness-pattern-count: 7
+          signed-state-pattern-count: 3
+      - cleanup-singlejob-testnet:
+          requires:
+            - freeze-restart-third-round
           pre-steps:
             - attach_workspace:
                 at: /
