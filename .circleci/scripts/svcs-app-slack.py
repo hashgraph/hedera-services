@@ -3,6 +3,7 @@ import sys
 import json
 import slack
 import argparse
+import ntpath
 
 GITHUB_TO_SLACK_USER_ID = {
     'tinker-michaelj': 'UKW68U6TD',
@@ -38,6 +39,12 @@ def get_slack_user_id(args):
     github_user = get_github_user(args)
     return GITHUB_TO_SLACK_USER_ID.get(github_user)
 
+def get_file_name(args):
+    if args.file_name:
+        return args.file_name
+    if args.file:
+        return ntpath.basename(args.file)
+
 def get_env_var(env_var):
     return os.environ.get(env_var)
 
@@ -51,8 +58,8 @@ if __name__ == '__main__':
                         dest='file')
     parser.add_argument('-n', '--name',
                         help='Name of file to upload to Slack',
-                        default='file',
-                        dest='name')
+                        default='',
+                        dest='file_name')
     parser.add_argument('-u', '--user',
                         help='Slack user to @mention in the message',
                         default='',
@@ -88,11 +95,12 @@ if __name__ == '__main__':
     response = None
     if args.file:
         print('Sending contents of "{}" to {}'.format(args.file, slack_channel_id))
+        file_name = get_file_name(args)
         response = client.files_upload(
             channels=slack_channel_id,
             file=args.file,
-            filename=args.name,
-            title=args.name)
+            filename=file_name,
+            title=args.file_name)
     elif args.text:
         literal = ''
         with open(args.text) as f:
