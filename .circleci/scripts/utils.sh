@@ -113,6 +113,7 @@ function report_failure {
   if [[ $SIG -ne 0 ]]; then
     echo "CircleCi ${CIRCLE_BRANCH} build ${CIRCLE_BUILD_NUM} failed at stage ${CIRCLE_STAGE}" > ${REPO}/failure_msg.txt
     ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
+        -c hedera-cicd \
         -t ${REPO}/failure_msg.txt
   fi
   exit $SIG
