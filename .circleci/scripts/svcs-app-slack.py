@@ -4,23 +4,6 @@ import json
 import slack
 import argparse
 
-GITHUB_TO_SLACK_USER = {
-    'michael.tinker@hedera.com': 'UKW68U6TD',
-    'quannguyen@swirlds.com': 'UEVPV4HDY',
-    # These strange git users are returned when doing merge
-    '45947300+qnswirlds@users.noreply.github.com': 'UEVPV4HDY',
-    'anirudh.ghanta@hedera.com': 'ULV8PHZ9N',
-    '53790698+anighanta@users.noreply.github.com': 'ULV8PHZ9N',
-    'jeffrey@swirlds.com': 'UB15L2FLJ',
-    '39912573+JeffreyDallas@users.noreply.github.com': 'UB15L2FLJ',
-    'leo.jiang@hedera.com': 'UMQ7SUGBE',
-    '55505519+ljianghedera@users.noreply.github.com': 'UMQ7SUGBE',
-    'TopCat2': 'UE8DSP2F5',
-    'QianSwirlds': 'UE4P47SMT',
-    'nathanklick': 'UA66NE2NT',
-    'mike-burrage-hedera': 'UJLNNSUPR',
-}
-
 GITHUB_TO_SLACK_USER_ID = {
     'tinker-michaelj': 'UKW68U6TD',
     'qnswirlds': 'UEVPV4HDY',
@@ -75,7 +58,7 @@ if __name__ == '__main__':
                         default='',
                         dest='slack_user_id')
     parser.add_argument('-g', '--github-user',
-                        help='GitHub user to @mention in the message (requires GITHUB_TO_SLACK_USER entry)',
+                        help='GitHub user to @mention in the message (requires GITHUB_TO_SLACK_USER_ID entry)',
                         default='',
                         dest='github_user')
     parser.add_argument('-c', '--channel',
