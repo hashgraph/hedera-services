@@ -108,7 +108,7 @@ if __name__ == '__main__':
     elif args.text:
         literal = ''
         with open(args.text) as f:
-            literal = ' / '.join([ line.strip() for line in f.readlines() ])
+            literal = '\n'.join([ line.strip() for line in f.readlines() ])
 
         if slack_user_id:
             literal = '<@{}> - {}'.format(slack_user_id, literal)
