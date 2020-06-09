@@ -1010,7 +1010,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - freeze-restart-workflow
       - start-singlejob-testnet:
           requires:
             - build-artifact
@@ -1042,18 +1041,9 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-      - run-umbrella-freeze-restart-test:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
       - run-update-feature:
           requires:
-            - run-umbrella-freeze-restart-test
+            - run-smart-contract-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
