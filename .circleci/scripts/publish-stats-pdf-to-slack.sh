@@ -4,7 +4,7 @@
 
 SOURCE_DESC=$1
 cd $STATS_PARENT_DIR
-LINK_TXT="CircleCi Job #${CIRCLE_BUILD_NUM}"
+LINK_TXT="CircleCI Job #${CIRCLE_BUILD_NUM}"
 echo ":bulb: Stats for <${CIRCLE_BUILD_URL}|${LINK_TXT}>" > msg.txt
 echo "Branch: ${CIRCLE_BRANCH}" >> msg.txt
 echo "Commit ID: ${CIRCLE_SHA1}" >> msg.txt
