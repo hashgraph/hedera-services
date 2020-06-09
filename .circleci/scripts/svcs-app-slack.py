@@ -21,6 +21,12 @@ CHANNEL_NAME_TO_CHANNEL_ID = {
     'hedera-regression': 'CKWHL8R9A',
 }
 
+STATUS_TO_COLOR = {
+    'P' : '#00FF00',
+    'W' : '#FFFF00',
+    'E' : '#FF0000',
+}
+
 def get_slack_channel_id(args):
     if args.channel:
         return CHANNEL_NAME_TO_CHANNEL_ID.get(args.channel)
@@ -75,6 +81,10 @@ if __name__ == '__main__':
                         help='@mention the whole channel',
                         action='store_true',
                         dest="at_here")
+    parser.add_argument('-s', '--status',
+                        help='Report status with corresponding color (requires --text option)',
+                        default='',
+                        dest='status')
 
     args = parser.parse_args(sys.argv[1:])
     if (not bool(args.text or args.file)):
@@ -117,7 +127,14 @@ if __name__ == '__main__':
             literal = '<!here> - ' + literal
 
         print('Sending "{}" to {}'.format(literal, slack_channel_id))
-        response = client.chat_postMessage(channel=slack_channel_id, text=literal)
+        if args.status:
+            attachments = {'text': literal}
+            color = STATUS_TO_COLOR.get(args.status)
+            if color:
+                attachments['color'] = color
+            response = client.chat_postMessage(channel=slack_channel_id, attachments=[attachments])
+        else:
+            response = client.chat_postMessage(channel=slack_channel_id, text=literal)
 
     if response.data:
         print(json.dumps(response.data, indent=4, sort_keys=True))
