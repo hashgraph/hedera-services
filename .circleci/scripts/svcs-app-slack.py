@@ -71,6 +71,10 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channel',
                         help='Slack channel name',
                         dest='channel')
+    parser.add_argument('-a', '--at-here',
+                        help='@mention the whole channel',
+                        action='store_true',
+                        dest="at_here")
 
     args = parser.parse_args(sys.argv[1:])
     if (not bool(args.text or args.file)):
@@ -108,6 +112,9 @@ if __name__ == '__main__':
 
         if slack_user_id:
             literal = '<@{}> - {}'.format(slack_user_id, literal)
+
+        if args.at_here:
+            literal = '<!here> - ' + literal
 
         print('Sending "{}" to {}'.format(literal, slack_channel_id))
         response = client.chat_postMessage(channel=slack_channel_id, text=literal)
