@@ -705,7 +705,6 @@ workflows:
               branches:
                 only:
                   - master
-                  - ci-nightly-update-feature
     jobs:
       - fast-build-artifact
       - regression-target-testnet:
