@@ -131,6 +131,13 @@ if __name__ == '__main__':
     slack_user_id = get_slack_user_id(args)
     print("slack_user_id: {}".format(slack_user_id))
 
+    if slack_channel_id == None:
+        if slack_user_id == None:
+            print('Slack channel and/or user must be provided')
+            sys.exit()
+        else:
+            slack_channel_id = slack_user_id
+
     slack_token = get_env_var('SLACK_API_TOKEN')
     client = slack.WebClient(token=slack_token)
     response = None
