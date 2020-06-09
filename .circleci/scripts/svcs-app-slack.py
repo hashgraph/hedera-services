@@ -94,20 +94,18 @@ def get_slack_channel_id(args):
 
     return 'DT7EVFDA6'
 
+def get_github_user(args):
+    if args.github_user:
+        return args.github_user
+    if get_env_var('CIRCLECI') == 'true':
+        return get_env_var('CIRCLE_USERNAME')
+
 def get_slack_user_id(args):
     if args.slack_user_id:
         return args.slack_user_id
 
-    if args.github_user:
-        return GITHUB_TO_SLACK_USER_ID.get(args.github_user)
-
-    ci_user = get_env_var('CIRCLE_USERNAME')
-    if not ci_user  and args.ci_user:
-        ci_user = args.ci_user
-    slack_user_id = CIRCLE_USERNAME_TO_SLACK_USER.get(ci_user)
-    if slack_user_id:
-        return slack_user_id
-    return args.slack_user_id
+    github_user = get_github_user(args)
+    return GITHUB_TO_SLACK_USER_ID.get(github_user)
 
 def get_env_var(env_var):
     return os.environ.get(env_var)
