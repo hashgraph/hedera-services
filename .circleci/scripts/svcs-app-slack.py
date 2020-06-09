@@ -72,32 +72,11 @@ def get_slack_channel_id(args):
     if args.channel:
         return CHANNEL_NAME_TO_CHANNEL_ID.get(args.channel)
 
-    if get_env_var('CIRCLE_BRANCH') == 'master' and not get_env_var("CIRCLE_USERNAME"):
-        return 'CKWHL8R9A'
-    else:
-        sha1 = get_env_var('CIRCLE_SHA1')
-        github_user = None;
-        if not sha1 and args.commit_sha1:
-            sha1 = args.commit_sha1
-
-        if sha1:
-            github_user = get_github_user(sha1)
-        if not github_user and args.github_user:
-            github_user = args.github_user
-        if get_env_var('CIRCLE_BRANCH') == 'MASTER':
-            channel = GITHUB_TO_SLACK_USER.get(github_user)
-        else:
-            channel = CIRCLE_USERNAME_TO_SLACK_USER.get(get_env_var("CIRCLE_USERNAME"))
-
-    if channel:
-        return channel
-
-    return 'DT7EVFDA6'
-
 def get_github_user(args):
     if args.github_user:
         return args.github_user
     if get_env_var('CIRCLECI') == 'true':
+        print('Get GitHub user from CircleCI env var')
         return get_env_var('CIRCLE_USERNAME')
 
 def get_slack_user_id(args):
