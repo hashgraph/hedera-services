@@ -27,7 +27,7 @@ function tf_cleanup {
         fi
       done
 
-      mkdir -p ${REPO}/diagnostics
+      . ${REPO}/.circleci/scripts/prepare-slack-message.sh
       python3 ${REPO}/.circleci/scripts/diagnose-logs.py \
         ${REPO}/HapiApp2.0 ${REPO}/diagnostics ${REPO}/.circleci/scripts/resources
 

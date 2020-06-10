@@ -162,22 +162,15 @@ if __name__ == '__main__':
     diagnosis = net_of(diagnoses)
     print('\nFINAL DIAGNOSIS :: {}'.format(diagnosis))
 
-    branch = if_avail('CIRCLE_BRANCH')
-    commit_id = if_avail('CIRCLE_SHA1')
-    build_no = if_avail('CIRCLE_BUILD_NUM')
-    build_url = if_avail('CIRCLE_BUILD_URL')
     if diagnosis.implied_exit_code:
-        with open(slack_msg_rec_file(), 'w') as f:
-            msg = 'CircleCI Job #{}'.format(build_no)
-            msg += '\nBranch: {},'.format(branch)
-            msg += '\nCommit ID: {}'.format(commit_id)
-            msg += '\nFAILED, '
+        with open(slack_msg_rec_file(), 'a+') as f:
+            msg = '\nFAILED, '
             if diagnosis.should_retry:
                 msg += 'but probably just because {}. '.format(diagnosis.reason) \
-                        + 'You may want to re-run the workflow: {}'.format(build_url)
+                        + 'You may want to re-run the workflow.'
             else:
                 msg += 'and {}. There is likely '.format(diagnosis.reason) \
-                        + 'no reason to re-run the workflow: {}'.format(build_url)
+                        + 'no reason to re-run the workflow.'
             f.writelines(['{}\n'.format(msg)])
         if not diagnosis.should_retry:
             with open(upload_diagnostics_fingerprint_file(), 'w') as f:
