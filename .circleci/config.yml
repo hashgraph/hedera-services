@@ -735,7 +735,9 @@ workflows:
             - start-testnet:
                 use-existing-network: true
                 use-hugepage: true
-      - run-custom-migration
+      - run-custom-migration:
+          requires:
+            - regression-target-testnet
   nightly-simulate-network-outrage:
     triggers:
       - schedule:
