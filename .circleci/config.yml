@@ -940,7 +940,7 @@ workflows:
       - fast-build-artifact
       - start-singlejob-testnet:
           requires:
-            - build-artifact
+            - fast-build-artifact
       - run-umbrella-freeze-restart-test:
           name: freeze-restart-first-round
           requires:
