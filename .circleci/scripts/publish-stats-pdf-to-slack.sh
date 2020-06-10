@@ -2,6 +2,28 @@
 
 . ${REPO}/.circleci/scripts/utils.sh
 
+function post_summary_to_slack() {
+  local CHANNEL=$1
+  local FN=${CLIENT_LOG_DIR}/regression-test-summary.txt
+  local LINE=$(grep "Overall Status:" $FN)
+  case $LINE in
+    *"Passed with error"*)
+      OVERALL_STATUS="W"
+      ;;
+    *"Failed"*)
+      OVERALL_STATUS="E"
+      ;;
+    *"Passed"*)
+      OVERALL_STATUS="P"
+      ;;
+  esac
+  echo $OVERALL_STATUS
+  ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
+      -c $CHANNEL \
+      -t $FN \
+      -s $OVERALL_STATUS
+}
+
 SOURCE_DESC=$1
 cd $STATS_PARENT_DIR
 LINK_TXT="CircleCI Job #${CIRCLE_BUILD_NUM}"
