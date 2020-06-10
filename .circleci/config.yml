@@ -135,7 +135,7 @@ commands:
       infra-branch:
         description: Which branch of infrastructure repo to use
         type: string
-        default: 'master'
+        default: 'testMigrationWithDiffStates'
     steps:
       - attach_workspace:
           at: /
@@ -254,6 +254,10 @@ commands:
         description: Tell ansible to use hugepage mode when deploying
         type: boolean
         default: false
+      test-net-name:
+        description: The testnetwork to be used
+        type: string
+        default: net-hashgraph-regression
     steps:
       - fetch-testnet-control-assets:
           infra-branch: "hashgraph-hedera-services"
@@ -697,10 +701,24 @@ executors:
     working_directory: /repo
 
 workflows:
+  custom-migration:
+    jobs:
+      - fast-build-artifact
+      - regression-target-testnet:
+          requires:
+            - fast-build-artifact
+          pre-steps:
+            - start-testnet:
+                use-existing-network: true
+                use-hugepage: true
+      - run-custom-migration:
+
+
+
   nightly-regression:
     triggers:
        - schedule:
-           cron: "0 1,5,9,13 * * *"
+           cron: "0 5,9,13 * * *"
            filters:
              branches:
                only:
@@ -2091,3 +2109,22 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+  run-custom-migration:
+    parameters:
+      custom-migration-params:
+        type: string
+        description: parameters for customMigration script
+        default: '/repo/.circleci/scripts/resources/customMigrationConfig.json'
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "customMigration-test"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Run Custom Migration Script
+          command: |
+            /repo/.circleci/scripts/automateCustomMigration.py "<< parameters.custom-migration-params >>"

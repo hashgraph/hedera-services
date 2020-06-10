@@ -1,0 +1,15 @@
+{
+  "networkUsed": "publictestnet",
+  "infrastructureRepo": "/Users/anighanta/IdeaProjects/infrastructure",
+  "inventory": "customMigration-test.yml",
+  "pemFile": "/Users/anighanta/Downloads/serviceregression.pem",
+  "serviceBranch": "master",
+  "serviceRepo": "/Users/anighanta/IdeaProjects/hashgraph/hedera-services/",
+  "savedState0": "custom-migration-saved-states/backup-new-0.zip",
+  "savedState1": "custom-migration-saved-states/backup-new-1.zip",
+  "savedState2": "custom-migration-saved-states/backup-new-2.zip",
+  "savedState3": "custom-migration-saved-states/backup-new-3.zip",
+  "payerAccountNum": "95",
+  "startupAccount": "custom-migration-saved-states/StartUpAccount.txt",
+  "bucketName": "hedera-service-regression"
+}
