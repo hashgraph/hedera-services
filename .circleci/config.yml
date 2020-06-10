@@ -1037,29 +1037,9 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-      - run-update-feature:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-jar-files:
-          requires:
-            - run-update-feature
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - send-successful-report-to-slack
-            - cleanup-testnet
-          new-marker : "new marker string"
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-smart-contract-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
