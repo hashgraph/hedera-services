@@ -33,7 +33,7 @@ DEFAULT_CHANNEL="hedera-regression"
 
 PARAMS=("-c" "$DEFAULT_CHANNEL" "-a" "-t" "$SLACK_MSG_FILE")
 if [[ ! $SOURCE_DESC == *"regression"* ]]; then
-    PARAMS += ("-s" "P")
+    PARAMS+=("-s" "P")
 fi
 
 ${REPO}/.circleci/scripts/call-svcs-app-slack.sh ${PARAMS[*]}
