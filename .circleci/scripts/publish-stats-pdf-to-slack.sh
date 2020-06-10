@@ -30,10 +30,13 @@ ${REPO}/.circleci/scripts/prepare-slack-message.sh "$SOURCE_DESC"
 
 # To default channel (hedera-regression)
 DEFAULT_CHANNEL="hedera-regression"
-${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-    -c $DEFAULT_CHANNEL \
-    -a \
-    -t "$SLACK_MSG_FILE"
+
+PARAMS=("-c" "$DEFAULT_CHANNEL" "-a" "-t" "$SLACK_MSG_FILE")
+if [[ ! $SOURCE_DESC == *"regression"* ]]; then
+    PARAMS += ("-s" "P")
+fi
+
+${REPO}/.circleci/scripts/call-svcs-app-slack.sh ${PARAMS[*]}
 ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
     -c $DEFAULT_CHANNEL \
     -f $INSIGHT_PY_PDF_PATH \
