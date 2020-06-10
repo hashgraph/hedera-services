@@ -1979,7 +1979,6 @@ jobs:
       - save-this-job-client-logs
       - publish-platform-stats:
           source-desc: full regression
-          append-to-last-stats: 'true'
   run-oc-regression:
     parameters:
       runner:
