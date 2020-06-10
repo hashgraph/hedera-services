@@ -318,11 +318,11 @@ commands:
           name: Check logs to see if nodes are brought up with TLS GRPC servers
           command: |
             /repo/.circleci/scripts/show_logs.sh
-      - run:
-          name: Test TLS connections
-          command: |
-            /repo/.circleci/scripts/test-tls-connections.sh \
-              | tee -a /repo/test-clients/output/hapi-client.log
+#      - run:
+#          name: Test TLS connections
+#          command: |
+#            /repo/.circleci/scripts/test-tls-connections.sh \
+#              | tee -a /repo/test-clients/output/hapi-client.log
       - persist_to_workspace:
           root: /
           paths:
