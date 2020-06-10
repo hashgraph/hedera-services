@@ -635,6 +635,9 @@ public class SmartContractDeletePayable {
 				Assert.assertEquals(ResponseCodeEnum.CONTRACT_DELETED, updateDeletedContract);
 				log.info("Deleted contract could not be updated");
 			}
+
+			// Marker message for regression report
+			log.info("Regression summary: This run is successful.");
 		}
 	}
 

@@ -10,9 +10,15 @@ commands:
             /repo/.circleci/scripts/ensure-builtin-env-vars.sh
   validate-record-streams:
     description: Download and validate the record streaming data
+    parameters:
+      perf-run:
+        description: If in perf run, the output handling needs to be tolerant of small portion of censensus time out cases.
+        type: boolean
+        default: false
     steps:
       - download-record-streams
       - run-record-stream-validator
+
   download-record-streams:
     description: Fetch the record files and sigs
     steps:
@@ -23,10 +29,16 @@ commands:
               '/repo/.circleci/scripts/download_record_stream_data.sh'
   run-record-stream-validator:
     description: Check the record file sigs and running hashes
+    parameters:
+      perf-run:
+        description: If in perf run, the output handling needs to be tolerant of small portion of censensus time out cases.
+        type: boolean
+        default: false
     steps:
       - run-eet-suites:
           dsl-args: "RecordStreamValidation"
           ci-properties-map: "recordStreamsDir=/repo/recordstreams"
+
   publish-platform-stats:
     description: Generate the insight.py PDF and publish it (e.g. to Slack)
     parameters:
@@ -63,8 +75,8 @@ commands:
             - run:
                 name: 'Upload the PDF to Slack #hedera-regression channel'
                 command: |
-                    /repo/.circleci/scripts/publish-stats-pdf-to-slack.sh \
-                       "<< parameters.source-desc >>"
+                  /repo/.circleci/scripts/publish-stats-pdf-to-slack.sh \
+                     "<< parameters.source-desc >>"
   svc-app-slack-msg:
     description: Send a message to Slack via the Services Regression app
     parameters:
@@ -120,7 +132,7 @@ commands:
     description: Cleanup test client log storage
     parameters:
       client-log-folder:
-        description: Top level directory hold all test clients' logs.
+        description: Top level directory hold all test clients logs.
         type: string
         default: 'regression-testclient-logs'
     steps:
@@ -129,13 +141,21 @@ commands:
           command: |
             /repo/.circleci/scripts/cleanup-testclient-logs.sh \
                << parameters.client-log-folder >>
+  save-this-job-client-logs:
+    description: Save this client side log files for this job
+    steps:
+      - run:
+          name: Save the client side log files for this job
+          command: |
+            /repo/.circleci/scripts/save-default-client-logs.sh \
+               "regression-testclient-logs"
   fetch-testnet-control-assets:
     description: Add SSH keys, HCL scripts, Ansible playbooks to start testnet
     parameters:
       infra-branch:
         description: Which branch of infrastructure repo to use
         type: string
-        default: 'testMigrationWithDiffStates'
+        default: 'master'
     steps:
       - attach_workspace:
           at: /
@@ -254,10 +274,6 @@ commands:
         description: Tell ansible to use hugepage mode when deploying
         type: boolean
         default: false
-      test-net-name:
-        description: The testnetwork to be used
-        type: string
-        default: net-hashgraph-regression
     steps:
       - fetch-testnet-control-assets:
           infra-branch: "hashgraph-hedera-services"
@@ -266,9 +282,9 @@ commands:
           steps:
             - run: echo "Need to create new spot test net"
             - provision-testnet-hosts:
-                 liveness-timeout-secs: 120
-                 var-file: '<< parameters.var-file >>'
-                 var-region: "us-west-2"
+                liveness-timeout-secs: 120
+                var-file: '<< parameters.var-file >>'
+                var-region: "us-west-2"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
@@ -277,7 +293,8 @@ commands:
       - run:
           name: Generate self signed certificates for nodes
           command: |
-            /repo/.circleci/scripts/generate-self-signed-certificates.sh
+            /repo/.circleci/scripts/generate-self-signed-certificates.sh | \
+              tee -a /repo/test-clients/output/hapi-client.log
       - unless:
           condition: << parameters.use-hugepage >>
           steps:
@@ -304,7 +321,8 @@ commands:
       - run:
           name: Test TLS connections
           command: |
-            /repo/.circleci/scripts/test-tls-connections.sh
+            /repo/.circleci/scripts/test-tls-connections.sh \
+              | tee -a /repo/test-clients/output/hapi-client.log
       - persist_to_workspace:
           root: /
           paths:
@@ -711,20 +729,49 @@ workflows:
             - start-testnet:
                 use-existing-network: true
                 use-hugepage: true
-      - run-custom-migration:
-
-
-
-  nightly-regression:
+      - run-custom-migration
+  nightly-simulate-network-outrage:
     triggers:
-       - schedule:
-           cron: "0 5,9,13 * * *"
-           filters:
-             branches:
-               only:
-                 - master
+      - schedule:
+          cron: "0 0,12 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - ci-job-network-sim
     jobs:
       - fast-build-artifact
+      - start-singlejob-testnet:
+          requires:
+            - fast-build-artifact
+      - run-network-sim:
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-testnet
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-network-sim
+          pre-steps:
+            - attach_workspace:
+                at: /
+  nightly-regression:
+    triggers:
+      - schedule:
+          cron: "0 5,9,13 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - fast-build-artifact:
+          post-steps:
+            - save-this-job-client-logs
       - regression-target-testnet:
           requires:
             - fast-build-artifact
@@ -733,7 +780,7 @@ workflows:
                 use-existing-network: true
                 use-hugepage: true
           post-steps:
-            - cleanup-client-log-storage
+            - save-this-job-client-logs
       ##### W-BEGIN auto-generated by RegressionWorkflowShell #####
       - long-contract_txns6-0:
           requires:
@@ -804,6 +851,8 @@ workflows:
             - long-crypto_txns300-12
             - long-file_ops-0
             - long-consensus_ops-0
+          post-steps:
+            - save-this-job-client-logs
       - short-contract_txns6-0:
           requires:
             - regression-validate-freeze
@@ -884,6 +933,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+      #                - 0241-E-Refactor-CircleCi-build-scripts
       - start-singlejob-testnet:
           requires:
             - build-artifact
@@ -991,10 +1041,15 @@ jobs:
     steps:
       - checkout
       - run:
+          name: prepare log dir
+          command: |
+            mkdir -p /repo/test-clients/output
+      - run:
           name: mvn install
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar'
+              'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+                 | tee /repo/test-clients/output/hapi-client.log'
       - run:
           name: Upload codecov
           command: |
@@ -1030,20 +1085,25 @@ jobs:
     executor: build-executor
     steps:
       - checkout
+      - cleanup-client-log-storage
+      - run:
+          name: prepare log dir
+          command: |
+            mkdir -p /repo/test-clients/output
       - run:
           name: mvn install
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-               'mvn clean install -DskipTests'
+               'mvn clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
               '/repo/.circleci/scripts/package-hapi-artifacts.sh \
-                   hedera-node/data/lib'
+                     hedera-node/data/lib | tee -a /repo/test-clients/output/hapi-client.log'
             /repo/.circleci/scripts/trap-failure-report.sh \
               '/repo/.circleci/scripts/upload-dir-to-s3.sh \
-                hedera-node/data lib SHA-${CIRCLE_SHA1}'
+                     hedera-node/data lib SHA-${CIRCLE_SHA1} | tee -a /repo/test-clients/output/hapi-client.log'
       - run:
           name: Reposition config for Ansible scripts
           command: |
@@ -1097,7 +1157,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -1111,7 +1171,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1121,11 +1181,12 @@ jobs:
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test:
           config-file: umbrella.properties.altHalfSizeOCRegPostFreeze
+      - save-this-job-client-logs
   long-umbrella:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1135,11 +1196,12 @@ jobs:
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test:
           config-file: umbrella.properties.altHalfSizeOCRegPreFreeze
+      - save-this-job-client-logs
   short-file_ops-0:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1155,7 +1217,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1171,7 +1233,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1187,7 +1249,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1203,7 +1265,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1219,7 +1281,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1235,7 +1297,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1251,7 +1313,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1266,7 +1328,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1281,7 +1343,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1296,7 +1358,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1311,7 +1373,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1326,7 +1388,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1341,7 +1403,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1356,7 +1418,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1371,7 +1433,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1386,7 +1448,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1402,7 +1464,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1417,7 +1479,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1432,7 +1494,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1448,7 +1510,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1463,7 +1525,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1478,7 +1540,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1493,7 +1555,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1508,7 +1570,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1523,7 +1585,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1538,7 +1600,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1553,7 +1615,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1568,7 +1630,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1583,7 +1645,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1599,7 +1661,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1614,7 +1676,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1630,11 +1692,15 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
       - publish-platform-stats:
           source-desc: pre-freeze regression
           publish-to-slack: false
@@ -1649,15 +1715,21 @@ jobs:
       - restart-with-validations:
           valid-ss-timeout-secs: 120
           active-status-timeout-secs: 120
+      - run-eet-suites:
+          dsl-args: "TopicCreateSpecs"
   regression-run-accessory-tests:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hashgraph-regression"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
       - run-eet-suites:
@@ -1726,6 +1798,7 @@ jobs:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
       - validate-record-streams
+      - save-this-job-client-logs
       - publish-platform-stats:
           source-desc: full regression
           append-to-last-stats: 'true'
@@ -1997,7 +2070,9 @@ jobs:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
       - validate-thaw
-      - restart-with-validations
+      - restart-with-validations:
+          valid-ss-timeout-secs: 180
+          active-status-timeout-secs: 180
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
@@ -2109,6 +2184,32 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+  run-network-sim:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+    executor: << parameters.runner >>
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: call script to block tcp ports
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_create_rules.sh'
+      - run-eet-suites:
+          dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
+          ci-properties-map: mins=50
+      - run:
+          name: call script to remove firewall rules
+          command: |
+            /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
+            '/repo/.circleci/scripts/firewall_flush_rules.sh'
+      - run:
+          name: Show swirlds logs after HGCApp restart
+          command: |
+            /repo/.circleci/scripts/show_logs.sh
   run-custom-migration:
     parameters:
       custom-migration-params:

@@ -267,6 +267,8 @@ public class OCTokenIT {
         channelShared.shutdown();
         log.info("--------------------¯\\_(ツ)_/¯----------------------");
 
+        // Marker message for regression report
+        log.info("Regression summary: This run is successful.");
       }
 
 

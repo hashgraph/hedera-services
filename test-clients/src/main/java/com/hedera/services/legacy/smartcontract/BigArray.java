@@ -227,6 +227,9 @@ public class BigArray {
     log.info("About " + tps + " TPS for " + sizeInKb + " KB of storage");
 
     channelShared.shutdown();
+
+    // Marker message for regression report
+    log.info("Regression summary: This run is successful.");
   }
 
   private static void createStubs() {
