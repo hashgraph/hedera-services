@@ -276,7 +276,7 @@ commands:
         default: false
     steps:
       - fetch-testnet-control-assets:
-          infra-branch: "hashgraph-hedera-services"
+          infra-branch: "testMigrationWithDiffStates"
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
@@ -721,11 +721,17 @@ executors:
 workflows:
   custom-migration:
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
+          filters:
+            branches:
+              only:
+                - 00229-T-AutomateMigrationTestWithDifferentSavedStates
       - regression-target-testnet:
           requires:
             - fast-build-artifact
           pre-steps:
+            - attach_workspace:
+                at: /
             - start-testnet:
                 use-existing-network: true
                 use-hugepage: true
@@ -933,6 +939,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00229-T-AutomateMigrationTestWithDifferentSavedStates
       #                - 0241-E-Refactor-CircleCi-build-scripts
       - start-singlejob-testnet:
           requires:

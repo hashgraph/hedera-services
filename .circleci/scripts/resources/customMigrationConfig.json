@@ -2,7 +2,7 @@
   "networkUsed": "publictestnet",
   "infrastructureRepo": "/Users/anighanta/IdeaProjects/infrastructure",
   "inventory": "customMigration-test.yml",
-  "pemFile": "/Users/anighanta/Downloads/serviceregression.pem",
+  "pemFile": "./serviceregression.pem",
   "serviceBranch": "master",
   "serviceRepo": "/Users/anighanta/IdeaProjects/hashgraph/hedera-services/",
   "savedState0": "custom-migration-saved-states/backup-new-0.zip",

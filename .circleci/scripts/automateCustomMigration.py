@@ -147,12 +147,12 @@ def validateInputs():
 	finally:
 		f.close()
 
-	try:
-		f = open("{}".format(PEM_FILE))
-	except IOError:
-		print("PEM file not found")
-	finally:
-		f.close()
+	# try:
+	# 	f = open("{}".format(PEM_FILE))
+	# except IOError:
+	# 	print("PEM file not found")
+	# finally:
+	# 	f.close()
 
 	try:
 		f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
@@ -211,8 +211,8 @@ def validateInputs():
 
 	return NO_OF_NODES
 
-NO_OF_NODES=validateInputs()
-
+#NO_OF_NODES=validateInputs()
+NO_OF_NODES=4
 print("No of nodes required : {}".format(NO_OF_NODES))
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -236,7 +236,7 @@ def buildSavedZip():
 		shutil.make_archive('saved', 'zip', 'saved')
 	except Exception as e:
 		print e
-buildSavedZip()
+#buildSavedZip()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------- COPY SAVED.ZIP TO INFRASTRUCTURE -----------------------------------------------------------#
@@ -254,13 +254,17 @@ def runMigration():
 
 	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
 
-	playbook_command = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, PEM_FILE, BRANCH_NAME)
+	# for local
+	#playbook_command = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, PEM_FILE, BRANCH_NAME)
+
+	# for CircleCI
+	playbook_command = "ansible-playbook -i ./inventory/{} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, BRANCH_NAME)
 
 	os.chdir(ansible_path)
 
 	os.system(playbook_command)
 
-runMigration()
+#runMigration()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------ Copy Swirlds.log ----------------------------------------------------------------------#
@@ -274,8 +278,11 @@ def copyLogs():
 	for i in range(0, 11):
 		node_address = inventory_f.readline()
 
+	# for local
+	#copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
-	copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
+	# for CircleCI
+	copy_swirld_log = "scp -i ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
 	os.mkdir("output")
 
@@ -285,9 +292,9 @@ def copyLogs():
 		for x in range(0, 3):
 			inventory_f.readline()
 		os.mkdir("output/{}".format(n))
-		os.system(copy_swirld_log.format(PEM_FILE, NODE_ADDRESSES[n], n))
+		os.system(copy_swirld_log.format(NODE_ADDRESSES[n], n))
 
-copyLogs()
+#copyLogs()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
@@ -300,7 +307,7 @@ mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.re
 os.system(mvn_install_cmd)
 
 for n in range(0, NO_OF_NODES):
-	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, STARTUP_ACCOUNT, n))
+	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n))
 	time.sleep(90)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
