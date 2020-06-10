@@ -221,7 +221,6 @@ if __name__ == '__main__':
     init()
 
     overall_status = 'Passed'
-    os.environ['OVERALL_STATUS'] = 'P'
 
     if sys.argv[1] and os.path.exists(sys.argv[1]):
         log_parent_path = sys.argv[1]
@@ -256,9 +255,7 @@ if __name__ == '__main__':
                 each_job_status[job_type] = None
                 if REGRESSION_JOB_TYPE_MUST_PASS[job_type]:
                     overall_status = 'Failed'
-                    os.environ['OVERALL_STATUS'] = 'E'
                 elif overall_status == 'Passed':
                     overall_status = 'Passed with error'
-                    os.environ['OVERALL_STATUS'] = 'W'
 
     report_regression_status(overall_status)
