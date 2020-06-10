@@ -2237,4 +2237,4 @@ jobs:
       - run:
           name: Run Custom Migration Script
           command: |
-            /repo/.circleci/scripts/automateCustomMigration.py "<< parameters.custom-migration-params >>"
+            /repo/.circleci/scripts/run-custom-migration-script.sh
