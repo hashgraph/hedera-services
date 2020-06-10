@@ -924,7 +924,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-#                - 0241-E-Refactor-CircleCi-build-scripts
+
       - start-singlejob-testnet:
           requires:
             - build-artifact
@@ -1792,7 +1792,6 @@ jobs:
       - save-this-job-client-logs
       - publish-platform-stats:
           source-desc: full regression
-          append-to-last-stats: 'true'
   run-oc-regression:
     parameters:
       runner:
