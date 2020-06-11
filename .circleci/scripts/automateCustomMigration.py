@@ -229,7 +229,7 @@ def buildSavedZip():
 	try:
 		shutil.make_archive('saved', 'zip', 'saved')
 	except Exception as e:
-		print e
+		print (e)
 buildSavedZip()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
