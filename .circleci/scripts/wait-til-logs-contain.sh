@@ -45,7 +45,8 @@ while true; do
   fi
   SECS_WAITED=$((SECS_WAITED+SLEEP_SECS))
   if [ $SECS_WAITED -lt $TIMEOUT_SECS ]; then
-    ci_echo "Sleeping $SLEEP_SECS secs at `date` ..."
+    ci_echo "Sleeping $SLEEP_SECS secs at `date` ..." \
+       | tee -a ${REPO}/test-clients/output/hapi-client.log
     sleep $SLEEP_SECS
   else
     break
