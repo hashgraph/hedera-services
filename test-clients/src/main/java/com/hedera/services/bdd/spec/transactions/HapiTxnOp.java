@@ -136,6 +136,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("submitOp Received unexpected EOS on DATA frame from server, retry");
 					continue;
+				}else if (e.toString().contains("REFUSED_STREAM")) {
+					log.info("submitOp Received REFUSED_STREAM from server, retry");
+					continue;
 				} else {
 					// Severe GRPC exception, rethrow
 					throw (e);
@@ -368,6 +371,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					continue;
 				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("statusResponse Received unexpected EOS on DATA frame from server, retry");
+					continue;
+				}else if (e.toString().contains("REFUSED_STREAM")) {
+					log.info("statusResponse Received REFUSED_STREAM from server, retry");
 					continue;
 				}
 			}
