@@ -33,6 +33,7 @@ DEFAULT_CHANNEL="hedera-regression"
 
 PARAMS=("-c" "$DEFAULT_CHANNEL" "-a" "-t" "$SLACK_MSG_FILE")
 if [[ ! $SOURCE_DESC == *"regression"* ]]; then
+    echo "Passed" >> $SLACK_MSG_FILE
     PARAMS+=("-s" "P")
 fi
 
