@@ -1,6 +1,6 @@
 {
   "networkUsed": "publictestnet",
-  "infrastructureRepo": "/repo/infrastructure",
+  "infrastructureRepo": "/infrastructure",
   "inventory": "customMigration-test.yml",
   "pemFile": "./serviceregression.pem",
   "serviceBranch": "master",

@@ -1132,7 +1132,6 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-            - infrastructure
   run-bdd-test:
     executor: ci-test-executor
     parallelism: <<parameters.parallel-level>>
