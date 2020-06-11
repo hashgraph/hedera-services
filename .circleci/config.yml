@@ -10,11 +10,17 @@ commands:
             /repo/.circleci/scripts/ensure-builtin-env-vars.sh
 
   send-successful-report-to-slack:
+    parameters:
+      workflow-name:
+        description: name of the workflow
+        type: string
+        default: "continuous integration"
     steps:
       - run:
           name: Send a successful report to slack
           command: |
-            /repo/.circleci/scripts/prepare-slack-message.sh
+            /repo/.circleci/scripts/prepare-slack-message.sh \
+                "<< parameters.workflow-name >>"
             echo "Passed" >> /repo/diagnostics/slack_msg.txt
             /repo/.circleci/scripts/call-svcs-app-slack.sh \
                 -c hedera-cicd \
