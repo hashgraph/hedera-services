@@ -3,7 +3,7 @@
 set +e
 cd $REPO
 
-CONFIG_FILE_PATH='${REPO}/.circleci/scripts/resources/customMigrationConfig.json'
+CONFIG_FILE_PATH='/repo/.circleci/scripts/resources/customMigrationConfig.json'
 
 pip3 install boto
 pip3 install boto3
