@@ -139,7 +139,6 @@ def validateInputs():
 		print("publictestnet")
 
 	try:
-		# f = open("/Users/anighanta/IdeaProjects/infrastructure/terraform/deployments/ansible/inventory/customMigration-test.yml")
 		f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
 	except IOError:
 		print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
@@ -160,47 +159,42 @@ def validateInputs():
 		print("services repo not present")
 	finally:
 		f.close()
-
- 	try:
+	try:
 		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_0, "./savedState0.zip")
 		f = open("{}".format("./savedState0.zip"))
 		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
-			savedState0.extractall("0/");
+			savedState0.extractall("0/")
 	except IOError:
 		print("State file 0 not found ")
 	finally:
 		f.close()
-
 	try:
 		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_1, "./savedState1.zip")
 		f = open("{}".format("./savedState1.zip"))
 		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
-			 savedState1.extractall("1/")
+			savedState1.extractall("1/")
 	except IOError:
 		print("State file 1 not found ")
 	finally:
 		f.close()
-
 	try:
 		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_2, "./savedState2.zip")
 		f = open("{}".format("./savedState2.zip"))
 		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
-			 savedState2.extractall("2/")
+			savedState2.extractall("2/")
 	except IOError:
 		print("State file 2 not found ")
 	finally:
 		f.close()
-
 	try:
 		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_3, "./savedState3.zip")
 		f = open("{}".format("./savedState3.zip"))
 		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
-			 savedState3.extractall("3/")
+			savedState3.extractall("3/")
 	except IOError:
 		print("State file 3 not found ")
 	finally:
 		f.close()
-
 	try:
 		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "./startupAccount.txt")
 		f = open("{}".format("./startupAccount.txt"))
@@ -211,8 +205,7 @@ def validateInputs():
 
 	return NO_OF_NODES
 
-#NO_OF_NODES=validateInputs()
-NO_OF_NODES=4
+NO_OF_NODES=validateInputs()
 print("No of nodes required : {}".format(NO_OF_NODES))
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
