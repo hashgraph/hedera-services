@@ -860,7 +860,7 @@ workflows:
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 18 * * *"
             filters:
               branches:
                 only:
