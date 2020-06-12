@@ -482,6 +482,9 @@ public class SmartContractNegativeCalls {
       setValueToContract(crAccount, sampleStorageContractId, ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE, ResponseCodeEnum.SUCCESS,
           CONTRACT_CALL_SUCCESS_GAS, NEGATIVE_NUMBER);
       log.info ("Call failed precheck with negative value");
+
+      // Marker message for regression report
+      log.info("Regression summary: This run is successful.");
     }
   }
 }

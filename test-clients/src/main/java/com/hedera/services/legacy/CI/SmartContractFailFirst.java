@@ -536,6 +536,9 @@ public class SmartContractFailFirst {
       beforeBalance = creatingAccountBalance;
 
       channel.shutdown();
+
+      // Marker message for regression report
+      log.info("Regression summary: This run is successful.");
     }
   }
 
