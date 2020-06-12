@@ -14,7 +14,7 @@ SLEEP_SECS=$3
 LINE_PATTERN=$(eval $1)
 PRE="ssh -o StrictHostKeyChecking=no ubuntu"
 LOG_PTH=$(log_path swirlds.log)
-GREP_CMD="${PRE}@$DEFAULT_HOST 'grep -o \"$LINE_PATTERN\" $LOG_PTH'"
+GREP_CMD="${PRE}@$DEFAULT_HOST 'grep -o \"$LINE_PATTERN\" $LOG_PTH | tail -1'"
 
 SECS_WAITED=0
 while true; do

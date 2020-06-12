@@ -521,11 +521,12 @@ public class SmartContractInlineAssembly {
 			int accountCodeSize = getCodeSize(crAccount, codeSizeContractId, accountAddress);
 			assert(contractCodeSize >0);
 			assert(accountCodeSize ==0);
-	      }
-	    }
+          }
 
-
-	  }
+          // Marker message for regression report
+          log.info("Regression summary: This run is successful.");
+        }
+      }
 
 
 	  private ContractInfo getContractInfo(AccountID payerAccount,

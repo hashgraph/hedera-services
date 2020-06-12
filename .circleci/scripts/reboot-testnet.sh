@@ -5,5 +5,5 @@
 
 TIMEOUT_SECS=${1:-60}
 
-ansible_reboot
-wait_for_live_hosts 50211 $TIMEOUT_SECS
+ansible_reboot | tee -a ${REPO}/test-clients/output/hapi-client.log
+wait_for_live_hosts 50211 $TIMEOUT_SECS | tee -a ${REPO}/test-clients/output/hapi-client.log

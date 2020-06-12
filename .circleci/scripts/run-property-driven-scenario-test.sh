@@ -20,8 +20,9 @@ if [ ! -f "$CLIENT_RESOURCES_REBUILD_FINGERPRINT" ]; then
   touch $CLIENT_RESOURCES_REBUILD_FINGERPRINT
 fi
 set -x
-ci_echo "Running scenario $FCQN getting host information from properties only..."
+ci_echo "Running legacy scenario $FCQN getting host information from properties only..."
 mvn -e -q exec:java \
     -Dexec.mainClass=$FCQN \
     -Dexec.args="$ARGS" \
     -Dexec.cleanupDaemonThreads=false
+ci_echo "End of running legacy scenario $FCQN test."
