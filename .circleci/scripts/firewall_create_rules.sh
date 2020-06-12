@@ -56,5 +56,5 @@ packet_loss ${TF_HOSTS[0]}
 # the last node delay packet
 packet_corruption ${TF_HOSTS[1]}
 
-# the last node delay packet
+# the second last node randome corrupt packet
 packet_reorder ${TF_HOSTS[2]}
