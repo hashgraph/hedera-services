@@ -1166,7 +1166,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "customMigration-test"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -2228,7 +2228,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "customMigration-test"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
