@@ -14,6 +14,6 @@ ci_echo "Download all test client log files to ${CLIENT_LOG_DIR}..."
 /usr/local/bin/aws s3 cp \
   s3://${SWIRLD_S3_BUCKET}/${TARGET_DIR}/${BRANCH_DIR} ${CLIENT_LOG_DIR} --recursive
 
-echo "Summary of this regression test:" > ${REPO}/${CLIENT_DIR}/regression-test-summary.txt
+echo "Summary of this regression test:" > ${CLIENT_LOG_DIR}/regression-test-summary.txt
 
-python3 ${REPO}/.circleci/scripts/summarize-test-results.py -d ${REPO}/${CLIENT_DIR}
+python3 ${REPO}/.circleci/scripts/summarize-test-results.py  ${CLIENT_LOG_DIR}
