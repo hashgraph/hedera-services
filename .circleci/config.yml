@@ -8,6 +8,25 @@ commands:
           name: Ensure the builtin CircleCI env vars are available
           command: |
             /repo/.circleci/scripts/ensure-builtin-env-vars.sh
+
+  send-successful-report-to-slack:
+    parameters:
+      workflow-name:
+        description: name of the workflow
+        type: string
+        default: "continuous integration"
+    steps:
+      - run:
+          name: Send a successful report to slack
+          command: |
+            /repo/.circleci/scripts/prepare-slack-message.sh \
+                "<< parameters.workflow-name >>"
+            echo "Passed" >> /repo/diagnostics/slack_msg.txt
+            /repo/.circleci/scripts/call-svcs-app-slack.sh \
+                -c hedera-cicd \
+                -t /repo/diagnostics/slack_msg.txt \
+                -s P
+
   validate-record-streams:
     description: Download and validate the record streaming data
     parameters:
@@ -584,12 +603,16 @@ commands:
         description: How long til the logs must all have the freeze pattern
         type: integer
         default: 90
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
     steps:
       - wait-til-logs-contain:
           log: hgcaa.log
           pattern-sh: /repo/.circleci/scripts/get-freeze-pattern.sh
           pattern-desc: freeze pattern
-          times: 1
+          times: << parameters.freeze-pattern-count >>
           timeout-secs: << parameters.freeze-start-timeout-secs >>
           sleep-secs: 7
       - run:
@@ -647,6 +670,14 @@ commands:
         description: How long til nodes must confirm a valid signed state
         type: integer
         default: 120
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
     steps:
       - postgres-status
       - reboot-testnet:
@@ -657,15 +688,22 @@ commands:
           log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-liveness-pattern.sh
           pattern-desc: alive pattern
-          times: 3
+          times: << parameters.liveness-pattern-count >>
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
           log: swirlds.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
           pattern-desc: valid signed state hash pattern
-          times: 1
+          times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
+          sleep-secs: 7
+      - wait-til-logs-contain:
+          log: swirlds.log
+          pattern-sh: /repo/.circleci/scripts/get-lateseq-pattern.sh
+          pattern-desc: last known sequence numbers after restart pattern
+          times: << parameters.signed-state-pattern-count >>
+          timeout-secs: 60
           sleep-secs: 7
       - run:
           name: Scan log of node 0.0.3 for restart lateseq
@@ -781,7 +819,7 @@ executors:
     working_directory: /repo
 
 workflows:
-  nightly-simulate-network-outrage:
+  nightly-simulate-network-outage:
     triggers:
         - schedule:
             cron: "0 0,12 * * *"
@@ -890,56 +928,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  freeze-restart-regression:
-    triggers:
-        - schedule:
-            cron: "0 5 * * *"
-            filters:
-              branches:
-                only:
-                  - master
-    jobs:
-      - fast-build-artifact
-      - start-singlejob-testnet:
-          requires:
-            - fast-build-artifact
-      - run-accessory-tests:
-          requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-umbrella-freeze-restart-test:
-          requires:
-            - run-accessory-tests
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - rerun-accessory-tests:
-          requires:
-            - run-umbrella-freeze-restart-test
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - cleanup-singlejob-testnet:
-          requires:
-            - rerun-accessory-tests
-          pre-steps:
-            - attach_workspace:
-                at: /
-
-                  
   nightly-regression:
     triggers:
         - schedule:
@@ -1104,6 +1092,69 @@ workflows:
             - short-consensus_ops-0
 
       ##### END auto-generated by RegressionWorkflowShell #####
+  nightly-freeze-restart:
+    triggers:
+      - schedule:
+          cron: "0 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - fast-build-artifact
+      - start-singlejob-testnet:
+          requires:
+            - fast-build-artifact
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-first-round
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 1
+          liveness-pattern-count: 3
+          signed-state-pattern-count: 1
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-second-round
+          requires:
+            - freeze-restart-first-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 2
+          liveness-pattern-count: 5
+          signed-state-pattern-count: 2
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-third-round
+          requires:
+            - freeze-restart-second-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - publish-platform-stats:
+                source-desc: freeze restart
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 3
+          liveness-pattern-count: 7
+          signed-state-pattern-count: 3
+      - cleanup-singlejob-testnet:
+          requires:
+            - freeze-restart-third-round
+          pre-steps:
+            - attach_workspace:
+                at: /
   continuous-integration:
     jobs:
       - build-artifact:
@@ -1143,6 +1194,7 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
+            - send-successful-report-to-slack
             - cleanup-rerun-testnet-if-present
       - cleanup-singlejob-testnet:
           requires:
@@ -2156,6 +2208,19 @@ jobs:
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
   run-umbrella-freeze-restart-test:
+    parameters:
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
     executor: ci-test-executor
     steps:
       - run:
@@ -2169,10 +2234,13 @@ jobs:
       - run-umbrella-test:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
-      - validate-thaw
+      - validate-thaw:
+          freeze-pattern-count: << parameters.freeze-pattern-count >>
       - restart-with-validations:
           valid-ss-timeout-secs: 180
           active-status-timeout-secs: 180
+          liveness-pattern-count: << parameters.liveness-pattern-count >>
+          signed-state-pattern-count: << parameters.signed-state-pattern-count >>
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
