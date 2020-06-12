@@ -276,7 +276,7 @@ commands:
         default: false
     steps:
       - fetch-testnet-control-assets:
-          infra-branch: "testMigrationWithDiffStates"
+          infra-branch: "hashgraph-hedera-services"
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
