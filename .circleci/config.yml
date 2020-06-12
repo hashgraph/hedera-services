@@ -155,7 +155,7 @@ commands:
       infra-branch:
         description: Which branch of infrastructure repo to use
         type: string
-        default: 'master'
+        default: 'hashgraph-hedera-services'
     steps:
       - attach_workspace:
           at: /
