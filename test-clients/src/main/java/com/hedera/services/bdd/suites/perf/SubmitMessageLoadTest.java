@@ -96,6 +96,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 						.payingWith("sender")
 						.suppressStats(true)
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, RECEIPT_NOT_FOUND)
+						.hasAnyStatusAtAll()
 						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 						.deferStatusResolution()
 
