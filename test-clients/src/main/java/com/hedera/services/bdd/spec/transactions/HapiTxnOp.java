@@ -381,11 +381,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		}
 		long after = System.currentTimeMillis();
 		ResponseCodeEnum queryResult = reflectForPrecheck(response);
-		if ( queryResult != ok ){
+		if ( queryResult != OK ){
 			log.info("receipt not ok " + Instant.now() + " submit Time " + submitTime );
-			if (receiptQuery.hasTransactionGetReceipt()){
-				log.info("txn id " + receiptQuery.getTransactionGetReceipt().getTransactionID());
-			}
+			log.info("txn id " + extractTxnId(txnSubmitted));
 		}
 		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
