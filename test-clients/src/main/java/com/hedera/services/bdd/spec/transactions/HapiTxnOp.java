@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -81,6 +82,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
 	private long submitTime = 0L;
+	private Instant submitTimeInstant;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
 
@@ -199,6 +201,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	private TransactionResponse timedCall(HapiApiSpec spec, Transaction txn) {
 		submitTime = System.currentTimeMillis();
+		submitTimeInstant = Instant.now();
 		TransactionResponse response = callToUse(spec).apply(txn);
 		long after = System.currentTimeMillis();
 		stats.setResponseLatency(after - submitTime);
@@ -345,13 +348,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			if (acceptAnyStatus) {
 				expectedStatus = Optional.of(statusNow);
 				return statusNow;
-			} else if (statusNow != UNKNOWN) {
+				} else if (statusNow != UNKNOWN) {
 				if (acceptAnyKnownStatus) {
 					expectedStatus = Optional.of(statusNow);
 				}
 				return statusNow;
 			}
 			pause(spec.setup().statusWaitSleepMs());
+			log.info("statusNow=  " + statusNow + " qsize " + spec.numPendingOps());
+
 		} while ((Instant.now().toEpochMilli() - beginWait) < spec.setup().statusWaitTimeoutMs());
 		return UNKNOWN;
 	}
@@ -382,8 +387,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		long after = System.currentTimeMillis();
 		ResponseCodeEnum queryResult = reflectForPrecheck(response);
 		if ( queryResult != OK ){
-			log.info("receipt not ok " + Instant.now() + " submit Time " + submitTime );
-			log.info("txn id " + extractTxnId(txnSubmitted));
+			log.info("receipt not ok elapsed " + Duration.between(Instant.now(), submitTimeInstant)
+					+ " qsize " + spec.numPendingOps());
 		}
 		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
