@@ -829,12 +829,12 @@ workflows:
                   - master
     jobs:
       - fast-build-artifact
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           requires:
             - fast-build-artifact
       - run-accessory-tests:
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
           pre-steps:
             - attach_workspace:
                 at: /
@@ -886,14 +886,12 @@ workflows:
           requires:
             - start-singlejob-testnet
           pre-steps:
-            - start-testnet:
-                use-existing-network: true
-                use-hugepage: true
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-      - run-network-sim:
-          requires:
-            - start-singlejob-testnet
       - run-update-feature:
           requires:
             - run-accessory-tests
