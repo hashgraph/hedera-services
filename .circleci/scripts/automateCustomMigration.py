@@ -297,13 +297,13 @@ copyLogs()
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
 
-test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 os.chdir(SERVICES_REPO)
 mvn_install_cmd = "mvn clean install"
+os.system(mvn_install_cmd)
+
+test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
 mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
-
-os.system(mvn_install_cmd)
 
 for n in range(0, NO_OF_NODES):
 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n, RUNNING_HASH_VERSION))
