@@ -298,8 +298,9 @@ copyLogs()
 #---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
 
 test_clients_path = "{}/test-clients".format(SERVICES_REPO)
-os.chdir(test_clients_path)
+os.chdir(SERVICES_REPO)
 mvn_install_cmd = "mvn clean install"
+os.chdir(test_clients_path)
 mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
 
 os.system(mvn_install_cmd)
