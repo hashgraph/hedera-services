@@ -73,6 +73,20 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				Assert.assertEquals("Bad TopicRunningHashVerions!",
+						versionNumber,
+						receipt.getTopicRunningHashVersion());
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts contractCallResult(ContractFnResultAsserts provider) {
 		registerTypedProvider("contractCallResult", provider);
 		return this;

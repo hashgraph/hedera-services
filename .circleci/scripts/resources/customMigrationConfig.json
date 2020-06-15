@@ -11,5 +11,6 @@
   "savedState3": "custom-migration-saved-states/backup-new-3.zip",
   "payerAccountNum": "95",
   "startupAccount": "custom-migration-saved-states/StartUpAccount.txt",
-  "bucketName": "hedera-service-regression"
+  "bucketName": "hedera-service-regression",
+  "topicRunningHashVersion":"2"
 }

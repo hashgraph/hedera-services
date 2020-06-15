@@ -23,7 +23,9 @@ package com.hedera.services.bdd.suites.regression;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -37,6 +39,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -49,6 +55,8 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     public static String nodeAddress = "";
     public static String payer = "0.0.";
     public static String startUpAccount = "";
+    public static int topic_running_hash_version = 0;
+    public static final int TOPIC_RUNNING_HASH_VERSION = HapiSpecSetup.getDefaultInstance().defaultTopicRunningHashVersion();
 
     private AtomicLong duration = new AtomicLong(1);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
@@ -67,12 +75,14 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
             nodeAddress = nodeInfo.getHost();
             payer +=  defaultSetup.defaultPayer().getAccountNum();
             startUpAccount =  defaultSetup.startupAccountsPath();
+            topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
         }
         else{
             nodeId += args[0];
             nodeAddress = args[1];
             payer += args[2];
             startUpAccount = args[3];
+            topic_running_hash_version = Integer.parseInt(args[4]);
         }
 
         UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
@@ -83,12 +93,39 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
         return List.of(
                 new HapiApiSpec[]{
                         UmbrellaReduxWithCustomNodes(),
+                        messageSubmissionSimple()
                 }
         );
     }
 
+    private HapiApiSpec messageSubmissionSimple() {
+        return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
+                .withProperties(Map.of(
+                        "default.topic.runningHash.version",topic_running_hash_version
+                ))
+                .given(
+                        newKeyNamed("submitKey"),
+                        createTopic("testTopic")
+                                .submitKeyName("submitKey")
+                )
+                .when(
+                        cryptoCreate("civilian").sendThreshold(1L)
+                )
+                .then(
+                        submitMessageTo("testTopic")
+                                .message("testmessage")
+                                .payingWith("civilian")
+                                .hasKnownStatus(SUCCESS)
+                                .via("messageSubmissionSimple"),
+                        QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
+                                .has(TransactionRecordAsserts.recordWith()
+                                        .checkTopicRunningHashVersion(TOPIC_RUNNING_HASH_VERSION))
+
+                );
+    }
+
     private HapiApiSpec UmbrellaReduxWithCustomNodes(){
-        return HapiApiSpec.customHapiSpec("UmbrellaRedux")
+        return HapiApiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
                 .withProperties(Map.of(
                         "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get()),
                         "default.node",nodeId,

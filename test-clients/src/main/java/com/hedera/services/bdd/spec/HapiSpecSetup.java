@@ -224,6 +224,7 @@ public class HapiSpecSetup {
 	}
 	public long defaultThroughputObsExpiryMs() { return props.getLong("default.throughputObs.expiry.ms"); }
 	public long defaultThroughputObsSleepMs() { return props.getLong("default.throughputObs.sleep.ms"); }
+	public int defaultTopicRunningHashVersion() { return props.getInteger("default.topic.runningHash.version"); }
 	public AccountID defaultTransfer() {
 		return props.getAccount("default.transfer");
 	}

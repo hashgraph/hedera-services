@@ -69,6 +69,8 @@ PAYER_ACCOUNT_NUM=""
 
 STARTUP_ACCOUNT=""
 
+RUNNING_HASH_VERSION=""
+
 NODE_ADDRESSES = []
 
 START_DIR=os.getcwd()
@@ -111,6 +113,8 @@ def reafConfig():
 		STARTUP_ACCOUNT = config['startupAccount']
 		global BUCKET_NAME
 		BUCKET_NAME = config['bucketName']
+		global RUNNING_HASH_VERSION
+		RUNNING_HASH_VERSION = config['topicRunningHashVersion']
 
 reafConfig()
 
@@ -276,7 +280,7 @@ def copyLogs():
 	#copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
 	# for CircleCI
-	copy_swirld_log = "scp ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /output/{}/"
+	copy_swirld_log = "scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /output/{}/"
 
 	os.mkdir("/output")
 
@@ -296,12 +300,12 @@ copyLogs()
 test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
 mvn_install_cmd = "mvn clean install"
-mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
+mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
 
 os.system(mvn_install_cmd)
 
 for n in range(0, NO_OF_NODES):
-	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n))
+	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n, RUNNING_HASH_VERSION))
 	time.sleep(90)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
