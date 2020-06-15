@@ -282,14 +282,14 @@ def copyLogs():
 	# for CircleCI
 	copy_swirld_log = "scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /output/{}/"
 
-	os.mkdir("/output")
+	os.mkdir("/repo/output")
 
 	for n in range(0, NO_OF_NODES):
 		NODE_ADDRESSES.append(inventory_f.readline().rstrip()[20:])
 		print("node address is : {}".format(NODE_ADDRESSES[n]))
 		for x in range(0, 3):
 			inventory_f.readline()
-		os.mkdir("/output/{}".format(n))
+		os.mkdir("/repo/output/{}".format(n))
 		os.system(copy_swirld_log.format(NODE_ADDRESSES[n], n))
 
 copyLogs()
@@ -301,13 +301,13 @@ copyLogs()
 # mvn_install_cmd = "mvn clean install"
 # os.system(mvn_install_cmd)
 
-test_clients_path = "{}test-clients".format(SERVICES_REPO)
-os.chdir(test_clients_path)
-mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
-
-for n in range(0, NO_OF_NODES):
-	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n, RUNNING_HASH_VERSION))
-	time.sleep(90)
+# test_clients_path = "{}test-clients".format(SERVICES_REPO)
+# os.chdir(test_clients_path)
+# mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /output/CustomMigrationUmbrellaRedux{}.log'
+#
+# for n in range(0, NO_OF_NODES):
+# 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n, RUNNING_HASH_VERSION))
+# 	time.sleep(90)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
@@ -317,7 +317,8 @@ def validateLogs():
 
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "SwirldsPlatform - Platform {} has loaded a saved state for round".format(n)
-		with open( "/output/{}/swirlds.log".format(n)) as swirldsLog_f:
+		with open( "/repo/output/{}/swirlds.log".format(n)) as swirldsLog_f:
+			print(swirldsLog_f)
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))
 			else:
@@ -326,11 +327,11 @@ def validateLogs():
 			if 'ERROR' in swirldsLog_f.read():
 				print ("Error Found in the swirlds log on platform{}".format(n))
 		passed_eet = "UmbrellaRedux - Spec{name=UmbrellaRedux, status=PASSED}"
-		with open ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n)) as eetLog_f:
-			if passed_eet in eetLog_f.read():
-				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
-			else:
-				print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
-				print ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n))
+		# with open ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n)) as eetLog_f:
+		# 	if passed_eet in eetLog_f.read():
+		# 		print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
+		# 	else:
+		# 		print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
+				# print ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n))
 
 validateLogs()
