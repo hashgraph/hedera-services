@@ -318,7 +318,7 @@ def validateLogs():
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "SwirldsPlatform - Platform {} has loaded a saved state for round".format(n)
 		with open( "/repo/output/{}/swirlds.log".format(n)) as swirldsLog_f:
-			print(swirldsLog_f)
+			print(swirldsLog_f.read())
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))
 			else:
