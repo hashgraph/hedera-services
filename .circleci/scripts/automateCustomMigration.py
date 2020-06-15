@@ -276,7 +276,7 @@ def copyLogs():
 	#copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
 	# for CircleCI
-	copy_swirld_log = "scp -i ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /output/{}/"
+	copy_swirld_log = "scp ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /output/{}/"
 
 	os.mkdir("/output")
 
