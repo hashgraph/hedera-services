@@ -1200,7 +1200,7 @@ workflows:
           filters:
             branches:
               only:
-                - AWS-summary-workflow
+                - master
     jobs:
       - aws-summary
 
