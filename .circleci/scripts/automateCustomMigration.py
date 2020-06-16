@@ -304,6 +304,7 @@ time.sleep(60)
 
 test_clients_path = "{}test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
+os.system("mvn -q clean package")
 mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" ' #'> /output/CustomMigrationUmbrellaRedux{}.log'
 
 for n in range(0, NO_OF_NODES):
