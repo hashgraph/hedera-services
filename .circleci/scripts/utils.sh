@@ -19,6 +19,8 @@ function ci_echo() {
 
 TEST_CLIENTS_DIR=${REPO}/test-clients
 CLIENT_LOG_DIR=${REPO}/client-logs
+DIAG_DIR=${REPO}/diagnostics
+SLACK_MSG_FILE=$DIAG_DIR/slack_msg.txt
 RECORD_STREAMS_DIR=${REPO}/recordstreams
 FIRST_NODE_ACCOUNT_NUM=3
 HAPI_APP_DIR="/opt/hgcapp/services-hedera/HapiApp2.0"
@@ -113,7 +115,9 @@ function report_failure {
   if [[ $SIG -ne 0 ]]; then
     echo "CircleCi ${CIRCLE_BRANCH} build ${CIRCLE_BUILD_NUM} failed at stage ${CIRCLE_STAGE}" > ${REPO}/failure_msg.txt
     ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-        -t ${REPO}/failure_msg.txt
+        -c hedera-cicd \
+        -t ${REPO}/failure_msg.txt \
+        -s E
   fi
   exit $SIG
 }
