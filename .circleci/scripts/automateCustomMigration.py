@@ -328,7 +328,7 @@ def validateLogs():
 
 			if 'ERROR' in swirldsLog_f.read():
 				print ("Error Found in the swirlds log on platform{}".format(n))
-		passed_eet = "UmbrellaRedux - Spec{name=UmbrellaRedux, status=PASSED}"
+		passed_eet = "UmbrellaRedux - Spec{name=UmbrellaReduxWithCustomNodes, status=PASSED}"
 		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
 			if passed_eet in eetLog_f.read():
 				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
