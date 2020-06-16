@@ -1157,6 +1157,13 @@ workflows:
                 at: /
 
   daily-aws-summary:
+    triggers:
+      - schedule:
+          cron: "15 14 * * *"
+          filters:
+            branches:
+              only:
+                - AWS-summary-workflow
     jobs:
       - aws-summary
 
