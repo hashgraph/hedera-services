@@ -308,8 +308,9 @@ os.chdir(test_clients_path)
 mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /repo/output/CustomMigrationUmbrellaRedux{}.log'
 
 for n in range(0, NO_OF_NODES):
+	print("running UmbrellaReduxWithCustomNodes test on node {}".format(n))
 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "{}/startupAccount.txt".format(SERVICES_REPO), RUNNING_HASH_VERSION, n))
-	time.sleep(90)
+	time.sleep(65)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
