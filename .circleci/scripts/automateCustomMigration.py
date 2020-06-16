@@ -305,7 +305,7 @@ time.sleep(60)
 test_clients_path = "{}test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
 
-mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" ' #'> /output/CustomMigrationUmbrellaRedux{}.log'
+mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" > /repo/output/CustomMigrationUmbrellaRedux{}.log'
 
 for n in range(0, NO_OF_NODES):
 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "{}/startupAccount.txt".format(SERVICES_REPO), RUNNING_HASH_VERSION))
@@ -329,11 +329,11 @@ def validateLogs():
 			if 'ERROR' in swirldsLog_f.read():
 				print ("Error Found in the swirlds log on platform{}".format(n))
 		passed_eet = "UmbrellaRedux - Spec{name=UmbrellaRedux, status=PASSED}"
-		# with open ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n)) as eetLog_f:
-		# 	if passed_eet in eetLog_f.read():
-		# 		print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
-		# 	else:
-		# 		print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
-				# print ("{}/CustomMigrationUmbrellaRedux{}.log".format(test_clients_path, n))
+		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
+			if passed_eet in eetLog_f.read():
+				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
+			else:
+				print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
+				print ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n))
 
 validateLogs()
