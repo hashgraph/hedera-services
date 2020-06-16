@@ -1,0 +1,19 @@
+{
+  "workflow-name": "nightly-regression",
+  "ordered-job-types": {
+	"build-artifact": true,
+	"regression-target-testnet": true,
+	"long-contract_txns6": false,
+	"long-crypto_txns300": false ,
+	"long-file_ops": false,
+	"long-consensus_ops": false,
+	"long-umbrella": false,
+	"regression-validate-freeze": true,
+	"short-contract_txns6": false,
+	"short-crypto_txns300": false,
+	"short-file_ops": false,
+	"short-consensus_ops": false,
+	"short-umbrella": false,
+	"regression-run-accessory-tests": true
+	}
+}

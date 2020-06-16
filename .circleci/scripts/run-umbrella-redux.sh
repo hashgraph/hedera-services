@@ -8,6 +8,6 @@ CI_PROPERTIES_MAP=$CI_PROPERTIES_MAP \
 DSL_SUITE_RUNNER_ARGS=$DSL_SUITE_RUNNER_ARGS \
 ${REPO}/.circleci/scripts/run-scenario-test.sh $*
 
-${REPO}/.circleci/scripts/save-default-client-logs.sh
+${REPO}/.circleci/scripts/save-default-client-logs.sh nightly-regression
 
 exit 0
