@@ -129,7 +129,7 @@ if __name__ == '__main__':
         print('Sending "{}" to {}'.format(literal, slack_channel_id))
         if args.status:
             attachments = {'text': literal}
-            color = STATUS_TO_COLOR.get(args.status)
+            color = STATUS_TO_COLOR.get(args.status[0:1])
             if color:
                 attachments['color'] = color
             response = client.chat_postMessage(channel=slack_channel_id, attachments=[attachments])
