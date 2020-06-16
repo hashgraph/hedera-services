@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,6 +66,7 @@ public class FreezeHandler {
 	private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
 	private static String CMD_SCRIPT = "exec.sh";
 	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
+	private String LOG_PREFIX;
 
 	private FileID updateFeatureFile;
 
@@ -73,6 +74,7 @@ public class FreezeHandler {
 		this.globalFlag = GlobalFlag.getInstance();
 		this.platform = platform;
 		this.hfs = hfs;
+		LOG_PREFIX = "Node " + platform.getSelfId();
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
@@ -111,45 +113,57 @@ public class FreezeHandler {
 		if (updateFeatureFile == null){
 			return;
 		}
-		log.info("node " + platform.getSelfId() + " running update, CONTEXTS.getContextsCount() =" + CONTEXTS.getContextsCount());
+		log.info(LOG_PREFIX + " running update with FileID " + updateFeatureFile);
 
 		FileID fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
 		try {
 			File directory = new File(TEMP_DIR);
 			if (directory.exists()) {
+				log.info(LOG_PREFIX + " clean directory " + directory);
 				// delete everything in it recursively
 				FileUtils.cleanDirectory(directory);
 			} else {
+				log.info(LOG_PREFIX + " create directory " + directory);
 				directory.mkdir();
 			}
 
 			if (hfs.exists(fileIDtoUse)) {
+				log.info(LOG_PREFIX + " ready to ready file content, FileID = " + updateFeatureFile);
 				byte[] fileBytes = hfs.cat(fileIDtoUse);
 
+				log.info(LOG_PREFIX + " has read file content " + fileBytes.length + " bytes");
+
+				log.info(LOG_PREFIX + " unzipping file to directory " + TEMP_DIR);
 				//unzip bytes stream to target directory
 				UnzipUtility.unzip(fileBytes, TEMP_DIR);
 
 				File sdk_directory = new File(TEMP_SDK_DIR);
 				if (sdk_directory.exists()) {
-					log.info("Copying files from {} to {}", TEMP_SDK_DIR, TARGET_DIR);
+					log.info(LOG_PREFIX + " copying files from {} to {}", TEMP_SDK_DIR, TARGET_DIR);
 					// copy files recursively to sdk directory
 					FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
+
+					log.info(LOG_PREFIX + " deleting directory ", TEMP_SDK_DIR);
 					FileUtils.deleteDirectory(sdk_directory);
 				}
 
 				File deleteTxt = new File(DELETE_FILE);
 				if (deleteTxt.exists()) {
+					log.info(LOG_PREFIX + " executing delete file list ", DELETE_FILE);
 					deleteFileFromList(DELETE_FILE);
+
+					log.info(LOG_PREFIX + " deleting file ", DELETE_FILE);
 					deleteTxt.delete();
 				}
 
 				File script = new File(FULL_SCRIPT_PATH);
 				if (script.exists()) {
 					if (script.setExecutable(true)) {
+						log.info(LOG_PREFIX + " ready to execute script ", DELETE_FILE);
 						runScript(FULL_SCRIPT_PATH);
 					} else {
-						log.error("Could not change to executable permission for file {} ", FULL_SCRIPT_PATH);
+						log.error(LOG_PREFIX + " could not change to executable permission for file {} ", FULL_SCRIPT_PATH);
 					}
 				}
 			}
@@ -168,15 +182,16 @@ public class FreezeHandler {
 			while ((line = br.readLine()) != null) {
 
 				if (line.contains("..")) {
-					log.warn("Skip delete file {}", line);
+					log.warn(LOG_PREFIX + " skip delete file {} located in parent directory ", line);
 				} else {
 					String fullPath = TARGET_DIR + File.separator + line;
 					File file = new File(fullPath);
+					log.info(LOG_PREFIX + " deleting file  ", fullPath);
 					if (file.exists()) {
 						if (file.delete()) {
-							log.info("Successfully deleted file {}", fullPath);
+							log.info(LOG_PREFIX + " successfully deleted file {}", fullPath);
 						} else {
-							log.error("Could not delete file {}", fullPath);
+							log.error(LOG_PREFIX +  "could not delete file {}", fullPath);
 						}
 					}
 				}
@@ -188,10 +203,10 @@ public class FreezeHandler {
 
 	private void runScript(String scriptFullPath) {
 		try {
-			log.info("Start running script: {}", scriptFullPath);
+			log.info(LOG_PREFIX + " start running script: {}", scriptFullPath);
 			Runtime.getRuntime().exec(" nohup " + scriptFullPath );
 		} catch (SecurityException | NullPointerException | IllegalArgumentException | IOException e) {
-			log.error("Run script exception ", e);
+			log.error(LOG_PREFIX + " run script exception ", e);
 		}
 	}
 }

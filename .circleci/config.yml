@@ -872,11 +872,12 @@ workflows:
   feature-update-regression:
     triggers:
         - schedule:
-            cron: "0 8 * * *"
+            # cron: "0 8 * * *"
             filters:
               branches:
                 only:
-                  - master
+                  # - master
+                  - 00272-update-feature-detail-log
     jobs:
       - build-artifact
       - start-singlejob-testnet:
