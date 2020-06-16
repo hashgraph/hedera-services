@@ -201,8 +201,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "./startupAccount.txt")
-		f = open("{}".format("./startupAccount.txt"))
+		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "{}/startupAccount.txt".format(SERVICES_REPO))
+		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
 	except IOError:
 		print("startupAccount not found ")
 	finally:
@@ -304,11 +304,11 @@ time.sleep(60)
 
 test_clients_path = "{}test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
-os.system("mvn -q clean package")
+
 mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes  -Dexec.args="{} {} {} {} {}" ' #'> /output/CustomMigrationUmbrellaRedux{}.log'
 
 for n in range(0, NO_OF_NODES):
-	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "./startupAccount.txt", n, RUNNING_HASH_VERSION))
+	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "{}/startupAccount.txt".format(SERVICES_REPO), RUNNING_HASH_VERSION))
 	time.sleep(90)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
