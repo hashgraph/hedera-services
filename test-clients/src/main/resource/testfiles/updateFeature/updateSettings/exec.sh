@@ -52,7 +52,7 @@ if [[ "$unamestr" == 'Linux' ]]; then
         RENAME="data/apps/HGCApp.jar"
         # if new files contain HederaNode.jar, rename it to HGCApp.jar
         if [ -f $FILE ]; then
-            shell_echo $LINENO $0 "The file HGCApp.jar pre-exist, need rename."
+            shell_echo $LINENO $0 "The file HGCApp.jar pre-exist, need rename to $FILE."
             rm $RENAME
             mv $FILE $RENAME
         fi
@@ -60,8 +60,6 @@ if [[ "$unamestr" == 'Linux' ]]; then
         # call DevOps script here ?
         shell_echo $LINENO $0 "Restart HGCAPP service"
         sudo service hgcapp restart >> $OUTPUT 2>&1
-
-        shell_echo $LINENO $0 "Restart for CircleCI"
 
     else
         shell_echo $LINENO $0 "Running on Linux"

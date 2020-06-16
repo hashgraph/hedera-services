@@ -118,6 +118,7 @@ public class FreezeHandler {
 		FileID fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
 		try {
+			log.info(LOG_PREFIX + " current directory " + System.getProperty("user.dir"));
 			File directory = new File(TEMP_DIR);
 			if (directory.exists()) {
 				log.info(LOG_PREFIX + " clean directory " + directory);
@@ -129,7 +130,7 @@ public class FreezeHandler {
 			}
 
 			if (hfs.exists(fileIDtoUse)) {
-				log.info(LOG_PREFIX + " ready to ready file content, FileID = " + updateFeatureFile);
+				log.info(LOG_PREFIX + " ready to read file content, FileID = " + fileIDtoUse);
 				byte[] fileBytes = hfs.cat(fileIDtoUse);
 
 				log.info(LOG_PREFIX + " has read file content " + fileBytes.length + " bytes");
@@ -144,23 +145,23 @@ public class FreezeHandler {
 					// copy files recursively to sdk directory
 					FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
 
-					log.info(LOG_PREFIX + " deleting directory ", TEMP_SDK_DIR);
+					log.info(LOG_PREFIX + " deleting directory " + TEMP_SDK_DIR);
 					FileUtils.deleteDirectory(sdk_directory);
 				}
 
 				File deleteTxt = new File(DELETE_FILE);
 				if (deleteTxt.exists()) {
-					log.info(LOG_PREFIX + " executing delete file list ", DELETE_FILE);
+					log.info(LOG_PREFIX + " executing delete file list " + DELETE_FILE);
 					deleteFileFromList(DELETE_FILE);
 
-					log.info(LOG_PREFIX + " deleting file ", DELETE_FILE);
+					log.info(LOG_PREFIX + " deleting file " + DELETE_FILE);
 					deleteTxt.delete();
 				}
 
 				File script = new File(FULL_SCRIPT_PATH);
 				if (script.exists()) {
 					if (script.setExecutable(true)) {
-						log.info(LOG_PREFIX + " ready to execute script ", DELETE_FILE);
+						log.info(LOG_PREFIX + " ready to execute script " + DELETE_FILE);
 						runScript(FULL_SCRIPT_PATH);
 					} else {
 						log.error(LOG_PREFIX + " could not change to executable permission for file {} ", FULL_SCRIPT_PATH);
