@@ -17,6 +17,7 @@
 #   SAVEDSTATE_3		- Skey to aved State zip for node 4
 #	PAYER_ACCOUNT_NUM	- Account number of the key that you have ins tartup account ex: 95
 #	STARTUP_ACCOUNT		- Key to the startUpAccount that we need to use to run UmbrellaRedux
+#	RUNNING_HASH_VERSION- Verion to verify
 #
 #.  Only coded this custom migration script to do 4 node migration test.
 #
