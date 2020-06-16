@@ -1336,6 +1336,7 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Summarize all AWS instances currently used by regions
           command: |
             /repo/.circleci/scripts/aws-summary.sh
   run-bdd-test:
