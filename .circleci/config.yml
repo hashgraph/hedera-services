@@ -1210,6 +1210,17 @@ workflows:
             - attach_workspace:
                 at: /
 
+  daily-aws-summary:
+    triggers:
+      - schedule:
+          cron: "15 14 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - aws-summary
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -1403,6 +1414,14 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
+  aws-summary:
+    executor: ci-test-executor
+    steps:
+      - checkout
+      - run:
+          name: Summarize all AWS instances currently used by regions
+          command: |
+            /repo/.circleci/scripts/aws-summary.sh
   run-bdd-test:
     executor: ci-test-executor
     parallelism: <<parameters.parallel-level>>

@@ -32,7 +32,7 @@ function tf_cleanup {
         ${REPO}/HapiApp2.0 ${REPO}/diagnostics ${REPO}/.circleci/scripts/resources
 
       slack_channel='hedera-cicd'
-      if [ ${CITCLE_BRANCH} = "master" ];  then
+      if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
           slack_channel='hedera-regression'
       fi
       ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
