@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 
+#
+# Sample script of how to update jar files using update feature
+#
+# Argument
+#   $1 node id number
+#
+
 set -eE
 
 unamestr=`uname`
+
+NODE_ID=$1
 
 OUTPUT=output/hgcaa.log
 
@@ -15,11 +24,11 @@ OUTPUT=output/hgcaa.log
 #
 shell_echo() {
     if [[ "$unamestr" == 'Linux' ]]; then
-        echo $(date +"%Y-%m-%d %T.%3N") INFO $@ >> $OUTPUT
+        echo $(date +"%Y-%m-%d %T.%3N") INFO  $1  $2 "- NETWORK_UPDATE Node $NODE_ID" "$3" >> $OUTPUT
     elif [[ "$unamestr" == 'Darwin' ]]; then
-        echo $(date +"%Y-%m-%d %T") INFO $@ >> $OUTPUT
+        echo $(date +"%Y-%m-%d %T.000") INFO  $1  $2 "- NETWORK_UPDATE Node $NODE_ID" "$3" >> $OUTPUT
     else
-        echo $@
+        echo $(date) INFO  $1  $2 "- NETWORK_UPDATE Node $NODE_ID" "$3" >> $OUTPUT
     fi
 }
 
@@ -33,8 +42,9 @@ else
     exit
 fi
 
-shell_echo $LINENO $0 "Start backgorund bash script to update jar files"
-shell_echo $LINENO $0 "current user is" `whoami`
+USER=`whoami`
+shell_echo $LINENO $0 "Start backgorund bash script"
+shell_echo $LINENO $0 "current user is $USER"
 
 # find PID
 processId=$(ps -ef | grep 'com.swirlds.platform.Browser' | grep -v 'grep' | awk '{ printf $2 }')

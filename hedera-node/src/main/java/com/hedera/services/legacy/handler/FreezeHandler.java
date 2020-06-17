@@ -74,7 +74,7 @@ public class FreezeHandler {
 		this.globalFlag = GlobalFlag.getInstance();
 		this.platform = platform;
 		this.hfs = hfs;
-		LOG_PREFIX = "Node " + platform.getSelfId();
+		LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
@@ -161,7 +161,7 @@ public class FreezeHandler {
 				File script = new File(FULL_SCRIPT_PATH);
 				if (script.exists()) {
 					if (script.setExecutable(true)) {
-						log.info(LOG_PREFIX + " ready to execute script " + DELETE_FILE);
+						log.info(LOG_PREFIX + " ready to execute script " + FULL_SCRIPT_PATH);
 						runScript(FULL_SCRIPT_PATH);
 					} else {
 						log.error(LOG_PREFIX + " could not change to executable permission for file {} ", FULL_SCRIPT_PATH);
@@ -205,7 +205,7 @@ public class FreezeHandler {
 	private void runScript(String scriptFullPath) {
 		try {
 			log.info(LOG_PREFIX + " start running script: {}", scriptFullPath);
-			Runtime.getRuntime().exec(" nohup " + scriptFullPath );
+			Runtime.getRuntime().exec(" nohup " + scriptFullPath + " " + platform.getSelfId().getId());
 		} catch (SecurityException | NullPointerException | IllegalArgumentException | IOException e) {
 			log.error(LOG_PREFIX + " run script exception ", e);
 		}
