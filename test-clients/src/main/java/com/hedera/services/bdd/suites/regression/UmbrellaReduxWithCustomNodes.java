@@ -56,7 +56,6 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     public static String payer = "0.0.";
     public static String startUpAccount = "";
     public static int topic_running_hash_version = 0;
-    public static final int TOPIC_RUNNING_HASH_VERSION = HapiSpecSetup.getDefaultInstance().defaultTopicRunningHashVersion();
 
     private AtomicLong duration = new AtomicLong(1);
     private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
@@ -119,7 +118,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                                 .via("messageSubmissionSimple"),
                         QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
                                 .has(TransactionRecordAsserts.recordWith()
-                                        .checkTopicRunningHashVersion(TOPIC_RUNNING_HASH_VERSION))
+                                        .checkTopicRunningHashVersion(topic_running_hash_version))
 
                 );
     }
