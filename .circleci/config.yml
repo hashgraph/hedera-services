@@ -870,13 +870,13 @@ workflows:
                 at: /
 
   feature-update-regression:
-    # triggers:
-    #     - schedule:
-    #         cron: "0 8 * * *"
-    #         filters:
-    #           branches:
-    #             only:
-    #               - master
+    triggers:
+        - schedule:
+            cron: "0 8 * * *"
+            filters:
+              branches:
+                only:
+                  - master
     jobs:
       - build-artifact
       - start-singlejob-testnet:
