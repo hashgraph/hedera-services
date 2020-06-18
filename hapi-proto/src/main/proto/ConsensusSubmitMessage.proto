@@ -10,7 +10,7 @@ import "BasicTypes.proto";
 message ConsensusMessageChunkInfo {
     TransactionID initialMessageTransactionID = 1; // TransactionID of the first chunk, get copied to every subsequent chunk in a long message.
     int32 totalChunks = 2; // Total number of chunks in the message.
-    int32 currentChunk = 3; // The sequence number (from 1 to totalChunks) of the current chunk in the message.
+    int32 chunkNumber = 3; // The sequence number (from 1 to totalChunks) of the current chunk in the message.
 }
 
 message ConsensusSubmitMessageTransactionBody {
