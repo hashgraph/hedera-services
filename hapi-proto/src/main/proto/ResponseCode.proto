@@ -155,6 +155,6 @@ enum ResponseCodeEnum {
   // by HAPI.
   TOPIC_EXPIRED = 162;
   INVALID_CHUNK_SIZE = 163; // All chunks except for the last one has to be a full CHUNK_SIZE message. The size of the last chunk could be less than CHUNK_SIZE.
-  INVALID_CHUNK_NUMBER = 164; // currentChunk must be from 1 to totalChunks inclusive.
+  INVALID_CHUNK_NUMBER = 164; // chunkNumber must be from 1 to totalChunks inclusive.
   INVALID_CHUNK_TRANSACTION_ID = 165; // initialMessageTransactionID must match the TransactionID of the first chunk in a long message.
 }
