@@ -31,10 +31,14 @@ function tf_cleanup {
       python3 ${REPO}/.circleci/scripts/diagnose-logs.py \
         ${REPO}/HapiApp2.0 ${REPO}/diagnostics ${REPO}/.circleci/scripts/resources
 
+      slack_channel='hedera-cicd'
+      if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
+          slack_channel='hedera-regression'
+      fi
       ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-        -c hedera-cicd \
+        -c ${slack_channel} \
         -t ${REPO}/diagnostics/slack_msg.txt \
-        -s E
+        -s Error
 
       if [ -f ${REPO}/diagnostics/shouldUploadFilteredLogs ]; then
         DIAGNOSTICS_DIR=${REPO}/diagnostics/filtered-logs
