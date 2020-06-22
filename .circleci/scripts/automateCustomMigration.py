@@ -7,7 +7,6 @@
 #	NETWORKUSED			- Kind of network we are testing migration on - mainnet / testnet
 #	INFRASTRUCTURE_REPO	- Path to infrastructure repository to use ansible playbooks
 #	INVENTORY			- Intervory file which contains IPs to the instances we are going to test migration on
-#	PEM_FILE			- Permissions file that allows us to access the instances that are mentioned in the inventory file
 #	BRANCH_NAME			- Newer branch of service-hedera repo we want to deploy the nodes with
 #	SERVICES_REPO		- Path to services-hedera repository
 #	BUCKET_NAME			- Name of the s3 bucket that the saved states and startUpAccount are saved in.
@@ -48,8 +47,6 @@ INFRASTRUCTURE_REPO=""
 
 INVENTORY=""
 
-PEM_FILE=""
-
 BRANCH_NAME=""
 
 SERVICES_REPO=""
@@ -88,8 +85,6 @@ def reafConfig():
 		INFRASTRUCTURE_REPO = config['infrastructureRepo']
 		global INVENTORY
 		INVENTORY = config['inventory']
-		global PEM_FILE
-		PEM_FILE = config['pemFile']
 		global BRANCH_NAME
 		BRANCH_NAME = config['serviceBranch']
 		global SERVICES_REPO
@@ -136,14 +131,6 @@ def validateInputs():
 		print("Invetory file not found")
 	finally:
 		f.close()
-
-	# for Local
-	# try:
-	# 	f = open("{}".format(PEM_FILE))
-	# except IOError:
-	# 	print("PEM file not found")
-	# finally:
-	# 	f.close()
 
 	try:
 		f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
@@ -239,10 +226,6 @@ def runMigration():
 
 	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
 
-	# for local
-	#playbook_command = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, PEM_FILE, BRANCH_NAME)
-
-	# for CircleCI
 	playbook_command = "ansible-playbook -i ./inventory/{} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, BRANCH_NAME)
 
 	os.chdir(ansible_path)
@@ -264,10 +247,6 @@ def copyLogs():
 	for i in range(0, 11):
 		node_address = inventory_f.readline()
 
-	# for local
-	#copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
-
-	# for CircleCI
 	copy_swirld_log = "scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /repo/output/{}/"
 
 	os.mkdir("/repo/output")
@@ -308,7 +287,6 @@ def validateLogs():
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "SwirldsPlatform - Platform {} has loaded a saved state for round".format(n)
 		with open( "/repo/output/{}/swirlds.log".format(n)) as swirldsLog_f:
-			# print(swirldsLog_f.read())
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))
 			else:
@@ -316,12 +294,17 @@ def validateLogs():
 
 			if 'ERROR' in swirldsLog_f.read():
 				print ("Error Found in the swirlds log on platform{}".format(n))
-		passed_eet = "UmbrellaRedux - Spec{name=UmbrellaReduxWithCustomNodes, status=PASSED}"
+		passed_UmbrellaRedux = "UmbrellaRedux - Spec{name=UmbrellaReduxWithCustomNodes, status=PASSED}"
+		passed_
 		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
-			if passed_eet in eetLog_f.read():
+			if passed_UmbrellaRedux in eetLog_f.read():
 				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
 			else:
 				print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
-				print ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n))
+		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
+        			if passed_UmbrellaRedux in eetLog_f.read():
+        				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
+        			else:
+        				print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
 
 validateLogs()
