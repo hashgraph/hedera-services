@@ -202,7 +202,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "{}/startupAccount.txt".format(SERVICES_REPO))
+		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "{}/startupAccount.txt".format(SERVICES_REPO))
+		os.system("aws s3 cp s3://hedera-service-regression/custom-migration-saved-states/StartUpAccount.txt /repo/startupAccount.txt")
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
 	except IOError:
 		print("startupAccount not found ")
