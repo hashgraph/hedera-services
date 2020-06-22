@@ -190,7 +190,7 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO)
+		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
 	except IOError:
 		print("startupAccount not found ")
