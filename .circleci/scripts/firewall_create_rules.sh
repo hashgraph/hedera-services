@@ -4,7 +4,7 @@
 . /repo/.circleci/scripts/utils.sh
 
 
-function firewall_creat_rules {
+function firewall_create_rules {
 
     # running block script at the last node
     HOST=$1
@@ -47,14 +47,14 @@ function packet_reorder {
 
 }
 
-# the last node block network
-firewall_creat_rules ${TF_HOSTS[${#TF_HOSTS[@]}-1]}
-
 # the first node drop packet
 packet_loss ${TF_HOSTS[0]}
 
-# the last node delay packet
+# the second node delay packet
 packet_corruption ${TF_HOSTS[1]}
 
-# the second last node randome corrupt packet
+# the third node randome corrupt packet
 packet_reorder ${TF_HOSTS[2]}
+
+# the last node block network
+firewall_create_rules ${TF_HOSTS[${#TF_HOSTS[@]}-1]}
