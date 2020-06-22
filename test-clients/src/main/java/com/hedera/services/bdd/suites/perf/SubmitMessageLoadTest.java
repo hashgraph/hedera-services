@@ -97,7 +97,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 						.suppressStats(true)
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, RECEIPT_NOT_FOUND)
 						.hasAnyStatusAtAll()
-						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
+						.hasKnownStatusFrom(SUCCESS, UNKNOWN, OK)
 						.deferStatusResolution()
 
 		};
