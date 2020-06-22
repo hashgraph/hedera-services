@@ -100,7 +100,11 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     private HapiApiSpec messageSubmissionSimple() {
         return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
                 .withProperties(Map.of(
-                        "default.topic.runningHash.version",topic_running_hash_version
+                        "default.topic.runningHash.version",topic_running_hash_version,
+                        "default.node",nodeId,
+                        "default.payer", payer,
+                        "nodes", nodeAddress + ":" + nodeId,
+                        "startupAccounts.path", startUpAccount
                 ))
                 .given(
                         newKeyNamed("submitKey"),
