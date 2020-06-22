@@ -277,8 +277,6 @@ for n in range(0, NO_OF_NODES):
 	print("running UmbrellaReduxWithCustomNodes test on node {}".format(n))
 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "{}/startupAccount.txt".format(SERVICES_REPO), RUNNING_HASH_VERSION, n))
 	time.sleep(80)
-	logFile = open("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n), "r")
-	print(logFile.read())
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
