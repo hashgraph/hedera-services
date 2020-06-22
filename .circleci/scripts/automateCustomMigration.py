@@ -166,7 +166,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_0, "./savedState0.zip")
+		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_0, "./savedState0.zip")
+		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_0))
 		f = open("{}".format("./savedState0.zip"))
 		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
 			savedState0.extractall("0/")
@@ -175,7 +176,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_1, "./savedState1.zip")
+		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_1, "./savedState1.zip")
+		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_1))
 		f = open("{}".format("./savedState1.zip"))
 		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
 			savedState1.extractall("1/")
@@ -184,7 +186,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_2, "./savedState2.zip")
+		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_2, "./savedState2.zip")
+		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_2))
 		f = open("{}".format("./savedState2.zip"))
 		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
 			savedState2.extractall("2/")
@@ -193,7 +196,8 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_3, "./savedState3.zip")
+		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_3, "./savedState3.zip")
+		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_3))
 		f = open("{}".format("./savedState3.zip"))
 		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
 			savedState3.extractall("3/")
