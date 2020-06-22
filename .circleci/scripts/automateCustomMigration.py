@@ -76,10 +76,6 @@ NODE_ADDRESSES = []
 
 START_DIR=os.getcwd()
 
-ACCESS_KEY = "AKIARLBM6VADFE5EUMHY"
-
-SECRET_KEY = "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"
-
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- READ CONFIG ------------------------------------------------------------------------#
 
@@ -166,7 +162,6 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_0, "./savedState0.zip")
 		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_0))
 		f = open("{}".format("./savedState0.zip"))
 		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
@@ -176,8 +171,7 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_1, "./savedState1.zip")
-		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_1))
+		os.system("aws s3 cp s3://{}/{} ./savedState1.zip".format(BUCKET_NAME, SAVEDSTATE_1))
 		f = open("{}".format("./savedState1.zip"))
 		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
 			savedState1.extractall("1/")
@@ -186,8 +180,7 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_2, "./savedState2.zip")
-		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_2))
+		os.system("aws s3 cp s3://{}/{} ./savedState2.zip".format(BUCKET_NAME, SAVEDSTATE_2))
 		f = open("{}".format("./savedState2.zip"))
 		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
 			savedState2.extractall("2/")
@@ -196,8 +189,7 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, SAVEDSTATE_3, "./savedState3.zip")
-		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_3))
+		os.system("aws s3 cp s3://{}/{} ./savedState3.zip".format(BUCKET_NAME, SAVEDSTATE_3))
 		f = open("{}".format("./savedState3.zip"))
 		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
 			savedState3.extractall("3/")
@@ -206,8 +198,7 @@ def validateInputs():
 	finally:
 		f.close()
 	try:
-		#downloadFileFromS3(ACCESS_KEY, SECRET_KEY, BUCKET_NAME, STARTUP_ACCOUNT, "{}/startupAccount.txt".format(SERVICES_REPO))
-		os.system("aws s3 cp s3://hedera-service-regression/custom-migration-saved-states/StartUpAccount.txt /repo/startupAccount.txt")
+		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO)
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
 	except IOError:
 		print("startupAccount not found ")
