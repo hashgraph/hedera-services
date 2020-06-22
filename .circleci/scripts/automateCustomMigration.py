@@ -226,7 +226,7 @@ def runMigration():
 
 	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
 
-	playbook_command = "ansible-playbook -i ./inventory/{} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml".format(INVENTORY, BRANCH_NAME)
+	playbook_command = "ansible-playbook -i ./inventory/{} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR play-deploy-migration.yml > customMigrationLog.txt".format(INVENTORY, BRANCH_NAME)
 
 	os.chdir(ansible_path)
 
@@ -276,7 +276,7 @@ mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.re
 for n in range(0, NO_OF_NODES):
 	print("running UmbrellaReduxWithCustomNodes test on node {}".format(n))
 	os.system(mvn_test_cmd.format(n+3, NODE_ADDRESSES[n], PAYER_ACCOUNT_NUM, "{}/startupAccount.txt".format(SERVICES_REPO), RUNNING_HASH_VERSION, n))
-	time.sleep(65)
+	time.sleep(80)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
