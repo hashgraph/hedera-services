@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -37,6 +38,7 @@ import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
@@ -46,6 +48,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	private Optional<String> topic = Optional.empty();
 	private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
 	private Optional<String> message = Optional.empty();
+	private OptionalInt totalChunks = OptionalInt.empty();
+	private OptionalInt chunkNumber = OptionalInt.empty();
 	private boolean clearMessage = false;
 
 	public HapiMessageSubmit(String topic) {
@@ -76,6 +80,12 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return this;
 	}
 
+	public HapiMessageSubmit chunkInfo(int totalChunks, int chunkNumber) {
+		this.totalChunks = OptionalInt.of(totalChunks);
+		this.chunkNumber = OptionalInt.of(chunkNumber);
+		return this;
+	}
+
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		TopicID id = resolveTopicId(spec);
@@ -87,6 +97,14 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 							message.ifPresent(m -> b.setMessage(ByteString.copyFrom(m.getBytes())));
 							if (clearMessage) {
 								b.clearMessage();
+							}
+							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
+								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
+										.newBuilder()
+										.setTotalChunks(totalChunks.getAsInt())
+										.setChunkNumber(chunkNumber.getAsInt())
+										.build();
+								b.setChunkInfo(chunkInfo);
 							}
 						});
 		return b -> b.setConsensusSubmitMessage(opBody);
