@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
@@ -55,6 +56,8 @@ public class RunLoadTest extends UtilOp {
 	private final Supplier<HapiSpecOperation[]> opSource;
 
 	private int numberOfThreads = 1;
+
+	private AtomicLong totalOpsAllThread = new AtomicLong();
 
 	public RunLoadTest tps(DoubleSupplier targetTps) {
 		this.targetTps = targetTps;
@@ -110,6 +113,8 @@ public class RunLoadTest extends UtilOp {
 				e.printStackTrace();
 			}
 		}
+		log.info("Total Ops submitted {}, actual TPS {}", totalOpsAllThread.get(),
+				totalOpsAllThread.get() / ((float) (testDuration.getAsLong() * 60 )));
 		return false;
 	}
 
@@ -137,7 +142,8 @@ public class RunLoadTest extends UtilOp {
 
 			long elapsedMS = statDuration.elapsed(MILLISECONDS);
 			currentTPS = submitOps / (elapsedMS * 0.001f);
-			//log.info("Thread {} elapsedMS {} submitOps {} currentTPS {} ", Thread.currentThread().getName(), elapsedMS, submitOps, currentTPS);
+			//log.info("Thread {} elapsedMS {} submitOps {} currentTPS {} ", Thread.currentThread().getName(),
+			// elapsedMS, submitOps, currentTPS);
 
 			if (statDuration.elapsed(SECONDS) % 10 == 0) { //report periodically
 				if (!reported) {
@@ -161,5 +167,7 @@ public class RunLoadTest extends UtilOp {
 		}
 		log.info("Thread {} final ops {} in {} seconds, TPS {} ", Thread.currentThread().getName(),
 				totalOps, duration.elapsed(SECONDS), currentTPS);
+
+		totalOpsAllThread.addAndGet(totalOps);
 	}
 }
