@@ -200,7 +200,6 @@ def buildSavedZip():
 			for dir in dirs:
 				if dir == "123":
 					fullSourcePath = os.path.join(root, dir)
-					print("Source path is : {}".format(fullSourcePath))
 
 		shutil.copytree( "{}/".format( fullSourcePath ), "{}".format(dest_path.format(x)) )
 
