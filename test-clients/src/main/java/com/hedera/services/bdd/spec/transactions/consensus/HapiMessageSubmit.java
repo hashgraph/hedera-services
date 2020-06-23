@@ -51,6 +51,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	private Optional<String> message = Optional.empty();
 	private OptionalInt totalChunks = OptionalInt.empty();
 	private OptionalInt chunkNumber = OptionalInt.empty();
+	private Optional<String> initialTransactionPayer = Optional.empty();
 	private boolean clearMessage = false;
 
 	public HapiMessageSubmit(String topic) {
@@ -87,6 +88,11 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return this;
 	}
 
+	public HapiMessageSubmit chunkInfo(int totalChunks, int chunkNumber, String initialTransactionPayer) {
+		this.initialTransactionPayer = Optional.of(initialTransactionPayer);
+		return chunkInfo(totalChunks, chunkNumber);
+	}
+
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		TopicID id = resolveTopicId(spec);
@@ -102,7 +108,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
 								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 										.newBuilder()
-										.setInitialTransactionID(asTransactionID(spec, payer))
+										.setInitialTransactionID(asTransactionID(spec,
+												initialTransactionPayer.isPresent() ? initialTransactionPayer : payer))
 										.setTotal(totalChunks.getAsInt())
 										.setNumber(chunkNumber.getAsInt())
 										.build();
