@@ -74,7 +74,7 @@ START_DIR=os.getcwd()
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- READ CONFIG ------------------------------------------------------------------------#
 
-def reafConfig():
+def readConfig():
 
 	with open(CONFIG_FILE) as f:
 		config 					= json.load(f)
@@ -106,10 +106,21 @@ def reafConfig():
 		global RUNNING_HASH_VERSION
 		RUNNING_HASH_VERSION = config['topicRunningHashVersion']
 
-reafConfig()
+readConfig()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
+
+def validateSavedStates(savedStateKey, savedStateName):
+    try:
+    		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, savedStateKey))
+    		f = open("./{}.zip".format(savedStateName))
+    		with zipfile.ZipFile("./{}.zip".format(savedStateName), 'r') as savedState:
+    			savedState.extractall("0/")
+    	except IOError:
+    		print("{} not found.".format(savedStateName))
+    	finally:
+    		f.close()
 
 def validateInputs():
 
@@ -138,42 +149,48 @@ def validateInputs():
 		print("services repo not present")
 	finally:
 		f.close()
-	try:
-		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_0))
-		f = open("{}".format("./savedState0.zip"))
-		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
-			savedState0.extractall("0/")
-	except IOError:
-		print("State file 0 not found ")
-	finally:
-		f.close()
-	try:
-		os.system("aws s3 cp s3://{}/{} ./savedState1.zip".format(BUCKET_NAME, SAVEDSTATE_1))
-		f = open("{}".format("./savedState1.zip"))
-		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
-			savedState1.extractall("1/")
-	except IOError:
-		print("State file 1 not found ")
-	finally:
-		f.close()
-	try:
-		os.system("aws s3 cp s3://{}/{} ./savedState2.zip".format(BUCKET_NAME, SAVEDSTATE_2))
-		f = open("{}".format("./savedState2.zip"))
-		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
-			savedState2.extractall("2/")
-	except IOError:
-		print("State file 2 not found ")
-	finally:
-		f.close()
-	try:
-		os.system("aws s3 cp s3://{}/{} ./savedState3.zip".format(BUCKET_NAME, SAVEDSTATE_3))
-		f = open("{}".format("./savedState3.zip"))
-		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
-			savedState3.extractall("3/")
-	except IOError:
-		print("State file 3 not found ")
-	finally:
-		f.close()
+
+
+	validateSavedStates(SAVEDSTATE_0, "savedState0")
+# 	try:
+# 		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_0))
+# 		f = open("{}".format("./savedState0.zip"))
+# 		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
+# 			savedState0.extractall("0/")
+# 	except IOError:
+# 		print("State file 0 not found ")
+# 	finally:
+# 		f.close()
+    validateSavedStates(SAVEDSTATE_0, "savedState0")
+# 	try:
+# 		os.system("aws s3 cp s3://{}/{} ./savedState1.zip".format(BUCKET_NAME, SAVEDSTATE_1))
+# 		f = open("{}".format("./savedState1.zip"))
+# 		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
+# 			savedState1.extractall("1/")
+# 	except IOError:
+# 		print("State file 1 not found ")
+# 	finally:
+# 		f.close()
+	validateSavedStates(SAVEDSTATE_0, "savedState0")
+# 	try:
+# 		os.system("aws s3 cp s3://{}/{} ./savedState2.zip".format(BUCKET_NAME, SAVEDSTATE_2))
+# 		f = open("{}".format("./savedState2.zip"))
+# 		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
+# 			savedState2.extractall("2/")
+# 	except IOError:
+# 		print("State file 2 not found ")
+# 	finally:
+# 		f.close()
+	validateSavedStates(SAVEDSTATE_0, "savedState0")
+# 	try:
+# 		os.system("aws s3 cp s3://{}/{} ./savedState3.zip".format(BUCKET_NAME, SAVEDSTATE_3))
+# 		f = open("{}".format("./savedState3.zip"))
+# 		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
+# 			savedState3.extractall("3/")
+# 	except IOError:
+# 		print("State file 3 not found ")
+# 	finally:
+# 		f.close()
 	try:
 		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
