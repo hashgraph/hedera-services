@@ -42,6 +42,7 @@ import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
@@ -101,6 +102,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
 								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 										.newBuilder()
+										.setInitialTransactionID(asTransactionID(spec, payer))
 										.setTotal(totalChunks.getAsInt())
 										.setNumber(chunkNumber.getAsInt())
 										.build();
