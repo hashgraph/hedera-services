@@ -1196,7 +1196,7 @@ workflows:
   daily-aws-summary:
     triggers:
       - schedule:
-          cron: "15 14 * * *"
+          cron: "15 12 * * *"
           filters:
             branches:
               only:
