@@ -2842,24 +2842,24 @@ Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessage
             <tbody>
               
                 <tr>
-                  <td>initialMessageTransactionID</td>
+                  <td>initialTransactionID</td>
                   <td><a href="#proto.TransactionID">TransactionID</a></td>
                   <td></td>
-                  <td><p>TransactionID of the first chunk, get copied to every subsequent chunk in a long message. </p></td>
+                  <td><p>TransactionID of the first chunk, gets copied to every subsequent chunk in a fragmented message. </p></td>
                 </tr>
               
                 <tr>
-                  <td>totalChunks</td>
+                  <td>total</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Total number of chunks in the message. </p></td>
+                  <td><p>The total number of chunks in the message. </p></td>
                 </tr>
               
                 <tr>
-                  <td>chunkNumber</td>
+                  <td>number</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The sequence number (from 1 to totalChunks) of the current chunk in the message. </p></td>
+                  <td><p>The sequence number (from 1 to total) of the current chunk in the message. </p></td>
                 </tr>
               
             </tbody>
@@ -2890,14 +2890,14 @@ Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessage
                   <td>message</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>Message to be submitted. Max size of the Transaction (including signatures) is 4kB. </p></td>
+                  <td><p>Message to be submitted. Max size of the Transaction (including signatures) is 6KiB. </p></td>
                 </tr>
               
                 <tr>
                   <td>chunkInfo</td>
                   <td><a href="#proto.ConsensusMessageChunkInfo">ConsensusMessageChunkInfo</a></td>
                   <td></td>
-                  <td><p>Optional information of the current chunk in a long message. </p></td>
+                  <td><p>Optional information of the current chunk in a fragmented message. </p></td>
                 </tr>
               
             </tbody>
@@ -7352,21 +7352,15 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>INVALID_CHUNK_SIZE</td>
-                <td>163</td>
-                <td><p>All chunks except for the last one has to be a full CHUNK_SIZE message. The size of the last chunk could be less than CHUNK_SIZE.</p></td>
-              </tr>
-            
-              <tr>
                 <td>INVALID_CHUNK_NUMBER</td>
-                <td>164</td>
-                <td><p>chunkNumber must be from 1 to totalChunks inclusive.</p></td>
+                <td>163</td>
+                <td><p>chunk number must be from 1 to total (chunks) inclusive.</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_CHUNK_TRANSACTION_ID</td>
-                <td>165</td>
-                <td><p>initialMessageTransactionID must match the TransactionID of the first chunk in a long message.</p></td>
+                <td>164</td>
+                <td><p>For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.</p></td>
               </tr>
             
           </tbody>
