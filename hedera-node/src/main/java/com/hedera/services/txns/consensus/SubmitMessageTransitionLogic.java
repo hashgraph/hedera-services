@@ -69,6 +69,14 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		if (op.hasChunkInfo()) {
+			var chunkInfo = op.getChunkInfo();
+			if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
+				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
+				return;
+			}
+		}
+
 		var topicMapKey = MapKey.getMapKey(topicId);
 		var topic = topics.get(topicMapKey);
 		try {
