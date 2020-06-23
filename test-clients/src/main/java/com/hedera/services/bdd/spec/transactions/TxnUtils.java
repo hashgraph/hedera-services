@@ -194,6 +194,14 @@ public class TxnUtils {
 				.setNanos(instant.getNano() - nanosBehind.addAndGet(1)).build();
 	}
 
+	public static TransactionID asTransactionID(HapiApiSpec spec, Optional<String> payer) {
+		var payerID = spec.registry().getAccountID(payer.orElse(spec.setup().defaultPayerName()));
+		var validStart = defaultTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
+		return TransactionID.newBuilder()
+				.setTransactionValidStart(validStart)
+				.setAccountID(payerID).build();
+	}
+
 	private static AtomicInteger nanosBehind = new AtomicInteger(0);
 
 	public static String solidityIdFrom(ContractID contract) {
