@@ -101,8 +101,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
 								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 										.newBuilder()
-										.setTotalChunks(totalChunks.getAsInt())
-										.setChunkNumber(chunkNumber.getAsInt())
+										.setTotal(totalChunks.getAsInt())
+										.setNumber(chunkNumber.getAsInt())
 										.build();
 								b.setChunkInfo(chunkInfo);
 							}
