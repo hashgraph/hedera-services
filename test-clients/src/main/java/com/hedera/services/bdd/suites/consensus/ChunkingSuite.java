@@ -57,7 +57,7 @@ public class ChunkingSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("testmessage")
 								.chunkInfo(2, 3)
-								.hasPrecheck(INVALID_CHUNK_NUMBER)
+								.hasKnownStatus(INVALID_CHUNK_NUMBER)
 				);
 	}
 
