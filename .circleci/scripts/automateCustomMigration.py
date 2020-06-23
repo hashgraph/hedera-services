@@ -122,6 +122,11 @@ def validateSavedStates(savedStateKey, savedStateName):
     finally:
         f.close()
 
+validateSavedStates(SAVEDSTATE_0, "savedState0")
+validateSavedStates(SAVEDSTATE_1, "savedState1")
+validateSavedStates(SAVEDSTATE_2, "savedState2")
+validateSavedStates(SAVEDSTATE_3, "savedState3")
+
 def validateInputs():
 
 	NO_OF_NODES=0
@@ -149,11 +154,6 @@ def validateInputs():
 		print("services repo not present")
 	finally:
 		f.close()
-
-	validateSavedStates(SAVEDSTATE_0, "savedState0")
-    validateSavedStates(SAVEDSTATE_0, "savedState0")
-	validateSavedStates(SAVEDSTATE_0, "savedState0")
-	validateSavedStates(SAVEDSTATE_0, "savedState0")
 
 	try:
 		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
