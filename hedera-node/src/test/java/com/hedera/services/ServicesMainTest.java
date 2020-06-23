@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,18 @@ import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.files.HederaFs;
+import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.StorageKey;
+import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.handler.FreezeHandler;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy.unit.FreezeTestHelper;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -39,10 +50,17 @@ import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.legacy.stream.RecordStream;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -54,21 +72,31 @@ import com.swirlds.common.io.FCDataOutputStream;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
@@ -327,7 +355,7 @@ public class ServicesMainTest {
 		// then:
 		verify(grpc).start(intThat(i -> i == 50212), intThat(i -> i == 50213), any());
 	}
-	
+
 	@Test
 	public void managesSystemFiles() throws Exception {
 		given(properties.getBooleanProperty("hedera.createSystemFilesOnStartup")).willReturn(true);
@@ -733,5 +761,78 @@ public class ServicesMainTest {
 		// then:
 		String msg = String.format(ServicesMain.ISS_FALLBACK_ERROR_MSG_PATTERN, 1, "null", "null");
 		verify(mockLog).error((String)argThat(msg::equals), any(Exception.class));
+	}
+
+	@Test
+	public void createUsesNextEntityId() throws Throwable {
+		EntityIdSource ids = mock(EntityIdSource.class);
+		AccountID sponsor = IdUtils.asAccount("0.0.2");
+		FileID fid = IdUtils.asFile("0.0.7575");
+
+		Map<FileID, byte[]>data = mock(Map.class);
+		Map<FileID, JFileInfo> metadata = mock(Map.class);
+		Supplier<Instant> clock = mock(Supplier.class);
+
+		given(ids.newFileId(sponsor)).willReturn(fid);
+
+		TieredHederaFs fileSystemSubject = new TieredHederaFs(ids, properties, clock, data, metadata);
+		int lifetimeSecs = 1_234_567;
+		JKey validKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey();
+		Instant now = Instant.now();
+
+		JFileInfo livingAttr = new JFileInfo(false, validKey, now.getEpochSecond() + lifetimeSecs);
+		String zipFile = "src/test/resources/testfiles/updateSettings/update.zip";
+
+		try {
+			byte[] origContents = Files.readAllBytes(Paths.get(zipFile));
+			// when:
+			var newFile = fileSystemSubject.create(origContents, livingAttr, sponsor);
+
+			// then:
+			assertEquals(fid, newFile);
+			verify(data).put(fid, origContents);
+			verify(metadata).put(fid, livingAttr);
+		} catch (IOException e) {
+			Assert.fail("Error creating file: reading contract file " + zipFile);
+		}
+	}
+
+	@Test
+	public void freezeAndUpdateSettings() {
+		String fsPath = "/0/a1234/";
+		String zipFile = "src/test/resources/testfiles/updateSettings/update.zip";
+		try {
+			byte[] data = Files.readAllBytes(Paths.get(zipFile));
+			FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);;
+
+			FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
+			storageWrapper.fileCreate(fsPath, data, 1000,
+					2, 3, null);
+
+			FreezeHandler freezeHandler;
+			Instant consensusTime = new Date().toInstant();
+			HederaFs hfs;
+			hfs = mock(HederaFs.class);
+			platform = Mockito.mock(Platform.class);
+			freezeHandler = new FreezeHandler(hfs, platform);
+			Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
+			TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+			TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+			Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+
+			// given:
+			subject.ctx = ctx;
+			PlatformStatus newStatus = PlatformStatus.MAINTENANCE;
+
+			// when:
+			subject.platformStatusChange(newStatus);
+
+			// then:
+			verify(platformStatus).set(newStatus);
+			verify(recordStream).setInFreeze(true);
+		} catch (IOException e) {
+			Assert.fail("Error creating file: reading contract file " + zipFile);
+		}
+
 	}
 }

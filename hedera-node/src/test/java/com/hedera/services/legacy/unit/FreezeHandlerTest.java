@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,7 +70,7 @@ public class FreezeHandlerTest {
 		hfs = mock(HederaFs.class);
 		platform = Mockito.mock(Platform.class);
 		freezeHandler = new FreezeHandler(hfs, platform);
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
@@ -82,7 +82,7 @@ public class FreezeHandlerTest {
 		platform = Mockito.mock(Platform.class);
 		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
 		freezeHandler = new FreezeHandler(hfs, platform);
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
