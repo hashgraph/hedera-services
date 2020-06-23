@@ -113,14 +113,14 @@ readConfig()
 
 def validateSavedStates(savedStateKey, savedStateName):
     try:
-    		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, savedStateKey))
-    		f = open("./{}.zip".format(savedStateName))
-    		with zipfile.ZipFile("./{}.zip".format(savedStateName), 'r') as savedState:
-    			savedState.extractall("0/")
-    	except IOError:
-    		print("{} not found.".format(savedStateName))
-    	finally:
-    		f.close()
+        os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, savedStateKey))
+        f = open("./{}.zip".format(savedStateName))
+        with zipfile.ZipFile("./{}.zip".format(savedStateName), 'r') as savedState:
+            savedState.extractall("0/")
+    except IOError:
+        print("{} not found.".format(savedStateName))
+    finally:
+        f.close()
 
 def validateInputs():
 
@@ -150,47 +150,11 @@ def validateInputs():
 	finally:
 		f.close()
 
-
 	validateSavedStates(SAVEDSTATE_0, "savedState0")
-# 	try:
-# 		os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, SAVEDSTATE_0))
-# 		f = open("{}".format("./savedState0.zip"))
-# 		with zipfile.ZipFile("./savedState0.zip", 'r') as savedState0:
-# 			savedState0.extractall("0/")
-# 	except IOError:
-# 		print("State file 0 not found ")
-# 	finally:
-# 		f.close()
     validateSavedStates(SAVEDSTATE_0, "savedState0")
-# 	try:
-# 		os.system("aws s3 cp s3://{}/{} ./savedState1.zip".format(BUCKET_NAME, SAVEDSTATE_1))
-# 		f = open("{}".format("./savedState1.zip"))
-# 		with zipfile.ZipFile("./savedState1.zip", 'r') as savedState1:
-# 			savedState1.extractall("1/")
-# 	except IOError:
-# 		print("State file 1 not found ")
-# 	finally:
-# 		f.close()
 	validateSavedStates(SAVEDSTATE_0, "savedState0")
-# 	try:
-# 		os.system("aws s3 cp s3://{}/{} ./savedState2.zip".format(BUCKET_NAME, SAVEDSTATE_2))
-# 		f = open("{}".format("./savedState2.zip"))
-# 		with zipfile.ZipFile("./savedState2.zip", 'r') as savedState2:
-# 			savedState2.extractall("2/")
-# 	except IOError:
-# 		print("State file 2 not found ")
-# 	finally:
-# 		f.close()
 	validateSavedStates(SAVEDSTATE_0, "savedState0")
-# 	try:
-# 		os.system("aws s3 cp s3://{}/{} ./savedState3.zip".format(BUCKET_NAME, SAVEDSTATE_3))
-# 		f = open("{}".format("./savedState3.zip"))
-# 		with zipfile.ZipFile("./savedState3.zip", 'r') as savedState3:
-# 			savedState3.extractall("3/")
-# 	except IOError:
-# 		print("State file 3 not found ")
-# 	finally:
-# 		f.close()
+
 	try:
 		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
@@ -259,19 +223,15 @@ def copyLogs():
 
 	node_address = ""
 	inventory_f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY), 'r')
-	#parsed_inventory_file = yaml.load(inventory_f, Loader=yaml.FullLoader)
-	for i in range(0, 11):
-		node_address = inventory_f.readline()
+	parsed_inventory_file = yaml.load(inventory_f, Loader=yaml.FullLoader)
 
 	copy_swirld_log = "scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log /repo/output/{}/"
-
 	os.mkdir("/repo/output")
 
 	for n in range(0, NO_OF_NODES):
-		NODE_ADDRESSES.append(inventory_f.readline().rstrip()[20:])
+	    # net-hightps is hardcoded here because our inventory file name and the actual inventory name are different. otherwise we can just use INVENTORY with out the .yml
+		NODE_ADDRESSES.append(parsed_inventory_file["net-hightps"]["hosts"]["node0{}".format(n)]["ansible_host"])
 		print("node address is : {}".format(NODE_ADDRESSES[n]))
-		for x in range(0, 3):
-			inventory_f.readline()
 		os.mkdir("/repo/output/{}".format(n))
 		os.system(copy_swirld_log.format(NODE_ADDRESSES[n], n))
 
