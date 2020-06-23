@@ -29,6 +29,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -42,7 +43,8 @@ public class ChunkingSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				chunkNumberIsValidated()
+				chunkNumberIsValidated(),
+				chunkTransactionIDIsValidated()
 		);
 	}
 
@@ -58,6 +60,22 @@ public class ChunkingSuite extends HapiApiSuite {
 								.message("testmessage")
 								.chunkInfo(2, 3)
 								.hasKnownStatus(INVALID_CHUNK_NUMBER)
+				);
+	}
+
+	private HapiApiSpec chunkTransactionIDIsValidated() {
+		return defaultHapiSpec("messageSubmissionSimple")
+				.given(
+						cryptoCreate("initialTransactionPayer"),
+						createTopic("testTopic")
+				)
+				.when(
+				)
+				.then(
+						submitMessageTo("testTopic")
+								.message("testmessage")
+								.chunkInfo(3, 2, "initialTransactionPayer")
+								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID)
 				);
 	}
 
