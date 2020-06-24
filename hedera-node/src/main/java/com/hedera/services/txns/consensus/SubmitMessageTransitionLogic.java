@@ -80,6 +80,11 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}
+			if (1 == chunkInfo.getNumber() &&
+					!chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
+				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+				return;
+			}
 		}
 
 		var topicMapKey = MapKey.getMapKey(topicId);
