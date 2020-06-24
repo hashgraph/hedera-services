@@ -113,7 +113,7 @@ readConfig()
 
 def validateSavedStates(savedStateKey, savedStateName):
     try:
-        os.system("aws s3 cp s3://{}/{} ./savedState0.zip".format(BUCKET_NAME, savedStateKey))
+        os.system("aws s3 cp s3://{}/{} ./{}.zip".format(BUCKET_NAME, savedStateKey, savedStateName))
         f = open("./{}.zip".format(savedStateName))
         with zipfile.ZipFile("./{}.zip".format(savedStateName), 'r') as savedState:
             savedState.extractall("0/")
