@@ -1840,6 +1840,8 @@ jobs:
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
       - run-eet-suites:
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
+      - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
           dsl-args: "ConsensusThrottlesSpecs"
