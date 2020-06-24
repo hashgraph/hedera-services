@@ -75,8 +75,8 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
 				return;
 			}
-			if (chunkInfo.getInitialTransactionID().getAccountID() !=
-					transactionBody.getTransactionID().getAccountID()) {
+			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
+					transactionBody.getTransactionID().getAccountID())) {
 				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
 				return;
 			}
