@@ -114,6 +114,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 										.setNumber(chunkNumber.getAsInt())
 										.build();
 								b.setChunkInfo(chunkInfo);
+								spec.registry().saveTimestamp(txnName,
+										chunkInfo.getInitialTransactionID().getTransactionValidStart());
 							}
 						});
 		return b -> b.setConsensusSubmitMessage(opBody);
