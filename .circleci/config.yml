@@ -85,8 +85,8 @@ commands:
       - run:
           name: Fetch stats from spot nodes
           command: |
-            /repo/.circleci/scripts/collect-node-stats.sh \
-              '<< parameters.append-to-last-stats >>'
+              /repo/.circleci/scripts/collect-node-stats.sh \
+                '<< parameters.append-to-last-stats >>'
       - when:
           condition: << parameters.publish-to-slack >>
           steps:
@@ -345,11 +345,11 @@ commands:
           name: Check logs to see if nodes are brought up with TLS GRPC servers
           command: |
             /repo/.circleci/scripts/show_logs.sh
-#      - run:
-#          name: Test TLS connections
-#          command: |
-#            /repo/.circleci/scripts/test-tls-connections.sh \
-#              | tee -a /repo/test-clients/output/hapi-client.log
+      - run:
+          name: Test TLS connections
+          command: |
+            /repo/.circleci/scripts/test-tls-connections.sh \
+              | tee -a /repo/test-clients/output/hapi-client.log
       - persist_to_workspace:
           root: /
           paths:
@@ -835,12 +835,15 @@ executors:
 
 workflows:
   custom-migration:
-    jobs:
-      - fast-build-artifact:
+    triggers:
+      - schedule:
+          cron: "0 16 * * *"
           filters:
             branches:
               only:
-                - 00229-T-AutomateMigrationTestWithDifferentSavedStates
+                - master
+    jobs:
+      - fast-build-artifact
       - regression-target-testnet:
           requires:
             - fast-build-artifact
@@ -1230,7 +1233,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00229-T-AutomateMigrationTestWithDifferentSavedStates
           workflow_name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
@@ -1456,7 +1458,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hightps"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -2552,7 +2554,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-hightps"
+      tf_workspace: "net-new-regression"
       use_existing_network: "1"
     parallelism: 1
     steps:
