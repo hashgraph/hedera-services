@@ -103,6 +103,25 @@
             </configuration>
           </execution>
           <execution>
+            <id>suite-runner-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>SuiteRunner</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.bdd.suites.SuiteRunner</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+          <execution>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
