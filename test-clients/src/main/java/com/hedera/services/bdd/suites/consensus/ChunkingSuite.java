@@ -83,7 +83,14 @@ public class ChunkingSuite extends HapiApiSuite {
 						submitMessageTo("testTopic")
 								.message("testmessage")
 								.chunkInfo(2, 1)
-								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID)
+								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
+						submitMessageTo("testTopic")
+								.message("testmessage")
+								.chunkInfo(4, 1)
+								.via("firstChunk")
+								.payingWith("initialTransactionPayer")
+								.usePresetTimestamp()
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 
