@@ -87,9 +87,16 @@ public class ChunkingSuite extends HapiApiSuite {
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
 								.message("testmessage")
-								.chunkInfo(2, 1)
-								// so the valid start of the transaction will not match
+								.chunkInfo(3, 3, "initialTransactionPayer")
+								.payingWith("initialTransactionPayer")
+								// Add delay to make sure the valid start of the transaction will not match
 								// that of the initialTransactionID
+								.delayBy(1000)
+								.hasKnownStatus(SUCCESS),
+						submitMessageTo("testTopic")
+								.message("testmessage")
+								.chunkInfo(2, 1)
+								// Also add delay here
 								.delayBy(1000)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
