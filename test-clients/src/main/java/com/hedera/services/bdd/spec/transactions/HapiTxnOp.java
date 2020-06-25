@@ -151,6 +151,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			txnSubmitted = txn;
 
 			actualPrecheck = response.getNodeTransactionPrecheckCode();
+
+			if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
+				if (payerIsRechargingFor(spec)) {
+					addIpbToPermissiblePrechecks();
+					if(!payerRecentRecharged(spec)){
+						rechargePayerFor(spec);
+					}
+				}
+			}
+
 			if (retryPrechecks.isPresent() && retryPrechecks.get().contains(actualPrecheck)) {
 				sleep(10);
 			} else {
@@ -158,14 +168,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			}
 		}
 		stats.setAccepted(actualPrecheck == OK);
-		if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
-			if (payerIsRechargingFor(spec)) {
-				addIpbToPermissiblePrechecks();
-				if(!payerRecentRecharged(spec)){
-					rechargePayerFor(spec);
-				}
-			}
-		}
+
 		if (!acceptAnyPrecheck) {
 			if (permissiblePrechecks.isPresent()) {
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
