@@ -1003,15 +1003,20 @@ workflows:
                 at: /
 
   nightly-regression:
-    triggers:
-        - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - master
+#    triggers:
+#        - schedule:
+#            cron: "0 5,9,13 * * *"
+#            filters:
+#              branches:
+#                only:
+#                  - master
+#                  - 00050-D-duplicate-tranx
     jobs:
       - fast-build-artifact:
+          filters:
+              branches:
+                only:
+                  - 00050-D-duplicate-tranx
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1074,9 +1079,9 @@ workflows:
       - long-consensus_ops-0:
           requires:
             - regression-target-testnet
-      - long-umbrella:
-          requires:
-            - regression-target-testnet
+      # - long-umbrella:
+      #     requires:
+      #       - regression-target-testnet
       - regression-validate-freeze:
           requires:
             - long-contract_txns6-0
@@ -1261,17 +1266,18 @@ workflows:
 
   continuous-integration:
     jobs:
-      - build-artifact:
-          context: SonarCloud
+      - fast-build-artifact:
+          #context: SonarCloud
           filters:
             branches:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00050-D-duplicate-tranx
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
-            - build-artifact
+            - fast-build-artifact
           workflow-name: "Continuous integration"
       - run-consensus-and-crypto-scenarios:
           requires:
