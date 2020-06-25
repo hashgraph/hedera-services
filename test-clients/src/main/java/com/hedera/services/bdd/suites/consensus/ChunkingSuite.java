@@ -57,15 +57,15 @@ public class ChunkingSuite extends HapiApiSuite {
 				)
 				.then(
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("failsForChunkNumberGreaterThanTotalChunks")
 								.chunkInfo(2, 3)
 								.hasKnownStatus(INVALID_CHUNK_NUMBER),
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("acceptsChunkNumberLessThanTotalChunks")
 								.chunkInfo(3, 2)
 								.hasKnownStatus(SUCCESS),
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("acceptsChunkNumberEqualTotalChunks")
 								.chunkInfo(5, 5)
 								.hasKnownStatus(SUCCESS)
 
@@ -82,11 +82,11 @@ public class ChunkingSuite extends HapiApiSuite {
 				)
 				.then(
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("failsForDifferentPayers")
 								.chunkInfo(3, 2, "initialTransactionPayer")
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
 								.chunkInfo(3, 3, "initialTransactionPayer")
 								.payingWith("initialTransactionPayer")
 								// Add delay to make sure the valid start of the transaction will not match
@@ -94,13 +94,13 @@ public class ChunkingSuite extends HapiApiSuite {
 								.delayBy(1000)
 								.hasKnownStatus(SUCCESS),
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID")
 								.chunkInfo(2, 1)
 								// Also add delay here
 								.delayBy(1000)
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
-								.message("testmessage")
+								.message("acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID")
 								.chunkInfo(4, 1)
 								.via("firstChunk")
 								.payingWith("initialTransactionPayer")
