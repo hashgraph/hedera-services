@@ -1261,8 +1261,8 @@ workflows:
 
   continuous-integration:
     jobs:
-      - fast-build-artifact:
-#          context: SonarCloud
+      - build-artifact:
+          context: SonarCloud
           filters:
             branches:
               ignore:
@@ -1271,7 +1271,7 @@ workflows:
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
-            - fast-build-artifact
+            - build-artifact
           workflow-name: "Continuous integration"
       - run-consensus-and-crypto-scenarios:
           requires:
