@@ -49,7 +49,7 @@ public class ChunkingSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec chunkNumberIsValidated() {
-		return defaultHapiSpec("messageSubmissionSimple")
+		return defaultHapiSpec("chunkNumberIsValidated")
 				.given(
 						createTopic("testTopic")
 				)
@@ -73,7 +73,7 @@ public class ChunkingSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec chunkTransactionIDIsValidated() {
-		return defaultHapiSpec("messageSubmissionSimple")
+		return defaultHapiSpec("chunkTransactionIDIsValidated")
 				.given(
 						cryptoCreate("initialTransactionPayer"),
 						createTopic("testTopic")
