@@ -49,7 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @RunWith(JUnitPlatform.class)
 class SubmitMessageTransitionLogicTest {
-	final private String TOPIC_ID = "8.6.75";
+	private static final String TOPIC_ID = "8.6.75";
+	private static final long EPOCH_SECOND = 1546304461;
 
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
@@ -62,7 +63,7 @@ class SubmitMessageTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		consensusTime = Instant.ofEpochSecond(1546304461);
+		consensusTime = Instant.ofEpochSecond(EPOCH_SECOND);
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
@@ -162,7 +163,7 @@ class SubmitMessageTransitionLogicTest {
 
 	private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body) {
 		transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
+				.setTransactionID(defaultTxnId())
 				.setConsensusSubmitMessage(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
@@ -190,7 +191,7 @@ class SubmitMessageTransitionLogicTest {
 	private void givenChunkMessage(int totalChunks, int chunkNumber) {
 		ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 				.newBuilder()
-				.setInitialTransactionID(ourTxnId())
+				.setInitialTransactionID(defaultTxnId())
 				.setTotal(totalChunks)
 				.setNumber(chunkNumber)
 				.build();
@@ -200,11 +201,15 @@ class SubmitMessageTransitionLogicTest {
 		topics.put(MapKey.getMapKey(asTopic(TOPIC_ID)), new Topic());
 	}
 
-	private TransactionID ourTxnId() {
+	private TransactionID txnId(AccountID payer, long epochSecond) {
 		return TransactionID.newBuilder()
 				.setAccountID(payer)
 				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+						Timestamp.newBuilder().setSeconds(epochSecond))
 				.build();
+	}
+
+	private TransactionID defaultTxnId() {
+		return txnId(payer, EPOCH_SECOND);
 	}
 }
