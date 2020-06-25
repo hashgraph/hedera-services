@@ -27,6 +27,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -135,6 +136,18 @@ class SubmitMessageTransitionLogicTest {
 		verify(transactionContext).setStatus(INVALID_TOPIC_ID);
 	}
 
+	@Test
+	public void failsForInvalidChunkNumber() {
+		// given:
+		givenChunkMessage(2, 3);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_NUMBER);
+	}
+
 	private void assertUnchangedTopics() {
 		var topic = topics.get(MapKey.getMapKey(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
@@ -172,6 +185,19 @@ class SubmitMessageTransitionLogicTest {
 	private void givenTransactionContextInvalidTopic() {
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
+	}
+
+	private void givenChunkMessage(int totalChunks, int chunkNumber) {
+		ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
+				.newBuilder()
+				.setInitialTransactionID(ourTxnId())
+				.setTotal(totalChunks)
+				.setNumber(chunkNumber)
+				.build();
+		givenTransaction(getBasicValidTransactionBodyBuilder()
+				.setChunkInfo(chunkInfo));
+		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+		topics.put(MapKey.getMapKey(asTopic(TOPIC_ID)), new Topic());
 	}
 
 	private TransactionID ourTxnId() {
