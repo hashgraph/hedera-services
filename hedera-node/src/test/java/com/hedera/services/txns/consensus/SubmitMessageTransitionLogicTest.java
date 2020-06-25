@@ -177,6 +177,30 @@ class SubmitMessageTransitionLogicTest {
 		verify(transactionContext).setStatus(SUCCESS);
 	}
 
+	@Test
+	public void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
+		// given:
+		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+	}
+
+	@Test
+	public void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
+		// given:
+		givenChunkMessage(1, 1, defaultTxnId());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(SUCCESS);
+	}
+
 	private void assertUnchangedTopics() {
 		var topic = topics.get(MapKey.getMapKey(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
