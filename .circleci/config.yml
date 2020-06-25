@@ -201,8 +201,7 @@ commands:
           name: Checkout infrastructure repo
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              '/repo/.circleci/scripts/clone-infra-repo.sh \
-                  << parameters.infra-branch >> \
+              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >> \
                   << parameters.infra-sha1 >>'
   provision-testnet-hosts:
     description: Provision hosts using Terraform
