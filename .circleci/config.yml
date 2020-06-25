@@ -1205,21 +1205,21 @@ workflows:
       - aws-summary
 
   continuous-integration:
-    triggers:
-      - schedule:
-          cron: "0 7,9,11,13,15 * * *"
-          filters:
-            branches:
-              only:
-                - 00288-D-mvn-build-error
+#    triggers:
+#      - schedule:
+#          cron: "0 7,9,11,13,15 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - 00288-D-mvn-build-error
     jobs:
       - build-artifact:
           context: SonarCloud
-#          filters:
-#            branches:
-#              ignore:
-#                - /.*-PERF/
-#                - /.*-REGRESSION/
+          filters:
+            branches:
+              ignore:
+                - /.*-PERF/
+                - /.*-REGRESSION/
           workflow_name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
