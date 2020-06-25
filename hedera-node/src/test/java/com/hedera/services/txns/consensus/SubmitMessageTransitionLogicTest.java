@@ -140,13 +140,41 @@ class SubmitMessageTransitionLogicTest {
 	@Test
 	public void failsForInvalidChunkNumber() {
 		// given:
-		givenChunkMessage(2, 3);
+		givenChunkMessage(2, 3, defaultTxnId());
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(transactionContext).setStatus(INVALID_CHUNK_NUMBER);
+	}
+
+	@Test
+	public void failsForDifferentPayers() {
+		// given:
+		AccountID initialTransactionPayer = AccountID
+				.newBuilder()
+				.setAccountNum(payer.getAccountNum() + 1)
+				.build();
+		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+	}
+
+	@Test
+	public void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
+		// given:
+		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(SUCCESS);
 	}
 
 	private void assertUnchangedTopics() {
@@ -188,10 +216,10 @@ class SubmitMessageTransitionLogicTest {
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
 	}
 
-	private void givenChunkMessage(int totalChunks, int chunkNumber) {
+	private void givenChunkMessage(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
 		ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 				.newBuilder()
-				.setInitialTransactionID(defaultTxnId())
+				.setInitialTransactionID(initialTransactionID)
 				.setTotal(totalChunks)
 				.setNumber(chunkNumber)
 				.build();
