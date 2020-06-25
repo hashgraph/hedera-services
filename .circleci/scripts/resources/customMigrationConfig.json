@@ -1,7 +1,7 @@
 {
   "networkUsed": "publictestnet",
   "infrastructureRepo": "/infrastructure",
-  "inventory": "custom-net-hightps.yml",
+  "inventory": "net-new-regression.yml",
   "serviceBranch": "master",
   "serviceRepo": "/repo/",
   "savedState0": "custom-migration-saved-states/backup-new-0.zip",
