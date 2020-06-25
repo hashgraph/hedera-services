@@ -1,0 +1,5 @@
+{
+    "umbrella-redux-success-pattern" : {
+        "Run umbrella test": "UmbrellaRedux                    :: 1/1 suites ran OK"
+    }
+}

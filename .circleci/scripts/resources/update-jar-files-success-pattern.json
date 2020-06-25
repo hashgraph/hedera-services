@@ -1,0 +1,25 @@
+{
+    "update-jar-files" : {
+        "Start step": "UpdateServerFiles - -------------- STARTING UpdateServerFiles SUITE --------------",
+        "Create zip file": "UpdateServerFiles - Creating zip file from updateFiles",
+        "Create zip file": "ZipUtil - Root = temp, current = temp",
+        "Create zip file": "ZipUtil - Current directory temp",
+        "Create zip file": "ZipUtil - Root = temp, current = temp/sdk",
+        "Add sdk dir "   : "ZipUtil - Adding dir sdk/",
+        "Add sdk dir "   : "ZipUtil - Current directory temp/sdk",
+        "Add sdk/data dir" : "ZipUtil - Root = temp, current = temp/sdk/data",
+        "Add sdk/data dir" : "ZipUtil - Adding dir sdk/data/",
+        "Add sdk/data  dir": "ZipUtil - Current directory temp/sdk/data",
+        "Add sdk/data/apps dir" : "ZipUtil - Root = temp, current = temp/sdk/data/apps",
+        "Add sdk/data/apps ": "ZipUtil - Adding dir sdk/data/apps/",
+        "Add sdk/data/apps ": "ZipUtil - Current directory temp/sdk/data/apps",
+        "Adding file:/sdk/data/apps/HederaNode.jar": "ZipUtil - Adding file:/sdk/data/apps/HederaNode.jar",
+        "file:/sdk/swirlds.jar": "ZipUtil - Adding file:/sdk/swirlds.jar",
+        "Adding dir sdk/target/": "ZipUtil - Root = temp, current = temp/sdk/target",
+        "Adding dir sdk/target/": "ZipUtil - Adding dir sdk/target/",
+        "Create zip file": "ZipUtil - Current directory temp/sdk/target",
+        "Adding file:/sdk/target/hedera-node-0.5.0.jar": "ZipUtil - Adding file:/sdk/target/hedera-node-0.5.0.jar",
+        "Adding file:/exec.sh": "ZipUtil - Adding file:/exec.sh",
+        "Uploading file Archive.zip": "UpdateServerFiles - Uploading file Archive.zip"
+    }
+}
