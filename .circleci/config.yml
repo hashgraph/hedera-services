@@ -354,7 +354,6 @@ commands:
     steps:
       - fetch-testnet-control-assets:
           infra-branch: "hashgraph-hedera-services"
-          infra-sha1: "b328009"
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
