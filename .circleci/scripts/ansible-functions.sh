@@ -3,7 +3,7 @@
 . ${REPO}/.circleci/scripts/rationalize-ansible-env-vars.sh
 
 
-PLAYBOOK_OPT="-i ./inventory/hosts-${TF_WORKSPACE} \
+PLAYBOOK_OPT="-i ./inventory/hosts-${TF_WORKSPACE}.yml \
       -u ubuntu \
       -e branch=${CIRCLE_BRANCH} \
       -e app_dir=${REPO} \
@@ -36,7 +36,7 @@ function ansible_clean {
 
   cd $ANSIBLE_DIR
   ansible-playbook \
-      -i ./inventory/hosts-${TF_WORKSPACE} \
+      -i ./inventory/hosts-${TF_WORKSPACE}.yml \
       -u ubuntu \
       play-clean-state.yml
 }
@@ -51,7 +51,7 @@ function ansible_reboot {
 
   cd $ANSIBLE_DIR
   ansible-playbook \
-      -i ./inventory/hosts-${TF_WORKSPACE} \
+      -i ./inventory/hosts-${TF_WORKSPACE}.yml \
       -u ubuntu \
       play-reboot.yml
 }
@@ -59,7 +59,7 @@ function ansible_reboot {
 function ansible_prepare {
   cd $ANSIBLE_DIR
   ansible-playbook \
-      -i ./inventory/hosts-${TF_WORKSPACE} \
+      -i ./inventory/hosts-${TF_WORKSPACE}.yml \
       -u ubuntu \
       play-uninstall-psql.yml
 }
