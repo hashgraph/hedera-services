@@ -2,7 +2,9 @@
 
 . ${REPO}/.circleci/scripts/utils.sh
 
-TARGET_DIR=${1:-regression-testclient-logs}
+WORKFLOW=${1:-none-workflow}
+
+TARGET_DIR="${WORKFLOW}-logs"
 
 echo "current circleci build URL: ${CIRCLE_BUILD_URL}" | tee -a ${REPO}/test-clients/output/hapi-client.log
 

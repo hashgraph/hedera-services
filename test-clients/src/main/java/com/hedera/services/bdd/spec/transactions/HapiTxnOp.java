@@ -539,4 +539,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		nodeSupplier = Optional.of(() -> HapiPropertySource.asAccount(accountSupplier.get()));
 		return self();
 	}
+	public T usePresetTimestamp() {
+		usePresetTimestamp = true;
+		return self();
+	}
 }

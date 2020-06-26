@@ -8,6 +8,65 @@ commands:
           name: Ensure the builtin CircleCI env vars are available
           command: |
             /repo/.circleci/scripts/ensure-builtin-env-vars.sh
+
+  send-report-to-slack:
+    parameters:
+      workflow-name:
+        description: name of the workflow
+        type: string
+        default: "continuous integration"
+      slack-channel:
+        description: name of the slack channel to send report to
+        type: string
+        default: "hedera-cicd"
+      status:
+        description: status of the workflow
+        type: string
+        default: "Passed"
+    steps:
+      - run:
+          name: Send a successful report to slack
+          command: |
+            /repo/.circleci/scripts/prepare-slack-message.sh \
+                "<< parameters.workflow-name >>"
+            echo "<< parameters.status >>"  >> /repo/diagnostics/slack_msg.txt
+            /repo/.circleci/scripts/call-svcs-app-slack.sh \
+                -c << parameters.slack-channel >> \
+                -t /repo/diagnostics/slack_msg.txt \
+                -s << parameters.status >>
+
+
+  validate-feature-update-test-report:
+    description: Validate feature update test result
+    parameters:
+      slack-channel:
+        description: slack channel to publish to
+        type: string
+        default: 'hedera-cicd'
+      status:
+        description: test finishing status
+        type: string
+        default: 'Passed'
+      workflow-name:
+        description: test finishing status
+        type: string
+        default: 'none-workflow'
+
+    steps:
+      - run:
+          name: Final summary of workflow
+          command: |
+            /repo/.circleci/scripts/final-summary.sh \
+                << parameters.workflow-name >>
+
+      - run:
+          name: 'send feature update test result to slack'
+          command: |
+            /repo/.circleci/scripts/call-svcs-app-slack.sh \
+                -c << parameters.slack-channel >> \
+                -t /repo/client-logs/feature-update-regression-report.txt \
+                -s << parameters.status >>
+
   validate-record-streams:
     description: Download and validate the record streaming data
     parameters:
@@ -54,6 +113,11 @@ commands:
         description: publish to slack channel
         type: boolean
         default: true
+      workflow-name:
+        type: string
+        description: which workflow results to report
+        default: 'nightly-regression'
+
     steps:
       - run:
           name: Fetch stats from spot nodes
@@ -66,7 +130,8 @@ commands:
             - run:
                 name: Final summary of workflow
                 command: |
-                  /repo/.circleci/scripts/final-summary.sh
+                  /repo/.circleci/scripts/final-summary.sh \
+                      << parameters.workflow-name >>
             - run:
                 name: Generate the insight.py PDF
                 command: |
@@ -131,25 +196,30 @@ commands:
   cleanup-client-log-storage:
     description: Cleanup test client log storage
     parameters:
-      client-log-folder:
-        description: Top level directory hold all test clients logs.
+      workflow-name:
+        description: The current workflow tag
         type: string
-        default: 'regression-testclient-logs'
+        default: 'none-workflow'      
     steps:
       - run:
           name: Cleanup old test client log storage
           command: |
             /repo/.circleci/scripts/cleanup-testclient-logs.sh \
-               << parameters.client-log-folder >>
+               << parameters.workflow-name >>
 
   save-this-job-client-logs:
     description: Save this client side log files for this job
+    parameters:
+      workflow-name:
+        description: The current workflow name
+        type: string
+        default: 'none-workflow'      
     steps:
       - run:
           name: Save the client side log files for this job
           command: |
             /repo/.circleci/scripts/save-default-client-logs.sh \
-               "regression-testclient-logs"
+               << parameters.workflow-name >>
 
   fetch-testnet-control-assets:
     description: Add SSH keys, HCL scripts, Ansible playbooks to start testnet
@@ -158,6 +228,10 @@ commands:
         description: Which branch of infrastructure repo to use
         type: string
         default: 'master'
+      infra-sha1:
+        description: Which commit sha1 of infrastructure repo to use
+        type: string
+        default: 'HEAD'
     steps:
       - attach_workspace:
           at: /
@@ -170,7 +244,8 @@ commands:
           name: Checkout infrastructure repo
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >>'
+              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >> \
+                  << parameters.infra-sha1 >>'
   provision-testnet-hosts:
     description: Provision hosts using Terraform
     parameters:
@@ -584,12 +659,16 @@ commands:
         description: How long til the logs must all have the freeze pattern
         type: integer
         default: 90
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
     steps:
       - wait-til-logs-contain:
           log: hgcaa.log
           pattern-sh: /repo/.circleci/scripts/get-freeze-pattern.sh
           pattern-desc: freeze pattern
-          times: 1
+          times: << parameters.freeze-pattern-count >>
           timeout-secs: << parameters.freeze-start-timeout-secs >>
           sleep-secs: 7
       - run:
@@ -647,6 +726,14 @@ commands:
         description: How long til nodes must confirm a valid signed state
         type: integer
         default: 120
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
     steps:
       - postgres-status
       - reboot-testnet:
@@ -657,15 +744,22 @@ commands:
           log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-liveness-pattern.sh
           pattern-desc: alive pattern
-          times: 3
+          times: << parameters.liveness-pattern-count >>
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
           log: swirlds.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
           pattern-desc: valid signed state hash pattern
-          times: 1
+          times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
+          sleep-secs: 7
+      - wait-til-logs-contain:
+          log: swirlds.log
+          pattern-sh: /repo/.circleci/scripts/get-lateseq-pattern.sh
+          pattern-desc: last known sequence numbers after restart pattern
+          times: << parameters.signed-state-pattern-count >>
+          timeout-secs: 60
           sleep-secs: 7
       - run:
           name: Scan log of node 0.0.3 for restart lateseq
@@ -683,8 +777,72 @@ commands:
           timeout-secs: 30
           sleep-secs: 7
       - check-logs-for-iss
+
+  accessory-test-common-steps:
+    description: shared steps for accessory tests
+    steps:
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractBitcarbon
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractCallLocal
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractCreateContract
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractCRUD
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractDeletePayable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractInlineAssembly
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractNegativeCalls
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractNegativeCreates
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractPay
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractPayReceivable
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractPayReceivableAmount
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractSimpleStorage
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractSimpleStorageWithEvents
+          args: '1'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.smartcontract.OCTokenIT
+      - run-scenario-test:
+          fqcn: com.opencrowd.smartcontract.BigArray
+          other-args: '1 32'
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.CI.SmartContractFailFirst
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.CI.SmartContractSelfDestruct
+      - run-property-driven-scenario-test:
+          fqcn: com.opencrowd.regression.SmartContractSimpleStorageLinked
+      - run:
+          name: Set log level to INFO
+          command: /repo/.circleci/scripts/config-log4j-4normal.sh
+
 executors:
   build-executor:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
     docker:
       - image: qnswirlds/java-builder:0.1.3
       - image: postgres:10
@@ -696,6 +854,7 @@ executors:
       MAVEN_OPTS: -Xmx3200m
       IN_CIRCLE_CI: true
       REPO: /repo
+      WORKFLOW-NAME: << parameters.workflow-name >>
     working_directory: /repo
 
   ci-test-executor:
@@ -709,6 +868,9 @@ executors:
       use_existing_network:
         type: string
         default: ""
+      workflow-name:
+        type: string
+        default: ""
     docker:
       - image: qnswirlds/java-builder:0.1.3
     environment:
@@ -718,10 +880,11 @@ executors:
       TF_WORKSPACE: << parameters.tf_workspace >>
       REPO: /repo
       INFRASTRUCTURE_REPO: /infrastructure
+      WORKFLOW-NAME: << parameters.workflow-name >>
     working_directory: /repo
 
 workflows:
-  nightly-simulate-network-outrage:
+  nightly-simulate-network-outage:
     triggers:
         - schedule:
             cron: "0 0,12 * * *"
@@ -729,13 +892,14 @@ workflows:
               branches:
                 only:
                   - master
-                  - ci-job-network-sim
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
+          workflow-name: "nightly-simulate-network-outage"
       - start-singlejob-testnet:
           requires:
             - fast-build-artifact
-      - run-network-sim:
+          workflow-name: "nightly-simulate-network-outage"
+      - run-accessory-tests:
           requires:
             - start-singlejob-testnet
           pre-steps:
@@ -744,13 +908,105 @@ workflows:
             - run: /repo/.circleci/scripts/echo-env.sh
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-testnet
-      - cleanup-singlejob-testnet:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "nightly-simulate-network-outage"
+      - run-network-sim:
+          requires:
+            - run-accessory-tests
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "nightly-simulate-network-outage"
+      - rerun-accessory-tests:
           requires:
             - run-network-sim
           pre-steps:
             - attach_workspace:
                 at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - send-report-to-slack:
+                workflow-name: simulate network outage
+                status: Passed
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "nightly-simulate-network-outage"
+      - cleanup-singlejob-testnet:
+          requires:
+            - rerun-accessory-tests 
+          pre-steps:
+            - attach_workspace:
+                at: /
+
+  feature-update-regression:
+    triggers:
+        - schedule:
+            cron: "0 8 * * *"
+            filters:
+              branches:
+                only:
+                  - master
+    jobs:
+      - fast-build-artifact:
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+          workflow-name: "feature-update-regression"
+      - regression-target-testnet:
+          requires:
+            - fast-build-artifact
+          pre-steps:
+            - start-testnet
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+      - run-accessory-tests:
+          requires:
+            - regression-target-testnet
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "feature-update-regression"
+      - run-update-feature:
+          requires:
+            - run-accessory-tests
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "feature-update-regression"
+      - run-update-jar-files:
+          requires:
+            - run-update-feature
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+            - cleanup-rerun-testnet-if-present
+          new-marker : "new marker string"
+          workflow-name: "feature-update-regression"
+      - rerun-accessory-tests:
+          requires:
+            - run-update-jar-files
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+            - validate-feature-update-test-report:
+                status: "Passed"
+                workflow-name: "feature-update-regression"
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "feature-update-regression"
+      - cleanup-singlejob-testnet:
+          requires:
+            - rerun-accessory-tests
+          pre-steps:
+            - attach_workspace:
+                at: /
+
   nightly-regression:
     triggers:
         - schedule:
@@ -762,7 +1018,8 @@ workflows:
     jobs:
       - fast-build-artifact:
           post-steps:
-            - save-this-job-client-logs
+            - save-this-job-client-logs:
+                workflow-name: "nightly-regression"
       - regression-target-testnet:
           requires:
             - fast-build-artifact
@@ -771,7 +1028,8 @@ workflows:
                 use-existing-network: true
                 use-hugepage: true
           post-steps:
-            - save-this-job-client-logs
+            - save-this-job-client-logs:
+                workflow-name: "nightly-regression"
       ##### W-BEGIN auto-generated by RegressionWorkflowShell #####
       - long-contract_txns6-0:
           requires:
@@ -843,16 +1101,23 @@ workflows:
             - long-file_ops-0
             - long-consensus_ops-0
           post-steps:
-            - save-this-job-client-logs
+            - save-this-job-client-logs:
+                workflow-name: "nightly-regression"
+
+      # - validate-server-stat-1:
+      #     requires:
+      #       - regression-validate-freeze
+
       - short-contract_txns6-0:
           requires:
             - regression-validate-freeze
+
       - short-crypto_txns300-0:
           requires:
             - regression-validate-freeze
       - short-crypto_txns300-1:
           requires:
-            - regression-validate-freeze
+            - regression-validate-freeze              
       - short-crypto_txns300-2:
           requires:
             - regression-validate-freeze
@@ -914,7 +1179,91 @@ workflows:
             - short-file_ops-0
             - short-consensus_ops-0
 
+#      - validate-server-stat-2:
+#          requires:
+#            - regression-run-accessory-tests
+
       ##### END auto-generated by RegressionWorkflowShell #####
+  nightly-freeze-restart:
+    triggers:
+      - schedule:
+          cron: "0 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - fast-build-artifact:
+          workflow-name: freeze restart
+      - start-singlejob-testnet:
+          requires:
+            - fast-build-artifact
+          workflow-name: freeze restart
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-first-round
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 1
+          liveness-pattern-count: 3
+          signed-state-pattern-count: 1
+          workflow-name: freeze restart
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-second-round
+          requires:
+            - freeze-restart-first-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 2
+          liveness-pattern-count: 5
+          signed-state-pattern-count: 2
+          workflow-name: freeze restart
+      - run-umbrella-freeze-restart-test:
+          name: freeze-restart-third-round
+          requires:
+            - freeze-restart-second-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - publish-platform-stats:
+                source-desc: freeze restart
+            - cleanup-rerun-testnet-if-present
+          freeze-pattern-count: 3
+          liveness-pattern-count: 7
+          signed-state-pattern-count: 3
+          workflow-name: freeze restart
+      - cleanup-singlejob-testnet:
+          requires:
+            - freeze-restart-third-round
+          pre-steps:
+            - attach_workspace:
+                at: /
+
+  daily-aws-summary:
+    triggers:
+      - schedule:
+          cron: "15 14 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - aws-summary
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -924,10 +1273,11 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-
+          workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
             - build-artifact
+          workflow-name: "Continuous integration"
       - run-consensus-and-crypto-scenarios:
           requires:
             - start-singlejob-testnet
@@ -938,15 +1288,17 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
       - run-file-scenarios:
           requires:
-            - run-consensus-and-crypto-scenarios
+            - start-singlejob-testnet
           pre-steps:
             - attach_workspace:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
       - run-smart-contract-scenarios:
           requires:
             - run-file-scenarios
@@ -955,44 +1307,27 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
+            - send-report-to-slack:
+                workflow-name: "Continuous integration"
+                status: Passed
             - cleanup-rerun-testnet-if-present
-      - run-umbrella-freeze-restart-test:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-feature:
-          requires:
-            - run-umbrella-freeze-restart-test
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-      - run-update-jar-files:
-          requires:
-            - run-update-feature
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-testnet
-          new-marker : "new marker string"
+          workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - run-smart-contract-scenarios
+            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
 jobs:
   start-singlejob-testnet:
-    executor: ci-test-executor
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - start-testnet
   cleanup-singlejob-testnet:
@@ -1019,7 +1354,6 @@ jobs:
       - cleanup-testnet:
           var-file: "regression.tfvars"
   build-artifact:
-    executor: build-executor
     parameters:
       sys-props:
         type: string
@@ -1029,6 +1363,12 @@ jobs:
         type: string
         description: Args for mvn install
         default: ''
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - checkout
       - run:
@@ -1073,10 +1413,17 @@ jobs:
             - root/.m2
             - repo/hedera-node
   fast-build-artifact:
-    executor: build-executor
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - checkout
-      - cleanup-client-log-storage
+      - cleanup-client-log-storage:
+          workflow-name: << parameters.workflow-name >>
       - run:
           name: prepare log dir
           command: |
@@ -1099,8 +1446,6 @@ jobs:
           name: Reposition config for Ansible scripts
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-               'rm -rf /repo/hedera-node/src'
-            /repo/.circleci/scripts/trap-failure-report.sh \
                'mkdir -p /repo/HapiApp2.0'
             /repo/.circleci/scripts/trap-failure-report.sh \
                'cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0'
@@ -1114,6 +1459,14 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
+  aws-summary:
+    executor: ci-test-executor
+    steps:
+      - checkout
+      - run:
+          name: Summarize all AWS instances currently used by regions
+          command: |
+            /repo/.circleci/scripts/aws-summary.sh
   run-bdd-test:
     executor: ci-test-executor
     parallelism: <<parameters.parallel-level>>
@@ -1157,6 +1510,50 @@ jobs:
             - repo/.circleci
             - infrastructure
 
+  run-accessory-tests:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - attach_workspace:
+          at: /
+      - ensure-testnet-for-reruns
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
+      - run: /repo/.circleci/scripts/echo-env.sh
+      - accessory-test-common-steps
+
+  rerun-accessory-tests:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - attach_workspace:
+          at: /
+      - ensure-testnet-for-reruns
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
+      - run: /repo/.circleci/scripts/echo-env.sh
+      - accessory-test-common-steps
+
   ##### J-BEGIN auto-generated by RegressionWorkflowShell #####
   short-umbrella:
     executor:
@@ -1172,7 +1569,8 @@ jobs:
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test:
           config-file: umbrella.properties.altHalfSizeOCRegPostFreeze
-      - save-this-job-client-logs
+      - save-this-job-client-logs:
+          workflow-name: "nightly-regression"
   long-umbrella:
     executor:
       name: ci-test-executor
@@ -1187,7 +1585,8 @@ jobs:
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test:
           config-file: umbrella.properties.altHalfSizeOCRegPreFreeze
-      - save-this-job-client-logs
+      - save-this-job-client-logs:
+          workflow-name: "nightly-regression"
   short-file_ops-0:
     executor:
       name: ci-test-executor
@@ -1721,75 +2120,10 @@ jobs:
           name:  Reset client log
           command: |
             cat /dev/null > /repo/test-clients/output/hapi-client.log
-      - run-eet-suites:
-          dsl-args: "TopicCreateSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicUpdateSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicDeleteSpecs"
-      - run-eet-suites:
-          dsl-args: "SubmitMessageSpecs"
-      - run-eet-suites:
-          dsl-args: "TopicGetInfoSpecs"
-      - run-eet-suites:
-          dsl-args: "ConsensusThrottlesSpecs"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractDeletePayable
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPay
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivable
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorage
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageWithEvents
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.BigArray
-          other-args: '1 32'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
-      - run:
-          name: Set log level to INFO
-          command: /repo/.circleci/scripts/config-log4j-4normal.sh
+      - accessory-test-common-steps
       - validate-record-streams
-      - save-this-job-client-logs
+      - save-this-job-client-logs:
+          workflow-name: "nightly-regression"
       - publish-platform-stats:
           source-desc: full regression
   run-oc-regression:
@@ -1911,7 +2245,16 @@ jobs:
           dsl-args: "ConsensusThrottlesSpecs"
 
   run-file-tests:
-    executor: ci-test-executor
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
@@ -1941,7 +2284,12 @@ jobs:
       runner:
         type: executor
         default: ci-test-executor
-    executor: << parameters.runner >>
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
@@ -1953,6 +2301,8 @@ jobs:
           dsl-args: "TopicDeleteSpecs"
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
       - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
@@ -1978,7 +2328,16 @@ jobs:
       - run-eet-suites:
           dsl-args: "SuperusersAreNeverThrottled"
   run-file-scenarios:
-    executor: ci-test-executor
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
@@ -2009,7 +2368,17 @@ jobs:
       - run-eet-suites:
           dsl-args: "SysDelSysUndelSpec"
   run-smart-contract-scenarios:
-    executor: ci-test-executor
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+
     steps:
       - run-eet-suites:
           dsl-args: "NewOpInConstructorSpecs"
@@ -2046,7 +2415,25 @@ jobs:
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
   run-umbrella-freeze-restart-test:
-    executor: ci-test-executor
+    parameters:
+      freeze-pattern-count:
+        description: How many repetitions of the freeze pattern should occur
+        type: integer
+        default: 1
+      liveness-pattern-count:
+        description: How many repetitions of the liveness pattern should occur
+        type: integer
+        default: 3
+      signed-state-pattern-count:
+        description: How many repetitions of the signed state pattern should occur
+        type: integer
+        default: 1
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - run:
           name: Set log level to WARN
@@ -2059,10 +2446,13 @@ jobs:
       - run-umbrella-test:
           config-file: umbrellaTest.properties.alt5k
           expect-unavailable-nodes: true
-      - validate-thaw
+      - validate-thaw:
+          freeze-pattern-count: << parameters.freeze-pattern-count >>
       - restart-with-validations:
           valid-ss-timeout-secs: 180
           active-status-timeout-secs: 180
+          liveness-pattern-count: << parameters.liveness-pattern-count >>
+          signed-state-pattern-count: << parameters.signed-state-pattern-count >>
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-umbrella-test:
@@ -2076,8 +2466,20 @@ jobs:
       runner:
         type: executor
         default: ci-test-executor
-    executor: << parameters.runner >>
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
+      - ensure-testnet-for-reruns
       - run:
           name: Set environmental variable
           command: |
@@ -2131,8 +2533,20 @@ jobs:
         type: string
         description: New string to indicate the chang of source code and jar
         default: 'new version jar'
-    executor: << parameters.runner >>
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
     steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name:  Reset client log
+          command: |
+            cat /dev/null > /repo/test-clients/output/hapi-client.log
+      - ensure-testnet-for-reruns
       - run:
           name: Set environmental variable
           command: |
@@ -2179,7 +2593,12 @@ jobs:
       runner:
         type: executor
         default: ci-test-executor
-    executor: << parameters.runner >>
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >> # "simulate network outage"
     steps:
       - attach_workspace:
           at: /
