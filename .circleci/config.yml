@@ -859,11 +859,11 @@ workflows:
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 2,17,22 * * *"
             filters:
               branches:
                 only:
-                  - master
+                  - release/0.6
     jobs:
       - fast-build-artifact:
           workflow_name: "Simulate network outage"
@@ -2243,6 +2243,8 @@ jobs:
           dsl-args: "TopicDeleteSpecs"
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
       - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
