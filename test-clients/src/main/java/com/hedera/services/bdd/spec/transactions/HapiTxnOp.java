@@ -156,14 +156,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			}
 		}
 		stats.setAccepted(actualPrecheck == OK);
-			if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
-				if (payerIsRechargingFor(spec)) {
-					addIpbToPermissiblePrechecks();
-					if(!payerRecentRecharged(spec)){
-						rechargePayerFor(spec);
-					}
+		if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
+			if (payerIsRechargingFor(spec)) {
+				addIpbToPermissiblePrechecks();
+				if (!payerRecentRecharged(spec)) {
+					rechargePayerFor(spec);
 				}
 			}
+		}
 		if (!acceptAnyPrecheck) {
 			if (permissiblePrechecks.isPresent()) {
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
