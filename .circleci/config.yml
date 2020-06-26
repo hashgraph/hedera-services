@@ -1317,12 +1317,12 @@ workflows:
             - attach_workspace:
                 at: /
             - ensure-testnet-for-reruns
+          new-marker : "new marker string"          
           post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
                 status: Passed
             - cleanup-rerun-testnet-if-present
-          new-marker : "new marker string"          
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
