@@ -1323,7 +1323,7 @@ workflows:
                 status: Passed
             - cleanup-rerun-testnet-if-present
           new-marker : "new marker string"          
-          workflow_name: "Continuous integration"
+          workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
             - run-update-jar-files
