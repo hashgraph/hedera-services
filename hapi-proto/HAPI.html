@@ -358,6 +358,10 @@
             <ul>
               
                 <li>
+                  <a href="#proto.ConsensusMessageChunkInfo"><span class="badge">M</span>ConsensusMessageChunkInfo</a>
+                </li>
+              
+                <li>
                   <a href="#proto.ConsensusSubmitMessageTransactionBody"><span class="badge">M</span>ConsensusSubmitMessageTransactionBody</a>
                 </li>
               
@@ -2304,13 +2308,13 @@
               <tr>
                 <td>CryptoAddLiveHash</td>
                 <td>4</td>
-                <td><p>Add a live hash to a crypto account</p></td>
+                <td><p>Add a livehash to a crypto account</p></td>
               </tr>
             
               <tr>
                 <td>CryptoDeleteLiveHash</td>
                 <td>5</td>
-                <td><p>Delete a live hash from a crypto account</p></td>
+                <td><p>Delete a livehash from a crypto account</p></td>
               </tr>
             
               <tr>
@@ -2827,6 +2831,44 @@ Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessage
       <p></p>
 
       
+        <h3 id="proto.ConsensusMessageChunkInfo">ConsensusMessageChunkInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>initialTransactionID</td>
+                  <td><a href="#proto.TransactionID">TransactionID</a></td>
+                  <td></td>
+                  <td><p>TransactionID of the first chunk, gets copied to every subsequent chunk in a fragmented message. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>total</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The total number of chunks in the message. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The sequence number (from 1 to total) of the current chunk in the message. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="proto.ConsensusSubmitMessageTransactionBody">ConsensusSubmitMessageTransactionBody</h3>
         <p></p>
 
@@ -2848,7 +2890,14 @@ Request is [ConsensusSubmitMessageTransactionBody](#proto.ConsensusSubmitMessage
                   <td>message</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>Message to be submitted. Max size of the Transaction (including signatures) is 4kB. </p></td>
+                  <td><p>Message to be submitted. Max size of the Transaction (including signatures) is 6KiB. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>chunkInfo</td>
+                  <td><a href="#proto.ConsensusMessageChunkInfo">ConsensusMessageChunkInfo</a></td>
+                  <td></td>
+                  <td><p>Optional information of the current chunk in a fragmented message. </p></td>
                 </tr>
               
             </tbody>
@@ -3885,7 +3934,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.CryptoAddLiveHashTransactionBody">CryptoAddLiveHashTransactionBody</h3>
-        <p>At consensus, attaches the given live hash to the given account.</p><p>The hash can be deleted by the key controlling the account, or by any of the keys associated to the live hash.</p><p>Hence live hashes provide a revocation service for their implied credentials; for example,</p><p>when an authority grants a credential to the account, the account owner will cosign with the authority (or authorities)</p><p>to attach a hash of the credential to the account---hence proving the grant. If the credential is revoked, then any of</p><p>the authorities may delete it (or the account owner). In this way, the live hash mechanism acts as a revocation service.</p><p>An account cannot have two identical live hashes associated. To modify the list of keys in a live hash, the</p><p>live hash should first be deleted, then recreated with a new list of keys.</p>
+        <p>At consensus, attaches the given livehash to the given account.</p><p>The hash can be deleted by the key controlling the account, or by any of the keys associated to the livehash.</p><p>Hence livehashes provide a revocation service for their implied credentials; for example,</p><p>when an authority grants a credential to the account, the account owner will cosign with the authority (or authorities)</p><p>to attach a hash of the credential to the account---hence proving the grant. If the credential is revoked, then any of</p><p>the authorities may delete it (or the account owner). In this way, the livehash mechanism acts as a revocation service.</p><p>An account cannot have two identical livehashes associated. To modify the list of keys in a livehash, the</p><p>livehash should first be deleted, then recreated with a new list of keys.</p>
 
         
           <table class="field-table">
@@ -3922,7 +3971,7 @@ If unspecified, no change. </p></td>
                   <td>accountId</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>The account to which the live hash is attached </p></td>
+                  <td><p>The account to which the livehash is attached </p></td>
                 </tr>
               
                 <tr>
@@ -3936,14 +3985,14 @@ If unspecified, no change. </p></td>
                   <td>keys</td>
                   <td><a href="#proto.KeyList">KeyList</a></td>
                   <td></td>
-                  <td><p>A list of keys (primitive or threshold), all of which must sign to attach the live hash to an account, and any one of which can later delete it. </p></td>
+                  <td><p>A list of keys (primitive or threshold), all of which must sign to attach the livehash to an account, and any one of which can later delete it. </p></td>
                 </tr>
               
                 <tr>
                   <td>duration</td>
                   <td><a href="#proto.Duration">Duration</a></td>
                   <td></td>
-                  <td><p>The duration for which the live hash will remain valid </p></td>
+                  <td><p>The duration for which the livehash will remain valid </p></td>
                 </tr>
               
             </tbody>
@@ -4114,7 +4163,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.CryptoDeleteLiveHashTransactionBody">CryptoDeleteLiveHashTransactionBody</h3>
-        <p>At consensus, deletes a live hash associated to the given account. The transaction must be signed by either the key of the owning account, or at least one of the keys associated to the live hash.</p>
+        <p>At consensus, deletes a livehash associated to the given account. The transaction must be signed by either the key of the owning account, or at least one of the keys associated to the livehash.</p>
 
         
           <table class="field-table">
@@ -4127,14 +4176,14 @@ If unspecified, no change. </p></td>
                   <td>accountOfLiveHash</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>The account owning the live hash </p></td>
+                  <td><p>The account owning the livehash </p></td>
                 </tr>
               
                 <tr>
                   <td>liveHashToDelete</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>The SHA-384 live hash to delete from the account </p></td>
+                  <td><p>The SHA-384 livehash to delete from the account </p></td>
                 </tr>
               
             </tbody>
@@ -4491,7 +4540,7 @@ If unspecified, no change. </p></td>
                   <td>liveHashes</td>
                   <td><a href="#proto.LiveHash">LiveHash</a></td>
                   <td>repeated</td>
-                  <td><p>All of the live hashes attached to the account (each of which is a hash along with the keys that authorized it and can delete it) </p></td>
+                  <td><p>All of the livehashes attached to the account (each of which is a hash along with the keys that authorized it and can delete it) </p></td>
                 </tr>
               
             </tbody>
@@ -4516,7 +4565,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.CryptoGetLiveHashQuery">CryptoGetLiveHashQuery</h3>
-        <p>Requests a live hash associated to an account.</p>
+        <p>Requests a livehash associated to an account.</p>
 
         
           <table class="field-table">
@@ -4536,14 +4585,14 @@ If unspecified, no change. </p></td>
                   <td>accountID</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>The account to which the live hash is associated </p></td>
+                  <td><p>The account to which the livehash is associated </p></td>
                 </tr>
               
                 <tr>
                   <td>hash</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>The SHA-384 data in the live hash </p></td>
+                  <td><p>The SHA-384 data in the livehash </p></td>
                 </tr>
               
             </tbody>
@@ -4554,7 +4603,7 @@ If unspecified, no change. </p></td>
         
       
         <h3 id="proto.CryptoGetLiveHashResponse">CryptoGetLiveHashResponse</h3>
-        <p>Returns the full live hash associated to an account, if it is present. Note that the only way to obtain a state proof exhibiting the absence of a live hash from an account is to retrieve a state proof of the entire account with its list of live hashes.</p>
+        <p>Returns the full livehash associated to an account, if it is present. Note that the only way to obtain a state proof exhibiting the absence of a livehash from an account is to retrieve a state proof of the entire account with its list of livehashes.</p>
 
         
           <table class="field-table">
@@ -4574,7 +4623,7 @@ If unspecified, no change. </p></td>
                   <td>liveHash</td>
                   <td><a href="#proto.LiveHash">LiveHash</a></td>
                   <td></td>
-                  <td><p>The live hash, if present </p></td>
+                  <td><p>The livehash, if present </p></td>
                 </tr>
               
             </tbody>
@@ -4782,21 +4831,21 @@ If unspecified, no change. </p></td>
                 <td>addLiveHash</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p>(NOT CURRENTLY SUPPORTED) Adds a live hash</p></td>
+                <td><p>(NOT CURRENTLY SUPPORTED) Adds a livehash</p></td>
               </tr>
             
               <tr>
                 <td>deleteLiveHash</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p>(NOT CURRENTLY SUPPORTED) Deletes a live hash</p></td>
+                <td><p>(NOT CURRENTLY SUPPORTED) Deletes a livehash</p></td>
               </tr>
             
               <tr>
                 <td>getLiveHash</td>
                 <td><a href="#proto.Query">Query</a></td>
                 <td><a href="#proto.Response">Response</a></td>
-                <td><p>(NOT CURRENTLY SUPPORTED) Retrieves a live hash for an account</p></td>
+                <td><p>(NOT CURRENTLY SUPPORTED) Retrieves a livehash for an account</p></td>
               </tr>
             
               <tr>
@@ -5857,7 +5906,7 @@ If unspecified, no change. </p></td>
 
       
         <h3 id="proto.EntityID">EntityID</h3>
-        <p>the ID for a single entity (account, live hash, file, or smart contract instance)</p>
+        <p>the ID for a single entity (account, livehash, file, or smart contract instance)</p>
 
         
           <table class="field-table">
@@ -5877,7 +5926,7 @@ If unspecified, no change. </p></td>
                   <td>liveHash</td>
                   <td><a href="#proto.LiveHash">LiveHash</a></td>
                   <td></td>
-                  <td><p>A uniquely identifying live hash of an acount </p></td>
+                  <td><p>A uniquely identifying livehash of an acount </p></td>
                 </tr>
               
                 <tr>
@@ -6253,7 +6302,7 @@ If unspecified, no change. </p></td>
                   <td>cryptoGetLiveHash</td>
                   <td><a href="#proto.CryptoGetLiveHashQuery">CryptoGetLiveHashQuery</a></td>
                   <td></td>
-                  <td><p>Get a single live hash from a single account, if present </p></td>
+                  <td><p>Get a single livehash from a single account, if present </p></td>
                 </tr>
               
                 <tr>
@@ -6490,7 +6539,7 @@ If unspecified, no change. </p></td>
                   <td>cryptoGetLiveHash</td>
                   <td><a href="#proto.CryptoGetLiveHashResponse">CryptoGetLiveHashResponse</a></td>
                   <td></td>
-                  <td><p>Contains a live hash associated to an account </p></td>
+                  <td><p>Contains a livehash associated to an account </p></td>
                 </tr>
               
                 <tr>
@@ -6901,25 +6950,25 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>EMPTY_LIVE_HASH_BODY</td>
                 <td>53</td>
-                <td><p>the live hash body is empty</p></td>
+                <td><p>the livehash body is empty</p></td>
               </tr>
             
               <tr>
                 <td>EMPTY_LIVE_HASH</td>
                 <td>54</td>
-                <td><p>the live hash data is missing</p></td>
+                <td><p>the livehash data is missing</p></td>
               </tr>
             
               <tr>
                 <td>EMPTY_LIVE_HASH_KEYS</td>
                 <td>55</td>
-                <td><p>the keys for a live hash are missing</p></td>
+                <td><p>the keys for a livehash are missing</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_LIVE_HASH_SIZE</td>
                 <td>56</td>
-                <td><p>the live hash data is not the output of a SHA-384 digest</p></td>
+                <td><p>the livehash data is not the output of a SHA-384 digest</p></td>
               </tr>
             
               <tr>
@@ -6931,13 +6980,13 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>EMPTY_LIVE_HASH_QUERY</td>
                 <td>58</td>
-                <td><p>the crypto live hash query is empty</p></td>
+                <td><p>the crypto livehash query is empty</p></td>
               </tr>
             
               <tr>
                 <td>LIVE_HASH_NOT_FOUND</td>
                 <td>59</td>
-                <td><p>the live hash is not present</p></td>
+                <td><p>the livehash is not present</p></td>
               </tr>
             
               <tr>
@@ -6949,7 +6998,7 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>LIVE_HASH_ALREADY_EXISTS</td>
                 <td>61</td>
-                <td><p>the live already exists for a given account</p></td>
+                <td><p>the livehash already exists for a given account</p></td>
               </tr>
             
               <tr>
@@ -7302,6 +7351,18 @@ deleted unrecoverably. This error response code will not be returned until autoR
 by HAPI.</p></td>
               </tr>
             
+              <tr>
+                <td>INVALID_CHUNK_NUMBER</td>
+                <td>163</td>
+                <td><p>chunk number must be from 1 to total (chunks) inclusive.</p></td>
+              </tr>
+            
+              <tr>
+                <td>INVALID_CHUNK_TRANSACTION_ID</td>
+                <td>164</td>
+                <td><p>For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -7450,7 +7511,7 @@ by HAPI.</p></td>
                 <td>deleteContract</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p>Delete a contract instance and transfer any remaining hbars to a specified receiver</p></td>
+                <td><p>Deletes a contract instance and transfers any remaining hbars to a specified receiver</p></td>
               </tr>
             
               <tr>
@@ -7464,7 +7525,7 @@ by HAPI.</p></td>
                 <td>systemUndelete</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
-                <td><p>Undeletes a file if the submitting account has network admin privileges</p></td>
+                <td><p>Undeletes a contract if the submitting account has network admin privileges</p></td>
               </tr>
             
           </tbody>
@@ -7814,7 +7875,7 @@ by HAPI.</p></td>
                   <td>cryptoAddLiveHash</td>
                   <td><a href="#proto.CryptoAddLiveHashTransactionBody">CryptoAddLiveHashTransactionBody</a></td>
                   <td></td>
-                  <td><p>Attach a new live hash to an account </p></td>
+                  <td><p>Attach a new livehash to an account </p></td>
                 </tr>
               
                 <tr>
@@ -7835,7 +7896,7 @@ by HAPI.</p></td>
                   <td>cryptoDeleteLiveHash</td>
                   <td><a href="#proto.CryptoDeleteLiveHashTransactionBody">CryptoDeleteLiveHashTransactionBody</a></td>
                   <td></td>
-                  <td><p>Remove a live hash from an account </p></td>
+                  <td><p>Remove a livehash from an account </p></td>
                 </tr>
               
                 <tr>

@@ -27,6 +27,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -48,7 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @RunWith(JUnitPlatform.class)
 class SubmitMessageTransitionLogicTest {
-	final private String TOPIC_ID = "8.6.75";
+	private static final String TOPIC_ID = "8.6.75";
+	private static final long EPOCH_SECOND = 1546304461;
 
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
@@ -61,7 +63,7 @@ class SubmitMessageTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		consensusTime = Instant.ofEpochSecond(1546304461);
+		consensusTime = Instant.ofEpochSecond(EPOCH_SECOND);
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
@@ -135,6 +137,70 @@ class SubmitMessageTransitionLogicTest {
 		verify(transactionContext).setStatus(INVALID_TOPIC_ID);
 	}
 
+	@Test
+	public void failsForInvalidChunkNumber() {
+		// given:
+		givenChunkMessage(2, 3, defaultTxnId());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_NUMBER);
+	}
+
+	@Test
+	public void failsForDifferentPayers() {
+		// given:
+		AccountID initialTransactionPayer = AccountID
+				.newBuilder()
+				.setAccountNum(payer.getAccountNum() + 1)
+				.build();
+		givenChunkMessage(3, 2, txnId(initialTransactionPayer, EPOCH_SECOND));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+	}
+
+	@Test
+	public void acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart() {
+		// given:
+		givenChunkMessage(5, 5, txnId(payer, EPOCH_SECOND - 30));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void failsForTransactionIDOfChunkNumber1NotMatchingTheEntireInitialTransactionID() {
+		// given:
+		givenChunkMessage(4, 1, txnId(payer, EPOCH_SECOND - 30));
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(INVALID_CHUNK_TRANSACTION_ID);
+	}
+
+	@Test
+	public void acceptsChunkNumber1WhenItsTransactionIDMatchesTheEntireInitialTransactionID() {
+		// given:
+		givenChunkMessage(1, 1, defaultTxnId());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(SUCCESS);
+	}
+
 	private void assertUnchangedTopics() {
 		var topic = topics.get(MapKey.getMapKey(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
@@ -149,7 +215,7 @@ class SubmitMessageTransitionLogicTest {
 
 	private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body) {
 		transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
+				.setTransactionID(defaultTxnId())
 				.setConsensusSubmitMessage(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
@@ -174,11 +240,28 @@ class SubmitMessageTransitionLogicTest {
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
 	}
 
-	private TransactionID ourTxnId() {
+	private void givenChunkMessage(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+		ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
+				.newBuilder()
+				.setInitialTransactionID(initialTransactionID)
+				.setTotal(totalChunks)
+				.setNumber(chunkNumber)
+				.build();
+		givenTransaction(getBasicValidTransactionBodyBuilder()
+				.setChunkInfo(chunkInfo));
+		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+		topics.put(MapKey.getMapKey(asTopic(TOPIC_ID)), new Topic());
+	}
+
+	private TransactionID txnId(AccountID payer, long epochSecond) {
 		return TransactionID.newBuilder()
 				.setAccountID(payer)
 				.setTransactionValidStart(
-						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+						Timestamp.newBuilder().setSeconds(epochSecond))
 				.build();
+	}
+
+	private TransactionID defaultTxnId() {
+		return txnId(payer, EPOCH_SECOND);
 	}
 }
