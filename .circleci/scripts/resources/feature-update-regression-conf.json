@@ -1,0 +1,11 @@
+{
+  "workflow-name": "feature-update-regression",
+  "ordered-job-types": {
+	  "build-artifact": true,
+	  "regression-target-testnet": true,
+      "run-accessory-tests": false,
+	  "update-feature": true,
+	  "update-jar-files": true,
+	  "rerun-accessory-tests": false
+  }
+}

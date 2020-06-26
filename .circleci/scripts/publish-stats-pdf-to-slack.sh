@@ -4,8 +4,9 @@
 
 function post_summary_to_slack() {
   local CHANNEL=$1
-  local FN=${CLIENT_LOG_DIR}/regression-test-summary.txt
+  local FN=${CLIENT_LOG_DIR}/${WORKFLOW_NAME}-report.txt
   local LINE=$(grep "Overall Status:" $FN)
+  OVERALL_STATUS="E"
   case $LINE in
     *"Passed with error"*)
       OVERALL_STATUS="W"
@@ -25,6 +26,7 @@ function post_summary_to_slack() {
 }
 
 SOURCE_DESC=$1
+WORKFLOW_NAME=${2:-nightly-regression}
 cd $STATS_PARENT_DIR
 ${REPO}/.circleci/scripts/prepare-slack-message.sh "$SOURCE_DESC"
 
