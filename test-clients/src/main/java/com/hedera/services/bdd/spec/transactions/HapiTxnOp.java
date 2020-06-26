@@ -81,7 +81,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
 	private long submitTime = 0L;
-	private Instant submitTimeInstant;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
 
@@ -150,7 +149,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			txnSubmitted = txn;
 
 			actualPrecheck = response.getNodeTransactionPrecheckCode();
-
+			if (retryPrechecks.isPresent() && retryPrechecks.get().contains(actualPrecheck)) {
+				sleep(10);
+			} else {
+				break;
+			}
+		}
+		stats.setAccepted(actualPrecheck == OK);
 			if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
 				if (payerIsRechargingFor(spec)) {
 					addIpbToPermissiblePrechecks();
@@ -159,15 +164,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					}
 				}
 			}
-
-			if (retryPrechecks.isPresent() && retryPrechecks.get().contains(actualPrecheck)) {
-				sleep(10);
-			} else {
-				break;
-			}
-		}
-		stats.setAccepted(actualPrecheck == OK);
-
 		if (!acceptAnyPrecheck) {
 			if (permissiblePrechecks.isPresent()) {
 				if (permissiblePrechecks.get().contains(actualPrecheck)) {
@@ -203,7 +199,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	private TransactionResponse timedCall(HapiApiSpec spec, Transaction txn) {
 		submitTime = System.currentTimeMillis();
-		submitTimeInstant = Instant.now();
 		TransactionResponse response = callToUse(spec).apply(txn);
 		long after = System.currentTimeMillis();
 		stats.setResponseLatency(after - submitTime);
@@ -357,8 +352,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				return statusNow;
 			}
 			pause(spec.setup().statusWaitSleepMs());
-			log.info("statusNow=  " + statusNow + " qsize " + spec.numPendingOps());
-
 		} while ((Instant.now().toEpochMilli() - beginWait) < spec.setup().statusWaitTimeoutMs());
 		return UNKNOWN;
 	}
@@ -388,10 +381,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		}
 		long after = System.currentTimeMillis();
 		ResponseCodeEnum queryResult = reflectForPrecheck(response);
-//		if ( queryResult != OK ){
-//			log.info("receipt not ok elapsed " + Duration.between(Instant.now(), submitTimeInstant)
-//					+ " qsize " + spec.numPendingOps());
-//		}
+		// no need to check here, since response will be checked in resolvedStatusOfSubmission
 //		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
 		return response;
