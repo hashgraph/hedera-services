@@ -39,6 +39,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.Mockito;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
 
@@ -86,5 +89,31 @@ public class FreezeHandlerTest {
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
+	}
+
+	@Test
+	public void freeze_updateFeature() throws Exception {
+		hfs = mock(HederaFs.class);
+		platform = Mockito.mock(Platform.class);
+		freezeHandler = new FreezeHandler(hfs, platform);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true);
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+
+		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		byte[] data = Files.readAllBytes(Paths.get(zipFile));
+		freezeHandler.updateFeatureWithFileContents(data);
+
+		//check whether file has been deleted as expected
+		File file1 = new File("new1.txt");
+		Assertions.assertFalse(file1.exists());
+
+		File file2 = new File("new1.txt");
+		Assertions.assertFalse(file2.exists());
+
+		//check whether new file has been added as expected
+		File file3 = new File("new3.txt");
+		Assertions.assertTrue(file3.exists());
 	}
 }
