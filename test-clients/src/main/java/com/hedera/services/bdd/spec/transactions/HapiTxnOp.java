@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
