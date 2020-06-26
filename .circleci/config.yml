@@ -1318,7 +1318,7 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - send-report-to-slack
+            - send-report-to-slack:
                 workflow-name: "Continuous integration"
                 status: Passed
             - cleanup-rerun-testnet-if-present
