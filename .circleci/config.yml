@@ -1308,7 +1308,7 @@ workflows:
             - ensure-testnet-for-reruns
           post-steps:
             - cleanup-rerun-testnet-if-present
-          workflow_name: "Continuous integration"
+          workflow-name: "Continuous integration"
       - run-update-jar-files:
           requires:
             - run-smart-contract-scenarios
