@@ -1,3 +1,0 @@
-new1.txt
-../sdk/nonexist.txt
-new2.txt
