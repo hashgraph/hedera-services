@@ -128,13 +128,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			try {
 				response = timedCall(spec, txn);
 			} catch (StatusRuntimeException e) {
-				if (e.toString().contains("max_age") && e.toString().contains("NO_ERROR")) {
-					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway max_age
+				if (e.toString().contains("NO_ERROR")) {
+					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway
 					// do nothing just reissue rpc request
-					log.info("GRPC max_age happened， no need to reconnect, retry ");
+					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
 					continue;
 				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("submitOp Received unexpected EOS on DATA frame from server, retry");
+					continue;
+				}else if (e.toString().contains("REFUSED_STREAM")) {
+					log.info("submitOp Received REFUSED_STREAM from server, retry");
 					continue;
 				} else {
 					// Severe GRPC exception, rethrow
@@ -156,7 +159,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
 			if (payerIsRechargingFor(spec)) {
 				addIpbToPermissiblePrechecks();
-				if(!payerRecentRecharged(spec)){
+				if (!payerRecentRecharged(spec)) {
 					rechargePayerFor(spec);
 				}
 			}
@@ -361,13 +364,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(
 						receiptQuery);
 			} catch (StatusRuntimeException e) {
-				if (e.toString().contains("max_age") && e.toString().contains("NO_ERROR")) {
-					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway max_age
+				if (e.toString().contains("NO_ERROR")) {
+					// GRPC server broke the connection with error HTTP/2 error code: NO_ERROR Received Goaway
 					// do nothing just reissue rpc request
-					log.info("GRPC max_age happened， no need to reconnect, retry ");
+					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
 					continue;
 				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("statusResponse Received unexpected EOS on DATA frame from server, retry");
+					continue;
+				}else if (e.toString().contains("REFUSED_STREAM")) {
+					log.info("statusResponse Received REFUSED_STREAM from server, retry");
 					continue;
 				}
 			}
@@ -375,7 +381,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		}
 		long after = System.currentTimeMillis();
 		ResponseCodeEnum queryResult = reflectForPrecheck(response);
-		Assert.assertEquals(OK, queryResult);
+		// no need to check here, since response will be checked in resolvedStatusOfSubmission
+//		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
 		return response;
 	}
