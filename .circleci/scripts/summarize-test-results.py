@@ -181,13 +181,15 @@ def get_AWS_testnet_IPs(log_file):
     with open(log_file, "r") as f:
         data = f.read()
 
-        match = re.search("PLAY RECAP \*+\n((.*\n){4})", data)
-        IP_lines = [line for line in match.group(
-            1).split(sep='\n') if len(line) > 0]
-        for line in IP_lines:
-            IP = re.search('(\d+\.\d+\.\d+\.\d+)[ \t]+:[ \t]+ok=\d+.*', line)
-            IPs.append(IP.group(1))
-
+        match = re.search(r'>>>> \[CI\] >> (\d+\.\d+\.\d+\.\d+) (\d+\.\d+\.\d+\.\d+) (\d+\.\d+\.\d+\.\d+) (\d+\.\d+\.\d+\.\d+)\n', data)
+        if match:
+            for i in range(4):
+                IP = match.group(i+1)
+                print("IP: {}".format(IP))
+                IPs.append(IP)
+        else:
+            print("No match")
+            IPs.append('NO_IP_ADDRESS')
     return IPs
 
 
