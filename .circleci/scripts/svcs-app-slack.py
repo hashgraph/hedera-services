@@ -65,7 +65,8 @@ def get_github_user(sha1):
 
 
 def get_slack_channel(args):
-    if os.environ.get('CIRCLE_BRANCH') == 'master' and not os.environ.get("CIRCLE_USERNAME"):
+#    if os.environ.get('CIRCLE_BRANCH') == 'master' and not os.environ.get("CIRCLE_USERNAME"):
+    if os.environ.get('CIRCLE_BRANCH') == 'release/0.6':
         return 'CKWHL8R9A'
     else:
         sha1 = os.environ.get('CIRCLE_SHA1')
