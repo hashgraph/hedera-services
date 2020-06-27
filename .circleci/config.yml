@@ -681,7 +681,7 @@ workflows:
   nightly-regression:
     triggers:
         - schedule:
-            cron: "0 1,17,21 * * *"
+            cron: "0 1,16,21 * * *"
             filters:
               branches:
                 only:
@@ -733,12 +733,12 @@ workflows:
       - long-crypto_txns300-10:
           requires:
             - regression-target-testnet
-      - long-crypto_txns300-11:
-          requires:
-            - regression-target-testnet
-      - long-crypto_txns300-12:
-          requires:
-            - regression-target-testnet
+      # - long-crypto_txns300-11:
+      #     requires:
+      #       - regression-target-testnet
+      # - long-crypto_txns300-12:
+      #     requires:
+      #       - regression-target-testnet
       - long-file_ops-0:
           requires:
             - regression-target-testnet
@@ -762,8 +762,8 @@ workflows:
             - long-crypto_txns300-8
             - long-crypto_txns300-9
             - long-crypto_txns300-10
-            - long-crypto_txns300-11
-            - long-crypto_txns300-12
+#            - long-crypto_txns300-11
+#            - long-crypto_txns300-12
             - long-file_ops-0
             - long-consensus_ops-0
       - short-contract_txns6-0:
