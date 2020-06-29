@@ -106,6 +106,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
 
+@Disabled
 @RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
