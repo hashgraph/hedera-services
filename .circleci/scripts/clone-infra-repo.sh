@@ -19,4 +19,9 @@ else
     git clone git@github.com:swirlds${INFRASTRUCTURE_REPO}.git \
       --branch "$BRANCH" \
         | tee -a ${REPO}/test-clients/output/hapi-client.log
+  SHA1="$2"
+  cd ${INFRASTRUCTURE_REPO}
+  git reset --hard $SHA1
+  SHA1=$(git show -s --format=%h)
+  ci_echo "Using commit sha1 '$SHA1' of infrastructure repo..."
 fi

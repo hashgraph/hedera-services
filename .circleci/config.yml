@@ -228,6 +228,10 @@ commands:
         description: Which branch of infrastructure repo to use
         type: string
         default: 'master'
+      infra-sha1:
+        description: Which commit sha1 of infrastructure repo to use
+        type: string
+        default: 'HEAD'
     steps:
       - attach_workspace:
           at: /
@@ -240,7 +244,8 @@ commands:
           name: Checkout infrastructure repo
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >>'
+              '/repo/.circleci/scripts/clone-infra-repo.sh << parameters.infra-branch >> \
+                  << parameters.infra-sha1 >>'
   provision-testnet-hosts:
     description: Provision hosts using Terraform
     parameters:
@@ -2302,6 +2307,8 @@ jobs:
           dsl-args: "TopicDeleteSpecs"
       - run-eet-suites:
           dsl-args: "SubmitMessageSpecs"
+      - run-eet-suites:
+          dsl-args: "HCSTopicFragmentationSuite -TLS=alternate -NODE=random"
       - run-eet-suites:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:

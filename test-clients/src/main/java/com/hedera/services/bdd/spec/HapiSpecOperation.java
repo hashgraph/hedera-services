@@ -86,6 +86,7 @@ public abstract class HapiSpecOperation {
 	protected boolean shouldRegisterTxnId = false;
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
+	protected boolean usePresetTimestamp = false;
 
 	public enum SigStyle {MAP, LIST}
 
@@ -209,6 +210,11 @@ public abstract class HapiSpecOperation {
 				TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
 				builder.setTransactionID(txnId);
 			});
+			if (usePresetTimestamp) {
+				TransactionID txnId = builder.getTransactionID().toBuilder().setTransactionValidStart(
+						spec.registry().getTimestamp(txnName)).build();
+				builder.setTransactionID(txnId);
+			}
 			node.ifPresent(nodeId -> builder.setNodeAccountID(nodeId));
 			validDurationSecs.ifPresent(s -> {
 				builder.setTransactionValidDuration(Duration.newBuilder().setSeconds(s).build());
