@@ -217,12 +217,12 @@ public class SuiteRunner {
 				? Stream.of(args, new Object[] { "-CI" }, getEffectiveArgs(ciArgs))
 				.flatMap(Stream::of)
 				.toArray(n -> new String[n])
-			: args;
+				: args;
 	}
 
-	private static String[] getEffectiveArgs(String ciArgs){
+	private static String[] getEffectiveArgs(String ciArgs) {
 		String[] ciArgsArray = ciArgs.split("\\s+");
-		if(ciArgsArray[0].equals("ALL_SUITES")){
+		if (ciArgsArray[0].equals("ALL_SUITES")) {
 			String allSuites = StringUtils.join(CATEGORY_MAP.keySet(), " ");
 			ciArgsArray[0] = allSuites;
 		}
