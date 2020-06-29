@@ -854,7 +854,7 @@ workflows:
   chunking-performance:
     jobs:
       - fast-build-artifact
-      - run-chunking-load-test
+      - run-chunking-load-test:
           requires:
             - fast-build-artifact
 
