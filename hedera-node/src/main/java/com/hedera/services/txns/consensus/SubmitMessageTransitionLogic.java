@@ -69,6 +69,24 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		if (op.hasChunkInfo()) {
+			var chunkInfo = op.getChunkInfo();
+			if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
+				transactionContext.setStatus(INVALID_CHUNK_NUMBER);
+				return;
+			}
+			if (!chunkInfo.getInitialTransactionID().getAccountID().equals(
+					transactionBody.getTransactionID().getAccountID())) {
+				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+				return;
+			}
+			if (1 == chunkInfo.getNumber() &&
+					!chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
+				transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
+				return;
+			}
+		}
+
 		var topicMapKey = MapKey.getMapKey(topicId);
 		var topic = topics.get(topicMapKey);
 		try {

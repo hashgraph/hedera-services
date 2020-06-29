@@ -332,12 +332,12 @@
     <repository>
       <id>ossrh-ethereumj-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1136</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1145</url>
     </repository>
     <repository>
       <id>ossrh-swirlds-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1134</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1144</url>
     </repository>
     <repository>
       <snapshots>

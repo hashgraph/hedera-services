@@ -1,5 +1,0 @@
-{
-  "target_testnet_success_pattern" : [
-    ":50211 is available."
-  ]
-}

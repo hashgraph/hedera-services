@@ -154,4 +154,6 @@ enum ResponseCodeEnum {
   // deleted unrecoverably. This error response code will not be returned until autoRenew functionality is supported
   // by HAPI.
   TOPIC_EXPIRED = 162;
+  INVALID_CHUNK_NUMBER = 163; // chunk number must be from 1 to total (chunks) inclusive.
+  INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
 }

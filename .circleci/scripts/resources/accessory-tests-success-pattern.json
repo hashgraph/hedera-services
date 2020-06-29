@@ -1,0 +1,27 @@
+{
+    "accessory-tests-success-pattern" : {
+        "Run SmartContractBitcarbon test": "SmartContractBitcarbon - Regression summary: This run is successful.",
+        "Run SmartContractCallLocal test": "SmartContractCallLocal - Regression summary: This run is successful.",
+        "Run SmartContractCreateContract test": "SmartContractCreateContract - Regression summary: This run is successful.",
+        "Run SmartContractCRUD test": "SmartContractCRUD - Regression summary: This run is successful.",
+        "Run SmartContractPay test": "SmartContractPay - Regression summary: This run is successful.",
+        "Run SmartContractSimpleStorage test": "SmartContractSimpleStorage - Regression summary: This run is successful.",
+        "Run SmartContractNegativeCalls test": "SmartContractNegativeCalls - Regression summary: This run is successful.",
+        "Run SmartContractNegativeCreates test": "SmartContractNegativeCreates - Regression summary: This run is successful.",
+        "Run SmartContractPay test": "SmartContractPay - Regression summary: This run is successful.",
+        "Run SmartContractPayReceivable test": "SmartContractPayReceivable - Regression summary: This run is successful.",
+        "Run SmartContractPayReceivable test": "SmartContractPayReceivable - Regression summary: This run is successful.",
+        "Run SmartContractSimpleStorage test": "SmartContractSimpleStorage - Regression summary: This run is successful.",
+        "Run SmartContractSimpleStorageWithEvents test": "SmartContractSimpleStorageWithEvents - Regression summary: This run is successful.",
+        "Run OCTokenIT test": "OCTokenIT - Regression summary: This run is successful.",
+        "Run SmartContractFailFirst test": "SmartContractFailFirst - Regression summary: This run is successful.",
+        "Run SmartContractSelfDestruct test": "SmartContractSelfDestruct - Regression summary: This run is successful.",
+        "Run SmartContractSimpleStorage test": "SmartContractSimpleStorage - Regression summary: This run is successful.",
+        "Run TopicCreateSpecs test" : "SuiteRunner - TopicCreateSpecs                 :: 1/1 suites ran OK",
+        "Run TopicUpdateSpecs test" : "SuiteRunner - TopicUpdateSpecs                 :: 1/1 suites ran OK",
+        "Run TopicDeleteSpecs test" : "SuiteRunner - TopicDeleteSpecs                 :: 1/1 suites ran OK",
+        "Run SubmitMessageSpecs test" : "SuiteRunner - SubmitMessageSpecs               :: 1/1 suites ran OK",
+        "Run TopicGetInfoSpecs test" : "SuiteRunner - TopicGetInfoSpecs                :: 1/1 suites ran OK",
+        "Run ConsensusThrottlesSpecs test" : "SuiteRunner - ConsensusThrottlesSpecs          :: 1/1 suites ran OK"
+    }
+}

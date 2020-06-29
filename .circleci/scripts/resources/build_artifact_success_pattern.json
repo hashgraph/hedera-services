@@ -1,8 +1,0 @@
-{
-  "build_artifact_success_pattern": [
-    "Hedera Services .................................... SUCCESS",
-    "Hedera Services API ................................ SUCCESS",
-    "Hedera Services Node ............................... SUCCESS",
-    "Hedera Services Test Clients ....................... SUCCESS"
-  ]
-}
