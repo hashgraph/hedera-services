@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
@@ -71,35 +70,24 @@ public class RegressionProviderFactory {
 			String path = RESOURCE_DIR + "/" + resource.get();
 			HapiPropertySource props = new JutilPropertySource(path);
 
-			EntityNameProvider<Key> keys = new RegistrySourcedNameProvider<>(
-				Key.class,
-				spec.registry(),
-				new RandomSelector());
-			RegistrySourcedNameProvider<FileID> files = new RegistrySourcedNameProvider<>(
-					FileID.class,
-					spec.registry(),
-					new RandomSelector());
-			RegistrySourcedNameProvider<AccountID> accounts = new RegistrySourcedNameProvider<>(
-					AccountID.class,
-					spec.registry(),
-					new RandomSelector());
-			RegistrySourcedNameProvider<ContractID> contracts = new RegistrySourcedNameProvider<>(
-					ContractID.class,
-					spec.registry(),
-					new RandomSelector());
-			RegistrySourcedNameProvider<ActionableContractCall> calls = new RegistrySourcedNameProvider<>(
-					ActionableContractCall.class,
-					spec.registry(),
-					new RandomSelector());
-			RegistrySourcedNameProvider<ActionableContractCallLocal> localCalls = new RegistrySourcedNameProvider<>(
-					ActionableContractCallLocal.class,
-					spec.registry(),
-					new RandomSelector());
-
-			RegistrySourcedNameProvider<TopicID> topics = new RegistrySourcedNameProvider<>(
-					TopicID.class,
-					spec.registry(),
-					new RandomSelector());
+			var keys = new RegistrySourcedNameProvider<>(
+					Key.class, spec.registry(), new RandomSelector());
+			var files = new RegistrySourcedNameProvider<>(
+					FileID.class, spec.registry(), new RandomSelector());
+			var allAccounts = new RegistrySourcedNameProvider<>(
+					AccountID.class, spec.registry(), new RandomSelector());
+			var unstableAccounts = new RegistrySourcedNameProvider<>(
+					AccountID.class, spec.registry(), new RandomSelector(account -> !account.startsWith("stable-")));
+			var contracts = new RegistrySourcedNameProvider<>(
+					ContractID.class, spec.registry(), new RandomSelector());
+			var calls = new RegistrySourcedNameProvider<>(
+					ActionableContractCall.class, spec.registry(), new RandomSelector());
+			var localCalls = new RegistrySourcedNameProvider<>(
+					ActionableContractCallLocal.class, spec.registry(), new RandomSelector());
+			var allTopics = new RegistrySourcedNameProvider<>(
+					TopicID.class, spec.registry(), new RandomSelector());
+			var unstableTopics = new RegistrySourcedNameProvider<>(
+					TopicID.class, spec.registry(), new RandomSelector(topic -> !topic.startsWith("stable-")));
 
 			KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
@@ -116,51 +104,66 @@ public class RegressionProviderFactory {
 							props.getInteger("randomReceipt.bias"))
 					/* ----- CRYPTO ----- */
 					.withOp(
-							new RandomAccount(keys, accounts)
+							new RandomAccount(keys, allAccounts)
 									.ceiling(intPropOrElse(
 											"randomAccount.ceilingNum",
 											RandomAccount.DEFAULT_CEILING_NUM,
+											props) + intPropOrElse(
+											"randomTransfer.numStableAccounts",
+											RandomTransfer.DEFAULT_NUM_STABLE_ACCOUNTS,
 											props)),
 							props.getInteger("randomAccount.bias"))
 					.withOp(
-							new RandomTransfer(accounts)
-									.recordProbability(
+							new RandomTransfer(allAccounts)
+									.numStableAccounts(
+											intPropOrElse(
+													"randomTransfer.numStableAccounts",
+													RandomTransfer.DEFAULT_NUM_STABLE_ACCOUNTS,
+													props)
+									).recordProbability(
 											doublePropOrElse(
-													"randomTransfer.recordProbability",
+												   "randomTransfer.recordProbability",
 													RandomTransfer.DEFAULT_RECORD_PROBABILITY,
 													props)),
 							props.getInteger("randomTransfer.bias"))
 					.withOp(
-							new RandomAccountUpdate(keys, accounts),
+							new RandomAccountUpdate(keys, unstableAccounts),
 							props.getInteger("randomAccountUpdate.bias"))
 					.withOp(
-							new RandomAccountDeletion(accounts),
+							new RandomAccountDeletion(unstableAccounts),
 							props.getInteger("randomAccountDeletion.bias"))
 					.withOp(
-							new RandomAccountInfo(accounts),
+							new RandomAccountInfo(allAccounts),
 							props.getInteger("randomAccountInfo.bias"))
 					.withOp(
-							new RandomAccountRecords(accounts),
+							new RandomAccountRecords(allAccounts),
 							props.getInteger("randomAccountRecords.bias"))
 					/* ---- CONSENSUS ---- */
 					.withOp(
-							new RandomTopicCreation(keys, topics)
+							new RandomTopicCreation(keys, allTopics)
 									.ceiling(intPropOrElse(
 											"randomTopicCreation.ceilingNum",
 											RandomFile.DEFAULT_CEILING_NUM,
+											props) + intPropOrElse(
+											"randomMessageSubmit.numStableTopics",
+											RandomMessageSubmit.DEFAULT_NUM_STABLE_TOPICS,
 											props)),
 							intPropOrElse("randomTopicCreation.bias", 0, props))
 					.withOp(
-							new RandomTopicDeletion(topics),
+							new RandomTopicDeletion(unstableTopics),
 							intPropOrElse("randomTopicDeletion.bias", 0, props))
 					.withOp(
-							new RandomTopicUpdate(topics),
+							new RandomTopicUpdate(unstableTopics),
 							intPropOrElse("randomTopicUpdate.bias", 0, props))
 					.withOp(
-							new RandomMessageSubmit(topics),
+							new RandomMessageSubmit(allTopics).numStableTopics(
+									intPropOrElse(
+											"randomMessageSubmit.numStableTopics",
+											RandomMessageSubmit.DEFAULT_NUM_STABLE_TOPICS,
+											props)),
 							intPropOrElse("randomMessageSubmit.bias", 0, props))
 					.withOp(
-							new RandomTopicInfo(topics),
+							new RandomTopicInfo(allTopics),
 							intPropOrElse("randomTopicInfo.bias", 0, props))
 
 					/* ---- FILE ---- */
@@ -194,7 +197,7 @@ public class RegressionProviderFactory {
 							new RandomCallLocal(localCalls),
 							props.getInteger("randomCallLocal.bias"))
 					.withOp(
-							new RandomContractDeletion(accounts, contracts),
+							new RandomContractDeletion(allAccounts, contracts),
 							props.getInteger("randomContractDeletion.bias"))
 					.withOp(
 							new RandomContract(keys, contracts)

@@ -3,6 +3,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -11,14 +12,21 @@ import org.apache.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.Collections.EMPTY_LIST;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class RandomMessageSubmit implements OpProvider {
         private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
+
+        public static final int DEFAULT_NUM_STABLE_TOPICS = 500;
         private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
                 TOPIC_EXPIRED,
                 INVALID_TOPIC_ID,
@@ -28,14 +36,31 @@ public class RandomMessageSubmit implements OpProvider {
 
         private final SplittableRandom r = new SplittableRandom();
         private final EntityNameProvider<TopicID> topics;
+        private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
 
         public RandomMessageSubmit(EntityNameProvider<TopicID> topics) {
                 this.topics = topics;
         }
 
+        public RandomMessageSubmit numStableTopics(int n) {
+                numStableTopics = n;
+                return this;
+        }
+
+        public static Set<String> stableTopics(int n) {
+                return IntStream.range(0, n)
+                        .mapToObj(i -> String.format("stable-topic%d", i)).collect(toSet());
+        }
+
         @Override
         public List<HapiSpecOperation> suggestedInitializers() {
-                return EMPTY_LIST;
+                return stableTopics(numStableTopics).stream()
+                        .map(topic -> createTopic(my(topic)).noLogging().deferStatusResolution())
+                        .collect(toList());
+        }
+
+        private String my(String opName) {
+                return unique(opName, RandomMessageSubmit.class);
         }
 
         @Override

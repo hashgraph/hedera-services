@@ -113,6 +113,7 @@ public class QueryResponseHelper {
 		if (log.isDebugEnabled()) {
 			log.debug(ALL_QUERIES_MARKER, "Received query: {}", query);
 		}
+		log.warn(ALL_QUERIES_MARKER, "Received query: {}", query);
 		Response response;
 		incReceivedCount.run();
 

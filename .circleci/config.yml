@@ -1008,20 +1008,15 @@ workflows:
                 at: /
 
   nightly-regression:
-#    triggers:
-#        - schedule:
-#            cron: "0 5,9,13 * * *"
-#            filters:
-#              branches:
-#                only:
-#                  - master
-#                  - 00050-D-duplicate-tranx
-    jobs:
-      - fast-build-artifact:
-          filters:
+    triggers:
+      - schedule:
+            cron: "0 5,9,13 * * *"
+            filters:
               branches:
                 only:
-                  - 00050-D-duplicate-tranx
+                  - master
+    jobs:
+      - fast-build-artifact:
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1084,9 +1079,9 @@ workflows:
       - long-consensus_ops-0:
           requires:
             - regression-target-testnet
-      # - long-umbrella:
-      #     requires:
-      #       - regression-target-testnet
+      - long-umbrella:
+           requires:
+             - regression-target-testnet
       - regression-validate-freeze:
           requires:
             - long-contract_txns6-0
@@ -1109,20 +1104,19 @@ workflows:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
 
-      # - validate-server-stat-1:
-      #     requires:
-      #       - regression-validate-freeze
+#       - validate-server-stat-1:
+#           requires:
+#             - regression-validate-freeze
 
       - short-contract_txns6-0:
           requires:
             - regression-validate-freeze
-
       - short-crypto_txns300-0:
           requires:
             - regression-validate-freeze
       - short-crypto_txns300-1:
           requires:
-            - regression-validate-freeze              
+            - regression-validate-freeze
       - short-crypto_txns300-2:
           requires:
             - regression-validate-freeze
@@ -1183,7 +1177,7 @@ workflows:
             - short-crypto_txns300-12
             - short-file_ops-0
             - short-consensus_ops-0
-
+#
 #      - validate-server-stat-2:
 #          requires:
 #            - regression-run-accessory-tests
@@ -1271,18 +1265,17 @@ workflows:
 
   continuous-integration:
     jobs:
-      - fast-build-artifact:
-          #context: SonarCloud
+      - build-artifact:
+          context: SonarCloud
           filters:
             branches:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00050-D-duplicate-tranx
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
-            - fast-build-artifact
+            - build-artifact
           workflow-name: "Continuous integration"
       - run-consensus-and-crypto-scenarios:
           requires:
@@ -1297,7 +1290,7 @@ workflows:
           workflow-name: "Continuous integration"
       - run-file-scenarios:
           requires:
-            - start-singlejob-testnet
+            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1321,7 +1314,7 @@ workflows:
       - cleanup-singlejob-testnet:
           requires:
             - run-smart-contract-scenarios
-            - run-consensus-and-crypto-scenarios
+#            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1507,7 +1500,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - persist_to_workspace:
@@ -1565,7 +1558,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1581,7 +1574,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1597,7 +1590,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1613,7 +1606,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1629,7 +1622,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1645,7 +1638,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1661,7 +1654,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1677,7 +1670,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1693,7 +1686,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1709,7 +1702,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1724,7 +1717,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1739,7 +1732,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1754,7 +1747,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1769,7 +1762,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1784,7 +1777,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1799,7 +1792,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1814,7 +1807,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1829,7 +1822,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1844,7 +1837,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1860,7 +1853,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1875,7 +1868,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1890,7 +1883,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -1906,7 +1899,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1921,7 +1914,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1936,7 +1929,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1951,7 +1944,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1966,7 +1959,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1981,7 +1974,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -1996,7 +1989,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2011,7 +2004,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2026,7 +2019,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2041,7 +2034,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     parallelism: 1
     steps:
@@ -2057,7 +2050,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2072,7 +2065,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2088,7 +2081,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2117,7 +2110,7 @@ jobs:
     executor:
       name: ci-test-executor
       tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-new-regression"
+      tf_workspace: "net-hightps"
       use_existing_network: "1"
     steps:
       - attach_workspace:
@@ -2126,8 +2119,8 @@ jobs:
           name:  Reset client log
           command: |
             cat /dev/null > /repo/test-clients/output/hapi-client.log
-      - accessory-test-common-steps
-      - validate-record-streams
+#     - accessory-test-common-steps
+#      - validate-record-streams
       - save-this-job-client-logs:
           workflow-name: "nightly-regression"
       - publish-platform-stats:

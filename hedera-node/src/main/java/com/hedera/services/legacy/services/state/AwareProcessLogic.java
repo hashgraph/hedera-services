@@ -167,6 +167,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 
+
 		final SignatureStatus sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
@@ -182,6 +183,8 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (duplicity == DUPLICATE) {
 			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
+			log.warn("Duplicated Transaction: Active payer account: " + ctx.txnCtx().activePayer());
+			log.warn(accessor.getSignedTxn4Log());
 			return;
 		}
 
@@ -289,6 +292,8 @@ public class AwareProcessLogic implements ProcessLogic {
 
 		if (duplicity == NODE_DUPLICATE) {
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
+			log.warn("Duplicate_transaction due to NODE_DUPLICATE");
+			log.warn(ctx);
 			return true;
 		}
 

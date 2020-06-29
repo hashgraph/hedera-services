@@ -88,8 +88,6 @@ public abstract class HapiSpecOperation {
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
 
-	public enum SigStyle {MAP, LIST}
-
 	protected boolean useTls = false;
 	protected boolean useRandomNode = false;
 	protected boolean useLegacySignature = false;
@@ -333,6 +331,9 @@ public abstract class HapiSpecOperation {
 		return helper;
 	}
 
+	public Optional<String> getPayer() {
+		return payer;
+	}
 	protected void considerRecording(HapiApiSpec spec, OpObs obs) {
 		if (!suppressStats) {
 			spec.registry().record(obs);

@@ -32,6 +32,7 @@ import org.mockito.MockitoAnnotations;
 import org.apache.logging.log4j.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -265,4 +266,11 @@ public class HederaNodeStatsTest {
 		assertTrue(stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX) > 0.0);
 	}
+
+
+	@Test
+	public void dumpHederaNodeStatsShouldNotBeEmptyTest() throws Exception {
+		assertNotNull(stats.dumpHederaNodeStats());
+	}
+
 }
