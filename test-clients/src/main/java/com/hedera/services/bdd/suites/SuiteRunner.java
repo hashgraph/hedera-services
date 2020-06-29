@@ -23,12 +23,12 @@ package com.hedera.services.bdd.suites;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
+import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
+import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
-import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
-import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
@@ -36,10 +36,10 @@ import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
-import com.hedera.services.bdd.suites.freeze.FreezeSuite;
-import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
+import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
+import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
@@ -54,7 +54,6 @@ import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
-
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.LegacyToBucketTransitionSpec;
@@ -63,7 +62,6 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,12 +76,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
+import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.*;
 import static java.util.stream.Collectors.toMap;
 
 public class SuiteRunner {
@@ -216,19 +214,24 @@ public class SuiteRunner {
 		log.info("Args from CircleCI environment: |" + ciArgs + "|");
 
 		return StringUtils.isNotEmpty(ciArgs)
-				? Stream.of(args, new Object[] { "-CI" }, getEffectiveArgs(ciArgs))
+				? Stream.of(args, new Object[] { "-CI" }, getEffectiveDSLSuiteRunnerArgs(ciArgs))
 				.flatMap(Stream::of)
 				.toArray(n -> new String[n])
 				: args;
 	}
 
-	private static String[] getEffectiveArgs(String ciArgs) {
-		String[] ciArgsArray = ciArgs.split("\\s+");
-		if (ciArgsArray[0].equals("ALL_SUITES")) {
-			String allSuites = StringUtils.join(CATEGORY_MAP.keySet(), " ");
-			ciArgsArray[0] = allSuites;
+	private static String[] getEffectiveDSLSuiteRunnerArgs(String realArgs) {
+		ArrayList<String> effectiveArgs = new ArrayList<>();
+		String[] ciArgs = realArgs.split("\\s+");
+		if (ciArgs[0].equals("ALL_SUITES")) {
+			effectiveArgs.addAll(CATEGORY_MAP.keySet());
+			for(int i=1;i<ciArgs.length;i++){
+				effectiveArgs.add(ciArgs[i]);
+			}
+			log.info("Effective args when running ALL_SUITES : "+ effectiveArgs.toString());
+			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
 		}
-		return ciArgsArray;
+		return ciArgs;
 	}
 
 	private static List<CategoryResult> runCategories(List<String> args) {
