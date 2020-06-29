@@ -14,16 +14,16 @@ import java.util.Optional;
 import java.util.SplittableRandom;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.Collections.EMPTY_LIST;
 
 public class RandomMessageSubmit implements OpProvider {
         private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
         private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-                        TOPIC_EXPIRED,
-                        INVALID_TOPIC_ID
+                TOPIC_EXPIRED,
+                INVALID_TOPIC_ID,
+                INVALID_CHUNK_NUMBER,
+                INVALID_CHUNK_TRANSACTION_ID
         );
 
         private final SplittableRandom r = new SplittableRandom();
@@ -46,8 +46,12 @@ public class RandomMessageSubmit implements OpProvider {
                 }
 
                 HapiMessageSubmit op = submitMessageTo(target.get())
-                                .message("Hello Hedera")
-                                .hasKnownStatusFrom(permissibleOutcomes);
+                        .message("Hello Hedera")
+                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
+                        .hasKnownStatusFrom(permissibleOutcomes);
+                if (r.nextBoolean()) {
+                        op = op.usePresetTimestamp();
+                }
 
                 return Optional.of(op);
         }

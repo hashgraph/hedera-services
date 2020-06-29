@@ -29,28 +29,27 @@ import org.apache.log4j.Logger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
 	private static final Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
 	private static String topicID = null;
-
+	private static int messageSize = 40;
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
@@ -58,6 +57,11 @@ public class SubmitMessageLoadTest extends LoadTest {
 		if (args.length > usedArgs) {
 			topicID = args[usedArgs];
 			log.info("Set topicID as " + topicID);
+		}
+
+		if (args.length > (usedArgs+1)) {
+			messageSize = Integer.parseInt(args[usedArgs+1]);
+			log.info("Set messageSize as " + messageSize);
 		}
 
 		SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
@@ -81,11 +85,12 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo(topicID != null ? topicID : "topic")
-						.message("A fascinating item of general interest!")
+						.message(randomUtf8Bytes(messageSize))
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+						.hasKnownStatusFrom(SUCCESS)
 						.deferStatusResolution()
 
 		};
@@ -93,6 +98,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		return defaultHapiSpec("RunSubmitMessages")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+						newKeyNamed("submitKey"),
 						logIt(ignore -> settings.toString())
 				).when(
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
@@ -100,8 +106,10 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
+								.submitKeyName("submitKey")
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
-								sleepFor(100)
+								sleepFor(100),
+						sleepFor(5000) //wait all other thread ready
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
