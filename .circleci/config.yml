@@ -857,6 +857,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - release/0.6
       - start-singlejob-testnet:
           requires:
             - build-artifact
