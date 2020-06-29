@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -212,11 +212,21 @@ public class SuiteRunner {
 	private static String[] trueArgs(String[] args) {
 		String ciArgs = Optional.ofNullable(System.getenv("DSL_SUITE_RUNNER_ARGS")).orElse("");
 		log.info("Args from CircleCI environment: |" + ciArgs + "|");
+
 		return StringUtils.isNotEmpty(ciArgs)
-			? Stream.of(args, new Object[] { "-CI" }, ciArgs.split("\\s+"))
+				? Stream.of(args, new Object[] { "-CI" }, getEffectiveArgs(ciArgs))
 				.flatMap(Stream::of)
 				.toArray(n -> new String[n])
 			: args;
+	}
+
+	private static String[] getEffectiveArgs(String ciArgs){
+		String[] ciArgsArray = ciArgs.split("\\s+");
+		if(ciArgsArray[0].equals("ALL_SUITES")){
+			String allSuites = StringUtils.join(CATEGORY_MAP.keySet(), " ");
+			ciArgsArray[0] = allSuites;
+		}
+		return ciArgsArray;
 	}
 
 	private static List<CategoryResult> runCategories(List<String> args) {
@@ -275,16 +285,19 @@ public class SuiteRunner {
 				.collect(toList());
 		return summaryOf(category, suites, failed);
 	}
+
 	private static CategoryResult runSuitesSync(String category, HapiApiSuite[] suites) {
 		toggleStatsReporting(suites);
 		List<HapiApiSuite> failed = Stream.of(suites)
-					.filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
-					.collect(toList());
+				.filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
+				.collect(toList());
 		return summaryOf(category, suites, failed);
 	}
+
 	private static void toggleStatsReporting(HapiApiSuite[] suites) {
 		Stream.of(suites).forEach(suite -> suite.setReportStats(suite.hasInterestingStats()));
 	}
+
 	private static CategoryResult summaryOf(String category, HapiApiSuite[] suites, List<HapiApiSuite> failed) {
 		int numPassed = suites.length - failed.size();
 		String summary = category + " :: " + numPassed + "/" + suites.length + " suites ran OK";
@@ -293,7 +306,9 @@ public class SuiteRunner {
 
 	private static <T, R> List<R> accumulateAsync(T[] inputs, Function<T, R> f) {
 		final List<R> outputs = new ArrayList<>();
-		for (int i = 0; i < inputs.length; i++) { outputs.add(null); }
+		for (int i = 0; i < inputs.length; i++) {
+			outputs.add(null);
+		}
 		CompletableFuture<Void> future = CompletableFuture.allOf(
 				IntStream.range(0, inputs.length)
 						.mapToObj(i -> runAsync(() -> outputs.set(i, f.apply(inputs[i]))))
