@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -112,6 +113,7 @@ public class SuiteRunner {
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
 		put("TopicUpdateSpecs", aof(new TopicUpdateSuite()));
 		put("SubmitMessageSpecs", aof(new SubmitMessageSuite()));
+		put("HCSTopicFragmentationSuite", aof(new ChunkingSuite()));
 		put("TopicGetInfoSpecs", aof(new TopicGetInfoSuite()));
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		/* Functional tests - FILE */
