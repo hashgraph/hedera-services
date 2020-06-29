@@ -32,7 +32,7 @@
 
     <commons-io.version>2.1</commons-io.version>
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
-    <swirlds.version>0.6.5-patch.2</swirlds.version>
+    <swirlds.version>0.7.0-alpha.2</swirlds.version>
 
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <mockito-junit-jupiter.version>3.3.0</mockito-junit-jupiter.version>
@@ -330,14 +330,14 @@
 
   <repositories>
     <repository>
-      <id>ossrh-ethereumj-staging</id>
-      <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1145</url>
-    </repository>
-    <repository>
       <id>ossrh-swirlds-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1144</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1142</url>
+    </repository>
+    <repository>
+      <id>ossrh-ethereumj-staging</id>
+      <name>Staging repo</name>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1143</url>
     </repository>
     <repository>
       <snapshots>

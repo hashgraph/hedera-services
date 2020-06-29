@@ -49,11 +49,10 @@ import com.hedera.services.contracts.execution.SoliditySigsVerifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.math.BigInteger;
@@ -148,7 +147,7 @@ public class SolidityExecutor {
 			return asSolidityAddress(
 					0,
 					creatorHgState.getRealmId(),
-					seqNo.getNextSequenceNum());
+					seqNo.getAndIncrement());
 		}
 	}
 
@@ -297,7 +296,7 @@ public class SolidityExecutor {
 
 	private void create() {
 		var sponsor = trackingRepository.getAccountState(solidityTxn.getSender());
-		long newSequence = seqNo.getNextSequenceNum();
+		long newSequence = seqNo.getAndIncrement();
 		byte[] newContractAddress = asSolidityAddress(0, sponsor.getRealmId(), newSequence);
 
 		solidityTxn.setContractAddress(newContractAddress);

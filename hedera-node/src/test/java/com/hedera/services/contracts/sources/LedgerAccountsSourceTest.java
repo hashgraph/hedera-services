@@ -20,7 +20,7 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -30,7 +30,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
@@ -111,10 +111,10 @@ class LedgerAccountsSourceTest {
 		boolean deleted = true;
 		boolean smartContract = true;
 		boolean receiverSigRequired = true;
-		HederaAccount account = mock(HederaAccount.class);
-		given(account.getAutoRenewPeriod()).willReturn(autoRenew);
-		given(account.getExpirationTime()).willReturn(expiry);
-		given(account.getProxyAccount()).willReturn(JAccountID.convert(IdUtils.asAccount("1.2.3")));
+		MerkleAccount account = mock(MerkleAccount.class);
+		given(account.getAutoRenewSecs()).willReturn(autoRenew);
+		given(account.getExpiry()).willReturn(expiry);
+		given(account.getProxy()).willReturn(EntityId.ofNullableAccountId(IdUtils.asAccount("1.2.3")));
 		given(account.getSenderThreshold()).willReturn(sendThreshold);
 		given(account.getReceiverThreshold()).willReturn(receiveThreshold);
 		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
@@ -158,7 +158,7 @@ class LedgerAccountsSourceTest {
 		// and:
 		InOrder inOrder = inOrder(ledger);
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, HederaAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(ledger.getBalance(target)).willReturn(oldBalance);
 		given(ledger.exists(target)).willReturn(true);
@@ -192,7 +192,7 @@ class LedgerAccountsSourceTest {
 		evmState.setBalance(BigInteger.valueOf(newBalance));
 		// and:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, HederaAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn(sendThreshold);
 		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn(receiveThreshold);
@@ -214,7 +214,7 @@ class LedgerAccountsSourceTest {
 		verify(txnLedger).set(target, FUNDS_SENT_RECORD_THRESHOLD, sendThreshold);
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-		verify(txnLedger).set(target, PROXY, JAccountID.convert(proxy));
+		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
 		verify(txnLedger).set(target, MEMO, "");
 	}
 
@@ -237,7 +237,7 @@ class LedgerAccountsSourceTest {
 		evmState.setReceiverThreshold(receiveThreshold);
 		// and:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, HederaAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(ledger.exists(target)).willReturn(false);
 
@@ -257,7 +257,7 @@ class LedgerAccountsSourceTest {
 		verify(txnLedger).set(target, FUNDS_SENT_RECORD_THRESHOLD, sendThreshold);
 		verify(txnLedger).set(target, IS_SMART_CONTRACT, true);
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
-		verify(txnLedger).set(target, PROXY, JAccountID.convert(proxy));
+		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
 		verify(txnLedger).set(target, MEMO, "");
 		// and:
 		verify(properties, never()).getLongProperty(any());

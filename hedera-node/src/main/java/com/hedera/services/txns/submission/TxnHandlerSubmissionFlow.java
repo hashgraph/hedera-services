@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
@@ -71,7 +71,7 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 
 			TxnValidityAndFeeReq metaValidity = metaValidityOf(accessor);
 			if (metaValidity.getValidity() != OK) {
-				return responseWith(metaValidity.getValidity(), metaValidity.getFeeRequired());
+				return responseWith(metaValidity.getValidity(), metaValidity.getRequiredFee());
 			}
 
 			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getTxn());

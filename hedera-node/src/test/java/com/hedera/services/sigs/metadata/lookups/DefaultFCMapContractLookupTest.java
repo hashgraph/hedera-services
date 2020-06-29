@@ -22,8 +22,8 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class DefaultFCMapContractLookupTest {
 	private final String id = "0.0.1337";
 	private final ContractID contract = IdUtils.asContract(id);
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private DefaultFCMapContractLookup subject;
 
 	@Test

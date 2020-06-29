@@ -748,9 +748,9 @@ commands:
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
-          log: swirlds.log
+          log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
-          pattern-desc: valid signed state hash pattern
+          pattern-desc: merkle state restored
           times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
           sleep-secs: 7

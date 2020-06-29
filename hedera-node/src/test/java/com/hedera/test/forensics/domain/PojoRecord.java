@@ -23,16 +23,12 @@ package com.hedera.test.forensics.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.jproto.JAccountID;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
-import com.hedera.services.legacy.core.jproto.JTransactionID;
-import com.hedera.services.legacy.core.jproto.JTransactionReceipt;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
-import com.hedera.services.legacy.core.jproto.JTransferList;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import org.apache.commons.codec.binary.Hex;
-
-import static java.util.stream.Collectors.toList;
 
 @JsonPropertyOrder({
 		"receipt",
@@ -59,16 +55,16 @@ public class PojoRecord {
 	private PojoFunctionResult callResult;
 	private PojoFunctionResult createResult;
 
-	public static PojoRecord from(JTransactionRecord value) {
+	public static PojoRecord from(ExpirableTxnRecord value) {
 		var pojo = new PojoRecord();
-		pojo.setTxnId(asString(value.getTransactionID()));
-		pojo.setReceipt(asString(value.getTxReceipt()));
-		pojo.setHash(Hex.encodeHexString(value.getTxHash()));
+		pojo.setTxnId(asString(value.getTxnId()));
+		pojo.setReceipt(asString(value.getReceipt()));
+		pojo.setHash(Hex.encodeHexString(value.getTxnHash()));
 		pojo.setTimestamp(asString(value.getConsensusTimestamp()));
 		pojo.setMemo(value.getMemo());
-		pojo.setFee(value.getTransactionFee());
-		pojo.setExpiry(value.getExpirationTime());
-		pojo.setTransfers(MiscUtils.readableTransferList(xfersFrom(value.getjTransferList())));
+		pojo.setFee(value.getFee());
+		pojo.setExpiry(value.getExpiry());
+		pojo.setTransfers(MiscUtils.readableTransferList(value.getHbarAdjustments().toGrpc()));
 		if (value.getContractCallResult() != null) {
 			pojo.setCallResult(PojoFunctionResult.from(value.getContractCallResult()));
 		}
@@ -158,52 +154,44 @@ public class PojoRecord {
 		this.receipt = receipt;
 	}
 
-	public static String asString(JAccountID id) {
+	public static String asString(EntityId id) {
 		if (id == null) {
 			return null;
 		}
-		return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+		return String.format("%d.%d.%d", id.shard(), id.realm(), id.num());
 	}
 
-	public static String asString(JTimestamp stamp) {
-		return String.format("%d.%d", stamp.getSeconds(), stamp.getNano());
+	public static String asString(RichInstant stamp) {
+		return String.format("%d.%d", stamp.getSeconds(), stamp.getNanos());
 	}
 
-	public static String asString(JTransactionID txnId) {
-		var ts = String.format("%d.%d", txnId.getStartTime().getSeconds(), txnId.getStartTime().getNano());
+	public static String asString(TxnId txnId) {
+		var ts = String.format("%d.%d", txnId.getValidStart().getSeconds(), txnId.getValidStart().getNanos());
 		return String.format("From %s @ %s", asString(txnId.getPayerAccount()), ts);
 	}
 
-	public static TransferList xfersFrom(JTransferList list) {
-		return TransferList.newBuilder()
-				.addAllAccountAmounts(
-						list.getjAccountAmountsList().stream().map(JTransferList::convert).collect(toList()))
-				.build();
-	}
-
-	public static String asString(JTransactionReceipt receipt) {
+	public static String asString(TxnReceipt receipt) {
 		var createdId = "";
-		if (receipt.getAccountID() != null) {
-			createdId = "+Account" + asString(receipt.getAccountID());
-		} else if (receipt.getContractID() != null) {
-			createdId = "+Contract" + asString(receipt.getContractID());
-		} else if (receipt.getFileID() != null) {
-			createdId = "+File" + asString(receipt.getFileID());
-		} else if (receipt.getTopicID() != null) {
-			createdId = "+Topic" + asString(receipt.getTopicID());
+		if (receipt.getAccountId() != null) {
+			createdId = "+Account" + asString(receipt.getAccountId());
+		} else if (receipt.getContractId() != null) {
+			createdId = "+Contract" + asString(receipt.getContractId());
+		} else if (receipt.getFileId() != null) {
+			createdId = "+File" + asString(receipt.getFileId());
+		} else if (receipt.getTopicId() != null) {
+			createdId = "+Topic" + asString(receipt.getTopicId());
 		}
 
 		var rates = "N/A";
-		if (receipt.getExchangeRate() != null) {
+		if (receipt.getExchangeRates() != null) {
 			rates = String.format(
 					"%d <-> %d til %d | %d <-> %d til %d",
-					receipt.getExchangeRate().getCurrentRate().getHbarEquiv(),
-					receipt.getExchangeRate().getCurrentRate().getCentEquiv(),
-					receipt.getExchangeRate().getCurrentRate().getExpirationTime(),
-					receipt.getExchangeRate().getNextRate().getHbarEquiv(),
-					receipt.getExchangeRate().getNextRate().getCentEquiv(),
-					receipt.getExchangeRate().getNextRate().getExpirationTime()
-			);
+					receipt.getExchangeRates().getCurrHbarEquiv(),
+					receipt.getExchangeRates().getCurrCentEquiv(),
+					receipt.getExchangeRates().getCurrExpiry(),
+					receipt.getExchangeRates().getNextHbarEquiv(),
+					receipt.getExchangeRates().getNextCentEquiv(),
+					receipt.getExchangeRates().getNextExpiry());
 		}
 
 		return String.format("%s (%s, %s)", receipt.getStatus(), createdId, rates);

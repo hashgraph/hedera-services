@@ -71,7 +71,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -99,7 +99,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.*;
+import static com.hedera.services.legacy.core.jproto.ExpirableTxnRecord.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,12 +199,12 @@ public class MiscUtilsTest {
 	@Test
 	public void prettyPrintsJTransactionRecordFcll() {
 		// given:
-		LinkedList<JTransactionRecord> records = new LinkedList<>();
-		records.add(convert(
+		LinkedList<ExpirableTxnRecord> records = new LinkedList<>();
+		records.add(fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS))
 						.build()));
-		records.add(convert(
+		records.add(fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(INVALID_ACCOUNT_ID))
 						.build()));

@@ -31,9 +31,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -59,11 +58,11 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 @RunWith(JUnitPlatform.class)
 class GetAccountInfoAnswerTest {
 	private StateView view;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private OptionValidator optionValidator;
 	private String node = "0.0.3";
 	private String payer = "0.0.12345";
-	private HederaAccount payerAccount;
+	private MerkleAccount payerAccount;
 	private String target = payer;
 
 	private long fee = 1_234L;
@@ -84,7 +83,7 @@ class GetAccountInfoAnswerTest {
 				.expirationTime(9_999_999L)
 				.get();
 		accounts = mock(FCMap.class);
-		given(accounts.get(getMapKey(asAccount(target)))).willReturn(payerAccount);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		view = new StateView(StateView.EMPTY_TOPICS, accounts);
 		optionValidator = mock(OptionValidator.class);
@@ -144,11 +143,11 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getReceiverThreshold(), info.getGenerateReceiveRecordThreshold());
 		assertEquals(payerAccount.getSenderThreshold(), info.getGenerateSendRecordThreshold());
-		assertEquals(payerAccount.getAutoRenewPeriod(), info.getAutoRenewPeriod().getSeconds());
-		assertEquals(payerAccount.getProxyAccount(), JAccountID.convert(info.getProxyAccountID()));
-		assertEquals(JKey.mapJKey(payerAccount.getAccountKeys()), info.getKey());
+		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
+		assertEquals(payerAccount.getProxy(), EntityId.ofNullableAccountId(info.getProxyAccountID()));
+		assertEquals(JKey.mapJKey(payerAccount.getKey()), info.getKey());
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
-		assertEquals(payerAccount.getExpirationTime(), info.getExpirationTime().getSeconds());
+		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 	}
 
 	@Test

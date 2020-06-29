@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.keys;
 
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hederahashgraph.api.proto.java.Key;
@@ -43,8 +44,8 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 
@@ -314,6 +315,12 @@ public class KeyFactory implements Serializable {
 	}
 
 	private static KeyPairObj firstKpFrom(Object keyStore, String name) {
+//		var tmpAcklo = ((Map<String, List<com.opencrowd.core.AccountKeyListObj>>)keyStore)
+//				.get(name)
+//				.get(0);
+//		System.out.println(HapiPropertySource.asAccountString(tmpAcklo.getAccountId()));
+//		var tmp = tmpAcklo.getKeyPairList().get(0);
+//		return new KeyPairObj(tmp.getPublicKeyStr(), tmp.getPrivateKeyStr());
 		return ((Map<String, List<AccountKeyListObj>>)keyStore)
 				.get(name)
 				.get(0)

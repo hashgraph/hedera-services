@@ -24,8 +24,8 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 
 import java.util.Optional;
@@ -44,15 +44,15 @@ public class MapValueFactory {
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
 
-	public HederaAccount get() {
-		HederaAccount value = new HederaAccount();
+	public MerkleAccount get() {
+		MerkleAccount value = new MerkleAccount();
 		memo.ifPresent(s -> value.setMemo(s));
-		proxy.ifPresent(p -> value.setProxyAccount(JAccountID.convert(p)));
+		proxy.ifPresent(p -> value.setProxy(EntityId.ofNullableAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
 		deleted.ifPresent(b -> value.setDeleted(b));
-		accountKeys.ifPresent(k -> value.setAccountKeys(k));
-		expirationTime.ifPresent(l -> value.setExpirationTime(l));
-		autoRenewPeriod.ifPresent(d -> value.setAutoRenewPeriod(d));
+		accountKeys.ifPresent(k -> value.setKey(k));
+		expirationTime.ifPresent(l -> value.setExpiry(l));
+		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
 		senderThreshold.ifPresent(l -> value.setSenderThreshold(l));
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
 		receiverThreshold.ifPresent(l -> value.setReceiverThreshold(l));

@@ -21,7 +21,8 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
@@ -34,7 +35,6 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.time.Instant;
@@ -62,7 +62,7 @@ public class AwareTransactionContext implements TransactionContext {
 		}
 	}
 
-	private final HederaNodeContext ctx;
+	private final ServicesContext ctx;
 
 	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {};
 	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {};
@@ -78,7 +78,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 
-	public AwareTransactionContext(HederaNodeContext ctx) {
+	public AwareTransactionContext(ServicesContext ctx) {
 		this.ctx = ctx;
 	}
 
@@ -102,7 +102,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? ctx.accounts().get(getMapKey(accessor.getPayer())).getAccountKeys()
+				? ctx.accounts().get(MerkleEntityId.fromPojoAccountId(accessor.getPayer())).getKey()
 				: EMPTY_HEDERA_KEY;
 	}
 
@@ -225,7 +225,7 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = receipt -> receipt
 				.setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
 				.setTopicSequenceNumber(sequenceNumber)
-				.setTopicRunningHashVersion(Topic.RUNNING_HASH_VERSION);
+				.setTopicRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
 	}
 
 	@Override

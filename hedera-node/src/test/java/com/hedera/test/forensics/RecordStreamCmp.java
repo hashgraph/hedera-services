@@ -29,7 +29,7 @@ import com.hedera.test.forensics.domain.PojoRecord;
 import com.hedera.test.forensics.records.RecordParser;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -206,7 +206,7 @@ public class RecordStreamCmp {
 		}
 
 		public PojoRecord pojo() {
-			return PojoRecord.from(JTransactionRecord.convert(history.getRecord()));
+			return PojoRecord.from(ExpirableTxnRecord.fromGprc(history.getRecord()));
 		}
 
 		public String readable() throws JsonProcessingException {

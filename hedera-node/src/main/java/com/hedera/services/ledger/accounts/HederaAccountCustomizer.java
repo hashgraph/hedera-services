@@ -25,10 +25,10 @@ import java.util.Map;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.MapValueProperty;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 
 public class HederaAccountCustomizer extends
-		AccountCustomizer<AccountID, HederaAccount, MapValueProperty, HederaAccountCustomizer> {
+		AccountCustomizer<AccountID, MerkleAccount, MapValueProperty, HederaAccountCustomizer> {
 	private static final Map<Option, MapValueProperty> OPTION_PROPERTIES = Map.of(
 			Option.KEY, MapValueProperty.KEY,
 			Option.MEMO, MapValueProperty.MEMO,

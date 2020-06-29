@@ -21,7 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -43,7 +43,6 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 /**
@@ -125,19 +124,19 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MapKey, Topic> topics) {
-		Topic topic = topics.get(getMapKey(id));
+	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
+		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromPojoTopicId(id));
 
-		return Optional.ofNullable(topic)
+		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
 				.orElse(INVALID_TOPIC_ID);
 	}
 
 	/* Not applicable until auto-renew is implemented. */
-	boolean isExpired(Topic topic) {
+	boolean isExpired(MerkleTopic merkleTopic) {
 		Instant expiry = Instant.ofEpochSecond(
-				topic.getExpirationTimestamp().getSeconds(),
-				topic.getExpirationTimestamp().getNano());
+				merkleTopic.getExpirationTimestamp().getSeconds(),
+				merkleTopic.getExpirationTimestamp().getNanos());
 		return txnCtx.consensusTime().isAfter(expiry);
 	}
 }

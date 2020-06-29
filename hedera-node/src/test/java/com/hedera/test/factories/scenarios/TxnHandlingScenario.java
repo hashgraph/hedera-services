@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -33,10 +33,10 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
 
@@ -55,7 +55,7 @@ public interface TxnHandlingScenario {
 
 	KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-	default FCMap<MapKey, HederaAccount> accounts() throws Exception {
+	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
 				.withAccount(DEFAULT_NODE_ID,
 						newAccount()
@@ -133,16 +133,16 @@ public interface TxnHandlingScenario {
 		return hfs;
 	}
 
-	default FCMap<StorageKey, StorageValue> storage() {
+	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		@SuppressWarnings("unchecked")
-		FCMap<StorageKey, StorageValue> storage = (FCMap<StorageKey, StorageValue>)mock(FCMap.class);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>)mock(FCMap.class);
 
 		return storage;
 	}
 
-	default FCMap<MapKey, Topic> topics() {
-		var topics = (FCMap<MapKey, Topic>) mock(FCMap.class);
-		given(topics.get(EXISTING_TOPIC)).willReturn(new Topic());
+	default FCMap<MerkleEntityId, MerkleTopic> topics() {
+		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
+		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
 	}
 

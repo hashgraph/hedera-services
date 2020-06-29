@@ -22,8 +22,9 @@ package com.hedera.services.context;
 
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
+import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -46,15 +47,17 @@ import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 public class SingletonContextsManagerTest {
-	private final long VERSION = 123L;
 	private final NodeId id = new NodeId(false, 1L);
 
 	Platform platform;
+	ServicesContext ctx;
 	PropertySources propertySources;
 
 	@BeforeEach
 	private void resetContexts() {
 		CONTEXTS.clear();
+		ctx = mock(ServicesContext.class);
+		given(ctx.id()).willReturn(id);
 		platform = mock(Platform.class);
 		propertySources = mock(PropertySources.class);
 	}
@@ -66,87 +69,16 @@ public class SingletonContextsManagerTest {
 	}
 
 	@Test
-	public void createsExpectedLoFiContext() {
+	public void createsExpectedContext() {
 		// given:
-		AddressBook book = mock(AddressBook.class);
-		// and:
 		assertFalse(CONTEXTS.isInitialized(1L));
 
 		// when:
-		CONTEXTS.store(new HederaNodeContext(id, platform, propertySources, new PrimitiveContext(book)));
-		HederaNodeContext ctx = CONTEXTS.lookup(1L);
+		CONTEXTS.store(ctx);
 
 		// then:
-		assertEquals(0L, ctx.versionAtStateInit());
-		assertEquals(book, ctx.addressBook());
-		assertNull(ctx.consensusTimeOfLastHandledTxn());
-		assertNotNull(ctx.seqNo());
-		assertNotNull(ctx.midnightRates());
-		assertNotNull(ctx.accounts());
-		assertNotNull(ctx.storage());
-		assertNotNull(ctx.topics());
+		assertEquals(ctx, CONTEXTS.lookup(1L));
 		// and:
 		assertTrue(CONTEXTS.isInitialized(1L));
-	}
-
-	@Test
-	public void createsExpectedMidFiContext() {
-		// given:
-		AddressBook book = mock(AddressBook.class);
-		FCMap storage = mock(FCMap.class);
-		FCMap accounts = mock(FCMap.class);
-		FCMap topics = mock(FCMap.class);
-		SequenceNumber seqNo = mock(SequenceNumber.class);
-
-		// when:
-		CONTEXTS.store(new HederaNodeContext(
-				id,
-				platform,
-				propertySources,
-				new PrimitiveContext(VERSION, book, seqNo, accounts, storage, topics))
-		);
-		HederaNodeContext ctx = CONTEXTS.lookup(1L);
-
-		// then:
-		assertEquals(VERSION, ctx.versionAtStateInit());
-		assertEquals(book, ctx.addressBook());
-		assertNull(ctx.consensusTimeOfLastHandledTxn());
-		assertEquals(seqNo, ctx.seqNo());
-		assertNotNull(ctx.midnightRates());
-		assertEquals(accounts, ctx.accounts());
-		assertEquals(storage, ctx.storage());
-		assertEquals(topics, ctx.topics());
-	}
-
-	@Test
-	public void createsExpectedHiFiContext() {
-		// given:
-		FCMap topics = mock(FCMap.class);
-		FCMap storage = mock(FCMap.class);
-		FCMap accounts = mock(FCMap.class);
-		Instant consensusTimeOfLastHandledTxn = mock(Instant.class);
-		AddressBook book = mock(AddressBook.class);
-		SequenceNumber seqNo = mock(SequenceNumber.class);
-		ExchangeRateSetWrapper exchangeRateSets = mock(ExchangeRateSetWrapper.class);
-
-		// when:
-		CONTEXTS.store(new HederaNodeContext(
-				id,
-				platform,
-				propertySources,
-				new PrimitiveContext(
-						VERSION, consensusTimeOfLastHandledTxn, book, seqNo, exchangeRateSets, accounts, storage, topics)
-		));
-		HederaNodeContext ctx = CONTEXTS.lookup(1L);
-
-		// then:
-		assertEquals(VERSION, ctx.versionAtStateInit());
-		assertEquals(book, ctx.addressBook());
-		assertEquals(consensusTimeOfLastHandledTxn, ctx.consensusTimeOfLastHandledTxn());
-		assertEquals(seqNo, ctx.seqNo());
-		assertEquals(exchangeRateSets, ctx.midnightRates());
-		assertEquals(accounts, ctx.accounts());
-		assertEquals(storage, ctx.storage());
-		assertEquals(topics, ctx.topics());
 	}
 }

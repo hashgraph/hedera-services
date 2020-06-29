@@ -21,7 +21,7 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.common.cache.CacheBuilder;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
@@ -54,11 +54,11 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 import java.security.KeyPair;
@@ -104,9 +104,9 @@ class PreCheckValidationTest {
   long payerAccountInitialBalance = 1000000000;
   private MockStorageWrapper storageWrapper = new MockStorageWrapper();
   private RecordCache recordCache = new RecordCache(CacheBuilder.newBuilder().build());
-  private FCMap<MapKey, HederaAccount> accountFCMap =
-      new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-  FCMap<MapKey, Topic> topicFCMap = new FCMap<>(MapKey::deserialize, Topic::deserialize);
+  private FCMap<MerkleEntityId, MerkleAccount> accountFCMap =
+      new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+  FCMap<MerkleEntityId, MerkleTopic> topicFCMap = new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
   private AccountID nodeAccount = AccountID.newBuilder().setAccountNum(3).setRealmNum(0).setShardNum(0).build();
   private AccountID payerAccount = AccountID.newBuilder().setAccountNum(300).setRealmNum(0).setShardNum(0).build();
   private KeyPair payerKeyGenerated = new KeyPairGenerator().generateKeyPair();
@@ -161,7 +161,7 @@ class PreCheckValidationTest {
   @BeforeAll
   void initializeState() throws Exception {
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fileServiceHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRateSetWrapper());
+    fileServiceHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
 
     precheckVerifier = mock(PrecheckVerifier.class);
     transactionHandler = new TransactionHandler(recordCache, accountFCMap,
@@ -199,7 +199,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     Assertions.assertEquals(OK, result.getValidity());
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -222,7 +222,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -241,7 +241,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_NODE_ACCOUNT);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -282,7 +282,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // send duration less than 5sec
     origTransaction = createPossibleTransaction();
@@ -299,7 +299,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -313,7 +313,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_SIGNATURE);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -330,7 +330,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.MEMO_TOO_LONG);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -348,7 +348,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-    assert (result.getFeeRequired() == correctFee);
+    assert (result.getRequiredFee() == correctFee);
   }
 
   @Test
@@ -376,7 +376,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -398,7 +398,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.BUSY);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -414,7 +414,7 @@ class PreCheckValidationTest {
     TransactionReceipt txReceipt = RequestBuilder.getTransactionReceipt(OK);
     TransactionRecord transactionRecord =
         TransactionRecord.newBuilder().setReceipt(txReceipt).build();
-    localRecordCache.setPostConsensus(trId, JTransactionRecord.convert(transactionRecord));
+    localRecordCache.setPostConsensus(trId, ExpirableTxnRecord.fromGprc(transactionRecord));
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     TransactionHandler localTransactionHandler = new TransactionHandler(localRecordCache, accountFCMap,
@@ -427,7 +427,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.DUPLICATE_TRANSACTION);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   private static Transaction createFreezeTransaction(boolean paidBy55) {
@@ -470,7 +470,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     Assertions.assertEquals(ResponseCodeEnum.INVALID_TRANSACTION_START, result.getValidity());
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     trValidStart = trValidStart.toBuilder().setSeconds(Instant.MAX.getEpochSecond() + 1).build();
     trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
@@ -484,7 +484,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
   @Test
@@ -507,7 +507,7 @@ class PreCheckValidationTest {
     TxnValidityAndFeeReq result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // 1. Negative : test start + duration should be less than node time
     startTime = Instant.now(Clock.systemUTC()).plusSeconds(-11);
@@ -525,7 +525,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     Assertions.assertEquals(ResponseCodeEnum.TRANSACTION_EXPIRED, result.getValidity());
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // 2. Positive : test start + duration should be less than node time
     startTime = Instant.now(Clock.systemUTC()).plusSeconds(-9);
@@ -543,7 +543,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == OK);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // 3. Positive : test start + duration should be less than node time
     startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
@@ -561,7 +561,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == OK);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // 4. Positive : test start + duration should be less than node time
     startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
@@ -579,7 +579,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == OK);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
 
     // 5. Positive : test start + duration should be less than node time
     startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
@@ -597,7 +597,7 @@ class PreCheckValidationTest {
     result =
         transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
     assert (result.getValidity() == OK);
-    assert (result.getFeeRequired() == 0L);
+    assert (result.getRequiredFee() == 0L);
   }
 
 }

@@ -30,9 +30,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 
@@ -62,8 +62,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.legacy.core.jproto.JAccountID.convert;
-
 public class NodeAccountsCreation {
 	private static final Logger log = LogManager.getLogger(NodeAccountsCreation.class);
 
@@ -78,7 +76,7 @@ public class NodeAccountsCreation {
 			long balance,
 			String publicKey,
 			AccountID accountID,
-			FCMap<MapKey, HederaAccount> map
+			FCMap<MerkleEntityId, MerkleAccount> map
 	) throws DecoderException, NegativeAccountBalanceException {
 		LocalDate date = LocalDate.parse("2018-09-01");
 		long expiryTime = PropertiesLoader.getExpiryTime();
@@ -89,25 +87,24 @@ public class NodeAccountsCreation {
 								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(publicKey))).build())
 						.build())
 				.build();
-		MapKey mapKey = MapKey.getMapKey(accountID);
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
 
 		JKey jKey = JKey.mapKey(accountKeys);
-		JAccountID proxyId = convert(AccountID.getDefaultInstance());
-		HederaAccount hAccount = new HederaAccountCustomizer()
+		MerkleAccount hAccount = new HederaAccountCustomizer()
 				.fundsSentRecordThreshold(INITIAL_GENESIS_COINS)
 				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
 				.isReceiverSigRequired(false)
-				.proxy(proxyId)
+				.proxy(EntityId.MISSING_ENTITY_ID)
 				.isDeleted(false)
 				.expiry(expiryTime)
 				.memo("")
 				.isSmartContract(false)
 				.key(jKey)
 				.autoRenewPeriod(date.toEpochDay())
-				.customizing(new HederaAccount());
+				.customizing(new MerkleAccount());
 		hAccount.setBalance(balance);
 
-		map.put(mapKey, hAccount);
+		map.put(merkleEntityId, hAccount);
 	}
 
 	/**
@@ -203,7 +200,7 @@ public class NodeAccountsCreation {
 	/**
 	 * This method initializes Node accounts from exists in AddressBook.
 	 */
-	public void initializeNodeAccounts(AddressBook addressBook, FCMap<MapKey, HederaAccount> map)
+	public void initializeNodeAccounts(AddressBook addressBook, FCMap<MerkleEntityId, MerkleAccount> map)
 			throws DecoderException, InvalidKeySpecException, IOException, NegativeAccountBalanceException {
 		log.info("Initialization of Startup Account and Node Accounts started");
 		Map<String, List<AccountKeyListObj>> accountMap = getAccountMapFromPath(GEN_ACCOUNT_PATH);
@@ -218,9 +215,9 @@ public class NodeAccountsCreation {
 		writeToFileUTF8(GEN_PUB_KEY_PATH, publicKeyStr);
 		writeToFileUTF8(GEN_PRIV_KEY_PATH, privateKeyStr);
 		// Check if Map is initialised withAccount 1 and 2
-		MapKey mapKey = new MapKey(ApplicationConstants.DEFAULT_FILE_SHARD,
+		MerkleEntityId merkleEntityId = new MerkleEntityId(ApplicationConstants.DEFAULT_FILE_SHARD,
 				ApplicationConstants.DEFAULT_FILE_REALM, 1);
-		if (!map.containsKey(mapKey)) {
+		if (!map.containsKey(merkleEntityId)) {
 			// Genesis Account with Account ID 1 will not have any balance
 			AccountID accountIDOne = RequestBuilder.getAccountIdBuild(1L,
 					ApplicationConstants.DEFAULT_FILE_REALM, ApplicationConstants.DEFAULT_SHARD);
@@ -255,8 +252,8 @@ public class NodeAccountsCreation {
 			nodeShardNum = Long.parseLong(accountIdArr[0]);
 			nodeRealmNum = Long.parseLong(accountIdArr[1]);
 			nodeAccountNum = Long.parseLong(accountIdArr[2]);
-			mapKey = new MapKey(nodeShardNum, nodeRealmNum, nodeAccountNum);
-			if (!map.containsKey(mapKey)) {
+			merkleEntityId = new MerkleEntityId(nodeShardNum, nodeRealmNum, nodeAccountNum);
+			if (!map.containsKey(merkleEntityId)) {
 				accountID = RequestBuilder.getAccountIdBuild(nodeAccountNum, nodeRealmNum, nodeShardNum);
 				log.info("The node Public Key for Account Num ===> " + nodeAccountNum
 						+ " Public key ====>>> " + publicKeyStartAcct);
@@ -272,17 +269,17 @@ public class NodeAccountsCreation {
 		for (long i = startCount; i <= 100; i++) {
 			AccountID sysAccountID = RequestBuilder.getAccountIdBuild(i,
 					ApplicationConstants.DEFAULT_FILE_REALM, ApplicationConstants.DEFAULT_SHARD);
-			mapKey = new MapKey(sysAccountID.getShardNum(), sysAccountID.getRealmNum(),
+			merkleEntityId = new MerkleEntityId(sysAccountID.getShardNum(), sysAccountID.getRealmNum(),
 					sysAccountID.getAccountNum());
-			if (!map.containsKey(mapKey)) {
+			if (!map.containsKey(merkleEntityId)) {
 				createAccounts(INITIAL_COINS, publicKeyStartAcct, sysAccountID, map);
 			}
 
 		}
 
 		long totalLedgerBalance = 0L;
-		for (MapKey currKey : map.keySet()) {
-			HederaAccount currMv = map.get(currKey);
+		for (MerkleEntityId currKey : map.keySet()) {
+			MerkleAccount currMv = map.get(currKey);
 			totalLedgerBalance += currMv.getBalance();
 		}
 		log.info("Total balance for ledger " + totalLedgerBalance);

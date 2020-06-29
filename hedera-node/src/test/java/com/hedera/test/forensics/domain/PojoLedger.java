@@ -21,9 +21,9 @@ package com.hedera.test.forensics.domain;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.MapKey;
-import com.swirlds.common.io.FCDataInputStream;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.fcmap.FCMap;
 
 import java.io.File;
@@ -39,15 +39,16 @@ public class PojoLedger {
 	private List<PojoAccount> accounts;
 
 	public static PojoLedger fromDisk(String dumpLoc) throws Exception {
-		try (FCDataInputStream fin = new FCDataInputStream(Files.newInputStream(Path.of(dumpLoc)))) {
-			FCMap<MapKey, HederaAccount> fcm = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+		try (SerializableDataInputStream fin = new SerializableDataInputStream(Files.newInputStream(Path.of(dumpLoc)))) {
+			FCMap<MerkleEntityId, MerkleAccount> fcm =
+					new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
 			fcm.copyFrom(fin);
 			fcm.copyFromExtra(fin);
 			return from(fcm);
 		}
 	}
 
-	public static PojoLedger from(FCMap<MapKey, HederaAccount> ledger) {
+	public static PojoLedger from(FCMap<MerkleEntityId, MerkleAccount> ledger) {
 		var pojo = new PojoLedger();
 		var readable = ledger.entrySet()
 				.stream()

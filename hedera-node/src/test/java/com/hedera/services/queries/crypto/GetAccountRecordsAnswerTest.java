@@ -20,7 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -33,8 +33,8 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,23 +48,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.services.context.domain.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.context.domain.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 
 @RunWith(JUnitPlatform.class)
 class GetAccountRecordsAnswerTest {
 	long fee = 1_234L;
 	StateView view;
-	FCMap<MapKey, HederaAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	Transaction paymentTxn;
 	String node = "0.0.3";
 	String payer = "0.0.12345";
 	String target = payer;
-	HederaAccount payerAccount;
+	MerkleAccount payerAccount;
 	OptionValidator optionValidator;
 
 	GetAccountRecordsAnswer subject;
@@ -81,11 +80,11 @@ class GetAccountRecordsAnswerTest {
 				.autoRenewPeriod(1_000_000L)
 				.expirationTime(9_999_999L)
 				.get();
-		payerAccount.getRecords().offer(recordOne());
-		payerAccount.getRecords().offer(recordTwo());
+		payerAccount.records().offer(recordOne());
+		payerAccount.records().offer(recordTwo());
 
 		accounts = mock(FCMap.class);
-		given(accounts.get(getMapKey(asAccount(target)))).willReturn(payerAccount);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(target)))).willReturn(payerAccount);
 		view = new StateView(StateView.EMPTY_TOPICS, accounts);
 
 		optionValidator = mock(OptionValidator.class);
@@ -148,7 +147,7 @@ class GetAccountRecordsAnswerTest {
 		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
 		assertEquals(0, opResponse.getHeader().getCost());
 		// and:
-		assertEquals(JTransactionRecord.convert(payerAccount.recordList()), opResponse.getRecordsList());
+		assertEquals(ExpirableTxnRecord.allToGrpc(payerAccount.recordList()), opResponse.getRecordsList());
 	}
 
 	@Test

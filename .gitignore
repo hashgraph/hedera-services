@@ -66,6 +66,9 @@ test-clients/remote-system-files/*.txt
 test-clients/src/main/resource/MainNet*StartUp.txt
 test-clients/src/main/resource/TestNet*StartUp.txt
 test-clients/src/main/resource/testfiles/*.abi
+test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
+test-clients/devops-utils/validation-scenarios/files/*-application.properties
+test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
 target
 

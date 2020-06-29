@@ -20,8 +20,8 @@ package com.hedera.services.files.store;
  * ‍
  */
 
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,47 +49,47 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class FcBlobsBytesStoreTest {
 	byte[] aData = "BlobA".getBytes(), bData = "BlobB".getBytes();
-	StorageKey pathA = new StorageKey("pathA"), pathB = new StorageKey("pathB");
+	MerkleBlobMeta pathA = new MerkleBlobMeta("pathA"), pathB = new MerkleBlobMeta("pathB");
 
-	StorageValue blobA, blobB;
-	Function<byte[], StorageValue> blobFactory;
-	FCMap<StorageKey, StorageValue> pathedBlobs;
+	MerkleOptionalBlob blobA, blobB;
+	Function<byte[], MerkleOptionalBlob> blobFactory;
+	FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs;
 
 	FcBlobsBytesStore subject;
 
 	@Test
 	public void putDeletesReplacedValueIfNoCopyIsHeld() {
 		// setup:
-		FCMap<StorageKey, StorageValue> blobs = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
 
 		// given:
-		blobs.put(at("path"), new StorageValue("FIRST".getBytes()));
+		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
 
 		// when:
-		var replaced = blobs.put(at("path"), new StorageValue("SECOND".getBytes()));
+		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
 
 		// then:
-		assertTrue(replaced.getBinaryObject().isDeleted());
+		assertTrue(replaced.getDelegate().isDeleted());
 	}
 
 	@Test
 	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
 		// setup:
-		FCMap<StorageKey, StorageValue> blobs = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
 
 		// given:
-		blobs.put(at("path"), new StorageValue("FIRST".getBytes()));
+		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
 
 		// when:
 		var copy = blobs.copy();
-		var replaced = blobs.put(at("path"), new StorageValue("SECOND".getBytes()));
+		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
 
 		// then:
-		assertFalse(replaced.getBinaryObject().isDeleted());
+		assertFalse(replaced.getDelegate().isDeleted());
 	}
 
-	private StorageKey at(String key) {
-		return new StorageKey(key);
+	private MerkleBlobMeta at(String key) {
+		return new MerkleBlobMeta(key);
 	}
 
 	@BeforeEach
@@ -139,8 +139,8 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void delegatesPut() {
 		// setup:
-		ArgumentCaptor<StorageKey> keyCaptor = ArgumentCaptor.forClass(StorageKey.class);
-		ArgumentCaptor<StorageValue> valueCaptor = ArgumentCaptor.forClass(StorageValue.class);
+		ArgumentCaptor<MerkleBlobMeta> keyCaptor = ArgumentCaptor.forClass(MerkleBlobMeta.class);
+		ArgumentCaptor<MerkleOptionalBlob> valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
 		// when:
 		var oldBytes = subject.put(pathA.getPath(), blobA.getData());
 
@@ -154,7 +154,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void propagatesNullFromGet() {
-		given(pathedBlobs.get(argThat(sk -> ((StorageKey)sk).getPath().equals(pathA.getPath())))).willReturn(null);
+		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(null);
 
 		// when:
 		byte[] blob = subject.get(pathA.getPath());
@@ -165,7 +165,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void delegatesGet() {
-		given(pathedBlobs.get(argThat(sk -> ((StorageKey)sk).getPath().equals(pathA.getPath())))).willReturn(blobA);
+		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(blobA);
 
 		// when:
 		byte[] blob = subject.get(pathA.getPath());
@@ -176,7 +176,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void delegatesContainsKey() {
-		given(pathedBlobs.containsKey(argThat(sk -> ((StorageKey)sk).getPath().equals(pathA.getPath()))))
+		given(pathedBlobs.containsKey(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath()))))
 				.willReturn(true);
 
 		// when:
@@ -210,7 +210,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void delegatesEntrySet() {
 		// setup:
-		Set<Entry<StorageKey, StorageValue>> blobEntries = Set.of(
+		Set<Entry<MerkleBlobMeta, MerkleOptionalBlob>> blobEntries = Set.of(
 				new AbstractMap.SimpleEntry<>(pathA, blobA),
 				new AbstractMap.SimpleEntry<>(pathB, blobB));
 
@@ -231,8 +231,8 @@ class FcBlobsBytesStoreTest {
 	}
 
 	private void givenMockBlobs() {
-		blobA = mock(StorageValue.class);
-		blobB = mock(StorageValue.class);
+		blobA = mock(MerkleOptionalBlob.class);
+		blobB = mock(MerkleOptionalBlob.class);
 
 		given(blobA.getData()).willReturn(aData);
 		given(blobB.getData()).willReturn(bData);

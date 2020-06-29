@@ -20,8 +20,8 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 
 public interface StateMigrations {
-	void runAllFor(HederaNodeContext ctx);
+	void runAllFor(ServicesContext ctx);
 }

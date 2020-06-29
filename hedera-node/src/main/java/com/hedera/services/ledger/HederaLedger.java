@@ -32,8 +32,8 @@ import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,7 +82,7 @@ public class HederaLedger {
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
 	private final ScopedDuplicateClassifier duplicateClassifier;
-	private final TransactionalLedger<AccountID, MapValueProperty, HederaAccount> ledger;
+	private final TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> ledger;
 
 	private final Set<AccountID> balancesAdjustedDuringTxn = new HashSet<>();
 
@@ -90,7 +90,7 @@ public class HederaLedger {
 			EntityIdSource ids,
 			AccountRecordsHistorian historian,
 			ScopedDuplicateClassifier duplicateClassifier,
-			TransactionalLedger<AccountID, MapValueProperty, HederaAccount> ledger
+			TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> ledger
 	) {
 		this.ids = ids;
 		this.ledger = ledger;
@@ -234,28 +234,28 @@ public class HederaLedger {
 		return ledger.existsPending(id);
 	}
 
-	public HederaAccount get(AccountID id) {
+	public MerkleAccount get(AccountID id) {
 		return ledger.get(id);
 	}
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long addRecord(AccountID id, JTransactionRecord record) {
-		FCQueue<JTransactionRecord> records = (FCQueue<JTransactionRecord>)ledger.get(id, TRANSACTION_RECORDS);
+	public long addRecord(AccountID id, ExpirableTxnRecord record) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
 		records.offer(record);
 		ledger.set(id, TRANSACTION_RECORDS, records);
-		return records.peek().getExpirationTime();
+		return records.peek().getExpiry();
 	}
 
 	public long purgeExpiredRecords(AccountID id, long now) {
-		FCQueue<JTransactionRecord> records = (FCQueue<JTransactionRecord>)ledger.get(id, TRANSACTION_RECORDS);
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
 		long newEarliestExpiry = -1;
 		int numBefore = records.size();
 
-		while (!records.isEmpty() && records.peek().getExpirationTime() <= now) {
+		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
 			records.poll();
 		}
 		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpirationTime();
+			newEarliestExpiry = records.peek().getExpiry();
 		}
 		ledger.set(id, TRANSACTION_RECORDS, records);
 
