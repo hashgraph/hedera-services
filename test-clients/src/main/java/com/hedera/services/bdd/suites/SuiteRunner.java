@@ -220,17 +220,27 @@ public class SuiteRunner {
 				: args;
 	}
 
+	/**
+	 * Check if the DSL_SUITE_RUNNER_ARGS contain ALL_SUITES.
+	 * If so, add all test suites from CATEGORY_MAP to args that should be run
+	 *
+	 * @param realArgs
+	 * 		DSL_SUITE_RUNNER_ARGS provided
+	 * @return effective args after examining DSL_SUITE_RUNNER_ARGS
+	 */
 	private static String[] getEffectiveDSLSuiteRunnerArgs(String realArgs) {
 		ArrayList<String> effectiveArgs = new ArrayList<>();
 		String[] ciArgs = realArgs.split("\\s+");
-		if (ciArgs[0].equals("ALL_SUITES")) {
+
+		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
-			for(int i=1;i<ciArgs.length;i++){
-				effectiveArgs.add(ciArgs[i]);
-			}
-			log.info("Effective args when running ALL_SUITES : "+ effectiveArgs.toString());
+			effectiveArgs.addAll(Stream.of(ciArgs).
+					filter(e -> !e.equals("ALL_SUITES")).
+					collect(Collectors.toList()));
+			log.info("Effective args when running ALL_SUITES : " + effectiveArgs.toString());
 			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
 		}
+
 		return ciArgs;
 	}
 
