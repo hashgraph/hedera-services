@@ -1265,13 +1265,6 @@ workflows:
       - aws-summary
 
   continuous-integration:
-#    triggers:
-#      - schedule:
-#          cron: "0 7,9,11,13,15 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - 00288-D-mvn-build-error
     jobs:
       - build-artifact:
           context: SonarCloud
