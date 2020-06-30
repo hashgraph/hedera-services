@@ -58,19 +58,19 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest tps(DoubleSupplier targetTps) {
 		this.targetTps = targetTps;
-		log.info("targetTps: {}", this.targetTps);
+		log.info("targetTps: {}", this.targetTps.getAsDouble());
 		return this;
 	}
 
 	public RunLoadTest tolerance(IntSupplier tpsTolerance) {
 		this.tpsTolerancePercentage = tpsTolerance;
-		log.info("tpsTolerancePercentage: {}", this.tpsTolerancePercentage);
+		log.info("tpsTolerancePercentage: {}", this.tpsTolerancePercentage.getAsInt());
 		return this;
 	}
 
 	public RunLoadTest allowedSecsBelow(IntSupplier allowedSecsBelow) {
 		this.secsAllowedBelowTolerance = allowedSecsBelow;
-		log.info("secsAllowedBelowTolerance: {}", this.secsAllowedBelowTolerance);
+		log.info("secsAllowedBelowTolerance: {}", this.secsAllowedBelowTolerance.getAsInt());
 		return this;
 	}
 
@@ -83,7 +83,7 @@ public class RunLoadTest extends UtilOp {
 	public RunLoadTest lasting(LongSupplier duration, Supplier<TimeUnit> ofUnit) {
 		this.testDuration = duration;
 		this.ofUnit = ofUnit;
-		log.info("testDuration: {} {}", this.testDuration, this.ofUnit.get());
+		log.info("testDuration: {} {}", this.testDuration.getAsLong(), this.ofUnit.get());
 		return this;
 	}
 
