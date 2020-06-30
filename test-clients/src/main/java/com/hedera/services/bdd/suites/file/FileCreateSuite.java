@@ -23,10 +23,9 @@ package com.hedera.services.bdd.suites.file;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -75,16 +74,14 @@ public class FileCreateSuite extends HapiApiSuite {
 		SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
 		return defaultHapiSpec("CreateFailsWithMissingSigs")
-				.given(
-						QueryVerbs.getFileContents("0.0.1008").logged()
-				).when().then(
-//						fileCreate("test")
-//								.waclShape(shape)
-//								.sigControl(forKey("test", invalidSig))
-//								.hasKnownStatus(INVALID_SIGNATURE),
-//						fileCreate("test")
-//								.waclShape(shape)
-//								.sigControl(forKey("test", validSig))
+				.given().when().then(
+						fileCreate("test")
+								.waclShape(shape)
+								.sigControl(forKey("test", invalidSig))
+								.hasKnownStatus(INVALID_SIGNATURE),
+						fileCreate("test")
+								.waclShape(shape)
+								.sigControl(forKey("test", validSig))
 				);
 	}
 
