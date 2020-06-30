@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -188,7 +188,7 @@ public class CryptoCreateTransitionLogicTest {
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
-		assertEquals(JAccountID.convert(proxy), changes.get(PROXY));
+		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
 	}
 
 	@Test

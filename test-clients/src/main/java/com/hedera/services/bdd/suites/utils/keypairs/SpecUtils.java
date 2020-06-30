@@ -97,9 +97,9 @@ public class SpecUtils {
 	}
 
 	public static void main(String... args) throws Exception {
-		var genesisLoc = new File("src/main/resource/genesis.pem");
-		var txt = asSerializedLegacyOcKeystore(genesisLoc, "swirlds", asAccount("0.0.2"));
-		var out = newBufferedWriter(Paths.get("RepackagedStartupAccount.txt"));
+		var genesisLoc = new File("src/main/resource/mainnet-account950.pem");
+		var txt = asSerializedLegacyOcKeystore(genesisLoc, "swirlds", asAccount("0.0.950"));
+		var out = newBufferedWriter(Paths.get("MainStartupAccount.txt"));
 		out.write(txt);
 		out.close();
 	}

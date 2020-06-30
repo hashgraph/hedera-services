@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -142,7 +142,7 @@ public class MiscUtils {
 
 	public static String readableProperty(Object o) {
 		if (o instanceof FCQueue) {
-			return JTransactionRecord.convert(new ArrayList<>((FCQueue<JTransactionRecord>) o)).toString();
+			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
 			return o.toString();
 		}
@@ -321,6 +321,18 @@ public class MiscUtils {
 			return MessageDigest.getInstance("SHA-384").digest(data);
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
+		}
+	}
+
+	public static String describe(JKey k) {
+		if (k == null) {
+			return "<N/A>";
+		} else {
+			Key readable = null;
+			try {
+				readable = mapJKey(k);
+			} catch (Exception ignore) { }
+			return String.valueOf(readable);
 		}
 	}
 }

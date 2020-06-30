@@ -21,7 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.Profile;
@@ -50,7 +50,8 @@ import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.io.FCDataOutputStream;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.Logger;
@@ -94,7 +95,7 @@ public class ServicesMainTest {
 	FeeCalculator fees;
 	ServicesMain subject;
 	ServicesState localSignedState;
-	HederaNodeContext ctx;
+	ServicesContext ctx;
 	PropertySource properties;
 	LedgerValidator ledgerValidator;
 	AccountsExporter accountsExporter;
@@ -134,7 +135,7 @@ public class ServicesMainTest {
 		addressBook = mock(AddressBook.class);
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
 
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.grpc()).willReturn(grpc);
@@ -532,11 +533,11 @@ public class ServicesMainTest {
 	@Test
 	public void doesntDumpIfOngoingIss() throws Exception {
 		// setup:
-		byte[] topicRootHash = "sdfgf".getBytes();
+		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
 		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
+		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
 		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
+		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 		String acHashHex = Hex.encodeHexString(accountsRootHash);
 		var round = 1_234L;
 		var mockIssInfo = mock(IssEventInfo.class);
@@ -552,14 +553,14 @@ public class ServicesMainTest {
 		given(mockIssInfo.status()).willReturn(IssEventStatus.NO_KNOWN_ISS);
 		given(mockIssInfo.shouldDumpThisRound()).willReturn(false);
 		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
+		given(accounts.getRootHash()).willReturn(new Hash(accountsRootHash));
+		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
+		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
 		// and:
 		localSignedState = mock(ServicesState.class);
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
+		given(localSignedState.accounts()).willReturn(accounts);
+		given(localSignedState.storage()).willReturn(storage);
+		given(localSignedState.topics()).willReturn(topics);
 		// and:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -589,11 +590,11 @@ public class ServicesMainTest {
 	public void logsExpectedIssInfo() throws Exception {
 		// setup:
 		var round = 1_234L;
-		byte[] topicRootHash = "sdfgf".getBytes();
+		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
 		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
+		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
 		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
+		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 		String acHashHex = Hex.encodeHexString(accountsRootHash);
 		// and:
 		byte[] hash = "xyz".getBytes();
@@ -613,21 +614,22 @@ public class ServicesMainTest {
 		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
 		Instant consensusTime = Instant.now();
 		// and:
-		FCDataOutputStream foutAccounts = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutStorage = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutTopics = mock(FCDataOutputStream.class);
-		Function<String, FCDataOutputStream> supplier = (Function<String, FCDataOutputStream>)mock(Function.class);
+		SerializableDataOutputStream foutAccounts = mock(SerializableDataOutputStream.class);
+		SerializableDataOutputStream foutStorage = mock(SerializableDataOutputStream.class);
+		SerializableDataOutputStream foutTopics = mock(SerializableDataOutputStream.class);
+		Function<String, SerializableDataOutputStream> supplier = (Function<String, SerializableDataOutputStream>)mock(Function.class);
 		subject.foutSupplier = supplier;
 		// and:
 		InOrder inOrder = inOrder(accounts, storage, topics, foutAccounts, foutStorage, foutTopics, mockIssInfo);
 
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
+		var arh = new Hash(accountsRootHash);
+		given(accounts.getRootHash()).willReturn(arh);
+		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
+		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
 		// and:
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
+		given(localSignedState.accounts()).willReturn(accounts);
+		given(localSignedState.storage()).willReturn(storage);
+		given(localSignedState.topics()).willReturn(topics);
 		// and:
 		given(supplier.apply(
 				String.format(ServicesMain.FC_DUMP_LOC_TPL,

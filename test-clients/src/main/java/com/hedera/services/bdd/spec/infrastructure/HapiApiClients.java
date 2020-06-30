@@ -43,8 +43,8 @@ import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -74,8 +74,8 @@ public class HapiApiClients {
 			ManagedChannel channel;
 			String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
 			List<String> ciphers = Arrays.asList(
+//					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
 					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
-//					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
 			);
 			SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
 			contextBuilder

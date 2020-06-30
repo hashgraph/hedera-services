@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.Collections;

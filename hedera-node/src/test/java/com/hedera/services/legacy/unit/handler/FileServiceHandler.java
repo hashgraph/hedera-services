@@ -28,7 +28,7 @@ import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -74,16 +74,16 @@ public class FileServiceHandler {
   private GlobalFlag globalFlag;
   private FCStorageWrapper storageWrapper;
   private FeeScheduleInterceptor feeScheduleInterceptor;
-  private ExchangeRateSetWrapper midnightRateSet;
+  private ExchangeRates midnightRateSet;
 
   public FileServiceHandler(
           FCStorageWrapper storageWrapper,
           FeeScheduleInterceptor feeScheduleInterceptor,
-          ExchangeRateSetWrapper exchangeRateSetWrapper
+          ExchangeRates exchangeRates
   ) {
     this.globalFlag = GlobalFlag.getInstance();
     this.storageWrapper = storageWrapper;
-    this.midnightRateSet = exchangeRateSetWrapper;
+    this.midnightRateSet = exchangeRates;
     this.feeScheduleInterceptor = feeScheduleInterceptor;
   }
 
@@ -337,7 +337,7 @@ public class FileServiceHandler {
                 ExchangeRateSet exchangeRateSet = readExchangeRateSetFromFile(storageWrapper);
 
                 if (exchangeRateSet != null) {
-                  midnightRateSet.update(exchangeRateSet);
+                  midnightRateSet.replaceWith(exchangeRateSet);
                   log.info("Midnight exchange rate updated by {}", updater.toString());
                 }
               }
@@ -500,7 +500,7 @@ public class FileServiceHandler {
    */
   public boolean isSmallChange(ExchangeRateSet exchangeRateSet) {
     return isSmallChange(PropertiesLoader.getExchangeRateAllowedPercentage(),
-        midnightRateSet.getCurrentCentEquiv(), midnightRateSet.getCurrentHbarEquiv(),
+        midnightRateSet.getCurrCentEquiv(), midnightRateSet.getCurrHbarEquiv(),
         exchangeRateSet.getCurrentRate().getCentEquiv(),
         exchangeRateSet.getCurrentRate().getHbarEquiv()) && isSmallChange(
         PropertiesLoader.getExchangeRateAllowedPercentage(),

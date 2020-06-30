@@ -83,12 +83,12 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
@@ -105,7 +105,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.builder.RequestBuilder.getTimestamp;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hedera.services.legacy.core.jproto.JKey.convertJKey;
 import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 
@@ -122,8 +121,8 @@ public class SmartContractRequestHandler {
 	private HederaLedger ledger;
 	private LedgerAccountsSource ledgerSource;
 	private ServicesRepositoryRoot repository;
-	private FCMap<MapKey, HederaAccount> accounts;
-	private FCMap<StorageKey, StorageValue> storageMap;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -136,8 +135,8 @@ public class SmartContractRequestHandler {
 			ServicesRepositoryRoot repository,
 			AccountID funding,
 			HederaLedger ledger,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<StorageKey, StorageValue> storageMap,
+			FCMap<MerkleEntityId, MerkleAccount> accounts,
+			FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap,
 			LedgerAccountsSource ledgerSource,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
@@ -161,7 +160,7 @@ public class SmartContractRequestHandler {
 		this.lifecycle = lifecycle;
 		this.sigsVerifier = sigsVerifier;
 
-		var blobStore = new FcBlobsBytesStore(StorageValue::new, storageMap);
+		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storageMap);
 		storageView = storageMapFrom(blobStore);
 		bytecodeView = bytecodeMapFrom(blobStore);
 	}
@@ -417,12 +416,12 @@ public class SmartContractRequestHandler {
 	}
 
 	private void setParentPropertiesForChildrenContracts(AccountID parent, List<ContractID> children) {
-		HederaAccount parentAccount = ledger.get(parent);
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getAccountKeys())
+		MerkleAccount parentAccount = ledger.get(parent);
+		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getKey())
 				.memo(parentAccount.getMemo())
-				.expiry(parentAccount.getExpirationTime())
-				.autoRenewPeriod(parentAccount.getAutoRenewPeriod())
-				.proxy(parentAccount.getProxyAccount())
+				.expiry(parentAccount.getExpiry())
+				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
+				.proxy(parentAccount.getProxy())
 				.fundsSentRecordThreshold(parentAccount.getSenderThreshold())
 				.fundsReceivedRecordThreshold(parentAccount.getReceiverThreshold());
 		for (ContractID child : children) {
@@ -617,20 +616,20 @@ public class SmartContractRequestHandler {
 		String contractEthAddress = asSolidityAddressHex(id);
 		if (!StringUtils.isEmpty(contractEthAddress)) {
 			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			HederaAccount contract = accounts.get(getMapKey(id));
+			MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
 			if (contract != null && contract.isSmartContract()) {
 				builder.setContractID(cid)
 						.setBalance(contract.getBalance())
 						.setMemo(contract.getMemo())
 						.setAccountID(id)
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewPeriod()))
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpirationTime()))
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
 						.setContractAccountID(contractEthAddress);
 				var address = asSolidityAddress(cid);
 				long bytesUsed = lengthIfPresent(storageView.get(address)) + lengthIfPresent(bytecodeView.get(address));
 				builder.setStorage(bytesUsed);
 
-				JKey key = contract.getAccountKeys();
+				JKey key = contract.getKey();
 				if (key != null) {
 					try {
 						builder.setAdminKey(convertJKey(key, 1));
@@ -664,22 +663,22 @@ public class SmartContractRequestHandler {
 		if (validity == OK) {
 			AccountID id = asAccount(cid);
 			try {
-				HederaAccount contract = ledger.get(id);
+				MerkleAccount contract = ledger.get(id);
 				if (contract != null) {
 					boolean memoProvided = op.getMemo().length() > 0;
-					boolean adminKeyExist = Optional.ofNullable(contract.getAccountKeys())
+					boolean adminKeyExist = Optional.ofNullable(contract.getKey())
 							.map(key -> !key.hasContractID())
 							.orElse(false);
 					if (!adminKeyExist &&
 							(op.hasProxyAccountID() ||
 									op.hasAutoRenewPeriod() || op.hasFileID() || op.hasAdminKey() || memoProvided)) {
 						receipt = getTransactionReceipt(MODIFYING_IMMUTABLE_CONTRACT, exchange.activeRates());
-					} else if (op.hasExpirationTime() && contract.getExpirationTime() > op.getExpirationTime().getSeconds()) {
+					} else if (op.hasExpirationTime() && contract.getExpiry() > op.getExpirationTime().getSeconds()) {
 						receipt = getTransactionReceipt(EXPIRATION_REDUCTION_NOT_ALLOWED, exchange.activeRates());
 					} else {
 						HederaAccountCustomizer customizer = new HederaAccountCustomizer();
 						if (op.hasProxyAccountID()) {
-							customizer.proxy(JAccountID.convert(op.getProxyAccountID()));
+							customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
 						}
 						if (op.hasAutoRenewPeriod()) {
 							customizer.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
@@ -727,7 +726,7 @@ public class SmartContractRequestHandler {
 	 */
 	public ByteString getContractBytecode(ContractID cid) {
 		AccountID id = asAccount(cid);
-		HederaAccount contract = accounts.get(getMapKey(id));
+		MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
 		if (contract != null && contract.isSmartContract()) {
 			String contractEthAddress = asSolidityAddressHex(id);
 			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);

@@ -20,23 +20,22 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.Optional;
 
 public class QueryFeeCheck {
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	public QueryFeeCheck(FCMap<MapKey, HederaAccount> accounts) {
+	public QueryFeeCheck(FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -94,7 +93,7 @@ public class QueryFeeCheck {
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
 		var id = adjustment.getAccountID();
-		var key = getMapKey(id);
+		var key = MerkleEntityId.fromPojoAccountId(id);
 		long amount = adjustment.getAmount();
 
 		if (amount == Long.MIN_VALUE) {

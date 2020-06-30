@@ -20,7 +20,7 @@ package com.hedera.test.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
@@ -40,6 +40,6 @@ public final class JAccountIDConverter implements ArgumentConverter {
 		if (3 != parts.length) {
 			throw new ArgumentConversionException(input + " is not a 3-part account ID");
 		}
-		return new JAccountID(Long.valueOf(parts[0]), Long.valueOf(parts[1]), Long.valueOf(parts[2]));
+		return new EntityId(Long.valueOf(parts[0]), Long.valueOf(parts[1]), Long.valueOf(parts[2]));
 	}
 }

@@ -25,8 +25,8 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.jproto.JTransactionReceipt;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
- * Uses a {@link Cache} to store {@link JTransactionRecord} instances by their
+ * Uses a {@link Cache} to store {@link ExpirableTxnRecord} instances by their
  * {@link TransactionID}. (Somewhat more precisely, an {@link Optional} is stored
  * for each id, and if this optional is empty, it indicates the transaction with
  * that id has been submitted to the platform, but not yet incorporated to state.)
@@ -49,9 +49,9 @@ public class RecordCache {
 			.setStatus(UNKNOWN)
 			.build();
 
-	private final Cache<TransactionID, Optional<JTransactionRecord>> delegate;
+	private final Cache<TransactionID, Optional<ExpirableTxnRecord>> delegate;
 
-	public RecordCache(Cache<TransactionID, Optional<JTransactionRecord>> delegate) {
+	public RecordCache(Cache<TransactionID, Optional<ExpirableTxnRecord>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -59,7 +59,7 @@ public class RecordCache {
 		delegate.put(txnId, Optional.empty());
 	}
 
-	public void setPostConsensus(TransactionID txnId, JTransactionRecord record) {
+	public void setPostConsensus(TransactionID txnId, ExpirableTxnRecord record) {
 		delegate.put(txnId, Optional.of(record));
 	}
 
@@ -71,7 +71,7 @@ public class RecordCache {
 				.setMemo(accessor.getTxn().getMemo())
 				.setTransactionHash(sha384HashOf(accessor))
 				.setConsensusTimestamp(asTimestamp(consensusTimestamp));
-		delegate.put(txnId, Optional.of(JTransactionRecord.convert(record.build())));
+		delegate.put(txnId, Optional.of(ExpirableTxnRecord.fromGprc(record.build())));
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
@@ -83,17 +83,17 @@ public class RecordCache {
 	}
 
 	public TransactionReceipt getReceipt(TransactionID txnId) {
-		Optional<JTransactionRecord> record = delegate.getIfPresent(txnId);
+		Optional<ExpirableTxnRecord> record = delegate.getIfPresent(txnId);
 		if (record == null) {
 			return null;
 		}
-		return record.map(r -> JTransactionReceipt.convert(r.getTxReceipt())).orElse(UNKNOWN_RECEIPT);
+		return record.map(r -> TxnReceipt.convert(r.getReceipt())).orElse(UNKNOWN_RECEIPT);
 	}
 
 	public TransactionRecord getRecord(TransactionID txnId) {
-		Optional<JTransactionRecord> record = delegate.getIfPresent(txnId);
-		if ( record != null && record.isPresent()) {
-			return record.map(JTransactionRecord::convert).get();
+		Optional<ExpirableTxnRecord> record = delegate.getIfPresent(txnId);
+		if (record != null && record.isPresent()) {
+			return record.map(ExpirableTxnRecord::toGrpc).get();
 		}
 		return null;
 	}

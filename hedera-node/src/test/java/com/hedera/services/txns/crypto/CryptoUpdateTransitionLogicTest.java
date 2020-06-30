@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(JAccountID.convert(proxy), changes.get(MapValueProperty.PROXY));
+		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(MapValueProperty.PROXY));
 	}
 
 	@Test

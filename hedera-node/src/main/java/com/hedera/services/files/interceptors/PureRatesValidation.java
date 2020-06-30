@@ -21,7 +21,7 @@ package com.hedera.services.files.interceptors;
  */
 
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import java.math.BigInteger;
 import java.util.stream.LongStream;
 import static java.math.BigInteger.valueOf;
@@ -35,13 +35,13 @@ public class PureRatesValidation {
 	}
 
 	public static boolean isNormalIntradayChange(
-			ExchangeRateSetWrapper midnightRates,
+			ExchangeRates midnightRates,
 			ExchangeRateSet proposedRates,
 			int limitPercent
 	) {
 		return canonicalTest(
 				limitPercent,
-				midnightRates.getCurrentCentEquiv(), midnightRates.getCurrentHbarEquiv(),
+				midnightRates.getCurrCentEquiv(), midnightRates.getCurrHbarEquiv(),
 				proposedRates.getCurrentRate().getCentEquiv(), proposedRates.getCurrentRate().getHbarEquiv())
 				&& canonicalTest(
 						limitPercent,

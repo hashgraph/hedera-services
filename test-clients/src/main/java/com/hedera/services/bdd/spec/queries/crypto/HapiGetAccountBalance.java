@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.Optional;
@@ -103,7 +103,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			log.info(spec.logPrefix() + entity + " was actually deleted!");
 		} else {
 			long balance = response.getCryptogetAccountBalance().getBalance();
-			log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance);
+			long TINYBARS_PER_HBAR = 100_000_000L;
+			long hBars = balance / TINYBARS_PER_HBAR;
+			log.info(spec.logPrefix() + "balance for '" + entity + "': " + balance
+					+ " tinyBars (" + hBars + "ħ)");
 		}
 	}
 

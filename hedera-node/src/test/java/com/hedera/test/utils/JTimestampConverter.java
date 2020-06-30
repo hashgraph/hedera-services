@@ -20,7 +20,7 @@ package com.hedera.test.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.JTimestamp;
+import com.hedera.services.state.submerkle.RichInstant;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
@@ -40,6 +40,6 @@ public final class JTimestampConverter implements ArgumentConverter {
 			throw new ArgumentConversionException(input + " is not a string");
 		}
 		String[] splits = Strings.split((String) input, '_');
-		return new JTimestamp(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
+		return new RichInstant(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
 	}
 }

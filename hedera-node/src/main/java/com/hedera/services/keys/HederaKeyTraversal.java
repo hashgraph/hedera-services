@@ -20,7 +20,7 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,9 +76,9 @@ public class HederaKeyTraversal {
 	 * @param account the account with the Hedera key of interest.
 	 * @return the number of simple keys.
 	 */
-	public static int numSimpleKeys(HederaAccount account) {
+	public static int numSimpleKeys(MerkleAccount account) {
 		try {
-			return numSimpleKeys(account.getAccountKeys());
+			return numSimpleKeys(account.getKey());
 		} catch (Exception ignore) {
 			log.warn(ignore.getMessage());
 			return 0;

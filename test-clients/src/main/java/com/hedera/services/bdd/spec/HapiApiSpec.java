@@ -32,8 +32,8 @@ import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -91,6 +91,7 @@ public class HapiApiSpec implements Runnable {
 	HapiApiClients hapiClients;
 	HapiSpecRegistry hapiRegistry;
 	HapiSpecOperation[] given, when, then;
+	AtomicInteger adhoc = new AtomicInteger(0);
 	AtomicInteger numLedgerOpsExecuted = new AtomicInteger(0);
 	AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
 	ThreadPoolExecutor finalizingExecutor;
@@ -98,6 +99,14 @@ public class HapiApiSpec implements Runnable {
 	CompletableFuture<Void> finalizingFuture;
 	AtomicReference<Optional<Throwable>> finishingError = new AtomicReference<>(Optional.empty());
 	BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
+
+	public void adhocIncrement() {
+		adhoc.getAndIncrement();
+	}
+
+	public int finalAdhoc() {
+		return adhoc.get();
+	}
 
 	public int numPendingOps() {
 		return pendingOps.size();

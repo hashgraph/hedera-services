@@ -23,8 +23,8 @@ package com.hedera.services.bdd.spec.utilops.pauses;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiSpecSleep extends UtilOp {
 	static final Logger log = LogManager.getLogger(HapiSpecSleep.class);

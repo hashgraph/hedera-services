@@ -21,17 +21,17 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
@@ -47,12 +47,12 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
 
-	private final FCMap<MapKey, HederaAccount> accounts;
-	private final FCMap<MapKey, Topic> topics;
+	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final FCMap<MerkleEntityId, MerkleTopic> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicUpdateTransitionLogic(FCMap<MapKey, HederaAccount> accounts, FCMap<MapKey, Topic> topics,
+	public TopicUpdateTransitionLogic(FCMap<MerkleEntityId, MerkleAccount> accounts, FCMap<MerkleEntityId, MerkleTopic> topics,
 									  OptionValidator validator, TransactionContext transactionContext) {
 		this.accounts = accounts;
 		this.topics = topics;
@@ -73,8 +73,8 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicMapKey = MapKey.getMapKey(topicId);
-		var updatedTopic = new Topic(topics.get(topicMapKey));
+		var topicMapKey = MerkleEntityId.fromPojoTopicId(topicId);
+		var updatedTopic = new MerkleTopic(topics.get(topicMapKey));
 
 		if (!updatedTopic.hasAdminKey() &&
 				(op.hasMemo() || op.hasAdminKey() || op.hasSubmitKey() || op.hasAutoRenewPeriod() ||
@@ -123,42 +123,42 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		transactionContext.setStatus(SUCCESS);
 	}
 
-	private boolean updateTopicWithNewExpirationTime(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
+	private boolean updateTopicWithNewExpirationTime(ConsensusUpdateTopicTransactionBody op, MerkleTopic updatedMerkleTopic) {
 		var newExpiration = op.getExpirationTime();
 		if (!validator.isValidExpiry(newExpiration)) {
 			transactionContext.setStatus(INVALID_EXPIRATION_TIME);
 			return false;
 		}
 
-		var newExpirationJTimestamp = JTimestamp.convert(newExpiration);
+		var newExpirationJTimestamp = RichInstant.fromGrpc(newExpiration);
 		// Not yet updated...
-		if (updatedTopic.hasExpirationTimestamp() &&
-				updatedTopic.getExpirationTimestamp().isAfter(newExpirationJTimestamp))
+		if (updatedMerkleTopic.hasExpirationTimestamp() &&
+				updatedMerkleTopic.getExpirationTimestamp().isAfter(newExpirationJTimestamp))
 		{
 			transactionContext.setStatus(EXPIRATION_REDUCTION_NOT_ALLOWED);
 			return false;
 		}
 
-		updatedTopic.setExpirationTimestamp(newExpirationJTimestamp);
+		updatedMerkleTopic.setExpirationTimestamp(newExpirationJTimestamp);
 		return true;
 	}
 
-	private boolean updateTopicWithNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
+	private boolean updateTopicWithNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, MerkleTopic updatedMerkleTopic) {
 		var newAutoRenewAccountId = op.getAutoRenewAccount();
 		if (newAutoRenewAccountId.getShardNum() == 0 && newAutoRenewAccountId.getRealmNum() == 0
 				&& newAutoRenewAccountId.getAccountNum() == 0) {
-			updatedTopic.setAutoRenewAccountId(null);
+			updatedMerkleTopic.setAutoRenewAccountId(null);
 		} else {
 			if (OK != validator.queryableAccountStatus(newAutoRenewAccountId, accounts)) {
 				transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
 				return false;
 			}
 		}
-		updatedTopic.setAutoRenewAccountId(JAccountID.convert(newAutoRenewAccountId));
+		updatedMerkleTopic.setAutoRenewAccountId(EntityId.ofNullableAccountId(newAutoRenewAccountId));
 		return true;
 	}
 
-	private boolean updateTopicWithNewKeys(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
+	private boolean updateTopicWithNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic updatedMerkleTopic) {
 		var topicId = op.getTopicID();
 		try {
 			if (op.hasAdminKey()) {
@@ -169,7 +169,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 					transactionContext.setStatus(BAD_ENCODING);
 					return false;
 				}
-				updatedTopic.setAdminKey(JKey.mapKey(newAdminKey));
+				updatedMerkleTopic.setAdminKey(JKey.mapKey(newAdminKey));
 			}
 
 			if (op.hasSubmitKey()) {
@@ -178,7 +178,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 					transactionContext.setStatus(BAD_ENCODING);
 					return false;
 				}
-				updatedTopic.setSubmitKey(JKey.mapKey(newSubmitKey));
+				updatedMerkleTopic.setSubmitKey(JKey.mapKey(newSubmitKey));
 			}
 		} catch (DecoderException e) {
 			log.error("Decoder exception updating topic {}. ", topicId, e);

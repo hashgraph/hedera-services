@@ -25,8 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import java.util.List;
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;

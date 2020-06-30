@@ -28,12 +28,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
 
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractUpdateResourceUsage.class);
@@ -52,7 +52,7 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
 		try {
-			MapKey id = getMapKey(txn.getContractUpdateInstance().getContractID());
+			MerkleEntityId id = fromPojoContractId(txn.getContractUpdateInstance().getContractID());
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
 			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {

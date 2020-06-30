@@ -21,14 +21,14 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 
@@ -39,20 +39,19 @@ import java.util.stream.Stream;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
 	private final TransactionContext txnCtx;
 	private final SyncActivationCheck check;
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	public TxnAwareSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			SyncActivationCheck check,
-			FCMap<MapKey, HederaAccount> accounts
+			FCMap<MerkleEntityId, MerkleAccount> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
@@ -83,10 +82,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	private Stream<JKey> keyRequirement(AccountID id) {
-		return Optional.ofNullable(accounts.get(getMapKey(id)))
+		return Optional.ofNullable(accounts.get(MerkleEntityId.fromPojoAccountId(id)))
 				.filter(account -> !account.isSmartContract())
-				.filter(HederaAccount::isReceiverSigRequired)
-				.map(HederaAccount::getAccountKeys)
+				.filter(MerkleAccount::isReceiverSigRequired)
+				.map(MerkleAccount::getKey)
 				.stream();
 	}
 
