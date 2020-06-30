@@ -2687,7 +2687,11 @@ jobs:
           node-terraform-index: << parameters.node-terraform-index >>
           node-account: << parameters.node-account >>
   chunking-load-test-summary:
-    executor: ci-test-executor
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-chunking-performance"
+      use_existing_network: "1"
     steps:
       - attach_workspace:
           at: /
