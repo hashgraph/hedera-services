@@ -842,7 +842,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.6
+                # - release/0.6
                 - ignore
       - chunking-performance-target-testnet:
           requires:
@@ -2122,4 +2122,3 @@ jobs:
           ci-properties-map: << parameters.ci-properties-map >>
           node-terraform-index: << parameters.node-terraform-index >>
           node-account: << parameters.node-account >>
-          perf-run: true
