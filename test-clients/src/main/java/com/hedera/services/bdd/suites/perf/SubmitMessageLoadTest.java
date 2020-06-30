@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.log4j.LogManager;
@@ -38,8 +39,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -93,6 +94,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 						.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(), payload))
 						.noLogging()
 						.payingWith("sender")
+						.signedBy("sender", "submitKey")
 						.suppressStats(true)
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
 						.hasKnownStatusFrom(SUCCESS, OK)
@@ -103,7 +105,10 @@ public class SubmitMessageLoadTest extends LoadTest {
 		return defaultHapiSpec("RunSubmitMessages")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						newKeyNamed("submitKey"),
+						keyFromPem("src/main/resource/testfiles/hcs/topicSubmitKey.pem")
+								.name("submitKey")
+								.simpleWacl()
+								.passphrase(KeyFactory.PEM_PASSPHRASE),
 						logIt(ignore -> settings.toString())
 				).when(
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
