@@ -1326,6 +1326,10 @@ workflows:
 jobs:
   start-singlejob-testnet:
     parameters:
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       workflow-name:
         type: string
         default: ""
@@ -1333,7 +1337,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - start-testnet
+      - start-testnet:
+          infra-branch: << parameters.infra-branch >>
   cleanup-singlejob-testnet:
     executor: ci-test-executor
     steps:
