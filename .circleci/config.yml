@@ -1291,7 +1291,7 @@ workflows:
           workflow-name: "Continuous integration"
       - run-file-scenarios:
           requires:
-            - start-singlejob-testnet
+            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
