@@ -1270,7 +1270,7 @@ workflows:
       - run-chunking-load-test:
           requires:
             - fast-build-artifact
-          ci-properties-map: "tps=250,mins=2,threads=2"
+          ci-properties-map: "tps=125,mins=2,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 1
           node-account: 4
 
