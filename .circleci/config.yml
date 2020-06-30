@@ -347,13 +347,17 @@ commands:
         description: Terraform vars to use
         type: string
         default: "ci.tfvars"
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       use-hugepage:
         description: Tell ansible to use hugepage mode when deploying
         type: boolean
         default: false
     steps:
       - fetch-testnet-control-assets:
-          infra-branch: "hashgraph-hedera-services"
+          infra-branch: << parameters.infra-branch >>
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
@@ -1278,6 +1282,7 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
+          infra-branch: services-with-platform070
       - run-consensus-and-crypto-scenarios:
           requires:
             - start-singlejob-testnet
@@ -1315,7 +1320,6 @@ workflows:
       - cleanup-singlejob-testnet:
           requires:
             - run-smart-contract-scenarios
-            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /

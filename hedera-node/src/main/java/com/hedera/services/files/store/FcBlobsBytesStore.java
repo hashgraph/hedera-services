@@ -23,6 +23,8 @@ package com.hedera.services.files.store;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.AbstractMap;
 import java.util.Optional;
@@ -32,6 +34,8 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toSet;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
+        public static Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
+
         private final Function<byte[], MerkleOptionalBlob> blobFactory;
         private final FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs;
 
@@ -76,7 +80,12 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
                 leaf, and this leaf will have been deleted before it is returned
                 from {@code pathedBlobs#put}. Hence we simply return {@code null}
                 here. */
-                pathedBlobs.put(at(path), blobFactory.apply(value));
+                var blob = blobFactory.apply(value);
+                log.debug("Putting {} bytes (hash = {}) @ '{}'",
+                                value.length,
+                                blob.getHash(),
+                                path);
+                pathedBlobs.put(at(path), blob);
                 return null;
         }
 
