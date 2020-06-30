@@ -1266,7 +1266,14 @@ workflows:
 
   chunking-performance:
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
+          post-steps:
+            - fetch-testnet-control-assets:
+                infra-branch: "hashgraph-hedera-services"
+            - persist_to_workspace:
+                root: /
+                paths:
+                  - infrastructure
       - run-chunking-load-test:
           name: chunking-load-test-node0-client1
           requires:
@@ -2679,8 +2686,6 @@ jobs:
       use_existing_network: "1"
     parallelism: 1
     steps:
-      - fetch-testnet-control-assets:
-          infra-branch: "hashgraph-hedera-services"
       - run-eet-suites:
           dsl-args: "SubmitMessageLoadTest"
           ci-properties-map: << parameters.ci-properties-map >>
