@@ -23,6 +23,8 @@ package com.hedera.services.files.store;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.AbstractMap;
 import java.util.Optional;
@@ -32,6 +34,8 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toSet;
 
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
+        static final Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
+
         private final Function<byte[], MerkleOptionalBlob> blobFactory;
         private final FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs;
 
@@ -71,6 +75,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
          */
         @Override
         public byte[] put(String path, byte[] value) {
+        	    log.info("Putting {} bytes @ '{}'", value.length, path);
                 /* Note that if the blob at {@code path} was already updated
                 in this round, the platform will not hold a copy of the replaced
                 leaf, and this leaf will have been deleted before it is returned

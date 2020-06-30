@@ -83,6 +83,8 @@ function summarize_postgresql_status() {
 function get_binary_object_count() {
   for HOST in ${TF_HOSTS[@]}; do
     ssh -o StrictHostKeyChecking=no ubuntu@$HOST \
+      "sudo -u postgres psql -d fcfs -c 'select ref_count, file_oid from binary_objects'" 
+      
       "sudo -u postgres psql -d fcfs -c 'SELECT COUNT(*) FROM binary_objects' | egrep -o '[^(]+[0-9]+' | egrep -o '[^ ]*[0-9]+'" > binaryObject_$HOST.count
 
     num=$(cat binaryObject_$HOST.count)
