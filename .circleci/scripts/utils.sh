@@ -96,9 +96,11 @@ function get_binary_object_count() {
 function verify_binary_object_count() {
   local diff=$1
   for HOST in ${TF_HOSTS[@]}; do
+    ssh -o StrictHostKeyChecking=no ubuntu@$HOST \
+      "sudo -u postgres psql -d fcfs -c 'select * from binary_objects'"
+
     actual=$(ssh -o StrictHostKeyChecking=no ubuntu@$HOST \
          "sudo -u postgres psql -d fcfs -c 'SELECT COUNT(*) FROM binary_objects' | egrep -o '[^(]+[0-9]+' | egrep -o '[^ ]*[0-9]+'")
-
     file="binaryObject_$HOST.count"
 
     num=$(cat "$file")
