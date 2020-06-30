@@ -71,6 +71,13 @@ public class PerfTestLoadSettings {
 		return defaultValue;
 	}
 
+	public boolean getBooleanProperty(String property, boolean defaultValue) {
+		if (null != ciProps && ciProps.has(property)) {
+			return ciProps.getBoolean(property);
+		}
+		return defaultValue;
+	}
+
 	public void setFrom(HapiPropertySource ciProps) {
 		this.ciProps = ciProps;
 		if (ciProps.has("tps")) {

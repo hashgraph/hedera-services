@@ -116,6 +116,9 @@ public class SubmitMessageLoadTest extends LoadTest {
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
 				.hasKnownStatusFrom(SUCCESS)
 				.deferStatusResolution();
+		if (settings.getBooleanProperty("isChunk", false)) {
+			return () -> op.chunkInfo(1, 1).usePresetTimestamp();
+		}
 		return () -> op;
 	}
 
