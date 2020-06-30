@@ -2658,3 +2658,5 @@ jobs:
           ci-properties-map: << parameters.ci-properties-map >>
           node-terraform-index: << parameters.node-terraform-index >>
           node-account: << parameters.node-account >>
+      - publish-platform-stats:
+          source-desc: HCS chunking performance
