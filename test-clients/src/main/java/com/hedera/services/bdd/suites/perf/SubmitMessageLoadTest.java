@@ -84,15 +84,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				submitMessageTo(topicID != null ? topicID : "topic")
-						.message(randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize)))
-						.noLogging()
-						.payingWith("sender")
-						.suppressStats(true)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
-						.hasKnownStatusFrom(SUCCESS)
-						.deferStatusResolution()
-
+				opSupplier(settings).get()
 		};
 
 		return defaultHapiSpec("RunSubmitMessages")
@@ -113,6 +105,18 @@ public class SubmitMessageLoadTest extends LoadTest {
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
+	}
+
+	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
+		var op = submitMessageTo(topicID != null ? topicID : "topic")
+				.message(randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize)))
+				.noLogging()
+				.payingWith("sender")
+				.suppressStats(true)
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+				.hasKnownStatusFrom(SUCCESS)
+				.deferStatusResolution();
+		return () -> op;
 	}
 
 	@Override
