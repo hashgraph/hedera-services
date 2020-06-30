@@ -38,6 +38,8 @@ public class PerfTestLoadSettings {
 	private int burstSize = DEFAULT_BURST_SIZE;
 	private int threads = DEFAULT_THREADS;
 
+	private HapiPropertySource ciProps = null;
+
 	public int getTps() {
 		return tps;
 	}
@@ -62,7 +64,15 @@ public class PerfTestLoadSettings {
 		return threads;
 	}
 
+	public int getIntProperty(String property, int defaultValue) {
+		if (null != ciProps && ciProps.has(property)) {
+			return ciProps.getInteger(property);
+		}
+		return defaultValue;
+	}
+
 	public void setFrom(HapiPropertySource ciProps) {
+		this.ciProps = ciProps;
 		if (ciProps.has("tps")) {
 			tps = ciProps.getInteger("tps");
 		}

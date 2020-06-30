@@ -85,7 +85,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
 				submitMessageTo(topicID != null ? topicID : "topic")
-						.message(randomUtf8Bytes(messageSize))
+						.message(randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize)))
 						.noLogging()
 						.payingWith("sender")
 						.suppressStats(true)
