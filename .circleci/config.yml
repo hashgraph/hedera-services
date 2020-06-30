@@ -1264,6 +1264,16 @@ workflows:
     jobs:
       - aws-summary
 
+  chunking-performance:
+    jobs:
+      - fast-build-artifact
+      - run-chunking-load-test:
+          requires:
+            - fast-build-artifact
+          ci-properties-map: "tps=250,mins=5,threads=4"
+          node-terraform-index: 1
+          node-account: 4
+
   continuous-integration:
     jobs:
       - build-artifact:
@@ -2619,3 +2629,31 @@ jobs:
           name: Show swirlds logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+  run-chunking-load-test:
+    parameters:
+      node-terraform-index:
+        description: Index into array of Terraform-provisioned hosts
+        type: integer
+        default: 0
+      node-account:
+        description: Seq num of the Hedera account id for specified node.
+        type: integer
+        default: 3
+      ci-properties-map:
+        description: Key=value pairs to configure suite behavior
+        type: string
+        default: ''
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-chunking-performance"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - fetch-testnet-control-assets:
+          infra-branch: "hashgraph-hedera-services"
+      - run-eet-suites:
+          dsl-args: "SubmitMessageLoadTest"
+          ci-properties-map: << parameters.ci-properties-map >>
+          node-terraform-index: << parameters.node-terraform-index >>
+          node-account: << parameters.node-account >>
