@@ -2689,5 +2689,7 @@ jobs:
   chunking-load-test-summary:
     executor: ci-test-executor
     steps:
+      - attach_workspace:
+          at: /
       - publish-platform-stats:
           source-desc: HCS chunking performance
