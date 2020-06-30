@@ -2687,6 +2687,7 @@ jobs:
           node-terraform-index: << parameters.node-terraform-index >>
           node-account: << parameters.node-account >>
   chunking-load-test-summary:
+    executor: ci-test-executor
     steps:
       - publish-platform-stats:
           source-desc: HCS chunking performance
