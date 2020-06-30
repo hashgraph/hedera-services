@@ -842,7 +842,7 @@ workflows:
           filters:
             branches:
               only:
-                # - release/0.6
+                - release/0.6
                 - ignore
       - chunking-performance-target-testnet:
           requires:
