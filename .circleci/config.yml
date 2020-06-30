@@ -1268,11 +1268,39 @@ workflows:
     jobs:
       - fast-build-artifact
       - run-chunking-load-test:
+          name: chunking-load-test-node0-client1
+          requires:
+            - fast-build-artifact
+          ci-properties-map: "tps=125,mins=2,threads=2,messageSize=5800,isChunk=true"
+          node-terraform-index: 0
+          node-account: 3
+      - run-chunking-load-test:
+          name: chunking-load-test-node1-client1
           requires:
             - fast-build-artifact
           ci-properties-map: "tps=125,mins=2,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 1
           node-account: 4
+      - run-chunking-load-test:
+          name: chunking-load-test-node2-client1
+          requires:
+            - fast-build-artifact
+          ci-properties-map: "tps=125,mins=2,threads=2,messageSize=5800,isChunk=true"
+          node-terraform-index: 2
+          node-account: 5
+      - run-chunking-load-test:
+          name: chunking-load-test-node3-client1
+          requires:
+            - fast-build-artifact
+          ci-properties-map: "tps=125,mins=2,threads=2,messageSize=5800,isChunk=true"
+          node-terraform-index: 3
+          node-account: 6
+      - chunking-load-test-summary:
+          requires:
+            - chunking-load-test-node0-client1
+            - chunking-load-test-node1-client1
+            - chunking-load-test-node2-client1
+            - chunking-load-test-node3-client1
 
   continuous-integration:
     jobs:
@@ -2658,5 +2686,7 @@ jobs:
           ci-properties-map: << parameters.ci-properties-map >>
           node-terraform-index: << parameters.node-terraform-index >>
           node-account: << parameters.node-account >>
+  chunking-load-test-summary:
+    steps:
       - publish-platform-stats:
           source-desc: HCS chunking performance
