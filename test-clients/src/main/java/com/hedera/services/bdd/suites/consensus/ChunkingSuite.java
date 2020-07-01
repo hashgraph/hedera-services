@@ -20,21 +20,30 @@ package com.hedera.services.bdd.suites.consensus;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.junit.Assert;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ChunkingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
+	private static final int CHUNK_SIZE = 5800;
 
 	public static void main(String... args) {
 		new ChunkingSuite().runSuiteSync();
@@ -44,7 +53,8 @@ public class ChunkingSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				chunkNumberIsValidated(),
-				chunkTransactionIDIsValidated()
+				chunkTransactionIDIsValidated(),
+				longMessageIsFragmentedIntoChunks()
 		);
 	}
 
@@ -106,6 +116,51 @@ public class ChunkingSuite extends HapiApiSuite {
 								.payingWith("initialTransactionPayer")
 								.usePresetTimestamp()
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec longMessageIsFragmentedIntoChunks() {
+		String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
+		return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
+				.given(
+						cryptoCreate("payer"),
+						createTopic("testTopic")
+				)
+				.when(
+				)
+				.then(
+						withOpContext((spec, ctxLog) -> {
+							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+
+							ByteString msg = ByteString.copyFrom(
+									Files.readAllBytes(Paths.get(fileForLongMessage))
+							);
+							int size = msg.size();
+							log.info("File size: " + size);
+							int totalChunks = (size + CHUNK_SIZE - 1) / CHUNK_SIZE;
+							int position = 0;
+							int currentChunk = 0;
+
+							while (position < size) {
+								++currentChunk;
+								int newPosition = Math.min(size, position + CHUNK_SIZE);
+								HapiSpecOperation subOp = submitMessageTo("testTopic")
+										.message(msg.substring(position, newPosition))
+										.chunkInfo(totalChunks, currentChunk)
+										.payingWith("payer")
+										.usePresetTimestamp()
+										.hasKnownStatus(SUCCESS);
+								opsList.add(subOp);
+								position = newPosition;
+							}
+
+							log.info("Total chunks: " + totalChunks);
+							log.info("Last chunk number: " + currentChunk);
+							Assert.assertEquals("Total chunks and last chunk number do not match",
+									totalChunks, currentChunk);
+
+							CustomSpecAssert.allRunFor(spec, opsList);
+						})
 				);
 	}
 
