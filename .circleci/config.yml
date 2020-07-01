@@ -1278,17 +1278,6 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
-      - run-consensus-and-crypto-scenarios:
-          requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
       - run-file-scenarios:
           requires:
             - start-singlejob-testnet
@@ -1309,9 +1298,19 @@ workflows:
           post-steps:
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
-      - run-update-jar-files:
+      - run-consensus-and-crypto-scenarios:
           requires:
             - run-smart-contract-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-update-jar-files:
+          requires:
             - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
@@ -2273,7 +2272,7 @@ jobs:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
       - postgres-verify-counts:
-          expected-difference: 3
+          expected-difference: 2
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.LoadTestIT
       - run-scenario-test:
