@@ -2273,7 +2273,7 @@ jobs:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
       - postgres-verify-counts:
-          expected-difference: 2
+          expected-difference: 3
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.LoadTestIT
       - run-scenario-test:
