@@ -1279,28 +1279,28 @@ workflows:
           name: chunking-load-test-node0-client1
           requires:
             - fast-build-artifact
-          ci-properties-map: "tps=250,mins=60,threads=2,messageSize=5800,isChunk=true"
+          ci-properties-map: "tps=375,mins=60,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 0
           node-account: 3
       - run-chunking-load-test:
           name: chunking-load-test-node1-client1
           requires:
             - fast-build-artifact
-          ci-properties-map: "tps=250,mins=60,threads=2,messageSize=5800,isChunk=true"
+          ci-properties-map: "tps=375,mins=60,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 1
           node-account: 4
       - run-chunking-load-test:
           name: chunking-load-test-node2-client1
           requires:
             - fast-build-artifact
-          ci-properties-map: "tps=250,mins=60,threads=2,messageSize=5800,isChunk=true"
+          ci-properties-map: "tps=375,mins=60,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 2
           node-account: 5
       - run-chunking-load-test:
           name: chunking-load-test-node3-client1
           requires:
             - fast-build-artifact
-          ci-properties-map: "tps=250,mins=60,threads=2,messageSize=5800,isChunk=true"
+          ci-properties-map: "tps=375,mins=60,threads=2,messageSize=5800,isChunk=true"
           node-terraform-index: 3
           node-account: 6
       - chunking-load-test-summary:
