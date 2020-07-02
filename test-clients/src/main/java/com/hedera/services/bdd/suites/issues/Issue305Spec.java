@@ -70,7 +70,7 @@ public class Issue305Spec extends HapiApiSuite {
 						})
 				).then(
 						fileCreate("tbd").key("tbdKey").deferStatusResolution(),
-						fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").hasAnyKnownStatus().logged(),
+						fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").logged(),
 						getFileInfo(nextFileId::get).logged()
 				);
 	}
