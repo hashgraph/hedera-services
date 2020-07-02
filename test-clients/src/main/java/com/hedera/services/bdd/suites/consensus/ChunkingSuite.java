@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -165,6 +166,9 @@ public class ChunkingSuite extends HapiApiSuite {
 							log.info("Last chunk number: " + currentChunk);
 							Assert.assertEquals("Total chunks and last chunk number do not match",
 									totalChunks, currentChunk);
+
+							var subOp = getTopicInfo("testTopic").hasSeqNo(totalChunks);
+							opsList.add(subOp);
 
 							CustomSpecAssert.allRunFor(spec, opsList);
 						})
