@@ -1273,6 +1273,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 0305-M-FixFileDelEdgeCase
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
