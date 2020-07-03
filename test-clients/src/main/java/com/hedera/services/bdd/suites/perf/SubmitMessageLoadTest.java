@@ -95,7 +95,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 				).when(
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
-								.rechargeWindow(3)
+								.rechargeWindow(30)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
 								.submitKeyName("submitKey")

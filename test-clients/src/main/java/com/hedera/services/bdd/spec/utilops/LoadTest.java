@@ -43,7 +43,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt testDurationMinutes = OptionalInt.empty();
 	public static OptionalInt threadNumber = OptionalInt.empty();
 	/** initial balance of payer account used for paying for performance test transactions*/
-	public static OptionalLong initialBalance = OptionalLong.of(5_000_000_000L);
+	public static OptionalLong initialBalance = OptionalLong.of(5_000_000_000_000L);
 
 	public static int parseArgs(String... args) {
 		int usedArgs = 0;
