@@ -126,14 +126,14 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesRemove() {
+	public void delegatesRemoveAndReturnsNull() {
 		given(pathedBlobs.remove(pathA)).willReturn(blobA);
 
 		// when:
 		byte[] prev = subject.remove(pathA.getPath());
 
 		// then:
-		assertEquals(new String(prev), new String(blobA.getData()));
+		assertNull(prev);
 	}
 
 	@Test
