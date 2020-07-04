@@ -53,6 +53,8 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class MerkleOptionalBlobTest {
 	byte[] stuff = "abcdefghijklmnopqrstuvwxyz".getBytes();
+	byte[] newStuff = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
+
 	String readableStuffDelegate = "<me>";
 	static final Hash stuffDelegateHash = new Hash(new byte[] {
 			(byte)0xf0, (byte)0xe1, (byte)0xd2, (byte)0xc3,
@@ -70,8 +72,9 @@ class MerkleOptionalBlobTest {
 	});
 
 	BinaryObjectStore blobStore;
-	BinaryObject stuffDelegate;
 	BinaryObject newDelegate;
+	BinaryObject stuffDelegate;
+	BinaryObject newStuffDelegate;
 
 	MerkleOptionalBlob subject;
 
@@ -79,10 +82,12 @@ class MerkleOptionalBlobTest {
 	public void setup() {
 		newDelegate = mock(BinaryObject.class);
 		stuffDelegate = mock(BinaryObject.class);
+		newStuffDelegate = mock(BinaryObject.class);
 		given(stuffDelegate.toString()).willReturn(readableStuffDelegate);
 		given(stuffDelegate.getHash()).willReturn(stuffDelegateHash);
 		blobStore = mock(BinaryObjectStore.class);
 		given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, stuff)))).willReturn(stuffDelegate);
+		given(blobStore.put(argThat((byte[] bytes) -> Arrays.equals(bytes, newStuff)))).willReturn(newStuffDelegate);
 		given(blobStore.get(stuffDelegate)).willReturn(stuff);
 
 		MerkleOptionalBlob.blobSupplier = () -> newDelegate;
@@ -95,6 +100,29 @@ class MerkleOptionalBlobTest {
 	public void cleanup() {
 		MerkleOptionalBlob.blobSupplier = BinaryObject::new;
 		MerkleOptionalBlob.blobStoreSupplier = BinaryObjectStore::getInstance;
+	}
+
+	@Test
+	public void modifyWorksWithNonEmpty() {
+		// when:
+		subject.modify(newStuff);
+
+		// then:
+		verify(stuffDelegate).delete();
+		// and:
+		assertEquals(newStuffDelegate, subject.getDelegate());
+	}
+
+	@Test
+	public void modifyWorksWithEmpty() {
+		// given:
+		subject = new MerkleOptionalBlob();
+
+		// when:
+		subject.modify(newStuff);
+
+		// then:
+		assertEquals(newStuffDelegate, subject.getDelegate());
 	}
 
 	@Test
