@@ -20,29 +20,18 @@ package com.hedera.services.bdd.suites.consensus;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.junit.Assert;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ChunkingSuite extends HapiApiSuite {
@@ -133,45 +122,7 @@ public class ChunkingSuite extends HapiApiSuite {
 				.when(
 				)
 				.then(
-						withOpContext((spec, ctxLog) -> {
-							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-
-							ByteString msg = ByteString.copyFrom(
-									Files.readAllBytes(Paths.get(fileForLongMessage))
-							);
-							int size = msg.size();
-							log.info("File size: " + size);
-							int totalChunks = (size + CHUNK_SIZE - 1) / CHUNK_SIZE;
-							int position = 0;
-							int currentChunk = 0;
-							var initialTransactionID = asTransactionID(spec, Optional.of("payer"));
-
-							while (position < size) {
-								++currentChunk;
-								int newPosition = Math.min(size, position + CHUNK_SIZE);
-								HapiMessageSubmit subOp = submitMessageTo("testTopic")
-										.message(msg.substring(position, newPosition))
-										.chunkInfo(totalChunks, currentChunk, initialTransactionID)
-										.via("chunk" + currentChunk)
-										.payingWith("payer")
-										.hasKnownStatus(SUCCESS);
-								if (1 == currentChunk) {
-									subOp = subOp.usePresetTimestamp();
-								}
-								opsList.add(subOp);
-								position = newPosition;
-							}
-
-							log.info("Total chunks: " + totalChunks);
-							log.info("Last chunk number: " + currentChunk);
-							Assert.assertEquals("Total chunks and last chunk number do not match",
-									totalChunks, currentChunk);
-
-							var subOp = getTopicInfo("testTopic").hasSeqNo(totalChunks);
-							opsList.add(subOp);
-
-							CustomSpecAssert.allRunFor(spec, opsList);
-						})
+						chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic")
 				);
 	}
 
