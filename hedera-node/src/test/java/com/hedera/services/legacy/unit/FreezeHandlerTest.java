@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,36 +20,39 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
+
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.handler.FreezeHandler;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.legacy.core.StorageKey;
 import com.hedera.services.legacy.core.StorageValue;
+import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
 import java.time.Instant;
 import java.util.Date;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
-import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.willThrow;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+
+import static org.mockito.BDDMockito.*;
+
+@RunWith(JUnitPlatform.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FreezeHandlerTest {
 	Platform platform;
 	FreezeHandler freezeHandler;
@@ -63,7 +66,7 @@ public class FreezeHandlerTest {
 		SettingsCommon.transactionMaxBytes = 1_234_567;
 	}
 
-	@Before
+	@BeforeAll
 	public void init() {
 		consensusTime = new Date().toInstant();
 	}
