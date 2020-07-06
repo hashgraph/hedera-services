@@ -117,18 +117,14 @@ public class FreezeHandler {
 
 		FileID fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
-		try {
-			if (hfs.exists(fileIDtoUse)) {
-				log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
-				byte[] fileBytes = hfs.cat(fileIDtoUse);
-				updateFeatureWithFileContents(fileBytes);
-			}
-		} catch (SecurityException e) {
-			log.error("Exception during handleUpdateFeature ", e);
+		if (hfs.exists(fileIDtoUse)) {
+			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
+			byte[] fileBytes = hfs.cat(fileIDtoUse);
+			updateFeatureWithFileContents(fileBytes);
 		}
 	}
 
-	public void updateFeatureWithFileContents(final byte[] fileBytes) {
+	private void updateFeatureWithFileContents(final byte[] fileBytes) {
 		log.info("{} current directory {}", LOG_PREFIX, System.getProperty("user.dir"));
 		File directory = new File(TEMP_DIR);
 		try {

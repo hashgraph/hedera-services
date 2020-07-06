@@ -76,7 +76,7 @@ public class FreezeHandlerTest {
 		hfs = mock(HederaFs.class);
 		platform = Mockito.mock(Platform.class);
 		freezeHandler = new FreezeHandler(hfs, platform);
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
@@ -88,7 +88,7 @@ public class FreezeHandlerTest {
 		platform = Mockito.mock(Platform.class);
 		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
 		freezeHandler = new FreezeHandler(hfs, platform);
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
@@ -96,17 +96,24 @@ public class FreezeHandlerTest {
 
 	@Test
 	public void freeze_updateFeature() throws Exception {
+		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		byte[] data = Files.readAllBytes(Paths.get(zipFile));
+
 		hfs = mock(HederaFs.class);
 		platform = Mockito.mock(Platform.class);
 		freezeHandler = new FreezeHandler(hfs, platform);
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true);
+		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(2000L).build();
+
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID);
+
+		given(hfs.exists(fileID)).willReturn(true);
+		given(hfs.cat(fileID)).willReturn(data);
+
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
 		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
 
-		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
-		byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		freezeHandler.updateFeatureWithFileContents(data);
+		freezeHandler.handleUpdateFeature();
 
 		//check whether file has been deleted as expected
 		File file1 = new File("new1.txt");
