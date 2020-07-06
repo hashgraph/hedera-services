@@ -62,6 +62,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -222,7 +223,8 @@ public class SuiteRunner {
 
 	/**
 	 * Check if the DSL_SUITE_RUNNER_ARGS contain ALL_SUITES.
-	 * If so, add all test suites from CATEGORY_MAP to args that should be run
+	 * If so, add all test suites from CATEGORY_MAP to args that should be run. If there are any tests mentioned with -
+	 * in the beginning while running ALL_SUITES, dont add them to effective args
 	 *
 	 * @param realArgs
 	 * 		DSL_SUITE_RUNNER_ARGS provided
@@ -234,6 +236,9 @@ public class SuiteRunner {
 
 		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
+			Arrays.stream(ciArgs)
+					.filter(args -> args.startsWith("-"))
+					.forEach(s -> effectiveArgs.remove(s));
 			effectiveArgs.addAll(Stream.of(ciArgs).
 					filter(e -> !e.equals("ALL_SUITES")).
 					collect(Collectors.toList()));

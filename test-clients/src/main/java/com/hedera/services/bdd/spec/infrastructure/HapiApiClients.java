@@ -197,6 +197,9 @@ public class HapiApiClients {
 	 * Close all netty channels that are opened for clients
 	 */
 	public void closeChannels() {
+		if (channels.isEmpty()) {
+			return;
+		}
 		channels.forEach(channel -> channel.shutdown());
 	}
 }
