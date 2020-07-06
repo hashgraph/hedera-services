@@ -147,17 +147,12 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
         setExpirationTimestamp(expirationTimestamp);
     }
 
-    /**
-     * Fast copy constructor for timestamps and keys. Shallow copy for immutables.
-     * @param other
-     * @throws Exception
-     */
     public MerkleTopic(final MerkleTopic other) {
         this.memo = other.memo;
         this.adminKey = other.hasAdminKey() ? other.getAdminKey().clone() : null;
         this.submitKey = other.hasSubmitKey() ? other.getSubmitKey().clone() : null;
         this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
-        this.autoRenewAccountId = other.hasAutoRenewAccountId() ? new EntityId(other.autoRenewAccountId) : null;
+        this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
         this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
         this.deleted = other.deleted;
 
