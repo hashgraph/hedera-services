@@ -35,15 +35,13 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	}
 
 	@Override
-	public MerkleAccount getRef(AccountID id) {
+	public MerkleAccount getUnsafeRef(AccountID id) {
 		return delegate.get(fromPojoAccountId(id));
 	}
 
 	@Override
-	public MerkleAccount getCopy(AccountID id) {
-		MerkleAccount ref = delegate.get(fromPojoAccountId(id));
-
-		return (ref == null) ? null : new MerkleAccount(ref);
+	public MerkleAccount getMutableRef(AccountID id) {
+		return delegate.getForModify(fromPojoAccountId(id));
 	}
 
 	@Override

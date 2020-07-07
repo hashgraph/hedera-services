@@ -29,9 +29,12 @@ import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.exceptions.InsufficientFundsException.*;
 
 @RunWith(JUnitPlatform.class)
@@ -91,7 +94,7 @@ public class HederaLedgerTest {
 	EntityIdSource ids;
 	AccountRecordsHistorian historian;
 	ScopedDuplicateClassifier duplicateClassifier = mock(ScopedDuplicateClassifier.class);
-	TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> ledger;
+	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	@BeforeEach
 	private void setupWithMockLedger() {
@@ -119,7 +122,7 @@ public class HederaLedgerTest {
 
 	private void setupWithLiveLedger() {
 		ledger = new TransactionalLedger<>(
-				MapValueProperty.class,
+				AccountProperty.class,
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
@@ -138,7 +141,7 @@ public class HederaLedgerTest {
 		} catch (Exception impossible) {}
 		backingAccounts.replace(genesis, genesisAccount);
 		ledger = new TransactionalLedger<>(
-				MapValueProperty.class,
+				AccountProperty.class,
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
@@ -619,6 +622,8 @@ public class HederaLedgerTest {
 	public void performsFundedCreate() {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
+		// and:
+		given(ledger.existsPending(IdUtils.asAccount(String.format("0.0.%d", NEXT_ID)))).willReturn(true);
 
 		// when:
 		AccountID created = subject.create(rand, 1_000L, customizer);
@@ -637,6 +642,8 @@ public class HederaLedgerTest {
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 		AccountID contract = asAccount("1.2.3");
 		long balance = 1_234L;
+		// and:
+		given(ledger.existsPending(contract)).willReturn(true);
 
 		// when:
 		subject.spawn(contract, balance, customizer);

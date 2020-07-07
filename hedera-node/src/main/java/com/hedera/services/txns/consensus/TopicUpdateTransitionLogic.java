@@ -25,6 +25,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -174,18 +176,17 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (!op.hasAutoRenewAccount()) {
 			return true;
 		}
+		var newAutoRenewAccount = op.getAutoRenewAccount();
+		if (designatesAccountRemoval(newAutoRenewAccount)) {
+			return true;
+		}
 		if (!topic.hasAdminKey() || (op.hasAdminKey() && asFcKeyUnchecked(op.getAdminKey()).isEmpty())) {
 			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
 			return false;
 		}
-		var newAutoRenewAccount = op.getAutoRenewAccount();
-		if (designatesAccountRemoval(newAutoRenewAccount)) {
-			return true;
-		} else {
-			if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts)) {
-				transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
-				return false;
-			}
+		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts)) {
+			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
+			return false;
 		}
 		return true;
 	}
@@ -224,7 +225,15 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 					transactionContext.setStatus(BAD_ENCODING);
 					return false;
 				}
-				JKey.mapKey(newAdminKey);
+				var fcKey = JKey.mapKey(newAdminKey);
+				if (fcKey.isEmpty()) {
+					boolean opRemovesAutoRenewId = op.hasAutoRenewAccount() &&
+							designatesAccountRemoval(op.getAutoRenewAccount());
+					if (topic.hasAutoRenewAccountId() && !opRemovesAutoRenewId) {
+						transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
+						return false;
+					}
+				}
 			}
 
 			if (op.hasSubmitKey()) {

@@ -57,13 +57,72 @@ public class TransactionalLedgerTest {
 	@BeforeEach
 	private void setup() {
 		backingAccounts = mock(BackingAccounts.class);
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getCopy(1L)).willReturn(new TestAccount(account1.value, account1.thing, account1.flag));
+		given(backingAccounts.getUnsafeRef(1L)).willReturn(account1);
+		given(backingAccounts.getMutableRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
+	}
+
+	@Test
+	public void rollbackClearsMutableRefs() {
+		// given:
+		subject.begin();
+
+		// when:
+		var obj = subject.get(1L, OBJ);
+		// and:
+		subject.rollback();
+
+		// then:
+		assertTrue(subject.mutableRefs.isEmpty());
+	}
+
+	@Test
+	public void settingPropWithMutableReqUpdatesChangeset() {
+		// given:
+		subject.begin();
+
+		// when:
+		var obj = subject.get(1L, OBJ);
+
+		// then:
+		assertTrue(subject.mutableRefs.containsKey(1L));
+		assertEquals(account1, subject.mutableRefs.get(1L));
+		// and:
+		assertTrue(subject.changes.get(1L).containsKey(OBJ));
+		assertEquals(account1.thing, subject.changes.get(1L).get(OBJ));
+	}
+
+	@Test
+	public void getUsesMutableRefIfPendingChanges() {
+		// given:
+		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag);
+		// and:
+		subject.begin();
+		subject.set(1L, FLAG, !account1.flag);
+
+		// when:
+		var account = subject.get(1L);
+
+		// then:
+		assertEquals(newAccount1, account);
+		// and:
+		verify(backingAccounts).getMutableRef(1L);
+		verify(backingAccounts, never()).getUnsafeRef(1L);
+	}
+
+	@Test
+	public void getUsesUnsafeRefIfNoPendingChanges() {
+		// when:
+		var account = subject.get(1L);
+
+		// then:
+		assertEquals(account1, account);
+		// and:
+		verify(backingAccounts).getUnsafeRef(1L);
 	}
 
 	@Test
@@ -120,7 +179,7 @@ public class TransactionalLedgerTest {
 
 	@Test
 	public void requiresManualRollbackIfCommitFails() {
-		given(backingAccounts.getCopy(any())).willThrow(IllegalStateException.class);
+		given(backingAccounts.getMutableRef(any())).willThrow(IllegalStateException.class);
 
 		// when:
 		subject.begin();
@@ -224,14 +283,19 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void usesGetRefWhenAccessingPropertiesFromExistingAccount() {
+	public void throwsWhenGettingMutableReqPropertiesWithoutTransaction() {
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.get(1L, OBJ));
+	}
+
+	@Test
+	public void usesGetRefWhenAccessingNonMutableReqPropertiesFromExistingAccount() {
 		// when:
-		Object thing = subject.get(1L, OBJ);
+		Object _long = subject.get(1L, LONG);
 
 		// then:
-		assertEquals(things[1], thing);
-		verify(backingAccounts, never()).getCopy(1L);
-		verify(backingAccounts).getRef(1L);
+		assertEquals(1L, _long);
+		verify(backingAccounts).getUnsafeRef(1L);
 	}
 
 	@Test
@@ -241,12 +305,11 @@ public class TransactionalLedgerTest {
 		subject.set(1L, FLAG, false);
 
 		// when:
-		Object thing = subject.get(1L, OBJ);
+		Object _long = subject.get(1L, LONG);
 
 		// then:
-		assertEquals(things[1], thing);
-		verify(backingAccounts, never()).getCopy(1L);
-		verify(backingAccounts).getRef(1L);
+		assertEquals(1L, _long);
+		verify(backingAccounts).getUnsafeRef(1L);
 	}
 
 	@Test

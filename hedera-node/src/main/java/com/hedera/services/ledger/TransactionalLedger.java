@@ -61,9 +61,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final Class<P> propertyType;
 	private final Supplier<A> newAccount;
 	private final BackingAccounts<K, A> accounts;
-	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
+
+	final Map<K, A> mutableRefs = new HashMap<>();
+	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
 	private Optional<Comparator<K>> keyComparator = Optional.empty();
@@ -97,6 +99,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
 		changes.clear();
+		mutableRefs.clear();
 		deadAccounts.clear();
 		isInTransaction = false;
 	}
@@ -144,9 +147,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 				desc.append(", ");
 			}
 			K id = change.getKey();
-			String accountInDeadAccounts = deadAccounts.contains(id) ? "*DEAD* " : "";
-			String accountNotInDeadAccounts = deadAccounts.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			String prefix = accounts.contains(id)
+			var accountInDeadAccounts = deadAccounts.contains(id) ? "*DEAD* " : "";
+			var accountNotInDeadAccounts = deadAccounts.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			var prefix = accounts.contains(id)
 					? accountInDeadAccounts
 					: accountNotInDeadAccounts;
 			desc.append(prefix)
@@ -190,9 +193,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public A get(K id) {
 		throwIfMissing(id);
-		A account = accounts.contains(id) ? accounts.getCopy(id) : newAccount.get();
+
 		EnumMap<P, Object> changeSet = changes.get(id);
-		if (changeSet != null) {
+		boolean hasPendingChanges = changeSet != null;
+		A account;
+		if (!accounts.contains(id)) {
+			account = newAccount.get();
+		} else {
+			account = hasPendingChanges ? mutableRefTo(id) : accounts.getUnsafeRef(id);
+		}
+
+		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
 		return account;
@@ -207,13 +218,25 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 				return changeSet.get(property);
 			}
 		}
-		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
+
+		var value = property.getter().apply(
+				isPendingCreation(id)
+						? newAccount.get()
+						: property.requiresMutableRef() ? mutableRefTo(id) : accounts.getUnsafeRef(id));
+		if (property.requiresMutableRef()) {
+			set(id, property, value);
+		}
+		return value;
+	}
+
+	private A mutableRefTo(K id) {
+		return mutableRefs.computeIfAbsent(id, accounts::getMutableRef);
 	}
 
 	@Override
 	public Object getSaved(K id, P property) {
 		throwIfUnsaved(id);
-		return property.getter().apply(accounts.getRef(id));
+		return property.getter().apply(accounts.getUnsafeRef(id));
 	}
 
 	@Override
