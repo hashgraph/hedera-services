@@ -42,20 +42,13 @@ public class FreezeTestHelper {
 		if (valid) {
 			int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
 			int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
-			if (fileID != null){
-				freezeBody = FreezeTransactionBody.newBuilder()
-						.setUpdateFile(fileID)
-						.setStartHour(startHourMin[0]).setStartMin(startHourMin[1])
-						.setEndHour(endHourMin[0]).setEndMin(endHourMin[1]).build();
-			} else {
-				freezeBody = FreezeTransactionBody.newBuilder()
-						.setStartHour(startHourMin[0]).setStartMin(startHourMin[1])
-						.setEndHour(endHourMin[0]).setEndMin(endHourMin[1]).build();
+			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
+			if (fileID != null) {
+				builder.setUpdateFile(fileID);
 			}
+			freezeBody =  builder.build();
 		} else {
-			freezeBody = FreezeTransactionBody.newBuilder()
-					.setStartHour(25).setStartMin(1)
-					.setEndHour(3).setEndMin(4).build();
+			freezeBody = getFreezeTranBuilder(25, 1, 3, 4).build();
 		}
 
 
@@ -78,5 +71,11 @@ public class FreezeTestHelper {
 		byte[] bodyBytesArr = body.build().toByteArray();
 		ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
 		return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+	}
+
+	private static FreezeTransactionBody.Builder getFreezeTranBuilder(int startHour, int startMin, int endHours, int endMin){
+		return FreezeTransactionBody.newBuilder()
+				.setStartHour(startHour).setStartMin(startMin)
+				.setEndHour(endHours).setEndMin(endMin);
 	}
 }
