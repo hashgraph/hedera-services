@@ -341,26 +341,6 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnGettingSavedPropertyOfZombie() {
-		// given:
-		subject.begin();
-		subject.destroy(1L);
-
-		// expect:
-		assertThrows(MissingAccountException.class, () -> subject.getSaved(1L, OBJ));
-	}
-
-	@Test
-	public void throwsOnGettingSavedPropertyOfPendingAccount() {
-		// given:
-		subject.begin();
-		subject.create(2L);
-
-		// expect:
-		assertThrows(MissingAccountException.class, () -> subject.getSaved(2L, OBJ));
-	}
-
-	@Test
 	public void returnsSetPropertiesOfPendingNewAccounts() {
 		// given:
 		subject.begin();
@@ -401,18 +381,6 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void ignoresChangeToExistingAccountInGetSaved() {
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-
-		// expect:
-		assertEquals(things[1], subject.getSaved(1L, OBJ));
-	}
-
-	@Test
 	public void throwsIfTxnAlreadyBegun() {
 		// given:
 		subject.begin();
@@ -428,7 +396,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnCommitWithoutAciveTxn() {
+	public void throwsOnCommitWithoutActiveTxn() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.commit());
 	}
@@ -449,6 +417,20 @@ public class TransactionalLedgerTest {
 		assertFalse(subject.isInTransaction());
 		assertEquals(account1, subject.get(1L));
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L));
+	}
+
+	@Test
+	public void resetsMutableRefsAfterCommit() {
+		// given:
+		subject.begin();
+
+		// when:
+		subject.set(1L, OBJ, things[0]);
+		// and:
+		subject.commit();
+
+		// then:
+		assertTrue(subject.mutableRefs.isEmpty());
 	}
 
 	@Test

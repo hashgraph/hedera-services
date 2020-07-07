@@ -98,7 +98,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	@Override
 	public boolean isImmutable() {
-		return false;
+		return records().isImmutable() || payerRecords().isImmutable();
 	}
 
 	@Override

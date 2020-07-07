@@ -109,7 +109,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
 
-		log.debug("Changes to be commited: {}", this::changeSetSoFar);
+		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 
 		try {
 			Stream<K> changedKeys = keyComparator.isPresent()
@@ -119,6 +119,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					.filter(id -> !deadAccounts.contains(id))
 					.forEach(id -> accounts.replace(id, get(id)));
 			changes.clear();
+			mutableRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
 					? deadAccounts.stream().sorted(keyComparator.get())
@@ -231,12 +232,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private A mutableRefTo(K id) {
 		return mutableRefs.computeIfAbsent(id, accounts::getMutableRef);
-	}
-
-	@Override
-	public Object getSaved(K id, P property) {
-		throwIfUnsaved(id);
-		return property.getter().apply(accounts.getUnsafeRef(id));
 	}
 
 	@Override

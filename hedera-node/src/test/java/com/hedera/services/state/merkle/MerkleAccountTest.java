@@ -343,7 +343,28 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void isMutable() {
+	public void isMutableOnlyIfBothFcqsAreMutable1() {
+		given(records.isImmutable()).willReturn(false);
+		given(payerRecords.isImmutable()).willReturn(true);
+
+		// expect:
+		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	public void isMutableOnlyIfBothFcqsAreMutable2() {
+		given(records.isImmutable()).willReturn(true);
+		given(payerRecords.isImmutable()).willReturn(false);
+
+		// expect:
+		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	public void isMutableOnlyIfBothFcqsAreMutable3() {
+		given(records.isImmutable()).willReturn(false);
+		given(payerRecords.isImmutable()).willReturn(false);
+
 		// expect:
 		assertFalse(subject.isImmutable());
 	}
