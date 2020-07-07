@@ -236,11 +236,9 @@ public class SuiteRunner {
 
 		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
-			Arrays.stream(ciArgs)
-					.filter(args -> args.startsWith("-"))
-					.forEach(s -> effectiveArgs.remove(s));
 			effectiveArgs.addAll(Stream.of(ciArgs).
 					filter(e -> !e.equals("ALL_SUITES")).
+					filter(e -> !checkIfSkipped(e, effectiveArgs)).
 					collect(Collectors.toList()));
 			log.info("Effective args when running ALL_SUITES : " + effectiveArgs.toString());
 			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
@@ -248,6 +246,15 @@ public class SuiteRunner {
 
 		return ciArgs;
 	}
+
+	private static boolean checkIfSkipped(String e, ArrayList<String> effectiveArgs) {
+		boolean isSkipped =  e.startsWith("skip:");
+		if(isSkipped){
+			effectiveArgs.remove(e.substring(e.indexOf(":")+1));
+		}
+		return isSkipped;
+	}
+
 
 	private static List<CategoryResult> runCategories(List<String> args) {
 		argSet = args.stream().collect(Collectors.toSet());
