@@ -73,9 +73,9 @@ public class FreezeTestHelper {
 		return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
 	}
 
-	private static FreezeTransactionBody.Builder getFreezeTranBuilder(int startHour, int startMin, int endHours, int endMin){
+	private static FreezeTransactionBody.Builder getFreezeTranBuilder(int startHour, int startMin, int endHour, int endMin){
 		return FreezeTransactionBody.newBuilder()
 				.setStartHour(startHour).setStartMin(startMin)
-				.setEndHour(endHours).setEndMin(endMin);
+				.setEndHour(endHour).setEndMin(endMin);
 	}
 }
