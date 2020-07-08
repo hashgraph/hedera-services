@@ -1277,9 +1277,19 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
-      - run-consensus-and-crypto-scenarios:
+      - run-file-scenarios:
           requires:
             - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-consensus-and-crypto-scenarios:
+          requires:
+            - run-file-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1288,7 +1298,7 @@ workflows:
           post-steps:
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
-      - run-file-scenarios:
+      - run-smart-contract-scenarios:
           requires:
             - run-consensus-and-crypto-scenarios
           pre-steps:
@@ -1296,25 +1306,14 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
-                status: Passed
+                status: Passed            
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
             - run-smart-contract-scenarios
-#            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
