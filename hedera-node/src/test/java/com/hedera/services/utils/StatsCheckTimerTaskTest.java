@@ -18,12 +18,15 @@ class StatsCheckTimerTaskTest {
 
 	@Test
 	void testRun() {
+		// Given:
 		HederaNodeStats mockStats = mock(HederaNodeStats.class);
 		when(mockStats.dumpHederaNodeStats()).thenReturn("");
 
+		// When:
 		StatsCheckTimerTask timerTask = new StatsCheckTimerTask(mockStats);
 		StatsCheckTimerTask mock = spy(timerTask);
 		mock.run();
+		// Then:
 		verify(mock, times(1)).run();
 	}
 }
