@@ -1288,33 +1288,33 @@ workflows:
           post-steps:
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
       - run-consensus-and-crypto-scenarios:
           requires:
-            - run-smart-contract-scenarios
+            - run-file-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
             - run: /repo/.circleci/scripts/echo-env.sh
             - ensure-testnet-for-reruns
           post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-smart-contract-scenarios:
+          requires:
+            - run-consensus-and-crypto-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
-                status: Passed
+                status: Passed            
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
-            - run-consensus-and-crypto-scenarios
+            - run-smart-contract-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
