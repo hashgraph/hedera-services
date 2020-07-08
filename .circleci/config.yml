@@ -1307,17 +1307,6 @@ workflows:
             - run: /repo/.circleci/scripts/echo-env.sh
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-update-jar-files:
-          requires:
-            - run-consensus-and-crypto-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          new-marker : "new marker string"          
-          post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
                 status: Passed
@@ -1325,7 +1314,7 @@ workflows:
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
-            - run-update-jar-files
+            - un-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
