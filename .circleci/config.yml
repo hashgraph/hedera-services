@@ -1314,7 +1314,7 @@ workflows:
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
           requires:
-            - un-consensus-and-crypto-scenarios
+            - run-consensus-and-crypto-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
