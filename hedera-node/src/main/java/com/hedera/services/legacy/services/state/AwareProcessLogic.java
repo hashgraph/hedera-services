@@ -229,7 +229,8 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 
-		ctx.stats().transactionHandled(MiscUtils.getTxnStat(accessor.getTxn()));
+		ctx.stats().transactionHandled(MiscUtils.getTxnStat(accessor.getTxn()),
+				accessor.getTxn().getSerializedSize());
 	}
 
 	private ResponseCodeEnum assessPostConsensusValidity(PlatformTxnAccessor accessor, Instant consensusTime) {

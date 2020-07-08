@@ -127,6 +127,7 @@ public class HederaNodeStats {
 
 	private StatsRunningAverage avgAcctLookupRetryAttempts;
 	private StatsRunningAverage avgAcctRetryWaitMs;
+	private StatsRunningAverage avgHdlTxSize;
 	private StatsSpeedometer acctLookupRetriesPerSecond;
 
 	/** size of the queue from which we take records and write to RecordStream file */
@@ -267,6 +268,21 @@ public class HederaNodeStats {
 				},//
 				null,//
 				() -> avgAcctRetryWaitMs.getWeightedMean())
+		);
+
+		avgHdlTxSize = new StatsRunningAverage(DEFAULT_HALF_LIFE);
+		platform.addAppStatEntry(new StatEntry(//
+				"app",//
+				"avgHdlTxSize",//
+				"average size of the handled transaction",
+				"%,13.6f",//
+				avgHdlTxSize,//
+				(h) -> {
+					avgHdlTxSize.reset(h);
+					return avgHdlTxSize;
+				},//
+				avgHdlTxSize::reset,//
+				() -> getAvgHdlTxSize())
 		);
 
 		platform.addAppStatEntry(new StatEntry(//
@@ -416,8 +432,9 @@ public class HederaNodeStats {
 		// Can also update stats for SmartContract and/or queries
 	}
 
-	public void transactionHandled(String transactionType) {
+	public void transactionHandled(String transactionType, int transactionSize) {
 		updateCountStat(transactionType, HANDLED_SUFFIX);
+		avgHdlTxSize.recordValue(transactionSize);
 	}
 
 	public void signatureVerified(final boolean async) {
@@ -436,6 +453,10 @@ public class HederaNodeStats {
 
 	public void updateRecordStreamQueueSize(int size) {
 		recordStreamQueueSize = size;
+	}
+
+	public double getAvgHdlTxSize() {
+		return avgHdlTxSize.getWeightedMean();
 	}
 
 	/**
