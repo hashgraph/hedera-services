@@ -17,11 +17,9 @@ cpuVerifierThreadRatio, 1
 csvFileName, MainNetStats
 csvAppend, 0
 checkSignedStateFromDisk, 1
-
 freezeSettings.active,          1
 freezeSettings.startHour,     	6
 freezeSettings.startMin,   		0
 freezeSettings.endHour,    		6
 freezeSettings.endMin,     		10
-
 dbBackup.active, 0

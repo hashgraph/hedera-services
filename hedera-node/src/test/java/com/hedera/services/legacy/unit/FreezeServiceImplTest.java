@@ -76,7 +76,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.BDDMockito.*;
 
 /**
- * Working directory should be HapiApp2.0/
+ * Working directory should be hedera-node/
  */
 //@RunWith(JUnitPlatform.class)
 
