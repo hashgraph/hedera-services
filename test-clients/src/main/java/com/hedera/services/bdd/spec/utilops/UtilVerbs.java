@@ -261,7 +261,11 @@ public class UtilVerbs {
 						.message(msg.substring(position, newPosition))
 						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
 						.payingWith(payer)
-						.hasKnownStatus(SUCCESS);
+						.hasKnownStatus(SUCCESS)
+						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+						.noLogging()
+						.suppressStats(true)
+						.deferStatusResolution();
 				if (1 == currentChunk) {
 					subOp = subOp.usePresetTimestamp();
 				}
