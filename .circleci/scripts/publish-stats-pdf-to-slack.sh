@@ -31,7 +31,7 @@ cd $STATS_PARENT_DIR
 ${REPO}/.circleci/scripts/prepare-slack-message.sh "$SOURCE_DESC"
 
 # To default channel (hedera-regression)
-DEFAULT_CHANNEL="hedera-cicd"
+DEFAULT_CHANNEL="hedera-regression"
 
 PARAMS=("-c" "$DEFAULT_CHANNEL" "-a" "-t" "$SLACK_MSG_FILE")
 if [[ ! $SOURCE_DESC == *"regression"* ]]; then
