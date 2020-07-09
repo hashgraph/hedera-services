@@ -7,8 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
-public class StatsCheckTimerTask extends TimerTask {
-	public static Logger log = LogManager.getLogger(StatsCheckTimerTask.class);
+public class StatsDumpTimerTask extends TimerTask {
+	public static Logger log = LogManager.getLogger(StatsDumpTimerTask.class);
 
 	private HederaNodeStats stats;
 
@@ -18,7 +18,7 @@ public class StatsCheckTimerTask extends TimerTask {
 		stats.dumpHederaNodeStats();
 	}
 
-	public StatsCheckTimerTask(HederaNodeStats stats) {
+	public StatsDumpTimerTask(HederaNodeStats stats) {
 		this.stats = stats;
 	}
 

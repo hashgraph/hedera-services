@@ -3,16 +3,15 @@ package com.hedera.services.utils;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class TimerUtils {
-	private static StatsCheckTimerTask dumpHederaNodeStatsTask;
+	private static StatsDumpTimerTask dumpHederaNodeStatsTask;
 	private static Timer statsDumpTimer;
 
 	final private static int INITIAL_DELAY_DUMP_STATS = 30; // in seconds
 
 	public static void initStatsDumpTimers(HederaNodeStats stats) {
-		dumpHederaNodeStatsTask = new StatsCheckTimerTask(stats);
+		dumpHederaNodeStatsTask = new StatsDumpTimerTask(stats);
 		statsDumpTimer = new Timer(true);
 	}
 
