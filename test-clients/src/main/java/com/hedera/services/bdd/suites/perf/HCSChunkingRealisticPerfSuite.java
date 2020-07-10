@@ -43,8 +43,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
 	private static final Logger log = LogManager.getLogger(HCSChunkingRealisticPerfSuite.class);
-	private static final int CHUNK_SIZE = 5800;
-	private static final String LARGE_FILE = "src/main/resource/RandomLargeBinary.bin";
+	private static final int CHUNK_SIZE = 256;
+	private static final String LARGE_FILE = "src/main/resource/testfiles/1K.txt";
 	private static final String PAYER = "payer";
 	private static final String TOPIC = "topic";
 
