@@ -13,7 +13,13 @@ unamestr=`uname`
 
 NODE_ID=$1
 
-OUTPUT=output/hgcaa.log
+SERVICE_LOG4J2="log4j2-services-regression.xml"
+
+if [ -f $SERVICE_LOG4J2 ]; then
+    OUTPUT=hgcaa.log
+else
+    OUTPUT=output/hgcaa.log
+fi
 
 #
 #  Generate log message to follow log4j2 format
@@ -54,7 +60,9 @@ shell_echo $LINENO $0 "HGCApp processID=$processId"
 # detect current platform and restart java process
 if [[ "$unamestr" == 'Linux' ]]; then
     # useful set circle ci AWS environment variable
-    source ~/.bash_profile
+    if [[ -f ~/.bash_profile ]]; then
+        source ~/.bash_profile  >> $OUTPUT
+    fi
     if [[ -n "${CI_AWS}" ]]; then
         shell_echo $LINENO $0 "Running on CIRCLECI"
 
@@ -79,8 +87,14 @@ if [[ "$unamestr" == 'Linux' ]]; then
         sleep 15
 
         shell_echo $LINENO $0 "Restart HGCApp"
-        java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser
 
+        # running suite test with platform regression flow
+        if [ -f $SERVICE_LOG4J2 ]; then
+            LOG4j2XML=$SERVICE_LOG4J2
+            java -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:ConcGCThreads=14 -XX:+UseLargePages -Xmx98g -Xms10g -XX:ZMarkStackSpaceLimit=16g -XX:MaxDirectMemorySize=32g -XX:MetaspaceSize=100M  -Xlog:gc*:gc.log  -Dlog4j.configurationFile=log4j2-services-regression.xml -cp 'data/lib/*' com.swirlds.platform.Browser >>output.log 2>&1 & disown -h
+        else
+            java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser
+        fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     shell_echo $LINENO $0 "Running on macOS"
