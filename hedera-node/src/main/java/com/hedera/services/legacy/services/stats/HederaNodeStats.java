@@ -465,7 +465,6 @@ public class HederaNodeStats {
 	}
 
 	public String dumpHederaNodeStats() {
-		//log.warn("Dumping transaction stats...");
 		StringBuffer statsSB = new StringBuffer();
 		Iterator iterator = countStats.entrySet().iterator();
 		while(iterator.hasNext()) {
@@ -473,7 +472,7 @@ public class HederaNodeStats {
 			String thisStat = String.format("%s -> %s\n", statElement.getKey(), statElement.getValue().toString());
 			statsSB.append(thisStat);
 		}
-		log.warn(String.format("Current services stats: \n %s", statsSB.toString()) );
+		log.info(String.format("Current services stats: \n %s", statsSB.toString()) );
 		return statsSB.toString();
 	}
 }
