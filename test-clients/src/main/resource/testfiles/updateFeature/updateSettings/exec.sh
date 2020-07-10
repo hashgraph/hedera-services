@@ -90,6 +90,8 @@ if [[ "$unamestr" == 'Linux' ]]; then
 
         # running suite test with platform regression flow
         if [ -f $SERVICE_LOG4J2 ]; then
+            rm data/apps/HederaNode.jar
+            mv HederaNode.jar data/apps/HederaNode.jar
             LOG4j2XML=$SERVICE_LOG4J2
             java -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:ConcGCThreads=14 -XX:+UseLargePages -Xmx98g -Xms10g -XX:ZMarkStackSpaceLimit=16g -XX:MaxDirectMemorySize=32g -XX:MetaspaceSize=100M  -Xlog:gc*:gc.log  -Dlog4j.configurationFile=log4j2-services-regression.xml -cp 'data/lib/*' com.swirlds.platform.Browser >>output.log 2>&1 & disown -h
         else

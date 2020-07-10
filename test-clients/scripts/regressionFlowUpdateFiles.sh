@@ -26,7 +26,7 @@ function updateServiceMainJava
     TARGET_DIR=../test-clients/updateFiles
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
-    find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync -R {} $TARGET_DIR \;
+    find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync  {} $TARGET_DIR \;
 
 
     git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
