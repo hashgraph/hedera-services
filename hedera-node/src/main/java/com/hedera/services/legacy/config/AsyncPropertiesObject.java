@@ -93,6 +93,11 @@ public class AsyncPropertiesObject {
 	private static int nettyFlowControlWindow = ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW;
 	private static String skipExitOnStartupFailures = ApplicationConstants.NO;
 	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<String, PermissionedAccountsRange>();
+
+	// Timer properties
+	private static boolean startStatsDumpTimer = false;
+	private static int     statsDumpTimerValue = 60; // in seconds
+
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
 		port = appConfig.getInt("port", ApplicationConstants.APP_PORT);
@@ -164,6 +169,11 @@ public class AsyncPropertiesObject {
 		 addressBook = appConfig.getString("addressBook", ApplicationConstants.ADDRESS_BOOK);
 		//skipping system exit on startup validations 
 		 skipExitOnStartupFailures =  appConfig.getString("skipExitOnStartupFailures", ApplicationConstants.NO);
+
+		// properties for timers
+		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
+		statsDumpTimerValue = appConfig.getInt("statsDumpTimerValue",60);
+
 	}
 	
 	
@@ -353,5 +363,14 @@ public class AsyncPropertiesObject {
 	 static String getSkipExitOnStartupFailures() {
 	   return skipExitOnStartupFailures;
 	 }
+
+
+	static boolean getStartStatsDumpTimer() {
+		return startStatsDumpTimer;
+	}
+
+	static int getStatsDumpTimerValue() {
+		return statsDumpTimerValue;
+	}
 
 }
