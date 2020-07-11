@@ -250,6 +250,7 @@ public class SuiteRunner {
 	private static boolean checkIfSkipped(String e, ArrayList<String> effectiveArgs) {
 		boolean isSkipped =  e.startsWith("skip:");
 		if(isSkipped){
+			log.info("Skipping test suite " + e);
 			effectiveArgs.remove(e.substring(e.indexOf(":")+1));
 		}
 		return isSkipped;
