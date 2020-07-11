@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Run this script form services-hedera/HapiApp2.0/ directory to test state recover from event files
+# Run this script form hedera-services/hedera-node/ directory to test state recover from event files
 #
 #
 # Arguments list
@@ -14,8 +14,8 @@ set -eE
 
 trap ' print_banner "TEST FAILED" ' ERR 
 
-PACKAGE="com.opencrowd.HGCAppMain"
-CLIENT="mvn exec:java -Dexec.mainClass=com.opencrowd.regression.umbrella.UmbrellaTest -Dexec.cleanupDaemonThreads=false"
+PACKAGE="com.hedera.services.ServicesMain"
+CLIENT="mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest -Dexec.cleanupDaemonThreads=false"
 
 platform='unknown'
 unamestr=`uname`
@@ -86,10 +86,10 @@ function step1_original_run()
     echo "Please make sure log4j.xml append is enabled."
 
     # Change settings.txt to save state more frequently
-    sed -i -e s/'saveStatePeriod'.*/'saveStatePeriod,    20 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
 
     # save many signed state on disk so we can test of removing more signed state
-    echo "signedStateDisk,     3000" >> settings.txt
+    echo "state.signedStateDisk,     3000" >> settings.txt
 
     echo "Making sure enableStateRecovery is false"
     sed -i -e s/'enableStateRecovery'.*/'enableStateRecovery,   false '/g  settings.txt
@@ -198,7 +198,7 @@ function step3_recover()
     echo "enableStateRecovery,   true" >> settings.txt
     echo "playbackStreamFileDirectory,   data/eventStream " >> settings.txt
 
-    sed -i -e s/'saveStatePeriod'.*/'saveStatePeriod,    150 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    150 '/g  settings.txt
 
     # save event to different directory
     echo "eventsLogDir,   data/eventStreamRecover" >> settings.txt
@@ -274,7 +274,7 @@ function step4_check()
     sed -i -e s/'enableStateRecovery'.*/'enableStateRecovery,   false '/g  settings.txt
 
     #don't save new sigend state in the checking stage
-    sed -i -e s/'saveStatePeriod'.*/'saveStatePeriod,   0 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,   0 '/g  settings.txt
 
     #disable event streaming
     sed -i -e s/'enableEventStreaming'.*/'enableEventStreaming,  false'/g  settings.txt
@@ -289,7 +289,7 @@ function step5_normal_restart()
     print_banner "Running ${FUNCNAME[0]}"
 
     # Change settings.txt to save state more frequently
-    sed -i -e s/'saveStatePeriod'.*/'saveStatePeriod,    20 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
     
     # save event to different directory
     sed -i -e s/'eventsLogDir'.*/'eventsLogDir, data\/eventStreamResume'/g  settings.txt
@@ -325,7 +325,7 @@ function launch_hgc_and_client
     print_banner "Now lanching client "
 
     # meanwhile launch haiClient
-    cd ../hapiClient
+    cd ../test-clients
     eval "$CLIENT"
     
     cd -
@@ -350,7 +350,7 @@ function recover_common
 function recover_linux
 {
     state_round=$(get_last_round_number)
-    sudo -u postgres psql -f drop_database.psql
+    sudo -u postgres psql -f ../test-tools/drop_database.psql
     sudo -u postgres createdb fcfs ; sudo -u postgres pg_restore  --format=tar --dbname=fcfs data/saved/$PACKAGE/0/123/$state_round/PostgresBackup.tar ; 
 }
 
