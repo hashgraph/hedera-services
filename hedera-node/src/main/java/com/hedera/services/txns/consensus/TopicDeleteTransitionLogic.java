@@ -72,9 +72,9 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var updatedTopic = new MerkleTopic(topic);
-		updatedTopic.setDeleted(true);
-		topics.put(topicMapKey, updatedTopic);
+		var mutableTopic = topics.getForModify(topicMapKey);
+		mutableTopic.setDeleted(true);
+		topics.put(topicMapKey, mutableTopic);
 
 		transactionContext.setStatus(SUCCESS);
 	}

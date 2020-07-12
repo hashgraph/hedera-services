@@ -37,7 +37,7 @@ import java.util.function.Function;
  * @author Michael Tinker
  */
 @SuppressWarnings("unchecked")
-public enum MapValueProperty implements BeanProperty<MerkleAccount> {
+public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	IS_DELETED {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -173,12 +173,18 @@ public enum MapValueProperty implements BeanProperty<MerkleAccount> {
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return a -> a.records().copy(true);
+			return MerkleAccount::records;
+		}
+
+		@Override
+		public boolean requiresMutableRef() {
+			return true;
 		}
 	};
 
 	@Override
 	abstract public BiConsumer<MerkleAccount, Object> setter();
+
 	@Override
 	abstract public Function<MerkleAccount, Object> getter();
 }

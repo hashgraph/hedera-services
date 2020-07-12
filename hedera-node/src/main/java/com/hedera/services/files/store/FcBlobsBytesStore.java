@@ -86,17 +86,17 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 */
 	@Override
 	public byte[] put(String path, byte[] value) {
-		/* Note that if the blob at {@code path} was already updated
-		in this round, the platform will not hold a copy of the replaced
-		leaf, and this leaf will have been deleted before it is returned
-		from {@code pathedBlobs#put}. Hence we simply return {@code null}
-		here. */
-		var blob = blobFactory.apply(value);
-		log.debug("Putting {} bytes (hash = {}) @ '{}'",
-				value.length,
-				blob.getHash(),
-				path);
-		pathedBlobs.put(at(path), blob);
+		var meta = at(path);
+		if (pathedBlobs.containsKey(meta)) {
+			var blob = pathedBlobs.getForModify(meta);
+			blob.modify(value);
+			log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			pathedBlobs.put(meta, blob);
+		} else {
+			var blob = blobFactory.apply(value);
+			log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			pathedBlobs.put(at(path), blob);
+		}
 		return null;
 	}
 

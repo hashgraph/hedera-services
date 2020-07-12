@@ -28,7 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -146,8 +146,8 @@ public class SmartContractRequestHandlerPayableTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
             () -> new MerkleAccount(),
             new FCMapBackingAccounts(fcMap),
             new ChangeSummaryManager<>());

@@ -130,6 +130,19 @@ public class MerkleAccountTest {
 	}
 
 	@Test
+	public void fastCopyUsesImmutableFcqs() {
+		// when:
+		var copy = subject.copy(false);
+
+		// then:
+		verify(records).isImmutable();
+		verify(records).copy(false);
+		// and:
+		verify(payerRecords).isImmutable();
+		verify(payerRecords).copy(false);
+	}
+
+	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleAccount.NUM_V1_CHILDREN, subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
@@ -202,11 +215,11 @@ public class MerkleAccountTest {
 		// given:
 		var one = new MerkleAccount();
 		var two = new MerkleAccount(List.of(state, payerRecords, records));
-		var three = new MerkleAccount(two);
+		var three = two.copy();
 
 		// then:
-		verify(records, never()).copy(anyBoolean());
-		verify(payerRecords, never()).copy(anyBoolean());
+		verify(records).copy(false);
+		verify(payerRecords).copy(false);
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
@@ -330,7 +343,28 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void isMutable() {
+	public void isMutableOnlyIfBothFcqsAreMutable1() {
+		given(records.isImmutable()).willReturn(false);
+		given(payerRecords.isImmutable()).willReturn(true);
+
+		// expect:
+		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	public void isMutableOnlyIfBothFcqsAreMutable2() {
+		given(records.isImmutable()).willReturn(true);
+		given(payerRecords.isImmutable()).willReturn(false);
+
+		// expect:
+		assertTrue(subject.isImmutable());
+	}
+
+	@Test
+	public void isMutableOnlyIfBothFcqsAreMutable3() {
+		given(records.isImmutable()).willReturn(false);
+		given(payerRecords.isImmutable()).willReturn(false);
+
 		// expect:
 		assertFalse(subject.isImmutable());
 	}

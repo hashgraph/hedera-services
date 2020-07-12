@@ -180,7 +180,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 				for (AccountAmount actAmt : accountAmounts) {
 					acctId = actAmt.getAccountID();
 					MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(acctId);
-					MerkleAccount mapValue = new MerkleAccount(map.get(merkleEntityId));
+					MerkleAccount mapValue = map.getForModify(merkleEntityId);
 					if (log.isDebugEnabled()) {
 						log.debug(
 								"Map Value of Account ID :: " + acctId.getAccountNum() + "  is :: " + mapValue);
@@ -390,7 +390,7 @@ class AccountOperations {
 
 	static void markDeleted(AccountID target, FCMap<MerkleEntityId, MerkleAccount> ledger) {
 		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(target);
-		MerkleAccount account = new MerkleAccount(ledger.get(key));
+		MerkleAccount account = ledger.getForModify(key);
 		account.setDeleted(true);
 		ledger.replace(key, account);
 	}
@@ -428,7 +428,7 @@ class AccountOperations {
 			AccountAmount transfer, FCMap<MerkleEntityId, MerkleAccount> ledger)
 			throws NegativeAccountBalanceException {
 		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(transfer.getAccountID());
-		MerkleAccount account = new MerkleAccount(ledger.get(key));
+		MerkleAccount account = ledger.getForModify(key);
 		long adjustedBalance = Math.addExact(account.getBalance(), transfer.getAmount());
 		account.setBalance(adjustedBalance);
 		ledger.replace(key, account);

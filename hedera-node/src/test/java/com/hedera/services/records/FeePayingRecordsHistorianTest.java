@@ -68,7 +68,7 @@ import java.util.stream.IntStream;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -39,9 +39,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
@@ -82,15 +83,15 @@ public class HederaLedger {
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
 	private final ScopedDuplicateClassifier duplicateClassifier;
-	private final TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> ledger;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
-	private final Set<AccountID> balancesAdjustedDuringTxn = new HashSet<>();
+	private final Map<AccountID, Long> priorBalances = new HashMap<>();
 
 	public HederaLedger(
 			EntityIdSource ids,
 			AccountRecordsHistorian historian,
 			ScopedDuplicateClassifier duplicateClassifier,
-			TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> ledger
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger
 	) {
 		this.ids = ids;
 		this.ledger = ledger;
@@ -107,7 +108,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		ledger.rollback();
-		balancesAdjustedDuringTxn.clear();
+		priorBalances.clear();
 	}
 
 	public void commit() {
@@ -115,7 +116,7 @@ public class HederaLedger {
 		historian.addNewRecords();
 		duplicateClassifier.incorporateCommitment();
 		ledger.commit();
-		balancesAdjustedDuringTxn.clear();
+		priorBalances.clear();
 	}
 
 	public TransferList netTransfersInTxn() {
@@ -125,7 +126,7 @@ public class HederaLedger {
 		* of transfers in the list (an invalid state signature
 		* exception is sure to appear otherwise!) */
 		return TransferList.newBuilder().addAllAccountAmounts(
-			balancesAdjustedDuringTxn.stream()
+			priorBalances.keySet().stream()
 					.sorted(ACCOUNT_ID_COMPARATOR)
 					.filter(ledger::exists)
 					.map(this::netAdjustmentInTxn)
@@ -304,16 +305,14 @@ public class HederaLedger {
 	}
 
 	private void setBalance(AccountID id, long newBalance) {
+		if (!priorBalances.containsKey(id)) {
+			priorBalances.put(id, isPendingCreation(id) ? 0L : getBalance(id));
+		}
 		ledger.set(id, BALANCE, newBalance);
-		balancesAdjustedDuringTxn.add(id);
 	}
 
 	private AccountAmount netAdjustmentInTxn(AccountID id) {
-		long prevBalance = 0L;
-		try {
-			prevBalance = (long)ledger.getSaved(id, BALANCE);
-		} catch (Exception ignore) { }
-		long adjustment = getBalance(id) - prevBalance;
+		long adjustment = getBalance(id) - priorBalances.get(id);
 		return AccountAmount.newBuilder().setAccountID(id).setAmount(adjustment).build();
 	}
 
