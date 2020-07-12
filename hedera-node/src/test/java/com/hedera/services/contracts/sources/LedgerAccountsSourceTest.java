@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,7 +44,7 @@ import org.mockito.InOrder;
 
 import java.math.BigInteger;
 
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -158,7 +158,7 @@ class LedgerAccountsSourceTest {
 		// and:
 		InOrder inOrder = inOrder(ledger);
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(ledger.getBalance(target)).willReturn(oldBalance);
 		given(ledger.exists(target)).willReturn(true);
@@ -192,7 +192,7 @@ class LedgerAccountsSourceTest {
 		evmState.setBalance(BigInteger.valueOf(newBalance));
 		// and:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn(sendThreshold);
 		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn(receiveThreshold);
@@ -237,7 +237,7 @@ class LedgerAccountsSourceTest {
 		evmState.setReceiverThreshold(receiveThreshold);
 		// and:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
 		given(ledger.exists(target)).willReturn(false);
 

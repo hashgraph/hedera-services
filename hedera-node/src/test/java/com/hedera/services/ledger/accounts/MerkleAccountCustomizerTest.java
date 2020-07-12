@@ -20,8 +20,7 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -37,11 +36,11 @@ public class MerkleAccountCustomizerTest {
 	@Test
 	public void hasExpectedOptionProps() {
 		// given:
-		Map<Option, MapValueProperty> optionProperties = subject.getOptionProperties();
+		Map<Option, AccountProperty> optionProperties = subject.getOptionProperties();
 
 		// expect:
 		Arrays.stream(Option.class.getEnumConstants()).forEach(
-				option -> assertEquals(MapValueProperty.valueOf(option.toString()), optionProperties.get(option))
+				option -> assertEquals(AccountProperty.valueOf(option.toString()), optionProperties.get(option))
 		);
 	}
 }

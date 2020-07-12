@@ -40,7 +40,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.legacy.util.MockStorageWrapper;
@@ -204,8 +204,8 @@ public class SmartContractServiceImplTest {
     MerkleEntityId solMerkleEntityId = new MerkleEntityId(0l, 0l, 9999l);
 
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
             () -> new MerkleAccount(),
             new FCMapBackingAccounts(accountFCMap),
             new ChangeSummaryManager<>());

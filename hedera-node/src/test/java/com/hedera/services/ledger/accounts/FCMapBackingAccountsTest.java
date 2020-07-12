@@ -80,32 +80,25 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
+	public void returnsMutableRef() {
+		given(map.getForModify(aKey)).willReturn(aValue);
+
+		// when:
+		MerkleAccount v = subject.getMutableRef(a);
+
+		// then:
+		assertSame(aValue, v);
+	}
+
+	@Test
 	public void returnsRef() {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// when:
-		MerkleAccount v = subject.getRef(a);
+		MerkleAccount v = subject.getUnsafeRef(a);
 
 		// then:
-		assertTrue(aValue == v);
-	}
-
-	@Test
-	public void returnsCopy() {
-		given(map.get(aKey)).willReturn(aValue);
-
-		// when:
-		MerkleAccount v = subject.getCopy(a);
-
-		// then:
-		assertFalse(aValue == v);
-		assertEquals(aValue, v);
-	}
-
-	@Test
-	public void returnsNullOnMissingCopy() {
-		// expect:
-		assertNull(subject.getCopy(a));
+		assertSame(aValue, v);
 	}
 
 	@Test

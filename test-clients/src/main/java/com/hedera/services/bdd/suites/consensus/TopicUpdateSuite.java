@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,17 +52,20 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				validateMultipleFields(),
-				topicUpdateSigReqsEnforcedAtConsensus(),
-				updateSubmitKeyToDiffKey(),
-				updateAdminKeyToDiffKey(),
-				updateAdminKeyToEmpty(),
-				updateMultipleFields(),
-				expirationTimestampIsValidated(),
-				updateExpiryOnTopicWithNoAdminKey(),
-				clearingAdminKeyWhenAutoRenewAccountPresent(),
-				updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-				feeAsExpected());
+				new HapiApiSpec[] {
+						validateMultipleFields(),
+						topicUpdateSigReqsEnforcedAtConsensus(),
+						updateSubmitKeyToDiffKey(),
+						updateAdminKeyToDiffKey(),
+						updateAdminKeyToEmpty(),
+						updateMultipleFields(),
+						expirationTimestampIsValidated(),
+						updateExpiryOnTopicWithNoAdminKey(),
+						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
+						feeAsExpected(),
+						clearingAdminKeyWhenAutoRenewAccountPresent(),
+				}
+		);
 	}
 
 	private HapiApiSpec validateMultipleFields() {
@@ -113,15 +116,16 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.adminKeyName("oldAdminKey")
 								.autoRenewAccountId("oldAutoRenewAccount")
 				).when(
-						updateTopicSignedBy.apply(new String[]{"payer", "oldAdminKey"})
+						updateTopicSignedBy.apply(new String[] { "payer", "oldAdminKey" })
 								.hasKnownStatus(INVALID_SIGNATURE),
-						updateTopicSignedBy.apply(new String[]{"payer", "oldAdminKey", "newAdminKey"})
+						updateTopicSignedBy.apply(new String[] { "payer", "oldAdminKey", "newAdminKey" })
 								.hasKnownStatus(INVALID_SIGNATURE),
-						updateTopicSignedBy.apply(new String[]{"payer", "oldAdminKey", "newAutoRenewAccount"})
+						updateTopicSignedBy.apply(new String[] { "payer", "oldAdminKey", "newAutoRenewAccount" })
 								.hasKnownStatus(INVALID_SIGNATURE),
-						updateTopicSignedBy.apply(new String[]{"payer", "newAdminKey", "newAutoRenewAccount"})
+						updateTopicSignedBy.apply(new String[] { "payer", "newAdminKey", "newAutoRenewAccount" })
 								.hasKnownStatus(INVALID_SIGNATURE),
-						updateTopicSignedBy.apply(new String[]{"payer", "oldAdminKey", "newAdminKey", "newAutoRenewAccount"})
+						updateTopicSignedBy.apply(
+								new String[] { "payer", "oldAdminKey", "newAdminKey", "newAutoRenewAccount" })
 								.hasKnownStatus(SUCCESS)
 				).then(
 						getTopicInfo("testTopic")
@@ -193,7 +197,8 @@ public class TopicUpdateSuite extends HapiApiSuite {
 
 	private HapiApiSpec updateMultipleFields() {
 		long updateAutoRenewPeriod = 1200L;
-		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew.secs=7000000
+		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
+		// .secs=7000000
 		return defaultHapiSpec("updateMultipleFields")
 				.given(
 						newKeyNamed("adminKey"),
@@ -215,7 +220,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.submitKey("submitKey")
 								.adminKey("adminKey2")
 								.expiry(expirationTimestamp)
-								.autoRenewPeriod(updateAutoRenewPeriod*2)
+								.autoRenewPeriod(updateAutoRenewPeriod * 2)
 								.autoRenewAccountId("nextAutoRenewAccount")
 								.hasKnownStatus(SUCCESS)
 				)
@@ -225,7 +230,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.hasSubmitKey("submitKey")
 								.hasAdminKey("adminKey2")
 								.hasExpiry(expirationTimestamp)
-								.hasAutoRenewPeriod(updateAutoRenewPeriod*2)
+								.hasAutoRenewPeriod(updateAutoRenewPeriod * 2)
 								.hasAutoRenewAccount("nextAutoRenewAccount")
 								.logged()
 				);
@@ -252,7 +257,8 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	/* If admin key is not set, only expiration timestamp updates are allowed */
 	private HapiApiSpec updateExpiryOnTopicWithNoAdminKey() {
 		// some time in future, otherwise update operation will fail
-		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew.secs=7000000
+		long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
+		// .secs=7000000
 		return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
 				.given(
 						createTopic("testTopic")
@@ -324,7 +330,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 								.via("updateTopic")
 				)
 				.then(
-				        validateFee("updateTopic", 0.0004)
+						validateFee("updateTopic", 0.0004)
 				);
 	}
 

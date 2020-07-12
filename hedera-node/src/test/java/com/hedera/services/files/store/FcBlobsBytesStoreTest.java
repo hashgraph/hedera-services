@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -56,41 +58,6 @@ class FcBlobsBytesStoreTest {
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs;
 
 	FcBlobsBytesStore subject;
-
-	@Test
-	public void putDeletesReplacedValueIfNoCopyIsHeld() {
-		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-
-		// given:
-		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
-
-		// when:
-		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
-
-		// then:
-		assertTrue(replaced.getDelegate().isDeleted());
-	}
-
-	@Test
-	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
-		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-
-		// given:
-		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
-
-		// when:
-		var copy = blobs.copy();
-		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
-
-		// then:
-		assertFalse(replaced.getDelegate().isDeleted());
-	}
-
-	private MerkleBlobMeta at(String key) {
-		return new MerkleBlobMeta(key);
-	}
 
 	@BeforeEach
 	private void setup() {
@@ -137,18 +104,46 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	public void delegatesPut() {
+	public void delegatesPutUsingGetForModifyIfExtantBlob() {
 		// setup:
 		ArgumentCaptor<MerkleBlobMeta> keyCaptor = ArgumentCaptor.forClass(MerkleBlobMeta.class);
 		ArgumentCaptor<MerkleOptionalBlob> valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
+
+		given(pathedBlobs.containsKey(pathA)).willReturn(true);
+		given(pathedBlobs.getForModify(pathA)).willReturn(blobA);
+
 		// when:
 		var oldBytes = subject.put(pathA.getPath(), blobA.getData());
 
 		// then:
+		verify(pathedBlobs).containsKey(pathA);
+		verify(pathedBlobs).getForModify(pathA);
+		verify(blobA).modify(argThat((byte[] bytes) -> Arrays.equals(bytes, blobA.getData())));
+		// and:
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 		// and:
 		assertEquals(pathA, keyCaptor.getValue());
-		assertTrue(blobA == valueCaptor.getValue());
+		assertSame(blobA, valueCaptor.getValue());
+		assertNull(oldBytes);
+	}
+
+	@Test
+	public void delegatesPutUsingGetAndFactoryIfNewBlob() {
+		// setup:
+		ArgumentCaptor<MerkleBlobMeta> keyCaptor = ArgumentCaptor.forClass(MerkleBlobMeta.class);
+		ArgumentCaptor<MerkleOptionalBlob> valueCaptor = ArgumentCaptor.forClass(MerkleOptionalBlob.class);
+
+		given(pathedBlobs.containsKey(pathA)).willReturn(false);
+
+		// when:
+		var oldBytes = subject.put(pathA.getPath(), blobA.getData());
+
+		// then:
+		verify(pathedBlobs).containsKey(pathA);
+		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
+		// and:
+		assertEquals(pathA, keyCaptor.getValue());
+		assertSame(blobA, valueCaptor.getValue());
 		assertNull(oldBytes);
 	}
 
@@ -236,5 +231,40 @@ class FcBlobsBytesStoreTest {
 
 		given(blobA.getData()).willReturn(aData);
 		given(blobB.getData()).willReturn(bData);
+	}
+
+	@Test
+	public void putDeletesReplacedValueIfNoCopyIsHeld() {
+		// setup:
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+
+		// given:
+		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
+
+		// when:
+		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
+
+		// then:
+		assertTrue(replaced.getDelegate().isDeleted());
+	}
+
+	@Test
+	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
+		// setup:
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+
+		// given:
+		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
+
+		// when:
+		var copy = blobs.copy();
+		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
+
+		// then:
+		assertFalse(replaced.getDelegate().isDeleted());
+	}
+
+	private MerkleBlobMeta at(String key) {
+		return new MerkleBlobMeta(key);
 	}
 }

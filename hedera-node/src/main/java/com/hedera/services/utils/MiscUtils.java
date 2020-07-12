@@ -148,9 +148,17 @@ public class MiscUtils {
 		}
 	}
 
-	public static Key asKeyUnchecked(JKey jKey) {
+	public static JKey asFcKeyUnchecked(Key key) {
 		try {
-			return mapJKey(jKey);
+			return JKey.mapKey(key);
+		} catch (Exception impossible) {
+			throw new IllegalArgumentException("Key " + key + " should have been decodable!", impossible);
+		}
+	}
+
+	public static Key asKeyUnchecked(JKey fcKey) {
+		try {
+			return mapJKey(fcKey);
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}

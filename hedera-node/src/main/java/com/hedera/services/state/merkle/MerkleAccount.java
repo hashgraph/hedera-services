@@ -26,6 +26,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -76,21 +77,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 				new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER)));
 	}
 
-	public MerkleAccount(MerkleAccount that, boolean fastCopy) {
-		this(List.of(
-				that.state().copy(),
-				fastCopy
-						? (that.records().isImmutable() ? that.records() : that.records().copy(false))
-						: that.records(),
-				fastCopy
-						? (that.payerRecords().isImmutable() ? that.payerRecords() : that.payerRecords().copy(false))
-						: that.payerRecords()));
-	}
-
-	public MerkleAccount(MerkleAccount that) {
-		this(that, false);
-	}
-
 	/* --- MerkleInternal --- */
 
 	@Override
@@ -112,12 +98,23 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	@Override
 	public boolean isImmutable() {
-		return false;
+		return records().isImmutable() || payerRecords().isImmutable();
+	}
+
+	@Override
+	public FCMElement copy(boolean shouldBeMutable) {
+		var records = records();
+		var payerRecords = payerRecords();
+
+		return new MerkleAccount(List.of(
+				state().copy(),
+				records.isImmutable() ? records : records.copy(shouldBeMutable),
+				payerRecords.isImmutable() ? payerRecords : payerRecords.copy(shouldBeMutable)));
 	}
 
 	@Override
 	public MerkleAccount copy() {
-		return new MerkleAccount(this, true);
+		return (MerkleAccount)copy(false);
 	}
 
 	@Override

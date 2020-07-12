@@ -94,7 +94,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.queries.answering.ServiceAnswerFlow;
 import com.hedera.services.queries.consensus.GetTopicInfoAnswer;
@@ -814,8 +814,8 @@ public class ServicesContext {
 
 	public HederaLedger ledger() {
 		if (ledger == null) {
-			TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-					MapValueProperty.class,
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+					AccountProperty.class,
 					MerkleAccount::new,
 					new FCMapBackingAccounts(accounts()),
 					new ChangeSummaryManager<>()
@@ -1049,8 +1049,8 @@ public class ServicesContext {
 
 	public Supplier<ServicesRepositoryRoot> newPureRepo() {
 		if (newPureRepo == null) {
-			TransactionalLedger<AccountID, MapValueProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
-					MapValueProperty.class,
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
+					AccountProperty.class,
 					MerkleAccount::new,
 					new FCMapBackingAccounts(accounts()),
 					new ChangeSummaryManager<>());

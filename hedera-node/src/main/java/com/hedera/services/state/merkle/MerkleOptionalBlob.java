@@ -95,6 +95,14 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 		}
 	}
 
+	public void modify(byte[] newContents) {
+		var newDelegate = blobStoreSupplier.get().put(newContents);
+		if (delegate != MISSING_DELEGATE) {
+			delegate.delete();
+		}
+		delegate = newDelegate;
+	}
+
 	/* --- MerkleExternalLeaf --- */
 	@Override
 	public long getClassId() {
