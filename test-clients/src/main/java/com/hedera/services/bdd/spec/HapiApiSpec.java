@@ -34,12 +34,14 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +101,8 @@ public class HapiApiSpec implements Runnable {
 	CompletableFuture<Void> finalizingFuture;
 	AtomicReference<Optional<Throwable>> finishingError = new AtomicReference<>(Optional.empty());
 	BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
+	EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+	EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 
 	public void adhocIncrement() {
 		adhoc.getAndIncrement();
@@ -120,6 +124,20 @@ public class HapiApiSpec implements Runnable {
 	public void incrementNumLedgerOps() {
 		int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
 		ledgerOpCountCallbacks.stream().forEach(c -> c.accept(newNumLedgerOps));
+	}
+	public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
+		precheckStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
+	}
+	public void updateResolvedCounts(ResponseCodeEnum finalStatus) {
+		finalizedStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
+	}
+
+	public EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts() {
+		return finalizedStatusCounts;
+	}
+
+	public EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts() {
+		return precheckStatusCounts;
 	}
 
 	public String getName() {

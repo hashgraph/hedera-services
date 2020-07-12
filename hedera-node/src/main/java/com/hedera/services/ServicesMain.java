@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
+import com.hedera.services.utils.TimerUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
@@ -181,6 +182,7 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record stream started.");
 		startNettyIfAppropriate();
 		log.info("Netty started.");
+		startTimerTasksIfNeeded();
 		createSystemAccountsIfNeeded();
 		log.info("System accounts rationalized.");
 		createSystemFilesIfNeeded();
@@ -397,6 +399,14 @@ public class ServicesMain implements SwirldMain {
 			this.storageHash = storageHash;
 			this.accountsHash = accountsHash;
 			this.topicsHash = topicsHash;
+		}
+	}
+
+	public void startTimerTasksIfNeeded() {
+		if (ctx.properties().getBooleanProperty("timer.stats.dump.started")) {
+			TimerUtils.initStatsDumpTimers(ctx.stats());
+			TimerUtils.startStatsDumpTimer(ctx.properties().getIntProperty("timer.stats.dump.value"));
+			log.info("Stats Dump Timer Task started.");
 		}
 	}
 }

@@ -29,6 +29,7 @@ import com.swirlds.platform.StatsSpeedometer;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -461,5 +462,17 @@ public class HederaNodeStats {
 		} else {
 			return stat.getCyclesPerSecond();
 		}
+	}
+
+	public String dumpHederaNodeStats() {
+		StringBuffer statsSB = new StringBuffer();
+		Iterator iterator = countStats.entrySet().iterator();
+		while(iterator.hasNext()) {
+			Map.Entry statElement = (Map.Entry)iterator.next();
+			String thisStat = String.format("%s -> %s\n", statElement.getKey(), statElement.getValue().toString());
+			statsSB.append(thisStat);
+		}
+		log.info(String.format("Current services stats: \n %s", statsSB.toString()) );
+		return statsSB.toString();
 	}
 }

@@ -18,7 +18,7 @@ class TestJobResult:
         return self.status == 'Passed'
 
 
-
+workflow = ''
 workflow_conf = 'nightly-regression-config.json'
 summary_report = 'nightly-regression-report.txt'
 
@@ -146,7 +146,7 @@ def report_regression_status(overall_status):
     print("Test report file: {}".format(full_report_path))
     with open(full_report_path, 'w+') as f:
         f.writelines(
-            '```================== THIS REGRESSION TEST REPORT ===================\n')
+            f'```================== {workflow} TEST REPORT ===================\n')
 
         f.writelines(' Overall Status: {}\n'.format(overall_status))
         f.writelines(

@@ -1013,7 +1013,7 @@ workflows:
 
   nightly-regression:
     triggers:
-        - schedule:
+      - schedule:
             cron: "0 5,9,13 * * *"
             filters:
               branches:
@@ -1084,8 +1084,8 @@ workflows:
           requires:
             - regression-target-testnet
       - long-umbrella:
-          requires:
-            - regression-target-testnet
+           requires:
+             - regression-target-testnet
       - regression-validate-freeze:
           requires:
             - long-contract_txns6-0
@@ -1108,20 +1108,19 @@ workflows:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
 
-      # - validate-server-stat-1:
-      #     requires:
-      #       - regression-validate-freeze
+#       - validate-server-stat-1:
+#           requires:
+#             - regression-validate-freeze
 
       - short-contract_txns6-0:
           requires:
             - regression-validate-freeze
-
       - short-crypto_txns300-0:
           requires:
             - regression-validate-freeze
       - short-crypto_txns300-1:
           requires:
-            - regression-validate-freeze              
+            - regression-validate-freeze
       - short-crypto_txns300-2:
           requires:
             - regression-validate-freeze
@@ -1182,7 +1181,7 @@ workflows:
             - short-crypto_txns300-12
             - short-file_ops-0
             - short-consensus_ops-0
-
+#
 #      - validate-server-stat-2:
 #          requires:
 #            - regression-run-accessory-tests
@@ -1283,9 +1282,19 @@ workflows:
             - build-artifact
           workflow-name: "Continuous integration"
           infra-branch: services-with-platform070
-      - run-consensus-and-crypto-scenarios:
+      - run-file-scenarios:
           requires:
             - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-consensus-and-crypto-scenarios:
+          requires:
+            - run-file-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1294,7 +1303,7 @@ workflows:
           post-steps:
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
-      - run-file-scenarios:
+      - run-smart-contract-scenarios:
           requires:
             - run-consensus-and-crypto-scenarios
           pre-steps:
@@ -1302,19 +1311,9 @@ workflows:
                 at: /
             - ensure-testnet-for-reruns
           post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
-                status: Passed
+                status: Passed            
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
@@ -2129,8 +2128,8 @@ jobs:
           name:  Reset client log
           command: |
             cat /dev/null > /repo/test-clients/output/hapi-client.log
-      - accessory-test-common-steps
-      - validate-record-streams
+#     - accessory-test-common-steps
+#      - validate-record-streams
       - save-this-job-client-logs:
           workflow-name: "nightly-regression"
       - publish-platform-stats:

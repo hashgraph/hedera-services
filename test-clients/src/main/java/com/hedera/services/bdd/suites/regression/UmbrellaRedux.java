@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.regression;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +37,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 
 public class UmbrellaRedux extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
@@ -68,7 +73,16 @@ public class UmbrellaRedux extends HapiApiSuite {
 		return HapiApiSpec.customHapiSpec("UmbrellaRedux")
 				.withProperties(Map.of(
 						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
-				.given().when().then(
+				.given(
+						cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+								.withRecharging()
+								.via("createUniquePayer"),
+						UtilVerbs.sleepFor(10000)
+
+				).when(
+						getTxnRecord("createUniquePayer").logged()
+				).then(
 						withOpContext((spec, opLog) -> configureFromCi(spec)),
 						runWithProvider(factoryFrom(props::get))
 								.lasting(duration::get, unit::get)

@@ -32,7 +32,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -42,11 +44,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static java.util.stream.Collectors.toList;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.*;
+import static java.util.stream.Collectors.toSet;
 
 public class RandomTransfer implements OpProvider {
 	private static final Logger log = LogManager.getLogger(RandomTransfer.class);
 
 	private static final int NUM_INVOLVED_PARTIES = 2;
+	public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 500;
 	public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
@@ -54,12 +58,18 @@ public class RandomTransfer implements OpProvider {
 			INSUFFICIENT_ACCOUNT_BALANCE
 	);
 
-	private double recordProb = DEFAULT_RECORD_PROBABILITY;
+	private int numStableAccounts = DEFAULT_NUM_STABLE_ACCOUNTS;
+	public double recordProb = DEFAULT_RECORD_PROBABILITY;
 	private final SplittableRandom r = new SplittableRandom();
 	private final EntityNameProvider<AccountID> accounts;
 
 	public RandomTransfer(EntityNameProvider<AccountID> accounts) {
 		this.accounts = accounts;
+	}
+
+	public RandomTransfer numStableAccounts(int n) {
+		numStableAccounts = n;
+		return this;
 	}
 
 	public RandomTransfer recordProbability(double p) {
@@ -71,12 +81,16 @@ public class RandomTransfer implements OpProvider {
 		return unique(opName, RandomTransfer.class);
 	}
 
+	public static Set<String> stableAccounts(int n) {
+		return IntStream.range(0, n)
+				.mapToObj(i -> String.format("stable-account%d", i)).collect(toSet());
+	}
+
 	@Override
 	public List<HapiSpecOperation> suggestedInitializers() {
-		return IntStream
-						.range(0, NUM_INVOLVED_PARTIES)
-						.mapToObj(i ->
-								cryptoCreate(my("party" + i)).noLogging().balance(INITIAL_BALANCE))
+		return stableAccounts(numStableAccounts).stream()
+						.map(account ->
+								cryptoCreate(my(account)).noLogging().balance(INITIAL_BALANCE).deferStatusResolution())
 						.collect(toList());
 	}
 

@@ -250,6 +250,9 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("throttling.hcs.getTopicInfo.tps", PropertiesLoader::getGetTopicInfoTps);
 		source.put("throttling.hcs.getTopicInfo.burstPeriod", PropertiesLoader::getGetTopicInfoBurstPeriod);
 
+		source.put("timer.stats.dump.started", PropertiesLoader::getStartStatsDumpTimer);
+		source.put("timer.stats.dump.value", PropertiesLoader::getStatsDumpTimerValue);
+
 		return source;
 	}
 }

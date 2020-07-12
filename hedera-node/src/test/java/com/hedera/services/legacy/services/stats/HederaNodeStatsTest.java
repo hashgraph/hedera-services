@@ -26,15 +26,19 @@ import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import org.apache.logging.log4j.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+@RunWith(JUnitPlatform.class)
 public class HederaNodeStatsTest {
 
 	@Mock
@@ -265,4 +269,11 @@ public class HederaNodeStatsTest {
 		assertTrue(stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX) > 0.0);
 	}
+
+
+	@Test
+	public void dumpHederaNodeStatsShouldNotBeEmptyTest() throws Exception {
+		assertNotNull(stats.dumpHederaNodeStats());
+	}
+
 }

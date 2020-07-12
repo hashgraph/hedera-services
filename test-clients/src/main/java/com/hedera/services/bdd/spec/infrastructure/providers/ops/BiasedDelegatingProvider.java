@@ -92,9 +92,13 @@ public class BiasedDelegatingProvider implements OpProvider {
 		if (delegates.isEmpty()) {
 			return Optional.empty();
 		} else {
-			Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
-			op.ifPresent(this::configureDefaults);
-			return op;
+			while (true) {
+				Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
+				if(op.isPresent()) {
+					op.ifPresent(this::configureDefaults);
+					return op;
+				}
+			}
 		}
 
 	}
@@ -115,10 +119,13 @@ public class BiasedDelegatingProvider implements OpProvider {
 			((HapiTxnOp)op).deferStatusResolution();
 		}
 		if (!shouldLogNormalFlow) {
+//			log.info(String.format("configs: shouldAlwaysDefer = %b, shouldLogNormalFlow = %b", shouldAlwaysDefer, shouldLogNormalFlow));
+
 			if (isTxnOp) {
-				((HapiTxnOp)op).noLogging();
+				((HapiTxnOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
+
 			} else {
-				((HapiQueryOp)op).noLogging();
+				((HapiQueryOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT);
 			}
 		}
 	}
