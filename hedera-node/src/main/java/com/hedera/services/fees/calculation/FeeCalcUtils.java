@@ -54,8 +54,8 @@ public class FeeCalcUtils {
 			MerkleAccount account = accounts.get(key);
 			long expiration = account.getExpiry();
 			return Timestamp.newBuilder().setSeconds(expiration).build();
-		} catch (Exception e) {
-			log.debug("Ignoring expiry in fee calculation for {}", key, e);
+		} catch (Exception ignore) {
+			log.debug("Ignoring expiry in fee calculation for {}", key);
 			return ZERO_EXPIRY;
 		}
 	}

@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.consensus.queries;
 
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.test.utils.JAccountIDConverter;
+import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -91,7 +91,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 			String memo,
 			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
 			@ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
-			@ConvertWith(JAccountIDConverter.class) EntityId autoRenewAccountId,
+			@ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
 			int expectedBpt,  // query header + topic id size
 			int expectedBpr  // query response header + topic id size + topic info size
 	) {

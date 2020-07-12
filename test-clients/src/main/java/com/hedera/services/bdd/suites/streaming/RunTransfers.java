@@ -49,12 +49,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class RunTransfers extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RunTransfers.class);
 
-	private AtomicLong duration = new AtomicLong(600);
+	private AtomicLong duration = new AtomicLong(900);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
-	private final int TOTAL_ACCOUNTS = 1000;
-	private final int ACCOUNTS_IN_TRANSFER_ROTATION = 10;
+	private final int TOTAL_ACCOUNTS = 10_000;
+	private final int ACCOUNTS_IN_TRANSFER_ROTATION = 5;
 
 	public static void main(String... args) {
 		new RunTransfers().runSuiteSync();

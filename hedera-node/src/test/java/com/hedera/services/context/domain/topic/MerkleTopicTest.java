@@ -23,9 +23,9 @@ package com.hedera.services.context.domain.topic;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.test.utils.ByteArrayConverter;
 import com.hedera.test.utils.InstantConverter;
-import com.hedera.test.utils.JAccountIDConverter;
+import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
-import com.hedera.test.utils.JTimestampConverter;
+import com.hedera.test.utils.RichInstantConverter;
 import com.hedera.test.utils.TopicIDConverter;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.submerkle.EntityId;
@@ -84,8 +84,8 @@ public class MerkleTopicTest {
 												 	  @ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
 												  	  @ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
 												  	  long autoRenewDurationSeconds,
-												  	  @ConvertWith(JAccountIDConverter.class) EntityId autoRenewAccountId,
-												  	  @ConvertWith(JTimestampConverter.class) RichInstant expirationTimestamp
+												  	  @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
+												  	  @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp
 	) throws Exception {
 		// given:
 		var topic = new MerkleTopic(memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId,
@@ -181,8 +181,8 @@ public class MerkleTopicTest {
 	public void equalsViaCopy(String memo, @ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
 							  @ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
 							  long autoRenewDurationSeconds,
-							  @ConvertWith(JAccountIDConverter.class) EntityId autoRenewAccountId,
-							  @ConvertWith(JTimestampConverter.class) RichInstant expirationTimestamp) {
+							  @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
+							  @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp) {
 		// given:
 		var topic = new MerkleTopic(memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId,
 				expirationTimestamp);
@@ -207,15 +207,15 @@ public class MerkleTopicTest {
 	public void notEquals(String aMemo, @ConvertWith(JEd25519KeyConverter.class) JEd25519Key aAdminKey,
 					      @ConvertWith(JEd25519KeyConverter.class) JEd25519Key aSubmitKey,
 					      long aAutoRenewDurationSeconds,
-						  @ConvertWith(JAccountIDConverter.class) EntityId aAutoRenewAccountId,
-						  @ConvertWith(JTimestampConverter.class) RichInstant aExpirationTimestamp,
+						  @ConvertWith(EntityIdConverter.class) EntityId aAutoRenewAccountId,
+						  @ConvertWith(RichInstantConverter.class) RichInstant aExpirationTimestamp,
 					      boolean aDeleted, long aSequenceNumber,
 					      @ConvertWith(ByteArrayConverter.class) byte[] aRunningHash,
 					      String bMemo, @ConvertWith(JEd25519KeyConverter.class) JEd25519Key bAdminKey,
 					      @ConvertWith(JEd25519KeyConverter.class) JEd25519Key bSubmitKey,
 					      long bAutoRenewDurationSeconds,
-					      @ConvertWith(JAccountIDConverter.class) EntityId bAutoRenewAccountId,
-					      @ConvertWith(JTimestampConverter.class) RichInstant bExpirationTimestamp,
+					      @ConvertWith(EntityIdConverter.class) EntityId bAutoRenewAccountId,
+					      @ConvertWith(RichInstantConverter.class) RichInstant bExpirationTimestamp,
 					      boolean bDeleted, long bSequenceNumber,
 					      @ConvertWith(ByteArrayConverter.class) byte[] bRunningHash) {
 		// given:
@@ -248,8 +248,8 @@ public class MerkleTopicTest {
 	public void hashCodeIsSafe(String memo, @ConvertWith(JEd25519KeyConverter.class) JEd25519Key adminKey,
 							   @ConvertWith(JEd25519KeyConverter.class) JEd25519Key submitKey,
 							   long autoRenewDurationSeconds,
-							   @ConvertWith(JAccountIDConverter.class) EntityId autoRenewAccountId,
-							   @ConvertWith(JTimestampConverter.class) RichInstant expirationTimestamp) {
+							   @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
+							   @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp) {
 		// expect:
 		assertDoesNotThrow(() -> new MerkleTopic(memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId,
 				expirationTimestamp).hashCode());

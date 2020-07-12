@@ -335,6 +335,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	}
 
 	@Override
+	@Deprecated
 	public void copyToExtra(SerializableDataOutputStream out) {
 		throw new UnsupportedOperationException();
 	}

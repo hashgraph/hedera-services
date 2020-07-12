@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-public final class JAccountIDConverter implements ArgumentConverter {
+public final class EntityIdConverter implements ArgumentConverter {
 	@Override
 	public Object convert(Object input, ParameterContext parameterContext)
 			throws ArgumentConversionException {

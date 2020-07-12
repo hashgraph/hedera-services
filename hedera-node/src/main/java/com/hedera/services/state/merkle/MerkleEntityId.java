@@ -31,6 +31,8 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -117,12 +119,20 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 		}
 
 		var that = (MerkleEntityId)o;
-		return shard == that.shard && realm == that.realm && num == that.num;
+		return new EqualsBuilder()
+				.append(shard, that.shard)
+				.append(realm, that.realm)
+				.append(num, that.num)
+				.isEquals();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(shard, realm, num);
+		return new HashCodeBuilder(17, 37)
+				.append(shard)
+				.append(realm)
+				.append(num)
+				.toHashCode();
 	}
 
 	/* --- FastCopyable --- */

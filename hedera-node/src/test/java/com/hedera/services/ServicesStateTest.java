@@ -228,15 +228,19 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void deletesCascadeToStorage() {
+	public void deleteCascadesToAllFcms() {
 		// setup:
 		subject.setChild(ServicesState.STORAGE_CHILD_INDEX, storage);
+		subject.setChild(ServicesState.TOPICS_CHILD_INDEX, topics);
+		subject.setChild(ServicesState.ACCOUNTS_CHILD_INDEX, accounts);
 
 		// when:
 		subject.delete();
 
 		// then:
 		verify(storage).delete();
+		verify(accounts).delete();
+		verify(topics).delete();
 	}
 
 	@Test

@@ -29,7 +29,7 @@ import org.junit.jupiter.params.converter.ArgumentConverter;
 /**
  * Converts string to JTimestamp. Format of string is "seconds_nanos".
  */
-public final class JTimestampConverter implements ArgumentConverter {
+public final class RichInstantConverter implements ArgumentConverter {
 	@Override
 	public Object convert(Object input, ParameterContext parameterContext)
 			throws ArgumentConversionException {

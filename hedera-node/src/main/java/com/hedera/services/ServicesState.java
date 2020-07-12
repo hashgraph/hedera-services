@@ -193,6 +193,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	@Override
 	public synchronized void delete() {
 		storage().delete();
+		accounts().delete();
+		topics().delete();
 	}
 
 	@Override

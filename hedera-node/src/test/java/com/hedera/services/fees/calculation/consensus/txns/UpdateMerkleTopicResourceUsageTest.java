@@ -97,11 +97,11 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             @ConvertWith(Ed25519KeyConverter.class) Key newAdminKey,
             @ConvertWith(JEd25519KeyConverter.class) JEd25519Key oldSubmitKey,
             @ConvertWith(Ed25519KeyConverter.class) Key newSubmitKey,
-            @ConvertWith(JAccountIDConverter.class) EntityId oldAutoRenewAccountId,
+            @ConvertWith(EntityIdConverter.class) EntityId oldAutoRenewAccountId,
             @ConvertWith(AccountIDConverter.class) AccountID newAutoRenewAccountId,
             @ConvertWith(DurationConverter.class) Duration newAutoRenewPeriod,
-            @ConvertWith(JTimestampConverter.class) RichInstant oldExpirationTimestamp,
-            @ConvertWith(JTimestampConverter.class) RichInstant newExpirationTimestamp,
+            @ConvertWith(RichInstantConverter.class) RichInstant oldExpirationTimestamp,
+            @ConvertWith(RichInstantConverter.class) RichInstant newExpirationTimestamp,
             int expectedExtraBpt,
             int expectedExtraServicesRbh
     ) throws Exception {
