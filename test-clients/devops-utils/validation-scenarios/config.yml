@@ -70,14 +70,14 @@ networks:
     ensureScenarioPayerHbars: 300
     nodes:
     - {account: 3, ipv4Addr: 127.0.0.1}
-    scenarioPayer: 1003
+    scenarioPayer: 1001
     scenarios:
-      consensus: {persistent: 1009}
+      consensus: {persistent: 1007}
       contract:
-        persistent: {bytecode: 1007, luckyNo: 42, num: 1008, source: Multipurpose.sol}
-      crypto: {receiver: 1005, sender: 1004}
+        persistent: {bytecode: 1005, luckyNo: 42, num: 1006, source: Multipurpose.sol}
+      crypto: {receiver: 1003, sender: 1002}
       file:
-        persistent: {contents: MrBleaney.txt, num: 1006}
+        persistent: {contents: MrBleaney.txt, num: 1004}
   staging:
     bootstrap: 2
     ensureScenarioPayerHbars: 25

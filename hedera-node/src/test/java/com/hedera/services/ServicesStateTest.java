@@ -157,7 +157,7 @@ class ServicesStateTest {
 	public void getsNodeAccount() {
 		// setup:
 		subject.nodeId = self;
-		subject.setChild(ServicesState.ADDRESS_BOOK_CHILD_INDEX, book);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 
 		// when:
 		AccountID actual = subject.getNodeAccountId();
@@ -193,11 +193,11 @@ class ServicesStateTest {
 	@Test
 	public void fastCopyCopiesPrimitives() {
 		// setup:
-		subject.setChild(ServicesState.TOPICS_CHILD_INDEX, topics);
-		subject.setChild(ServicesState.STORAGE_CHILD_INDEX, storage);
-		subject.setChild(ServicesState.ACCOUNTS_CHILD_INDEX, accounts);
-		subject.setChild(ServicesState.ADDRESS_BOOK_CHILD_INDEX, book);
-		subject.setChild(ServicesState.NETWORK_CTX_CHILD_INDEX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.nodeId = self;
 
 		// when:
@@ -230,9 +230,9 @@ class ServicesStateTest {
 	@Test
 	public void deleteCascadesToAllFcms() {
 		// setup:
-		subject.setChild(ServicesState.STORAGE_CHILD_INDEX, storage);
-		subject.setChild(ServicesState.TOPICS_CHILD_INDEX, topics);
-		subject.setChild(ServicesState.ACCOUNTS_CHILD_INDEX, accounts);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 
 		// when:
 		subject.delete();
@@ -250,9 +250,9 @@ class ServicesStateTest {
 		InOrder inOrder = inOrder(in, topics, storage, accounts, bookCopy);
 		ServicesState.legacyTmpBookSupplier = () -> bookCopy;
 		// and:
-		subject.setChild(ServicesState.TOPICS_CHILD_INDEX, topics);
-		subject.setChild(ServicesState.STORAGE_CHILD_INDEX, storage);
-		subject.setChild(ServicesState.ACCOUNTS_CHILD_INDEX, accounts);
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 
 		// when:
 		subject.copyFromExtra(in);
@@ -274,11 +274,11 @@ class ServicesStateTest {
 		// and:
 		subject.ctx = ctx;
 		subject.nodeId = self;
-		subject.setChild(ServicesState.TOPICS_CHILD_INDEX, topics);
-		subject.setChild(ServicesState.STORAGE_CHILD_INDEX, storage);
-		subject.setChild(ServicesState.ACCOUNTS_CHILD_INDEX, accounts);
-		subject.setChild(ServicesState.ADDRESS_BOOK_CHILD_INDEX, book);
-		subject.setChild(ServicesState.NETWORK_CTX_CHILD_INDEX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		// and:
 		var lastHandleTime = Instant.now();
 
@@ -305,7 +305,7 @@ class ServicesStateTest {
 	@Test
 	public void implementsBookCopy() {
 		// setup:
-		subject.setChild(ServicesState.ADDRESS_BOOK_CHILD_INDEX, book);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 
 		// when:
 		AddressBook actualCopy = subject.getAddressBookCopy();

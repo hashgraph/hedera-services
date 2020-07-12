@@ -69,28 +69,28 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
-	static final NodeId ID_WITH_INACTIVE_CONTEXT = null;
 
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 
+	NodeId nodeId = null;
 	boolean immutable = true;
-	NodeId nodeId = ID_WITH_INACTIVE_CONTEXT;
 
 	/* Order of v1 Merkle node children */
-	static final int ADDRESS_BOOK_CHILD_INDEX = 0;
-	static final int NETWORK_CTX_CHILD_INDEX = 1;
-	static final int TOPICS_CHILD_INDEX = 2;
-	static final int STORAGE_CHILD_INDEX = 3;
-	static final int ACCOUNTS_CHILD_INDEX = 4;
-	static final int NUM_V1_CHILDREN = 5;
+	static class ChildIndices {
+		static final int ADDRESS_BOOK = 0;
+		static final int NETWORK_CTX = 1;
+		static final int TOPICS = 2;
+		static final int STORAGE = 3;
+		static final int ACCOUNTS = 4;
+		static final int NUM_V1_CHILDREN = 5;
+	}
 
 	ServicesContext ctx;
-	SystemExits systemExits = new JvmSystemExits();
 
 	public ServicesState() { }
 
 	public ServicesState(List<MerkleNode> children) {
-		super(NUM_V1_CHILDREN);
+		super(ChildIndices.NUM_V1_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -112,7 +112,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		return NUM_V1_CHILDREN;
+		return ChildIndices.NUM_V1_CHILDREN;
 	}
 
 	/* --- SwirldState --- */
@@ -122,17 +122,17 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		nodeId = platform.getSelfId();
 
 		/* Note this overrides the address book from the saved state if it is present. */
-		setChild(ADDRESS_BOOK_CHILD_INDEX, addressBook);
+		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
-		if (getNumberOfChildren() < NUM_V1_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_V1_CHILDREN) {
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
 					new SequenceNumber(HEDERA_START_SEQUENCE),
 					new ExchangeRates());
-			setChild(NETWORK_CTX_CHILD_INDEX, networkCtx);
-			setChild(TOPICS_CHILD_INDEX, new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
-			setChild(STORAGE_CHILD_INDEX, new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
-			setChild(ACCOUNTS_CHILD_INDEX, new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
+			setChild(ChildIndices.NETWORK_CTX, networkCtx);
+			setChild(ChildIndices.TOPICS, new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
+			setChild(ChildIndices.STORAGE, new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
+			setChild(ChildIndices.ACCOUNTS, new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -258,22 +258,22 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return getChild(ACCOUNTS_CHILD_INDEX);
+		return getChild(ChildIndices.ACCOUNTS);
 	}
 
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return getChild(STORAGE_CHILD_INDEX);
+		return getChild(ChildIndices.STORAGE);
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return getChild(TOPICS_CHILD_INDEX);
+		return getChild(ChildIndices.TOPICS);
 	}
 
 	public MerkleNetworkContext networkCtx() {
-		return getChild(NETWORK_CTX_CHILD_INDEX);
+		return getChild(ChildIndices.NETWORK_CTX);
 	}
 
 	public AddressBook addressBook() {
-		return getChild(ADDRESS_BOOK_CHILD_INDEX);
+		return getChild(ChildIndices.ADDRESS_BOOK);
 	}
 }
