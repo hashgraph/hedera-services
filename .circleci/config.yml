@@ -1375,10 +1375,11 @@ jobs:
             mkdir -p /repo/test-clients/output
       - run:
           name: mvn install
+          # use double quote otherwise the backslash of multiple will be treated as part of mvn parameter 
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              'mvn -e -X --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install \
-              sonar:sonar | tee /repo/test-clients/output/hapi-client.log'
+              "mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+              | tee /repo/test-clients/output/hapi-client.log"
       - run:
           name: Upload codecov
           command: |
