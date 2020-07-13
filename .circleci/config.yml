@@ -1377,8 +1377,8 @@ jobs:
           name: mvn install
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              'mvn -e -X --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
-              | tee /repo/test-clients/output/hapi-client.log'
+              'mvn -e -X --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install \
+              sonar:sonar | tee /repo/test-clients/output/hapi-client.log'
       - run:
           name: Upload codecov
           command: |
