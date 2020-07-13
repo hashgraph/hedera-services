@@ -70,7 +70,7 @@ import static java.util.Map.Entry;
 import static java.util.stream.Collectors.toList;
 
 public class KeyFactory implements Serializable {
-	public static final String PEM_PASSPHRASE = "swirlds";
+	public static String PEM_PASSPHRASE = "swirlds";
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = LogManager.getLogger(KeyFactory.class);
 	public enum KeyType { SIMPLE, LIST, THRESHOLD }

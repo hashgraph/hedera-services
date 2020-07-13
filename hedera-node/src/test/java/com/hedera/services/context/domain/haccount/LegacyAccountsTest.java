@@ -6,7 +6,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTest;
 import com.hedera.services.state.merkle.MerkleEntityId;

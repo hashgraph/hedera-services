@@ -21,7 +21,7 @@ package com.hedera.services.state.serdes;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;

@@ -40,7 +40,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.legacy.core.jproto.TxnId;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;

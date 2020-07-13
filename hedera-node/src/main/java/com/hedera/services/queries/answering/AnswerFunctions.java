@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.TxnId;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,7 +60,7 @@ public class AnswerFunctions {
 						.stream()
 						.filter(r -> r.getTxnId().equals(searchableId))
 						.findAny()
-						.map(ExpirableTxnRecord::toGrpc);
+						.map(ExpirableTxnRecord::asGrpc);
 			} catch (Exception ignore) {
 				log.warn(ignore.getMessage());
 				return Optional.empty();

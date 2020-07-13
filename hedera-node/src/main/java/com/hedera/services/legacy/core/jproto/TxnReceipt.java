@@ -326,6 +326,10 @@ public class TxnReceipt implements SelfSerializable {
 				runningHashVersion);
 	}
 
+	public TransactionReceipt toGrpc() {
+		return convert(this);
+	}
+
 	public static TransactionReceipt convert(TxnReceipt txReceipt) {
 		TransactionReceipt.Builder builder = TransactionReceipt.newBuilder()
 				.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));

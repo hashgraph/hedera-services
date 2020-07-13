@@ -21,7 +21,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hederahashgraph.api.proto.java.AccountID;

@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.core.jproto;
+package com.hedera.services.state.submerkle;
 
 /*-
  * ‌
@@ -22,11 +22,9 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.HbarAdjustments;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -224,7 +222,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	}
 
 	@Override
-	public void serialize(final SerializableDataOutputStream out) throws IOException {
+	public void serialize(SerializableDataOutputStream out) throws IOException {
 		serdes.writeNullableSerializable(receipt, out);
 
 		out.writeByteArray(txnHash);
@@ -365,78 +363,52 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	/* --- Helpers --- */
 
 	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {
-		var txnReceipt = TxnReceipt.fromGrpc(record.getReceipt());
-		var txnId = TxnId.fromGrpc(record.getTransactionID());
-
-		HbarAdjustments hbarAdjustments = null;
-		if (record.hasTransferList()) {
-			hbarAdjustments = HbarAdjustments.fromGrpc(record.getTransferList());
-		}
-
-		SolidityFnResult callResult = null;
-		if (record.hasContractCallResult()) {
-			callResult = SolidityFnResult.fromGrpc(record.getContractCallResult());
-		}
-
-		SolidityFnResult createResult = null;
-		if (record.hasContractCreateResult()) {
-			createResult = SolidityFnResult.fromGrpc(record.getContractCreateResult());
-		}
-
 		return new ExpirableTxnRecord(
-				txnReceipt,
+				TxnReceipt.fromGrpc(record.getReceipt()),
 				record.getTransactionHash().toByteArray(),
-				txnId,
+				TxnId.fromGrpc(record.getTransactionID()),
 				RichInstant.fromGrpc(record.getConsensusTimestamp()),
 				record.getMemo(),
 				record.getTransactionFee(),
-				hbarAdjustments,
-				callResult,
-				createResult);
+				record.hasTransferList() ? HbarAdjustments.fromGrpc(record.getTransferList()) : null,
+				record.hasContractCallResult() ? SolidityFnResult.fromGrpc(record.getContractCallResult()) : null,
+				record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null);
 	}
 
 	public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {
 		return records.stream()
-				.map(ExpirableTxnRecord::toGrpc)
+				.map(ExpirableTxnRecord::asGrpc)
 				.collect(toList());
 	}
 
-	public static TransactionRecord toGrpc(ExpirableTxnRecord expirableTxnRecord) {
-		TransactionRecord.Builder grpc = TransactionRecord.newBuilder();
+	public TransactionRecord asGrpc() {
+		var grpc = TransactionRecord.newBuilder();
 
-		TransactionReceipt txReceipt = TxnReceipt.convert(expirableTxnRecord.getReceipt());
-		if (expirableTxnRecord.getTxnId() != null) {
-			EntityId payer = expirableTxnRecord.getTxnId().getPayerAccount();
-			RichInstant timestamp = expirableTxnRecord.getTxnId().getValidStart();
-			if ((payer != null) || (timestamp != null)) {
-				grpc.setTransactionID(expirableTxnRecord.getTxnId().toGrpc());
-			}
-		}
+		grpc.setTransactionFee(fee);
 
-		Timestamp timestamp = Timestamp.newBuilder().build();
-		if (expirableTxnRecord.getConsensusTimestamp() != null) {
-			timestamp = expirableTxnRecord.getConsensusTimestamp().toGrpc();
+		if (receipt != null) {
+			grpc.setReceipt(TxnReceipt.convert(receipt));
 		}
-		grpc.setConsensusTimestamp(timestamp)
-				.setTransactionFee(expirableTxnRecord.getFee())
-				.setReceipt(txReceipt);
-
-		if (expirableTxnRecord.getMemo() != null) {
-			grpc.setMemo(expirableTxnRecord.getMemo());
+		if (txnId != null) {
+			grpc.setTransactionID(txnId.toGrpc());
 		}
-		if (expirableTxnRecord.getTxnHash().length > 0) {
-			grpc.setTransactionHash(ByteString.copyFrom(expirableTxnRecord.getTxnHash()));
+		if (consensusTimestamp != null) {
+			grpc.setConsensusTimestamp(consensusTimestamp.toGrpc());
 		}
-		if (expirableTxnRecord.getHbarAdjustments() != null) {
-			grpc.setTransferList(expirableTxnRecord.getHbarAdjustments().toGrpc());
+		if (memo != null) {
+			grpc.setMemo(memo);
 		}
-		if (expirableTxnRecord.getContractCallResult() != null) {
-			var contractCallResult = expirableTxnRecord.getContractCallResult().toGrpc();
-			grpc.setContractCallResult(contractCallResult);
+		if (txnHash.length > 0) {
+			grpc.setTransactionHash(ByteString.copyFrom(txnHash));
 		}
-		if (expirableTxnRecord.getContractCreateResult() != null) {
-			ContractFunctionResult contractCreateResult = expirableTxnRecord.getContractCreateResult().toGrpc();
-			grpc.setContractCreateResult(contractCreateResult);
+		if (hbarAdjustments != null) {
+			grpc.setTransferList(hbarAdjustments.toGrpc());
+		}
+		if (contractCallResult != null) {
+			grpc.setContractCallResult(contractCallResult.toGrpc());
+		}
+		if (contractCreateResult != null) {
+			grpc.setContractCreateResult(contractCreateResult.toGrpc());
 		}
 
 		return grpc.build();

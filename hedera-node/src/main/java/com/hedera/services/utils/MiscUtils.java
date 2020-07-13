@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;

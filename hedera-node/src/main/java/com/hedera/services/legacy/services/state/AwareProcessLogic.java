@@ -32,7 +32,7 @@ import com.hedera.services.keys.RevocationServiceCharacteristics;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
@@ -147,7 +147,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private void addRecordToStream() {
-		TransactionRecord finalRecord = ExpirableTxnRecord.toGrpc(ctx.recordsHistorian().lastCreatedRecord().get());
+		TransactionRecord finalRecord = ctx.recordsHistorian().lastCreatedRecord().get().asGrpc();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 

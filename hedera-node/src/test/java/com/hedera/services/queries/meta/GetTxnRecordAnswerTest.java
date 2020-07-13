@@ -40,7 +40,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +72,7 @@ class GetTxnRecordAnswerTest {
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
 	private ExpirableTxnRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = ExpirableTxnRecord.toGrpc(targetRecord);
+	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
 
 	private StateView view;
 	private RecordCache recordCache;

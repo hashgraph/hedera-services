@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -93,7 +93,7 @@ public class RecordCache {
 	public TransactionRecord getRecord(TransactionID txnId) {
 		Optional<ExpirableTxnRecord> record = delegate.getIfPresent(txnId);
 		if (record != null && record.isPresent()) {
-			return record.map(ExpirableTxnRecord::toGrpc).get();
+			return record.map(ExpirableTxnRecord::asGrpc).get();
 		}
 		return null;
 	}

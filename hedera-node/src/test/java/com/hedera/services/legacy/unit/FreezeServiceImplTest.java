@@ -45,7 +45,7 @@ import com.hedera.test.mocks.TestFeesFactory;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;

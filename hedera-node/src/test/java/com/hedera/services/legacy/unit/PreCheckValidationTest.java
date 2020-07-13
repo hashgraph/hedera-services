@@ -57,7 +57,7 @@ import com.hedera.services.legacy.TestHelper;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 

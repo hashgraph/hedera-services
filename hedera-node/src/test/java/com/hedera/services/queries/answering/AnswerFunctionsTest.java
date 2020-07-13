@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +68,7 @@ class AnswerFunctionsTest {
 			.build();
 
 	private ExpirableTxnRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = ExpirableTxnRecord.toGrpc(targetRecord);
+	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
 	private MerkleAccount payerAccount;
 	private String target = payer;
 	private long fee = 1_234L;

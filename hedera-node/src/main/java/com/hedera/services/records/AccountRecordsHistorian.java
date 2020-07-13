@@ -21,7 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.Optional;
 
