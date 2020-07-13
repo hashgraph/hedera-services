@@ -119,9 +119,6 @@ import static org.mockito.Mockito.mock;
 
 @Disabled
 @RunWith(JUnitPlatform.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@DisplayName("SmartContractRequestHandler Miscellaneous Test Suite")
 public class SmartContractRequestHandlerMiscTest {
 
   public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";

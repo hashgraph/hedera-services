@@ -106,11 +106,7 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features for a payable contract
  */
 
-@Disabled
 @RunWith(JUnitPlatform.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@DisplayName("SmartContractRequestHandler Payable Test Suite")
 public class SmartContractRequestHandlerPayableTest {
 
   public static final String PAYABLE_TEST_BIN = "/testfiles/PayTest.bin";
