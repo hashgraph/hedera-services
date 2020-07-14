@@ -1375,7 +1375,7 @@ jobs:
             mkdir -p /repo/test-clients/output
       - run:
           name: mvn install
-          # use double quote otherwise the backslash of multiple will be treated as part of mvn parameter 
+          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
               "mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
