@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -o pipefail
+
 if [ $# -lt 1 ]; then
   echo "USAGE: $0 cmd-to-trap"
   exit 1
