@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -55,18 +56,40 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
 	private static String topicID = null;
 	private static int messageSize = 40;
+	private static String pemFile = null;
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
+		// Usage
+		//
+		// 1) create new topic with auto generated key, an topicSubmitKey.pem will ge exported for later use
+		// args: [size]
+		//
+		// 2) create new topic with pre-exist PEM file
+		// args: [size] [pemFile]
+		//
+		// 3) submit message to pre-exist topic
+		// args: [size] [pemFile] [topicID]
+		//
+
+
 		// parsing local argument specific to this test
+		if (args.length > (usedArgs)) {
+			messageSize = Integer.parseInt(args[usedArgs]);
+			log.info("Set messageSize as " + messageSize);
+			usedArgs++;
+		}
+
+		if (args.length > (usedArgs)) {
+			pemFile = args[usedArgs];
+			log.info("Set pemFile as " + pemFile);
+			usedArgs++;
+		}
+
 		if (args.length > usedArgs) {
 			topicID = args[usedArgs];
 			log.info("Set topicID as " + topicID);
-		}
-
-		if (args.length > (usedArgs+1)) {
-			messageSize = Integer.parseInt(args[usedArgs+1]);
-			log.info("Set messageSize as " + messageSize);
+			usedArgs++;
 		}
 
 		SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
@@ -105,10 +128,16 @@ public class SubmitMessageLoadTest extends LoadTest {
 		return defaultHapiSpec("RunSubmitMessages")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						keyFromPem("src/main/resource/testfiles/hcs/topicSubmitKey.pem")
+						// if no pem file defined then create a new submitKey
+						pemFile == null ? newKeyNamed("submitKey") :
+								keyFromPem(pemFile)
 								.name("submitKey")
 								.simpleWacl()
 								.passphrase(KeyFactory.PEM_PASSPHRASE),
+
+						// if just created a new key then export spec for later reuse
+						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
+								sleepFor(100),
 						logIt(ignore -> settings.toString())
 				).when(
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
