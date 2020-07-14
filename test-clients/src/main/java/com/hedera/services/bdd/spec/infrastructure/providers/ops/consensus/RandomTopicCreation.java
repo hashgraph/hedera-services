@@ -30,9 +30,7 @@ public class RandomTopicCreation implements OpProvider {
                         INVALID_TOPIC_ID,
                         TOPIC_EXPIRED);
 
-        public RandomTopicCreation(
-                        EntityNameProvider<Key> keys,
-                        RegistrySourcedNameProvider<TopicID> topics ) {
+        public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
                 this.keys = keys;
                 this.topics = topics;
         }

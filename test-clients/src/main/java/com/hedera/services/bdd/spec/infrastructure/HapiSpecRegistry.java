@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -68,6 +68,8 @@ public class HapiSpecRegistry {
 	private final List<ThroughputObs> throughputObs = new ArrayList<>();
 	private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
+	private static final Integer ZERO = Integer.valueOf(0);
+
 	public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
 		this.setup = setup;
 		KeyPairObj genesisKp = firstStartupKp(setup);
@@ -120,14 +122,17 @@ public class HapiSpecRegistry {
 
 		saveKey(HapiApiSuite.NONSENSE_KEY, nonsenseKey());
 	}
+
 	private Key nonsenseKey() {
 		return Key.getDefaultInstance();
 	}
+
 	private Key asPublicKey(String pubKeyHex) throws Exception {
 		return Key.newBuilder()
 				.setEd25519(ByteString.copyFrom(HexUtils.hexToBytes(pubKeyHex)))
 				.build();
 	}
+
 	private Key asKeyList(Key key) {
 		return Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(key)).build();
 	}
@@ -140,6 +145,7 @@ public class HapiSpecRegistry {
 	synchronized public void record(OpObs stat) {
 		obs.add(stat);
 	}
+
 	public List<OpObs> stats() {
 		return obs;
 	}
@@ -148,9 +154,11 @@ public class HapiSpecRegistry {
 		put(obs.getName(), obs);
 		throughputObs.add(obs);
 	}
+
 	public ThroughputObs getThroughputObs(String name) {
 		return get(name, ThroughputObs.class);
 	}
+
 	public List<ThroughputObs> throughputObs() {
 		return throughputObs;
 	}
@@ -158,12 +166,15 @@ public class HapiSpecRegistry {
 	public void saveContractChoice(String name, SupportedContract choice) {
 		put(name, choice);
 	}
+
 	public SupportedContract getContractChoice(String name) {
 		return get(name, SupportedContract.class);
 	}
+
 	public boolean hasContractChoice(String name) {
 		return hasVia(this::getContractChoice, name);
 	}
+
 	public void removeContractChoice(String name) {
 		remove(name, SupportedContract.class);
 	}
@@ -171,9 +182,11 @@ public class HapiSpecRegistry {
 	public ActionableContractCall getActionableCall(String name) {
 		return get(name, ActionableContractCall.class);
 	}
+
 	public void saveActionableCall(String name, ActionableContractCall call) {
 		put(name, call);
 	}
+
 	public void removeActionableCall(String name) {
 		remove(name, ActionableContractCall.class);
 	}
@@ -181,9 +194,11 @@ public class HapiSpecRegistry {
 	public void saveActionableLocalCall(String name, ActionableContractCallLocal call) {
 		put(name, call);
 	}
+
 	public void removeActionableLocalCall(String name) {
 		remove(name, ActionableContractCallLocal.class);
 	}
+
 	public ActionableContractCallLocal getActionableLocalCall(String name) {
 		return get(name, ActionableContractCallLocal.class);
 	}
@@ -191,6 +206,7 @@ public class HapiSpecRegistry {
 	public void saveBalanceSnapshot(String name, Long balance) {
 		put(name, balance);
 	}
+
 	public long getBalanceSnapshot(String name) {
 		return get(name, Long.class);
 	}
@@ -198,40 +214,49 @@ public class HapiSpecRegistry {
 	public boolean hasTimestamp(String label) {
 		return hasVia(this::getTimestamp, label);
 	}
+
 	public Timestamp getTimestamp(String label) {
 		return get(label, Timestamp.class);
 	}
+
 	public void saveTimestamp(String label, Timestamp when) {
 		put(label, when, Timestamp.class);
 	}
+
 	public void removeTimestamp(String label) {
 		try {
 			remove(label, Timestamp.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveKey(String name, Key key) {
 		put(name, key, Key.class);
 	}
+
 	public Key getKey(String name) {
 		return get(name, Key.class);
 	}
+
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
 	}
+
 	public void removeKey(String name) {
 		try {
 			remove(name, Key.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveTopicMeta(String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
 		put(name, meta);
 		put(name, approxConsensusTime + meta.getAutoRenewPeriod().getSeconds() + 60);
 	}
+
 	public void saveTopicMeta(String name, ConsensusUpdateTopicTransactionBody txn) {
 		ConsensusCreateTopicTransactionBody.Builder meta;
-		if (hasTopicMeta(name))	{
+		if (hasTopicMeta(name)) {
 			meta = getTopicMeta(name).toBuilder();
 		} else {
 			meta = ConsensusCreateTopicTransactionBody.newBuilder();
@@ -256,12 +281,15 @@ public class HapiSpecRegistry {
 			put(name, txn.getExpirationTime().getSeconds());
 		}
 	}
+
 	public ConsensusCreateTopicTransactionBody getTopicMeta(String name) {
 		return get(name, ConsensusCreateTopicTransactionBody.class);
 	}
+
 	public long getTopicExpiry(String name) {
 		return get(name, Long.class);
 	}
+
 	public boolean hasTopicMeta(String name) {
 		return hasVia(this::getTopicMeta, name);
 	}
@@ -269,13 +297,15 @@ public class HapiSpecRegistry {
 	public void saveBytes(String name, ByteString bytes) {
 		put(name, bytes, ByteString.class);
 	}
+
 	public byte[] getBytes(String name) {
 		return get(name, ByteString.class).toByteArray();
 	}
 
 	public void saveAmount(String name, Long amount) {
-		put (name, amount);
+		put(name, amount);
 	}
+
 	public Long getAmount(String name) {
 		return get(name, Long.class);
 	}
@@ -283,15 +313,19 @@ public class HapiSpecRegistry {
 	public void saveSigRequirement(String name, Boolean isRequired) {
 		put(name, isRequired);
 	}
+
 	public void removeSigRequirement(String name) {
 		remove(name, Boolean.class);
 	}
+
 	public boolean isSigRequired(String name) {
 		try {
 			return get(name, Boolean.class);
-		} catch (Throwable ignore) { }
+		} catch (Throwable ignore) {
+		}
 		return setup.defaultReceiverSigRequired();
 	}
+
 	public boolean hasSigRequirement(String name) {
 		return hasVia(this::isSigRequired, name);
 	}
@@ -308,6 +342,7 @@ public class HapiSpecRegistry {
 	public void saveTxnId(String name, TransactionID txnId) {
 		put(name, txnId);
 	}
+
 	public TransactionID getTxnId(String name) {
 		return get(name, TransactionID.class);
 	}
@@ -321,6 +356,7 @@ public class HapiSpecRegistry {
 		put(account, Boolean.TRUE);
 		put(account + "Recharge", amount);
 	}
+
 	public boolean isRecharging(String account) {
 		return registry.containsKey(full(account, Boolean.class));
 	}
@@ -336,7 +372,7 @@ public class HapiSpecRegistry {
 	public Instant getRechargingTime(String account) {
 		try {
 			return get(account + "RechargeTime", Instant.class);
-		}catch (Exception igore) {
+		} catch (Exception ignore) {
 			return Instant.MIN;
 		}
 	}
@@ -345,31 +381,40 @@ public class HapiSpecRegistry {
 		put(account + "RechargeWindow", seconds);
 	}
 
+	public boolean hasRechargingWindow(String rechargingAccount) {
+		return registry.get(full(rechargingAccount + "RechargeWindow", Integer.class)) != null;
+	}
+
 	public Integer getRechargingWindow(String account) {
-		return get(account + "RechargeWindow", Integer.class);
+		return getOrElse(account + "RechargeWindow", Integer.class, ZERO);
 	}
 
 	public boolean hasAccountId(String name) {
 		return hasVia(this::getAccountID, name);
 	}
+
 	public AccountID getAccountID(String name) {
 		return get(name, AccountID.class);
 	}
+
 	public String getAccountIdName(AccountID account) {
 		return get(asAccountString(account), String.class);
 	}
+
 	public void removeAccount(String name) {
 		try {
 			var id = getAccountID(name);
 			remove(name, AccountID.class);
 			remove(asAccountString(id), String.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveTopicId(String name, TopicID id) {
 		put(name, id);
 		put(HapiPropertySource.asTopicString(id), name);
 	}
+
 	public TopicID getTopicID(String name) {
 		return get(name, TopicID.class);
 	}
@@ -377,20 +422,23 @@ public class HapiSpecRegistry {
 	public boolean hasFileId(String name) {
 		return hasVia(this::getFileId, name);
 	}
+
 	public void saveFileId(String name, FileID id) {
 		put(name, id);
 	}
+
 	public FileID getFileId(String name) {
 		return get(name, FileID.class);
 	}
+
 	public void removeFileId(String name) {
 		try {
 			remove(name, FileID.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
-	public void saveContractList(String name, List<ContractID> list)
-	{
+	public void saveContractList(String name, List<ContractID> list) {
 		long listSize = list.size();
 		saveAmount(name + "Size", listSize);
 		for (int i = 0; i < listSize; i++) {
@@ -401,26 +449,33 @@ public class HapiSpecRegistry {
 	public void saveContractId(String name, ContractID id) {
 		put(name, id);
 	}
+
 	public ContractID getContractId(String name) {
 		return get(name, ContractID.class);
 	}
+
 	public boolean hasContractId(String name) {
 		return hasVia(this::getContractId, name);
 	}
+
 	public void removeContractId(String name) {
 		try {
 			remove(name, ContractID.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveContractInfo(String name, ContractGetInfoResponse.ContractInfo info) {
 		put(name, info);
 	}
+
 	public void removeContractInfo(String name) {
 		try {
 			remove(name, ContractGetInfoResponse.ContractInfo.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
+
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {
 		return get(name, ContractGetInfoResponse.ContractInfo.class);
 	}
@@ -433,9 +488,11 @@ public class HapiSpecRegistry {
 		registry.remove(full(name, type));
 		notifyAllOnDelete(type, name, cause);
 	}
+
 	private synchronized void remove(String name, Class<?> type) {
 		remove(name, type, Optional.empty());
 	}
+
 	private void notifyAllOnDelete(Class type, String name, Optional<HapiSpecOperation> cause) {
 		Optional.ofNullable(listenersByType.get(type)).ifPresent(a -> a.forEach(l -> l.onDelete(name, cause)));
 	}
@@ -455,12 +512,14 @@ public class HapiSpecRegistry {
 	private synchronized void put(String name, Object obj) {
 		put(name, obj, obj.getClass());
 	}
-	private void notifyAllOnPut(Class type, String name, Object value, Optional<HapiSpecOperation> cause)  {
+
+	private void notifyAllOnPut(Class type, String name, Object value, Optional<HapiSpecOperation> cause) {
 		Optional.ofNullable(listenersByType.get(type)).ifPresent(a -> a.forEach(l -> {
 			Class<?> lType = l.forType();
 			notifyOnPut(l, lType, name, value, cause);
 		}));
 	}
+
 	private <T> void notifyOnPut(
 			RegistryChangeListener<T> listener,
 			Class<T> type,
@@ -478,6 +537,15 @@ public class HapiSpecRegistry {
 		}
 		return type.cast(v);
 	}
+
+	private synchronized <T> T getOrElse(String name, Class<T> type, T defaultValue) {
+		Object v = registry.get(full(name, type));
+		if (v == null) {
+			return defaultValue;
+		}
+		return type.cast(v);
+	}
+
 	private String full(String name, Class<?> type) {
 		String typeName = type.getSimpleName();
 		return typeName + "-" + name;
@@ -488,6 +556,7 @@ public class HapiSpecRegistry {
 				.stream()
 				.collect(groupingBy(Object::getClass, counting()));
 	}
+
 	public List<String> stringValues() {
 		return registry.entrySet()
 				.stream()
@@ -513,7 +582,7 @@ public class HapiSpecRegistry {
 			log.error("Other exception catched while serializing registry to " + path + ":" + e);
 		} finally {
 			try {
-				if(fos != null) {
+				if (fos != null) {
 					fos.close();
 				}
 			} catch (IOException e) {
@@ -522,14 +591,14 @@ public class HapiSpecRegistry {
 		}
 	}
 
-	public void load(String path)  {
+	public void load(String path) {
 		FileInputStream fis = null;
 
 		log.info("Deserialize registry from : " + path);
 		try {
 			fis = new FileInputStream(path);
 			ObjectInputStream ois = new ObjectInputStream(fis);
-			Map newValues = (Map<String,Object>)ois.readObject();
+			Map newValues = (Map<String, Object>) ois.readObject();
 
 			registry.putAll(newValues);
 
@@ -539,7 +608,7 @@ public class HapiSpecRegistry {
 			log.error("Deserializable exception catched while deserializing registry from " + path + ":" + e);
 		} finally {
 			try {
-				if(fis != null) {
+				if (fis != null) {
 					fis.close();
 				}
 			} catch (IOException e) {

@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RandomAccount implements OpProvider {
 	public static final int DEFAULT_CEILING_NUM = 100;
-
 	static final long INITIAL_BALANCE = 100_000_000_000L;
 	static final long SEND_THRESHOLD = INITIAL_BALANCE / 50;
 
