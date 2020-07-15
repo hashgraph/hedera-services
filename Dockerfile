@@ -49,6 +49,7 @@ RUN cd /tmp && \
     rm -f /tmp/jdk-12.0.2_linux-x64_bin.tar.gz
 # Services runtime
 RUN mkdir -p /opt/hedera/services/data/lib
+RUN mkdir -p /opt/hedera/services/data/backup
 RUN mkdir /opt/hedera/services/data/apps
 RUN mkdir /opt/hedera/services/data/config
 RUN mkdir /opt/hedera/services/data/saved
@@ -82,6 +83,7 @@ FROM base-runtime AS final-image
 COPY image-utils/ /opt/hedera/services 
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
+COPY --from=services-builder /opt/hedera/services/hedera-node/data/backup /opt/hedera/services/data/backup
 COPY --from=services-builder /opt/hedera/services/hedera-node/swirlds.jar /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/onboard/StartUpAccount.txt /opt/hedera/services/data/onboard
