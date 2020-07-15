@@ -20,8 +20,8 @@ package com.hedera.test.utils;
  * ‍
  */
 
-import com.swirlds.common.io.FCDataInputStream;
-import com.swirlds.common.io.FCDataOutputStream;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +31,7 @@ import java.io.DataOutputStream;
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			try (FCDataOutputStream out = new FCDataOutputStream(baos)) {
+			try (SerializableDataOutputStream out = new SerializableDataOutputStream(baos)) {
 				serializer.accept(out);
 			}
 			return baos.toByteArray();
@@ -40,7 +40,7 @@ public class SerdeUtils {
 
 	public static <T> T deOutcome(ThrowingFunction<DataInputStream, T> deserializer, byte[] repr) throws Exception {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(repr)) {
-			try (FCDataInputStream in = new FCDataInputStream(bais)) {
+			try (SerializableDataInputStream in = new SerializableDataInputStream(bais)) {
 				return deserializer.apply(in);
 			}
 		}

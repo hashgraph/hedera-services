@@ -22,8 +22,8 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,29 +67,29 @@ public class PojoAccount {
 	private boolean deleted;
 	private boolean receiverSigRequired;
 
-	public static PojoAccount fromEntry(Map.Entry<MapKey, HederaAccount> e) {
+	public static PojoAccount fromEntry(Map.Entry<MerkleEntityId, MerkleAccount> e) {
 		return from(e.getKey(), e.getValue());
 	}
 
-	public static PojoAccount from(MapKey mk, HederaAccount value) {
+	public static PojoAccount from(MerkleEntityId mk, MerkleAccount value) {
 		var pojo = new PojoAccount();
 		pojo.setId(asAccountString(fromKey(mk)));
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
-		pojo.setKeys(value.getAccountKeys().toString());
-		pojo.setNumRecords(value.getRecords().size());
+		pojo.setKeys(value.getKey().toString());
+		pojo.setNumRecords(value.records().size());
 		if (pojo.getNumRecords() > 0) {
-			pojo.setRecords(value.getRecords().stream().map(PojoRecord::from).collect(toList()));
+			pojo.setRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
 		}
-		pojo.setExpiry(value.getExpirationTime());
-		pojo.setAutoRenewPeriod(value.getAutoRenewPeriod());
+		pojo.setExpiry(value.getExpiry());
+		pojo.setAutoRenewPeriod(value.getAutoRenewSecs());
 		pojo.setReceiveThreshold(value.getReceiverThreshold());
 		pojo.setSendThreshold(value.getReceiverThreshold());
 		pojo.setMemo(value.getMemo());
 		pojo.setReceiverSigRequired(value.isReceiverSigRequired());
 		pojo.setDeleted(value.isDeleted());
-		if (value.getProxyAccount() != null) {
-			pojo.setProxyId(asString(value.getProxyAccount()));
+		if (value.getProxy() != null) {
+			pojo.setProxyId(asString(value.getProxy()));
 		}
 		return pojo;
 	}

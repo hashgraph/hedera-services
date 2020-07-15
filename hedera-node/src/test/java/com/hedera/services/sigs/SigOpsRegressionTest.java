@@ -34,17 +34,17 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.crypto.DigitalSignature;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
@@ -85,7 +85,7 @@ public class SigOpsRegressionTest {
 	private SignatureStatus sigCreationFailureStatus;
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	@Test
 	public void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
@@ -383,7 +383,7 @@ public class SigOpsRegressionTest {
 	}
 
 	private SignatureStatus invokeRationalizationScenario() throws Exception {
-		SyncVerifier syncVerifier = DigitalSignature::verifySync;
+		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, accounts, null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),

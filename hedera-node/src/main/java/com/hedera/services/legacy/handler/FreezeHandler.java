@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,8 +50,8 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 
 /**
  * @author Qian
- * FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
- * transactions. Documentation available at index.html#proto.FreezeTransactionBody
+ * 		FreezeHandler is used in the HGCApp handleTransaction for performing Freeze
+ * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
 	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
@@ -66,6 +66,7 @@ public class FreezeHandler {
 	private static String DELETE_FILE = TEMP_DIR + File.separator + "delete.txt";
 	private static String CMD_SCRIPT = "exec.sh";
 	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
+	private String LOG_PREFIX;
 
 	private FileID updateFeatureFile;
 
@@ -73,10 +74,11 @@ public class FreezeHandler {
 		this.globalFlag = GlobalFlag.getInstance();
 		this.platform = platform;
 		this.hfs = hfs;
+		LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
-		log.debug("FreezeHandler - Handling FreezeTransaction: " + transactionBody);
+		log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
 		FreezeTransactionBody freezeBody = transactionBody.getFreeze();
 		TransactionReceipt receipt;
 		if (transactionBody.getFreeze().hasUpdateFile()) {
@@ -108,57 +110,70 @@ public class FreezeHandler {
 	}
 
 	public void handleUpdateFeature() {
-		if (updateFeatureFile == null){
+		if (updateFeatureFile == null) {
 			return;
 		}
-		log.info("node " + platform.getSelfId() + " running update, CONTEXTS.getContextsCount() =" + CONTEXTS.getContextsCount());
+		log.info("{} running update with FileID {}", LOG_PREFIX, updateFeatureFile);
 
 		FileID fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
+		if (hfs.exists(fileIDtoUse)) {
+			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
+			byte[] fileBytes = hfs.cat(fileIDtoUse);
+			updateFeatureWithFileContents(fileBytes);
+		}
+	}
+
+	private void updateFeatureWithFileContents(final byte[] fileBytes) {
+		log.info("{} current directory {}", LOG_PREFIX, System.getProperty("user.dir"));
+		File directory = new File(TEMP_DIR);
 		try {
-			File directory = new File(TEMP_DIR);
 			if (directory.exists()) {
+				log.info("{} clean directory {}", LOG_PREFIX, directory);
 				// delete everything in it recursively
 				FileUtils.cleanDirectory(directory);
 			} else {
+				log.info("{} create directory {}", LOG_PREFIX, directory);
 				directory.mkdir();
 			}
+			log.info("{} has read file content {} bytes", LOG_PREFIX, fileBytes.length);
 
-			if (hfs.exists(fileIDtoUse)) {
-				byte[] fileBytes = hfs.cat(fileIDtoUse);
+			log.info("{} unzipping file to directory {} ", LOG_PREFIX, TEMP_DIR);
+			//unzip bytes stream to target directory
+			UnzipUtility.unzip(fileBytes, TEMP_DIR);
 
-				//unzip bytes stream to target directory
-				UnzipUtility.unzip(fileBytes, TEMP_DIR);
+			File sdk_directory = new File(TEMP_SDK_DIR);
+			if (sdk_directory.exists()) {
+				log.info("{} copying files from {} to {}", LOG_PREFIX, TEMP_SDK_DIR, TARGET_DIR);
+				// copy files recursively to sdk directory
+				FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
 
-				File sdk_directory = new File(TEMP_SDK_DIR);
-				if (sdk_directory.exists()) {
-					log.info("Copying files from {} to {}", TEMP_SDK_DIR, TARGET_DIR);
-					// copy files recursively to sdk directory
-					FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
-					FileUtils.deleteDirectory(sdk_directory);
-				}
-
-				File deleteTxt = new File(DELETE_FILE);
-				if (deleteTxt.exists()) {
-					deleteFileFromList(DELETE_FILE);
-					deleteTxt.delete();
-				}
-
-				File script = new File(FULL_SCRIPT_PATH);
-				if (script.exists()) {
-					if (script.setExecutable(true)) {
-						runScript(FULL_SCRIPT_PATH);
-					} else {
-						log.error("Could not change to executable permission for file {} ", FULL_SCRIPT_PATH);
-					}
-				}
+				log.info("{} deleting directory {}", LOG_PREFIX, TEMP_SDK_DIR);
+				FileUtils.deleteDirectory(sdk_directory);
 			}
 
+			File deleteTxt = new File(DELETE_FILE);
+			if (deleteTxt.exists()) {
+				log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
+				deleteFileFromList(DELETE_FILE);
+
+				log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
+				deleteTxt.delete();
+			}
+
+			File script = new File(FULL_SCRIPT_PATH);
+			if (script.exists()) {
+				if (script.setExecutable(true)) {
+					log.info("{} ready to execute script {}", LOG_PREFIX, FULL_SCRIPT_PATH);
+					runScript(FULL_SCRIPT_PATH);
+				} else {
+					log.error("{} could not change to executable permission for file {}", LOG_PREFIX, FULL_SCRIPT_PATH);
+				}
+			}
 		} catch (SecurityException | IOException e) {
 			log.error("Exception during handleUpdateFeature ", e);
 		}
 	}
-
 
 	private void deleteFileFromList(String deleteFileListName) {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -168,15 +183,16 @@ public class FreezeHandler {
 			while ((line = br.readLine()) != null) {
 
 				if (line.contains("..")) {
-					log.warn("Skip delete file {}", line);
+					log.warn("{} skip delete file {} located in parent directory ", LOG_PREFIX, line);
 				} else {
 					String fullPath = TARGET_DIR + File.separator + line;
 					File file = new File(fullPath);
+					log.info("{} deleting file  {}", LOG_PREFIX, fullPath);
 					if (file.exists()) {
 						if (file.delete()) {
-							log.info("Successfully deleted file {}", fullPath);
+							log.info("{} successfully deleted file {}", LOG_PREFIX, fullPath);
 						} else {
-							log.error("Could not delete file {}", fullPath);
+							log.error("{} could not delete file {}", LOG_PREFIX, fullPath);
 						}
 					}
 				}
@@ -188,10 +204,10 @@ public class FreezeHandler {
 
 	private void runScript(String scriptFullPath) {
 		try {
-			log.info("Start running script: {}", scriptFullPath);
-			Runtime.getRuntime().exec(" nohup " + scriptFullPath );
+			log.info("{} start running script: {}", LOG_PREFIX, scriptFullPath);
+			Runtime.getRuntime().exec(" nohup " + scriptFullPath + " " + platform.getSelfId().getId());
 		} catch (SecurityException | NullPointerException | IllegalArgumentException | IOException e) {
-			log.error("Run script exception ", e);
+			log.error("{} run script exception ", LOG_PREFIX, e);
 		}
 	}
 }

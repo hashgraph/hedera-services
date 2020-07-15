@@ -21,7 +21,10 @@ package com.hedera.services.utils;
  */
 
 import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -57,6 +60,7 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.GetByKeyQuery;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -71,7 +75,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -99,7 +103,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.*;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,6 +114,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
+	@Test
+	public void asFcKeyUncheckedTranslatesExceptions() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> MiscUtils.asFcKeyUnchecked(null));
+	}
+
+	@Test
+	public void asFcKeyUncheckedWorks() {
+		// setup:
+		byte[] fakePrivateKey = "not-really-a-key!".getBytes();
+		// and:
+		Key matchingKey = Key.newBuilder().setEd25519(ByteString.copyFrom(fakePrivateKey)).build();
+
+		// given:
+		var expected = new JEd25519Key(fakePrivateKey);
+
+		// expect:
+		assertTrue(JKey.equalUpToDecodability(expected, MiscUtils.asFcKeyUnchecked(matchingKey)));
+	}
+
 	@Test
 	public void recoversKeypair() throws Exception {
 		// setup:
@@ -199,12 +223,12 @@ public class MiscUtilsTest {
 	@Test
 	public void prettyPrintsJTransactionRecordFcll() {
 		// given:
-		LinkedList<JTransactionRecord> records = new LinkedList<>();
-		records.add(convert(
+		LinkedList<ExpirableTxnRecord> records = new LinkedList<>();
+		records.add(fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS))
 						.build()));
-		records.add(convert(
+		records.add(fromGprc(
 				TransactionRecord.newBuilder()
 						.setReceipt(TransactionReceipt.newBuilder().setStatus(INVALID_ACCOUNT_ID))
 						.build()));

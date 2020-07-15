@@ -21,10 +21,11 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -44,7 +45,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
@@ -62,35 +63,35 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
 
 @RunWith(JUnitPlatform.class)
 public class ContextOptionValidatorTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private Instant now = Instant.now();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
-	final private HederaAccount aV = MapValueFactory.newAccount().get();
+	final private MerkleAccount aV = MapValueFactory.newAccount().get();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
 	final private AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID missingContract = ContractID.newBuilder().setContractNum(5_431L).build();
 	final private AccountID deleted = AccountID.newBuilder().setAccountNum(2_234L).build();
-	final private HederaAccount deletedV = MapValueFactory.newAccount().deleted(true).get();
+	final private MerkleAccount deletedV = MapValueFactory.newAccount().deleted(true).get();
 	final private ContractID contract = ContractID.newBuilder().setContractNum(5_432L).build();
-	final private HederaAccount contractV = MapValueFactory.newAccount().isSmartContract(true).get();
+	final private MerkleAccount contractV = MapValueFactory.newAccount().isSmartContract(true).get();
 	final private ContractID deletedContract = ContractID.newBuilder().setContractNum(4_432L).build();
-	final private HederaAccount deletedContractV =
+	final private MerkleAccount deletedContractV =
 			MapValueFactory.newAccount().isSmartContract(true).deleted(true).get();
 	final private TopicID missingTopicId = TopicID.newBuilder().setTopicNum(1_234L).build();
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
 
-	private Topic missingTopic;
-	private Topic deletedTopic;
-	private Topic expiredTopic;
-	private Topic topic;
+	private MerkleTopic missingMerkleTopic;
+	private MerkleTopic deletedMerkleTopic;
+	private MerkleTopic expiredMerkleTopic;
+	private MerkleTopic merkleTopic;
 	private FCMap topics;
 	private FCMap accounts;
 	private HederaLedger ledger;
@@ -116,20 +117,20 @@ public class ContextOptionValidatorTest {
 		properties = mock(PropertySource.class);
 		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(100);
 		accounts = mock(FCMap.class);
-		given(accounts.get(getMapKey(a))).willReturn(aV);
-		given(accounts.get(getMapKey(deleted))).willReturn(deletedV);
-		given(accounts.get(getMapKey(contract))).willReturn(contractV);
-		given(accounts.get(getMapKey(deletedContract))).willReturn(deletedContractV);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(a))).willReturn(aV);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(deleted))).willReturn(deletedV);
+		given(accounts.get(fromPojoContractId(contract))).willReturn(contractV);
+		given(accounts.get(fromPojoContractId(deletedContract))).willReturn(deletedContractV);
 
 		topics = mock(FCMap.class);
-		missingTopic = TopicFactory.newTopic().memo("I'm not here").get();
-		deletedTopic = TopicFactory.newTopic().deleted(true).get();
-		expiredTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
-		topic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
-		given(topics.get(getMapKey(topicId))).willReturn(topic);
-		given(topics.get(getMapKey(missingTopicId))).willReturn(null);
-		given(topics.get(getMapKey(deletedTopicId))).willReturn(deletedTopic);
-		given(topics.get(getMapKey(expiredTopicId))).willReturn(expiredTopic);
+		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();
+		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
+		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
+		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
+		given(topics.get(MerkleEntityId.fromPojoTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(MerkleEntityId.fromPojoTopicId(missingTopicId))).willReturn(null);
+		given(topics.get(MerkleEntityId.fromPojoTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
+		given(topics.get(MerkleEntityId.fromPojoTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new JFileInfo(false, wacl, expiry);
@@ -183,8 +184,8 @@ public class ContextOptionValidatorTest {
 	@Test
 	public void usesConsensusTimeForTopicExpiry() {
 		// expect:
-		assertTrue(subject.isExpired(expiredTopic));
-		assertFalse(subject.isExpired(topic));
+		assertTrue(subject.isExpired(expiredMerkleTopic));
+		assertFalse(subject.isExpired(merkleTopic));
 	}
 
 	@Test

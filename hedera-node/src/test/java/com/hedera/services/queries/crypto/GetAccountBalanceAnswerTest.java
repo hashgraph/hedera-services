@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,7 +36,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -54,16 +55,16 @@ class GetAccountBalanceAnswerTest {
 	private OptionValidator optionValidator;
 	private String idLit = "0.0.12345";
 	private long balance = 1_234L;
-	private HederaAccount accountV = MapValueFactory.newAccount().balance(balance).get();
-	private HederaAccount contractV = MapValueFactory.newContract().balance(balance).get();
+	private MerkleAccount accountV = MapValueFactory.newAccount().balance(balance).get();
+	private MerkleAccount contractV = MapValueFactory.newContract().balance(balance).get();
 
 	private GetAccountBalanceAnswer subject;
 
 	@BeforeEach
 	private void setup() {
 		accounts = mock(FCMap.class);
-		given(accounts.get(getMapKey(asAccount(idLit)))).willReturn(accountV);
-		given(accounts.get(getMapKey(asContract(idLit)))).willReturn(contractV);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(idLit)))).willReturn(accountV);
+		given(accounts.get(fromPojoContractId(asContract(idLit)))).willReturn(contractV);
 		view = new StateView(StateView.EMPTY_TOPICS, accounts);
 
 		optionValidator = mock(OptionValidator.class);

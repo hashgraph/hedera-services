@@ -28,7 +28,7 @@ import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
@@ -38,10 +38,10 @@ import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestProperties;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 
 import java.math.BigInteger;
@@ -64,14 +64,14 @@ public class RepoNewCacheTest {
 
   @Ignore
   public void test() {
-    FCMap<MapKey, HederaAccount> accountMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize,
-        StorageValue::deserialize);
+    FCMap<MerkleEntityId, MerkleAccount> accountMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    TransactionalLedger<AccountID, MapValueProperty, HederaAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
-            () -> new HederaAccount(),
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
+            () -> new MerkleAccount(),
             new FCMapBackingAccounts(accountMap),
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
@@ -165,18 +165,19 @@ public class RepoNewCacheTest {
 
   @Test
   public void rollbackTest() {
-    FCMap<MapKey, HederaAccount> accountMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+    FCMap<MerkleEntityId, MerkleAccount> accountMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
     FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(accountMap);
-    TransactionalLedger<AccountID, MapValueProperty, HederaAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
-            () -> new HederaAccount(),
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
+            () -> new MerkleAccount(),
             backingAccounts,
             new ChangeSummaryManager<>());
-    HederaAccount someAccount = new HederaAccount();
-    HederaAccount someOtherAccount = new HederaAccount();
+    MerkleAccount someAccount = new MerkleAccount();
+    MerkleAccount someOtherAccount = new MerkleAccount();
     try {
       someAccount.setBalance(100_000_000L);
       someOtherAccount.setBalance(0L);

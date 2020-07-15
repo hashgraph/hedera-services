@@ -24,8 +24,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,9 +92,13 @@ public class BiasedDelegatingProvider implements OpProvider {
 		if (delegates.isEmpty()) {
 			return Optional.empty();
 		} else {
-			Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
-			op.ifPresent(this::configureDefaults);
-			return op;
+			while (true) {
+				Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
+				if(op.isPresent()) {
+					op.ifPresent(this::configureDefaults);
+					return op;
+				}
+			}
 		}
 
 	}
@@ -115,10 +119,13 @@ public class BiasedDelegatingProvider implements OpProvider {
 			((HapiTxnOp)op).deferStatusResolution();
 		}
 		if (!shouldLogNormalFlow) {
+//			log.info(String.format("configs: shouldAlwaysDefer = %b, shouldLogNormalFlow = %b", shouldAlwaysDefer, shouldLogNormalFlow));
+
 			if (isTxnOp) {
-				((HapiTxnOp)op).noLogging();
+				((HapiTxnOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
+
 			} else {
-				((HapiQueryOp)op).noLogging();
+				((HapiQueryOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT);
 			}
 		}
 	}

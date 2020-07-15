@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo 'Platform - Signed state loaded from disk has a valid hash.'
+echo 'ServicesState - Init called on Services node .* WITH Merkle saved state'

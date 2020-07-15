@@ -22,7 +22,7 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.hedera.services.legacy.core.jproto.JContractFunctionResult;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import org.apache.commons.codec.binary.Hex;
 
 import java.util.Collections;
@@ -48,9 +48,9 @@ public class PojoFunctionResult {
 	private List<String> creations = Collections.emptyList();
 	private List<PojoFunctionLog> logs = Collections.EMPTY_LIST;;
 
-	public static PojoFunctionResult from(JContractFunctionResult value) {
+	public static PojoFunctionResult from(SolidityFnResult value) {
 		var pojo = new PojoFunctionResult();
-		pojo.setId(PojoRecord.asString(value.getContractID()));
+		pojo.setId(PojoRecord.asString(value.getContractId()));
 		pojo.setGas(value.getGasUsed());
 		if (value.getResult() != null) {
 			pojo.setResult(Hex.encodeHexString(value.getResult()));
@@ -58,13 +58,13 @@ public class PojoFunctionResult {
 		if (value.getBloom() != null) {
 			pojo.setBloom(Hex.encodeHexString(value.getBloom()));
 		}
-		if (value.getjContractLogInfo() != null) {
-			pojo.setLogs(value.getjContractLogInfo().stream().map(PojoFunctionLog::from).collect(toList()));
+		if (value.getLogs() != null) {
+			pojo.setLogs(value.getLogs().stream().map(PojoFunctionLog::from).collect(toList()));
 		}
-		if (value.getjCreatedContractIDs() != null) {
-			pojo.setCreations(value.getjCreatedContractIDs()
+		if (value.getCreatedContractIds() != null) {
+			pojo.setCreations(value.getCreatedContractIds()
 					.stream()
-					.map(jId -> String.format("%d.%d.%d", jId.getShardNum(), jId.getRealmNum(), jId.getAccountNum()))
+					.map(jId -> String.format("%d.%d.%d", jId.shard(), jId.realm(), jId.num()))
 					.collect(toList()));
 		}
 		pojo.setError(value.getError());

@@ -2,16 +2,16 @@
 #!/usr/bin/env bash
 
 # script to test update feature on local macOS
-# 
+#
 # Steps
-#   from directory test-clients/
+#   from directory hedera-node
 #   launch HGCApp
 #
 #   run test to update jar files
 #       ./scripts/updateFiles.sh updateFiles/
 #
 #   run test to update settings.txt
-#       ./scripts/updateFiles.sh 
+#       ./scripts/updateFiles.sh
 #
 #
 set -eE
@@ -78,20 +78,20 @@ if [[ -n $1 ]]; then
     checkUpdateResult "$OLD_MARKER" hgcaa.log
 
     #run client test before freeze
-    mvn exec:java -Dexec.mainClass=MultipleCryptoTransfers -Dexec.args='0 3 ' -Dexec.cleanupDaemonThreads=false
+    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoCreateSuite -Dexec.cleanupDaemonThreads=false
 
     updateServiceMainJava
 
     newFileDir=$1
     targeFileID=$2
 
-    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.freeze.UpdateServerFiles -Dexec.args="$newFileDir $targeFileID" -Dexec.cleanupDaemonThreads=false 
+    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.freeze.UpdateServerFiles -Dexec.args="$newFileDir $targeFileID" -Dexec.cleanupDaemonThreads=false
 
     echo "sleep to wait hgc server freeze then restart"
     sleep 120
 
     #run client test after freeze
-    mvn exec:java -Dexec.mainClass=TxRecordTest -Dexec.args='0 3 ' -Dexec.cleanupDaemonThreads=false
+    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoTransferSuite -Dexec.cleanupDaemonThreads=false
 
     checkUpdateResult "$NEW_MARKER" hgcaa.log
 
@@ -99,14 +99,14 @@ else
     echo "---------- run test to update settings.txt -----------"
 
     #run client test before freeze
-    mvn exec:java -Dexec.mainClass=MultipleCryptoTransfers -Dexec.args='0 3 ' -Dexec.cleanupDaemonThreads=false
+    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoCreateSuite -Dexec.cleanupDaemonThreads=false
 
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.freeze.FreezeSuite -Dexec.cleanupDaemonThreads=false
     echo "sleep to wait hgc server freeze then restart"
     sleep 120
 
     #run client test after freeze
-    mvn exec:java -Dexec.mainClass=TxRecordTest -Dexec.args='0 3 ' -Dexec.cleanupDaemonThreads=false
+    mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoTransferSuite -Dexec.cleanupDaemonThreads=false
 
     checkUpdateResult "ERROR: fakeParameter is not a valid setting name" swirlds.log
 

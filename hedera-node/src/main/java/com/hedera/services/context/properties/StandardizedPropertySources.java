@@ -70,7 +70,7 @@ public class StandardizedPropertySources implements PropertySources {
 	public static final String VERSION_INFO_PROPERTIES_FILE = "semantic-version.properties";
 	public static final String VERSION_INFO_PROPERTIES_PROTO_KEY = "hapi.proto.version";
 	public static final String VERSION_INFO_PROPERTIES_SERVICES_KEY = "hedera.services.version";
-	private static final int MAX_MEMO_UTF8_BYTES = 100;
+	public static final int MAX_MEMO_UTF8_BYTES = 100;
 	public static final int PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES = 10;
 	public static final int PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS = 10;
 	public static final long LONG_MASK = 0xffffffffL;
@@ -249,6 +249,9 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("throttling.hcs.submitMessage.burstPeriod", PropertiesLoader::getSubmitMessageBurstPeriod);
 		source.put("throttling.hcs.getTopicInfo.tps", PropertiesLoader::getGetTopicInfoTps);
 		source.put("throttling.hcs.getTopicInfo.burstPeriod", PropertiesLoader::getGetTopicInfoBurstPeriod);
+
+		source.put("timer.stats.dump.started", PropertiesLoader::getStartStatsDumpTimer);
+		source.put("timer.stats.dump.value", PropertiesLoader::getStatsDumpTimerValue);
 
 		return source;
 	}

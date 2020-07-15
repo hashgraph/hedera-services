@@ -21,7 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.Optional;
 
@@ -41,5 +41,5 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void reviewExistingRecords(long ignore) { }
 
   @Override
-  public Optional<JTransactionRecord> lastCreatedRecord() { return Optional.empty(); }
+  public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
 }

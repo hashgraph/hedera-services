@@ -28,13 +28,13 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
@@ -46,8 +46,8 @@ import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,14 +57,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -81,6 +79,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class SysFilesUpdate extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysFilesUpdate.class);
+
+	final static long TINYBARS_PER_HBAR = 100_000_000L;
+	final static long DEFAULT_FEE_IN_HBARS = 100L;
 
 	final static String DEV_TARGET_DIR = "/Users/tinkerm/Dev/misc/tools/scratch";
 
@@ -148,6 +149,12 @@ public class SysFilesUpdate extends HapiApiSuite {
 				dumpAvailPubKeys();
 			}
 		}
+	}
+
+	public static long feeToOffer() {
+		return Optional.ofNullable(System.getenv("TXN_FEE"))
+				.map(s -> Long.parseLong(s) * TINYBARS_PER_HBAR)
+				.orElse(DEFAULT_FEE_IN_HBARS * TINYBARS_PER_HBAR);
 	}
 
 	private static void writeDefaultSysFilesPem() throws IOException {
@@ -219,7 +226,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 				ServicesConfigurationList.Builder protoConfig = ServicesConfigurationList.newBuilder();
 				jutilConfig.stringPropertyNames()
 						.stream()
-						.sorted(LEGACY_THROTTLES_FIRST_ORDER)
+						.sorted(JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER)
 						.forEach(prop -> protoConfig.addNameValue(Setting.newBuilder()
 								.setName(prop)
 								.setValue(jutilConfig.getProperty(prop))));
@@ -264,6 +271,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							if (toUpload.length < (6 * 1024)) {
 								var singleOp = fileUpdate(registryNames.get(target))
+										.fee(feeToOffer())
 										.contents(toUpload)
 										.signedBy(GENESIS, DEFAULT_SYSFILE_KEY);
 								CustomSpecAssert.allRunFor(spec, singleOp);
@@ -275,12 +283,14 @@ public class SysFilesUpdate extends HapiApiSuite {
 									HapiSpecOperation subOp;
 									if (n == 0) {
 										subOp = fileUpdate(registryNames.get(target))
+												.fee(feeToOffer())
 												.wacl("insurance")
 												.contents(thisChunk)
 												.signedBy(GENESIS, DEFAULT_SYSFILE_KEY)
 												.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED);
 									} else {
 										subOp = fileAppend(registryNames.get(target))
+												.fee(feeToOffer())
 												.content(thisChunk)
 												.signedBy(GENESIS, DEFAULT_SYSFILE_KEY)
 												.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED);
@@ -314,7 +324,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 			return proto.getNameValueList()
 					.stream()
 					.map(setting -> String.format("%s=%s", setting.getName(), setting.getValue()))
-					.sorted(LEGACY_THROTTLES_FIRST_ORDER)
+					.sorted(JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER)
 					.collect(Collectors.joining("\n"));
 		}
 	}
@@ -446,23 +456,6 @@ public class SysFilesUpdate extends HapiApiSuite {
 
 		var byteSink = Files.asByteSink(file);
 		byteSink.write(CommonUtils.base64encode(baos.toByteArray()).getBytes());
-	}
-
-	static Set<String> legacyBouncerProps = Set.of("throttlingTps", "simpletransferTps", "getReceiptTps", "queriesTps");
-	static final Comparator<String> LEGACY_THROTTLES_FIRST_ORDER = Comparator.<String>comparingInt(prop -> {
-		if (isLegacyBouncerProp(prop)) {
-			return 0;
-		} else if (prop.startsWith("throttling.hcs")) {
-			return 1;
-		} else {
-			return 2;
-		}
-	}).thenComparing(Comparator.naturalOrder());
-
-	private static boolean isLegacyBouncerProp(String prop) {
-		return (!prop.contains("="))
-				? legacyBouncerProps.contains(prop)
-				: legacyBouncerProps.contains(prop.substring(0, prop.indexOf("=")));
 	}
 
 	private static void dumpAvailPubKeys() throws IOException {

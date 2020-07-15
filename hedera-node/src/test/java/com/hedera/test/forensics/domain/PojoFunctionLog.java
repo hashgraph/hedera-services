@@ -22,7 +22,7 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.hedera.services.legacy.core.jproto.JContractLogInfo;
+import com.hedera.services.state.submerkle.SolidityLog;
 import org.apache.commons.codec.binary.Hex;
 
 import java.util.Collections;
@@ -43,17 +43,17 @@ public class PojoFunctionLog {
 	private String bloom;
 	private List<String> topics = Collections.EMPTY_LIST;
 
-	public static PojoFunctionLog from(JContractLogInfo value) {
+	public static PojoFunctionLog from(SolidityLog value) {
 		var pojo = new PojoFunctionLog();
-		pojo.setId(PojoRecord.asString(value.getContractID()));
+		pojo.setId(PojoRecord.asString(value.getContractId()));
 		if (value.getData() != null) {
 			pojo.setData(Hex.encodeHexString(value.getData()));
 		}
 		if (value.getBloom() != null) {
 			pojo.setBloom(Hex.encodeHexString(value.getBloom()));
 		}
-		if (value.getTopic() != null) {
-			pojo.setTopics(value.getTopic().stream().map(Hex::encodeHexString).collect(toList()));
+		if (value.getTopics() != null) {
+			pojo.setTopics(value.getTopics().stream().map(Hex::encodeHexString).collect(toList()));
 		}
 		return pojo;
 	}

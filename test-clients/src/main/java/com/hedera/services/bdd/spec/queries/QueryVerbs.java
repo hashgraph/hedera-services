@@ -53,6 +53,9 @@ public class QueryVerbs {
 	public static HapiGetFileInfo getFileInfo(String file) {
 		return new HapiGetFileInfo(file);
 	}
+	public static HapiGetFileInfo getFileInfo(Supplier<String> supplier) {
+		return new HapiGetFileInfo(supplier);
+	}
 
 	public static HapiGetFileContents getFileContents(String file) {
 		return new HapiGetFileContents(file);
