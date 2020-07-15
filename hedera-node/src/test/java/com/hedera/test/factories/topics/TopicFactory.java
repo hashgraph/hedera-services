@@ -20,13 +20,13 @@ package com.hedera.test.factories.topics;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
+import com.hedera.services.state.submerkle.RichInstant;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -41,18 +41,18 @@ public class TopicFactory {
 	private Optional<AccountID> autoRenewAccount = Optional.empty();
 
 	private TopicFactory() {}
-	public Topic get() throws Exception {
-		Topic value = new Topic();
+	public MerkleTopic get() throws Exception {
+		MerkleTopic value = new MerkleTopic();
 
 		value.setDeleted(isDeleted);
 		memo.ifPresent(s -> value.setMemo(s));
 		expiry.ifPresent(secs ->
-				value.setExpirationTimestamp(JTimestamp.convert(
+				value.setExpirationTimestamp(RichInstant.fromGrpc(
 						Timestamp.newBuilder().setSeconds(secs).build())));
 		autoRenewDuration.ifPresent(value::setAutoRenewDurationSeconds);
 		adminKey.ifPresent(k -> value.setAdminKey(uncheckedMap(k)));
 		submitKey.ifPresent(k -> value.setSubmitKey(uncheckedMap(k)));
-		autoRenewAccount.ifPresent(id -> value.setAutoRenewAccountId(JAccountID.convert(id)));
+		autoRenewAccount.ifPresent(id -> value.setAutoRenewAccountId(EntityId.ofNullableAccountId(id)));
 
 		return value;
 	}

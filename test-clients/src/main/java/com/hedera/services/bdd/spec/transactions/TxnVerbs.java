@@ -43,6 +43,7 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class TxnVerbs {
 	/* All supported non-system, non-claim txn types as of 09/17/19:
@@ -99,6 +100,9 @@ public class TxnVerbs {
 	}
 	public static HapiFileDelete fileDelete(String fileName) {
 		return new HapiFileDelete(fileName);
+	}
+	public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
+		return new HapiFileDelete(fileNameSupplier);
 	}
 
 	/* SYSTEM */

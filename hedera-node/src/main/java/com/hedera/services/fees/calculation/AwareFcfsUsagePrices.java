@@ -121,8 +121,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception e) {
-			log.warn("Only default usage prices available for function {} @ {}!", function, at);
-			log.warn(e.getMessage());
+			log.warn("Only default usage prices available for function {} @ {}!", function, at, e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

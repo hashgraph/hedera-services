@@ -23,13 +23,13 @@ package com.hedera.services.fees.calculation;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
@@ -45,16 +45,16 @@ import static com.hedera.services.legacy.logic.ApplicationConstants.*;
 
 @RunWith(JUnitPlatform.class)
 class FeeCalcUtilsTest {
-	private final MapKey key = new MapKey(0, 0, 1234);
+	private final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
 
 	@Test
 	public void returnsAccountExpiryIfAvail() {
 		// setup:
-		HederaAccount account = mock(HederaAccount.class);
-		FCMap<MapKey, HederaAccount> accounts = mock(FCMap.class);
+		MerkleAccount account = mock(MerkleAccount.class);
+		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
 		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 
-		given(account.getExpirationTime()).willReturn(Long.MAX_VALUE);
+		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
 		given(accounts.get(key)).willReturn(account);
 
 		// when:

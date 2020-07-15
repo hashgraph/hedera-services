@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -58,8 +59,8 @@ import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.LegacyToBucketTransitionSpec;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,6 +99,35 @@ public class SuiteRunner {
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
+		/* CI jobs */
+		put("CiConsensusAndCryptoJob", aof(
+				new TopicCreateSuite(),
+				new TopicUpdateSuite(),
+				new TopicDeleteSuite(),
+				new SubmitMessageSuite(),
+				new ChunkingSuite(),
+				new TopicGetInfoSuite(),
+				new ConsensusThrottlesSuite(),
+				new LegacyToBucketTransitionSpec(),
+				new SpecialAccountsAreExempted(),
+				new CryptoCreateSuite(),
+				new CryptoTransferSuite(),
+				new CryptoRecordsSanityCheckSuite(),
+				new Issue2144Spec()));
+		put("CiFileJob", aof(
+				new FileRecordsSanityCheckSuite(),
+				new VersionInfoSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new SysDelSysUndelSpec()));
+		put("CiSmartContractJob", aof(
+				new NewOpInConstructorSuite(),
+				new IssueXXXXSpec(),
+				new FetchSystemFiles(),
+				new ChildStorageSpec(),
+				new DeprecatedContractKeySuite(),
+				new ThresholdRecordCreationSuite(),
+				new ContractRecordsSanityCheckSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */

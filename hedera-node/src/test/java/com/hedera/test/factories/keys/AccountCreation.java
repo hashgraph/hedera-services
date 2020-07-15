@@ -27,7 +27,11 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.initialization.NodeAccountsCreation;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.config.PropertiesLoader;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -104,8 +108,16 @@ public class AccountCreation {
 
     accountKeyPairHolder.put(ApplicationConstants.INITIAL_ACCOUNTS, acctKeyList);
 
-    byte[] accountKeyPairHolderBytes = NodeAccountsCreation.convertToBytes(accountKeyPairHolder);
+    byte[] accountKeyPairHolderBytes = convertToBytes(accountKeyPairHolder);
     String keyBase64Pub = Base64.getEncoder().encodeToString(accountKeyPairHolderBytes);
     NodeAccountsCreation.writeToFileUTF8(path, keyBase64Pub);
   }
+
+  public static byte[] convertToBytes(Object object) throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutput out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        }
+    }
 }

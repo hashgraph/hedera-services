@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 @RunWith(JUnitPlatform.class)
 class PureValidationTest {

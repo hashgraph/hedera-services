@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;

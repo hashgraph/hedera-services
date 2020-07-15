@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,9 +108,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(JAccountID.convert(proxy), changes.get(MapValueProperty.PROXY));
+		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(AccountProperty.PROXY));
 	}
 
 	@Test
@@ -127,9 +127,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(MapValueProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
+		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -147,9 +147,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(MapValueProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
+		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -166,9 +166,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(true, changes.get(MapValueProperty.IS_RECEIVER_SIG_REQUIRED));
+		assertEquals(true, changes.get(AccountProperty.IS_RECEIVER_SIG_REQUIRED));
 	}
 
 	@Test
@@ -186,9 +186,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(true, changes.get(MapValueProperty.IS_RECEIVER_SIG_REQUIRED));
+		assertEquals(true, changes.get(AccountProperty.IS_RECEIVER_SIG_REQUIRED));
 	}
 
 	@Test
@@ -205,9 +205,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(MapValueProperty.FUNDS_SENT_RECORD_THRESHOLD));
+		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -224,9 +224,9 @@ public class CryptoUpdateTransitionLogicTest {
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(expiry, (long)changes.get(MapValueProperty.EXPIRY));
+		assertEquals(expiry, (long)changes.get(AccountProperty.EXPIRY));
 	}
 
 	@Test
@@ -243,9 +243,9 @@ public class CryptoUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(MapValueProperty.FUNDS_SENT_RECORD_THRESHOLD));
+		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -261,9 +261,9 @@ public class CryptoUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(autoRenewPeriod, changes.get(MapValueProperty.AUTO_RENEW_PERIOD));
+		assertEquals(autoRenewPeriod, changes.get(AccountProperty.AUTO_RENEW_PERIOD));
 	}
 
 	@Test
@@ -279,9 +279,9 @@ public class CryptoUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).customize(argThat(target::equals), captor.capture());
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(key, JKey.mapJKey((JKey)changes.get(MapValueProperty.KEY)));
+		assertEquals(key, JKey.mapJKey((JKey)changes.get(AccountProperty.KEY)));
 	}
 
 	@Test

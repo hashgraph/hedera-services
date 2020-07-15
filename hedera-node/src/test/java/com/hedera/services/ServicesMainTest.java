@@ -21,7 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.Profile;
@@ -30,6 +30,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -39,6 +40,7 @@ import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
@@ -50,7 +52,8 @@ import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.io.FCDataOutputStream;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.Logger;
@@ -94,7 +97,7 @@ public class ServicesMainTest {
 	FeeCalculator fees;
 	ServicesMain subject;
 	ServicesState localSignedState;
-	HederaNodeContext ctx;
+	ServicesContext ctx;
 	PropertySource properties;
 	LedgerValidator ledgerValidator;
 	AccountsExporter accountsExporter;
@@ -102,6 +105,7 @@ public class ServicesMainTest {
 	BalancesExporter balancesExporter;
 	PropertySanitizer propertySanitizer;
 	StateMigrations stateMigrations;
+	HederaNodeStats stats;
 	GrpcServerManager grpc;
 	SystemFilesManager systemFilesManager;
 	SystemAccountsCreator systemAccountsCreator;
@@ -112,6 +116,7 @@ public class ServicesMainTest {
 	private void setup() {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
+		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
@@ -134,9 +139,10 @@ public class ServicesMainTest {
 		addressBook = mock(AddressBook.class);
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
 
 		given(ctx.fees()).willReturn(fees);
+		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.pause()).willReturn(pause);
 		given(ctx.accounts()).willReturn(accounts);
@@ -161,6 +167,8 @@ public class ServicesMainTest {
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
+		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
 
 		subject = new ServicesMain();
@@ -205,6 +213,45 @@ public class ServicesMainTest {
 	}
 
 	@Test
+	public void exitsOnApplicationPropertiesLoading() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).loadApplicationProperties();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnAddressBookCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).createAddressBookIfMissing();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnCreationFailure() throws Exception {
+		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
+		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
+
+		willThrow(Exception.class)
+				.given(systemAccountsCreator).createSystemAccounts(any(), any());
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
 	public void initializesSanelyGivenPreconditions() {
 		// given:
 		InOrder inOrder = inOrder(
@@ -232,6 +279,9 @@ public class ServicesMainTest {
 		inOrder.verify(recordsHistorian).reviewExistingRecords(33L);
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);
+
+		// cleanup:
+		TimerUtils.stopStatsDumpTimer();
 	}
 
 	@Test
@@ -532,11 +582,11 @@ public class ServicesMainTest {
 	@Test
 	public void doesntDumpIfOngoingIss() throws Exception {
 		// setup:
-		byte[] topicRootHash = "sdfgf".getBytes();
+		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
 		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
+		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
 		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
+		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 		String acHashHex = Hex.encodeHexString(accountsRootHash);
 		var round = 1_234L;
 		var mockIssInfo = mock(IssEventInfo.class);
@@ -552,14 +602,14 @@ public class ServicesMainTest {
 		given(mockIssInfo.status()).willReturn(IssEventStatus.NO_KNOWN_ISS);
 		given(mockIssInfo.shouldDumpThisRound()).willReturn(false);
 		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
+		given(accounts.getRootHash()).willReturn(new Hash(accountsRootHash));
+		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
+		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
 		// and:
 		localSignedState = mock(ServicesState.class);
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
+		given(localSignedState.accounts()).willReturn(accounts);
+		given(localSignedState.storage()).willReturn(storage);
+		given(localSignedState.topics()).willReturn(topics);
 		// and:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -589,11 +639,11 @@ public class ServicesMainTest {
 	public void logsExpectedIssInfo() throws Exception {
 		// setup:
 		var round = 1_234L;
-		byte[] topicRootHash = "sdfgf".getBytes();
+		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
 		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
+		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
 		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
+		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
 		String acHashHex = Hex.encodeHexString(accountsRootHash);
 		// and:
 		byte[] hash = "xyz".getBytes();
@@ -613,21 +663,22 @@ public class ServicesMainTest {
 		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
 		Instant consensusTime = Instant.now();
 		// and:
-		FCDataOutputStream foutAccounts = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutStorage = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutTopics = mock(FCDataOutputStream.class);
-		Function<String, FCDataOutputStream> supplier = (Function<String, FCDataOutputStream>)mock(Function.class);
+		SerializableDataOutputStream foutAccounts = mock(SerializableDataOutputStream.class);
+		SerializableDataOutputStream foutStorage = mock(SerializableDataOutputStream.class);
+		SerializableDataOutputStream foutTopics = mock(SerializableDataOutputStream.class);
+		Function<String, SerializableDataOutputStream> supplier = (Function<String, SerializableDataOutputStream>)mock(Function.class);
 		subject.foutSupplier = supplier;
 		// and:
 		InOrder inOrder = inOrder(accounts, storage, topics, foutAccounts, foutStorage, foutTopics, mockIssInfo);
 
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
+		var arh = new Hash(accountsRootHash);
+		given(accounts.getRootHash()).willReturn(arh);
+		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
+		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
 		// and:
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
+		given(localSignedState.accounts()).willReturn(accounts);
+		given(localSignedState.storage()).willReturn(storage);
+		given(localSignedState.topics()).willReturn(topics);
 		// and:
 		given(supplier.apply(
 				String.format(ServicesMain.FC_DUMP_LOC_TPL,

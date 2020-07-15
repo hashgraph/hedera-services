@@ -58,6 +58,11 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 		public Function<TestAccount, Object> getter() {
 			return TestAccount::getThing;
 		}
+
+		@Override
+		public boolean requiresMutableRef() {
+			return true;
+		}
 	};
 
 	@Override

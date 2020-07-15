@@ -347,13 +347,17 @@ commands:
         description: Terraform vars to use
         type: string
         default: "ci.tfvars"
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       use-hugepage:
         description: Tell ansible to use hugepage mode when deploying
         type: boolean
         default: false
     steps:
       - fetch-testnet-control-assets:
-          infra-branch: "hashgraph-hedera-services"
+          infra-branch: << parameters.infra-branch >>
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
@@ -748,9 +752,9 @@ commands:
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
-          log: swirlds.log
+          log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
-          pattern-desc: valid signed state hash pattern
+          pattern-desc: merkle state restored
           times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
           sleep-secs: 7
@@ -1277,6 +1281,7 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
+          infra-branch: services-with-platform070
       - run-file-scenarios:
           requires:
             - start-singlejob-testnet
@@ -1320,6 +1325,10 @@ workflows:
 jobs:
   start-singlejob-testnet:
     parameters:
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       workflow-name:
         type: string
         default: ""
@@ -1327,7 +1336,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - start-testnet
+      - start-testnet:
+          infra-branch: << parameters.infra-branch >>
   cleanup-singlejob-testnet:
     executor: ci-test-executor
     steps:
@@ -1375,10 +1385,11 @@ jobs:
             mkdir -p /repo/test-clients/output
       - run:
           name: mvn install
+          # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              'mvn -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
-                 | tee /repo/test-clients/output/hapi-client.log'
+              "mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+              | tee /repo/test-clients/output/hapi-client.log"
       - run:
           name: Upload codecov
           command: |
@@ -1430,7 +1441,7 @@ jobs:
           name: mvn install
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-               'mvn clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
+               'mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
       - run:
           name: Upload built artifacts to S3 (for Ansible download)
           command: |

@@ -16,7 +16,10 @@ public class TimerUtils {
 	}
 
 	public static void startStatsDumpTimer(int timerValueInSeconds) {
-		statsDumpTimer.scheduleAtFixedRate(dumpHederaNodeStatsTask, INITIAL_DELAY_DUMP_STATS * 1000, timerValueInSeconds * 1000);
+		statsDumpTimer.scheduleAtFixedRate(
+				dumpHederaNodeStatsTask,
+				INITIAL_DELAY_DUMP_STATS * 1000,
+				timerValueInSeconds * 1000);
 	}
 
 	public static void stopStatsDumpTimer() {

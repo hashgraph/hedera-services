@@ -79,9 +79,12 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.sysfiles.SysFilesUpdate</mainClass>
                 </manifest>
               </archive>
-              <descriptorRefs>
-                <descriptorRef>jar-with-dependencies</descriptorRef>
-              </descriptorRefs>
+<!--              <descriptorRefs>-->
+<!--                <descriptorRef>jar-with-dependencies</descriptorRef>-->
+<!--              </descriptorRefs>-->
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
           <execution>
@@ -97,9 +100,14 @@
                   <mainClass>com.hedera.services.bdd.suites.utils.validation.ValidationScenarios</mainClass>
                 </manifest>
               </archive>
+				<!--
               <descriptorRefs>
                 <descriptorRef>jar-with-dependencies</descriptorRef>
               </descriptorRefs>
+              -->
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
           <execution>
@@ -142,7 +150,7 @@
     <repository>
       <id>ossrh-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1145</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1146</url>
     </repository>
     <repository>
       <id>Ethereum</id>

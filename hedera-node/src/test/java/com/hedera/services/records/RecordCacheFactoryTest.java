@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.cache.Cache;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -33,7 +33,6 @@ import org.junit.runner.RunWith;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
@@ -48,7 +47,7 @@ class RecordCacheFactoryTest {
 	private TransactionID txnIdB = TransactionID.newBuilder()
 			.setAccountID(asAccount("2.2.0"))
 			.build();
-	private JTransactionRecord record = new JTransactionRecord();
+	private ExpirableTxnRecord record = new ExpirableTxnRecord();
 
 	private PropertySource properties;
 	private RecordCacheFactory subject;
@@ -62,7 +61,7 @@ class RecordCacheFactoryTest {
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
 
 		// when:
-		Cache<TransactionID, Optional<JTransactionRecord>> cache = subject.getRecordCache();
+		Cache<TransactionID, Optional<ExpirableTxnRecord>> cache = subject.getRecordCache();
 		cache.put(txnIdA, Optional.of(record));
 
 		// then:

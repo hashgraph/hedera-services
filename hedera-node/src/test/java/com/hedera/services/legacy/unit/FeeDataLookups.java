@@ -20,7 +20,7 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
@@ -28,8 +28,8 @@ import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.swirlds.fcmap.FCMap;
@@ -153,12 +153,12 @@ public class FeeDataLookups {
 	}
 
 	static public FeeData getConsensusUpdateTopicTransactionFeeMatrices(
-			TransactionBody txBody, SigValueObj sigValObj, FCMap<MapKey, Topic> topicFCMap) throws Exception {
-		Topic topic = topicFCMap.get(MapKey.getMapKey(txBody.getConsensusUpdateTopic().getTopicID()));
+			TransactionBody txBody, SigValueObj sigValObj, FCMap<MerkleEntityId, MerkleTopic> topicFCMap) throws Exception {
+		MerkleTopic merkleTopic = topicFCMap.get(MerkleEntityId.fromPojoTopicId(txBody.getConsensusUpdateTopic().getTopicID()));
 		long rbsIncrease = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
 				txBody.getTransactionID().getTransactionValidStart(),
-				JKey.mapJKey(topic.getAdminKey()), JKey.mapJKey(topic.getSubmitKey()),
-				topic.getMemo(), topic.hasAutoRenewAccountId(), getTopicExpirationTimeStamp(topic),
+				JKey.mapJKey(merkleTopic.getAdminKey()), JKey.mapJKey(merkleTopic.getSubmitKey()),
+				merkleTopic.getMemo(), merkleTopic.hasAutoRenewAccountId(), getTopicExpirationTimeStamp(merkleTopic),
 				txBody.getConsensusUpdateTopic());
 		return ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txBody, rbsIncrease, sigValObj);
 	}
@@ -166,8 +166,8 @@ public class FeeDataLookups {
 	public static FeeData computeUsageMetrics(
 			TransactionBody txBody,
 			FileServiceHandler fileHandler,
-			FCMap<MapKey, HederaAccount> accountFCMap,
-			FCMap<MapKey, Topic> topicFCMap, SigValueObj sigValObj
+			FCMap<MerkleEntityId, MerkleAccount> accountFCMap,
+			FCMap<MerkleEntityId, MerkleTopic> topicFCMap, SigValueObj sigValObj
 	) {
 		FeeData feeMatrices = FeeData.getDefaultInstance();
 		try {
@@ -178,10 +178,10 @@ public class FeeDataLookups {
 			} else if (txBody.hasCryptoDelete()) {
 				feeMatrices = getCryptoDeleteTransactionFeeMatrices(txBody, sigValObj);
 			} else if (txBody.hasCryptoUpdateAccount()) {
-				MapKey accountIDMapKey = MapKey.getMapKey(txBody.getTransactionID().getAccountID());
-				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(accountIDMapKey, accountFCMap);
-				HederaAccount account = accountFCMap.get(accountIDMapKey);
-				Key existingKey = JKey.mapJKey(account.getAccountKeys());
+				MerkleEntityId accountIDMerkleEntityId = MerkleEntityId.fromPojoAccountId(txBody.getTransactionID().getAccountID());
+				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(accountIDMerkleEntityId, accountFCMap);
+				MerkleAccount account = accountFCMap.get(accountIDMerkleEntityId);
+				Key existingKey = JKey.mapJKey(account.getKey());
 				feeMatrices = getCryptoUpdateTransactionFeeMatrices(txBody, expirationTimeStamp, sigValObj, existingKey);
 			} else if (txBody.hasContractCreateInstance()) {
 				feeMatrices = getSmartContractCreateTransactionFeeMatrices(txBody, sigValObj);
@@ -189,7 +189,7 @@ public class FeeDataLookups {
 				feeMatrices = getSmartContractCallTransactionFeeMatrices(txBody, sigValObj);
 			} else if (txBody.hasContractUpdateInstance()) {
 				ContractID contractID = txBody.getContractUpdateInstance().getContractID();
-				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(MapKey.getMapKey(contractID), accountFCMap);
+				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(MerkleEntityId.fromPojoContractId(contractID), accountFCMap);
 				feeMatrices = getSmartContractUpdateTransactionFeeMatrices(txBody, expirationTimeStamp, sigValObj);
 			} else if (txBody.hasFileCreate()) {
 				feeMatrices = getFileCreateTransactionFeeMatrices(txBody, sigValObj);
@@ -226,9 +226,9 @@ public class FeeDataLookups {
 		return feeMatrices;
 	}
 
-	public static Timestamp getTopicExpirationTimeStamp(Topic topic) {
+	public static Timestamp getTopicExpirationTimeStamp(MerkleTopic merkleTopic) {
 		try {
-			long expiration = topic.getExpirationTimestamp().getSeconds();
+			long expiration = merkleTopic.getExpirationTimestamp().getSeconds();
 			return Timestamp.newBuilder().setSeconds(expiration).build();
 		}catch(NullPointerException e) {
 			// for invalid topic id, there wont be any expiration time, but network and node fee will be charged
