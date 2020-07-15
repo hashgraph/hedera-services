@@ -63,10 +63,11 @@ import org.apache.logging.log4j.Logger;
 public class NodeAccountsCreation {
 	private static final Logger log = LogManager.getLogger(NodeAccountsCreation.class);
 
-	private static String GEN_ACCOUNT_PATH = PropertiesLoader.getGenAccountPath();
-	private static String GEN_PUB_KEY_PATH = PropertiesLoader.getGenPubKeyPath();
-	private static String GEN_PRIV_KEY_PATH = PropertiesLoader.getGenPrivKeyPath();
-	private static String GEN_PUB_KEY_32BYTES_PATH = PropertiesLoader.getGenPub32KeyPath();
+	static String GEN_ACCOUNT_PATH = PropertiesLoader.getGenAccountPath();
+	static String GEN_PRIV_KEY_PATH = PropertiesLoader.getGenPrivKeyPath();
+	static String GEN_PUB_KEY_PATH = PropertiesLoader.getGenPubKeyPath();
+	static String GEN_PUB_KEY_32BYTES_PATH = PropertiesLoader.getGenPub32KeyPath();
+
 	private static long INITIAL_GENESIS_COINS = PropertiesLoader.getInitialGenesisCoins();
 	private static long INITIAL_COINS = PropertiesLoader.getInitialCoins();
 
@@ -113,6 +114,7 @@ public class NodeAccountsCreation {
 		try {
 			keysListMap = (Map<String, List<AccountKeyListObj>>) convertFromBytes(accountKeyPairHolderBytes);
 		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
 			log.error("Unable to deserialize startup keystore!", e);
 		}
 		return keysListMap;
