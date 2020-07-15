@@ -61,7 +61,7 @@ RUN mkdir /opt/hedera/services/config-mount
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
 # Maven
-RUN apt-get install -y maven
+RUN apt-get update && apt-get install -y maven
 WORKDIR /opt/hedera/services
 # Install Services
 COPY .env /opt/hedera/services
