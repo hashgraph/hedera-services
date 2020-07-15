@@ -18,6 +18,7 @@ hs_err_pid*
 
 *.sh
 *.json
+!hedera-node/src/test/resources/legacyAccounts.json
 .circleci/*.yml-excerpt
 hedera-node/*.sh
 hedera-node/*.csv
