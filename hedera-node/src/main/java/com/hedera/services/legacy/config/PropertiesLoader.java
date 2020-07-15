@@ -387,4 +387,13 @@ public class PropertiesLoader {
     public static int getMaxFileSize() {
 		 return SyncPropertiesObject.getMaxFileSize();
 	}
+
+	public static boolean getStartStatsDumpTimer() {
+		return AsyncPropertiesObject.getStartStatsDumpTimer();
+	}
+
+	public static int getStatsDumpTimerValue() {
+		return AsyncPropertiesObject.getStatsDumpTimerValue();
+	}
+
 }

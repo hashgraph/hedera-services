@@ -25,14 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
 import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,6 +46,14 @@ class BlobStorageSourceTest {
 		blobDelegate = mock(Map.class);
 
 		subject = new BlobStorageSource(blobDelegate);
+	}
+
+	@Test
+	public void unsupportedOpsThrow() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.reset());
+		assertThrows(UnsupportedOperationException.class, () -> subject.prefixLookup(new byte[0], 0));
+		assertThrows(UnsupportedOperationException.class, () -> subject.init(null));
 	}
 
 	@Test

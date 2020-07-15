@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -35,7 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 
 @RunWith(JUnitPlatform.class)
 public class CryptoCreateTransitionLogicTest {
@@ -180,7 +180,7 @@ public class CryptoCreateTransitionLogicTest {
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		EnumMap<MapValueProperty, Object> changes = captor.getValue().getChanges();
+		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(7, changes.size());
 		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
 		assertEquals(customSendThreshold, (long)changes.get(FUNDS_SENT_RECORD_THRESHOLD));
@@ -188,7 +188,7 @@ public class CryptoCreateTransitionLogicTest {
 		assertEquals(expiry, (long)changes.get(EXPIRY));
 		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
-		assertEquals(JAccountID.convert(proxy), changes.get(PROXY));
+		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
 	}
 
 	@Test

@@ -25,25 +25,31 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.Optional;
 import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
 public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	static final Logger log = LogManager.getLogger(HapiGetFileInfo.class);
-	final private String file;
+
+	private static final String MISSING_FILE = "<n/a>";
+
+	private String file = MISSING_FILE;
+
 	private boolean immutable = false;
 	private Optional<Boolean> expectedDeleted = Optional.empty();
 	private Optional<String> expectedWacl = Optional.empty();
 	private Optional<LongSupplier> expectedExpiry = Optional.empty();
 	private Optional<LongPredicate> expiryTest = Optional.empty();
+	private Optional<Supplier<String>> fileSupplier = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -82,6 +88,10 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
 	public HapiGetFileInfo(String file) {
 		this.file = file;
+	}
+
+	public HapiGetFileInfo(Supplier<String> supplier) {
+		fileSupplier = Optional.of(supplier);
 	}
 
 	@Override
@@ -123,6 +133,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	}
 
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
 		var id = TxnUtils.asFileId(file, spec);
 		FileGetInfoQuery infoQuery = FileGetInfoQuery.newBuilder()
 			.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))

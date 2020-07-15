@@ -7,8 +7,14 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
+message ConsensusMessageChunkInfo {
+    TransactionID initialTransactionID = 1; // TransactionID of the first chunk, gets copied to every subsequent chunk in a fragmented message.
+    int32 total = 2; // The total number of chunks in the message.
+    int32 number = 3; // The sequence number (from 1 to total) of the current chunk in the message.
+}
+
 message ConsensusSubmitMessageTransactionBody {
     TopicID topicID = 1; // Topic to submit message to.
-
-    bytes message = 2; // Message to be submitted. Max size of the Transaction (including signatures) is 4kB.
+    bytes message = 2; // Message to be submitted. Max size of the Transaction (including signatures) is 6KiB.
+    ConsensusMessageChunkInfo chunkInfo = 3; // Optional information of the current chunk in a fragmented message.
 }

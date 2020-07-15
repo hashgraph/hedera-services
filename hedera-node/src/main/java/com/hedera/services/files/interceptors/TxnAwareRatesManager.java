@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,18 +61,18 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
 	private final TransactionContext txnCtx;
-	private final ExchangeRateSetWrapper midnightRates;
+	private final ExchangeRates midnightRates;
 	private final Consumer<ExchangeRateSet> postUpdateCb;
-	private final IntFunction<BiPredicate<ExchangeRateSetWrapper, ExchangeRateSet>> intradayLimitFactory;
+	private final IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory;
 
 	public TxnAwareRatesManager(
 			FileNumbers fileNums,
 			AccountNumbers accountNums,
 			PropertySource properties,
 			TransactionContext txnCtx,
-			ExchangeRateSetWrapper midnightRates,
+			ExchangeRates midnightRates,
 			Consumer<ExchangeRateSet> postUpdateCb,
-			IntFunction<BiPredicate<ExchangeRateSetWrapper, ExchangeRateSet>> intradayLimitFactory
+			IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory
 	) {
 		this.txnCtx = txnCtx;
 		this.fileNums = fileNums;
@@ -119,7 +119,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 				postUpdateCb.accept(rates);
 				if (isMaster()) {
 					log.info("Overwriting midnight rates with {}", rates);
-					midnightRates.update(rates);
+					midnightRates.replaceWith(rates);
 				}
 			}, () -> {
 				log.error("Rates postUpdate called with invalid data by {}!", txnCtx.accessor().getSignedTxn4Log());

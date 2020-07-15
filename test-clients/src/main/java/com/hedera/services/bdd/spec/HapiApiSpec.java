@@ -32,14 +32,16 @@ import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +93,7 @@ public class HapiApiSpec implements Runnable {
 	HapiApiClients hapiClients;
 	HapiSpecRegistry hapiRegistry;
 	HapiSpecOperation[] given, when, then;
+	AtomicInteger adhoc = new AtomicInteger(0);
 	AtomicInteger numLedgerOpsExecuted = new AtomicInteger(0);
 	AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
 	ThreadPoolExecutor finalizingExecutor;
@@ -98,6 +101,16 @@ public class HapiApiSpec implements Runnable {
 	CompletableFuture<Void> finalizingFuture;
 	AtomicReference<Optional<Throwable>> finishingError = new AtomicReference<>(Optional.empty());
 	BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
+	EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+	EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+
+	public void adhocIncrement() {
+		adhoc.getAndIncrement();
+	}
+
+	public int finalAdhoc() {
+		return adhoc.get();
+	}
 
 	public int numPendingOps() {
 		return pendingOps.size();
@@ -111,6 +124,20 @@ public class HapiApiSpec implements Runnable {
 	public void incrementNumLedgerOps() {
 		int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
 		ledgerOpCountCallbacks.stream().forEach(c -> c.accept(newNumLedgerOps));
+	}
+	public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
+		precheckStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
+	}
+	public void updateResolvedCounts(ResponseCodeEnum finalStatus) {
+		finalizedStatusCounts.computeIfAbsent(finalStatus, ignore -> new AtomicInteger(0)).incrementAndGet();
+	}
+
+	public EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts() {
+		return finalizedStatusCounts;
+	}
+
+	public EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts() {
+		return precheckStatusCounts;
 	}
 
 	public String getName() {
@@ -297,13 +324,21 @@ public class HapiApiSpec implements Runnable {
 	private static String tlsFromCi;
 	private static String nodeSelectorFromCi;
 	private static String defaultNodeAccount;
+	private static Map<String, String> otherOverrides;
 	private static boolean runningInCi = false;
-	public static void runInCiMode(String nodes, String suggestedNode, String envTls, String envNodeSelector) {
+	public static void runInCiMode(
+			String nodes,
+			String suggestedNode,
+			String envTls,
+			String envNodeSelector,
+			Map<String, String> overrides
+	) {
 		runningInCi = true;
 		tlsFromCi = envTls;
 		dynamicNodes = nodes;
 		defaultNodeAccount = String.format("0.0.%s", suggestedNode);
 		nodeSelectorFromCi = envNodeSelector;
+		otherOverrides = overrides;
 	}
 	public static Def.Given defaultHapiSpec(String name) {
 		Stream prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
@@ -329,12 +364,14 @@ public class HapiApiSpec implements Runnable {
 					.collect(joining(","));
 			String ciPropertiesMap = Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
 			log.info("CI_PROPERTIES_MAP: " + ciPropertiesMap);
-			ciPropsSource = Map.of(
-					"node.selector", nodeSelectorFromCi,
-					"nodes", dynamicNodes,
-					"default.node", defaultNodeAccount,
-					"ci.properties.map", ciPropertiesMap,
-					"tls", tlsFromCi);
+			ciPropsSource = new HashMap<String, String>() {{
+					this.put("node.selector", nodeSelectorFromCi);
+					this.put("nodes", dynamicNodes);
+					this.put("default.node", defaultNodeAccount);
+					this.put("ci.properties.map", ciPropertiesMap);
+					this.put("tls", tlsFromCi);
+			}};
+			ciPropsSource.putAll(otherOverrides);
 		}
 		return ciPropsSource;
 	}
@@ -465,14 +502,18 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
-	private void loadCostSnapshot() throws Exception {
+	private void loadCostSnapshot() {
+		costSnapshot = costSnapshotFrom(costSnapshotFilePath());
+	}
+
+	public static List<Payment> costSnapshotFrom(String loc) {
 		Properties serializedCosts = new Properties();
-		final ByteSource source = Files.asByteSource(new File(costSnapshotFilePath()));
+		final ByteSource source = Files.asByteSource(new File(loc));
 		try (InputStream inStream = source.openBufferedStream()) {
 			serializedCosts.load(inStream);
 		} catch (IOException ie)  {
 			log.error("Couldn't load cost snapshots as requested!", ie);
-			throw new Exception();
+			throw new IllegalArgumentException(ie);
 		}
 		Map<Integer, Payment> costsByOrder = new HashMap<>();
 		serializedCosts.forEach((a, b) -> {
@@ -483,7 +524,7 @@ public class HapiApiSpec implements Runnable {
 					Integer.valueOf(meta.substring(0, i)),
 					Payment.fromEntry(meta.substring(i + 1), amount));
 		});
-		costSnapshot = IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
+		return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
 	}
 
 	private String costSnapshotFile() {

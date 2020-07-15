@@ -21,7 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.Optional;
 
@@ -31,7 +31,7 @@ import java.util.Optional;
  * transactions may not be directly <b>about</b> the ledger, but
  * instead a file or smart contract.)
  *
- * The definitive history is represented by {@link JTransactionRecord}
+ * The definitive history is represented by {@link ExpirableTxnRecord}
  * instances, which expire at regular intervals and are stored in
  * the ledger accounts themselves.
  *
@@ -52,7 +52,7 @@ public interface AccountRecordsHistorian {
 
 	/**
 	 * At the moment before committing the active transaction, forms a
-	 * final record by adding a {@link JTransactionRecord} to any
+	 * final record by adding a {@link ExpirableTxnRecord} to any
 	 * ledger accounts that qualify for the history of the active
 	 * transaction.
 	 */
@@ -80,5 +80,5 @@ public interface AccountRecordsHistorian {
 	 *
 	 * @return an optional record.
 	 */
-	Optional<JTransactionRecord> lastCreatedRecord();
+	Optional<ExpirableTxnRecord> lastCreatedRecord();
 }

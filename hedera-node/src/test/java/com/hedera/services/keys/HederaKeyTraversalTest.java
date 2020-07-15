@@ -21,7 +21,7 @@ package com.hedera.services.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -82,7 +82,7 @@ public class HederaKeyTraversalTest {
 	public void countsSimpleKeysForValidAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
-		HederaAccount account = MapValueFactory.newAccount().accountKeys(jKey).get();
+		MerkleAccount account = MapValueFactory.newAccount().accountKeys(jKey).get();
 
 		// expect:
 		assertEquals(10, HederaKeyTraversal.numSimpleKeys(account));
@@ -92,7 +92,7 @@ public class HederaKeyTraversalTest {
 	public void countsZeroSimpleKeysForWeirdAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
-		HederaAccount account = MapValueFactory.newAccount().get();
+		MerkleAccount account = MapValueFactory.newAccount().get();
 
 		// expect:
 		assertEquals(0, HederaKeyTraversal.numSimpleKeys(account));

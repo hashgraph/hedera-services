@@ -55,9 +55,9 @@ import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -309,7 +309,7 @@ public class SmartContractServiceImpl
       TxnValidityAndFeeReq precheckResult) {
     responseObserver.onNext(TransactionResponse.newBuilder()
         .setNodeTransactionPrecheckCodeValue(precheckResult.getValidity().getNumber())
-        .setCost(precheckResult.getFeeRequired()).build());
+        .setCost(precheckResult.getRequiredFee()).build());
     responseObserver.onCompleted();
   }
 
@@ -639,8 +639,8 @@ public class SmartContractServiceImpl
     Transaction feePayment = query.getHeader().getPayment();
     List<TransactionRecord> txRecord = null;
     try {
-      txRecord = JTransactionRecord.convert(
-          txHandler.getAllTransactionRecordFCM(MapKey.getMapKey(query.getContractID())));
+      txRecord = ExpirableTxnRecord.allToGrpc(
+          txHandler.getAllTransactionRecordFCM(MerkleEntityId.fromPojoContractId(query.getContractID())));
     } catch (ConcurrentModificationException ex) {
       TransactionValidationUtils.constructGetAccountRecordsErrorResponse(responseObserver,
           ResponseCodeEnum.RECORD_NOT_FOUND,0);

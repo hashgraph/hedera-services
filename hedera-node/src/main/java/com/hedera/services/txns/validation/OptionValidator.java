@@ -20,7 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,13 +32,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
-
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 /**
  * Defines a type able to divine the validity of various options
@@ -56,13 +54,13 @@ public interface OptionValidator {
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableLength(TransferList accountAmounts);
 
-	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MapKey, Topic> topics);
+	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 
-	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MapKey, HederaAccount> accounts) {
+	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);
 	}
 
-	default ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MapKey, HederaAccount> contracts) {
+	default ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
 		return PureValidation.queryableContractStatus(cid, contracts);
 	}
 

@@ -39,8 +39,8 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
 
 import java.math.BigInteger;
@@ -192,6 +192,14 @@ public class TxnUtils {
 		return Timestamp.newBuilder()
 				.setSeconds(instant.getEpochSecond() + offsetSecs)
 				.setNanos(instant.getNano() - nanosBehind.addAndGet(1)).build();
+	}
+
+	public static TransactionID asTransactionID(HapiApiSpec spec, Optional<String> payer) {
+		var payerID = spec.registry().getAccountID(payer.orElse(spec.setup().defaultPayerName()));
+		var validStart = defaultTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
+		return TransactionID.newBuilder()
+				.setTransactionValidStart(validStart)
+				.setAccountID(payerID).build();
 	}
 
 	private static AtomicInteger nanosBehind = new AtomicInteger(0);

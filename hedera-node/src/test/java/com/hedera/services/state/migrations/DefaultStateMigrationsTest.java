@@ -20,7 +20,7 @@ package com.hedera.services.state.migrations;
  * ‍
  */
 
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.migration.DefaultStateMigrations;
 import com.hedera.services.utils.Pause;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +34,12 @@ import static org.mockito.BDDMockito.mock;
 @RunWith(JUnitPlatform.class)
 public class DefaultStateMigrationsTest {
 	Pause pause;
-	HederaNodeContext ctx;
+	ServicesContext ctx;
 	DefaultStateMigrations subject;
 
 	@BeforeEach
 	private void setup() {
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
 		pause = mock(Pause.class);
 		subject = new DefaultStateMigrations(pause);
 	}

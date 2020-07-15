@@ -33,10 +33,10 @@ import java.util.Map;
 public enum SingletonContextsManager implements ContextsManager {
 	CONTEXTS;
 
-	private final Map<Long, HederaNodeContext> contexts = new HashMap<>();
+	private final Map<Long, ServicesContext> contexts = new HashMap<>();
 
 	@Override
-	public synchronized HederaNodeContext lookup(long nodeId) {
+	public synchronized ServicesContext lookup(long nodeId) {
 		if (!contexts.containsKey(nodeId)) {
 			throw new ContextNotFoundException(nodeId);
 		}
@@ -49,7 +49,7 @@ public enum SingletonContextsManager implements ContextsManager {
 	}
 
 	@Override
-	public synchronized void store(HederaNodeContext ctx) {
+	public synchronized void store(ServicesContext ctx) {
 		contexts.put(ctx.id().getId(), ctx);
 	}
 

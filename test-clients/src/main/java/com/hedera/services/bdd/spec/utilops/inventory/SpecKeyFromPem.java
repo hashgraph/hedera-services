@@ -33,12 +33,13 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class SpecKeyFromPem extends UtilOp {
 	static final Logger log = LogManager.getLogger(SpecKeyFromPem.class);
@@ -48,14 +49,21 @@ public class SpecKeyFromPem extends UtilOp {
 	private static final SigControl SIMPLE = SigControl.ON;
 	private static final SigControl SIMPLE_WACL = KeyShape.listOf(1);
 
-	private final String pemLoc;
+	private String pemLoc;
+	private Optional<Supplier<String>> pemLocFn = Optional.empty();
 	private String passphrase = DEFAULT_PASSPHRASE;
 	private SigControl control = SIMPLE;
+	private Optional<Supplier<String>> nameSupplier = Optional.empty();
+	private Optional<Supplier<String>> linkSupplier = Optional.empty();
 	private Optional<String> name = Optional.empty();
 	private Optional<String> linkedId = Optional.empty();
 
 	public SpecKeyFromPem(String pemLoc) {
 		this.pemLoc = pemLoc;
+	}
+
+	public SpecKeyFromPem(Supplier<String> pemLocFn) {
+		this.pemLocFn = Optional.of(pemLocFn);
 	}
 
 	public SpecKeyFromPem simpleWacl() {
@@ -71,21 +79,33 @@ public class SpecKeyFromPem extends UtilOp {
 		return this;
 	}
 
+	public SpecKeyFromPem name(Supplier<String> nameFn) {
+		nameSupplier = Optional.of(nameFn);
+		return this;
+	}
+
 	public SpecKeyFromPem linkedTo(String id) {
 		linkedId = Optional.of(id);
 		return this;
 	}
 
+	public SpecKeyFromPem linkedTo(Supplier<String> linkFn) {
+		linkSupplier = Optional.of(linkFn);
+		return this;
+	}
+
 	private String actualName() {
-		return name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem")));
+		return nameSupplier.map(Supplier::get).orElse(name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem"))));
 	}
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+		pemLoc = pemLocFn.map(Supplier::get).orElse(pemLoc);
 		var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
 		var key = populatedFrom(ocKeystore);
 		var real = actualName();
 		linkedId.ifPresent(s -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s)));
+		linkSupplier.ifPresent(fn -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(fn.get())));
 		spec.registry().saveKey(real, key);
 		spec.keys().incorporate(real, ocKeystore, control);
 		return false;

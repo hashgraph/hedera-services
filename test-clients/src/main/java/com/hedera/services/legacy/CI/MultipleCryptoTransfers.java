@@ -499,6 +499,9 @@ public class MultipleCryptoTransfers {
     getTransactionRecordsByAccountId(genKeyPair, payerAccount, defaultNodeAccount,
         payerAccount);
     log.info("-----------------¯\\_(ツ)_/¯---------------------");
+
+    // Marker message for regression report
+    log.info("Regression summary: This run is successful.");
     return newlyCreateAccountId3;
   }
 

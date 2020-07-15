@@ -25,8 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +99,7 @@ public class ProviderRun extends UtilOp {
 		OpProvider provider = providerFn.apply(spec);
 
 		allRunFor(spec, provider.suggestedInitializers().toArray(new HapiSpecOperation[0]));
-		log.info("Finished initializion for provider run...");
+		log.info("Finished initialization for provider run...");
 
 		TimeUnit unit = unitSupplier.get();
 		Stopwatch stopwatch = Stopwatch.createStarted();
@@ -129,6 +129,9 @@ public class ProviderRun extends UtilOp {
 							+ " ops submitted so far ("
 							+ numPending
 							+ " pending).");
+					log.info("Precheck txn status counts :: " + spec.precheckStatusCounts());
+					log.info("Resolved txn status counts :: " + spec.finalizedStatusCounts());
+					log.info("\n------------------------------\n");
 					lastDeltaLogged = delta;
 				}
 			}
@@ -158,6 +161,8 @@ public class ProviderRun extends UtilOp {
 				.filter(entry -> entry.getValue().get() > 0)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get()));
 		log.info("Final breakdown of *provided* ops: "  + finalCounts);
+		log.info("Final breakdown of *resolved* statuses: "  + spec.finalizedStatusCounts());
+
 
 		return false;
 	}

@@ -1,3 +1,6 @@
+# Key files
+*.pem
+
 # VIM
 *.sw*
 
@@ -15,9 +18,11 @@ hs_err_pid*
 
 *.sh
 *.json
+!hedera-node/src/test/resources/legacyAccounts.json
 .circleci/*.yml-excerpt
 hedera-node/*.sh
 hedera-node/*.csv
+hedera-node/swirlds.jar
 hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
@@ -44,23 +49,16 @@ hapi-proto/target/
 hapi-proto/src/main/proto/doc/index.html
 evm-adapter/output/
 evm-adapter/target/
+test-clients/logs/
 test-clients/*.bin
 test-clients/output/
+test-clients/devops-utils/validation-scenarios/logs/
 test-clients/devops-utils/validation-scenarios/output/
-test-clients/devops-utils/validation-scenarios/keys/*.pem
-!test-clients/devops-utils/validation-scenarios/keys/localhost-account2.pem
-!test-clients/devops-utils/validation-scenarios/keys/testnet-account982.pem
-!test-clients/devops-utils/validation-scenarios/keys/testnet-file210905.pem
-test-clients/devops-utils/validation-scenarios/files/*.txt
-!test-clients/devops-utils/validation-scenarios/files/MrBleaney.txt
-test-clients/devops-utils/validation-scenarios/contracts/
 test-clients/devops-utils/sysfiles-update/svctools.tar.gz
-test-clients/devops-utils/sysfiles-update/defaultSysFile.pem
 test-clients/devops-utils/sysfiles-update/certs/*.crt
 test-clients/devops-utils/sysfiles-update/run/SysFilesUpdate.jar
 test-clients/devops-utils/sysfiles-update/b64GenesisKeyPair.txt
-test-clients/src/main/resource/mainnet-account950.txt
-test-clients/src/main/resource/test-KeyStore-50.pem
+test-clients/src/main/resource/TestnetStartupAccount.txt
 test-clients/saved/
 test-clients/target/
 test-clients/record-snapshots/
@@ -69,6 +67,9 @@ test-clients/remote-system-files/*.txt
 test-clients/src/main/resource/MainNet*StartUp.txt
 test-clients/src/main/resource/TestNet*StartUp.txt
 test-clients/src/main/resource/testfiles/*.abi
+test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
+test-clients/devops-utils/validation-scenarios/files/*-application.properties
+test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
 target
 

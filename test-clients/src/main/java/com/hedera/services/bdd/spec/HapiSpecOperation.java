@@ -61,8 +61,8 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
@@ -86,8 +86,7 @@ public abstract class HapiSpecOperation {
 	protected boolean shouldRegisterTxnId = false;
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
-
-	public enum SigStyle {MAP, LIST}
+	protected boolean usePresetTimestamp = false;
 
 	protected boolean useTls = false;
 	protected boolean useRandomNode = false;
@@ -209,6 +208,11 @@ public abstract class HapiSpecOperation {
 				TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
 				builder.setTransactionID(txnId);
 			});
+			if (usePresetTimestamp) {
+				TransactionID txnId = builder.getTransactionID().toBuilder().setTransactionValidStart(
+						spec.registry().getTimestamp(txnName)).build();
+				builder.setTransactionID(txnId);
+			}
 			node.ifPresent(nodeId -> builder.setNodeAccountID(nodeId));
 			validDurationSecs.ifPresent(s -> {
 				builder.setTransactionValidDuration(Duration.newBuilder().setSeconds(s).build());
@@ -298,10 +302,9 @@ public abstract class HapiSpecOperation {
 		return payer.orElse(spec.setup().defaultPayerName());
 	}
 
-	/* WARNING: Assumes the submitted txn ID is saved in spec.registry()---use carefully! */
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		HapiGetTxnRecord subOp = QueryVerbs
-				.getTxnRecord(txnName)
+				.getTxnRecord(extractTxnId(txnSubmitted))
 				.noLogging()
 				.suppressStats(true)
 				.nodePayment(spec.setup().defaultNodePaymentTinyBars());
@@ -327,6 +330,9 @@ public abstract class HapiSpecOperation {
 		return helper;
 	}
 
+	public Optional<String> getPayer() {
+		return payer;
+	}
 	protected void considerRecording(HapiApiSpec spec, OpObs obs) {
 		if (!suppressStats) {
 			spec.registry().record(obs);

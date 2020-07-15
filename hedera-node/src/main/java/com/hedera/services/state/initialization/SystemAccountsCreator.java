@@ -20,11 +20,11 @@ package com.hedera.services.state.initialization;
  * ‍
  */
 
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 
 public interface SystemAccountsCreator {
-	void createSystemAccounts(FCMap<MapKey, HederaAccount> accounts, AddressBook addressBook) throws Exception;
+	void createSystemAccounts(FCMap<MerkleEntityId, MerkleAccount> accounts, AddressBook addressBook) throws Exception;
 }

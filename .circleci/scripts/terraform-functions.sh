@@ -27,12 +27,19 @@ function tf_cleanup {
         fi
       done
 
-      mkdir -p ${REPO}/diagnostics
+      . ${REPO}/.circleci/scripts/prepare-slack-message.sh
       python3 ${REPO}/.circleci/scripts/diagnose-logs.py \
         ${REPO}/HapiApp2.0 ${REPO}/diagnostics ${REPO}/.circleci/scripts/resources
 
+      slack_channel='hedera-cicd'
+      if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
+          slack_channel='hedera-regression'
+      fi
       ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-        -t ${REPO}/diagnostics/slack_msg.txt
+        -c ${slack_channel} \
+        -t ${REPO}/diagnostics/slack_msg.txt \
+        -s Error
+
       if [ -f ${REPO}/diagnostics/shouldUploadFilteredLogs ]; then
         DIAGNOSTICS_DIR=${REPO}/diagnostics/filtered-logs
         mkdir $DIAGNOSTICS_DIR
@@ -54,7 +61,7 @@ function tf_cleanup {
           ${REPO}/diagnostics/filtered-logs
 
         ${REPO}/.circleci/scripts/call-svcs-app-slack.sh \
-          -n logs-${CIRCLE_BUILD_NUM}.tgz \
+          -c hedera-cicd \
           -f ${REPO}/diagnostics/logs-${CIRCLE_BUILD_NUM}.tgz
       fi
 
@@ -125,6 +132,7 @@ function tf_provision {
         -var region=$AWS_REGION \
         -var ami_id=$AWS_AMI_ID
   set_tf_hosts_list
+  echo $AWS_REGION > $AWS_REGION_USED_PATH
   wait_for_live_hosts 22 $TIMEOUT_SECS
   ci_echo "...finished creating '$TF_WORKSPACE' with $NUM_NODES hosts!"
 }
@@ -143,9 +151,11 @@ function tf_destroy {
       TF_WORKSPACE=$(ls -1 $TF_DIR/nets | grep test)
       ci_echo "Current workspace : $TF_WORKSPACE"
       NUM_NODES=${#TF_HOSTS[@]}
+      local AWS_REGION=$(cat $AWS_REGION_USED_PATH)
       terraform destroy -auto-approve \
           -var-file "$VAR_FILE" \
           -var node_count=$NUM_NODES \
+          -var region=$AWS_REGION \
             && terraform workspace select default \
             && terraform workspace delete $TF_WORKSPACE
 
