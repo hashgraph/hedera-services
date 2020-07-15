@@ -1276,6 +1276,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 0230-M-AddQueryStressTestsToRegression
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
