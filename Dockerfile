@@ -71,8 +71,6 @@ COPY .git /opt/hedera/services/.git
 COPY pom.xml /opt/hedera/services
 RUN mkdir /opt/hedera/services/hapi-proto
 COPY hapi-proto /opt/hedera/services/hapi-proto
-RUN mkdir /opt/hedera/services/evm-adapter
-COPY evm-adapter /opt/hedera/services/evm-adapter
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients

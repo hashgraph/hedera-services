@@ -1,17 +1,98 @@
 ###############################################################################################
 # Swirlds configuration file, for automatically running multiple instances
 ###############################################################################################
-swirld, hedera
-app, HederaNode.jar
-address, A, Alice, 1, 172.20.1.0, 50204, 172.20.1.0, 50204, 0.0.3
-address, B, Bob, 1, 172.20.2.1, 50204, 172.20.2.1, 50204, 0.0.4
-address, C, Carol, 1, 172.20.3.2, 50204, 172.20.3.2, 50204, 0.0.5
-#address, D, Dave, 1, 172.20.0.0, 50207, 70.240.247.13, 50207, 0.0.6
-#TLS, on
+swirld, 123
+
+# app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
+# app,		GameDemo.jar,		   9000, 9000
+# app,		HelloSwirldDemo.jar
+# app,		CryptocurrencyDemo.jar
+# app,		StatsDemo.jar,		   1, 3000, 0, 100, 2048, 10_000
+# app,		FilesystemDemo.jar
+app,		HederaNode.jar
+
+# ** BEGIN REMOVE FROM SDK RELEASES **
+# app,      HelloFileSystemDemo.jar, 2, 128, 512, 5, 20, 5000, 2250, 0
+# app,		FCStressTestDemo.jar,  1, 3000, 0, 100, 2048, 3
+# app,		StatsSigningDemo.jar,  1, 3000, 0, 100, -1, 15000, 5000
+# app,		StatsRandomDemo.jar,  0, 3000, 0, 100, -1, 250000, 5000, 1, 100, 1024
+# app,		StatsSeqDemo.jar,	   1, 3000, 1000, 100, 16, -1
+# app,		FCMapStatsDemo.jar,	 signed, syncDelay, transPerEventMax, transPerSecToCreate
+# app,		FCMapStatsDemo.jar,		 0,      0,         -1,               250
+# app,		DatabaseDemo.jar
+# app, 		PlatformTestingDemo.jar, FCM1KFreeze.json
+# ** END REMOVE FROM SDK RELEASES **
+
+ address,  A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
+ address,  B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
+
+ address,  C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
+# address,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
+
+# address,  E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208
+# address,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209
+# address,  G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210
+# address,  H, Hank,     1, 127.0.0.1, 50211, 127.0.0.1, 50211
+# address,  I, Iris,     1, 127.0.0.1, 50212, 127.0.0.1, 50212
+# address,  J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213
+# address,  K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
+# address,  L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
+
+# The above addresses assume all are running on the same computer.
+# If multiple computers are being used, then the listed IP addresses should be changed.
+
+ TLS, on
+# maxSyncs, 1
+# transactionMaxBytes, 1024
+# ipTos, 123
 
 ###############################################################################################
 # The first line can be “swirld, “ and then a name for this swirld (shared world / ledger),
 # where the name is any string without commas, line breaks, or leading/trailing whitespace.
+#
+# The optional "TLS" line can be set to on or off to choose whether to use TLS encryption.
+#
+# The optional "maxSyncs" line controls the maximum number of gossip syncs at the same time
+# initiated by a member.
+#
+# The optional "transactionMaxBytes" line sets a limit on transactions size. Any transaction
+# will be rejected if it's too big.
+#
+# The optional "ipTos" parameter sets the Type of Service (IP_ToS) byte in each of the
+# TCP/IP packets (0 to 255). The internet usually ignores this byte.
+#
+# Uncomment exactly one of the app name lines, above.
+# That line should have the the word "app", then the  jar filename,
+# then any parameters, separated by commas.
+#
+#	HelloSwirldDemo.jar parameters: none
+#
+#	CryptocurrencyDemo.jar parameters: none
+#
+#	FilesystemDemo.jar parameters: none
+#
+#	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
+#		in the same order they appear are on the screen, with 1 to check it
+#		and 0 to not check it, followed by the number of events to display
+#		(or “all”). The first parameter  controls whether it runs
+#		slowly (1) or runs at full speed (0).
+#
+#	GameDemo.jar parameters:
+#		height:           height of the board (in cells). Player moves 1 cell at a time.
+#		width:            width of the board (in cells). Player moves 1 cell at a time.
+#
+#	StatsDemo.jar parameters:
+#		headless:         1 to run in a headless mode with no windows.
+#				  0 to see a window with the results.
+#		writePeriod:      how often to write stats to the file, in milliseconds.
+#		syncDelay:        how long to pause after initiating a sync, in milliseconds.
+#		bytesPerTrans:    how many bytes make up each transaction.
+#               transPerEventMax: max number of transactions to put in each event
+#                                 or -1 for infinite (no limit).
+#		transPerSec:      desired transaction per second (total created by all members)
+#                                 or -1 for infinite (no limit).
+#                                 This and transPerEventMax must not both be -1.
+#
 # After the app name line comes all the address book lines,
 # which give the addresses of all members, which is used by the simulation.
 # If the sim is run from a .jar file, put this file in the same directory as the jar.
