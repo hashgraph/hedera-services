@@ -27,8 +27,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 

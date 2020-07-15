@@ -21,8 +21,8 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -97,7 +97,7 @@ public class AwareTransactionContextTest {
 	private Address address;
 	private AddressBook book;
 	private HbarCentExchange exchange;
-	private HederaNodeContext ctx;
+	private ServicesContext ctx;
 	private PlatformTxnAccessor accessor;
 	private AwareTransactionContext subject;
 	private Transaction signedTxn;
@@ -128,12 +128,12 @@ public class AwareTransactionContextTest {
 		itemizableFeeCharging = mock(ItemizableFeeCharging.class);
 
 		payerKey = mock(JKey.class);
-		HederaAccount payerAccount = mock(HederaAccount.class);
-		given(payerAccount.getAccountKeys()).willReturn(payerKey);
-		FCMap<MapKey, HederaAccount> accounts = mock(FCMap.class);
-		given(accounts.get(MapKey.getMapKey(payer))).willReturn(payerAccount);
+		MerkleAccount payerAccount = mock(MerkleAccount.class);
+		given(payerAccount.getKey()).willReturn(payerKey);
+		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
+		given(accounts.get(MerkleEntityId.fromPojoAccountId(payer))).willReturn(payerAccount);
 
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
 		given(ctx.exchange()).willReturn(exchange);
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.accounts()).willReturn(accounts);
@@ -385,7 +385,7 @@ public class AwareTransactionContextTest {
 		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
 		assertArrayEquals(runningHash, record.getReceipt().getTopicRunningHash().toByteArray());
 		assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
-		assertEquals(Topic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
+		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
 	}
 
 	@Test

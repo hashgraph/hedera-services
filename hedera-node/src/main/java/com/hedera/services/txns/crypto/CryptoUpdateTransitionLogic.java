@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +37,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JAccountID.convert;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.util.function.Function;
@@ -114,7 +114,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(convert(op.getProxyAccountID()));
+			customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
 			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());

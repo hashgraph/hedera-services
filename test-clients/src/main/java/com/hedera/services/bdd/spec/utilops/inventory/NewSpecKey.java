@@ -28,8 +28,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;

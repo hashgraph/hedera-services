@@ -26,22 +26,23 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.lang.Math.min;
 import static java.util.stream.Collectors.toList;
@@ -82,15 +83,15 @@ public class HederaLedger {
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
 	private final ScopedDuplicateClassifier duplicateClassifier;
-	private final TransactionalLedger<AccountID, MapValueProperty, HederaAccount> ledger;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
-	private final Set<AccountID> balancesAdjustedDuringTxn = new HashSet<>();
+	private final Map<AccountID, Long> priorBalances = new HashMap<>();
 
 	public HederaLedger(
 			EntityIdSource ids,
 			AccountRecordsHistorian historian,
 			ScopedDuplicateClassifier duplicateClassifier,
-			TransactionalLedger<AccountID, MapValueProperty, HederaAccount> ledger
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger
 	) {
 		this.ids = ids;
 		this.ledger = ledger;
@@ -107,7 +108,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		ledger.rollback();
-		balancesAdjustedDuringTxn.clear();
+		priorBalances.clear();
 	}
 
 	public void commit() {
@@ -115,7 +116,7 @@ public class HederaLedger {
 		historian.addNewRecords();
 		duplicateClassifier.incorporateCommitment();
 		ledger.commit();
-		balancesAdjustedDuringTxn.clear();
+		priorBalances.clear();
 	}
 
 	public TransferList netTransfersInTxn() {
@@ -125,7 +126,7 @@ public class HederaLedger {
 		* of transfers in the list (an invalid state signature
 		* exception is sure to appear otherwise!) */
 		return TransferList.newBuilder().addAllAccountAmounts(
-			balancesAdjustedDuringTxn.stream()
+			priorBalances.keySet().stream()
 					.sorted(ACCOUNT_ID_COMPARATOR)
 					.filter(ledger::exists)
 					.map(this::netAdjustmentInTxn)
@@ -234,28 +235,28 @@ public class HederaLedger {
 		return ledger.existsPending(id);
 	}
 
-	public HederaAccount get(AccountID id) {
+	public MerkleAccount get(AccountID id) {
 		return ledger.get(id);
 	}
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long addRecord(AccountID id, JTransactionRecord record) {
-		FCQueue<JTransactionRecord> records = (FCQueue<JTransactionRecord>)ledger.get(id, TRANSACTION_RECORDS);
+	public long addRecord(AccountID id, ExpirableTxnRecord record) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
 		records.offer(record);
 		ledger.set(id, TRANSACTION_RECORDS, records);
-		return records.peek().getExpirationTime();
+		return records.peek().getExpiry();
 	}
 
 	public long purgeExpiredRecords(AccountID id, long now) {
-		FCQueue<JTransactionRecord> records = (FCQueue<JTransactionRecord>)ledger.get(id, TRANSACTION_RECORDS);
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
 		long newEarliestExpiry = -1;
 		int numBefore = records.size();
 
-		while (!records.isEmpty() && records.peek().getExpirationTime() <= now) {
+		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
 			records.poll();
 		}
 		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpirationTime();
+			newEarliestExpiry = records.peek().getExpiry();
 		}
 		ledger.set(id, TRANSACTION_RECORDS, records);
 
@@ -304,16 +305,14 @@ public class HederaLedger {
 	}
 
 	private void setBalance(AccountID id, long newBalance) {
+		if (!priorBalances.containsKey(id)) {
+			priorBalances.put(id, isPendingCreation(id) ? 0L : getBalance(id));
+		}
 		ledger.set(id, BALANCE, newBalance);
-		balancesAdjustedDuringTxn.add(id);
 	}
 
 	private AccountAmount netAdjustmentInTxn(AccountID id) {
-		long prevBalance = 0L;
-		try {
-			prevBalance = (long)ledger.getSaved(id, BALANCE);
-		} catch (Exception ignore) { }
-		long adjustment = getBalance(id) - prevBalance;
+		long adjustment = getBalance(id) - priorBalances.get(id);
 		return AccountAmount.newBuilder().setAccountID(id).setAmount(adjustment).build();
 	}
 

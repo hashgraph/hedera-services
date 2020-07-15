@@ -20,7 +20,7 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.utils.Pause;
 
 public class DefaultStateMigrations implements StateMigrations {
@@ -31,7 +31,7 @@ public class DefaultStateMigrations implements StateMigrations {
 	}
 
 	@Override
-	public void runAllFor(HederaNodeContext ctx) {
+	public void runAllFor(ServicesContext ctx) {
 		/* There are no applicable state migrations at this time. */
 	}
 }

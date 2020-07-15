@@ -61,8 +61,8 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
@@ -302,10 +302,9 @@ public abstract class HapiSpecOperation {
 		return payer.orElse(spec.setup().defaultPayerName());
 	}
 
-	/* WARNING: Assumes the submitted txn ID is saved in spec.registry()---use carefully! */
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		HapiGetTxnRecord subOp = QueryVerbs
-				.getTxnRecord(txnName)
+				.getTxnRecord(extractTxnId(txnSubmitted))
 				.noLogging()
 				.suppressStats(true)
 				.nodePayment(spec.setup().defaultNodePaymentTinyBars());

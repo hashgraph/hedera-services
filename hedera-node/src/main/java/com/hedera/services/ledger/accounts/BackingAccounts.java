@@ -34,20 +34,21 @@ package com.hedera.services.ledger.accounts;
  */
 public interface BackingAccounts<K, A> {
 	/**
-	 * Gets a reference to the actual account with the specified id.
+	 * Gets a reference to the actual account with the specified id. This reference
+	 * should not be considered safe to mutate.
 	 *
 	 * @param id the id of the relevant account.
 	 * @return a reference to the account.
 	 */
-	A getRef(K id);
+	A getUnsafeRef(K id);
 
 	/**
-	 * Gets a defensive copy of the account with the specified id.
+	 * Gets a mutable reference to the actual account with the specified id.
 	 *
 	 * @param id the id of the relevant account.
-	 * @return a copy of the account.
+	 * @return a reference to the account.
 	 */
-	A getCopy(K id);
+	A getMutableRef(K id);
 
 	/**
 	 * Updates (or creates, if absent) the account with the given id

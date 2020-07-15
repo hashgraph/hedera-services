@@ -184,7 +184,7 @@ public class JKeySerializer {
   }
 
 	@FunctionalInterface
-	public static interface StreamConsumer<T> {
+	public interface StreamConsumer<T> {
 
 	  void apply(T stream) throws IOException;
 	}

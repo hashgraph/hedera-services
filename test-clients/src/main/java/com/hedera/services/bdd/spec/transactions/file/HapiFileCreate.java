@@ -34,7 +34,9 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -46,8 +48,8 @@ import java.util.function.Function;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -63,6 +65,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 	Optional<byte[]> contents = Optional.empty();
 	Optional<SigControl> waclControl = Optional.empty();
 	Optional<String> keyName = Optional.empty();
+	Optional<String> resourceName = Optional.empty();
 	AtomicReference<Timestamp> expiryUsed = new AtomicReference<>();
 
 	public HapiFileCreate(String fileName) {
@@ -117,6 +120,19 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
 	public HapiFileCreate contents(String s) {
 		contents = Optional.of(s.getBytes());
+		return this;
+	}
+
+	public HapiFileCreate fromResource(String name) {
+		var baos = new ByteArrayOutputStream();
+		try {
+			HapiFileCreate.class.getClassLoader().getResourceAsStream(name).transferTo(baos);
+			baos.close();
+			contents = Optional.of(baos.toByteArray());
+		} catch (IOException e) {
+			log.warn(toString() + " failed to read bytes from resource '" + name + "'!", e);
+			throw new IllegalArgumentException(e);
+		}
 		return this;
 	}
 

@@ -34,10 +34,19 @@ public class FeeScheduleDeJson {
 	private static final String[] RESOURCE_KEYS =
 			{ "constant", "bpt", "vpt", "rbh", "sbh", "gas", "bpr", "sbpr", "min", "max" };
 
-	public static CurrentAndNextFeeSchedule fromJson(String jsonLoc) throws Exception {
-		CurrentAndNextFeeSchedule.Builder feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
-		List<Map<String, Object>> rawFeeSchedules = asMapList(jsonLoc);
+	public static CurrentAndNextFeeSchedule fromJsonLiteral(String stylized) throws Exception {
+		var om = new ObjectMapper();
+		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>)om.readValue(stylized, List.class);
+		return fromMapList(rawFeeSchedules);
+	}
 
+	public static CurrentAndNextFeeSchedule fromJson(String jsonLoc) throws Exception {
+		List<Map<String, Object>> rawFeeSchedules = asMapList(jsonLoc);
+		return fromMapList(rawFeeSchedules);
+	}
+
+	private static CurrentAndNextFeeSchedule fromMapList(List<Map<String, Object>> mapList) throws Exception {
+		var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 		int i = 0;
 		for (String rawFeeSchedule : FEE_SCHEDULE_KEYS) {
 			set(
@@ -45,9 +54,8 @@ public class FeeScheduleDeJson {
 					feeSchedules,
 					rawFeeSchedule,
 					FeeSchedule.class,
-					bindFeeScheduleFrom((List<Map<String, Object>>)rawFeeSchedules.get(i++).get(rawFeeSchedule)));
+					bindFeeScheduleFrom((List<Map<String, Object>>)mapList.get(i++).get(rawFeeSchedule)));
 		}
-
 		return feeSchedules.build();
 	}
 

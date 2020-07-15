@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -68,7 +68,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSI
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
-import static com.hedera.services.legacy.initialization.NodeAccountsCreation.getAccountMapFromPath;
+import static com.hedera.services.legacy.initialization.NodeAccountsCreation.readBase64EncodedGenesisKey;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -129,7 +129,7 @@ public class MiscUtils {
 
 	public static JKey lookupInCustomStore(String storeLoc, String keyName) {
 		try {
-			Map<String, List<AccountKeyListObj>> store = getAccountMapFromPath(storeLoc);
+			Map<String, List<AccountKeyListObj>> store = readBase64EncodedGenesisKey(storeLoc);
 			List<AccountKeyListObj> objs = store.get(keyName);
 			var pubKey = objs.get(0).getKeyPairList().get(0).getPublicKeyAbyteStr();
 			return new JEd25519Key(commonsHexToBytes(pubKey));
@@ -142,15 +142,23 @@ public class MiscUtils {
 
 	public static String readableProperty(Object o) {
 		if (o instanceof FCQueue) {
-			return JTransactionRecord.convert(new ArrayList<>((FCQueue<JTransactionRecord>) o)).toString();
+			return ExpirableTxnRecord.allToGrpc(new ArrayList<>((FCQueue<ExpirableTxnRecord>) o)).toString();
 		} else {
 			return o.toString();
 		}
 	}
 
-	public static Key asKeyUnchecked(JKey jKey) {
+	public static JKey asFcKeyUnchecked(Key key) {
 		try {
-			return mapJKey(jKey);
+			return JKey.mapKey(key);
+		} catch (Exception impossible) {
+			throw new IllegalArgumentException("Key " + key + " should have been decodable!", impossible);
+		}
+	}
+
+	public static Key asKeyUnchecked(JKey fcKey) {
+		try {
+			return mapJKey(fcKey);
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}
@@ -321,6 +329,18 @@ public class MiscUtils {
 			return MessageDigest.getInstance("SHA-384").digest(data);
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
+		}
+	}
+
+	public static String describe(JKey k) {
+		if (k == null) {
+			return "<N/A>";
+		} else {
+			Key readable = null;
+			try {
+				readable = mapJKey(k);
+			} catch (Exception ignore) { }
+			return String.valueOf(readable);
 		}
 	}
 }

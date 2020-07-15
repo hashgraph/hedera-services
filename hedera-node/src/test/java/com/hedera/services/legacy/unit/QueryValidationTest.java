@@ -44,10 +44,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.initialization.NodeAccountsCreation;
 
 import java.security.KeyPair;
@@ -75,9 +75,8 @@ class QueryValidationTest {
 
   long payerAccountInitialBalance = 100000;
   private RecordCache recordCache;
-  private FCMap<MapKey, HederaAccount> map = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-  private FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize,
-      StorageValue::deserialize);
+  private FCMap<MerkleEntityId, MerkleAccount> map = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
   ;
   private AccountID nodeAccount =
       AccountID.newBuilder().setAccountNum(3).setRealmNum(0).setShardNum(0).build();
@@ -138,7 +137,7 @@ class QueryValidationTest {
 
   private void onboardAccount(AccountID account, byte[] publicKey, long initialBalance)
       throws Exception {
-    NodeAccountsCreation.createAccounts(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
+    NodeAccountsCreation.insertAccount(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
     );
   }
 

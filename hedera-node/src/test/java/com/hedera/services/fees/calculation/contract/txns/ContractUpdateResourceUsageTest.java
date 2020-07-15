@@ -22,7 +22,7 @@ package com.hedera.services.fees.calculation.contract.txns;
 
 import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.*;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,12 +41,12 @@ import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class ContractUpdateResourceUsageTest {
-	MapKey accountKey = new MapKey(0, 0, 1234);
+	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
 	ContractID target = asContract("0.0.1234");
 	Timestamp expiry = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 	StateView view;
-	HederaAccount account;
-	FCMap<MapKey, HederaAccount> accounts;
+	MerkleAccount account;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private SigValueObj sigUsage;
 	private SmartContractFeeBuilder usageEstimator;
@@ -66,8 +66,8 @@ class ContractUpdateResourceUsageTest {
 		nonContractUpdateTxn = mock(TransactionBody.class);
 		given(nonContractUpdateTxn.hasContractUpdateInstance()).willReturn(false);
 
-		account = mock(HederaAccount.class);
-		given(account.getExpirationTime()).willReturn(Long.MAX_VALUE);
+		account = mock(MerkleAccount.class);
+		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
 		accounts = mock(FCMap.class);
 		given(accounts.get(accountKey)).willReturn(account);
 		view = mock(StateView.class);

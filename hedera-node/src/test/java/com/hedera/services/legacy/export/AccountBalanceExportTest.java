@@ -22,8 +22,8 @@ package com.hedera.services.legacy.export;
 
 import com.hedera.services.ServicesState;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.swirlds.common.Platform;
 import com.swirlds.fcmap.FCMap;
@@ -88,15 +88,16 @@ public class AccountBalanceExportTest {
     Assert.assertTrue(accountBalanceExport.timeToExport(timestamp_6));
   }
 
-  FCMap<MapKey, HederaAccount> getAccountMapForTest() throws Exception {
-    FCMap<MapKey, HederaAccount> fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+  FCMap<MerkleEntityId, MerkleAccount> getAccountMapForTest() throws Exception {
+    FCMap<MerkleEntityId, MerkleAccount> fcMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
     for (long[] account : accounts) {
-      MapKey mk = new MapKey();
-      mk.setShardNum(account[0]);
-      mk.setRealmNum(account[1]);
-      mk.setAccountNum(account[2]);
+      MerkleEntityId mk = new MerkleEntityId();
+      mk.setShard(account[0]);
+      mk.setRealm(account[1]);
+      mk.setNum(account[2]);
 
-      HederaAccount mv = new HederaAccount();
+      MerkleAccount mv = new MerkleAccount();
       mv.setBalance(account[3]);
       fcMap.put(mk, mv);
     }
@@ -105,7 +106,7 @@ public class AccountBalanceExportTest {
 
   ServicesState getMockState() throws Exception {
     ServicesState state = mock(ServicesState.class);
-    when(state.getAccountMap()).thenReturn(getAccountMapForTest());
+    when(state.accounts()).thenReturn(getAccountMapForTest());
     when(state.getNodeAccountId()).thenReturn(IdUtils.asAccount(nodeAccountIDString));
     return state;
   }
@@ -200,10 +201,11 @@ public class AccountBalanceExportTest {
     Assert.assertTrue(exportedFilename != null);
     File exportedFile = new File(exportedFilename);
     Assert.assertTrue(exportedFile.exists());
-    String appenderOutput = outContent.toString();
-    Assert.assertTrue(appenderOutput
-        .contains("Insufficient Node Balance Error - Node0 (0.0.3) balance: 200")
-        && appenderOutput.contains("Insufficient Node Balance Error - Node2 (0.0.5) balance: 500"));
+    String out = outContent.toString();
+    Assert.assertTrue(
+            out.contains(
+                    "Node 0 (0.0.3) has insufficient balance 200!")
+                    && out.contains("Node 2 (0.0.5) has insufficient balance 500!"));
 
 
     // Delete the file
@@ -214,20 +216,21 @@ public class AccountBalanceExportTest {
 
   ServicesState getMockStateWithInvalidTotalBalance() throws Exception {
     ServicesState state = mock(ServicesState.class);
-    when(state.getAccountMap()).thenReturn(getAccountMapWithInvalidTotalBalanceForTest());
+    when(state.accounts()).thenReturn(getAccountMapWithInvalidTotalBalanceForTest());
     when(state.getNodeAccountId()).thenReturn(IdUtils.asAccount(nodeAccountIDString));
     return state;
   }
 
-  FCMap<MapKey, HederaAccount> getAccountMapWithInvalidTotalBalanceForTest() throws Exception {
-    FCMap<MapKey, HederaAccount> fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+  FCMap<MerkleEntityId, MerkleAccount> getAccountMapWithInvalidTotalBalanceForTest() throws Exception {
+    FCMap<MerkleEntityId, MerkleAccount> fcMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
     for (long[] account : accounts) {
-      MapKey mk = new MapKey();
-      mk.setShardNum(account[0]);
-      mk.setRealmNum(account[1]);
-      mk.setAccountNum(account[2]);
+      MerkleEntityId mk = new MerkleEntityId();
+      mk.setShard(account[0]);
+      mk.setRealm(account[1]);
+      mk.setNum(account[2]);
 
-      HederaAccount mv = new HederaAccount();
+      MerkleAccount mv = new MerkleAccount();
       mv.setBalance(account[3] + 1);
       fcMap.put(mk, mv);
     }

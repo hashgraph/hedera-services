@@ -33,8 +33,8 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigStyle.*;
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;

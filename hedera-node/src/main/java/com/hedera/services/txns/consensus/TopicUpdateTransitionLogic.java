@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,17 +21,18 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
@@ -40,20 +41,28 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
+import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TopicUpdateTransitionLogic implements TransitionLogic {
 	protected static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
+
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
 
-	private final FCMap<MapKey, HederaAccount> accounts;
-	private final FCMap<MapKey, Topic> topics;
+	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final FCMap<MerkleEntityId, MerkleTopic> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicUpdateTransitionLogic(FCMap<MapKey, HederaAccount> accounts, FCMap<MapKey, Topic> topics,
-									  OptionValidator validator, TransactionContext transactionContext) {
+	public TopicUpdateTransitionLogic(
+			FCMap<MerkleEntityId, MerkleAccount> accounts,
+			FCMap<MerkleEntityId, MerkleTopic> topics,
+			OptionValidator validator,
+			TransactionContext transactionContext
+	) {
 		this.accounts = accounts;
 		this.topics = topics;
 		this.validator = validator;
@@ -64,101 +73,148 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		var transactionBody = transactionContext.accessor().getTxn();
 		var op = transactionBody.getConsensusUpdateTopic();
-		var topicId = op.getTopicID();
 
-		var topicStatus = validator.queryableTopicStatus(topicId, topics);
-		if (OK != topicStatus) {
-			// Should not get here as the adminKey lookup should have failed.
+		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics);
+		if (topicStatus != OK) {
 			transactionContext.setStatus(topicStatus);
 			return;
 		}
 
-		var topicMapKey = MapKey.getMapKey(topicId);
-		var updatedTopic = new Topic(topics.get(topicMapKey));
-
-		if (!updatedTopic.hasAdminKey() &&
-				(op.hasMemo() || op.hasAdminKey() || op.hasSubmitKey() || op.hasAutoRenewPeriod() ||
-						op.hasAutoRenewAccount())) {
-			// Topics without adminKeys can't be modified in this manner.
+		var topicId = MerkleEntityId.fromPojoTopicId(op.getTopicID());
+		var topic = topics.get(topicId);
+		if (!topic.hasAdminKey() && wantsToMutateNonExpiryField(op)) {
 			transactionContext.setStatus(UNAUTHORIZED);
 			return;
 		}
-
-		if (op.hasMemo()) {
-			var newMemo = op.getMemo().getValue();
-			if (!validator.isValidEntityMemo(newMemo)) {
-				transactionContext.setStatus(MEMO_TOO_LONG);
-				return;
-			}
-			updatedTopic.setMemo(newMemo);
-		}
-
-		if(!updateTopicWithNewKeys(op, updatedTopic)){
+		if (!canApplyNewFields(op, topic)) {
 			return;
 		}
 
-		if (op.hasAutoRenewPeriod()) {
-			var newAutoRenewPeriod = op.getAutoRenewPeriod();
-			if (!validator.isValidAutoRenewPeriod(newAutoRenewPeriod)) {
-				transactionContext.setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
-				return;
-			}
-			updatedTopic.setAutoRenewDurationSeconds(newAutoRenewPeriod.getSeconds());
-		}
-
-		if (op.hasAutoRenewAccount() && !updateTopicWithNewAutoRenewAccount(op, updatedTopic)){
-				return;
-		}
-
-		if (updatedTopic.hasAutoRenewAccountId() && !updatedTopic.hasAdminKey()) {
-			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
-			return;
-		}
-
-		if (op.hasExpirationTime() && !updateTopicWithNewExpirationTime(op, updatedTopic)){
-				return;
-		}
-
-		topics.put(topicMapKey, updatedTopic);
+		var mutableTopic = topics.getForModify(topicId);
+		applyNewFields(op, mutableTopic);
+		topics.put(topicId, mutableTopic);
 		transactionContext.setStatus(SUCCESS);
 	}
 
-	private boolean updateTopicWithNewExpirationTime(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
-		var newExpiration = op.getExpirationTime();
-		if (!validator.isValidExpiry(newExpiration)) {
+	private boolean wantsToMutateNonExpiryField(ConsensusUpdateTopicTransactionBody op) {
+		return op.hasMemo() ||
+				op.hasAdminKey() || op.hasSubmitKey() ||
+				op.hasAutoRenewPeriod() || op.hasAutoRenewAccount();
+	}
+
+	private boolean canApplyNewFields(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		return canApplyNewKeys(op, topic) &&
+				canApplyNewMemo(op) &&
+				canApplyNewExpiry(op, topic) &&
+				canApplyNewAutoRenewPeriod(op) &&
+				canApplyNewAutoRenewAccount(op, topic);
+	}
+
+	private void applyNewFields(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		applyNewKeys(op, topic);
+		applyNewMemo(op, topic);
+		applyNewExpiry(op, topic);
+		applyNewAutoRenewPeriod(op, topic);
+		applyNewAutoRenewAccount(op, topic);
+	}
+
+	private boolean canApplyNewAutoRenewPeriod(ConsensusUpdateTopicTransactionBody op) {
+		if (!op.hasAutoRenewPeriod()) {
+			return true;
+		}
+		var newAutoRenewPeriod = op.getAutoRenewPeriod();
+		if (!validator.isValidAutoRenewPeriod(newAutoRenewPeriod)) {
+			transactionContext.setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
+			return false;
+		}
+		return true;
+	}
+
+	private boolean canApplyNewMemo(ConsensusUpdateTopicTransactionBody op) {
+		if (!op.hasMemo()) {
+			return true;
+		}
+		if (!validator.isValidEntityMemo(op.getMemo().getValue())) {
+			transactionContext.setStatus(MEMO_TOO_LONG);
+			return false;
+		}
+		return true;
+	}
+
+	private void applyNewMemo(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (op.hasMemo()) {
+			topic.setMemo(op.getMemo().getValue());
+		}
+	}
+
+	private boolean canApplyNewExpiry(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (!op.hasExpirationTime()) {
+			return true;
+		}
+		var newExpiry = op.getExpirationTime();
+		if (!validator.isValidExpiry(newExpiry)) {
 			transactionContext.setStatus(INVALID_EXPIRATION_TIME);
 			return false;
 		}
 
-		var newExpirationJTimestamp = JTimestamp.convert(newExpiration);
-		// Not yet updated...
-		if (updatedTopic.hasExpirationTimestamp() &&
-				updatedTopic.getExpirationTimestamp().isAfter(newExpirationJTimestamp))
-		{
+		var richNewExpiry = fromGrpc(newExpiry);
+		if (topic.hasExpirationTimestamp() && topic.getExpirationTimestamp().isAfter(richNewExpiry)) {
 			transactionContext.setStatus(EXPIRATION_REDUCTION_NOT_ALLOWED);
 			return false;
 		}
 
-		updatedTopic.setExpirationTimestamp(newExpirationJTimestamp);
 		return true;
 	}
 
-	private boolean updateTopicWithNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
-		var newAutoRenewAccountId = op.getAutoRenewAccount();
-		if (newAutoRenewAccountId.getShardNum() == 0 && newAutoRenewAccountId.getRealmNum() == 0
-				&& newAutoRenewAccountId.getAccountNum() == 0) {
-			updatedTopic.setAutoRenewAccountId(null);
-		} else {
-			if (OK != validator.queryableAccountStatus(newAutoRenewAccountId, accounts)) {
-				transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
-				return false;
+	private void applyNewExpiry(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (op.hasExpirationTime()) {
+			topic.setExpirationTimestamp(fromGrpc(op.getExpirationTime()));
+		}
+	}
+
+	private boolean canApplyNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (!op.hasAutoRenewAccount()) {
+			return true;
+		}
+		var newAutoRenewAccount = op.getAutoRenewAccount();
+		if (designatesAccountRemoval(newAutoRenewAccount)) {
+			return true;
+		}
+		if (!topic.hasAdminKey() || (op.hasAdminKey() && asFcKeyUnchecked(op.getAdminKey()).isEmpty())) {
+			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
+			return false;
+		}
+		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts)) {
+			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
+			return false;
+		}
+		return true;
+	}
+
+	private void applyNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (op.hasAutoRenewAccount()) {
+			if (designatesAccountRemoval(op.getAutoRenewAccount())) {
+				topic.setAutoRenewAccountId(null);
+			} else {
+				topic.setAutoRenewAccountId(ofNullableAccountId(op.getAutoRenewAccount()));
 			}
 		}
-		updatedTopic.setAutoRenewAccountId(JAccountID.convert(newAutoRenewAccountId));
-		return true;
 	}
 
-	private boolean updateTopicWithNewKeys(ConsensusUpdateTopicTransactionBody op, Topic updatedTopic) {
+	private void applyNewAutoRenewPeriod(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (op.hasAutoRenewPeriod()) {
+			topic.setAutoRenewDurationSeconds(op.getAutoRenewPeriod().getSeconds());
+		}
+	}
+
+	private boolean designatesAccountRemoval(AccountID id) {
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0;
+	}
+
+	private boolean canApplyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (!op.hasAdminKey() && !op.hasSubmitKey()) {
+			return true;
+		}
 		var topicId = op.getTopicID();
 		try {
 			if (op.hasAdminKey()) {
@@ -169,7 +225,15 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 					transactionContext.setStatus(BAD_ENCODING);
 					return false;
 				}
-				updatedTopic.setAdminKey(JKey.mapKey(newAdminKey));
+				var fcKey = JKey.mapKey(newAdminKey);
+				if (fcKey.isEmpty()) {
+					boolean opRemovesAutoRenewId = op.hasAutoRenewAccount() &&
+							designatesAccountRemoval(op.getAutoRenewAccount());
+					if (topic.hasAutoRenewAccountId() && !opRemovesAutoRenewId) {
+						transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
+						return false;
+					}
+				}
 			}
 
 			if (op.hasSubmitKey()) {
@@ -178,7 +242,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 					transactionContext.setStatus(BAD_ENCODING);
 					return false;
 				}
-				updatedTopic.setSubmitKey(JKey.mapKey(newSubmitKey));
+				JKey.mapKey(newSubmitKey);
 			}
 		} catch (DecoderException e) {
 			log.error("Decoder exception updating topic {}. ", topicId, e);
@@ -186,6 +250,15 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return false;
 		}
 		return true;
+	}
+
+	private void applyNewKeys(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+		if (op.hasAdminKey()) {
+			topic.setAdminKey(asFcKeyUnchecked(op.getAdminKey()));
+		}
+		if (op.hasSubmitKey()) {
+			topic.setSubmitKey(asFcKeyUnchecked(op.getSubmitKey()));
+		}
 	}
 
 	@Override
@@ -198,9 +271,10 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		return PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK;
 	}
 
-	 /**
+	/**
 	 * Pre-consensus (and post-consensus-pre-doStateTransition) validation validates the encoding of the optional
 	 * adminKey; this check occurs before signature validation which occurs before doStateTransition.
+	 *
 	 * @param transactionBody
 	 * @return
 	 */

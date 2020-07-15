@@ -347,13 +347,17 @@ commands:
         description: Terraform vars to use
         type: string
         default: "ci.tfvars"
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       use-hugepage:
         description: Tell ansible to use hugepage mode when deploying
         type: boolean
         default: false
     steps:
       - fetch-testnet-control-assets:
-          infra-branch: "hashgraph-hedera-services"
+          infra-branch: << parameters.infra-branch >>
       - unless:
           condition: << parameters.use-existing-network >>
           steps:
@@ -748,9 +752,9 @@ commands:
           timeout-secs: << parameters.active-status-timeout-secs >>
           sleep-secs: 7
       - wait-til-logs-contain:
-          log: swirlds.log
+          log: hgcaa*.log
           pattern-sh: /repo/.circleci/scripts/get-signed-state-pattern.sh
-          pattern-desc: valid signed state hash pattern
+          pattern-desc: merkle state restored
           times: << parameters.signed-state-pattern-count >>
           timeout-secs: << parameters.valid-ss-timeout-secs >>
           sleep-secs: 7
@@ -1277,6 +1281,7 @@ workflows:
           requires:
             - build-artifact
           workflow-name: "Continuous integration"
+          infra-branch: services-with-platform070
       - run-file-scenarios:
           requires:
             - start-singlejob-testnet
@@ -1320,6 +1325,10 @@ workflows:
 jobs:
   start-singlejob-testnet:
     parameters:
+      infra-branch:
+        description: Infrastructure branch to use
+        type: string
+        default: "hashgraph-hedera-services"
       workflow-name:
         type: string
         default: ""
@@ -1327,7 +1336,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - start-testnet
+      - start-testnet:
+          infra-branch: << parameters.infra-branch >>
   cleanup-singlejob-testnet:
     executor: ci-test-executor
     steps:

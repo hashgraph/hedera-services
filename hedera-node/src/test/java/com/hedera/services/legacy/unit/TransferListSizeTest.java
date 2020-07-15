@@ -38,9 +38,9 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -84,12 +84,12 @@ public class TransferListSizeTest {
   protected SequenceNumber sequenceNum = new SequenceNumber(
       ApplicationConstants.HEDERA_START_SEQUENCE);
   private final long nodeAccount = 3L;
-  private final long payerAccount = sequenceNum.getNextSequenceNum();
-  private final long feeCollAccount = sequenceNum.getNextSequenceNum();
+  private final long payerAccount = sequenceNum.getAndIncrement();
+  private final long feeCollAccount = sequenceNum.getAndIncrement();
   AccountID payerAccountId;
   protected AccountID nodeAccountId;
   AccountID feeCollAccountId;
-  protected FCMap<MapKey, HederaAccount> fcMap = null;
+  protected FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
   public long TX_DURATION_SEC = 2 * 60; // 2 minutes for tx dedup
   protected SignatureList signatures = SignatureList.newBuilder()
       .getDefaultInstanceForType();
@@ -122,7 +122,7 @@ public class TransferListSizeTest {
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
 
-    fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+    fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
@@ -226,7 +226,7 @@ public class TransferListSizeTest {
   }
 
   public AccountID nextAccountId() {
-    long accountNum = sequenceNum.getNextSequenceNum();
+    long accountNum = sequenceNum.getAndIncrement();
     return AccountID.newBuilder().setRealmNum(0).setAccountNum(accountNum).build();
   }
 
@@ -237,11 +237,11 @@ public class TransferListSizeTest {
    * @return retrieved balance
    */
   public long getBalance(AccountID aid) {
-    MapKey mk = new MapKey();
-    mk.setAccountNum(aid.getAccountNum());
-    mk.setRealmNum(aid.getRealmNum());
-    mk.setShardNum(aid.getShardNum());
-    HederaAccount mv = new HederaAccount();
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(aid.getAccountNum());
+    mk.setRealm(aid.getRealmNum());
+    mk.setShard(aid.getShardNum());
+    MerkleAccount mv = new MerkleAccount();
     mv = fcMap.get(mk);
 //    assertNotNull(mv);
     return mv.getBalance();
@@ -301,15 +301,15 @@ public class TransferListSizeTest {
   }
 
   protected void createAccount(AccountID payerAccount, long balance) throws Exception {
-    MapKey mk = new MapKey();
-    mk.setAccountNum(payerAccount.getAccountNum());
-    mk.setRealmNum(0);
-    HederaAccount mv = new HederaAccount();
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(payerAccount.getAccountNum());
+    mk.setRealm(0);
+    MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
     Key accountKey = ComplexKeyManager
         .genComplexKey(ComplexKeyManager.SUPPORTE_KEY_TYPES.single.name());
     JKey jkey = JKey.convertKey(accountKey, 1);
-    mv.setAccountKeys(jkey);
+    mv.setKey(jkey);
     fcMap.put(mk, mv);
     ComplexKeyManager.setAccountKey(payerAccount, accountKey);
   }

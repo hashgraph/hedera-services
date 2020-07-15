@@ -36,33 +36,10 @@ import org.apache.logging.log4j.Logger;
 public class CustomProperties {
   private static final Logger log = LogManager.getLogger(CustomProperties.class);
 
-  private Properties customProperties = new Properties();
+  private final Properties customProperties;
 
   public CustomProperties(Properties customProperties) {
 	  this.customProperties = customProperties;
-  }
-
-  public CustomProperties(String file, int status) {
-    InputStream input = null;
-    File f = new File(file);
-    try {
-      if (f.exists()) {
-        input = new FileInputStream(file);
-        customProperties.load(input);
-      } else {
-        log.error("File :: " + f + ":: doesn't exist. System being shut down.");
-      }
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    } finally {
-      if (input != null) {
-        try {
-          input.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    }
   }
 
   /**

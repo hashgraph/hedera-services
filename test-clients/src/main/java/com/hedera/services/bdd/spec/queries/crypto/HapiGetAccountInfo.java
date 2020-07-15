@@ -42,8 +42,8 @@ import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountIn
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);

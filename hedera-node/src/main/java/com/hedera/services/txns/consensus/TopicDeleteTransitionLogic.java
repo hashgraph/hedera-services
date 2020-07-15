@@ -21,12 +21,12 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,11 +41,11 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 
-	private final FCMap<MapKey, Topic> topics;
+	private final FCMap<MerkleEntityId, MerkleTopic> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicDeleteTransitionLogic(FCMap<MapKey, Topic> topics, OptionValidator validator,
+	public TopicDeleteTransitionLogic(FCMap<MerkleEntityId, MerkleTopic> topics, OptionValidator validator,
 									  TransactionContext transactionContext) {
 		this.topics = topics;
 		this.validator = validator;
@@ -64,7 +64,7 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicMapKey = MapKey.getMapKey(topicId);
+		var topicMapKey = MerkleEntityId.fromPojoTopicId(topicId);
 		var topic = topics.get(topicMapKey);
 		if (!topic.hasAdminKey()) {
 			// Topics without adminKeys can't be deleted.
@@ -72,9 +72,9 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var updatedTopic = new Topic(topic);
-		updatedTopic.setDeleted(true);
-		topics.put(topicMapKey, updatedTopic);
+		var mutableTopic = topics.getForModify(topicMapKey);
+		mutableTopic.setDeleted(true);
+		topics.put(topicMapKey, mutableTopic);
 
 		transactionContext.setStatus(SUCCESS);
 	}

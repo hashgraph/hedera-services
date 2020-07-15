@@ -20,7 +20,7 @@ package com.hedera.test.mocks;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.StringUtils;
 
@@ -83,7 +83,7 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MapKey, Topic> topics) {
+	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		throw new UnsupportedOperationException();
 	}
 }

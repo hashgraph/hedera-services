@@ -14,7 +14,7 @@ public class StatsDumpTimerTask extends TimerTask {
 
 	@Override
 	public void run() {
-		log.info("Now dump HederaNodeStats...");
+		log.info("Dumping stats...");
 		stats.dumpHederaNodeStats();
 	}
 

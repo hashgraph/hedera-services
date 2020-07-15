@@ -32,9 +32,9 @@ import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -93,6 +93,7 @@ public class HapiApiSpec implements Runnable {
 	HapiApiClients hapiClients;
 	HapiSpecRegistry hapiRegistry;
 	HapiSpecOperation[] given, when, then;
+	AtomicInteger adhoc = new AtomicInteger(0);
 	AtomicInteger numLedgerOpsExecuted = new AtomicInteger(0);
 	AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
 	ThreadPoolExecutor finalizingExecutor;
@@ -102,6 +103,14 @@ public class HapiApiSpec implements Runnable {
 	BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
 	EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 	EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+
+	public void adhocIncrement() {
+		adhoc.getAndIncrement();
+	}
+
+	public int finalAdhoc() {
+		return adhoc.get();
+	}
 
 	public int numPendingOps() {
 		return pendingOps.size();
@@ -493,14 +502,18 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
-	private void loadCostSnapshot() throws Exception {
+	private void loadCostSnapshot() {
+		costSnapshot = costSnapshotFrom(costSnapshotFilePath());
+	}
+
+	public static List<Payment> costSnapshotFrom(String loc) {
 		Properties serializedCosts = new Properties();
-		final ByteSource source = Files.asByteSource(new File(costSnapshotFilePath()));
+		final ByteSource source = Files.asByteSource(new File(loc));
 		try (InputStream inStream = source.openBufferedStream()) {
 			serializedCosts.load(inStream);
 		} catch (IOException ie)  {
 			log.error("Couldn't load cost snapshots as requested!", ie);
-			throw new Exception();
+			throw new IllegalArgumentException(ie);
 		}
 		Map<Integer, Payment> costsByOrder = new HashMap<>();
 		serializedCosts.forEach((a, b) -> {
@@ -511,7 +524,7 @@ public class HapiApiSpec implements Runnable {
 					Integer.valueOf(meta.substring(0, i)),
 					Payment.fromEntry(meta.substring(i + 1), amount));
 		});
-		costSnapshot = IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
+		return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
 	}
 
 	private String costSnapshotFile() {
