@@ -302,10 +302,9 @@ public abstract class HapiSpecOperation {
 		return payer.orElse(spec.setup().defaultPayerName());
 	}
 
-	/* WARNING: Assumes the submitted txn ID is saved in spec.registry()---use carefully! */
 	protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
 		HapiGetTxnRecord subOp = QueryVerbs
-				.getTxnRecord(txnName)
+				.getTxnRecord(extractTxnId(txnSubmitted))
 				.noLogging()
 				.suppressStats(true)
 				.nodePayment(spec.setup().defaultNodePaymentTinyBars());

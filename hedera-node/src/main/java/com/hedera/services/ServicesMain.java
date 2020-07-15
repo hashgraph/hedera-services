@@ -182,7 +182,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record stream started.");
 		startNettyIfAppropriate();
 		log.info("Netty started.");
-		startTimerTasksIfNeeded();
 		createSystemAccountsIfNeeded();
 		log.info("System accounts rationalized.");
 		createSystemFilesIfNeeded();
@@ -194,6 +193,8 @@ public class ServicesMain implements SwirldMain {
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
 		sanitizeProperties();
+
+		startTimerTasksIfNeeded();
 	}
 
 	private void startRecordStreamThread() {
@@ -402,7 +403,7 @@ public class ServicesMain implements SwirldMain {
 		}
 	}
 
-	public void startTimerTasksIfNeeded() {
+	private void startTimerTasksIfNeeded() {
 		if (ctx.properties().getBooleanProperty("timer.stats.dump.started")) {
 			TimerUtils.initStatsDumpTimers(ctx.stats());
 			TimerUtils.startStatsDumpTimer(ctx.properties().getIntProperty("timer.stats.dump.value"));

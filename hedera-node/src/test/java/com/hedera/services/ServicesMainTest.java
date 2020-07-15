@@ -30,6 +30,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -39,6 +40,7 @@ import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
@@ -103,6 +105,7 @@ public class ServicesMainTest {
 	BalancesExporter balancesExporter;
 	PropertySanitizer propertySanitizer;
 	StateMigrations stateMigrations;
+	HederaNodeStats stats;
 	GrpcServerManager grpc;
 	SystemFilesManager systemFilesManager;
 	SystemAccountsCreator systemAccountsCreator;
@@ -113,6 +116,7 @@ public class ServicesMainTest {
 	private void setup() {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
+		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
@@ -138,6 +142,7 @@ public class ServicesMainTest {
 		ctx = mock(ServicesContext.class);
 
 		given(ctx.fees()).willReturn(fees);
+		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.pause()).willReturn(pause);
 		given(ctx.accounts()).willReturn(accounts);
@@ -162,6 +167,8 @@ public class ServicesMainTest {
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
+		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
 
 		subject = new ServicesMain();
@@ -206,6 +213,45 @@ public class ServicesMainTest {
 	}
 
 	@Test
+	public void exitsOnApplicationPropertiesLoading() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).loadApplicationProperties();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnAddressBookCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).createAddressBookIfMissing();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnCreationFailure() throws Exception {
+		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
+		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
+
+		willThrow(Exception.class)
+				.given(systemAccountsCreator).createSystemAccounts(any(), any());
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
 	public void initializesSanelyGivenPreconditions() {
 		// given:
 		InOrder inOrder = inOrder(
@@ -233,6 +279,9 @@ public class ServicesMainTest {
 		inOrder.verify(recordsHistorian).reviewExistingRecords(33L);
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);
+
+		// cleanup:
+		TimerUtils.stopStatsDumpTimer();
 	}
 
 	@Test

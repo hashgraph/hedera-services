@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -56,6 +57,7 @@ import com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.ContractScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.CryptoScenario;
 
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.FEE_SNAPSHOTS;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYS_FILES_UP;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.TRANSFERS_ONLY;
 import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
@@ -71,6 +73,7 @@ import static com.hedera.services.bdd.suites.utils.validation.domain.ContractSce
 import static com.hedera.services.bdd.suites.utils.validation.domain.CryptoScenario.*;
 import static com.hedera.services.bdd.suites.utils.validation.domain.FileScenario.*;
 
+import com.hedera.services.bdd.suites.utils.validation.domain.FeeSnapshotsScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.FileScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.Network;
 import com.hedera.services.bdd.suites.utils.validation.domain.Node;
@@ -101,6 +104,7 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -113,6 +117,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -140,6 +145,7 @@ import static com.hedera.services.bdd.suites.utils.validation.ValidationScenario
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.VERSIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.nio.file.Files.readString;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class ValidationScenarios extends HapiApiSuite {
@@ -159,7 +165,10 @@ public class ValidationScenarios extends HapiApiSuite {
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	enum Scenario {
-		CRYPTO, FILE, CONTRACT, CONSENSUS, SYSTEM_KEYS, TRANSFERS_ONLY, VERSIONS, SYS_FILES_UP, SYS_FILES_DOWN
+		CRYPTO, FILE, CONTRACT, CONSENSUS,
+		SYSTEM_KEYS, TRANSFERS_ONLY, VERSIONS,
+		SYS_FILES_UP, SYS_FILES_DOWN,
+		FEE_SNAPSHOTS
 	}
 
 	private static Scenarios scenarios;
@@ -204,9 +213,280 @@ public class ValidationScenarios extends HapiApiSuite {
 				Optional.ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
 				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
 				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
 				Optional.ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
 				.flatMap(Optional::stream)
-				.collect(Collectors.toList());
+				.collect(toList());
+	}
+
+	private static HapiApiSpec ensureBytecode() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+
+		try {
+			return customHapiSpec("EnsureBytecodeForFeeSnapshots")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given().when().then(
+							withOpContext((spec, opLog) -> {
+								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
+									var bytecodeCreate = fileCreate("unusedName")
+											.fromResource("Multipurpose.bin");
+									allRunFor(spec, bytecodeCreate);
+									feeSnapshots.getOpsConfig().setBytecode(bytecodeCreate.numOfCreatedFile());
+								}
+							})
+					);
+		} catch (Exception e) {
+			log.warn("Unable to ensure fee snapshots bytecode, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec feeSnapshots() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+		var tinyBarsToOffer = feeSnapshots.getTinyBarsToOffer();
+
+		/* Crypto signing */
+		var complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
+		/* File signing */
+		var complexWacl = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
+		var secondComplexWacl = KeyShape.listOf(3);
+		var normalDeleteSigs = secondComplexWacl.signedWith(KeyShape.sigs(ON, ON, ON));
+		var revocationDeleteSigs = secondComplexWacl.signedWith(KeyShape.sigs(ON, OFF, OFF));
+		/* Topic signing */
+		var complexAdmin = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
+		/* Contract signing */
+		var complexContract = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
+		try {
+			return customHapiSpec("FeeSnapshots")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.fee", "" + tinyBarsToOffer,
+							"default.payer", primaryPayer(),
+							"cost.snapshot.dir", "fees",
+							"cost.snapshot.mode", "TAKE",
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
+							/* Crypto keys */
+							newKeyNamed("firstKey").shape(complex),
+							newKeyNamed("secondKey"),
+							/* File keys */
+							newKeyNamed("fileFirstKey").shape(complexWacl),
+							newKeyNamed("fileSecondKey").shape(secondComplexWacl),
+							/* Topic keys */
+							newKeyNamed("topicKey").shape(complexAdmin),
+							/* Contract keys */
+							newKeyNamed("contractFirstKey").shape(complexContract),
+							newKeyNamed("contractSecondKey")
+					).when(
+							/* Crypto ops */
+							cryptoCreate("tbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.receiveThreshold(1_000L)
+									.balance(1_234L)
+									.key("firstKey"),
+							getAccountBalance("tbd").logged(),
+							cryptoUpdate("tbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.key("secondKey"),
+							cryptoTransfer(tinyBarsFromTo(SCENARIO_PAYER_NAME, "tbd", 1_234L))
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							getAccountRecords("tbd").logged(),
+							getAccountInfo("tbd").logged(),
+							cryptoDelete("tbd")
+									.fee(tinyBarsToOffer)
+									.via("deleteTxn")
+									.payingWith(SCENARIO_PAYER_NAME)
+									.transfer(SCENARIO_PAYER_NAME),
+							getTxnRecord("deleteTxn").logged(),
+							/* File ops */
+							fileCreate("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.key("fileFirstKey")
+									.contents("abcdefghijklm"),
+							fileAppend("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.content("nopqrstuvwxyz"),
+							getFileContents("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.hasContents(ignore -> "abcdefghijklmnopqrstuvwxyz".getBytes()),
+							fileUpdate("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.wacl("fileSecondKey"),
+							getFileInfo("fileTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							fileDelete("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.sigControl(ControlForKey.forKey(
+											"fileTbd",
+											params.isRevocationService() ? revocationDeleteSigs : normalDeleteSigs)),
+							/* Consensus ops */
+							createTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.adminKeyName("topicKey")
+									.submitKeyShape(KeyShape.SIMPLE),
+							submitMessageTo("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							updateTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.signedBy(SCENARIO_PAYER_NAME, "topicKey")
+									.submitKey(EMPTY_KEY),
+							submitMessageTo("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.signedBy(SCENARIO_PAYER_NAME),
+							getTopicInfo("topicTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							deleteTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							/* Contract ops */
+							contractCreate("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.bytecode(() -> String.format("0.0.%d", feeSnapshots.getOpsConfig().getBytecode()))
+									.adminKey("contractFirstKey")
+									.balance(1),
+							contractCall("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.sending(1L),
+							contractCallLocal("contractTbd", LUCKY_NO_LOOKUP_ABI),
+							contractUpdate("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.newKey("contractSecondKey"),
+							getContractInfo("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							getContractRecords("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							getContractBytecode("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							contractDelete("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.transferAccount(SCENARIO_PAYER_NAME)
+					).then( );
+		} catch (Exception e) {
+			log.warn("Unable to initialize system file scenarios, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec updatePaymentCsv() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+
+		try {
+			return customHapiSpec("UpdatePaymentCsv")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given().when().then(
+							withOpContext((spec, opLog) -> {
+								var payments = HapiApiSpec.costSnapshotFrom(
+										"cost-snapshots/fees/ValidationScenarios-FeeSnapshots-costs.properties");
+								var network = params.getTargetNetwork();
+								var feesCsvLoc = String.format("fees/%s-fees.csv", network);
+								var csvFile = new File(feesCsvLoc);
+								if (!feeSnapshots.getAppendToSnapshotCsv() || !csvFile.exists()) {
+									createInitialFeesCsv(feesCsvLoc, payments, feeSnapshots);
+								} else {
+									appendToFeesCsv(feesCsvLoc, payments, feeSnapshots);
+								}
+							})
+					);
+		} catch (Exception e) {
+			log.warn("Unable to ensure fee snapshots bytecode, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static void appendToFeesCsv(String loc, List<Payment> payments, FeeSnapshotsScenario scenario) {
+		List<String> lines = null;
+		int numExistingPayments = -1;
+
+		try {
+			lines = Files.readAllLines(Paths.get(loc));
+			numExistingPayments = lines.size() - 1;
+		} catch (IOException e) {
+			log.warn("Unable to read fees CSV, skipping it!", e);
+			return;
+		}
+
+		if (scenario.getIgnoreCostAnswer()) {
+			payments = payments
+					.stream()
+					.filter(p -> p.reason != Payment.Reason.COST_ANSWER_QUERY_COST)
+					.collect(toList());
+		}
+		if (numExistingPayments != payments.size())	 {
+			log.error(String.format("Existing CSV has %d payments, scenario resulted in %d payments, skipping!",
+					numExistingPayments, payments.size()));
+		}
+
+		int i = 1;
+		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(loc))) {
+			fout.write(lines.get(0) + "," + asColumnHeader(scenario.getScheduleDesc()) + "\n");
+			for (Payment p : payments) {
+				fout.write(String.format("%s,%s\n", lines.get(i++), p.tinyBars));
+			}
+		} catch (IOException e) {
+			log.warn("Unable to create fees CSV, skipping it!", e);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static String asColumnHeader(String desc) {
+		return "Cost (tB) with " + desc + " Schedule";
+	}
+
+	private static void createInitialFeesCsv(String loc, List<Payment> payments, FeeSnapshotsScenario scenario) {
+		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(loc))) {
+			fout.write("Operation," + asColumnHeader(scenario.getScheduleDesc()) + "\n");
+			for (Payment p : payments) {
+				if (scenario.getIgnoreCostAnswer() && (p.reason == Payment.Reason.COST_ANSWER_QUERY_COST)) {
+					continue;
+				}
+				fout.write(String.format("%s,%s\n", p.opName, p.tinyBars));
+			}
+		} catch (IOException e) {
+			log.warn("Unable to create fees CSV, skipping it!", e);
+			throw new IllegalStateException(e);
+		}
 	}
 
 	private static HapiApiSpec doJustTransfers() {
@@ -231,7 +511,7 @@ public class ValidationScenarios extends HapiApiSuite {
 											.via("transferTxn" + i)).toArray(HapiSpecOperation[]::new)
 					);
 		} catch (Exception e) {
-			log.warn("Unable to initialize crypto scenario, skipping it!", e);
+			log.warn("Unable to initialize transfers scenario, skipping it!", e);
 			errorsOccurred.set(true);
 			return null;
 		}
@@ -262,7 +542,9 @@ public class ValidationScenarios extends HapiApiSuite {
 									updateLargeFile(
 											String.format("payer%d", action.getPayer()),
 											String.format("0.0.%d", action.getNum()),
-											appropriateContents(action.getNum())))
+											appropriateContents(action.getNum()),
+											true,
+											OptionalLong.of(10_000_000_000L)))
 									.toArray(HapiSpecOperation[]::new)
 					);
 		} catch (Exception e) {
@@ -305,7 +587,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static ByteString appropriateContents(long fileNum) {
 		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
 		String name = serde.preferredFileName();
-		String loc = "files/" + params.getTargetNetwork() + "/" + name;
+		String loc = "files/" + params.getTargetNetwork() + "-" + name;
 		try {
 			var stylized = Files.readString(Paths.get(loc));
 			return ByteString.copyFrom(serde.toRawFile(stylized));
@@ -1106,6 +1388,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					params.setTargetNetwork(valueOf(matcher));
 				} else if ("defaultNodePayment".equals(keyOf(matcher))) {
 					try {
+
 						params.setDefaultNodePayment(Long.parseLong(valueOf(matcher)));
 					} catch (NumberFormatException ignore) {
 					}
@@ -1118,12 +1401,13 @@ public class ValidationScenarios extends HapiApiSuite {
 							.map(Object::toString)
 							.collect(Collectors.toSet());
 					List<String> listed = Arrays.stream(valueOf(matcher).split(","))
+							.map(name -> name.equals("fees") ? "FEE_SNAPSHOTS" : name)
 							.map(name -> name.equals("syskeys") ? "SYSTEM_KEYS" : name)
 							.map(name -> name.equals("xfers") ? "TRANSFERS_ONLY" : name)
 							.map(name -> name.equals("sysFilesDown") ? "SYS_FILES_DOWN" : name)
 							.map(name -> name.equals("sysFilesUp") ? "SYS_FILES_UP" : name)
 							.filter(v -> legal.contains(v.toUpperCase()))
-							.collect(Collectors.toList());
+							.collect(toList());
 					if (listed.size() == 1) {
 						params.setScenarios(EnumSet.of(Scenario.valueOf(listed.get(0).toUpperCase())));
 					} else if (listed.size() > 1) {

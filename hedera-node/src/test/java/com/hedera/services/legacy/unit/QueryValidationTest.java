@@ -137,7 +137,7 @@ class QueryValidationTest {
 
   private void onboardAccount(AccountID account, byte[] publicKey, long initialBalance)
       throws Exception {
-    NodeAccountsCreation.createAccounts(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
+    NodeAccountsCreation.insertAccount(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
     );
   }
 

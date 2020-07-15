@@ -56,7 +56,7 @@ public class ExportExistingAccounts {
         if (proxyAccountID != null) {
           cryptoAccount.put("proxyAccountNum", proxyAccountID.num());
           cryptoAccount.put("proxyRealmNum", proxyAccountID.realm());
-          cryptoAccount.put("proxyShardNum", mapValue.getProxy());
+          cryptoAccount.put("proxyShardNum", proxyAccountID.shard());
         } else {
           cryptoAccount.put("proxyAccountNum", 0);
           cryptoAccount.put("proxyRealmNum", 0);

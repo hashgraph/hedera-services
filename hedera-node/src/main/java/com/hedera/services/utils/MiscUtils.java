@@ -68,7 +68,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSI
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
-import static com.hedera.services.legacy.initialization.NodeAccountsCreation.getAccountMapFromPath;
+import static com.hedera.services.legacy.initialization.NodeAccountsCreation.readBase64EncodedGenesisKey;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -129,7 +129,7 @@ public class MiscUtils {
 
 	public static JKey lookupInCustomStore(String storeLoc, String keyName) {
 		try {
-			Map<String, List<AccountKeyListObj>> store = getAccountMapFromPath(storeLoc);
+			Map<String, List<AccountKeyListObj>> store = readBase64EncodedGenesisKey(storeLoc);
 			List<AccountKeyListObj> objs = store.get(keyName);
 			var pubKey = objs.get(0).getKeyPairList().get(0).getPublicKeyAbyteStr();
 			return new JEd25519Key(commonsHexToBytes(pubKey));

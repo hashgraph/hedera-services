@@ -502,14 +502,18 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
-	private void loadCostSnapshot() throws Exception {
+	private void loadCostSnapshot() {
+		costSnapshot = costSnapshotFrom(costSnapshotFilePath());
+	}
+
+	public static List<Payment> costSnapshotFrom(String loc) {
 		Properties serializedCosts = new Properties();
-		final ByteSource source = Files.asByteSource(new File(costSnapshotFilePath()));
+		final ByteSource source = Files.asByteSource(new File(loc));
 		try (InputStream inStream = source.openBufferedStream()) {
 			serializedCosts.load(inStream);
 		} catch (IOException ie)  {
 			log.error("Couldn't load cost snapshots as requested!", ie);
-			throw new Exception();
+			throw new IllegalArgumentException(ie);
 		}
 		Map<Integer, Payment> costsByOrder = new HashMap<>();
 		serializedCosts.forEach((a, b) -> {
@@ -520,7 +524,7 @@ public class HapiApiSpec implements Runnable {
 					Integer.valueOf(meta.substring(0, i)),
 					Payment.fromEntry(meta.substring(i + 1), amount));
 		});
-		costSnapshot = IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
+		return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).collect(toList());
 	}
 
 	private String costSnapshotFile() {

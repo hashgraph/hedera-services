@@ -54,6 +54,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	public HapiFileAppend(String file) {
 		this.file = file;
 	}
+
 	public HapiFileAppend content(byte[] data) {
 		contents = Optional.of(data);
 		return this;
@@ -83,11 +84,12 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 		} else if (path.isPresent()) {
 			contents = Optional.of(Files.toByteArray(new File(path.get())));
 		}
+		var fid = TxnUtils.asFileId(file, spec);
 		FileAppendTransactionBody opBody = spec
 				.txns()
 				.<FileAppendTransactionBody, FileAppendTransactionBody.Builder>body(
 					FileAppendTransactionBody.class, builder -> {
-						builder.setFileID(spec.registry().getFileId(file));
+						builder.setFileID(fid);
 						contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
 					});
 		return b -> b.setFileAppend(opBody);

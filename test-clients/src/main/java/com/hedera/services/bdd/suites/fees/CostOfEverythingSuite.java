@@ -49,8 +49,8 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
 public class CostOfEverythingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
 
-//	CostSnapshotMode costSnapshotMode = TAKE;
-	CostSnapshotMode costSnapshotMode = COMPARE;
+	CostSnapshotMode costSnapshotMode = TAKE;
+//	CostSnapshotMode costSnapshotMode = COMPARE;
 
 	public static void main(String... args) {
 		new CostOfEverythingSuite().runSuiteSync();

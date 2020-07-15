@@ -184,7 +184,7 @@ class PreCheckValidationTest {
 
   private void onboardAccount(AccountID account, byte[] publicKey, long initialBalance)
       throws Exception {
-    NodeAccountsCreation.createAccounts(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, accountFCMap
+    NodeAccountsCreation.insertAccount(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, accountFCMap
     );
   }
 
