@@ -49,6 +49,7 @@ RUN cd /tmp && \
     rm -f /tmp/jdk-12.0.2_linux-x64_bin.tar.gz
 # Services runtime
 RUN mkdir -p /opt/hedera/services/data/lib
+RUN mkdir -p /opt/hedera/services/data/backup
 RUN mkdir /opt/hedera/services/data/apps
 RUN mkdir /opt/hedera/services/data/config
 RUN mkdir /opt/hedera/services/data/saved
@@ -60,7 +61,7 @@ RUN mkdir /opt/hedera/services/config-mount
 ## the /opt/hedera/services/.VERSION file
 FROM base-runtime AS services-builder
 # Maven
-RUN apt-get install -y maven
+RUN apt-get update && apt-get install -y maven
 WORKDIR /opt/hedera/services
 # Install Services
 COPY .env /opt/hedera/services
@@ -71,8 +72,6 @@ COPY .git /opt/hedera/services/.git
 COPY pom.xml /opt/hedera/services
 RUN mkdir /opt/hedera/services/hapi-proto
 COPY hapi-proto /opt/hedera/services/hapi-proto
-RUN mkdir /opt/hedera/services/evm-adapter
-COPY evm-adapter /opt/hedera/services/evm-adapter
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
@@ -84,6 +83,7 @@ FROM base-runtime AS final-image
 COPY image-utils/ /opt/hedera/services 
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
+COPY --from=services-builder /opt/hedera/services/hedera-node/data/backup /opt/hedera/services/data/backup
 COPY --from=services-builder /opt/hedera/services/hedera-node/swirlds.jar /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/onboard/StartUpAccount.txt /opt/hedera/services/data/onboard
