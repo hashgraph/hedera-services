@@ -29,7 +29,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_MINS = 5;
 	public static final int DEFAULT_ALLOWED_SECS_BELOW = 60;
 	public static final int DEFAULT_BURST_SIZE = 5;
-	public static final int DEFAULT_THREAD_NUMBER = 10;
+	public static final int DEFAULT_THREAD_NUMBER = 50;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -90,6 +90,7 @@ public class PerfTestLoadSettings {
 				.add("tolerance", tolerancePercentage)
 				.add("burstSize", burstSize)
 				.add("allowedSecsBelow", allowedSecsBelow)
+				.add("threadNumber", threadNumber)
 				.toString();
 	}
 }
