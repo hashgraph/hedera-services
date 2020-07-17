@@ -1281,6 +1281,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 0343-M-FixFreezeRestart
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
