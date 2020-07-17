@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.Profile;
@@ -43,6 +44,7 @@ import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -66,29 +68,6 @@ import static org.apache.commons.codec.binary.Hex.encodeHexString;
  */
 public class ServicesMain implements SwirldMain {
 	public static Logger log = LogManager.getLogger(ServicesMain.class);
-
-	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
-
-	public static Function<String, SerializableDataOutputStream> foutSupplier = dumpLoc -> {
-		try {
-			return new SerializableDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)));
-		} catch (Exception e) {
-			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
-			return new SerializableDataOutputStream(System.out);
-		}
-	};
-
-	static final String ISS_ERROR_MSG_PATTERN =
-			"In round %d, node %d received a signed state from node %d with " +
-					"a signature different than %s on %s [accounts :: %s | storage :: %s | topics :: %s]!";
-	static final String ISS_FALLBACK_ERROR_MSG_PATTERN =
-			"In round %d, node %s received a signed state from node %s differing from its local "
-					+ "signed state; could not provide all details!";
-	private static Function<LoggedIssMeta, String> ISS_ERROR_MSG_FN = meta -> String.format(
-			ISS_ERROR_MSG_PATTERN,
-			meta.round, meta.self, meta.other,
-			encodeHexString(meta.sig), encodeHexString(meta.hash),
-			encodeHexString(meta.accountsHash), encodeHexString(meta.storageHash), encodeHexString(meta.topicsHash));
 
 	public static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
 
@@ -145,6 +124,11 @@ public class ServicesMain implements SwirldMain {
 
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long ignored) {
+		boolean shouldLog = new File("data/config/PRINT-HASHES").exists();
+		log.info("In newSignedState with shouldLog = {}", shouldLog);
+		if (shouldLog) {
+			((ServicesState)signedState).printHashes();
+		}
 		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
 				ctx.balancesExporter().isTimeToExport(when)) {
 			try {
@@ -328,79 +312,7 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	void registerIssListener() {
-		ctx.platform().addSignedStateListener(
-				(platform, book, swirldState, events, self, other, round, consensusTime, numConsEvents, sig, hash) -> {
-					try {
-						ServicesState state = (ServicesState) swirldState;
-						LoggedIssMeta meta = new LoggedIssMeta(
-								round, self.getId(), other.getId(),
-								sig, hash,
-								state.accounts().getRootHash().getValue(),
-								state.storage().getRootHash().getValue(),
-								state.topics().getRootHash().getValue());
-
-						ctx.issEventInfo().alert(consensusTime);
-						if (ctx.issEventInfo().shouldDumpThisRound()) {
-							log.error(ISS_ERROR_MSG_FN.apply(meta));
-							dumpFcms(
-									self.getId(), round, state.accounts(),
-									state.storage(), state.topics()
-							);
-						}
-					} catch (Exception e) {
-						String fallbackMsg = String.format(
-								ISS_FALLBACK_ERROR_MSG_PATTERN, 1, String.valueOf(self), String.valueOf(other));
-						log.error(fallbackMsg, e);
-					}
-				});
-	}
-
-	public static void dumpFcms(
-			long nodeId,
-			long round,
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage,
-			FCMap<MerkleEntityId, MerkleTopic> topics
-	) throws IOException {
-		var accountsFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "accounts", round));
-		accounts.copyTo(accountsFout);
-		accounts.copyToExtra(accountsFout);
-		accountsFout.close();
-
-		var storageFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "storage", round));
-		storage.copyTo(storageFout);
-		storage.copyToExtra(storageFout);
-		storageFout.close();
-
-		var topicsFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "topics", round));
-		topics.copyTo(topicsFout);
-		topics.copyToExtra(topicsFout);
-		topicsFout.close();
-	}
-
-	public static class LoggedIssMeta {
-		final long round, self, other;
-		final byte[] sig, hash, accountsHash, storageHash, topicsHash;
-
-		public LoggedIssMeta(
-				long round, long self, long other,
-				byte[] sig, byte[] hash, byte[] accountsHash, byte[] storageHash, byte[] topicsHash
-		) {
-			this.self = self;
-			this.other = other;
-			this.round = round;
-			this.sig = sig;
-			this.hash = hash;
-			this.storageHash = storageHash;
-			this.accountsHash = accountsHash;
-			this.topicsHash = topicsHash;
-		}
+		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
 	}
 
 	private void startTimerTasksIfNeeded() {

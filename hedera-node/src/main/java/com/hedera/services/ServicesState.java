@@ -43,6 +43,8 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -145,6 +147,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				new StandardizedPropertySources(PropertiesLoader::getFileExistenceCheck));
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly", nodeId);
+//		CryptoFactory.getInstance().digestTreeSync(this);
+		printHashes();
 	}
 
 	@Override
@@ -255,6 +259,22 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return accountParsedFromString(memo);
+	}
+
+	public void printHashes() {
+		ServicesMain.log.info("[Hashes]\n" +
+				"overall :: {}\n" +
+				"accounts :: {}\n" +
+				"storage :: {}\n" +
+				"topics :: {}\n" +
+				"networkCtx :: {}\n" +
+				"addressBook :: {}",
+				getHash(),
+				accounts().getHash(),
+				storage().getHash(),
+				topics().getHash(),
+				networkCtx().getHash(),
+				addressBook().getHash());
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {

@@ -114,7 +114,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	@Override
 	public MerkleAccount copy() {
-		return (MerkleAccount)copy(false);
+		return (MerkleAccount) copy(false);
 	}
 
 	@Override
@@ -167,7 +167,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		if (o == null || MerkleAccount.class != o.getClass()) {
 			return false;
 		}
-		var that = (MerkleAccount)o;
+		var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
 				this.records().equals(that.records()) &&
 				this.payerRecords().equals(that.payerRecords());

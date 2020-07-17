@@ -33,6 +33,7 @@ import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.exports.BalancesExporter;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.migration.StateMigrations;
@@ -79,7 +80,6 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 @RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
 	final long NODE_ID = 1L;
-	final long OTHER_NODE_ID = 2L;
 	final String PATH = "/this/was/mr/bleaneys/room";
 
 	FCMap topics;
@@ -88,7 +88,6 @@ public class ServicesMainTest {
 	Pause pause;
 	Thread recordStreamThread;
 	Console console;
-	Logger mockLog;
 	Platform platform;
 	SystemExits systemExits;
 	AddressBook addressBook;
@@ -96,7 +95,6 @@ public class ServicesMainTest {
 	RecordStream recordStream;
 	FeeCalculator fees;
 	ServicesMain subject;
-	ServicesState localSignedState;
 	ServicesContext ctx;
 	PropertySource properties;
 	LedgerValidator ledgerValidator;
@@ -269,7 +267,7 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		inOrder.verify(platform).addSignedStateListener(any());
+		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(stateMigrations).runAllFor(ctx);
@@ -577,212 +575,5 @@ public class ServicesMainTest {
 	public void returnsAppState() {
 		// expect:
 		assertTrue(subject.newState() instanceof ServicesState);
-	}
-
-	@Test
-	public void doesntDumpIfOngoingIss() throws Exception {
-		// setup:
-		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
-		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
-		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
-		String acHashHex = Hex.encodeHexString(accountsRootHash);
-		var round = 1_234L;
-		var mockIssInfo = mock(IssEventInfo.class);
-		NodeId self = new NodeId(false, NODE_ID);
-		NodeId other = new NodeId(false, OTHER_NODE_ID);
-		byte[] hash = "xyz".getBytes();
-		String hashHex = Hex.encodeHexString(hash);
-		byte[] sig = "zyx".getBytes();
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-
-		given(mockIssInfo.status()).willReturn(IssEventStatus.NO_KNOWN_ISS);
-		given(mockIssInfo.shouldDumpThisRound()).willReturn(false);
-		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		given(accounts.getRootHash()).willReturn(new Hash(accountsRootHash));
-		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
-		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
-		// and:
-		localSignedState = mock(ServicesState.class);
-		given(localSignedState.accounts()).willReturn(accounts);
-		given(localSignedState.storage()).willReturn(storage);
-		given(localSignedState.topics()).willReturn(topics);
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				platform,
-				addressBook,
-				localSignedState,
-				null,
-				self,
-				other,
-				round,
-				consensusTime,
-				1_234_567L,
-				sig,
-				hash);
-
-		// then:
-		verify(accounts, never()).copyTo(any());
-		verify(storage, never()).copyTo(any());
-		verify(topics, never()).copyTo(any());
-	}
-
-	@Test
-	public void logsExpectedIssInfo() throws Exception {
-		// setup:
-		var round = 1_234L;
-		byte[] topicRootHash = "sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes();
-		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes();
-		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes();
-		String acHashHex = Hex.encodeHexString(accountsRootHash);
-		// and:
-		byte[] hash = "xyz".getBytes();
-		String hashHex = Hex.encodeHexString(hash);
-		byte[] sig = "zyx".getBytes();
-		String sigHex = Hex.encodeHexString(sig);
-		// and:
-		var mockIssInfo = mock(IssEventInfo.class);
-		given(mockIssInfo.shouldDumpThisRound()).willReturn(true);
-		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
-		localSignedState = mock(ServicesState.class);
-		NodeId self = new NodeId(false, NODE_ID);
-		NodeId other = new NodeId(false, OTHER_NODE_ID);
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-		// and:
-		SerializableDataOutputStream foutAccounts = mock(SerializableDataOutputStream.class);
-		SerializableDataOutputStream foutStorage = mock(SerializableDataOutputStream.class);
-		SerializableDataOutputStream foutTopics = mock(SerializableDataOutputStream.class);
-		Function<String, SerializableDataOutputStream> supplier = (Function<String, SerializableDataOutputStream>)mock(Function.class);
-		subject.foutSupplier = supplier;
-		// and:
-		InOrder inOrder = inOrder(accounts, storage, topics, foutAccounts, foutStorage, foutTopics, mockIssInfo);
-
-		var arh = new Hash(accountsRootHash);
-		given(accounts.getRootHash()).willReturn(arh);
-		given(storage.getRootHash()).willReturn(new Hash(storageRootHash));
-		given(topics.getRootHash()).willReturn(new Hash(topicRootHash));
-		// and:
-		given(localSignedState.accounts()).willReturn(accounts);
-		given(localSignedState.storage()).willReturn(storage);
-		given(localSignedState.topics()).willReturn(topics);
-		// and:
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "accounts", round)))
-				.willReturn(foutAccounts);
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "storage", round)))
-				.willReturn(foutStorage);
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "topics", round)))
-				.willReturn(foutTopics);
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				platform,
-				addressBook,
-				localSignedState,
-				null,
-				self,
-				other,
-				round,
-				consensusTime,
-				1_234_567L,
-				sig,
-				hash);
-
-		// then:
-		String msg = String.format(
-				ServicesMain.ISS_ERROR_MSG_PATTERN,
-				round, NODE_ID, OTHER_NODE_ID, sigHex, hashHex, acHashHex, srHashHex, trHashHex);
-		verify(mockLog).error(msg);
-		// and
-		inOrder.verify(mockIssInfo).alert(consensusTime);
-		// and:
-		inOrder.verify(accounts).copyTo(foutAccounts);
-		inOrder.verify(accounts).copyToExtra(foutAccounts);
-		inOrder.verify(foutAccounts).close();
-		inOrder.verify(storage).copyTo(foutStorage);
-		inOrder.verify(storage).copyToExtra(foutStorage);
-		inOrder.verify(foutStorage).close();
-		inOrder.verify(topics).copyTo(foutTopics);
-		inOrder.verify(topics).copyToExtra(foutTopics);
-		inOrder.verify(foutTopics).close();
-	}
-
-	@Test
-	public void foutSupplierWorks() throws Exception {
-		// given:
-		var okPath = "src/test/resources/tmp.nothing";
-
-		// when:
-		var fout = subject.foutSupplier.apply(okPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
-		(new File(okPath)).delete();
-	}
-
-	@Test
-	public void foutSupplierDoesntBlowUp() throws Exception {
-		// given:
-		var badPath = "this/path/does/not/exist";
-
-		// when:
-		var fout = subject.foutSupplier.apply(badPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
-	}
-
-	@Test
-	public void logsFallbackIssInfoOnException() {
-		// setup:
-		mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				1,
-				null,
-				2,
-				null,
-				null);
-
-		// then:
-		String msg = String.format(ServicesMain.ISS_FALLBACK_ERROR_MSG_PATTERN, 1, "null", "null");
-		verify(mockLog).error((String)argThat(msg::equals), any(Exception.class));
 	}
 }
