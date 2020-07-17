@@ -125,7 +125,6 @@ public class ServicesMain implements SwirldMain {
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long ignored) {
 		boolean shouldLog = new File("data/config/PRINT-HASHES").exists();
-		log.info("In newSignedState with shouldLog = {}", shouldLog);
 		if (shouldLog) {
 			((ServicesState)signedState).printHashes();
 		}
