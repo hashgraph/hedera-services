@@ -147,7 +147,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				new StandardizedPropertySources(PropertiesLoader::getFileExistenceCheck));
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly", nodeId);
-//		CryptoFactory.getInstance().digestTreeSync(this);
+		CryptoFactory.getInstance().digestTreeSync(this);
 		printHashes();
 	}
 
