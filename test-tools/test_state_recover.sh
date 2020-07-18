@@ -198,7 +198,7 @@ function step3_recover()
     echo "enableStateRecovery,   true" >> settings.txt
     echo "playbackStreamFileDirectory,   data/eventStream " >> settings.txt
 
-    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    150 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
 
     # save event to different directory
     echo "eventsLogDir,   data/eventStreamRecover" >> settings.txt
@@ -208,7 +208,7 @@ function step3_recover()
     echo "recoverEventsPerRound, 250" >> settings.txt
     # launch HGCApp in recover mode
     ret=0
-    java  -Xmx14g -Xms12g -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser -local 0 || ret=$?
+    java  -Xmx14g -Xms12g -cp 'data/lib/*' com.swirlds.platform.Browser -local 0 || ret=$?
 
     echo "Recover mode exited with: $ret"
 
@@ -319,9 +319,9 @@ function launch_hgc_and_client
 
     # run HGCApp for a while then shut it down
     # then we have needed old states, event stream, and HGCApp expected result
-    java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser &
+    java -cp 'data/lib/*' com.swirlds.platform.Browser &
     pid=$!  # remember prcoess ID of server
-    sleep 40
+    sleep 80
     print_banner "Now lanching client "
 
     # meanwhile launch haiClient
@@ -385,15 +385,20 @@ function skip_step1()
 
 function step_recover_posgres
 {
-    recover_common
+    # remove other wise during recover, otherwise the service would try to create the same fiels
+    rm -rf data/recordstreams
 
-    if [[ $platform == 'linux' ]]; then
-        echo "Recover for Linux"
-        recover_linux
-    elif [[ $platform == 'macOS' ]]; then
-        echo "Recover for macOS"
-        recover_macOS
-    fi
+    # no longer need recover psql since platform doing it internally
+
+    # recover_common
+
+    # if [[ $platform == 'linux' ]]; then
+    #     echo "Recover for Linux"
+    #     recover_linux
+    # elif [[ $platform == 'macOS' ]]; then
+    #     echo "Recover for macOS"
+    #     recover_macOS
+    # fi
 
 }
 
@@ -453,7 +458,7 @@ elif [[ "reload" == $1 ]] ; then
     echo "Reload from saved state and restore database first"
     rm -f output/*.log
     step_recover_posgres
-    java -Dflag=1 -cp swirlds.jar:data/lib/* com.swirlds.platform.Browser
+    java -cp 'data/lib/*' com.swirlds.platform.Browser
 elif [[ "skip1" == $1 ]] ; then
     echo "Skip step 1"
     skip_step1
