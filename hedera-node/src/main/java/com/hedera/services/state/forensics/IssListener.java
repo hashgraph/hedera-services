@@ -91,23 +91,4 @@ public class IssListener implements InvalidSignedStateListener {
 		out.writeMerkleTree(fcm);
 		out.close();
 	}
-
-	public static class LoggedIssMeta {
-		public final long round, self, other;
-		public final byte[] sig, hash, accountsHash, storageHash, topicsHash;
-
-		public LoggedIssMeta(
-				long round, long self, long other,
-				byte[] sig, byte[] hash, byte[] accountsHash, byte[] storageHash, byte[] topicsHash
-		) {
-			this.self = self;
-			this.other = other;
-			this.round = round;
-			this.sig = sig;
-			this.hash = hash;
-			this.storageHash = storageHash;
-			this.accountsHash = accountsHash;
-			this.topicsHash = topicsHash;
-		}
-	}
 }

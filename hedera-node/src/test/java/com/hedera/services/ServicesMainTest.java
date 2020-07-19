@@ -22,60 +22,60 @@ package com.hedera.services;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
+import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
-import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
-import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.binary.Hex;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.intThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.verifyNoInteractions;
+import static org.mockito.BDDMockito.willThrow;
 
 @RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
@@ -87,6 +87,7 @@ public class ServicesMainTest {
 	FCMap storage;
 	Pause pause;
 	Thread recordStreamThread;
+	Logger mockLog;
 	Console console;
 	Platform platform;
 	SystemExits systemExits;
@@ -119,6 +120,7 @@ public class ServicesMainTest {
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
+		mockLog = mock(Logger.class);
 		console = mock(Console.class);
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
@@ -138,6 +140,8 @@ public class ServicesMainTest {
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
 		ctx = mock(ServicesContext.class);
+
+		ServicesMain.log = mockLog;
 
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.stats()).willReturn(stats);
@@ -173,6 +177,11 @@ public class ServicesMainTest {
 		subject.systemExits = systemExits;
 		subject.defaultCharset = () -> StandardCharsets.UTF_8;
 		CONTEXTS.store(ctx);
+	}
+
+	@AfterEach
+	public void cleanup() {
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 	}
 
 	@Test
@@ -492,6 +501,40 @@ public class ServicesMainTest {
 		// then:
 		verify(platformStatus).set(newStatus);
 		verify(recordStream).setInFreeze(false);
+	}
+
+	@Test
+	public void doesNotPrintHashesIfNotInMaintenance() {
+		// setup:
+		subject.ctx = ctx;
+		var signedState = mock(ServicesState.class);
+		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.DISCONNECTED);
+		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+
+		// when:
+		subject.newSignedState(signedState, Instant.now(), 1L);
+
+		// then:
+		verify(signedState, never()).printHashes();
+	}
+
+	@Test
+	public void onlyPrintsHashesIfInMaintenance() {
+		// setup:
+		subject.ctx = ctx;
+		var signedState = mock(ServicesState.class);
+		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
+		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+
+		// when:
+		subject.newSignedState(signedState, Instant.now(), 1L);
+
+		// then:
+		verify(signedState).printHashes();
 	}
 
 	@Test

@@ -21,45 +21,35 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.state.forensics.IssListener;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.utils.JvmSystemExits;
-import com.hedera.services.utils.SystemExits;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleBlobMeta;
-import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
+import com.hedera.services.state.forensics.IssListener;
+import com.hedera.services.utils.JvmSystemExits;
+import com.hedera.services.utils.SystemExits;
 import com.hedera.services.utils.TimerUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.SwirldMain;
 import com.swirlds.common.SwirldState;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.context.properties.Profile.*;
-import static com.swirlds.common.PlatformStatus.*;
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
+import static com.hedera.services.context.properties.Profile.DEV;
+import static com.hedera.services.context.properties.Profile.PROD;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.MAINTENANCE;
 
 /**
  * Drives the major state transitions for a Hedera Node via its {@link ServicesContext}.
@@ -123,9 +113,8 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	@Override
-	public void newSignedState(SwirldState signedState, Instant when, long ignored) {
-		boolean shouldLog = new File("data/config/PRINT-HASHES").exists();
-		if (shouldLog) {
+	public void newSignedState(SwirldState signedState, Instant when, long round) {
+		if (ctx.platformStatus().get() == MAINTENANCE) {
 			((ServicesState)signedState).printHashes();
 		}
 		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
