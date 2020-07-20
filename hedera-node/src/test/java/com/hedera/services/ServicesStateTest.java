@@ -202,6 +202,17 @@ class ServicesStateTest {
 	}
 
 	@Test
+	public void catchesProtobufParseException() {
+		// setup:
+		var platformTxn = mock(Transaction.class);
+
+		given(platformTxn.getContents()).willReturn("not-a-grpc-txn".getBytes());
+
+		// expect:
+		assertDoesNotThrow(() -> subject.expandSignatures(platformTxn));
+	}
+
+	@Test
 	public void logsNonNullHashesFromSavedState() {
 		// setup:
 		var mockLog = mock(Logger.class);
