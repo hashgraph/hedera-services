@@ -85,12 +85,8 @@ class MerkleEntityIdTest {
 		var defaultSubject = new MerkleEntityId();
 
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyToExtra(null));
 		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
 		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.diffCopyTo(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.diffCopyFrom(null, null));
 	}
 
 	@Test

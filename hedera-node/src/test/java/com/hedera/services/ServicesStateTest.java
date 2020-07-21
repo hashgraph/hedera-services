@@ -196,12 +196,6 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void copyFromStateThrows() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(subject));
-	}
-
-	@Test
 	public void catchesProtobufParseException() {
 		// setup:
 		var platformTxn = mock(Transaction.class);
@@ -321,8 +315,6 @@ class ServicesStateTest {
 	public void sanityChecks() {
 		assertEquals(ServicesState.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ServicesState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyToExtra(null));
 	}
 
 	@Test

@@ -202,12 +202,8 @@ public class MerkleAccountTest {
 	@Test
 	public void unsupportedOperationsThrow() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyToExtra(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.diffCopyTo(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.diffCopyFrom(null, null));
 	}
 
 	@Test

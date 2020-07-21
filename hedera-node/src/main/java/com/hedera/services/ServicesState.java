@@ -187,7 +187,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	/* --- FastCopyable --- */
 	@Override
-	public synchronized FastCopyable copy() {
+	public synchronized ServicesState copy() {
 		return new ServicesState(nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
@@ -236,23 +236,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		accounts().copyFromExtra(in);
 		storage().copyFromExtra(in);
 		topics().copyFromExtra(in);
-	}
-
-	@Override
-	@Deprecated
-	public void copyTo(SerializableDataOutputStream outputStream) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyToExtra(SerializableDataOutputStream outputStream) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void copyFrom(SwirldState _state) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --------------- */
