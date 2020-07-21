@@ -20,8 +20,8 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.commons.codec.binary.Hex;
@@ -33,7 +33,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,18 +54,6 @@ public class JKeyListTest {
 
 		// then:
 		assertTrue(recovered.isEmpty());
-	}
-
-
-	public static byte[] randomUtf8Bytes(int n) {
-		byte[] data = new byte[n];
-		int i = 0;
-		while (i < n) {
-			byte[] rnd = UUID.randomUUID().toString().getBytes();
-			System.arraycopy(rnd, 0, data, i, Math.min(rnd.length, n - 1 - i));
-			i += rnd.length;
-		}
-		return data;
 	}
 
 	@Test
@@ -93,7 +80,7 @@ public class JKeyListTest {
 	@Test
 	public void invalidJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
-				ByteString.copyFrom(randomUtf8Bytes(JEd25519Key.ED25519_BYTE_LENGTH))
+				MiscUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
 		KeyList invalidKeyList1 = KeyList.newBuilder().build();
 		Key invalidKey1 = Key.newBuilder().setKeyList(invalidKeyList1).build();
@@ -115,10 +102,10 @@ public class JKeyListTest {
 	@Test
 	public void validJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
-				ByteString.copyFrom(randomUtf8Bytes(JEd25519Key.ED25519_BYTE_LENGTH))
+				MiscUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
 		Key validECDSA384Key = Key.newBuilder().setECDSA384(
-				ByteString.copyFrom(randomUtf8Bytes(24))
+				MiscUtils.randomUtf8ByteString(24)
 		).build();
 		KeyList validKeyList1 = KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(validED25519Key).build();
 		Key validKey1 = Key.newBuilder().setKeyList(validKeyList1).build();

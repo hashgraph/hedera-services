@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -73,7 +73,7 @@ public class JThresholdKeyTest {
             ContractID.newBuilder().setContractNum(1L).build()
     ).build();
     Key validRSA3072Key = Key.newBuilder().setRSA3072(
-            ByteString.copyFrom(JKeyListTest.randomUtf8Bytes(16))
+            MiscUtils.randomUtf8ByteString(16)
     ).build();
     KeyList validKeyList = KeyList.newBuilder().addKeys(validContractIDKey).addKeys(validRSA3072Key).build();
 
@@ -86,10 +86,10 @@ public class JThresholdKeyTest {
   @Test
   public void invalidJThresholdKeyTest() throws Exception {
     Key validED25519Key = Key.newBuilder().setEd25519(
-            ByteString.copyFrom(JKeyListTest.randomUtf8Bytes(JEd25519Key.ED25519_BYTE_LENGTH))
+            MiscUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
     ).build();
     Key validECDSA384Key = Key.newBuilder().setECDSA384(
-            ByteString.copyFrom(JKeyListTest.randomUtf8Bytes(24))
+            MiscUtils.randomUtf8ByteString(24)
     ).build();
     KeyList invalidKeyList1 = KeyList.newBuilder().build();
     Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
