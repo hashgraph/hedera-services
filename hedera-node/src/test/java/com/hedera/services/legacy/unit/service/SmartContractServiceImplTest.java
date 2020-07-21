@@ -284,7 +284,8 @@ public class SmartContractServiceImplTest {
             TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true);
+            ignore -> true,
+            null);
 
     genKpair = new KeyPairGenerator().generateKeyPair();
     genPubKey = ((EdDSAPublicKey) genKpair.getPublic()).getAbyte();

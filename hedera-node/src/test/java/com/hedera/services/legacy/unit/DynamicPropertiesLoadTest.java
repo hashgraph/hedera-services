@@ -32,7 +32,6 @@ import java.util.List;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;

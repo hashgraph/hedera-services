@@ -28,7 +28,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleBlobMeta;

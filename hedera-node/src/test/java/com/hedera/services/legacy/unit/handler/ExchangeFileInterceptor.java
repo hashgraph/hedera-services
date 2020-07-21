@@ -22,7 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 
 public class ExchangeFileInterceptor implements GenericInterceptor {
   @Override

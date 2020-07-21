@@ -116,6 +116,7 @@ public class SmartContractRequestHandler {
 
 	private Map<byte[], byte[]> storageView;
 	private Map<byte[], byte[]> bytecodeView;
+	private Map<EntityId, Long> entityExpiries;
 
 	private AccountID funding;
 	private HederaLedger ledger;
@@ -144,7 +145,8 @@ public class SmartContractRequestHandler {
 			PropertySource properties,
 			Supplier<ServicesRepositoryRoot> newPureRepo,
 			SolidityLifecycle lifecycle,
-			SoliditySigsVerifier sigsVerifier
+			SoliditySigsVerifier sigsVerifier,
+			Map<EntityId, Long> entityExpiries
 	) {
 		this.repository = repository;
 		this.newPureRepo = newPureRepo;
@@ -159,6 +161,7 @@ public class SmartContractRequestHandler {
 		this.properties = properties;
 		this.lifecycle = lifecycle;
 		this.sigsVerifier = sigsVerifier;
+		this.entityExpiries = entityExpiries;
 
 		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storageMap);
 		storageView = storageMapFrom(blobStore);
@@ -759,21 +762,13 @@ public class SmartContractRequestHandler {
 		ContractID cid = op.getContractID();
 		long newExpiry = op.getExpirationTime().getSeconds();
 		TransactionReceipt receipt;
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		receipt = updateDeleteFlag(cid, true);
 		try {
 			if (receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				AccountID id = asAccount(cid);
 				long oldExpiry = ledger.expiry(id);
-				String path = getSystemTempFilePath(cid);
-				storageWrapper.fileCreate(
-						path,
-						Long.toString(oldExpiry).getBytes(),
-						consensusTimestamp.getEpochSecond(),
-						consensusTimestamp.getNano(),
-						newExpiry,
-						null);
-
+				var entity = EntityId.ofNullableContractId(cid);
+				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
 				ledger.customize(id, customizer);
 			}
@@ -801,17 +796,15 @@ public class SmartContractRequestHandler {
 	 * @return Details of contract undeletion result
 	 */
 	public TransactionRecord systemUndelete(TransactionBody txBody, Instant consensusTimestamp) {
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		SystemUndeleteTransactionBody op = txBody.getSystemUndelete();
 		ContractID cid = op.getContractID();
+		var entity = EntityId.ofNullableContractId(cid);
 		TransactionReceipt receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
 
-		String path = getSystemTempFilePath(cid);
 		long oldExpiry = 0;
 		try {
-			if (storageWrapper.fileExists(path)) {
-				byte[] oldBytes = storageWrapper.fileRead(path);
-				oldExpiry = Longs.fromByteArray(oldBytes);
+			if (entityExpiries.containsKey(entity)) {
+				oldExpiry = entityExpiries.get(entity);
 			} else {
 				receipt = getTransactionReceipt(INVALID_FILE_ID, exchange.activeRates());
 			}
@@ -829,7 +822,7 @@ public class SmartContractRequestHandler {
 					}
 				}
 			}
-			storageWrapper.delete(path, consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano());
+			entityExpiries.remove(entity);
 		} catch (Exception e) {
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
@@ -843,11 +836,6 @@ public class SmartContractRequestHandler {
 	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
 		ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
-	}
-
-	private String getSystemTempFilePath(ContractID contractID) {
-		return ApplicationConstants.buildPath(ApplicationConstants.SYSTEM_TEMP_FILE_PATH,
-				Long.toString(contractID.getRealmNum()), Long.toString(contractID.getContractNum()));
 	}
 
 	/**

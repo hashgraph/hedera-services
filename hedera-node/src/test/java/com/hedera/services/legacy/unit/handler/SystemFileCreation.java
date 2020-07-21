@@ -22,7 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;

@@ -22,6 +22,8 @@ package com.hedera.services.files.interceptors;
 
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import org.junit.Test;
+
 import java.math.BigInteger;
 import java.util.stream.LongStream;
 import static java.math.BigInteger.valueOf;
@@ -30,8 +32,8 @@ import static java.math.BigInteger.valueOf;
 public class PureRatesValidation {
 	private static BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
-	private PureRatesValidation(){
-		throw new IllegalStateException("Utility Class");
+	PureRatesValidation(){
+		throw new IllegalStateException();
 	}
 
 	public static boolean isNormalIntradayChange(

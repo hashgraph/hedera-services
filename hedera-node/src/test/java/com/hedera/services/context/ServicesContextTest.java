@@ -304,7 +304,7 @@ public class ServicesContextTest {
 		assertThat(ctx.usagePrices(), instanceOf(AwareFcfsUsagePrices.class));
 		assertThat(ctx.currentView(), instanceOf(StateView.class));
 		assertThat(ctx.blobStore(), instanceOf(FcBlobsBytesStore.class));
-		assertThat(ctx.oldExpiries(), instanceOf(Map.class));
+		assertThat(ctx.entityExpiries(), instanceOf(Map.class));
 		assertThat(ctx.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(ctx.txnThrottling(), instanceOf(TransactionThrottling.class));
 		assertThat(ctx.bucketThrottling(), instanceOf(BucketThrottling.class));

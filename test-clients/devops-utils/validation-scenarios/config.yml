@@ -67,17 +67,17 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
   localhost:
     bootstrap: 2
-    ensureScenarioPayerHbars: 300
+    ensureScenarioPayerHbars: 100000
     nodes:
-    - {account: 3, ipv4Addr: '127.0.0.1:50213'}
+    - {account: 3, ipv4Addr: '127.0.0.1:50211'}
     scenarioPayer: 1001
     scenarios:
       feeSnapshots:
-        appendToSnapshotCsv: true
+        appendToSnapshotCsv: false
         ignoreCostAnswer: true
         opsConfig: {bytecode: 1002, memoLength: 32}
-        scheduleDesc: Bootstrap
-        tinyBarsToOffer: 10000000000
+        scheduleDesc: 25xBootstrap
+        tinyBarsToOffer: 111222333444555
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [111]

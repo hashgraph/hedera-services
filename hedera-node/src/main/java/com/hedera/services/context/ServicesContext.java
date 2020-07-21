@@ -28,6 +28,7 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySanitizer;
@@ -71,7 +72,6 @@ import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
-import com.hedera.services.files.ExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.MetadataMapFactory;
@@ -106,6 +106,7 @@ import com.hedera.services.queries.meta.GetVersionInfoAnswer;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
@@ -264,8 +265,6 @@ import static java.util.stream.Collectors.toMap;
  * @author Michael Tinker
  */
 public class ServicesContext {
-	private static final CustomProperties IGNORED_API_PERMISSION_PROPS = null;
-
 	/* Injected dependencies. */
 	private final NodeId id;
 	private final Platform platform;
@@ -329,6 +328,7 @@ public class ServicesContext {
 	private Supplier<StateView> stateViews;
 	private FeeSchedulesManager feeSchedulesManager;
 	private Map<String, byte[]> blobStore;
+	private Map<EntityId, Long> entityExpiries;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private LedgerAccountsSource accountSource;
@@ -664,11 +664,11 @@ public class ServicesContext {
 		return balancesExporter;
 	}
 
-	public Map<FileID, Long> oldExpiries() {
-		if (oldExpiries == null) {
-			oldExpiries = ExpiryMapFactory.expiryMapFrom(blobStore());
+	public Map<EntityId, Long> entityExpiries() {
+		if (entityExpiries == null) {
+			entityExpiries = EntityExpiryMapFactory.entityExpiryMapFrom(blobStore());
 		}
-		return oldExpiries;
+		return entityExpiries;
 	}
 
 	public HederaFs hfs() {
@@ -742,8 +742,8 @@ public class ServicesContext {
 					new FileCreateTransitionLogic(hfs(), validator(), txnCtx()),
 					new FileDeleteTransitionLogic(hfs(), txnCtx()),
 					new FileAppendTransitionLogic(hfs(), txnCtx()),
-					new FileSysDelTransitionLogic(hfs(), oldExpiries(), txnCtx()),
-					new FileSysUndelTransitionLogic(hfs(), oldExpiries(), txnCtx()),
+					new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
+					new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
 					/* ----- CONSENSUS ---- */
 					new TopicCreateTransitionLogic(accounts(), topics(), ids(), validator(), txnCtx()),
 					new TopicUpdateTransitionLogic(accounts(), topics(), validator(), txnCtx()),
@@ -989,7 +989,8 @@ public class ServicesContext {
 					properties(),
 					newPureRepo(),
 					solidityLifecycle(),
-					soliditySigsVerifier());
+					soliditySigsVerifier(),
+					entityExpiries());
 		}
 		return contracts;
 	}

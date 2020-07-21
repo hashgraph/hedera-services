@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.DataMapFactory.*;
 
@@ -112,5 +113,11 @@ class DataMapFactoryTest {
 
 		dataMap.clear();
 		assertTrue(dataMap.isEmpty());
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, DataMapFactory::new);
 	}
 }

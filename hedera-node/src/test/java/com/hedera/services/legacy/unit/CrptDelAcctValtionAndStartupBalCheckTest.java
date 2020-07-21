@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.services.utils.MiscUtils;

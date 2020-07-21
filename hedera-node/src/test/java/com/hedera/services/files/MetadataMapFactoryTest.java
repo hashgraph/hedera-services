@@ -177,4 +177,10 @@ class MetadataMapFactoryTest {
 	private String asLegacyPath(String fid) {
 		return FeeCalcUtils.pathOfMeta(IdUtils.asFile(fid));
 	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, MetadataMapFactory::new);
+	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.files;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
@@ -30,21 +31,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.files.ExpiryMapFactory.expiryMapFrom;
-import static com.hedera.services.files.ExpiryMapFactory.toFid;
-import static com.hedera.services.files.ExpiryMapFactory.toKeyString;
 import static org.junit.jupiter.api.Assertions.*;
 
-class ExpiryMapFactoryTest {
+class EntityExpiryMapFactoryTest {
 	@Test
 	public void toFidConversionWorks() {
 		// given:
 		var key = "/666/e888";
 		// and:
-		var expected = IdUtils.asFile("0.666.888");
+		var expected = new EntityId(0, 666, 888);
 
 		// when:
-		var actual = toFid(key);
+		var actual = EntityExpiryMapFactory.toEid(key);
 
 		// then:
 		assertEquals(expected, actual);
@@ -53,12 +51,10 @@ class ExpiryMapFactoryTest {
 	@Test
 	public void toKeyConversionWorks() {
 		// given:
-		var fid = IdUtils.asFile("0.2.3");
-		// and:
-		var expected = FeeCalcUtils.pathOf(fid).replace("f", "e");
+		var expected = "/2/e3";
 
 		// when:
-		var actual = toKeyString(fid);
+		var actual = EntityExpiryMapFactory.toKeyString(new EntityId(0, 2, 3));
 
 		// then:
 		assertEquals(expected, actual);
@@ -74,9 +70,9 @@ class ExpiryMapFactoryTest {
 		Map<String, byte[]> delegate = new HashMap<>();
 		delegate.put(asLegacyPath("0.2.7"), Longs.toByteArray(111));
 		// and:
-		var fid1 = IdUtils.asFile("0.2.3");
-		var fid2 = IdUtils.asFile("0.3333.4");
-		var fid3 = IdUtils.asFile("0.4.555555");
+		var eid1 = new EntityId(0, 2, 3);
+		var eid2 = new EntityId(0, 3333, 4);
+		var eid3 = new EntityId(0, 4, 555555);
 		// and:
 		var theData = 222L;
 		var someData = 333L;
@@ -84,17 +80,17 @@ class ExpiryMapFactoryTest {
 		var overwrittenData = 555L;
 
 		// given:
-		var expiryMap = expiryMapFrom(delegate);
+		var expiryMap = EntityExpiryMapFactory.entityExpiryMapFrom(delegate);
 
 		// when:
-		expiryMap.put(fid1, overwrittenData);
-		expiryMap.put(fid1, someData);
-		expiryMap.put(fid2, moreData);
-		expiryMap.put(fid3, theData);
+		expiryMap.put(eid1, overwrittenData);
+		expiryMap.put(eid1, someData);
+		expiryMap.put(eid2, moreData);
+		expiryMap.put(eid3, theData);
 
 		assertFalse(expiryMap.isEmpty());
 		assertEquals(4, expiryMap.size());
-		assertEquals(java.util.Optional.of(moreData), java.util.Optional.ofNullable(expiryMap.remove(fid2)));
+		assertEquals(java.util.Optional.of(moreData), java.util.Optional.ofNullable(expiryMap.remove(eid2)));
 		assertEquals(3, expiryMap.size());
 		assertEquals(
 				"/2/e3->333, /4/e555555->222, /2/e7->111",
@@ -110,10 +106,28 @@ class ExpiryMapFactoryTest {
 								Longs.fromByteArray(entry.getValue())))
 						.collect(Collectors.joining(", ")));
 
-		assertTrue(expiryMap.containsKey(fid1));
-		assertFalse(expiryMap.containsKey(fid2));
+		assertTrue(expiryMap.containsKey(eid1));
+		assertFalse(expiryMap.containsKey(eid2));
 
 		expiryMap.clear();
 		assertTrue(expiryMap.isEmpty());
+	}
+
+	@Test
+	public void toLongPropagatesNull() {
+		// expect:
+		assertNull(EntityExpiryMapFactory.toLong(null));
+	}
+
+	@Test
+	public void throwsIseOnNonsense() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> EntityExpiryMapFactory.toLong("wtf".getBytes()));
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, EntityExpiryMapFactory::new);
 	}
 }

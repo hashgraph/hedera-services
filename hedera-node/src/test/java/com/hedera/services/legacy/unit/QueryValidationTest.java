@@ -23,7 +23,6 @@ package com.hedera.services.legacy.unit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
