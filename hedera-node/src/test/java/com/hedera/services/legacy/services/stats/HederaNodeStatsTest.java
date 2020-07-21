@@ -20,6 +20,10 @@ package com.hedera.services.legacy.services.stats;
  * ‍
  */
 
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import org.junit.Assert;
@@ -205,12 +209,14 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseTransactionHandled() {
+		var cryptoTransferTxnBody = CryptoTransferTransactionBody.newBuilder().build();
+		var transaction = TransactionBody.newBuilder().setCryptoTransfer(cryptoTransferTxnBody).build();
 		String statToTest = "cryptoTransfer";
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
-			stats.transactionHandled(statToTest, i);
+			stats.transactionHandled(transaction);
 			assertEquals(i, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
-			assertTrue(stats.getAvgHdlTxSize() > 0.0);
+			assertEquals(0.0, stats.getAvgHdlSubMsgSize());
 		}
 	}
 
@@ -258,7 +264,7 @@ public class HederaNodeStatsTest {
 		String fileTransactionHdlStat = "createFile";
 		assertEquals(0.0, stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 20; i++) {
-			stats.transactionHandled(fileTransactionHdlStat, 5678);
+			stats.transactionHandled(fileTransactionHdlStat);
 		}
 		String smartContractTransactionRcvStat = "contractCallMethod";
 		assertEquals(0.0, stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX));
@@ -269,7 +275,25 @@ public class HederaNodeStatsTest {
 		assertTrue(stats.getSpeedometerStat(cryptoQuerySubStat, HederaNodeStats.SUBMITTED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX) > 0.0);
-		assertEquals(5678.0, stats.getAvgHdlTxSize());
+		assertEquals(0.0, stats.getAvgHdlSubMsgSize());
+	}
+
+	@Test
+	public void shouldUpdateAvgHdlSubMsgSize() throws InterruptedException {
+		var subMsgTxnBody = ConsensusSubmitMessageTransactionBody.newBuilder().setMessage(
+				MiscUtils.randomUtf8ByteString(5120)
+		).build();
+		var transaction = TransactionBody.newBuilder().setConsensusSubmitMessage(subMsgTxnBody).build();
+		String statToTest = "submitMessage";
+		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
+		assertEquals(0.0, stats.getSpeedometerStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
+		for (int i = 1; i <= 10; i++) {
+			stats.transactionHandled(transaction);
+			assertEquals(i, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
+			assertEquals(5127.0, stats.getAvgHdlSubMsgSize());
+		}
+		Thread.sleep(HederaNodeStats.UPDATE_PERIOD + 500);
+		assertTrue(stats.getSpeedometerStat(statToTest, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 	}
 
 

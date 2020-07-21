@@ -40,7 +40,6 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.txns.diligence.DuplicateClassification;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -229,8 +228,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 
-		ctx.stats().transactionHandled(MiscUtils.getTxnStat(accessor.getTxn()),
-				accessor.getTxn().getSerializedSize());
+		ctx.stats().transactionHandled(accessor.getTxn());
 	}
 
 	private ResponseCodeEnum assessPostConsensusValidity(PlatformTxnAccessor accessor, Instant consensusTime) {

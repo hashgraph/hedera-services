@@ -22,6 +22,8 @@ package com.hedera.services.legacy.services.stats;
 
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.NetworkController;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
@@ -127,7 +129,7 @@ public class HederaNodeStats {
 
 	private StatsRunningAverage avgAcctLookupRetryAttempts;
 	private StatsRunningAverage avgAcctRetryWaitMs;
-	private StatsRunningAverage avgHdlTxSize;
+	private StatsRunningAverage avgHdlSubMsgSize;
 	private StatsSpeedometer acctLookupRetriesPerSecond;
 
 	/** size of the queue from which we take records and write to RecordStream file */
@@ -270,19 +272,19 @@ public class HederaNodeStats {
 				() -> avgAcctRetryWaitMs.getWeightedMean())
 		);
 
-		avgHdlTxSize = new StatsRunningAverage(DEFAULT_HALF_LIFE);
+		avgHdlSubMsgSize = new StatsRunningAverage(DEFAULT_HALF_LIFE);
 		platform.addAppStatEntry(new StatEntry(//
 				"app",//
-				"avgHdlTxSize",//
-				"average size of the handled transaction",
+				"avgHdlSubMsgSize",//
+				"average size of the handled HCS submit message transaction",
 				"%,13.6f",//
-				avgHdlTxSize,//
+				avgHdlSubMsgSize,//
 				(h) -> {
-					avgHdlTxSize.reset(h);
-					return avgHdlTxSize;
+					avgHdlSubMsgSize.reset(h);
+					return avgHdlSubMsgSize;
 				},//
-				avgHdlTxSize::reset,//
-				() -> getAvgHdlTxSize())
+				avgHdlSubMsgSize::reset,//
+				() -> getAvgHdlSubMsgSize())
 		);
 
 		platform.addAppStatEntry(new StatEntry(//
@@ -432,9 +434,16 @@ public class HederaNodeStats {
 		// Can also update stats for SmartContract and/or queries
 	}
 
-	public void transactionHandled(String transactionType, int transactionSize) {
+	public void transactionHandled(String transactionType) {
 		updateCountStat(transactionType, HANDLED_SUFFIX);
-		avgHdlTxSize.recordValue(transactionSize);
+	}
+
+	public void transactionHandled(TransactionBody transaction) {
+		String transactionType = MiscUtils.getTxnStat(transaction);
+		transactionHandled(transactionType);
+		if (transactionType.equals("submitMessage")) {
+			avgHdlSubMsgSize.recordValue(transaction.getSerializedSize());
+		}
 	}
 
 	public void signatureVerified(final boolean async) {
@@ -455,8 +464,8 @@ public class HederaNodeStats {
 		recordStreamQueueSize = size;
 	}
 
-	public double getAvgHdlTxSize() {
-		return avgHdlTxSize.getWeightedMean();
+	public double getAvgHdlSubMsgSize() {
+		return avgHdlSubMsgSize.getWeightedMean();
 	}
 
 	/**
