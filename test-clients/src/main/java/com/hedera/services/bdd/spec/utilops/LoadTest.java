@@ -87,7 +87,7 @@ public class LoadTest extends HapiApiSuite {
 				.tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
-				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber.getAsInt() : settings.getThreadNumber())
+				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber.getAsInt() : settings.getThreads())
 				.lasting(
 						(testDurationMinutes.isPresent() ?
 								LoadTest::getTestDurationMinutes :
