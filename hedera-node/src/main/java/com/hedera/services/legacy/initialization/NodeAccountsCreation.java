@@ -107,14 +107,13 @@ public class NodeAccountsCreation {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Map<String, List<AccountKeyListObj>> readBase64EncodedGenesisKey(String path) {
-		String keyBase64Pub = readFileContentUTF8(path);
-		byte[] accountKeyPairHolderBytes = Base64.getDecoder().decode(keyBase64Pub);
+	public static Map<String, List<AccountKeyListObj>> readBase64EncodedGenesisKey(String loc) {
 		Map<String, List<AccountKeyListObj>> keysListMap = null;
 		try {
+			var keyBase64Pub = Files.readString(Paths.get(loc));
+			byte[] accountKeyPairHolderBytes = Base64.getDecoder().decode(keyBase64Pub);
 			keysListMap = (Map<String, List<AccountKeyListObj>>) convertFromBytes(accountKeyPairHolderBytes);
 		} catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
 			log.error("Unable to deserialize startup keystore!", e);
 		}
 		return keysListMap;
@@ -127,25 +126,14 @@ public class NodeAccountsCreation {
 		}
 	}
 
-	private static String readFileContentUTF8(String filePath) {
-		String fileString = null;
-		try {
-			fileString = Files.readString(Paths.get(filePath));
-		} catch (IOException e) {
-			log.error("Error while reading from file {}. ", filePath, e);
-		}
-
-		return fileString;
-	}
-
-	public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
+	public static void writeToFile(String path, byte[] data) throws IOException {
 		File f = new File(path);
 		File parent = f.getParentFile();
 		if (parent != null && !parent.exists()) {
 			parent.mkdirs();
 		}
 
-		try (FileOutputStream fos = new FileOutputStream(f, append)) {
+		try (FileOutputStream fos = new FileOutputStream(f, false)) {
 			fos.write(data);
 			fos.flush();
 		} catch (IOException e) {
@@ -156,7 +144,7 @@ public class NodeAccountsCreation {
 
 	public static void writeToFileUTF8(String path, String data) throws IOException {
 		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-		writeToFile(path, bytes, false);
+		writeToFile(path, bytes);
 	}
 
 	public void initializeNodeAccounts(

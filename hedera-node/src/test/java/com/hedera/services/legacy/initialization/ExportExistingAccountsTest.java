@@ -2,6 +2,7 @@ package com.hedera.services.legacy.initialization;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterAll;
@@ -32,21 +33,42 @@ class ExportExistingAccountsTest {
 	}
 
 	@Test
-	public void reproducesLegacyFile() throws IOException {
+	public void handlesNullProxyAccount() throws IOException {
 		// setup:
-		FCMap<MerkleEntityId, MerkleAccount> helper = new FCMap<>(new MerkleEntityId.Provider(),
+		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>(
+				new MerkleEntityId.Provider(),
 				MerkleAccount.LEGACY_PROVIDER);
 		// and:
 		var in = new SerializableDataInputStream(Files.newInputStream(Paths.get(LEGACY_ACCOUNTS_LOC)));
 		// and:
-		helper.copyFrom(in);
-		helper.copyFromExtra(in);
+		savedAccounts.copyFrom(in);
+		savedAccounts.copyFromExtra(in);
+
+		// given:
+		savedAccounts.get(MerkleEntityId.fromPojoAccountId(EntityIdUtils.accountParsedFromString("1.2.3")))
+				.setProxy(null);
+
+		// expect:
+		Assertions.assertDoesNotThrow(() -> ExportExistingAccounts.asJsonArray(savedAccounts));
+	}
+
+	@Test
+	public void reproducesLegacyFile() throws IOException {
+		// setup:
+		FCMap<MerkleEntityId, MerkleAccount> savedAccounts = new FCMap<>(
+				new MerkleEntityId.Provider(),
+				MerkleAccount.LEGACY_PROVIDER);
+		// and:
+		var in = new SerializableDataInputStream(Files.newInputStream(Paths.get(LEGACY_ACCOUNTS_LOC)));
+		// and:
+		savedAccounts.copyFrom(in);
+		savedAccounts.copyFromExtra(in);
 
 		// given:
 		String expected = Files.readString(Paths.get(LEGACY_EXPORT_LOC));
 
 		// when:
-		ExportExistingAccounts.exportAccounts(TMP_EXPORT_LOC, helper);
+		ExportExistingAccounts.exportAccounts(TMP_EXPORT_LOC, savedAccounts);
 		// and:
 		String actual = Files.readString(Paths.get(TMP_EXPORT_LOC));
 
