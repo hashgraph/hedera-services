@@ -25,8 +25,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
-	private static final Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
+	private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
 	private static String topicID = null;
 	private static int messageSize = 40;
 	private static String pemFile = null;

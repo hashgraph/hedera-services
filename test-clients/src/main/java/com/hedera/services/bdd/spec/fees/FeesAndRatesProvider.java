@@ -42,8 +42,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.nio.file.Files;

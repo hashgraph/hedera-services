@@ -35,9 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
-import com.hedera.services.legacy.core.jproto.JTransactionID;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -48,7 +46,6 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
@@ -91,7 +88,7 @@ class RecordCacheTest {
 			.setTransactionFee(123L)
 			.build();
 
-	private JTransactionRecord jaRecord = JTransactionRecord.convert(aRecord);
+	private ExpirableTxnRecord jaRecord = ExpirableTxnRecord.fromGprc(aRecord);
 
 	private Cache delegate;
 	private RecordCache subject;
@@ -168,7 +165,7 @@ class RecordCacheTest {
 				.build();
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
 		// and:
-		ArgumentCaptor<Optional<JTransactionRecord>> captor = ArgumentCaptor.forClass(Optional.class);
+		ArgumentCaptor<Optional<ExpirableTxnRecord>> captor = ArgumentCaptor.forClass(Optional.class);
 
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
@@ -179,12 +176,12 @@ class RecordCacheTest {
 		// then:
 		verify(delegate).put(argThat(txnId::equals), captor.capture());
 		// and:
-		JTransactionRecord record = captor.getValue().get();
-		assertEquals("FAIL_INVALID", record.getTxReceipt().getStatus());
+		ExpirableTxnRecord record = captor.getValue().get();
+		assertEquals("FAIL_INVALID", record.getReceipt().getStatus());
 		assertEquals("Catastrophe!", record.getMemo());
-		assertEquals(txnId, JTransactionID.convert(record.getTransactionID()));
-		assertEquals(asTimestamp(consensusTime), JTimestamp.convert(record.getConsensusTimestamp()));
-		assertArrayEquals(sha384HashOf(accessor).toByteArray(), record.getTxHash(), "Wrong hash!");
+		assertEquals(txnId, record.getTxnId().toGrpc());
+		assertEquals(asTimestamp(consensusTime), record.getConsensusTimestamp().toGrpc());
+		assertArrayEquals(sha384HashOf(accessor).toByteArray(), record.getTxnHash(), "Wrong hash!");
 	}
 
 	@Test

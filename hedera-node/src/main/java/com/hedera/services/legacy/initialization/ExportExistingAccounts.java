@@ -20,9 +20,9 @@ package com.hedera.services.legacy.initialization;
  * ‍
  */
 
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -39,24 +39,24 @@ public class ExportExistingAccounts {
   private static final Logger log = LogManager.getLogger(ExportExistingAccounts.class);
   
   @SuppressWarnings("unchecked")
-  private static JSONArray getAccountsasJson(FCMap<MapKey, HederaAccount> accountMap) {
+  private static JSONArray getAccountsasJson(FCMap<MerkleEntityId, MerkleAccount> accountMap) {
 
     JSONArray accountObjArr = new JSONArray();
     JSONObject cryptoAccount = null;
-    HederaAccount mapValue = null;
-    JAccountID proxyAccountID = null;
-    for (MapKey currKey : accountMap.keySet()) {
+    MerkleAccount mapValue = null;
+    EntityId proxyAccountID = null;
+    for (MerkleEntityId currKey : accountMap.keySet()) {
       try {
         cryptoAccount = new JSONObject();
         log.info("retrieving account info from path :: Solidity Address in getAccountDetails "
-            + currKey.getAccountNum());
+            + currKey.getNum());
         mapValue = accountMap.get(currKey);
         cryptoAccount.put("initialBalance", mapValue.getBalance());
-        proxyAccountID = mapValue.getProxyAccount();
+        proxyAccountID = mapValue.getProxy();
         if (proxyAccountID != null) {
-          cryptoAccount.put("proxyAccountNum", proxyAccountID.getAccountNum());
-          cryptoAccount.put("proxyRealmNum", proxyAccountID.getRealmNum());
-          cryptoAccount.put("proxyShardNum", mapValue.getProxyAccount());
+          cryptoAccount.put("proxyAccountNum", proxyAccountID.num());
+          cryptoAccount.put("proxyRealmNum", proxyAccountID.realm());
+          cryptoAccount.put("proxyShardNum", proxyAccountID.shard());
         } else {
           cryptoAccount.put("proxyAccountNum", 0);
           cryptoAccount.put("proxyRealmNum", 0);
@@ -65,11 +65,11 @@ public class ExportExistingAccounts {
         cryptoAccount.put("sendRecordThreshold", mapValue.getSenderThreshold());
         cryptoAccount.put("receiveRecordThreshold", mapValue.getReceiverThreshold());
         cryptoAccount.put("receiverSigRequired", mapValue.isReceiverSigRequired());
-        cryptoAccount.put("autoRenewPeriod", mapValue.getAutoRenewPeriod());
-        cryptoAccount.put("shardID", currKey.getShardNum());
-        cryptoAccount.put("realmID", currKey.getRealmNum());
-        cryptoAccount.put("accountNum", currKey.getAccountNum());
-        String key = Hex.encodeHexString(SerializationUtils.serialize(mapValue.getAccountKeys()));
+        cryptoAccount.put("autoRenewPeriod", mapValue.getAutoRenewSecs());
+        cryptoAccount.put("shardID", currKey.getShard());
+        cryptoAccount.put("realmID", currKey.getRealm());
+        cryptoAccount.put("accountNum", currKey.getNum());
+        String key = Hex.encodeHexString(SerializationUtils.serialize(mapValue.getKey()));
         cryptoAccount.put("key", key);
       } catch (Exception e) {
         log.error("Exception occurred while fetching Accounts from Account FCMap", e);
@@ -83,7 +83,7 @@ public class ExportExistingAccounts {
    * This method is invoked during start up and executed based upon the configuration settings. It
    * exports all the existing accounts in the JSON format and write it in a file
    */
-  public static void exportAccounts(String exportAccountPath, FCMap<MapKey, HederaAccount> accountMap)
+  public static void exportAccounts(String exportAccountPath, FCMap<MerkleEntityId, MerkleAccount> accountMap)
       throws IOException {
     JSONArray accountList = getAccountsasJson(accountMap);
     try (FileWriter file = new FileWriter(exportAccountPath)) {

@@ -20,11 +20,11 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -44,7 +44,7 @@ class TopicResourceUsageTestBase {
     protected static final int baseBpt = 140; // size of transaction fields and sigs
 
     protected StateView view;
-    protected FCMap<MapKey, Topic> topics;
+    protected FCMap<MerkleEntityId, MerkleTopic> topics;
     protected TopicID topicId = asTopic("0.0.1234");
     protected SigValueObj sigValueObj = new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
 

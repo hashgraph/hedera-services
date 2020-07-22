@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.utilops;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
@@ -59,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
@@ -237,29 +239,54 @@ public class UtilVerbs {
 				.setValue(value)
 				.build();
 	}
+	public static HapiSpecOperation updateLargeFile(
+			String payer,
+			String fileName,
+			ByteString byteString
+	) {
+		return updateLargeFile(payer, fileName, byteString, false, OptionalLong.empty());
+	}
 
-	public static HapiSpecOperation updateLargeFile(String payer, String fileName, ByteString byteString) {
+	public static HapiSpecOperation updateLargeFile(
+			String payer,
+			String fileName,
+			ByteString byteString,
+			boolean signOnlyWithPayer,
+			OptionalLong tinyBarsToOffer
+	) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 
 			int fileSize = byteString.size();
 			int position = Math.min(BYTES_4K, fileSize);
 
-			HapiSpecOperation subOp = fileUpdate(fileName)
+			HapiFileUpdate updateSubOp = fileUpdate(fileName)
 					.contents(byteString.substring(0, position))
 					.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 					.noLogging()
 					.payingWith(payer);
-			opsList.add(subOp);
+			if (tinyBarsToOffer.isPresent()) {
+				updateSubOp = updateSubOp.fee(tinyBarsToOffer.getAsLong());
+			}
+			if (signOnlyWithPayer) {
+				updateSubOp = updateSubOp.signedBy(payer);
+			}
+			opsList.add(updateSubOp);
 
 			while (position < fileSize) {
 				int newPosition = Math.min(fileSize, position + BYTES_4K);
-				subOp = fileAppend(fileName)
+				var appendSubOp = fileAppend(fileName)
 						.content(byteString.substring(position, newPosition).toByteArray())
 						.hasKnownStatusFrom(SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED)
 						.noLogging()
 						.payingWith(payer);
-				opsList.add(subOp);
+				if (tinyBarsToOffer.isPresent()) {
+					appendSubOp = appendSubOp.fee(tinyBarsToOffer.getAsLong());
+				}
+				if (signOnlyWithPayer) {
+					appendSubOp = appendSubOp.signedBy(payer);
+				}
+				opsList.add(appendSubOp);
 				position = newPosition;
 			}
 

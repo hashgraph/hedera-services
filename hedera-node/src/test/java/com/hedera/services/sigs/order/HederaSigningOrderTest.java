@@ -21,7 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
@@ -32,8 +32,8 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
@@ -112,8 +112,8 @@ public class HederaSigningOrderTest {
 	private HederaFs hfs;
 	private TransactionBody txn;
 	private HederaSigningOrder subject;
-	private FCMap<MapKey, HederaAccount> accounts;
-	private FCMap<MapKey, Topic> topics;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 

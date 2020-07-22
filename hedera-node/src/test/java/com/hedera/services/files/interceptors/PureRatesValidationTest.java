@@ -23,7 +23,7 @@ package com.hedera.services.files.interceptors;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,13 +41,13 @@ class PureRatesValidationTest {
 	private static long ratesLifetime = 1_000_000;
 	private static long ratesExpiry = Instant.now().getEpochSecond() + ratesLifetime;
 
-	private static ExchangeRateSetWrapper midnightRates;
+	private static ExchangeRates midnightRates;
 
 	int bound = ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE;
 
 	@BeforeAll
 	public static void setUp() {
-		midnightRates = new ExchangeRateSetWrapper(
+		midnightRates = new ExchangeRates(
 				currentHbarEquiv, currentCentEquiv, ratesExpiry,
 				nextHbarEquiv, nextCentEquiv, ratesExpiry);
 	}
@@ -88,14 +88,14 @@ class PureRatesValidationTest {
 	}
 
 	private ExchangeRateSet newRates(
-			ExchangeRateSetWrapper exchangeRateSetWrapper,
+			ExchangeRates exchangeRates,
 			boolean smallChangeToCurrentRate,
 			boolean smallChangeToNextRate,
 			boolean increaseRates
 	) {
 		Pair<Integer, Integer> currentPair = getNewHandC(
-				exchangeRateSetWrapper.getCurrentHbarEquiv(),
-				exchangeRateSetWrapper.getCurrentCentEquiv(),
+				exchangeRates.getCurrHbarEquiv(),
+				exchangeRates.getCurrCentEquiv(),
 				smallChangeToCurrentRate, increaseRates);
 
 		ExchangeRate.Builder currentRate = ExchangeRate.newBuilder()
@@ -103,8 +103,8 @@ class PureRatesValidationTest {
 				.setCentEquiv(currentPair.getRight());
 
 		Pair<Integer, Integer> nextPair = getNewHandC(
-				exchangeRateSetWrapper.getNextHbarEquiv(),
-				exchangeRateSetWrapper.getNextCentEquiv(),
+				exchangeRates.getNextHbarEquiv(),
+				exchangeRates.getNextCentEquiv(),
 				smallChangeToNextRate,
 				increaseRates);
 		ExchangeRate.Builder nextRate = ExchangeRate.newBuilder()

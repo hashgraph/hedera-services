@@ -20,15 +20,15 @@ package com.hedera.services.legacy.services.utils;
  * ‍
  */
 
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.initialization.ExportExistingAccounts;
 import com.hedera.services.state.exports.AccountsExporter;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
 public class DefaultAccountsExporter implements AccountsExporter {
 	@Override
-	public void toFile(FCMap<MapKey, HederaAccount> accounts, String path) throws Exception {
+	public void toFile(FCMap<MerkleEntityId, MerkleAccount> accounts, String path) throws Exception {
 		ExportExistingAccounts.exportAccounts(path, accounts);
 	}
 }

@@ -39,8 +39,8 @@ import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.Contrac
 
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {

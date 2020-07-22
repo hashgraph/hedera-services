@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 
 import java.util.stream.Stream;
 
@@ -47,8 +47,8 @@ public class IdUtils {
 				.build();
 	}
 
-	public static AccountID fromKey(MapKey mk) {
-		return asAccount(String.format("%d.%d.%d", mk.getShardNum(), mk.getRealmNum(), mk.getAccountNum()));
+	public static AccountID fromKey(MerkleEntityId mk) {
+		return asAccount(String.format("%d.%d.%d", mk.getShard(), mk.getRealm(), mk.getNum()));
 	}
 
 	public static ContractID asContract(String v) {

@@ -22,7 +22,7 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-import com.hedera.services.context.HederaNodeContext;
+import com.hedera.services.context.ServicesContext;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
@@ -32,7 +32,7 @@ import com.hedera.services.keys.RevocationServiceCharacteristics;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
@@ -61,7 +61,6 @@ import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static java.time.ZoneOffset.UTC;
@@ -78,9 +77,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID);
 
-	private final HederaNodeContext ctx;
+	private final ServicesContext ctx;
 
-	public AwareProcessLogic(HederaNodeContext ctx) {
+	public AwareProcessLogic(ServicesContext ctx) {
 		this.ctx = ctx;
 	}
 
@@ -148,7 +147,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private void addRecordToStream() {
-		TransactionRecord finalRecord = JTransactionRecord.convert(ctx.recordsHistorian().lastCreatedRecord().get());
+		TransactionRecord finalRecord = ctx.recordsHistorian().lastCreatedRecord().get().asGrpc();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
@@ -320,7 +319,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void updateMidnightRatesIfAppropriateAt(Instant dataDrivenNow) {
 		if (shouldUpdateMidnightRatesAt(dataDrivenNow)) {
-			ctx.midnightRates().update(ctx.exchange().activeRates());
+			ctx.midnightRates().replaceWith(ctx.exchange().activeRates());
 		}
 	}
 	private boolean shouldUpdateMidnightRatesAt(Instant dataDrivenNow) {

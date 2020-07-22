@@ -36,7 +36,8 @@ import java.util.stream.Stream;
  * @author Michael Tinker
  */
 public interface PropertySource {
-	static final Logger log = LogManager.getLogger(PropertySource.class);
+	Logger log = LogManager.getLogger(PropertySource.class);
+
 	boolean containsProperty(String name);
 	Object getProperty(String name);
 	Set<String> allPropertyNames();

@@ -39,14 +39,14 @@ import com.hedera.test.mocks.TestFeesFactory;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.swirlds.crypto.DigitalSignature;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -78,7 +78,7 @@ public class TxnHandlerVerifySigRegressionTest {
 	private HederaSigningOrder retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private TransactionHandler subject;
 	private HederaNodeStats stats;
 
@@ -325,7 +325,7 @@ public class TxnHandlerVerifySigRegressionTest {
 						new MockEntityNumbers(),
 						defaultLookupsPlusAccountRetriesFor( null, accounts, null, MN, MN, stats));
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
-		syncVerifier = DigitalSignature::verifySync;
+		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 

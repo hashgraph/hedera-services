@@ -50,7 +50,7 @@ public class SyncPropertiesObject {
 	private static int currentCentEquivalent = ApplicationConstants.CURRENT_CENT_EQ;
 
 	private static long initialGenesisCoins = ApplicationConstants.INITIAL_GENESIS_COINS;
-	private static long initialCoins =ApplicationConstants.ZERO;
+	private static long initialCoins = ApplicationConstants.ZERO;
 	private static String defaultFeeCollectionAccount = ApplicationConstants.DEFAULT_FEE_COLLECTION_ACCOUNT;
 	// default valid duration of the contract in seconds
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
