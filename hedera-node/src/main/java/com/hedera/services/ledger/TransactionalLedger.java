@@ -279,12 +279,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
-	private void throwIfUnsaved(K id) {
-		if (isZombie(id) || !accounts.contains(id)) {
-			throw new MissingAccountException(id);
-		}
-	}
-
 	private void throwIfMissing(K id) {
 		if (!exists(id)) {
 			throw new MissingAccountException(id);

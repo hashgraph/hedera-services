@@ -9,6 +9,8 @@ prompt_with_scratch_default() {
     DEFAULT_VALUE=$(cat $DEFAULT_FILE)
     if [ "$ITEM" = "passphrase" ]; then
       DEFAULT_REPR="*******"
+    elif [ "$ITEM" = "rekey-passphrase" ]; then
+      DEFAULT_REPR="*******"
     else
       DEFAULT_REPR="$DEFAULT_VALUE"
     fi
@@ -17,6 +19,8 @@ prompt_with_scratch_default() {
     VALUE_PROMPT="${VALUE_PROMPT}? "
   fi
   if [ "$ITEM" = "passphrase" ]; then
+    read -s -p "$VALUE_PROMPT" VALUE ; echo
+  elif [ "$ITEM" = "rekey-passphrase" ]; then
     read -s -p "$VALUE_PROMPT" VALUE ; echo
   else
     read -p "$VALUE_PROMPT" VALUE

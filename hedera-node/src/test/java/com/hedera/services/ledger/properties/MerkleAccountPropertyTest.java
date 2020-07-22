@@ -43,6 +43,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static com.hedera.services.ledger.properties.AccountProperty.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountPropertyTest {
@@ -52,6 +53,13 @@ public class MerkleAccountPropertyTest {
 		assertThrows(
 				IllegalArgumentException.class,
 				() -> BALANCE.setter().accept(new MerkleAccount(), -1L));
+	}
+
+	@Test
+	public void recordsRequireMutableRef() {
+		// expect:
+		assertTrue(PAYER_RECORDS.requiresMutableRef());
+		assertTrue(HISTORY_RECORDS.requiresMutableRef());
 	}
 
 	@Test
@@ -71,6 +79,9 @@ public class MerkleAccountPropertyTest {
 		List<ExpirableTxnRecord> origRecords = new ArrayList<>();
 		origRecords.add(expirableRecord(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT));
 		origRecords.add(expirableRecord(ResponseCodeEnum.INVALID_PAYER_SIGNATURE));
+		List<ExpirableTxnRecord> origPayerRecords = new ArrayList<>();
+		origPayerRecords.add(expirableRecord(ResponseCodeEnum.INVALID_CHUNK_NUMBER));
+		origPayerRecords.add(expirableRecord(ResponseCodeEnum.INSUFFICIENT_TX_FEE));
 		// and:
 		boolean newIsDeleted = true;
 		boolean newIsReceiverSigReq = true;
@@ -85,6 +96,8 @@ public class MerkleAccountPropertyTest {
 		EntityId newProxy = new EntityId(0, 0, 2);
 		FCQueue<ExpirableTxnRecord> newRecords = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 		newRecords.offer(expirableRecord(ResponseCodeEnum.SUCCESS));
+		FCQueue<ExpirableTxnRecord> newPayerRecords = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+		newPayerRecords.offer(expirableRecord(ResponseCodeEnum.INVALID_FILE_ID));
 		// and:
 		MerkleAccount account = new HederaAccountCustomizer()
 				.fundsReceivedRecordThreshold(origReceivedRecordThresh)
@@ -101,6 +114,8 @@ public class MerkleAccountPropertyTest {
 		account.setBalance(origBalance);
 		account.records().offer(origRecords.get(0));
 		account.records().offer(origRecords.get(1));
+		account.payerRecords().offer(origPayerRecords.get(0));
+		account.payerRecords().offer(origPayerRecords.get(1));
 
 		// when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
@@ -114,7 +129,8 @@ public class MerkleAccountPropertyTest {
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		TRANSACTION_RECORDS.setter().accept(account, newRecords);
+		HISTORY_RECORDS.setter().accept(account, newRecords);
+		PAYER_RECORDS.setter().accept(account, newPayerRecords);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -128,7 +144,8 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		assertEquals(newRecords, TRANSACTION_RECORDS.getter().apply(account));
+		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
+		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {

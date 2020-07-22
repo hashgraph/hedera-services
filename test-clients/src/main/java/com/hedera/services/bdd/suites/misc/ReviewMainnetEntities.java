@@ -20,26 +20,30 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
+import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.CryptoTransfer;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.SplittableRandom;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ReviewMainnetEntities.class);
@@ -52,9 +56,48 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						reviewObjects(),
-						checkTls(),
+//						checkTls(),
+//						xfer(),
+						doSomething(),
 				}
 		);
+	}
+
+	private HapiApiSpec doSomething() {
+		final String NODES = "35.237.208.135:0.0.3";
+		return customHapiSpec("xfer")
+				.withProperties(Map.of(
+						"nodes", NODES,
+						"default.payer", "0.0.950",
+						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+				)).given(
+						cryptoCreate("somebody").balance(1L)
+				).when().then(
+						withOpContext((spec, opLog) -> {
+							byte[] passphraseBytes = new byte[16];
+							new SplittableRandom().nextBytes(passphraseBytes);
+							KeyFactory.PEM_PASSPHRASE = Base64.encodeBase64String(passphraseBytes);
+							spec.keys().exportSimpleKey(String.format("somebody.pem"), "somebody");
+							var loc = String.format("somebody-passphrase.txt");
+							try (BufferedWriter out = Files.newWriter(new File(loc), Charset.defaultCharset())) {
+								out.write(KeyFactory.PEM_PASSPHRASE);
+							}
+						})
+				);
+	}
+
+	private HapiApiSpec xfer() {
+		final String NODES = "35.237.208.135:0.0.3";
+		return customHapiSpec("xfer")
+				.withProperties(Map.of(
+						"nodes", NODES,
+						"default.payer", "0.0.950",
+						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+				)).given(
+				).when().then(
+						getAccountBalance(GENESIS).logged(),
+						getAccountInfo("0.0.58").logged()
+				);
 	}
 
 	private HapiApiSpec checkTls() {

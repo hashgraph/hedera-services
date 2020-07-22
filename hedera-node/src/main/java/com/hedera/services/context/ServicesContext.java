@@ -314,7 +314,6 @@ public class ServicesContext {
 	private GrpcServerManager grpc;
 	private FreezeServiceImpl freezeGrpc;
 	private TxnResponseHelper txnResponseHelper;
-	private Map<FileID, Long> oldExpiries;
 	private TransactionContext txnCtx;
 	private BlobStorageSource bytecodeDb;
 	private TxnAwareAuthPolicy authPolicy;

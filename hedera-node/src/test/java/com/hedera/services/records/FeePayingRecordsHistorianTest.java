@@ -526,7 +526,7 @@ public class FeePayingRecordsHistorianTest {
 		given(ledger.fundsReceivedRecordThreshold(id)).willReturn(receiveThreshold);
 		FUNDS_SENT_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
 		FUNDS_RECEIVED_RECORD_THRESHOLD.setter().accept(value, 50_000_000_000L);
-		TRANSACTION_RECORDS.setter().accept(
+		HISTORY_RECORDS.setter().accept(
 				value,
 				asFcq(IntStream.range(0, expiries.size()).mapToObj(i -> {
 					ExpirableTxnRecord record = new ExpirableTxnRecord(

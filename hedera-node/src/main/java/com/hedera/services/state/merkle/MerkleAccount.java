@@ -183,6 +183,10 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		setChild(RECORDS_CHILD_INDEX, records);
 	}
 
+	public void setPayerRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
+		setChild(PAYER_RECORDS_CHILD_INDEX, payerRecords);
+	}
+
 	/* ----  Bean  ---- */
 
 	public String getMemo() {

@@ -73,11 +73,11 @@ networks:
     scenarioPayer: 1001
     scenarios:
       feeSnapshots:
-        appendToSnapshotCsv: false
+        appendToSnapshotCsv: true
         ignoreCostAnswer: true
         opsConfig: {bytecode: 1002, memoLength: 32}
-        scheduleDesc: 25xBootstrap
-        tinyBarsToOffer: 111222333444555
+        scheduleDesc: 100xBootstrap
+        tinyBarsToOffer: 5550000000000
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [111]

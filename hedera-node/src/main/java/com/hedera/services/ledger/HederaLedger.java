@@ -241,24 +241,26 @@ public class HederaLedger {
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
 	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, HISTORY_RECORDS);
 		records.offer(record);
-		ledger.set(id, TRANSACTION_RECORDS, records);
+		ledger.set(id, HISTORY_RECORDS, records);
 		return records.peek().getExpiry();
 	}
 
 	public long purgeExpiredRecords(AccountID id, long now) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
-		long newEarliestExpiry = -1;
+		return purge(id, HISTORY_RECORDS, now);
+	}
+
+	public long purgeExpiredPayerRecords(AccountID id, long now) {
+		return purge(id, PAYER_RECORDS, now);
+	}
+
+	private long purge(AccountID id, AccountProperty recordsProp, long now) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, recordsProp);
 		int numBefore = records.size();
 
-		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			records.poll();
-		}
-		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpiry();
-		}
-		ledger.set(id, TRANSACTION_RECORDS, records);
+		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now);
+		ledger.set(id, recordsProp, records);
 
 		int numPurged = numBefore - records.size();
 		LedgerTxnEvictionStats.INSTANCE.recordPurgedFromAnAccount(numPurged);
@@ -266,6 +268,17 @@ public class HederaLedger {
 				() -> numPurged,
 				() -> readableId(id));
 
+		return newEarliestExpiry;
+	}
+
+	private long purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
+		long newEarliestExpiry = -1;
+		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
+			records.poll();
+		}
+		if (!records.isEmpty()) {
+			newEarliestExpiry = records.peek().getExpiry();
+		}
 		return newEarliestExpiry;
 	}
 

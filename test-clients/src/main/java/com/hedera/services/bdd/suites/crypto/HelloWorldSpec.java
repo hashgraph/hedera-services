@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -33,19 +34,28 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractCallDetails;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.util.List;
+import java.util.SplittableRandom;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class HelloWorldSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(HelloWorldSpec.class);
@@ -57,12 +67,46 @@ public class HelloWorldSpec extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
+				new HapiApiSpec[] {
 //						balancesChangeOnTransfer(),
-						freezeWorks(),
+//						freezeWorks(),
 //						createThenTransferThenUpdateDeleteThenUpdate()
+						createSomebodyAndExportKey(),
+//						deleteSomebody(),
 				}
 		);
+	}
+
+	private HapiApiSpec deleteSomebody() {
+		return defaultHapiSpec("DeleteSomebody")
+				.given(
+						keyFromPem("new-account0.0.1024.pem")
+								.name("tbd")
+								.passphrase("i/OPtQFD2co0lccoTv+jFQ==")
+								.linkedTo("0.0.1024")
+				).when(
+				).then(
+						cryptoDelete("0.0.1024").signedBy(GENESIS, "tbd")
+				);
+	}
+
+	private HapiApiSpec createSomebodyAndExportKey() {
+		return defaultHapiSpec("CreateSomebodyAndExportKey")
+				.given(
+						cryptoCreate("misc")
+				).when(
+				).then(
+						withOpContext((spec, opLog) -> {
+							byte[] passphraseBytes = new byte[16];
+							new SplittableRandom().nextBytes(passphraseBytes);
+							KeyFactory.PEM_PASSPHRASE = Base64.encodeBase64String(passphraseBytes);
+							spec.keys().exportSimpleKey(String.format("misc.pem"), "misc");
+							var loc = String.format("misc-passphrase.txt");
+							try (BufferedWriter out = Files.newWriter(new File(loc), Charset.defaultCharset())) {
+								out.write(KeyFactory.PEM_PASSPHRASE);
+							}
+						})
+				);
 	}
 
 	private HapiApiSpec freezeWorks() {

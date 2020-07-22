@@ -531,6 +531,32 @@ public class HederaLedgerTest {
 	}
 
 	@Test
+	public void purgesExpiredPayerRecords() {
+		// setup:
+		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(50L, 100L, 200L, 311L, 500L);
+		addPayerRecords(misc, records);
+
+		// when:
+		long newEarliestExpiry = subject.purgeExpiredPayerRecords(misc, 200L);
+
+		// then:
+		assertEquals(311L, newEarliestExpiry);
+		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
+		verify(ledger).set(
+				argThat(misc::equals),
+				argThat(PAYER_RECORDS::equals),
+				captor.capture());
+		// and:
+		assertTrue(captor.getValue() == records);
+		assertThat(
+				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+						.stream()
+						.map(ExpirableTxnRecord::getExpiry)
+						.collect(Collectors.toList()),
+				contains(311L, 500L));
+	}
+
+	@Test
 	public void purgesExpiredRecords() {
 		// setup:
 		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(50L, 100L, 200L, 311L, 500L);
@@ -544,7 +570,7 @@ public class HederaLedgerTest {
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(ledger).set(
 				argThat(misc::equals),
-				argThat(TRANSACTION_RECORDS::equals),
+				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);
@@ -571,7 +597,7 @@ public class HederaLedgerTest {
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(ledger).set(
 				argThat(misc::equals),
-				argThat(TRANSACTION_RECORDS::equals),
+				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);
@@ -597,7 +623,7 @@ public class HederaLedgerTest {
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(ledger).set(
 				argThat(misc::equals),
-				argThat(TRANSACTION_RECORDS::equals),
+				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);
@@ -858,8 +884,11 @@ public class HederaLedgerTest {
 		when(ledger.get(id, BALANCE)).thenReturn(0L);
 		when(ledger.get(id, IS_DELETED)).thenReturn(true);
 	}
+	private void addPayerRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
+		when(ledger.get(id, PAYER_RECORDS)).thenReturn(records);
+	}
 	private void addRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(ledger.get(id, TRANSACTION_RECORDS)).thenReturn(records);
+		when(ledger.get(id, HISTORY_RECORDS)).thenReturn(records);
 	}
 	FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {
 		FCQueue<ExpirableTxnRecord> records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
