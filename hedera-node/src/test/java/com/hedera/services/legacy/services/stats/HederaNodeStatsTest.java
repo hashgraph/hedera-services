@@ -20,6 +20,9 @@ package com.hedera.services.legacy.services.stats;
  * ‍
  */
 
+import com.hedera.services.grpc.controllers.ConsensusController;
+import com.hedera.services.grpc.controllers.CryptoController;
+import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -89,7 +92,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseCryptoTransactionsReceived() {
-		String statToTest = "createAccount";
+		String statToTest = CryptoController.CRYPTO_CREATE_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.RECEIVED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoTransactionReceived(statToTest);
@@ -99,7 +102,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseCryptoTransactionsSubmitted() {
-		String statToTest = "deleteClaim";
+		String statToTest = CryptoController.DELETE_LIVE_HASH_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.SUBMITTED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoTransactionSubmitted(statToTest);
@@ -109,7 +112,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseCryptoQueriesReceived() {
-		String statToTest = "getTransactionReceipts";
+		String statToTest = CryptoController.GET_RECEIPT_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.RECEIVED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoQueryReceived(statToTest);
@@ -119,7 +122,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseCryptoQueriesSubmitted() {
-		String statToTest = "getTxRecordByTxID";
+		String statToTest = CryptoController.GET_RECORD_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.SUBMITTED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoQuerySubmitted(statToTest);
@@ -129,7 +132,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseFileTransactionsReceived() {
-		String statToTest = "updateFile";
+		String statToTest = FileController.UPDATE_FILE_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.RECEIVED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.fileTransactionReceived(statToTest);
@@ -139,7 +142,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseFileTransactionsSubmitted() {
-		String statToTest = "appendContent";
+		String statToTest = FileController.APPEND_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.SUBMITTED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.fileTransactionSubmitted(statToTest);
@@ -149,7 +152,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseFileQueriesReceived() {
-		String statToTest = "getFileContent";
+		String statToTest = FileController.GET_FILE_CONTENT_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.RECEIVED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.fileQueryReceived(statToTest);
@@ -159,7 +162,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldIncreaseFileQueriesSubmitted() {
-		String statToTest = "getFileInfo";
+		String statToTest = FileController.GET_FILE_INFO_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.SUBMITTED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.fileQuerySubmitted(statToTest);
@@ -211,7 +214,7 @@ public class HederaNodeStatsTest {
 	public void shouldIncreaseTransactionHandled() {
 		var cryptoTransferTxnBody = CryptoTransferTransactionBody.newBuilder().build();
 		var transaction = TransactionBody.newBuilder().setCryptoTransfer(cryptoTransferTxnBody).build();
-		String statToTest = "cryptoTransfer";
+		String statToTest = CryptoController.CRYPTO_TRANSFER_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.transactionHandled(transaction);
@@ -245,7 +248,7 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldUpdateCryptoTransferSpeedometer() throws InterruptedException {
-		String statToTest = "cryptoTransfer";
+		String statToTest = CryptoController.CRYPTO_TRANSFER_METRIC;
 		assertEquals(0.0, stats.getSpeedometerStat(statToTest, HederaNodeStats.RECEIVED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoTransactionReceived(statToTest);
@@ -256,12 +259,12 @@ public class HederaNodeStatsTest {
 
 	@Test
 	public void shouldUpdateOtherSpeedometers() throws InterruptedException {
-		String cryptoQuerySubStat = "getAccountInfo";
+		String cryptoQuerySubStat = CryptoController.GET_ACCOUNT_INFO_METRIC;
 		assertEquals(0.0, stats.getSpeedometerStat(cryptoQuerySubStat, HederaNodeStats.SUBMITTED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
 			stats.cryptoQuerySubmitted(cryptoQuerySubStat);
 		}
-		String fileTransactionHdlStat = "createFile";
+		String fileTransactionHdlStat = FileController.CREATE_FILE_METRIC;
 		assertEquals(0.0, stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 20; i++) {
 			stats.transactionHandled(fileTransactionHdlStat);
@@ -284,7 +287,7 @@ public class HederaNodeStatsTest {
 				MiscUtils.randomUtf8ByteString(5120)
 		).build();
 		var transaction = TransactionBody.newBuilder().setConsensusSubmitMessage(subMsgTxnBody).build();
-		String statToTest = "submitMessage";
+		String statToTest = ConsensusController.SUBMIT_MESSAGE_METRIC;
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
 		assertEquals(0.0, stats.getSpeedometerStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
