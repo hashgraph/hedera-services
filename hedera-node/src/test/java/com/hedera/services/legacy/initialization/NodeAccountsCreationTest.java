@@ -49,6 +49,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -63,6 +64,12 @@ class NodeAccountsCreationTest {
 	private static final String LEGACY_ACCOUNTS_LOC = "src/test/resources/legacyBootstrapAccounts.mrk";
 
 	NodeAccountsCreation subject = new NodeAccountsCreation();
+
+	@Test
+	public void returnsNullIfBase64GenesisKeyUnreadable() {
+		// expect:
+		assertNull(NodeAccountsCreation.readBase64EncodedGenesisKey("not-a-base64-encoded-key"));
+	}
 
 	@Test
 	public void reproducesLegacyBehavior() throws Exception {

@@ -43,6 +43,8 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -55,6 +57,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
@@ -70,6 +73,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
+	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 
 	NodeId nodeId = null;
@@ -136,6 +140,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
+			merkleDigest.accept(this);
+			printHashes();
 		}
 
 		ctx = new ServicesContext(
@@ -144,7 +150,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				this,
 				new StandardizedPropertySources(PropertiesLoader::getFileExistenceCheck));
 		CONTEXTS.store(ctx);
-		log.info("  --> Context initialized accordingly", nodeId);
+		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
 
 	@Override
@@ -255,6 +261,22 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return accountParsedFromString(memo);
+	}
+
+	public void printHashes() {
+		ServicesMain.log.info(String.format("[SwirldState Hashes]\n" +
+				"  Overall        :: %s\n" +
+				"  Accounts       :: %s\n" +
+				"  Storage        :: %s\n" +
+				"  Topics         :: %s\n" +
+				"  NetworkContext :: %s\n" +
+				"  AddressBook    :: %s",
+				getHash(),
+				accounts().getHash(),
+				storage().getHash(),
+				topics().getHash(),
+				networkCtx().getHash(),
+				addressBook().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
