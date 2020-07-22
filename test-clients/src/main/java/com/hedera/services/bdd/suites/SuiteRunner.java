@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -234,7 +234,7 @@ public class SuiteRunner {
 	}
 
 	private static Map<String, String> arbitraryOverrides(String[] effArgs) {
-		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*)=(.*)");
+		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*?)=(.*)");
 		return Stream.of(effArgs)
 				.map(arg -> MISC_OVERRIDE_PATTERN.matcher(arg))
 				.filter(Matcher::matches)
