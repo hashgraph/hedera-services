@@ -49,7 +49,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
@@ -343,20 +342,5 @@ public class MiscUtils {
 			} catch (Exception ignore) { }
 			return String.valueOf(readable);
 		}
-	}
-
-	public static byte[] randomUtf8Bytes(int n) {
-		byte[] data = new byte[n];
-		int i = 0;
-		while (i < n) {
-			byte[] rnd = UUID.randomUUID().toString().getBytes();
-			System.arraycopy(rnd, 0, data, i, Math.min(rnd.length, n - 1 - i));
-			i += rnd.length;
-		}
-		return data;
-	}
-
-	public static ByteString randomUtf8ByteString(int n) {
-		return ByteString.copyFrom(randomUtf8Bytes(n));
 	}
 }

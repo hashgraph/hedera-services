@@ -23,7 +23,7 @@ package com.hedera.services.legacy.services.stats;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -284,7 +284,7 @@ public class HederaNodeStatsTest {
 	@Test
 	public void shouldUpdateAvgHdlSubMsgSize() throws InterruptedException {
 		var subMsgTxnBody = ConsensusSubmitMessageTransactionBody.newBuilder().setMessage(
-				MiscUtils.randomUtf8ByteString(5120)
+				TxnUtils.randomUtf8ByteString(5120)
 		).build();
 		var transaction = TransactionBody.newBuilder().setConsensusSubmitMessage(subMsgTxnBody).build();
 		String statToTest = ConsensusController.SUBMIT_MESSAGE_METRIC;

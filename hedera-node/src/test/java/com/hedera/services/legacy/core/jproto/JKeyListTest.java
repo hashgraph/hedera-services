@@ -21,7 +21,7 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.commons.codec.binary.Hex;
@@ -80,7 +80,7 @@ public class JKeyListTest {
 	@Test
 	public void invalidJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
-				MiscUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
+				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
 		KeyList invalidKeyList1 = KeyList.newBuilder().build();
 		Key invalidKey1 = Key.newBuilder().setKeyList(invalidKeyList1).build();
@@ -102,10 +102,10 @@ public class JKeyListTest {
 	@Test
 	public void validJKeyListTest() throws Exception {
 		Key validED25519Key = Key.newBuilder().setEd25519(
-				MiscUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
+				TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH)
 		).build();
 		Key validECDSA384Key = Key.newBuilder().setECDSA384(
-				MiscUtils.randomUtf8ByteString(24)
+				TxnUtils.randomUtf8ByteString(24)
 		).build();
 		KeyList validKeyList1 = KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(validED25519Key).build();
 		Key validKey1 = Key.newBuilder().setKeyList(validKeyList1).build();
