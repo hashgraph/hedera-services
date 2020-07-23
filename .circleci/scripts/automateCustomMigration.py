@@ -259,6 +259,14 @@ for n in range(0, NO_OF_NODES):
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
 
+def validateTest(testLogPath, logStatement, testName)
+    with open(testLogPath) as eetLog_f:
+        if logStatement in eetLog_f.read():
+            print ("{} test passed successfully on node {}".format(testName,n))
+        else:
+            print ("{} test failed.. please go through the eet logs".format(testName)
+
+
 def validateLogs():
 	os.chdir(START_DIR)
 
@@ -274,15 +282,7 @@ def validateLogs():
 				print ("Error Found in the swirlds log on platform{}".format(n))
 		passed_UmbrellaRedux = "UmbrellaRedux - Spec{name=UmbrellaReduxWithCustomNodes, status=PASSED}"
 		passed_Version = "UmbrellaRedux - Spec{name=messageSubmissionSimple, status=PASSED}"
-		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
-			if passed_UmbrellaRedux in eetLog_f.read():
-				print ("CustomMigrationUmbrellaRedux test passed successfully on node {}".format(n))
-			else:
-				print ("CustomMigrationUmbrellaRedux test failed.. please go through the eet logs")
-		with open ("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n)) as eetLog_f:
-        			if passed_Version in eetLog_f.read():
-        				print ("messageSubmissionSimple test passed successfully on node {}".format(n))
-        			else:
-        				print ("messageSubmissionSimple test failed.. please go through the eet logs")
+		validateTest("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n), passed_UmbrellaRedux, "CustomMigrationUmbrellaRedux")
+		validateTest("/repo/output/CustomMigrationUmbrellaRedux{}.log".format(n), passed_Version, "messageSubmissionSimple")
 
 validateLogs()
