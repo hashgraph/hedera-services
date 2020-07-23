@@ -35,14 +35,14 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
-	public static String GET_FILE_INFO_METRIC = "getFileInfo";
-	public static String GET_FILE_CONTENT_METRIC = "getFileContent";
-	public static String UPDATE_FILE_METRIC = "updateFile";
-	public static String CREATE_FILE_METRIC = "createFile";
-	public static String DELETE_FILE_METRIC = "deleteFile";
-	public static String APPEND_METRIC = "appendContent";
-	public static String FILE_SYSDEL_METRIC = "fileSystemDelete";
-	public static String FILE_SYSUNDEL_METRIC = "fileSystemUndelete";
+	public static final String GET_FILE_INFO_METRIC = "getFileInfo";
+	public static final String GET_FILE_CONTENT_METRIC = "getFileContent";
+	public static final String UPDATE_FILE_METRIC = "updateFile";
+	public static final String CREATE_FILE_METRIC = "createFile";
+	public static final String DELETE_FILE_METRIC = "deleteFile";
+	public static final String APPEND_METRIC = "appendContent";
+	public static final String FILE_SYSDEL_METRIC = "fileSystemDelete";
+	public static final String FILE_SYSUNDEL_METRIC = "fileSystemUndelete";
 
 	public FileController(
 			FileAnswers fileAnswers,

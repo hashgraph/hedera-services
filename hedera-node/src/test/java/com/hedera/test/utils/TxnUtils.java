@@ -20,12 +20,15 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
+
+import java.util.UUID;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
@@ -68,5 +71,20 @@ public class TxnUtils {
 				.payerKt(payerKey)
 				.transfers(tinyBarsFromTo(payer, beneficiary, amount))
 				.get();
+	}
+
+	public static byte[] randomUtf8Bytes(int n) {
+		byte[] data = new byte[n];
+		int i = 0;
+		while (i < n) {
+			byte[] rnd = UUID.randomUUID().toString().getBytes();
+			System.arraycopy(rnd, 0, data, i, Math.min(rnd.length, n - 1 - i));
+			i += rnd.length;
+		}
+		return data;
+	}
+
+	public static ByteString randomUtf8ByteString(int n) {
+		return ByteString.copyFrom(randomUtf8Bytes(n));
 	}
 }
