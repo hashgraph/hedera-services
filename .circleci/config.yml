@@ -925,6 +925,7 @@ workflows:
           requires:
             - fast-build-artifact
           workflow-name: "nightly-simulate-network-outage"
+          infra-branch: services-with-platform070
       - run-accessory-tests:
           requires:
             - start-singlejob-testnet
@@ -1224,6 +1225,7 @@ workflows:
           requires:
             - fast-build-artifact
           workflow-name: freeze restart
+          infra-branch: services-with-platform070
       - run-umbrella-freeze-restart-test:
           name: freeze-restart-first-round
           requires:

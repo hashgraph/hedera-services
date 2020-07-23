@@ -69,14 +69,14 @@ networks:
     bootstrap: 2
     ensureScenarioPayerHbars: 300
     nodes:
-    - {account: 3, ipv4Addr: 127.0.0.1}
-    scenarioPayer: 1007
+    - {account: 3, ipv4Addr: '127.0.0.1:50213'}
+    scenarioPayer: 1001
     scenarios:
       feeSnapshots:
         appendToSnapshotCsv: true
         ignoreCostAnswer: true
-        opsConfig: {bytecode: 1008, memoLength: 32}
-        scheduleDesc: Expensive CryptoCreate
+        opsConfig: {bytecode: 1002, memoLength: 32}
+        scheduleDesc: Bootstrap
         tinyBarsToOffer: 10000000000
       sysFilesDown:
         evalMode: snapshot
