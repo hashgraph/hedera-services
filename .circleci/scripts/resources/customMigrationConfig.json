@@ -1,7 +1,7 @@
 {
   "networkUsed": "publictestnet",
   "infrastructureRepo": "/infrastructure",
-  "inventory": "net-new-regression.yml",
+  "inventory": "hosts-net-new-regression",
   "serviceBranch": "master",
   "serviceRepo": "/repo/",
   "savedState0": "custom-migration-saved-states/backup-new-0.zip",
@@ -10,6 +10,6 @@
   "savedState3": "custom-migration-saved-states/backup-new-3.zip",
   "payerAccountNum": "95",
   "startupAccount": "custom-migration-saved-states/StartUpAccount.txt",
-  "bucketName": "hedera-service-regression",
+  "s3bucketName": "hedera-service-regression",
   "topicRunningHashVersion":"2"
 }

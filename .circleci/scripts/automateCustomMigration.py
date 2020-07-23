@@ -9,7 +9,7 @@
 #	INVENTORY			- Intervory file which contains IPs to the instances we are going to test migration on
 #	BRANCH_NAME			- Newer branch of service-hedera repo we want to deploy the nodes with
 #	SERVICES_REPO		- Path to services-hedera repository
-#	BUCKET_NAME			- Name of the s3 bucket that the saved states and startUpAccount are saved in.
+#	S3_BUCKET_NAME			- Name of the s3 bucket that the saved states and startUpAccount are saved in.
 #   SAVEDSTATE_0		- Key to Saved State zip for node 1
 #   SAVEDSTATE_1		- Key to Saved State zip for node 2
 #   SAVEDSTATE_2		- Key to Saved State zip for node 3
@@ -51,7 +51,7 @@ BRANCH_NAME=""
 
 SERVICES_REPO=""
 
-BUCKET_NAME=""
+S3_BUCKET_NAME=""
 
 SAVEDSTATE_0=""
 
@@ -101,8 +101,8 @@ def readConfig():
 		PAYER_ACCOUNT_NUM = config['payerAccountNum']
 		global STARTUP_ACCOUNT
 		STARTUP_ACCOUNT = config['startupAccount']
-		global BUCKET_NAME
-		BUCKET_NAME = config['bucketName']
+		global S3_BUCKET_NAME
+		S3_BUCKET_NAME = config['s3bucketName']
 		global RUNNING_HASH_VERSION
 		RUNNING_HASH_VERSION = config['topicRunningHashVersion']
 
@@ -113,7 +113,7 @@ readConfig()
 
 def validateSavedStates(savedStateKey, savedStateName):
     try:
-        os.system("aws s3 cp s3://{}/{} ./{}.zip".format(BUCKET_NAME, savedStateKey, savedStateName))
+        os.system("aws s3 cp s3://{}/{} ./{}.zip".format(S3_BUCKET_NAME, savedStateKey, savedStateName))
         f = open("./{}.zip".format(savedStateName))
         with zipfile.ZipFile("./{}.zip".format(savedStateName), 'r') as savedState:
             savedState.extractall("0/")
@@ -136,7 +136,7 @@ def validateInputs():
 	elif NETWORKUSED == "publictestnet":
             NO_OF_NODES=4
 	else:
-		print("please enter the correct network name has to one of :")
+		print("please enter the correct network name has to be one of :")
 		print("mainnet")
 		print("publictestnet")
 
@@ -145,6 +145,7 @@ def validateInputs():
 	except IOError:
 		print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
 		print("Invetory file not found")
+		sys.exit()
 	finally:
 		f.close()
 
@@ -152,14 +153,16 @@ def validateInputs():
 		f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
 	except IOError:
 		print("services repo not present")
+		sys.exit()
 	finally:
 		f.close()
 
 	try:
-		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
+		os.system("aws s3 cp s3://{}/{} {}/startupAccount.txt".format(S3_BUCKET_NAME, STARTUP_ACCOUNT, SERVICES_REPO))
 		f = open("{}/startupAccount.txt".format(SERVICES_REPO))
 	except IOError:
 		print("startupAccount not found ")
+		sys.exit()
 	finally:
 		f.close()
 
@@ -229,8 +232,7 @@ def copyLogs():
 	os.mkdir("/repo/output")
 
 	for n in range(0, NO_OF_NODES):
-	    # net-hightps is hardcoded here because our inventory file name and the actual inventory name are different. otherwise we can just use INVENTORY with out the .yml
-		NODE_ADDRESSES.append(parsed_inventory_file["net-hightps"]["hosts"]["node0{}".format(n)]["ansible_host"])
+	    NODE_ADDRESSES.append(parsed_inventory_file[INVENTORY[6:]["hosts"]["node0{}".format(n)]["ansible_host"])
 		print("node address is : {}".format(NODE_ADDRESSES[n]))
 		os.mkdir("/repo/output/{}".format(n))
 		os.system(copy_swirld_log.format(NODE_ADDRESSES[n], n))

@@ -891,7 +891,7 @@ workflows:
   custom-migration:
     triggers:
       - schedule:
-          cron: "0 16 * * *"
+          cron: "0 20 * * *"
           filters:
             branches:
               only:
@@ -913,11 +913,11 @@ workflows:
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "0 2,17,22 * * *"
+            cron: "0 0,12 * * *"
             filters:
               branches:
                 only:
-                  - release/0.6
+                  - master
     jobs:
       - fast-build-artifact:
           workflow-name: "nightly-simulate-network-outage"

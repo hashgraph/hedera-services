@@ -67,11 +67,12 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
 
     public static void main(String... args) {
         if(args.length < 4){
-            log.info("using default nodeId and node address -- RUNNING CUSTOM NET MIGRATION ");
             HapiSpecSetup defaultSetup = HapiSpecSetup.getDefaultInstance();
             NodeConnectInfo nodeInfo = defaultSetup.nodes().get(0);
             nodeId += nodeInfo.getAccount().getAccountNum();
             nodeAddress = nodeInfo.getHost();
+            log.info("using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
+                    nodeId, nodeAddress);
             payer +=  defaultSetup.defaultPayer().getAccountNum();
             startUpAccount =  defaultSetup.startupAccountsPath();
             topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
@@ -121,9 +122,10 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS)
                                 .via("messageSubmissionSimple"),
                         QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
-                                .has(TransactionRecordAsserts.recordWith()
-                                        .checkTopicRunningHashVersion(topic_running_hash_version))
-
+                                .has(TransactionRecordAsserts
+                                        .recordWith()
+                                        .checkTopicRunningHashVersion(topic_running_hash_version)
+                                )
                 );
     }
 
