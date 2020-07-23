@@ -299,6 +299,12 @@ public class HederaNodeStatsTest {
 		assertTrue(stats.getSpeedometerStat(statToTest, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 	}
 
+	@Test
+	public void shouldUpdateRecordStreamQueueSize() {
+		assertEquals(0, stats.getRecordStreamQueueSize());
+		stats.updateRecordStreamQueueSize(4567);
+		assertEquals(4567, stats.getRecordStreamQueueSize());
+	}
 
 	@Test
 	public void dumpHederaNodeStatsShouldNotBeEmptyTest() throws Exception {

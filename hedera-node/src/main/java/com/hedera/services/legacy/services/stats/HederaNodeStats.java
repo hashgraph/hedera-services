@@ -290,7 +290,7 @@ public class HederaNodeStats {
 				null,//
 				null,//
 				null,//
-				() -> recordStreamQueueSize)
+				() -> getRecordStreamQueueSize())
 		);
 
 		platform.appStatInit();
@@ -457,6 +457,10 @@ public class HederaNodeStats {
 
 	public void updateRecordStreamQueueSize(int size) {
 		recordStreamQueueSize = size;
+	}
+
+	public int getRecordStreamQueueSize() {
+		return recordStreamQueueSize;
 	}
 
 	public double getAvgHdlSubMsgSize() {
