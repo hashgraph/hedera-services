@@ -232,7 +232,7 @@ def copyLogs():
 	os.mkdir("/repo/output")
 
 	for n in range(0, NO_OF_NODES):
-	    NODE_ADDRESSES.append(parsed_inventory_file[INVENTORY[6:]["hosts"]["node0{}".format(n)]["ansible_host"])
+	    NODE_ADDRESSES.append(parsed_inventory_file[INVENTORY[6:]]["hosts"]["node0{}".format(n)]["ansible_host"])
 		print("node address is : {}".format(NODE_ADDRESSES[n]))
 		os.mkdir("/repo/output/{}".format(n))
 		os.system(copy_swirld_log.format(NODE_ADDRESSES[n], n))
