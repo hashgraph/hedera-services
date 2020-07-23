@@ -1,5 +1,8 @@
 package com.hedera.services.state.expiry;
 
+import com.google.common.base.MoreObjects;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 
@@ -32,7 +35,7 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 		return allExpiries.removeFirst().getId();
 	}
 
-	private final class ExpiryEvent {
+	final class ExpiryEvent {
 		private final K id;
 		private final long expiry;
 
@@ -47,6 +50,18 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 
 		public K getId() {
 			return id;
+		}
+
+		public long getExpiry() {
+			return expiry;
+		}
+
+		@Override
+		public String toString() {
+			return MoreObjects.toStringHelper(ExpiryEvent.class)
+					.add("id", id)
+					.add("expiry", expiry)
+					.toString();
 		}
 	}
 }

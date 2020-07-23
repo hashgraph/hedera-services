@@ -81,6 +81,10 @@ public interface TransactionContext {
 	 */
 	AccountID activePayer();
 
+	default AccountID effectivePayer() {
+		return isPayerSigKnownActive() ? activePayer() : submittingNodeAccount();
+	}
+
 	/**
 	 * If there is an active payer signature, returns the Hedera key used to sign.
 	 *

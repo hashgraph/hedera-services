@@ -217,7 +217,7 @@ public class FreezeServiceImplTest {
     TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
             TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.OK))
             .build();
-    receiptCache.setPostConsensus(txID, ExpirableTxnRecord.fromGprc(record));
+    receiptCache.setPostConsensus(txID, record);
   }
 
   /**

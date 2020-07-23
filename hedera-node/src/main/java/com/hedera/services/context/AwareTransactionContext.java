@@ -96,7 +96,7 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
 
-		ctx.charging().resetFor(accessor);
+		ctx.charging().resetFor(accessor, submittingNodeAccount());
 	}
 
 	@Override
@@ -121,9 +121,9 @@ public class AwareTransactionContext implements TransactionContext {
 			String memo = member.getMemo();
 			return accountParsedFromString(memo);
 		} catch (Exception e) {
-			log.warn("No address was available for member {}, returning account 0.0.0!", submittingMember, e);
+			log.warn("No available Hedera account for member {}!", submittingMember, e);
+			throw new IllegalStateException(String.format("Member %d must have a Hedera account!", submittingMember));
 		}
-		return AccountID.getDefaultInstance();
 	}
 
 	@Override

@@ -75,6 +75,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @RunWith(JUnitPlatform.class)
 public class FeePayingRecordsHistorianTest {
+	final private AccountID sn = asAccount("0.0.3");
+
 	final private AccountID a = asAccount("0.0.1111");
 	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
 	final private AccountID b = asAccount("0.0.2222");
@@ -87,7 +89,9 @@ public class FeePayingRecordsHistorianTest {
 	final private long lastCons = 100L;
 	final private int cacheTtl = 30;
 	final int accountRecordTtl = 1_000;
+	final int payerRecordTtl = 180;
 	final long expiry = now.getEpochSecond() + accountRecordTtl;
+	final long payerExpiry = now.getEpochSecond() + payerRecordTtl;
 	final private List<Long> aExps = List.of(expiry + 55L);
 	final private List<Long> aCons = List.of(lastCons - cacheTtl);
 	final private List<TransactionID> aIds = List.of(txnIdA);
@@ -112,6 +116,7 @@ public class FeePayingRecordsHistorianTest {
 	final private EarliestRecordExpiry cERE = new EarliestRecordExpiry(nows + 50L, c);
 	final private List<Long> dExps = List.of();
 	final private long dBalance = recordFee + 1L;
+	final private long snBalance = 1_234_567_890L;
 	final private long dSendThresh = 0L;
 	final private long dReceiveThresh = 50_000_000_000L;
 	final private long cacheRecordFee = 10 * recordFee;
@@ -134,11 +139,16 @@ public class FeePayingRecordsHistorianTest {
 	{
 		jFinalRecord.setExpiry(expiry);
 	}
+	final private ExpirableTxnRecord payerRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+	{
+		payerRecord.setExpiry(payerExpiry);
+	}
 
 	private MerkleAccount aValue;
 	private MerkleAccount bValue;
 	private MerkleAccount cValue;
 	private MerkleAccount dValue;
+	private MerkleAccount snValue;
 	private RecordCache recordCache;
 	private HederaLedger ledger;
 	private FeeCalculator fees;
@@ -255,7 +265,7 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(recordCache, never()).setPostConsensus(txnIdA, jFinalRecord);
+		verify(recordCache, never()).setPostConsensus(txnIdA, finalRecord);
 	}
 
 	@Test
@@ -271,6 +281,30 @@ public class FeePayingRecordsHistorianTest {
 	}
 
 	@Test
+	public void usesActivePayerForCachePayment() {
+		setupForAdd();
+
+		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
+
+		// when:
+		subject.addNewRecords();
+
+		// then:
+		verify(txnCtx).isPayerSigKnownActive();
+		verify(ledger).doTransfer(sn, funding, cacheRecordFee);
+	}
+
+	@Test
+	public void addsRecordToEffectivePayer() {
+		setupForAdd();
+
+		// when:
+		subject.addNewRecords();
+
+		// then:
+	}
+
+	@Test
 	public void addsRecordToQualifyingThresholdAccounts() {
 		setupForAdd();
 
@@ -280,7 +314,7 @@ public class FeePayingRecordsHistorianTest {
 		// then:
 		verify(exemptions).isExemptFromFees(txnCtx.accessor().getTxn());
 		verify(fees).computeCachingFee(record);
-		verify(recordCache).setPostConsensus(txnIdA, jFinalRecord);
+		verify(recordCache).setPostConsensus(txnIdA, finalRecord);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
 		verify(ledger).netTransfersInTxn();
@@ -309,7 +343,7 @@ public class FeePayingRecordsHistorianTest {
 		verify(expirations).offer(new EarliestRecordExpiry(expiry, d));
 		verify(ledger, never()).addRecord(asAccount(contract), jFinalRecord);
 		// and:
-		assertEquals(jFinalRecord, subject.lastCreatedRecord().get());
+		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 	}
 
 	@Test
@@ -461,9 +495,10 @@ public class FeePayingRecordsHistorianTest {
 		bValue = add(b, bBalance, bSendThresh, bReceiveThresh, bExps, bCons, bIds);
 		cValue = add(c, cBalance, cSendThresh, cReceiveThresh, cExps, EMPTY_LIST, EMPTY_LIST);
 		dValue = add(d, dBalance, dSendThresh, dReceiveThresh, dExps, EMPTY_LIST, EMPTY_LIST);
+		snValue = add(sn, snBalance, dSendThresh, dReceiveThresh, EMPTY_LIST, EMPTY_LIST, EMPTY_LIST);
 
 		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, properties);
-		itemizableFeeCharging.resetFor(accessor);
+		itemizableFeeCharging.resetFor(accessor, sn);
 
 		expirations = mock(BlockingQueue.class);
 

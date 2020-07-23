@@ -83,6 +83,7 @@ public class AwareTransactionContextTest {
 	private ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
 	private AccountID node = asAccount("0.0.3");
+	private AccountID anotherNodeAccount = asAccount("0.0.4");
 	private AccountID funding = asAccount("0.0.98");
 	private AccountID created = asAccount("1.0.2");
 	private AccountID another = asAccount("1.0.300");
@@ -95,6 +96,7 @@ public class AwareTransactionContextTest {
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private AccountID nodeAccount = asAccount("0.0.3");
 	private Address address;
+	private Address anotherAddress;
 	private AddressBook book;
 	private HbarCentExchange exchange;
 	private ServicesContext ctx;
@@ -116,8 +118,11 @@ public class AwareTransactionContextTest {
 	private void setup() {
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn(asAccountString(nodeAccount));
+		anotherAddress = mock(Address.class);
+		given(anotherAddress.getMemo()).willReturn(asAccountString(anotherNodeAccount));
 		book = mock(AddressBook.class);
 		given(book.getAddress(memberId)).willReturn(address);
+		given(book.getAddress(anotherMemberId)).willReturn(anotherAddress);
 
 		ledger = mock(HederaLedger.class);
 		given(ledger.netTransfersInTxn()).willReturn(transfers);
@@ -192,11 +197,11 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsDefaultAccountForUnknownMember() {
+	public void failsHardForMissingMemberAccount() {
 		given(book.getAddress(memberId)).willReturn(null);
 
 		// expect:
-		assertEquals(AccountID.getDefaultInstance(), subject.submittingNodeAccount());
+		assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
 	}
 
 	@Test
@@ -219,10 +224,25 @@ public class AwareTransactionContextTest {
 		assertEquals(0, record.getTransactionFee());
 		assertFalse(record.hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
-		assertEquals(AccountID.getDefaultInstance(), subject.submittingNodeAccount());
+		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:
-		verify(itemizableFeeCharging, times(2)).resetFor(accessor);
+		verify(itemizableFeeCharging).resetFor(accessor, anotherNodeAccount);
+	}
+
+	@Test
+	public void effectivePayerIsSubmittingNodeIfNotVerified() {
+		// expect:
+		assertEquals(nodeAccount, subject.effectivePayer());
+	}
+
+	@Test
+	public void effectivePayerIsActiveIfVerified() {
+		// given:
+		subject.payerSigIsKnownActive();
+
+		// expect:
+		assertEquals(payer, subject.effectivePayer());
 	}
 
 	@Test

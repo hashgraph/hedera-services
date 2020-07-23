@@ -49,9 +49,9 @@ public class RecordCache {
 			.setStatus(UNKNOWN)
 			.build();
 
-	private final Cache<TransactionID, Optional<ExpirableTxnRecord>> delegate;
+	private final Cache<TransactionID, Optional<TransactionRecord>> delegate;
 
-	public RecordCache(Cache<TransactionID, Optional<ExpirableTxnRecord>> delegate) {
+	public RecordCache(Cache<TransactionID, Optional<TransactionRecord>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -59,7 +59,7 @@ public class RecordCache {
 		delegate.put(txnId, Optional.empty());
 	}
 
-	public void setPostConsensus(TransactionID txnId, ExpirableTxnRecord record) {
+	public void setPostConsensus(TransactionID txnId, TransactionRecord record) {
 		delegate.put(txnId, Optional.of(record));
 	}
 
@@ -71,7 +71,7 @@ public class RecordCache {
 				.setMemo(accessor.getTxn().getMemo())
 				.setTransactionHash(sha384HashOf(accessor))
 				.setConsensusTimestamp(asTimestamp(consensusTimestamp));
-		delegate.put(txnId, Optional.of(ExpirableTxnRecord.fromGprc(record.build())));
+		delegate.put(txnId, Optional.of(record.build()));
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
@@ -83,17 +83,17 @@ public class RecordCache {
 	}
 
 	public TransactionReceipt getReceipt(TransactionID txnId) {
-		Optional<ExpirableTxnRecord> record = delegate.getIfPresent(txnId);
+		var record = delegate.getIfPresent(txnId);
 		if (record == null) {
 			return null;
 		}
-		return record.map(r -> TxnReceipt.convert(r.getReceipt())).orElse(UNKNOWN_RECEIPT);
+		return record.map(TransactionRecord::getReceipt).orElse(UNKNOWN_RECEIPT);
 	}
 
 	public TransactionRecord getRecord(TransactionID txnId) {
-		Optional<ExpirableTxnRecord> record = delegate.getIfPresent(txnId);
+		var record = delegate.getIfPresent(txnId);
 		if (record != null && record.isPresent()) {
-			return record.map(ExpirableTxnRecord::asGrpc).get();
+			return record.get();
 		}
 		return null;
 	}

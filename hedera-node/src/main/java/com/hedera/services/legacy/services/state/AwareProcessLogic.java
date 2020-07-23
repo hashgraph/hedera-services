@@ -147,7 +147,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private void addRecordToStream() {
-		TransactionRecord finalRecord = ctx.recordsHistorian().lastCreatedRecord().get().asGrpc();
+		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 

@@ -90,12 +90,12 @@ class RecordCacheTest {
 
 	private ExpirableTxnRecord jaRecord = ExpirableTxnRecord.fromGprc(aRecord);
 
-	private Cache delegate;
+	private Cache<TransactionID, Optional<TransactionRecord>> delegate;
 	private RecordCache subject;
 
 	@BeforeEach
 	private void setup() {
-		delegate = mock(Cache.class);
+		delegate = (Cache<TransactionID, Optional<TransactionRecord>>)mock(Cache.class);
 		subject = new RecordCache(delegate);
 	}
 
@@ -121,7 +121,7 @@ class RecordCacheTest {
 
 	@Test
 	public void getsRecordWhenPresent() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
+		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
 
 		// expect:
 		assertEquals(aRecord, subject.getRecord(txnIdA));
@@ -129,7 +129,7 @@ class RecordCacheTest {
 
 	@Test
 	public void getsReceiptWithKnownStatusPostConsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
+		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
 
 		// expect:
 		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
@@ -147,10 +147,10 @@ class RecordCacheTest {
 	@Test
 	public void delegatesToPutPostConsensus() {
 		// when:
-		subject.setPostConsensus(txnIdA, jaRecord);
+		subject.setPostConsensus(txnIdA, aRecord);
 
 		// then:
-		verify(delegate).put(txnIdA, Optional.of(jaRecord));
+		verify(delegate).put(txnIdA, Optional.of(aRecord));
 	}
 
 	@Test
@@ -165,7 +165,7 @@ class RecordCacheTest {
 				.build();
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
 		// and:
-		ArgumentCaptor<Optional<ExpirableTxnRecord>> captor = ArgumentCaptor.forClass(Optional.class);
+		ArgumentCaptor<Optional<TransactionRecord>> captor = ArgumentCaptor.forClass(Optional.class);
 
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
@@ -176,12 +176,15 @@ class RecordCacheTest {
 		// then:
 		verify(delegate).put(argThat(txnId::equals), captor.capture());
 		// and:
-		ExpirableTxnRecord record = captor.getValue().get();
-		assertEquals("FAIL_INVALID", record.getReceipt().getStatus());
+		var record = captor.getValue().get();
+		assertEquals(FAIL_INVALID, record.getReceipt().getStatus());
 		assertEquals("Catastrophe!", record.getMemo());
-		assertEquals(txnId, record.getTxnId().toGrpc());
-		assertEquals(asTimestamp(consensusTime), record.getConsensusTimestamp().toGrpc());
-		assertArrayEquals(sha384HashOf(accessor).toByteArray(), record.getTxnHash(), "Wrong hash!");
+		assertEquals(txnId, record.getTransactionID());
+		assertEquals(asTimestamp(consensusTime), record.getConsensusTimestamp());
+		assertArrayEquals(
+				sha384HashOf(accessor).toByteArray(),
+				record.getTransactionHash().toByteArray(),
+				"Wrong hash!");
 	}
 
 	@Test
@@ -196,7 +199,7 @@ class RecordCacheTest {
 	public void usesDelegateToTestRecordPresence() {
 		given(delegate.getIfPresent(txnIdC)).willReturn(null);
 		given(delegate.getIfPresent(txnIdB)).willReturn(Optional.empty());
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
+		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
 
 		// when:
 		boolean hasA = subject.isRecordPresent(txnIdA);

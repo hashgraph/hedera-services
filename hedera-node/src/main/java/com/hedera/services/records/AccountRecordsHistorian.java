@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.util.Optional;
 
@@ -80,5 +81,5 @@ public interface AccountRecordsHistorian {
 	 *
 	 * @return an optional record.
 	 */
-	Optional<ExpirableTxnRecord> lastCreatedRecord();
+	Optional<TransactionRecord> lastCreatedRecord();
 }

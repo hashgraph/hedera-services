@@ -52,7 +52,6 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.THRESHOLD_RECORD_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 
@@ -65,7 +64,7 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 	private static final Logger log = LogManager.getLogger(FeePayingRecordsHistorian.class);
 
 	private HederaLedger ledger;
-	private ExpirableTxnRecord lastCreatedRecord;
+	private TransactionRecord lastCreatedRecord;
 	private Set<AccountID> accountsWithExpiringRecords;
 
 	private final RecordCache recordCache;
@@ -100,7 +99,7 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public Optional<ExpirableTxnRecord> lastCreatedRecord() {
+	public Optional<TransactionRecord> lastCreatedRecord() {
 		return Optional.ofNullable(lastCreatedRecord);
 	}
 
@@ -112,7 +111,7 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void addNewRecords() {
-		TransactionRecord record = txnCtx.recordSoFar();
+		var record = txnCtx.recordSoFar();
 		long cachingFeePaid = isScopedRecordQueryable.test(txnCtx) ? payForCaching(record) : 0;
 
 		long thresholdRecordFee = fees.computeStorageFee(record);
@@ -122,13 +121,15 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 		if (feeCharging.numThresholdFeesCharged() > 0 || cachingFeePaid > 0L) {
 			record = txnCtx.recordSoFar();
 		}
-		addNonThreshXQualifiers(record, qualifiers);
+		lastCreatedRecord = record;
 
-		int accountTtl = properties.getIntProperty("ledger.records.ttl");
-		long accountRecordExpiry = txnCtx.consensusTime().getEpochSecond() + accountTtl;
-		lastCreatedRecord = asExpirableRecord(record, accountRecordExpiry);
-		log.debug("Last created record updated to: {}", record);
-		addToEachAccount(qualifiers, lastCreatedRecord);
+		addNonThreshXQualifiers(record, qualifiers);
+		if (!qualifiers.isEmpty()) {
+			int accountTtl = properties.getIntProperty("ledger.records.ttl");
+			long historicalExpiry = txnCtx.consensusTime().getEpochSecond() + accountTtl;
+			var historicalRecord = asExpirableRecord(record, historicalExpiry);
+			addToEachAccount(qualifiers, historicalRecord);
+		}
 
 		/* --- NOTE ---
 			In an upcoming release, we will store short-lived cache records in state
@@ -252,8 +253,13 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 
 	private long payForCaching(TransactionRecord record) {
 			feeCharging.setFor(CACHE_RECORD, fees.computeCachingFee(record));
-			feeCharging.chargePayerUpTo(CACHE_RECORD_FEE);
-			return feeCharging.chargedToPayer(CACHE_RECORD);
+			if (txnCtx.isPayerSigKnownActive()) {
+				feeCharging.chargePayerUpTo(CACHE_RECORD_FEE);
+				return feeCharging.chargedToPayer(CACHE_RECORD);
+			} else {
+				feeCharging.chargeSubmittingNodeUpTo(CACHE_RECORD_FEE);
+				return feeCharging.chargedToSubmittingNode(CACHE_RECORD);
+			}
 	}
 
 	private void addNonThreshXQualifiers(TransactionRecord record, Set<AccountID> qualifiers) {
