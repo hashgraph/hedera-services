@@ -279,7 +279,8 @@ public class ServicesMain implements SwirldMain {
 	private void validateLedgerState() {
 		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
 		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
-			log.warn("Unexpected total balance in ledger, nodeId={}!", ctx.id());
+			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
+			systemExits.fail(1);
 		}
 		if (ctx.nodeAccount() == null) {
 			throwIseOrLogError(new IllegalStateException("Unknown ledger account!"));
