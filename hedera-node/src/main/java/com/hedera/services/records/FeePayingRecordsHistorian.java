@@ -31,6 +31,7 @@ import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,6 +66,8 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 	private Set<AccountID> accountsWithExpiringRecords;
+
+	private ExpiringCreations creator;
 
 	private final RecordCache recordCache;
 	private final FeeCalculator fees;
@@ -96,11 +98,16 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 		this.isScopedRecordQueryable = isScopedRecordQueryable;
 
 		accountsWithExpiringRecords = new HashSet<>();
-	}
+}
 
 	@Override
 	public Optional<TransactionRecord> lastCreatedRecord() {
 		return Optional.ofNullable(lastCreatedRecord);
+	}
+
+	@Override
+	public void setCreator(ExpiringCreations creator) {
+		this.creator = creator;
 	}
 
 	@Override
@@ -125,10 +132,8 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 
 		addNonThreshXQualifiers(record, qualifiers);
 		if (!qualifiers.isEmpty()) {
-			int accountTtl = properties.getIntProperty("ledger.records.ttl");
-			long historicalExpiry = txnCtx.consensusTime().getEpochSecond() + accountTtl;
-			var historicalRecord = asExpirableRecord(record, historicalExpiry);
-			addToEachAccount(qualifiers, historicalRecord);
+			long now = txnCtx.consensusTime().getEpochSecond();
+			createHistorical(qualifiers, record, now);
 		}
 
 		/* --- NOTE ---
@@ -224,25 +229,8 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 				.collect(toSet());
 	}
 
-	private void addToEachAccount(Set<AccountID> ids, ExpirableTxnRecord jRecord) {
-		ids.forEach(id -> addToAccount(id, jRecord));
-	}
-
-	/* We can take for granted that records are added in monotonic
-	increasing order of expiry, since account records expire a
-	fixed distance from the ever-advancing consensus time. */
-	private void addToAccount(AccountID id, ExpirableTxnRecord jRecord) {
-		ledger.addRecord(id, jRecord);
-		if (!accountsWithExpiringRecords.contains(id)) {
-			expirations.offer(new EarliestRecordExpiry(jRecord.getExpiry(), id));
-			accountsWithExpiringRecords.add(id);
-		}
-	}
-
-	private ExpirableTxnRecord asExpirableRecord(TransactionRecord record, long expiry) {
-		var expirableRecord = ExpirableTxnRecord.fromGprc(record);
-		expirableRecord.setExpiry(expiry);
-		return expirableRecord;
+	private void createHistorical(Set<AccountID> ids, TransactionRecord record, long now) {
+		ids.forEach(id -> creator.createExpiringHistoricalRecord(id, record, now));
 	}
 
 	private boolean isCallableContract(AccountID id) {

@@ -31,6 +31,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -76,6 +77,7 @@ public class RepoNewCacheTest {
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             mock(ScopedDuplicateClassifier.class),
             delegate);
@@ -192,6 +194,7 @@ public class RepoNewCacheTest {
     backingAccounts.replace(IdUtils.asAccount("0.0.2"), someOtherAccount);
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             mock(ScopedDuplicateClassifier.class),
             delegate);

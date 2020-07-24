@@ -24,6 +24,8 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -343,6 +345,8 @@ public class ServicesContextTest {
 		assertThat(ctx.lookupRetryingKeyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.nodeDuplicateClassifier(), instanceOf(PerNodeDuplicateClassifier.class));
 		assertThat(ctx.soliditySigsVerifier(), instanceOf(TxnAwareSoliditySigsVerifier.class));
+		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
+		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

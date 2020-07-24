@@ -28,6 +28,8 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -89,6 +91,7 @@ public class HederaLedger {
 
 	public HederaLedger(
 			EntityIdSource ids,
+			EntityCreator creator,
 			AccountRecordsHistorian historian,
 			ScopedDuplicateClassifier duplicateClassifier,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger
@@ -98,6 +101,7 @@ public class HederaLedger {
 		this.historian = historian;
 		this.duplicateClassifier = duplicateClassifier;
 
+		creator.setLedger(this);
 		historian.setLedger(this);
 	}
 
@@ -241,9 +245,17 @@ public class HederaLedger {
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
 	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, HISTORY_RECORDS);
+		return addReturningEarliestExpiry(id, HISTORY_RECORDS, record);
+	}
+
+	public long addPayerRecord(AccountID id, ExpirableTxnRecord record) {
+		return addReturningEarliestExpiry(id, PAYER_RECORDS, record);
+	}
+
+	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, property);
 		records.offer(record);
-		ledger.set(id, HISTORY_RECORDS, records);
+		ledger.set(id, property, records);
 		return records.peek().getExpiry();
 	}
 

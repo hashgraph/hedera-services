@@ -26,6 +26,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -154,6 +155,7 @@ public class FeePayingRecordsHistorianTest {
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
 	private PropertySource properties;
+	private ExpiringCreations creator;
 	private TransactionContext txnCtx;
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -171,7 +173,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger).addRecord(argThat(asAccount(duplicateContract)::equals), any());
+		verify(creator).createExpiringHistoricalRecord(
+				argThat(asAccount(duplicateContract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -183,7 +188,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger).addRecord(argThat(asAccount(contract)::equals), any());
+		verify(creator).createExpiringHistoricalRecord(
+				argThat(asAccount(contract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -195,7 +203,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger).addRecord(argThat(asAccount(contract)::equals), any());
+		verify(creator).createExpiringHistoricalRecord(
+				argThat(asAccount(contract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 		verify(txnCtx, times(2)).recordSoFar();
 	}
 
@@ -208,7 +219,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger, never()).addRecord(argThat(asAccount(contract)::equals), any());
+		verify(creator, never()).createExpiringHistoricalRecord(
+				argThat(asAccount(contract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -220,7 +234,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger, never()).addRecord(argThat(asAccount(contract)::equals), any());
+		verify(creator, never()).createExpiringHistoricalRecord(
+				argThat(asAccount(contract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -233,7 +250,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger, never()).addRecord(argThat(asAccount(contract)::equals), any());
+		verify(creator, never()).createExpiringHistoricalRecord(
+				argThat(asAccount(contract)::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -277,7 +297,10 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(ledger, never()).addRecord(argThat(b::equals), any());
+		verify(creator, never()).createExpiringHistoricalRecord(
+				argThat(b::equals),
+				any(),
+				longThat(l -> l == now.getEpochSecond()));
 	}
 
 	@Test
@@ -302,6 +325,7 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
+		/* TODO */
 	}
 
 	@Test
@@ -333,14 +357,19 @@ public class FeePayingRecordsHistorianTest {
 		verify(ledger, never()).doTransfer(c, funding, recordFee);
 		verify(ledger).doTransfer(d, funding, recordFee);
 		// and:
-		verify(properties).getIntProperty("ledger.records.ttl");
+		verify(properties, never()).getIntProperty("ledger.records.ttl");
 		verify(txnCtx, times(1)).consensusTime();
-		verify(ledger).addRecord(b, jFinalRecord);
-		verify(expirations).offer(new EarliestRecordExpiry(expiry, b));
-		verify(ledger).addRecord(c, jFinalRecord);
-		verify(expirations).offer(new EarliestRecordExpiry(expiry, c));
-		verify(ledger).addRecord(d, jFinalRecord);
-		verify(expirations).offer(new EarliestRecordExpiry(expiry, d));
+		// and:
+		verify(creator).createExpiringHistoricalRecord(b, finalRecord, now.getEpochSecond());
+		verify(creator).createExpiringHistoricalRecord(c, finalRecord, now.getEpochSecond());
+		verify(creator).createExpiringHistoricalRecord(d, finalRecord, now.getEpochSecond());
+		verify(creator, never()).createExpiringHistoricalRecord(asAccount(contract), finalRecord, now.getEpochSecond());
+		verify(ledger, never()).addRecord(b, jFinalRecord);
+		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, b));
+		verify(ledger, never()).addRecord(c, jFinalRecord);
+		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, c));
+		verify(ledger, never()).addRecord(d, jFinalRecord);
+		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, d));
 		verify(ledger, never()).addRecord(asAccount(contract), jFinalRecord);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
@@ -478,6 +507,8 @@ public class FeePayingRecordsHistorianTest {
 		given(properties.getAccountProperty("ledger.funding.account")).willReturn(funding);
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
 
+		creator = mock(ExpiringCreations.class);
+
 		TransactionBody txn = mock(TransactionBody.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxn()).willReturn(txn);
@@ -514,6 +545,7 @@ public class FeePayingRecordsHistorianTest {
 				IS_QUERYABLE,
 				expirations);
 		subject.setLedger(ledger);
+		subject.setCreator(creator);
 	}
 
 	private void setupForPurge() {
@@ -524,7 +556,6 @@ public class FeePayingRecordsHistorianTest {
 		given(ledger.purgeExpiredRecords(a, nows)).willReturn(-1L);
 		given(ledger.purgeExpiredRecords(c, nows)).willReturn(-1L);
 		given(ledger.purgeExpiredRecords(b, nows)).willReturn(nows + 55L);
-
 
 		expirations = new PriorityBlockingQueue<>();
 		expirations.offer(cERE);

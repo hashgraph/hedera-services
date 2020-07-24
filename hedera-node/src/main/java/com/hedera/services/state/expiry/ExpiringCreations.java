@@ -21,11 +21,78 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
-public class ExpiringCreations {
+import java.util.function.Function;
+import java.util.function.ObjLongConsumer;
+import java.util.function.ToLongBiFunction;
+
+public class ExpiringCreations implements EntityCreator {
+	private TransactionRecord currentRecord = null;
+	private ExpirableTxnRecord currentExpirableRecord = null;
+
 	private final PropertySource properties;
 
-	public ExpiringCreations(PropertySource properties) {
+	private ObjLongConsumer<AccountID> payerTracker;
+	private ObjLongConsumer<AccountID> historicalTracker;
+	private ToLongBiFunction<AccountID, ExpirableTxnRecord> payerRecordFn;
+	private ToLongBiFunction<AccountID, ExpirableTxnRecord> historicalRecordFn;
+
+	public ExpiringCreations(ExpiryManager expiries, PropertySource properties) {
 		this.properties = properties;
+
+		payerTracker = expiries::trackPayerRecord;
+		historicalTracker = expiries::trackHistoricalRecord;
+	}
+
+	public void setLedger(HederaLedger ledger) {
+		payerRecordFn = ledger::addPayerRecord;
+		historicalRecordFn = ledger::addRecord;
+	}
+
+	public void createExpiringPayerRecord(AccountID id, TransactionRecord record, long now) {
+		createExpiringRecord(
+				now + properties.getIntProperty("cache.records.ttl"),
+				id,
+				record,
+				payerTracker,
+				payerRecordFn,
+				ExpirableTxnRecord::fromGprc);
+	}
+
+	public void createExpiringHistoricalRecord(AccountID id, TransactionRecord record, long now) {
+		createExpiringRecord(
+				now + properties.getIntProperty("ledger.records.ttl"),
+				id,
+				record,
+				historicalTracker,
+				historicalRecordFn,
+				this::expirableRecordWithReuse);
+	}
+
+	private ExpirableTxnRecord expirableRecordWithReuse(TransactionRecord record) {
+		if (record != currentRecord) {
+			currentExpirableRecord = ExpirableTxnRecord.fromGprc(record);
+			currentRecord = record;
+		}
+		return currentExpirableRecord;
+	}
+
+	private void createExpiringRecord(
+			long expiry,
+			AccountID id,
+			TransactionRecord record,
+			ObjLongConsumer<AccountID> tracker,
+			ToLongBiFunction<AccountID, ExpirableTxnRecord> adder,
+			Function<TransactionRecord, ExpirableTxnRecord> fromGrpc
+	) {
+		var expiringRecord = fromGrpc.apply(record);
+		expiringRecord.setExpiry(expiry);
+		adder.applyAsLong(id, expiringRecord);
+		tracker.accept(id, expiry);
 	}
 }

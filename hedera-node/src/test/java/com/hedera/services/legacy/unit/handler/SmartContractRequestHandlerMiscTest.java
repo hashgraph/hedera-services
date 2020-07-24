@@ -34,6 +34,7 @@ import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -171,6 +172,7 @@ public class SmartContractRequestHandlerMiscTest {
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             mock(ScopedDuplicateClassifier.class),
             delegate);

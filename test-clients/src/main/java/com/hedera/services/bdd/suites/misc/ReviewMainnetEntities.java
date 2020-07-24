@@ -64,14 +64,25 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	}
 
 	private HapiApiSpec doSomething() {
-		final String NODES = "35.237.208.135:0.0.3";
+		final String PROXIES = "35.237.194.97:0.0.3,35.186.171.76:0.0.4,35.194.0.222:0.0.5,35.197.115.53:0.0.6," +
+				"35.236.103.219:0.0.7,35.203.12.99:0.0.8,34.76.93.218:0.0.9,34.89.9.244:0.0.10," +
+				"34.107.118.148:0.0.11,34.91.239.212:0.0.12,35.200.11.146:0.0.13," +
+				"34.96.218.21:0.0.14,35.240.220.53:0.0.15";
+		final String NODES = "35.237.208.135:0.0.3,35.245.226.22:0.0.4,"
+				+ "34.68.9.203:0.0.5,34.83.131.197:0.0.6";
+		final String DIRECT_NODES = "35.237.194.97:0.0.3,13.71.127.1:0.0.6,27.110.33.145:0.0.7,20.49.137.94:0.0.12," +
+				"35.245.226.22:0.0.4,34.72.55.137:0.0.5,35.203.26.115:0.0.8,34.77.3.213:0.0.9," + // Ubuntu
+				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"; // CentOS
+
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
-						"nodes", NODES,
+						"nodes", DIRECT_NODES,
 						"default.payer", "0.0.950",
 						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
 				)).given(
-						cryptoCreate("somebody").balance(1L)
+						cryptoCreate("somebody")
+								.setNode("0.0.4")
+								.balance(1L)
 				).when().then(
 						withOpContext((spec, opLog) -> {
 							byte[] passphraseBytes = new byte[16];

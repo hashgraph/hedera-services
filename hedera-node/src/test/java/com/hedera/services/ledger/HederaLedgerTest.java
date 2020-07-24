@@ -31,6 +31,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -90,6 +91,7 @@ public class HederaLedgerTest {
 
 	HederaLedger subject;
 	EntityIdSource ids;
+	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
 	ScopedDuplicateClassifier duplicateClassifier = mock(ScopedDuplicateClassifier.class);
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
@@ -110,12 +112,13 @@ public class HederaLedgerTest {
 			}
 		};
 		ledger = mock(TransactionalLedger.class);
+		creator = mock(ExpiringCreations.class);
 		addToLedger(misc, MISC_BALANCE, noopCustomizer);
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
-		subject = new HederaLedger(ids, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
 	}
 
 	private void setupWithLiveLedger() {
@@ -124,7 +127,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
 	}
 
 	private void setupWithLiveFcBackedLedger() {
@@ -143,7 +146,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
 	}
 
 	@Test
@@ -290,6 +293,7 @@ public class HederaLedgerTest {
 	public void setsSelfOnHistorian() {
 		// expect:
 		verify(historian).setLedger(subject);
+		verify(creator).setLedger(subject);
 	}
 
 	@Test
@@ -605,6 +609,33 @@ public class HederaLedgerTest {
 		// and:
 		assertEquals(5, HederaLedger.LedgerTxnEvictionStats.INSTANCE.recordsPurged());
 		assertEquals(1, HederaLedger.LedgerTxnEvictionStats.INSTANCE.accountsTouched());
+	}
+
+	@Test
+	public void addsNewPayerRecordLast() {
+		// setup:
+		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(100L, 50L, 200L, 311L);
+		addPayerRecords(misc, records);
+		// and:
+		ExpirableTxnRecord newRecord = asExpirableRecords(1_000L).peek();
+
+		// when:
+		subject.addPayerRecord(misc, newRecord);
+
+		// then:
+		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
+		verify(ledger).set(
+				argThat(misc::equals),
+				argThat(PAYER_RECORDS::equals),
+				captor.capture());
+		// and:
+		assertTrue(captor.getValue() == records);
+		assertThat(
+				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+						.stream()
+						.map(ExpirableTxnRecord::getExpiry)
+						.collect(Collectors.toList()),
+				contains(100L, 50L, 200L, 311L, 1_000L));
 	}
 
 	@Test

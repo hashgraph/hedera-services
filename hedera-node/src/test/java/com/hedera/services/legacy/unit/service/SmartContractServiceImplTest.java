@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.HbarCentExchange;
@@ -211,6 +212,7 @@ public class SmartContractServiceImplTest {
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             mock(ScopedDuplicateClassifier.class),
             delegate);

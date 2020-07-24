@@ -29,6 +29,9 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.NoopExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySanitizer;
@@ -111,6 +114,7 @@ import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
 
+import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 import com.hedera.services.txns.ProcessLogic;
@@ -290,6 +294,7 @@ public class ServicesContext {
 	private ProcessLogic logic;
 	private RecordStream recordStream;
 	private QueryFeeCheck queryFeeCheck;
+	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
 	private EntityNumbers number;
@@ -310,6 +315,7 @@ public class ServicesContext {
 	private PrecheckVerifier precheckVerifier;
 	private BalancesExporter balancesExporter;
 	private SolidityLifecycle solidityLifecycle;
+	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
 	private FreezeServiceImpl freezeGrpc;
@@ -820,9 +826,23 @@ public class ServicesContext {
 					new ChangeSummaryManager<>()
 			);
 			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
-			ledger = new HederaLedger(ids(), recordsHistorian(), duplicateClassifier(), delegate);
+			ledger = new HederaLedger(ids(), creator(), recordsHistorian(), duplicateClassifier(), delegate);
 		}
 		return ledger;
+	}
+
+	public ExpiryManager expiries() {
+		if (expiries == null) {
+			expiries = new ExpiryManager();
+		}
+		return expiries;
+	}
+
+	public ExpiringCreations creator() {
+		if (creator == null) {
+			creator = new ExpiringCreations(expiries(), properties());
+		}
+		return creator;
 	}
 
 	public OptionValidator validator() {
@@ -1056,6 +1076,7 @@ public class ServicesContext {
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_ID_SOURCE,
+					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,
 					NOOP_DUPLICATE_CLASSIFIER,
 					pureDelegate);

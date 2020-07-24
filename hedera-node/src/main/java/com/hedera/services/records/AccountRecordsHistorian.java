@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -50,6 +51,14 @@ public interface AccountRecordsHistorian {
 	 * @param ledger the ledger to record history for.
 	 */
 	void setLedger(HederaLedger ledger);
+
+	/**
+	 * Injects the expiring entity creator which the historian
+	 * should use to create records.
+	 *
+	 * @param creator the creator of expiring entities.
+	 */
+	void setCreator(ExpiringCreations creator);
 
 	/**
 	 * At the moment before committing the active transaction, forms a

@@ -73,7 +73,7 @@ networks:
     scenarioPayer: 1001
     scenarios:
       feeSnapshots:
-        appendToSnapshotCsv: true
+        appendToSnapshotCsv: false
         ignoreCostAnswer: true
         opsConfig: {bytecode: 1002, memoLength: 32}
         scheduleDesc: 100xBootstrap
