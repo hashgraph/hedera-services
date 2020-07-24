@@ -21,14 +21,15 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
@@ -36,31 +37,40 @@ import static com.hedera.services.utils.MiscUtils.sha384HashOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-/**
- * Uses a {@link Cache} to store {@link ExpirableTxnRecord} instances by their
- * {@link TransactionID}. (Somewhat more precisely, an {@link Optional} is stored
- * for each id, and if this optional is empty, it indicates the transaction with
- * that id has been submitted to the platform, but not yet incorporated to state.)
- *
- * @author Michael Tinker
- */
 public class RecordCache {
 	static final TransactionReceipt UNKNOWN_RECEIPT = TransactionReceipt.newBuilder()
 			.setStatus(UNKNOWN)
 			.build();
 
-	private final Cache<TransactionID, Optional<TransactionRecord>> delegate;
+	private Cache<TransactionID, Boolean> receiptCache;
+	private Map<TransactionID, TxnIdRecentHistory> histories;
+
+	private Cache<TransactionID, Optional<TransactionRecord>> delegate;
+
+	public RecordCache(
+			Cache<TransactionID, Boolean> receiptCache,
+			Map<TransactionID, TxnIdRecentHistory> histories
+	) {
+		this.histories = histories;
+		this.receiptCache = receiptCache;
+	}
 
 	public RecordCache(Cache<TransactionID, Optional<TransactionRecord>> delegate) {
 		this.delegate = delegate;
 	}
 
 	public void addPreConsensus(TransactionID txnId) {
-		delegate.put(txnId, Optional.empty());
+		receiptCache.put(txnId, Boolean.TRUE);
 	}
 
-	public void setPostConsensus(TransactionID txnId, TransactionRecord record) {
-		delegate.put(txnId, Optional.of(record));
+	public void setPostConsensus(
+			TransactionID txnId,
+			ResponseCodeEnum status,
+			ExpirableTxnRecord record,
+			long submittingMember
+	) {
+		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
+		recentHistory.observe(record, status, submittingMember);
 	}
 
 	public void setFailInvalid(PlatformTxnAccessor accessor, Instant consensusTimestamp) {
@@ -83,18 +93,16 @@ public class RecordCache {
 	}
 
 	public TransactionReceipt getReceipt(TransactionID txnId) {
-		var record = delegate.getIfPresent(txnId);
-		if (record == null) {
-			return null;
-		}
-		return record.map(TransactionRecord::getReceipt).orElse(UNKNOWN_RECEIPT);
+		var recentHistory = histories.get(txnId);
+		return recentHistory != null
+				? recentHistory.legacyQueryableRecord().getReceipt().toGrpc()
+				: (receiptCache.getIfPresent(txnId) != null ? UNKNOWN_RECEIPT : null);
 	}
 
 	public TransactionRecord getRecord(TransactionID txnId) {
-		var record = delegate.getIfPresent(txnId);
-		if (record != null && record.isPresent()) {
-			return record.get();
-		}
-		return null;
+		return Optional.ofNullable(histories.get(txnId))
+				.map(TxnIdRecentHistory::legacyQueryableRecord)
+				.map(ExpirableTxnRecord::asGrpc)
+				.orElse(null);
 	}
 }

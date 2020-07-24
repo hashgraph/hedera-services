@@ -414,7 +414,11 @@ class PreCheckValidationTest {
     TransactionReceipt txReceipt = RequestBuilder.getTransactionReceipt(OK);
     TransactionRecord transactionRecord =
         TransactionRecord.newBuilder().setReceipt(txReceipt).build();
-    localRecordCache.setPostConsensus(trId, transactionRecord);
+    localRecordCache.setPostConsensus(
+            trId,
+            transactionRecord.getReceipt().getStatus(),
+            ExpirableTxnRecord.fromGprc(transactionRecord),
+            1L);
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     TransactionHandler localTransactionHandler = new TransactionHandler(localRecordCache, accountFCMap,

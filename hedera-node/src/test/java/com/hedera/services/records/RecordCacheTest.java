@@ -28,6 +28,7 @@ import com.google.common.cache.Cache;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -43,6 +44,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,6 +57,7 @@ import static com.hedera.services.utils.MiscUtils.sha384HashOf;
 
 @RunWith(JUnitPlatform.class)
 class RecordCacheTest {
+	long submittingMember = 1L;
 	private TransactionID txnIdA = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
 			.setAccountID(asAccount("0.0.2"))
@@ -88,22 +91,52 @@ class RecordCacheTest {
 			.setTransactionFee(123L)
 			.build();
 
-	private ExpirableTxnRecord jaRecord = ExpirableTxnRecord.fromGprc(aRecord);
+	private ExpirableTxnRecord record = ExpirableTxnRecord.fromGprc(aRecord);
+
+	private Cache<TransactionID, Boolean> receiptCache;
+	private Map<TransactionID, TxnIdRecentHistory> histories;
 
 	private Cache<TransactionID, Optional<TransactionRecord>> delegate;
 	private RecordCache subject;
 
 	@BeforeEach
 	private void setup() {
-		delegate = (Cache<TransactionID, Optional<TransactionRecord>>)mock(Cache.class);
-		subject = new RecordCache(delegate);
+//		delegate = (Cache<TransactionID, Optional<TransactionRecord>>)mock(Cache.class);
+//		subject = new RecordCache(delegate);
+
+		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
+		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
+		subject = new RecordCache(receiptCache, histories);
 	}
+
+	@Test
+	public void getsReceiptWithKnownStatusPostConsensus() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(record);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// expect:
+		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
+	}
+
 
 	@Test
 	public void getsNullReceiptWhenMissing() {
 		// expect:
 		assertNull(subject.getReceipt(txnIdA));
 	}
+
+	@Test
+	public void getsReceiptWithUnknownStatusPreconsensus() {
+		given(histories.get(txnIdA)).willReturn(null);
+		given(receiptCache.getIfPresent(txnIdA)).willReturn(Boolean.TRUE);
+
+		// expect:
+		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
+	}
+
 
 	@Test
 	public void getsNullRecordWhenMissing() {
@@ -113,7 +146,19 @@ class RecordCacheTest {
 
 	@Test
 	public void getsNullRecordWhenPreconsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.empty());
+		given(histories.get(txnIdA)).willReturn(null);
+
+		// expect:
+		assertNull(subject.getRecord(txnIdA));
+	}
+
+	@Test
+	public void getsNullRecordWhenNotLegacyQueryable() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(null);
+		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
 		assertNull(subject.getRecord(txnIdA));
@@ -121,18 +166,14 @@ class RecordCacheTest {
 
 	@Test
 	public void getsRecordWhenPresent() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(record);
+		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
 		assertEquals(aRecord, subject.getRecord(txnIdA));
-	}
-
-	@Test
-	public void getsReceiptWithKnownStatusPostConsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
-
-		// expect:
-		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
 	}
 
 	@Test
@@ -141,16 +182,25 @@ class RecordCacheTest {
 		subject.addPreConsensus(txnIdB);
 
 		// then:
-		verify(delegate).put(txnIdB, Optional.empty());
+		verify(receiptCache).put(txnIdB, Boolean.TRUE);
 	}
 
 	@Test
 	public void delegatesToPutPostConsensus() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(histories.computeIfAbsent(argThat(txnIdA::equals), any())).willReturn(history);
+
 		// when:
-		subject.setPostConsensus(txnIdA, aRecord);
+		subject.setPostConsensus(
+				txnIdA,
+				aRecord.getReceipt().getStatus(),
+				record,
+				submittingMember);
 
 		// then:
-		verify(delegate).put(txnIdA, Optional.of(aRecord));
+		verify(history).observe(record, aRecord.getReceipt().getStatus(), submittingMember);
 	}
 
 	@Test
@@ -185,14 +235,6 @@ class RecordCacheTest {
 				sha384HashOf(accessor).toByteArray(),
 				record.getTransactionHash().toByteArray(),
 				"Wrong hash!");
-	}
-
-	@Test
-	public void getsReceiptWithUnknownStatusPreconsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.empty());
-
-		// expect:
-		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
 	}
 
 	@Test

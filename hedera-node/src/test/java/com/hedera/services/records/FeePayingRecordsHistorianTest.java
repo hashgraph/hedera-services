@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @RunWith(JUnitPlatform.class)
 public class FeePayingRecordsHistorianTest {
 	final private AccountID sn = asAccount("0.0.3");
-
+	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
 	final private TransactionID txnIdA = TransactionID.newBuilder().setAccountID(a).build();
 	final private AccountID b = asAccount("0.0.2222");
@@ -285,7 +285,11 @@ public class FeePayingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(recordCache, never()).setPostConsensus(txnIdA, finalRecord);
+		verify(recordCache, never()).setPostConsensus(
+				txnIdA,
+				finalRecord.getReceipt().getStatus(),
+				null,
+				submittingMember);
 	}
 
 	@Test
@@ -338,7 +342,11 @@ public class FeePayingRecordsHistorianTest {
 		// then:
 		verify(exemptions).isExemptFromFees(txnCtx.accessor().getTxn());
 		verify(fees).computeCachingFee(record);
-		verify(recordCache).setPostConsensus(txnIdA, finalRecord);
+		verify(recordCache).setPostConsensus(
+				txnIdA,
+				finalRecord.getReceipt().getStatus(),
+				null,
+				submittingMember);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
 		verify(ledger).netTransfersInTxn();
@@ -520,6 +528,7 @@ public class FeePayingRecordsHistorianTest {
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(txnCtx.recordSoFar()).willReturn(record).willReturn(finalRecord);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 
 		accounts = mock(FCMap.class);
 		aValue = add(a, aBalance, aSendThresh, aReceiveThresh, aExps, aCons, aIds);

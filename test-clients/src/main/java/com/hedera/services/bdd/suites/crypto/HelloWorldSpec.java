@@ -71,22 +71,23 @@ public class HelloWorldSpec extends HapiApiSuite {
 //						balancesChangeOnTransfer(),
 //						freezeWorks(),
 //						createThenTransferThenUpdateDeleteThenUpdate()
-						createSomebodyAndExportKey(),
-//						deleteSomebody(),
+//						createSomebodyAndExportKey(),
+						changeSomebody(),
 				}
 		);
 	}
 
-	private HapiApiSpec deleteSomebody() {
-		return defaultHapiSpec("DeleteSomebody")
+	private HapiApiSpec changeSomebody() {
+		return defaultHapiSpec("ChangeSomebody")
 				.given(
-						keyFromPem("new-account0.0.1024.pem")
+						keyFromPem("misc.pem")
 								.name("tbd")
-								.passphrase("i/OPtQFD2co0lccoTv+jFQ==")
-								.linkedTo("0.0.1024")
+								.passphrase("ZSiN0WfqU8/PY88N/9DwxA==")
+								.linkedTo("0.0.1001")
 				).when(
 				).then(
-						cryptoDelete("0.0.1024").signedBy(GENESIS, "tbd")
+						cryptoUpdate("0.0.1001").receiverSigRequired(true),
+						cryptoUpdate("0.0.1001").receiverSigRequired(false)
 				);
 	}
 

@@ -154,7 +154,11 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 		*/
 
 		if (isScopedRecordQueryable.test(txnCtx)) {
-			recordCache.setPostConsensus(txnCtx.accessor().getTxnId(), lastCreatedRecord);
+			recordCache.setPostConsensus(
+					txnCtx.accessor().getTxnId(),
+					lastCreatedRecord.getReceipt().getStatus(),
+					null,
+					txnCtx.submittingSwirldsMember());
 		} else {
 			log.warn(
 					"No queryable record will be available for consensus transaction {} (final status '{}')!",
