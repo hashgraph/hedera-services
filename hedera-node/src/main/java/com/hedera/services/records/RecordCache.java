@@ -45,30 +45,24 @@ public class RecordCache {
 			.setStatus(UNKNOWN)
 			.build();
 
-	private static final Boolean MARKER = Boolean.TRUE;
+	public static final Boolean MARKER = Boolean.TRUE;
 
 	private EntityCreator creator;
-	private Cache<TransactionID, Boolean> receiptCache;
+	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
-
-	private Cache<TransactionID, Optional<TransactionRecord>> delegate;
 
 	public RecordCache(
 			EntityCreator creator,
-			Cache<TransactionID, Boolean> receiptCache,
+			Cache<TransactionID, Boolean> timedReceiptCache,
 			Map<TransactionID, TxnIdRecentHistory> histories
 	) {
 		this.creator = creator;
 		this.histories = histories;
-		this.receiptCache = receiptCache;
-	}
-
-	public RecordCache(Cache<TransactionID, Optional<TransactionRecord>> delegate) {
-		this.delegate = delegate;
+		this.timedReceiptCache = timedReceiptCache;
 	}
 
 	public void addPreConsensus(TransactionID txnId) {
-		receiptCache.put(txnId, Boolean.TRUE);
+		timedReceiptCache.put(txnId, Boolean.TRUE);
 	}
 
 	public void setPostConsensus(
@@ -104,18 +98,18 @@ public class RecordCache {
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
-		return Optional.ofNullable(delegate.getIfPresent(txnId)).map(ignore -> true).orElse(false);
+		return histories.containsKey(txnId) ? true : timedReceiptCache.getIfPresent(txnId) != null;
 	}
 
 	public boolean isRecordPresent(TransactionID txnId) {
-		return Optional.ofNullable(delegate.getIfPresent(txnId)).orElse(Optional.empty()).isPresent();
+		return histories.containsKey(txnId);
 	}
 
 	public TransactionReceipt getReceipt(TransactionID txnId) {
 		var recentHistory = histories.get(txnId);
 		return recentHistory != null
 				? receiptFrom(recentHistory)
-				: (receiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
+				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
 	}
 
 	private TransactionReceipt receiptFrom(TxnIdRecentHistory recentHistory) {

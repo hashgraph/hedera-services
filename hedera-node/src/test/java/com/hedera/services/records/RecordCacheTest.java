@@ -100,14 +100,10 @@ class RecordCacheTest {
 	private Cache<TransactionID, Boolean> receiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
-	private Cache<TransactionID, Optional<TransactionRecord>> delegate;
 	private RecordCache subject;
 
 	@BeforeEach
 	private void setup() {
-//		delegate = (Cache<TransactionID, Optional<TransactionRecord>>)mock(Cache.class);
-//		subject = new RecordCache(delegate);
-
 		creator = mock(EntityCreator.class);
 		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
 		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
@@ -258,37 +254,38 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void usesDelegateToTestRecordPresence() {
-		given(delegate.getIfPresent(txnIdC)).willReturn(null);
-		given(delegate.getIfPresent(txnIdB)).willReturn(Optional.empty());
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(aRecord));
+	public void usesHistoryToTestRecordPresence() {
+		given(histories.containsKey(txnIdA)).willReturn(true);
+		given(histories.containsKey(txnIdB)).willReturn(false);
 
 		// when:
 		boolean hasA = subject.isRecordPresent(txnIdA);
 		boolean hasB = subject.isRecordPresent(txnIdB);
-		boolean hasC = subject.isRecordPresent(txnIdC);
 
 		// then:
-		verify(delegate, times(3)).getIfPresent(any());
-		// and:
 		assertTrue(hasA);
 		assertFalse(hasB);
-		assertFalse(hasC);
 	}
 
 	@Test
-	public void usesDelegateToTestReceiptPresence() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(null);
-		given(delegate.getIfPresent(txnIdB)).willReturn(Optional.empty());
+	public void usesHistoryThenCacheToTestReceiptPresence() {
+		given(histories.containsKey(txnIdA)).willReturn(true);
+		given(receiptCache.getIfPresent(txnIdA)).willReturn(null);
+		// and:
+		given(histories.containsKey(txnIdB)).willReturn(false);
+		given(receiptCache.getIfPresent(txnIdB)).willReturn(RecordCache.MARKER);
+		// and:
+		given(histories.containsKey(txnIdC)).willReturn(false);
+		given(receiptCache.getIfPresent(txnIdC)).willReturn(null);
 
 		// when:
 		boolean hasA = subject.isReceiptPresent(txnIdA);
 		boolean hasB = subject.isReceiptPresent(txnIdB);
+		boolean hasC = subject.isReceiptPresent(txnIdC);
 
 		// then:
-		verify(delegate, times(2)).getIfPresent(any());
-		// and:
-		assertFalse(hasA);
+		assertTrue(hasA);
 		assertTrue(hasB);
+		assertFalse(hasC);
 	}
 }

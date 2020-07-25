@@ -45,7 +45,7 @@ class ExpiringCreationsTest {
 		// expect:
 		Assertions.assertDoesNotThrow(() ->
 				NOOP_EXPIRING_CREATIONS.setLedger(null));
-		Assertions.assertDoesNotThrow(() ->
+		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.createExpiringPayerRecord(null, null, 0L));
 		Assertions.assertDoesNotThrow(() ->
 				NOOP_EXPIRING_CREATIONS.createExpiringHistoricalRecord(null, null, 0L));

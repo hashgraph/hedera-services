@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
+import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -77,7 +78,6 @@ import static org.mockito.BDDMockito.*;
 /**
  * Working directory should be HapiApp2.0/
  */
-//@RunWith(JUnitPlatform.class)
 
 @RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -102,7 +102,6 @@ public class FreezeServiceImplTest {
   private Key key;
   private Map<String, PrivateKey> pubKey2privKeyMap;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
-  private FCStorageWrapper fcStorageWrapper;
 
   @BeforeAll
   public void setUp() throws Exception {
@@ -126,9 +125,10 @@ public class FreezeServiceImplTest {
     mv.setKey(JKey.mapKey(key));
     accountFCMap.put(mk, mv);
 
-    receiptCache = new RecordCache(CacheBuilder.newBuilder().build());
-
-    fcStorageWrapper = new FCStorageWrapper(storageMap);
+    receiptCache = new RecordCache(
+            null,
+            CacheBuilder.newBuilder().build(),
+            new HashMap<>());
 
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);

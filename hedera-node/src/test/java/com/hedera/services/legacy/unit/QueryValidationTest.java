@@ -107,10 +107,6 @@ class QueryValidationTest {
 
   @BeforeAll
   void initializeState() throws Exception {
-    FCStorageWrapper storageWrapper = new FCStorageWrapper(
-        storageMap);
-
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
         "./configuration/dev/application.properties",
         "./configuration/dev/api-permission.properties");

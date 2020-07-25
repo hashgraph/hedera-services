@@ -294,6 +294,7 @@ public class HederaLedgerTest {
 		// expect:
 		verify(historian).setLedger(subject);
 		verify(creator).setLedger(subject);
+		verify(historian).setCreator(creator);
 	}
 
 	@Test

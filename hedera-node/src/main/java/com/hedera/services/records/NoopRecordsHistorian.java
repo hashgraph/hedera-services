@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -34,7 +35,7 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void setLedger(HederaLedger ledger) { }
 
   @Override
-  public void setCreator(ExpiringCreations creator) { }
+  public void setCreator(EntityCreator creator) { }
 
   @Override
   public void addNewRecords() { }

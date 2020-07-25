@@ -59,14 +59,14 @@ class RecordCacheFactoryTest {
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
 
 		// when:
-		Cache<TransactionID, Optional<TransactionRecord>> cache = subject.getRecordCache();
-		cache.put(txnIdA, Optional.of(record));
+		var cache = subject.getRecordCache();
+		cache.put(txnIdA, RecordCache.MARKER);
 
 		// then:
-		assertEquals(record, cache.getIfPresent(txnIdA).get());
+		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		assertNull(cache.getIfPresent(txnIdB));
 		INSTANCE.forMs(500L);
-		assertEquals(record, cache.getIfPresent(txnIdA).get());
+		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		INSTANCE.forMs(500L);
 		assertNull(cache.getIfPresent(txnIdA));
 	}

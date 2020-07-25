@@ -9,9 +9,9 @@ package com.hedera.test.mocks;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.google.common.cache.CacheBuilder;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.StandardizedPropertySources;
@@ -57,6 +58,7 @@ import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
+import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
@@ -75,7 +77,10 @@ public enum TestFeesFactory {
 		SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 		PropertySource properties = new StandardizedPropertySources(ignore -> true).asResolvingSource();
 		AnswerFunctions answerFunctions = new AnswerFunctions();
-		RecordCache recordCache = new RecordCache(new RecordCacheFactory(properties).getRecordCache());
+		RecordCache recordCache = new RecordCache(
+				null,
+				CacheBuilder.newBuilder().build(),
+				new HashMap<>());
 
 		return new UsageBasedFeeCalculator(
 				properties,

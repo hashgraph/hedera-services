@@ -103,6 +103,7 @@ public class HederaLedger {
 
 		creator.setLedger(this);
 		historian.setLedger(this);
+		historian.setCreator(creator);
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */

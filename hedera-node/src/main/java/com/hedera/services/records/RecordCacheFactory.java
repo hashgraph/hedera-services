@@ -24,11 +24,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,10 +44,10 @@ public class RecordCacheFactory {
 		this.properties = properties;
 	}
 
-	public Cache<TransactionID, Optional<TransactionRecord>> getRecordCache() {
+	public Cache<TransactionID, Boolean> getRecordCache() {
 		int ttl = properties.getIntProperty("cache.records.ttl");
 
-		log.info("Constructing the RecordCache with TTL {}s", ttl);
+		log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
 		return CacheBuilder
 				.newBuilder()
 				.expireAfterWrite(ttl, TimeUnit.SECONDS)

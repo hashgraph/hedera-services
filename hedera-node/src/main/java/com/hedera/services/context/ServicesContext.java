@@ -29,6 +29,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.expiry.NoopExpiringCreations;
@@ -185,6 +186,7 @@ import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
@@ -352,6 +354,7 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
+	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
@@ -772,9 +775,19 @@ public class ServicesContext {
 		return txnCtx;
 	}
 
+	public Map<TransactionID, TxnIdRecentHistory> txnHistories() {
+		if (txnHistories == null) {
+			txnHistories = new HashMap<>();
+		}
+		return txnHistories;
+	}
+
 	public RecordCache recordCache() {
 		if (recordCache == null) {
-			recordCache = new RecordCache(new RecordCacheFactory(properties()).getRecordCache());
+			recordCache = new RecordCache(
+					creator(),
+					new RecordCacheFactory(properties()).getRecordCache(),
+					null);
 		}
 		return recordCache;
 	}

@@ -347,6 +347,7 @@ public class ServicesContextTest {
 		assertThat(ctx.soliditySigsVerifier(), instanceOf(TxnAwareSoliditySigsVerifier.class));
 		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
 		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
+		assertThat(ctx.txnHistories(), instanceOf(Map.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

@@ -31,6 +31,7 @@ import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -67,7 +68,7 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 	private TransactionRecord lastCreatedRecord;
 	private Set<AccountID> accountsWithExpiringRecords;
 
-	private ExpiringCreations creator;
+	private EntityCreator creator;
 
 	private final RecordCache recordCache;
 	private final FeeCalculator fees;
@@ -106,7 +107,7 @@ public class FeePayingRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void setCreator(ExpiringCreations creator) {
+	public void setCreator(EntityCreator creator) {
 		this.creator = creator;
 	}
 
