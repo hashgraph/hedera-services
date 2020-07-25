@@ -25,7 +25,10 @@ import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.cache.Cache;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -93,6 +96,7 @@ class RecordCacheTest {
 
 	private ExpirableTxnRecord record = ExpirableTxnRecord.fromGprc(aRecord);
 
+	private EntityCreator creator;
 	private Cache<TransactionID, Boolean> receiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
@@ -104,9 +108,10 @@ class RecordCacheTest {
 //		delegate = (Cache<TransactionID, Optional<TransactionRecord>>)mock(Cache.class);
 //		subject = new RecordCache(delegate);
 
+		creator = mock(EntityCreator.class);
 		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
 		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
-		subject = new RecordCache(receiptCache, histories);
+		subject = new RecordCache(creator, receiptCache, histories);
 	}
 
 	@Test
@@ -213,28 +218,43 @@ class RecordCacheTest {
 					.setTransactionID(txnId)
 					.setMemo("Catastrophe!"))
 				.build();
+		// and:
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
 		// and:
-		ArgumentCaptor<Optional<TransactionRecord>> captor = ArgumentCaptor.forClass(Optional.class);
+		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
+		// and:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+		// and:
+		AccountID effectivePayer = IdUtils.asAccount("0.0.3");
+
+		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(history);
 
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
+		// and:
+		var grpc = TransactionRecord.newBuilder()
+				.setTransactionID(txnId)
+				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
+				.setMemo(accessor.getTxn().getMemo())
+				.setTransactionHash(sha384HashOf(accessor))
+				.setConsensusTimestamp(asTimestamp(consensusTime))
+				.build();
+		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
+		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
+		given(creator.createExpiringPayerRecord(any(), any(), anyLong())).willReturn(expectedRecord);
 
 		// when:
-		subject.setFailInvalid(accessor, consensusTime);
+		subject.setFailInvalid(
+				effectivePayer,
+				accessor,
+				consensusTime,
+				submittingMember);
 
 		// then:
-		verify(delegate).put(argThat(txnId::equals), captor.capture());
-		// and:
-		var record = captor.getValue().get();
-		assertEquals(FAIL_INVALID, record.getReceipt().getStatus());
-		assertEquals("Catastrophe!", record.getMemo());
-		assertEquals(txnId, record.getTransactionID());
-		assertEquals(asTimestamp(consensusTime), record.getConsensusTimestamp());
-		assertArrayEquals(
-				sha384HashOf(accessor).toByteArray(),
-				record.getTransactionHash().toByteArray(),
-				"Wrong hash!");
+		verify(history).observe(
+				argThat(expectedRecord::equals),
+				argThat(FAIL_INVALID::equals),
+				longThat(l -> l == submittingMember));
 	}
 
 	@Test

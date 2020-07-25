@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 
 class ExpiringCreationsTest {
@@ -72,14 +73,18 @@ class ExpiringCreationsTest {
 
 		// given:
 		long expectedExpiry = now + cacheTtl;
+		// and:
+		var expected = ExpirableTxnRecord.fromGprc(record);
+		expected.setExpiry(expectedExpiry);
 
 		// when:
-		subject.createExpiringPayerRecord(effPayer, record, now);
+		var actual = subject.createExpiringPayerRecord(effPayer, record, now);
 
 		// then:
 		verify(ledger).addPayerRecord(argThat(effPayer::equals), captor.capture());
 		// and:
-		Assertions.assertEquals(expectedExpiry, captor.getValue().getExpiry());
+		assertEquals(expectedExpiry, captor.getValue().getExpiry());
+		Assertions.assertEquals(expected, actual);
 		// and:
 		verify(expiries).trackPayerRecord(effPayer, expectedExpiry);
 	}
@@ -98,7 +103,7 @@ class ExpiringCreationsTest {
 		// then:
 		verify(ledger).addRecord(argThat(effPayer::equals), captor.capture());
 		// and:
-		Assertions.assertEquals(expectedExpiry, captor.getValue().getExpiry());
+		assertEquals(expectedExpiry, captor.getValue().getExpiry());
 		// and:
 		verify(expiries).trackHistoricalRecord(effPayer, expectedExpiry);
 	}

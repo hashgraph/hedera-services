@@ -113,7 +113,11 @@ public class AwareProcessLogic implements ProcessLogic {
 				wasCommitted = true;
 			} catch (Exception unrecoverable) {
 				warnOf(unrecoverable, "txn commit");
-				ctx.recordCache().setFailInvalid(accessor, consensusTime);
+				ctx.recordCache().setFailInvalid(
+						ctx.txnCtx().effectivePayer(),
+						accessor,
+						consensusTime,
+						submittingMember);
 				ctx.ledger().rollback();
 			} finally {
 				if (wasCommitted) {

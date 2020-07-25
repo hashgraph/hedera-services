@@ -54,8 +54,8 @@ public class ExpiringCreations implements EntityCreator {
 		historicalRecordFn = ledger::addRecord;
 	}
 
-	public void createExpiringPayerRecord(AccountID id, TransactionRecord record, long now) {
-		createExpiringRecord(
+	public ExpirableTxnRecord createExpiringPayerRecord(AccountID id, TransactionRecord record, long now) {
+		return createExpiringRecord(
 				now + properties.getIntProperty("cache.records.ttl"),
 				id,
 				record,
@@ -82,7 +82,7 @@ public class ExpiringCreations implements EntityCreator {
 		return currentExpirableRecord;
 	}
 
-	private void createExpiringRecord(
+	private ExpirableTxnRecord createExpiringRecord(
 			long expiry,
 			AccountID id,
 			TransactionRecord record,
@@ -94,5 +94,6 @@ public class ExpiringCreations implements EntityCreator {
 		expiringRecord.setExpiry(expiry);
 		adder.applyAsLong(id, expiringRecord);
 		tracker.accept(id, expiry);
+		return expiringRecord;
 	}
 }
