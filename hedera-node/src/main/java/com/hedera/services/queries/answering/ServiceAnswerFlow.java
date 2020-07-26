@@ -111,9 +111,7 @@ public class ServiceAnswerFlow implements AnswerFlow {
 			if (validity != OK) {
 				return service.responseGiven(query, view, validity, cost);
 			}
-			try {
-				legacyHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId());
-			} catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+			if (!legacyHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId())) {
 				return service.responseGiven(query, view, PLATFORM_TRANSACTION_NOT_CREATED, cost);
 			}
 		}

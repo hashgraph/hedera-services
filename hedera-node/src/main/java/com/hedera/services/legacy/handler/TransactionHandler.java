@@ -604,17 +604,14 @@ public class TransactionHandler {
    *                                              due to either large backlog or message size
    *                                              exceeded transactionMaxBytes
    */
-  public void submitTransaction(Platform platform, Transaction request, TransactionID txnId)
-      throws PlatformTransactionCreationException, InvalidProtocolBufferException {
+  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
     boolean status = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
     if (status) {
       recordCache.addPreConsensus(txnId);
     } else {
-      throw new PlatformTransactionCreationException(
-          "platform tx not created: tx serialized size = " + transaction.length + ", txShortInfo = "
-              + com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShort(request));
     }
+    return status;
   }
 
   /**

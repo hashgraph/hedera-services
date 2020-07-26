@@ -92,12 +92,10 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 	}
 
 	private TransactionResponse submitTransaction(SignedTxnAccessor accessor) {
-		try {
-			legacyTxnHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId());
-			return responseWith(OK);
-		} catch (PlatformTransactionCreationException | InvalidProtocolBufferException ptce) {
+		if (!legacyTxnHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId())) {
 			return responseWith(PLATFORM_TRANSACTION_NOT_CREATED);
 		}
+		return responseWith(OK);
 	}
 
 	private TxnValidityAndFeeReq metaValidityOf(SignedTxnAccessor accessor) {
