@@ -49,7 +49,6 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -218,7 +217,6 @@ public class SmartContractServiceImplTest {
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),
-				mock(ScopedDuplicateClassifier.class),
 				delegate);
 		ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
 		Source<byte[], AccountState> accountSource = ledgerSource;

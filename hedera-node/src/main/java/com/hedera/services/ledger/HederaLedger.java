@@ -29,8 +29,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -86,7 +84,6 @@ public class HederaLedger {
 
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
-	private final ScopedDuplicateClassifier duplicateClassifier;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	private final Map<AccountID, Long> priorBalances = new HashMap<>();
@@ -95,13 +92,11 @@ public class HederaLedger {
 			EntityIdSource ids,
 			EntityCreator creator,
 			AccountRecordsHistorian historian,
-			ScopedDuplicateClassifier duplicateClassifier,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger
 	) {
 		this.ids = ids;
 		this.ledger = ledger;
 		this.historian = historian;
-		this.duplicateClassifier = duplicateClassifier;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
@@ -121,7 +116,6 @@ public class HederaLedger {
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
-		duplicateClassifier.incorporateCommitment();
 		ledger.commit();
 		priorBalances.clear();
 	}

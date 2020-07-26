@@ -33,7 +33,6 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -150,7 +149,6 @@ public class SmartContractRequestHandlerPayableTest {
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     Source<byte[], AccountState> repDatabase = ledgerSource;
@@ -324,37 +322,6 @@ public class SmartContractRequestHandlerPayableTest {
     // function, not all payable functions.
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeDeposit(DEPOSIT_AMOUNT + 1));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, DEPOSIT_AMOUNT);
-    consensusTime = new Date().toInstant();
-    seqNumber.getAndIncrement();
-    ledger.begin();
-    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-    ledger.commit();
-
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-  }
-
-  @Test
-  @Disabled
-  @DisplayName("04 ContractDepositCall: negative value")
-  public void contractDepositCallNegative() {
-    // Create the contract
-    byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    // Call the contract to deposit value
-    // System does not allow negative values.
-    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeDeposit(-1));
-    body = getCallTransactionBody(newContractId, dataToSet, 250000L, -1L);
     consensusTime = new Date().toInstant();
     seqNumber.getAndIncrement();
     ledger.begin();

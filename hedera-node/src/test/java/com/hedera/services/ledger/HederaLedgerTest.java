@@ -32,7 +32,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -96,7 +95,6 @@ public class HederaLedgerTest {
 	EntityIdSource ids;
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
-	ScopedDuplicateClassifier duplicateClassifier = mock(ScopedDuplicateClassifier.class);
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	@BeforeEach
@@ -121,7 +119,7 @@ public class HederaLedgerTest {
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
-		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, ledger);
 	}
 
 	private void setupWithLiveLedger() {
@@ -130,7 +128,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, ledger);
 	}
 
 	private void setupWithLiveFcBackedLedger() {
@@ -149,7 +147,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, creator, historian, duplicateClassifier, ledger);
+		subject = new HederaLedger(ids, creator, historian, ledger);
 	}
 
 	@Test
@@ -407,19 +405,6 @@ public class HederaLedgerTest {
 
 		// then:
 		verify(historian).addNewRecords();
-	}
-
-	@Test
-	public void incorporatesDuplicityImplicationsBeforeCommitting() {
-		setupWithLiveLedger();
-
-		// when:
-		subject.begin();
-		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		subject.commit();
-
-		// then:
-		verify(duplicateClassifier).incorporateCommitment();
 	}
 
 	@Test

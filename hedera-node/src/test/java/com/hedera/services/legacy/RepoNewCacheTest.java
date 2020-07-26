@@ -32,7 +32,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -79,7 +78,6 @@ public class RepoNewCacheTest {
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
@@ -196,7 +194,6 @@ public class RepoNewCacheTest {
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);

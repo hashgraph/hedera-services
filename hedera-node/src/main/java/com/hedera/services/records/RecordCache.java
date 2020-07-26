@@ -98,11 +98,7 @@ public class RecordCache {
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
-		return histories.containsKey(txnId) ? true : timedReceiptCache.getIfPresent(txnId) != null;
-	}
-
-	public boolean isRecordPresent(TransactionID txnId) {
-		return histories.containsKey(txnId);
+		return histories.containsKey(txnId) ? true : timedReceiptCache.getIfPresent(txnId) == MARKER;
 	}
 
 	public TransactionReceipt getReceipt(TransactionID txnId) {
@@ -116,13 +112,16 @@ public class RecordCache {
 		return Optional.ofNullable(recentHistory.legacyQueryableRecord())
 				.map(ExpirableTxnRecord::getReceipt)
 				.map(TxnReceipt::toGrpc)
-				.orElse(null);
+				.orElse(UNKNOWN_RECEIPT);
 	}
 
 	public TransactionRecord getRecord(TransactionID txnId) {
-		return Optional.ofNullable(histories.get(txnId))
-				.map(TxnIdRecentHistory::legacyQueryableRecord)
-				.map(ExpirableTxnRecord::asGrpc)
-				.orElse(null);
+		var history = histories.get(txnId);
+		if (history != null) {
+			return Optional.ofNullable(history.legacyQueryableRecord())
+					.map(ExpirableTxnRecord::asGrpc)
+					.orElse(null);
+		}
+		return null;
 	}
 }

@@ -126,7 +126,6 @@ class RecordCacheTest {
 		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
 	}
 
-
 	@Test
 	public void getsNullReceiptWhenMissing() {
 		// expect:
@@ -142,6 +141,17 @@ class RecordCacheTest {
 		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
 	}
 
+	@Test
+	public void getsReceiptWithUnknownStatusWhenNotLegacyQueryable() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(null);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// expect:
+		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
+	}
 
 	@Test
 	public void getsNullRecordWhenMissing() {
@@ -182,7 +192,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	public void addsEmptyOptionalForPreconsensusReceipt() {
+	public void addsMarkerForPreconsensusReceipt() {
 		// when:
 		subject.addPreConsensus(txnIdB);
 
@@ -253,20 +263,6 @@ class RecordCacheTest {
 		verify(history).observe(
 				argThat(expectedRecord::equals),
 				argThat(FAIL_INVALID::equals));
-	}
-
-	@Test
-	public void usesHistoryToTestRecordPresence() {
-		given(histories.containsKey(txnIdA)).willReturn(true);
-		given(histories.containsKey(txnIdB)).willReturn(false);
-
-		// when:
-		boolean hasA = subject.isRecordPresent(txnIdA);
-		boolean hasB = subject.isRecordPresent(txnIdB);
-
-		// then:
-		assertTrue(hasA);
-		assertFalse(hasB);
 	}
 
 	@Test

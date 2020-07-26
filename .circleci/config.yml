@@ -1278,7 +1278,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 0348-M-Keep3minPayerRecords
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:

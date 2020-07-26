@@ -128,12 +128,6 @@ import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoUpdateTransitionLogic;
-import com.hedera.services.txns.diligence.CountingDuplicateClassifier;
-import com.hedera.services.txns.diligence.DuplicateClassifier;
-import com.hedera.services.txns.diligence.NodeDuplicateClassifier;
-import com.hedera.services.txns.diligence.PerNodeDuplicateClassifier;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
-import com.hedera.services.txns.diligence.TxnAwareDuplicateClassifier;
 import com.hedera.services.txns.file.FileAppendTransitionLogic;
 import com.hedera.services.txns.file.FileCreateTransitionLogic;
 import com.hedera.services.txns.file.FileDeleteTransitionLogic;
@@ -160,7 +154,6 @@ import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.FeeChargingRecordsHistorian;
-import com.hedera.services.records.EarliestRecordExpiry;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -179,7 +172,6 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.txns.diligence.NoopDuplicateClassifier.NOOP_DUPLICATE_CLASSIFIER;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -238,8 +230,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -337,11 +328,9 @@ public class ServicesContext {
 	private HfsSystemFilesManager systemFilesManager;
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
-	private NodeDuplicateClassifier nodeDuplicateClassifier;
 	private AccountRecordsHistorian recordsHistorian;
 	private SmartContractServiceImpl contractsGrpc;
 	private SmartContractRequestHandler contracts;
-	private TxnAwareDuplicateClassifier duplicateClassifier;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
@@ -769,7 +758,7 @@ public class ServicesContext {
 
 	public Map<TransactionID, TxnIdRecentHistory> txnHistories() {
 		if (txnHistories == null) {
-			txnHistories = new HashMap<>();
+			txnHistories = new ConcurrentHashMap<>();
 		}
 		return txnHistories;
 	}
@@ -779,7 +768,7 @@ public class ServicesContext {
 			recordCache = new RecordCache(
 					creator(),
 					new RecordCacheFactory(properties()).getRecordCache(),
-					null);
+					txnHistories());
 		}
 		return recordCache;
 	}
@@ -820,7 +809,7 @@ public class ServicesContext {
 					new ChangeSummaryManager<>()
 			);
 			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
-			ledger = new HederaLedger(ids(), creator(), recordsHistorian(), duplicateClassifier(), delegate);
+			ledger = new HederaLedger(ids(), creator(), recordsHistorian(), delegate);
 		}
 		return ledger;
 	}
@@ -1072,7 +1061,6 @@ public class ServicesContext {
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,
-					NOOP_DUPLICATE_CLASSIFIER,
 					pureDelegate);
 			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger, properties());
 			newPureRepo = () -> {
@@ -1195,23 +1183,6 @@ public class ServicesContext {
 			txnChargingPolicy = new TxnFeeChargingPolicy();
 		}
 		return txnChargingPolicy;
-	}
-
-
-	public NodeDuplicateClassifier nodeDuplicateClassifier() {
-		if (nodeDuplicateClassifier == null)  {
-			Supplier<DuplicateClassifier> factory = () ->
-					new CountingDuplicateClassifier(properties(), new HashMap<>(), new PriorityBlockingQueue<>());
-			nodeDuplicateClassifier = new PerNodeDuplicateClassifier(factory, new HashMap<>());
-		}
-		return nodeDuplicateClassifier;
-	}
-
-	public ScopedDuplicateClassifier duplicateClassifier() {
-		if (duplicateClassifier == null) {
-			duplicateClassifier = new TxnAwareDuplicateClassifier(txnCtx(), nodeDuplicateClassifier());
-		}
-		return duplicateClassifier;
 	}
 
 	/* Context-free infrastructure. */

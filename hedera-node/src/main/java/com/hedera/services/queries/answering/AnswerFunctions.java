@@ -48,9 +48,10 @@ public class AnswerFunctions {
 	}
 
 	public Optional<TransactionRecord> txnRecord(RecordCache recordCache, StateView view, Query query) {
-		TransactionID txnId = query.getTransactionGetRecord().getTransactionID();
-		if (recordCache.isRecordPresent(txnId)) {
-			return Optional.of(recordCache.getRecord(txnId));
+		var txnId = query.getTransactionGetRecord().getTransactionID();
+		var record = recordCache.getRecord(txnId);
+		if (record != null) {
+			return Optional.of(record);
 		} else {
 			try {
 				AccountID id = txnId.getAccountID();
@@ -62,7 +63,6 @@ public class AnswerFunctions {
 						.findAny()
 						.map(ExpirableTxnRecord::asGrpc);
 			} catch (Exception ignore) {
-				log.warn(ignore.getMessage());
 				return Optional.empty();
 			}
 		}
