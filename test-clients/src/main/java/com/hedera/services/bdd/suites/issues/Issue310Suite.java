@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class Issue310Suite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -50,31 +52,20 @@ public class Issue310Suite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				negativeTests()
+		return  List.of(
+				duplicatedTxnsSameTypeDetected(),
+				duplicatedTxnsDifferentTypesDetected(),
+				duplicatedTxnsSameTypeDifferntNodesDetected(),
+				duplicatedTxnsDiffrentTypesDifferentNodesDetected()
 		);
 	}
 
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
-
-	private List<HapiApiSpec> negativeTests() {
-		return List.of(
-				createDuplcateTransaction()
-		);
-	}
-
-	private HapiApiSpec createDuplcateTransaction() {
-		KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
-		KeyShape thresholdShape4 = threshOf(4, SIMPLE, SIMPLE, SIMPLE);
-
+	private HapiApiSpec duplicatedTxnsSameTypeDetected() {
 		long initialBalance = 10_000L;
 
-		return defaultHapiSpec("testDuplcateTransaction")
+		return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
 				.given(
-						cryptoCreate("acctWithTxnId")
+						cryptoCreate("acct1")
 								.balance(initialBalance)
 								.logged()
 								.via("txnId1"),
@@ -92,6 +83,75 @@ public class Issue310Suite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec duplicatedTxnsDifferentTypesDetected() {
+		return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
+				.given(
+						cryptoCreate("acct2")
+								.via("txnId2"),
+						newKeyNamed("key1"),
+						createTopic("topic2")
+								.submitKeyName("key1")
+				)
+				.when(
+						submitMessageTo("topic2")
+								.message("Hello world")
+								.payingWith("acct2")
+								.txnId("txnId2")
+								.hasPrecheck(DUPLICATE_TRANSACTION)
+
+				)
+				.then(
+						getTxnRecord("txnId2").logged()
+
+				);
+	}
+
+
+	private HapiApiSpec duplicatedTxnsSameTypeDifferntNodesDetected() {
+
+		return defaultHapiSpec("duplicatedTxnsSameTypeDifferntNodesDetected")
+				.given(
+						cryptoCreate("acct3")
+								.setNode("0.0.3")
+								.via("txnId1"),
+						UtilVerbs.sleepFor(1000),
+						cryptoCreate("acctWithDuplicateTxnId")
+								.setNode("0.0.5")
+								.txnId("txnId1")
+								.hasPrecheck(DUPLICATE_TRANSACTION)
+
+				).when(
+				).then(
+						getTxnRecord("txnId1").logged()
+
+				);
+	}
+
+
+	private HapiApiSpec duplicatedTxnsDiffrentTypesDifferentNodesDetected() {
+		return defaultHapiSpec("duplicatedTxnsDiffrentTypesDifferentNodesDetected")
+				.given(
+						cryptoCreate("acct4")
+								.via("txnId4")
+								.setNode("0.0.3"),
+						newKeyNamed("key2"),
+						createTopic("topic2")
+								.setNode("0.0.5")
+								.submitKeyName("key2")
+				)
+				.when(
+						submitMessageTo("topic2")
+								.message("Hello world")
+								.payingWith("acct4")
+								.txnId("txnId4")
+								.hasPrecheck(DUPLICATE_TRANSACTION)
+
+				)
+				.then(
+						getTxnRecord("txnId4").logged()
+
+				);
+	}
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
