@@ -79,12 +79,9 @@ public interface AccountRecordsHistorian {
 
 	/**
 	 * Invites the historian to build any auxiliary data structures
-	 * needed to purge expired records, given a lower bound on the
-	 * time of the next transaction to be processed.
-	 *
-	 * @param consensusTimeOfLastHandledTxn the current data-driven time.
+	 * needed to purge expired records.
 	 */
-	void reviewExistingRecords(long consensusTimeOfLastHandledTxn);
+	void reviewExistingRecords();
 
 	/**
 	 * Returns the last record created, if it exists.

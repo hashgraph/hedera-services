@@ -26,7 +26,13 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -37,45 +43,43 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.legacy.core.jproto.TxnId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.InOrder;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.EMPTY_LIST;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 import java.time.Instant;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.mockito.BDDMockito.*;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.longThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
-public class FeePayingRecordsHistorianTest {
+public class FeeChargingRecordsHistorianTest {
 	final private AccountID sn = asAccount("0.0.3");
 	final private long submittingMember = 1L;
 	final private AccountID a = asAccount("0.0.1111");
@@ -84,6 +88,7 @@ public class FeePayingRecordsHistorianTest {
 	final private TransactionID txnIdB = TransactionID.newBuilder().setAccountID(b).build();
 	final private AccountID c = asAccount("0.0.3333");
 	final private TransactionID txnIdC = TransactionID.newBuilder().setAccountID(c).build();
+	final private AccountID effPayer = asAccount("0.0.13257");
 	final private long recordFee = 1_230L;
 	final private Instant now = Instant.now();
 	final private long nows = now.getEpochSecond();
@@ -99,22 +104,16 @@ public class FeePayingRecordsHistorianTest {
 	final private long aBalance = recordFee - 1L;
 	final private long aSendThresh = 999L;
 	final private long aReceiveThresh = 1_001L;
-	final private EarliestRecordExpiry aERE = new EarliestRecordExpiry(nows - 100L, a);
-	final private MerkleEntityId aKey = MerkleEntityId.fromPojoAccountId(a);
 	final private List<Long> bExps = List.of(expiry - 55L);
 	final private List<Long> bCons = List.of(lastCons - cacheTtl - 1);
 	final private List<TransactionID> bIds = List.of(txnIdB);
 	final private long bBalance = recordFee + 1L;
 	final private long bSendThresh = 2_000L;
 	final private long bReceiveThresh = 201L;
-	final private EarliestRecordExpiry bERE = new EarliestRecordExpiry(nows - 55L, b);
-	final private MerkleEntityId bKey = MerkleEntityId.fromPojoAccountId(b);
 	final private List<Long> cExps = List.of();
 	final private long cBalance = recordFee + 1L;
 	final private long cSendThresh = 3_000L;
 	final private long cReceiveThresh = 301L;
-	final private MerkleEntityId cKey = MerkleEntityId.fromPojoAccountId(c);
-	final private EarliestRecordExpiry cERE = new EarliestRecordExpiry(nows + 50L, c);
 	final private List<Long> dExps = List.of();
 	final private long dBalance = recordFee + 1L;
 	final private long snBalance = 1_234_567_890L;
@@ -152,6 +151,7 @@ public class FeePayingRecordsHistorianTest {
 	private MerkleAccount snValue;
 	private RecordCache recordCache;
 	private HederaLedger ledger;
+	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
 	private PropertySource properties;
@@ -161,8 +161,7 @@ public class FeePayingRecordsHistorianTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private BlockingQueue<EarliestRecordExpiry> expirations;
 
-	private FeePayingRecordsHistorian subject;
-	private Predicate<TransactionContext> IS_QUERYABLE;
+	private FeeChargingRecordsHistorian subject;
 
 	@Test
 	public void doesntAddRecordToCreatedContractIfAlreadyDoneViaThreshX() {
@@ -265,34 +264,6 @@ public class FeePayingRecordsHistorianTest {
 	}
 
 	@Test
-	public void doesntChargeRecordCachingFeeIfRecordNotQueryable() {
-		setupForAdd();
-		given(IS_QUERYABLE.test(any())).willReturn(false);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(ledger, never()).doTransfer(a, funding, aBalance);
-	}
-
-	@Test
-	public void doesntCacheNonqueryableRecord() {
-		setupForAdd();
-		given(IS_QUERYABLE.test(any())).willReturn(false);
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(recordCache, never()).setPostConsensus(
-				txnIdA,
-				finalRecord.getReceipt().getStatus(),
-				null,
-				submittingMember);
-	}
-
-	@Test
 	public void skipsAccountsPendingCreation() {
 		setupForAdd();
 		given(ledger.isPendingCreation(b)).willReturn(true);
@@ -322,17 +293,6 @@ public class FeePayingRecordsHistorianTest {
 	}
 
 	@Test
-	public void addsRecordToEffectivePayer() {
-		setupForAdd();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		/* TODO */
-	}
-
-	@Test
 	public void addsRecordToQualifyingThresholdAccounts() {
 		setupForAdd();
 
@@ -345,7 +305,7 @@ public class FeePayingRecordsHistorianTest {
 		verify(recordCache).setPostConsensus(
 				txnIdA,
 				finalRecord.getReceipt().getStatus(),
-				null,
+				payerRecord,
 				submittingMember);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
@@ -381,41 +341,30 @@ public class FeePayingRecordsHistorianTest {
 		verify(ledger, never()).addRecord(asAccount(contract), jFinalRecord);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
+		// and:
+		verify(creator).createExpiringPayerRecord(effPayer, finalRecord, nows);
 	}
 
 	@Test
 	public void managesReviewCorrectly() {
 		setupForReview();
-		given(accounts.entrySet()).willReturn(Set.of(
-				new AbstractMap.SimpleEntry<>(aKey, aValue),
-				new AbstractMap.SimpleEntry<>(bKey, bValue),
-				new AbstractMap.SimpleEntry<>(cKey, cValue)));
 
 		// when:
-		subject.reviewExistingRecords(lastCons);
+		subject.reviewExistingRecords();
 
 		// then:
-		verify(expirations).offer(new EarliestRecordExpiry(expiry + 55L, a));
-		verify(expirations).offer(new EarliestRecordExpiry(expiry - 55L, b));
+		verify(expiries).resumeTrackingFrom(accounts);
 	}
 
 	@Test
 	public void managesExpirationsCorrectly() {
 		setupForPurge();
-		InOrder inOrder = inOrder(txnCtx, ledger);
 
-		// given:
+		// when:
 		subject.purgeExpiredRecords();
 
 		// expect:
-		List<EarliestRecordExpiry> remaining = new ArrayList<>();
-		expirations.drainTo(remaining);
-		assertThat(remaining, contains(cERE, new EarliestRecordExpiry(nows + 55L, b)));
-		// and:
-		inOrder.verify(txnCtx).consensusTime();
-		inOrder.verify(ledger).purgeExpiredRecords(a, nows);
-		inOrder.verify(ledger).purgeExpiredRecords(b, nows);
-		inOrder.verify(ledger, never()).purgeExpiredRecords(c, nows);
+		verify(expiries).purgeExpiredRecordsAt(nows, ledger);
 	}
 
 	private void addSetupForCallToAccount() {
@@ -496,8 +445,7 @@ public class FeePayingRecordsHistorianTest {
 	}
 
 	private void setupForAdd() {
-		IS_QUERYABLE = mock(Predicate.class);
-		given(IS_QUERYABLE.test(any())).willReturn(true);
+		expiries = mock(ExpiryManager.class);
 
 		ledger = mock(HederaLedger.class);
 		given(ledger.netTransfersInTxn()).willReturn(initialTransfers);
@@ -516,6 +464,7 @@ public class FeePayingRecordsHistorianTest {
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
 
 		creator = mock(ExpiringCreations.class);
+		given(creator.createExpiringPayerRecord(effPayer, finalRecord, nows)).willReturn(payerRecord);
 
 		TransactionBody txn = mock(TransactionBody.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
@@ -529,6 +478,7 @@ public class FeePayingRecordsHistorianTest {
 		given(txnCtx.recordSoFar()).willReturn(record).willReturn(finalRecord);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
+		given(txnCtx.effectivePayer()).willReturn(effPayer);
 
 		accounts = mock(FCMap.class);
 		aValue = add(a, aBalance, aSendThresh, aReceiveThresh, aExps, aCons, aIds);
@@ -544,44 +494,34 @@ public class FeePayingRecordsHistorianTest {
 
 		recordCache = mock(RecordCache.class);
 
-		subject = new FeePayingRecordsHistorian(
+		subject = new FeeChargingRecordsHistorian(
 				recordCache,
 				fees,
-				properties,
 				txnCtx,
 				itemizableFeeCharging,
 				accounts,
-				IS_QUERYABLE,
-				expirations);
+				expiries);
 		subject.setLedger(ledger);
 		subject.setCreator(creator);
 	}
 
 	private void setupForPurge() {
+		expiries = mock(ExpiryManager.class);
+
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
 
 		ledger = mock(HederaLedger.class);
-		given(ledger.purgeExpiredRecords(a, nows)).willReturn(-1L);
-		given(ledger.purgeExpiredRecords(c, nows)).willReturn(-1L);
-		given(ledger.purgeExpiredRecords(b, nows)).willReturn(nows + 55L);
-
-		expirations = new PriorityBlockingQueue<>();
-		expirations.offer(cERE);
-		expirations.offer(bERE);
-		expirations.offer(aERE);
 
 		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, properties);
 
-		subject = new FeePayingRecordsHistorian(
+		subject = new FeeChargingRecordsHistorian(
 				recordCache,
 				fees,
-				properties,
 				txnCtx,
 				itemizableFeeCharging,
 				accounts,
-				IS_QUERYABLE,
-				expirations);
+				expiries);
 		subject.setLedger(ledger);
 	}
 

@@ -32,7 +32,6 @@ import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.expiry.NoopExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySanitizer;
@@ -160,7 +159,7 @@ import com.hedera.services.queries.meta.GetTxnReceiptAnswer;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.records.FeePayingRecordsHistorian;
+import com.hedera.services.records.FeeChargingRecordsHistorian;
 import com.hedera.services.records.EarliestRecordExpiry;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
@@ -183,8 +182,6 @@ import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HIST
 import static com.hedera.services.txns.diligence.NoopDuplicateClassifier.NOOP_DUPLICATE_CLASSIFIER;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import com.hedera.services.utils.Pause;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -194,7 +191,6 @@ import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.logic.CustomProperties;
 import com.hedera.services.legacy.netty.CryptoServiceInterceptor;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
@@ -238,7 +234,6 @@ import com.hedera.services.context.properties.PropertySource;
 
 import java.io.PrintStream;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -255,9 +250,6 @@ import static com.hedera.services.files.interceptors.PureRatesValidation.isNorma
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultAccountRetryingLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
 import static io.grpc.ServerInterceptors.intercept;
@@ -794,24 +786,13 @@ public class ServicesContext {
 
 	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
-			final EnumSet<ResponseCodeEnum> NON_QUERYABLE_RECORD_STATUSES = EnumSet.of(
-					INVALID_NODE_ACCOUNT,
-					DUPLICATE_TRANSACTION,
-					INVALID_PAYER_SIGNATURE
-			);
-			Predicate<TransactionContext> isScopedRecordQueryable = txnCtx ->
-				!NON_QUERYABLE_RECORD_STATUSES.contains(txnCtx.status());
-
-			BlockingQueue<EarliestRecordExpiry> pQ = new PriorityBlockingQueue<>();
-			recordsHistorian = new FeePayingRecordsHistorian(
+			recordsHistorian = new FeeChargingRecordsHistorian(
 					recordCache(),
 					fees(),
-					properties(),
 					txnCtx(),
 					charging(),
 					accounts(),
-					isScopedRecordQueryable,
-					pQ);
+					expiries());
 		}
 		return recordsHistorian;
 	}
@@ -846,7 +827,7 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager();
+			expiries = new ExpiryManager(addressBook(), txnHistories());
 		}
 		return expiries;
 	}

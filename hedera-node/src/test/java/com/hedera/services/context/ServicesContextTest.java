@@ -76,7 +76,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.records.FeePayingRecordsHistorian;
+import com.hedera.services.records.FeeChargingRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -328,7 +328,7 @@ public class ServicesContextTest {
 		assertThat(ctx.precheckVerifier(), instanceOf(PrecheckVerifier.class));
 		assertThat(ctx.apiPermissionsReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
-		assertThat(ctx.recordsHistorian(), instanceOf(FeePayingRecordsHistorian.class));
+		assertThat(ctx.recordsHistorian(), instanceOf(FeeChargingRecordsHistorian.class));
 		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
 		assertThat(ctx.txnChargingPolicy(), instanceOf(TxnFeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));

@@ -44,7 +44,7 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void purgeExpiredRecords() { }
 
   @Override
-  public void reviewExistingRecords(long ignore) { }
+  public void reviewExistingRecords() { }
 
   @Override
   public Optional<TransactionRecord> lastCreatedRecord() { return Optional.empty(); }

@@ -62,7 +62,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -538,14 +541,21 @@ public class HederaLedgerTest {
 	@Test
 	public void purgesExpiredPayerRecords() {
 		// setup:
+		Consumer<ExpirableTxnRecord> cb = (Consumer<ExpirableTxnRecord>)mock(Consumer.class);
 		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(50L, 100L, 200L, 311L, 500L);
+		List<ExpirableTxnRecord> added = new ArrayList<>(records);
 		addPayerRecords(misc, records);
 
 		// when:
-		long newEarliestExpiry = subject.purgeExpiredPayerRecords(misc, 200L);
+		long newEarliestExpiry = subject.purgeExpiredPayerRecords(misc, 200L, cb);
 
 		// then:
 		assertEquals(311L, newEarliestExpiry);
+		// and:
+		verify(cb).accept(same(added.get(0)));
+		verify(cb).accept(same(added.get(1)));
+		verify(cb).accept(same(added.get(2)));
+		// and:
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
 		verify(ledger).set(
 				argThat(misc::equals),

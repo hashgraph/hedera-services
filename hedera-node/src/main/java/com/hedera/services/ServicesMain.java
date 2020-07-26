@@ -287,9 +287,7 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void reviewRecordExpirations() {
-		long consensusTimeOfLastHandledTxn =
-				Optional.ofNullable(ctx.consensusTimeOfLastHandledTxn()).map(Instant::getEpochSecond).orElse(0L);
-		ctx.recordsHistorian().reviewExistingRecords(consensusTimeOfLastHandledTxn);
+		ctx.recordsHistorian().reviewExistingRecords();
 	}
 
 	void logInfoWithConsoleEcho(String s) {

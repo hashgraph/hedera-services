@@ -283,7 +283,7 @@ public class ServicesMainTest {
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(recordStreamThread).start();
-		inOrder.verify(recordsHistorian).reviewExistingRecords(33L);
+		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);
 

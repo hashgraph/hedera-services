@@ -43,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -75,6 +76,7 @@ import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAd
 @SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final Logger log = LogManager.getLogger(HederaLedger.class);
+	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -261,18 +263,23 @@ public class HederaLedger {
 	}
 
 	public long purgeExpiredRecords(AccountID id, long now) {
-		return purge(id, HISTORY_RECORDS, now);
+		return purge(id, HISTORY_RECORDS, now, NOOP_CB);
 	}
 
-	public long purgeExpiredPayerRecords(AccountID id, long now) {
-		return purge(id, PAYER_RECORDS, now);
+	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
+		return purge(id, PAYER_RECORDS, now, cb);
 	}
 
-	private long purge(AccountID id, AccountProperty recordsProp, long now) {
+	private long purge(
+			AccountID id,
+			AccountProperty recordsProp,
+			long now,
+			Consumer<ExpirableTxnRecord> cb
+	) {
 		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, recordsProp);
 		int numBefore = records.size();
 
-		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now);
+		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
 		ledger.set(id, recordsProp, records);
 
 		int numPurged = numBefore - records.size();
@@ -284,10 +291,14 @@ public class HederaLedger {
 		return newEarliestExpiry;
 	}
 
-	private long purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
+	private long purgeForNewEarliestExpiry(
+			FCQueue<ExpirableTxnRecord> records,
+			long now,
+			Consumer<ExpirableTxnRecord> cb
+	) {
 		long newEarliestExpiry = -1;
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			records.poll();
+			cb.accept(records.poll());
 		}
 		if (!records.isEmpty()) {
 			newEarliestExpiry = records.peek().getExpiry();
