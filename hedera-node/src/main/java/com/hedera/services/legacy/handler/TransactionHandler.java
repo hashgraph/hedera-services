@@ -243,10 +243,6 @@ public class TransactionHandler {
     return accounts.get(merkleEntityId) != null;
   }
 
-  public void addReceiptEntry(TransactionID txnId) {
-    recordCache.addPreConsensus(txnId);
-  }
-
   /**
    * @param trBody body of the transaction
    * @return ResponseCodeEnum.CONTRACT_GAS_NEGATIVE if this is a contract creation or call and the
