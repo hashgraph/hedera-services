@@ -602,12 +602,12 @@ public class TransactionHandler {
    */
   public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
-    boolean status = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (status) {
+    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
+    if (created) {
       recordCache.addPreConsensus(txnId);
     } else {
     }
-    return status;
+    return created;
   }
 
   /**
