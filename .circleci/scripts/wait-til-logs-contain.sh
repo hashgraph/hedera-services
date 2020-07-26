@@ -5,7 +5,6 @@ if [ $# -lt 5 ]; then
   exit 1
 fi
 
-
 LOG_FILE=$1
 LINE_PATTERN=$(eval $2)
 
