@@ -150,11 +150,16 @@ class ExpiryManagerTest {
 		assertEquals(b, e6.getId());
 		assertEquals(50, e6.getExpiry());
 		// and:
-		long[] allTs = Stream.of(aHistorical, aPayer, bHistorical, bPayer)
+		long[] allPayerTs = Stream.of(aPayer, bPayer)
 				.flatMap(a -> Arrays.stream(a).boxed())
 				.mapToLong(Long::valueOf)
 				.toArray();
-		assertTrue(Arrays.stream(allTs).mapToObj(t -> txnIdOf(t).toGrpc()).allMatch(txnHistories::containsKey));
+		long[] allHistoryTs = Stream.of(aHistorical, bHistorical)
+				.flatMap(a -> Arrays.stream(a).boxed())
+				.mapToLong(Long::valueOf)
+				.toArray();
+		assertTrue(Arrays.stream(allPayerTs).mapToObj(t -> txnIdOf(t).toGrpc()).allMatch(txnHistories::containsKey));
+		assertTrue(Arrays.stream(allHistoryTs).mapToObj(t -> txnIdOf(t).toGrpc()).noneMatch(txnHistories::containsKey));
 		// and:
 		assertTrue(txnHistories.values().stream().noneMatch(TxnIdRecentHistory::isStagePending));
 	}

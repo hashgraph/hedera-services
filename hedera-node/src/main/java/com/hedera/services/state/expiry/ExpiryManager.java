@@ -39,8 +39,8 @@ public class ExpiryManager {
 		var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		var _historicalExpiries = new ArrayList<Map.Entry<Long, Long>>();
 		accounts.forEach((id, account) -> {
-			addUniqueExpiries(id.getNum(), account.payerRecords(), _payerExpiries);
-			addUniqueExpiries(id.getNum(), account.records(), _historicalExpiries);
+			addUniqueExpiries(id.getNum(), account.payerRecords(), _payerExpiries, true);
+			addUniqueExpiries(id.getNum(), account.records(), _historicalExpiries, false);
 		});
 
 		var cmp = Comparator.comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey);
@@ -55,11 +55,14 @@ public class ExpiryManager {
 	private void addUniqueExpiries(
 			Long num,
 			FCQueue<ExpirableTxnRecord> records,
-			List<Map.Entry<Long, Long>> expiries
+			List<Map.Entry<Long, Long>> expiries,
+			boolean shouldStage
 	) {
 		long lastAdded = -1;
 		for (ExpirableTxnRecord record : records) {
-			stage(record);
+			if (shouldStage) {
+				stage(record);
+			}
 			var expiry = record.getExpiry();
 			if (expiry != lastAdded) {
 				expiries.add(new AbstractMap.SimpleImmutableEntry<>(num, expiry));
