@@ -48,6 +48,8 @@ import org.bouncycastle.util.encoders.Hex;
 import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
+	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
+
 	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
@@ -67,8 +69,10 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	static HbarAdjustments.Provider legacyAdjustmentsProvider = HbarAdjustments.LEGACY_PROVIDER;
 	static SolidityFnResult.Provider legacyFnResultProvider = SolidityFnResult.LEGACY_PROVIDER;
 
-	private long fee;
 	private long expiry;
+	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
+
+	private long fee;
 	private Hash hash;
 	private TxnId txnId;
 	private byte[] txnHash = MISSING_TXN_HASH;
@@ -157,7 +161,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				.add("txnHash", Hex.toHexString(txnHash))
 				.add("txnId", txnId)
 				.add("consensusTimestamp", consensusTimestamp)
-				.add("expiry", expiry);
+				.add("expiry", expiry)
+				.add("submittingMember", submittingMember);
 		if (memo != null)	 {
 			helper.add("memo", memo);
 		}
@@ -183,6 +188,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		}
 		var that = (ExpirableTxnRecord) o;
 		return fee == that.fee &&
+				expiry == that.expiry &&
+				submittingMember == that.submittingMember &&
 				receipt.equals(that.receipt) &&
 				Arrays.equals(txnHash, that.txnHash) &&
 				txnId.equals(that.txnId) &&
@@ -190,8 +197,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				Objects.equals(memo, that.memo) &&
 				Objects.equals(contractCallResult, that.contractCallResult) &&
 				Objects.equals(contractCreateResult, that.contractCreateResult) &&
-				Objects.equals(hbarAdjustments, that.hbarAdjustments) &&
-				Objects.equals(expiry, that.expiry);
+				Objects.equals(hbarAdjustments, that.hbarAdjustments);
 	}
 
 	@Override
@@ -205,7 +211,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				contractCallResult,
 				contractCreateResult,
 				hbarAdjustments,
-				expiry);
+				expiry,
+				submittingMember);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -238,6 +245,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		serdes.writeNullableSerializable(contractCreateResult, out);
 
 		out.writeLong(expiry);
+		out.writeLong(submittingMember);
 	}
 
 	@Override
@@ -252,6 +260,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		contractCallResult = serdes.readNullableSerializable(in);
 		contractCreateResult = serdes.readNullableSerializable(in);
 		expiry = in.readLong();
+		submittingMember = in.readLong();
 	}
 
 	@Override
@@ -310,6 +319,13 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		this.expiry = expiry;
 	}
 
+	public long getSubmittingMember() {
+		return submittingMember;
+	}
+
+	public void setSubmittingMember(long submittingMember) {
+		this.submittingMember = submittingMember;
+	}
 
 	/* --- FastCopyable --- */
 

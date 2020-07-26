@@ -34,8 +34,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
@@ -113,17 +111,21 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		lastCreatedRecord = record;
 
 		long now = txnCtx.consensusTime().getEpochSecond();
+		long submittingMember = txnCtx.submittingSwirldsMember();
 		addNonThreshXQualifiers(record, qualifiers);
 		if (!qualifiers.isEmpty()) {
-			createHistorical(qualifiers, record, now);
+			createHistorical(qualifiers, record, now, submittingMember);
 		}
 
-		var payerRecord = creator.createExpiringPayerRecord(txnCtx.effectivePayer(), lastCreatedRecord, now);
+		var payerRecord = creator.createExpiringPayerRecord(
+				txnCtx.effectivePayer(),
+				lastCreatedRecord,
+				now,
+				submittingMember);
 		recordCache.setPostConsensus(
 				txnCtx.accessor().getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
-				payerRecord,
-				txnCtx.submittingSwirldsMember());
+				payerRecord);
 	}
 
 	@Override
@@ -170,8 +172,13 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 				.collect(toSet());
 	}
 
-	private void createHistorical(Set<AccountID> ids, TransactionRecord record, long now) {
-		ids.forEach(id -> creator.createExpiringHistoricalRecord(id, record, now));
+	private void createHistorical(
+			Set<AccountID> ids,
+			TransactionRecord record,
+			long now,
+			long submittingMember
+	) {
+		ids.forEach(id -> creator.createExpiringHistoricalRecord(id, record, now, submittingMember));
 	}
 
 	private boolean isCallableContract(AccountID id) {

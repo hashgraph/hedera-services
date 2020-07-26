@@ -827,7 +827,7 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(addressBook(), txnHistories());
+			expiries = new ExpiryManager(txnHistories());
 		}
 		return expiries;
 	}

@@ -19,6 +19,7 @@ import static org.mockito.BDDMockito.*;
 class ExpiringCreationsTest {
 	int historyTtl = 90_000, cacheTtl = 180;
 	long now = 1_234_567L;
+	long submittingMember = 1L;
 
 	AccountID effPayer = IdUtils.asAccount("0.0.13257");
 	TransactionRecord record = DomainSerdesTest.recordOne().asGrpc();
@@ -46,9 +47,11 @@ class ExpiringCreationsTest {
 		Assertions.assertDoesNotThrow(() ->
 				NOOP_EXPIRING_CREATIONS.setLedger(null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringPayerRecord(null, null, 0L));
+				NOOP_EXPIRING_CREATIONS.createExpiringPayerRecord(
+						null, null, 0L, submittingMember));
 		Assertions.assertDoesNotThrow(() ->
-				NOOP_EXPIRING_CREATIONS.createExpiringHistoricalRecord(null, null, 0L));
+				NOOP_EXPIRING_CREATIONS.createExpiringHistoricalRecord(
+						null, null, 0L, submittingMember));
 	}
 
 	@Test
@@ -57,8 +60,8 @@ class ExpiringCreationsTest {
 		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
 
 		// when:
-		subject.createExpiringHistoricalRecord(effPayer, record, now);
-		subject.createExpiringHistoricalRecord(effPayer, record, now);
+		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
+		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
 
 		// then:
 		verify(ledger, times(2)).addRecord(argThat(effPayer::equals), captor.capture());
@@ -76,9 +79,10 @@ class ExpiringCreationsTest {
 		// and:
 		var expected = ExpirableTxnRecord.fromGprc(record);
 		expected.setExpiry(expectedExpiry);
+		expected.setSubmittingMember(submittingMember);
 
 		// when:
-		var actual = subject.createExpiringPayerRecord(effPayer, record, now);
+		var actual = subject.createExpiringPayerRecord(effPayer, record, now, submittingMember);
 
 		// then:
 		verify(ledger).addPayerRecord(argThat(effPayer::equals), captor.capture());
@@ -98,12 +102,13 @@ class ExpiringCreationsTest {
 		long expectedExpiry = now + historyTtl;
 
 		// when:
-		subject.createExpiringHistoricalRecord(effPayer, record, now);
+		subject.createExpiringHistoricalRecord(effPayer, record, now, submittingMember);
 
 		// then:
 		verify(ledger).addRecord(argThat(effPayer::equals), captor.capture());
 		// and:
 		assertEquals(expectedExpiry, captor.getValue().getExpiry());
+		assertEquals(submittingMember, captor.getValue().getSubmittingMember());
 		// and:
 		verify(expiries).trackHistoricalRecord(effPayer, expectedExpiry);
 	}

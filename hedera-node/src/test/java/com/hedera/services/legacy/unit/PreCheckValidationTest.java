@@ -426,8 +426,7 @@ class PreCheckValidationTest {
 		localRecordCache.setPostConsensus(
 				trId,
 				transactionRecord.getReceipt().getStatus(),
-				ExpirableTxnRecord.fromGprc(transactionRecord),
-				1L);
+				ExpirableTxnRecord.fromGprc(transactionRecord));
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		TransactionHandler localTransactionHandler = new TransactionHandler(localRecordCache, accountFCMap,
@@ -441,27 +440,6 @@ class PreCheckValidationTest {
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
 		assert (result.getValidity() == ResponseCodeEnum.DUPLICATE_TRANSACTION);
 		assert (result.getRequiredFee() == 0L);
-	}
-
-	private static Transaction createFreezeTransaction(boolean paidBy55) {
-		FreezeTransactionBody.Builder freezeBuilder = FreezeTransactionBody.newBuilder();
-		long currentSeconds = System.currentTimeMillis() / 1000;
-		freezeBuilder.setStartHour(1).setStartMin(10).setEndHour(2).setEndMin(10).build();
-
-		AccountID payerAccount = paidBy55 ? AccountID.newBuilder().setAccountNum(55).build() :
-				AccountID.newBuilder().setAccountNum(2).build();
-		TransactionID transactionID = TransactionID.newBuilder()
-				.setAccountID(payerAccount)
-				.setTransactionValidStart(Timestamp.newBuilder().setSeconds(currentSeconds).build())
-				.build();
-
-		TransactionBody body = TransactionBody.newBuilder()
-				.setTransactionID(transactionID)
-				.setFreeze(freezeBuilder)
-				.build();
-
-		return Transaction.newBuilder()
-				.setBodyBytes(body.toByteString()).build();
 	}
 
 	@Test

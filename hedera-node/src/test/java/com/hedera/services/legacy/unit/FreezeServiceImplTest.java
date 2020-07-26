@@ -220,8 +220,7 @@ public class FreezeServiceImplTest {
     receiptCache.setPostConsensus(
             txID,
             record.getReceipt().getStatus(),
-            ExpirableTxnRecord.fromGprc(record),
-            1L);
+            ExpirableTxnRecord.fromGprc(record));
   }
 
   /**

@@ -20,6 +20,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,6 +35,9 @@ import static org.mockito.BDDMockito.willAnswer;
 
 @RunWith(JUnitPlatform.class)
 class ExpirableTxnRecordTest {
+	long expiry = 1_234_567L;
+	long submittingMember = 1L;
+
 	DataInputStream din;
 
 	DomainSerdes serdes;
@@ -69,12 +73,15 @@ class ExpirableTxnRecordTest {
 	}
 
 	private ExpirableTxnRecord subjectRecord() {
-		return ExpirableTxnRecord.fromGprc(
+		var s = ExpirableTxnRecord.fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
 						.build()
 		);
+		s.setExpiry(expiry);
+		s.setSubmittingMember(submittingMember);
+		return s;
 	}
 
 	@Test
@@ -113,7 +120,8 @@ class ExpirableTxnRecordTest {
 		given(serdes.readNullableInstant(fin))
 				.willReturn(subject.getConsensusTimestamp());
 		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry());
+				.willReturn(subject.getExpiry())
+				.willReturn(subject.getSubmittingMember());
 		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
 		// and:
@@ -146,6 +154,7 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
 		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
 		inOrder.verify(fout).writeLong(subject.getExpiry());
+		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
 	}
 
 	@Test
@@ -164,6 +173,10 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	public void grpcInterconversionWorks() {
+		// given:
+		subject.setExpiry(0L);
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
+
 		// expect:
 		assertEquals(subject, ExpirableTxnRecord.fromGprc(subject.asGrpc()));
 	}
@@ -198,7 +211,8 @@ class ExpirableTxnRecordTest {
 						"txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 						"validStart=RichInstant{seconds=9999999999, nanos=0}}, " +
 						"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, " +
-						"expiry=0, memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, " +
+						"expiry=1234567, submittingMember=1, memo=Alpha bravo charlie, " +
+						"contractCreation=SolidityFnResult{gasUsed=55, bloom=, " +
 						"result=, error=null, contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 						"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
 						"adjustments=HbarAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}}",
@@ -249,6 +263,7 @@ class ExpirableTxnRecordTest {
 		var fromLegacy = ExpirableTxnRecord.LEGACY_PROVIDER.deserialize(din);
 
 		// then:
+		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
 		assertEquals(subject, fromLegacy);
 	}
 

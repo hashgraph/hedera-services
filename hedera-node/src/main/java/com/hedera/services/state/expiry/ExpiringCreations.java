@@ -54,9 +54,16 @@ public class ExpiringCreations implements EntityCreator {
 		historicalRecordFn = ledger::addRecord;
 	}
 
-	public ExpirableTxnRecord createExpiringPayerRecord(AccountID id, TransactionRecord record, long now) {
+	@Override
+	public ExpirableTxnRecord createExpiringPayerRecord(
+			AccountID id,
+			TransactionRecord record,
+			long now,
+			long submittingMember
+	) {
 		return createExpiringRecord(
 				now + properties.getIntProperty("cache.records.ttl"),
+				submittingMember,
 				id,
 				record,
 				payerTracker,
@@ -64,9 +71,16 @@ public class ExpiringCreations implements EntityCreator {
 				ExpirableTxnRecord::fromGprc);
 	}
 
-	public void createExpiringHistoricalRecord(AccountID id, TransactionRecord record, long now) {
+	@Override
+	public void createExpiringHistoricalRecord(
+			AccountID id,
+			TransactionRecord record,
+			long now,
+			long submittingMember
+	) {
 		createExpiringRecord(
 				now + properties.getIntProperty("ledger.records.ttl"),
+				submittingMember,
 				id,
 				record,
 				historicalTracker,
@@ -84,6 +98,7 @@ public class ExpiringCreations implements EntityCreator {
 
 	private ExpirableTxnRecord createExpiringRecord(
 			long expiry,
+			long submittingMember,
 			AccountID id,
 			TransactionRecord record,
 			ObjLongConsumer<AccountID> tracker,
@@ -92,6 +107,7 @@ public class ExpiringCreations implements EntityCreator {
 	) {
 		var expiringRecord = fromGrpc.apply(record);
 		expiringRecord.setExpiry(expiry);
+		expiringRecord.setSubmittingMember(submittingMember);
 		adder.applyAsLong(id, expiringRecord);
 		tracker.accept(id, expiry);
 		return expiringRecord;

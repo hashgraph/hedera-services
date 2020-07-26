@@ -20,18 +20,14 @@ package com.hedera.services.records;
  * ‍
  */
 
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.common.cache.Cache;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -39,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -48,15 +43,24 @@ import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.utils.MiscUtils.sha384HashOf;
+import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.utils.MiscUtils.sha384HashOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class RecordCacheTest {
@@ -197,11 +201,9 @@ class RecordCacheTest {
 		subject.setPostConsensus(
 				txnIdA,
 				aRecord.getReceipt().getStatus(),
-				record,
-				submittingMember);
-
+				record);
 		// then:
-		verify(history).observe(record, aRecord.getReceipt().getStatus(), submittingMember);
+		verify(history).observe(record, aRecord.getReceipt().getStatus());
 	}
 
 	@Test
@@ -237,7 +239,8 @@ class RecordCacheTest {
 				.build();
 		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
-		given(creator.createExpiringPayerRecord(any(), any(), anyLong())).willReturn(expectedRecord);
+		expectedRecord.setSubmittingMember(submittingMember);
+		given(creator.createExpiringPayerRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
 		// when:
 		subject.setFailInvalid(
@@ -249,8 +252,7 @@ class RecordCacheTest {
 		// then:
 		verify(history).observe(
 				argThat(expectedRecord::equals),
-				argThat(FAIL_INVALID::equals),
-				longThat(l -> l == submittingMember));
+				argThat(FAIL_INVALID::equals));
 	}
 
 	@Test

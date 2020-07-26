@@ -22,15 +22,16 @@ package com.hedera.services.state.expiry;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,10 +39,13 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static com.hedera.services.records.TxnIdRecentHistory.UNKNOWN_SUBMITTING_MEMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,7 +70,6 @@ class ExpiryManagerTest {
 	long expiry = 1_234_567L;
 	AccountID payer = IdUtils.asAccount("0.0.13257");
 
-	AddressBook book;
 	HederaLedger ledger;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
@@ -78,25 +81,9 @@ class ExpiryManagerTest {
 		accounts = new FCMap<>();
 		txnHistories = new HashMap<>();
 
-		var aAddress = mock(Address.class);
-		given(aAddress.getMemo()).willReturn("0.0.3");
-		var bAddress = mock(Address.class);
-		given(bAddress.getMemo()).willReturn("0.0.4");
-		book = mock(AddressBook.class);
-		given(book.getAddress(Long.valueOf(0L))).willReturn(aAddress);
-		given(book.getAddress(Long.valueOf(1L))).willReturn(bAddress);
-		given(book.getSize()).willReturn(2);
-
 		ledger = mock(HederaLedger.class);
 
-		subject = new ExpiryManager(book, txnHistories);
-	}
-
-	@Test
-	public void memberLookupWorks() {
-		// expect:
-		assertEquals(0L, subject.lookup.get(IdUtils.asAccount("0.0.3")));
-		assertEquals(1L, subject.lookup.get(IdUtils.asAccount("0.0.4")));
+		subject = new ExpiryManager(txnHistories);
 	}
 
 	@Test
@@ -136,6 +123,8 @@ class ExpiryManagerTest {
 		givenAccount(b, bHistorical, bPayer);
 
 		// when:
+		txnHistories.clear();
+		// and:
 		subject.resumeTrackingFrom(accounts);
 
 		// then:
@@ -160,6 +149,14 @@ class ExpiryManagerTest {
 		var e6 = subject.historicalExpiries.allExpiries.poll();
 		assertEquals(b, e6.getId());
 		assertEquals(50, e6.getExpiry());
+		// and:
+		long[] allTs = Stream.of(aHistorical, aPayer, bHistorical, bPayer)
+				.flatMap(a -> Arrays.stream(a).boxed())
+				.mapToLong(Long::valueOf)
+				.toArray();
+		assertTrue(Arrays.stream(allTs).mapToObj(t -> txnIdOf(t).toGrpc()).allMatch(txnHistories::containsKey));
+		// and:
+		assertTrue(txnHistories.values().stream().noneMatch(TxnIdRecentHistory::isStagePending));
 	}
 
 	private void givenAccount(long num, long[] historicalExpiries, long[] payerExpiries) {
@@ -241,24 +238,22 @@ class ExpiryManagerTest {
 		txnHistories.put(txnIdOf(givenPayerNum).toGrpc(), history);
 
 		// when:
-		subject.stage(rec, givenPayerNum);
-		subject.stage(rec, givenPayerNum);
-		subject.stage(rec, 3L);
-		subject.stage(rec, 4L);
-		subject.stage(rec, givenPayerNum);
+		subject.stage(rec);
+		subject.stage(rec);
+		subject.stage(rec);
+		subject.stage(rec);
+		subject.stage(rec);
 
 		// then:
-		verify(history, times(3)).stage(rec, UNKNOWN_SUBMITTING_MEMBER);
-		verify(history).stage(rec, 0L);
-		verify(history).stage(rec, 1L);
+		verify(history, times(5)).stage(rec);
 	}
 
 	private ExpirableTxnRecord withPayer(long num) {
 		return new ExpirableTxnRecord(
-				null,
-				null,
+				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
+				"NOPE".getBytes(),
 				txnIdOf(num),
-				null,
+				RichInstant.fromJava(Instant.now()),
 				null,
 				0,
 				null,
@@ -271,10 +266,10 @@ class ExpiryManagerTest {
 		var grpcTxn = txnIdOf(t).toGrpc();
 		txnHistories.put(grpcTxn, mock(TxnIdRecentHistory.class));
 		var r = new ExpirableTxnRecord(
-				null,
-				null,
+				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
+				"NOPE".getBytes(),
 				txnIdOf(t),
-				null,
+				RichInstant.fromJava(Instant.now()),
 				null,
 				0,
 				null,

@@ -7,7 +7,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 
@@ -16,27 +15,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.LongStream;
-
-import static com.hedera.services.records.TxnIdRecentHistory.UNKNOWN_SUBMITTING_MEMBER;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
-import static java.util.stream.Collectors.toMap;
 
 public class ExpiryManager {
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-
-	final Map<AccountID, Long> lookup;
 
 	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
 	MonotonicFullQueueExpiries<Long> historicalExpiries = new MonotonicFullQueueExpiries<>();
 
-	public ExpiryManager(
-			AddressBook book,
-			Map<TransactionID, TxnIdRecentHistory> txnHistories
-	) {
-		lookup = toMemberLookup(book);
+	public ExpiryManager(Map<TransactionID, TxnIdRecentHistory> txnHistories) {
 		this.txnHistories = txnHistories;
 	}
 
@@ -61,14 +48,8 @@ public class ExpiryManager {
 		_historicalExpiries.sort(cmp);
 		_payerExpiries.forEach(entry -> payerExpiries.track(entry.getKey(), entry.getValue()));
 		_historicalExpiries.forEach(entry -> historicalExpiries.track(entry.getKey(), entry.getValue()));
-	}
 
-	Map<AccountID, Long> toMemberLookup(AddressBook book) {
-		return LongStream.range(0, book.getSize())
-				.boxed()
-				.collect(toMap(
-						l -> accountParsedFromString(book.getAddress(l).getMemo()),
-						Function.identity()));
+		txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
 	}
 
 	private void addUniqueExpiries(
@@ -78,6 +59,7 @@ public class ExpiryManager {
 	) {
 		long lastAdded = -1;
 		for (ExpirableTxnRecord record : records) {
+			stage(record);
 			var expiry = record.getExpiry();
 			if (expiry != lastAdded) {
 				expiries.add(new AbstractMap.SimpleImmutableEntry<>(num, expiry));
@@ -86,11 +68,9 @@ public class ExpiryManager {
 		}
 	}
 
-	void stage(ExpirableTxnRecord record, Long owningAccountNum) {
+	void stage(ExpirableTxnRecord record) {
 		var txnId = record.getTxnId().toGrpc();
-		long bestGuessMember = (record.getTxnId().getPayerAccount().num() == owningAccountNum)
-				? UNKNOWN_SUBMITTING_MEMBER : lookup.get(accountWith(owningAccountNum));
-		txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(record, bestGuessMember);
+		txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(record);
 	}
 
 	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {

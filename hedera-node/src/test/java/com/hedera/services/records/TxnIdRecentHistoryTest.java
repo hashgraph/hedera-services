@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
@@ -43,13 +42,13 @@ class TxnIdRecentHistoryTest {
 	@Test
 	public void getsMemory() {
 		// given:
-		subject.classifiableRecords = List.of(mock(TxnIdRecentHistory.SubmissionRecord.class));
+		subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));
 		// expect:
 		assertFalse(subject.isForgotten());
 
 		// and given:
 		subject.classifiableRecords = null;
-		subject.unclassifiableRecords = List.of(mock(TxnIdRecentHistory.SubmissionRecord.class));
+		subject.unclassifiableRecords = List.of(mock(ExpirableTxnRecord.class));
 		// expect:
 		assertFalse(subject.isForgotten());
 
@@ -62,20 +61,18 @@ class TxnIdRecentHistoryTest {
 	@Test
 	public void returnsExpectedLegacyQueryableRecord() {
 		// setup:
-		var record = mock(ExpirableTxnRecord.class);
-		var classifiableSr = mock(TxnIdRecentHistory.SubmissionRecord.class);
-		given(classifiableSr.getRecord()).willReturn(record);
-		var unclassifiableSr = mock(TxnIdRecentHistory.SubmissionRecord.class);
+		var classifiable = mock(ExpirableTxnRecord.class);
+		var unclassifiable = mock(ExpirableTxnRecord.class);
 
 		// expect:
 		assertNull(subject.legacyQueryableRecord());
 		// and given:
-		subject.unclassifiableRecords = List.of(unclassifiableSr);
+		subject.unclassifiableRecords = List.of(unclassifiable);
 		// expect:
 		assertNull(subject.legacyQueryableRecord());
 		// and given:
-		subject.classifiableRecords = List.of(classifiableSr);
-		Assertions.assertSame(record, subject.legacyQueryableRecord());
+		subject.classifiableRecords = List.of(classifiable);
+		Assertions.assertSame(classifiable, subject.legacyQueryableRecord());
 	}
 
 	@Test
@@ -83,14 +80,14 @@ class TxnIdRecentHistoryTest {
 		// given:
 		subject.observe(
 				recordOf(0, 0, INVALID_NODE_ACCOUNT),
-				INVALID_NODE_ACCOUNT, 1);
+				INVALID_NODE_ACCOUNT);
 		// expect:
 		assertEquals(BELIEVED_UNIQUE, subject.currentDuplicityFor(1));
 
 		// and given:
 		subject.observe(
 				recordOf(1, 1, SUCCESS),
-				SUCCESS, 1);
+				SUCCESS);
 		// expect:
 		assertEquals(NODE_DUPLICATE, subject.currentDuplicityFor(1));
 		assertEquals(DUPLICATE, subject.currentDuplicityFor(2));
@@ -99,30 +96,14 @@ class TxnIdRecentHistoryTest {
 	@Test
 	public void restoresFromStagedAsExpected() {
 		// given:
-		subject.stage(
-				recordOf(2, 7, INVALID_NODE_ACCOUNT),
-				2);
-		subject.stage(
-				recordOf(1, 1, SUCCESS),
-				1);
-		subject.stage(
-				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
-				1);
-		subject.stage(
-				recordOf(2, 3, DUPLICATE_TRANSACTION),
-				2);
-		subject.stage(
-				recordOf(1, 2, DUPLICATE_TRANSACTION),
-				1);
-		subject.stage(
-				recordOf(3, 5, DUPLICATE_TRANSACTION),
-				3);
-		subject.stage(
-				recordOf(1, 6, INVALID_PAYER_SIGNATURE),
-				1);
-		subject.stage(
-				recordOf(2, 4, DUPLICATE_TRANSACTION),
-				2);
+		subject.stage(recordOf(2, 7, INVALID_NODE_ACCOUNT));
+		subject.stage(recordOf(1, 1, SUCCESS));
+		subject.stage(recordOf(1, 0, INVALID_PAYER_SIGNATURE));
+		subject.stage(recordOf(2, 3, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(1, 2, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(3, 5, DUPLICATE_TRANSACTION));
+		subject.stage(recordOf(1, 6, INVALID_PAYER_SIGNATURE));
+		subject.stage(recordOf(2, 4, DUPLICATE_TRANSACTION));
 
 		// when:
 		subject.observeStaged();
@@ -135,14 +116,14 @@ class TxnIdRecentHistoryTest {
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
 						memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
 						memoIdentifying(2, 4, DUPLICATE_TRANSACTION)
-				), subject.classifiableRecords.stream().map(sr -> sr.record.getMemo()).collect(toList()));
+				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
 		// and:
 		assertEquals(
 				List.of(
 						memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), subject.unclassifiableRecords.stream().map(sr -> sr.record.getMemo()).collect(toList()));
+				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
 		// and:
 		assertNull(subject.memory);
 	}
@@ -152,28 +133,28 @@ class TxnIdRecentHistoryTest {
 		// given:
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
-				INVALID_PAYER_SIGNATURE, 1);
+				INVALID_PAYER_SIGNATURE);
 		subject.observe(
 				recordOf(1, 1, SUCCESS),
-				SUCCESS, 1);
+				SUCCESS);
 		subject.observe(
 				recordOf(1, 2, DUPLICATE_TRANSACTION),
-				DUPLICATE_TRANSACTION, 1);
+				DUPLICATE_TRANSACTION);
 		subject.observe(
 				recordOf(2, 3, DUPLICATE_TRANSACTION),
-				DUPLICATE_TRANSACTION, 2);
+				DUPLICATE_TRANSACTION);
 		subject.observe(
 				recordOf(2, 4, DUPLICATE_TRANSACTION),
-				DUPLICATE_TRANSACTION, 2);
+				DUPLICATE_TRANSACTION);
 		subject.observe(
 				recordOf(3, 5, DUPLICATE_TRANSACTION),
-				DUPLICATE_TRANSACTION, 3);
+				DUPLICATE_TRANSACTION);
 		subject.observe(
 				recordOf(1, 6, INVALID_PAYER_SIGNATURE),
-				INVALID_PAYER_SIGNATURE, 1);
+				INVALID_PAYER_SIGNATURE);
 		subject.observe(
 				recordOf(2, 7, INVALID_NODE_ACCOUNT),
-				INVALID_NODE_ACCOUNT, 2);
+				INVALID_NODE_ACCOUNT);
 
 		// when:
 		subject.forgetExpiredAt(expiryAtOffset(4));
@@ -182,13 +163,13 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				List.of(
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
-				), subject.classifiableRecords.stream().map(sr -> sr.record.getMemo()).collect(toList()));
+				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
 		// and:
 		assertEquals(
 				List.of(
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), subject.unclassifiableRecords.stream().map(sr -> sr.record.getMemo()).collect(toList()));
+				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
 	}
 
 	private ExpirableTxnRecord recordOf(
@@ -202,6 +183,7 @@ class TxnIdRecentHistoryTest {
 				.build();
 		var expirableRecord = ExpirableTxnRecord.fromGprc(payerRecord);
 		expirableRecord.setExpiry(expiryAtOffset(consensusOffsetSecs));
+		expirableRecord.setSubmittingMember(submittingMember);
 		return expirableRecord;
 	}
 

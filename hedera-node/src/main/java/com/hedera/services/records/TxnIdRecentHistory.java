@@ -3,9 +3,7 @@ package com.hedera.services.records;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.txns.diligence.DuplicateClassification;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,12 +21,14 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingLong;
 
 public class TxnIdRecentHistory {
-	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
+	private static final Comparator<RichInstant> RI_CMP =
+			comparingLong(RichInstant::getSeconds).thenComparingInt(RichInstant::getNanos);
+	private static final Comparator<ExpirableTxnRecord> SR_CMP = comparing(r -> r.getConsensusTimestamp(), RI_CMP);
 
 	int numDuplicates = 0;
-	List<SubmissionRecord> memory = null;
-	List<SubmissionRecord> classifiableRecords = null;
-	List<SubmissionRecord> unclassifiableRecords = null;
+	List<ExpirableTxnRecord> memory = null;
+	List<ExpirableTxnRecord> classifiableRecords = null;
+	List<ExpirableTxnRecord> unclassifiableRecords = null;
 
 	public static final EnumSet<ResponseCodeEnum> UNCLASSIFIABLE_STATUSES = EnumSet.of(
 		INVALID_NODE_ACCOUNT,
@@ -36,9 +36,13 @@ public class TxnIdRecentHistory {
 
 	public ExpirableTxnRecord legacyQueryableRecord() {
 		if (classifiableRecords != null && !classifiableRecords.isEmpty()) {
-			return classifiableRecords.get(0).getRecord();
+			return classifiableRecords.get(0);
 		}
 		return null;
+	}
+
+	public boolean isStagePending() {
+		return memory != null;
 	}
 
 	public boolean isForgotten() {
@@ -46,60 +50,55 @@ public class TxnIdRecentHistory {
 				&& (unclassifiableRecords == null || unclassifiableRecords.isEmpty());
 	}
 
-	public void observe(ExpirableTxnRecord record, ResponseCodeEnum status, long submittingMember) {
+	public void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
 		if (UNCLASSIFIABLE_STATUSES.contains(status)) {
-			addUnclassifiable(record, submittingMember);
+			addUnclassifiable(record);
 		} else {
-			addClassifiable(record, submittingMember);
+			addClassifiable(record);
 		}
 	}
 
-	public void stage(ExpirableTxnRecord unorderedRecord, long submittingMember) {
+	public void stage(ExpirableTxnRecord unorderedRecord) {
 		if (memory == null) {
 			memory = new ArrayList<>();
 		}
-		memory.add(new SubmissionRecord(unorderedRecord, submittingMember));
+		memory.add(unorderedRecord);
 	}
 
 	public void observeStaged() {
-		Comparator<RichInstant>	riCmp = comparingLong(RichInstant::getSeconds).thenComparingInt(RichInstant::getNanos);
-		Comparator<SubmissionRecord> cmp = comparing(r -> r.getRecord().getConsensusTimestamp(), riCmp);
-		memory.sort(cmp);
-		memory.forEach(sr -> this.observe(
-				sr.record,
-				ResponseCodeEnum.valueOf(sr.record.getReceipt().getStatus()),
-				sr.submittingMember));
+		memory.sort(SR_CMP);
+		memory.forEach(record -> this.observe(record, ResponseCodeEnum.valueOf(record.getReceipt().getStatus())));
 		memory = null;
 	}
 
-	private void addClassifiable(ExpirableTxnRecord record, long submittingMember) {
+	private void addClassifiable(ExpirableTxnRecord record) {
 		if (classifiableRecords == null) {
 			classifiableRecords = new LinkedList<>();
 		}
 		int i = 0;
+		long submittingMember = record.getSubmittingMember();
 		var iter = classifiableRecords.listIterator();
-		var submissionRecord = new SubmissionRecord(record, submittingMember);
 		boolean isNodeDuplicate = false;
 		while (i < numDuplicates) {
-			if (submittingMember == iter.next().submittingMember) {
+			if (submittingMember == iter.next().getSubmittingMember()) {
 				isNodeDuplicate = true;
 				break;
 			}
 			i++;
 		}
 		if (isNodeDuplicate) {
-			classifiableRecords.add(submissionRecord);
+			classifiableRecords.add(record);
 		} else {
 			numDuplicates++;
-			iter.add(submissionRecord);
+			iter.add(record);
 		}
 	}
 
-	private void addUnclassifiable(ExpirableTxnRecord record, long submittingMember) {
+	private void addUnclassifiable(ExpirableTxnRecord record) {
 		if (unclassifiableRecords == null) {
 			unclassifiableRecords = new LinkedList<>();
 		}
-		unclassifiableRecords.add(new SubmissionRecord(record, submittingMember));
+		unclassifiableRecords.add(record);
 	}
 
 	public void forgetExpiredAt(long now) {
@@ -107,8 +106,8 @@ public class TxnIdRecentHistory {
 		Optional.ofNullable(unclassifiableRecords).ifPresent(l -> forgetFromList(l, now));
 	}
 
-	private void forgetFromList(List<SubmissionRecord> records, long now) {
-		records.removeIf(sr -> sr.record.getExpiry() <= now);
+	private void forgetFromList(List<ExpirableTxnRecord> records, long now) {
+		records.removeIf(record -> record.getExpiry() <= now);
 	}
 
 	public DuplicateClassification currentDuplicityFor(long submittingMember) {
@@ -117,24 +116,10 @@ public class TxnIdRecentHistory {
 		}
 		var iter = classifiableRecords.listIterator();
 		for (int i = 0; i < numDuplicates; i++) {
-			if (iter.next().submittingMember == submittingMember) {
+			if (iter.next().getSubmittingMember() == submittingMember) {
 				return NODE_DUPLICATE;
 			}
 		}
 		return DUPLICATE;
-	}
-
-	static class SubmissionRecord {
-		final long submittingMember;
-		final ExpirableTxnRecord record;
-
-		public ExpirableTxnRecord getRecord() {
-			return record;
-		}
-
-		public SubmissionRecord(ExpirableTxnRecord record, long submittingMember) {
-			this.submittingMember = submittingMember;
-			this.record = record;
-		}
 	}
 }

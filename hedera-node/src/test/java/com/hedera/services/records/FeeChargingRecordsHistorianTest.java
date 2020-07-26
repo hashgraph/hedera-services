@@ -9,9 +9,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -136,10 +136,13 @@ public class FeeChargingRecordsHistorianTest {
 			.setMemo("This is different!")
 			.build();
 	final private ExpirableTxnRecord jFinalRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+
 	{
 		jFinalRecord.setExpiry(expiry);
 	}
+
 	final private ExpirableTxnRecord payerRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+
 	{
 		payerRecord.setExpiry(payerExpiry);
 	}
@@ -175,7 +178,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator).createExpiringHistoricalRecord(
 				argThat(asAccount(duplicateContract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -190,7 +194,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator).createExpiringHistoricalRecord(
 				argThat(asAccount(contract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -205,7 +210,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator).createExpiringHistoricalRecord(
 				argThat(asAccount(contract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 		verify(txnCtx, times(2)).recordSoFar();
 	}
 
@@ -221,7 +227,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator, never()).createExpiringHistoricalRecord(
 				argThat(asAccount(contract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -236,7 +243,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator, never()).createExpiringHistoricalRecord(
 				argThat(asAccount(contract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -252,7 +260,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator, never()).createExpiringHistoricalRecord(
 				argThat(asAccount(contract)::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -275,7 +284,8 @@ public class FeeChargingRecordsHistorianTest {
 		verify(creator, never()).createExpiringHistoricalRecord(
 				argThat(b::equals),
 				any(),
-				longThat(l -> l == now.getEpochSecond()));
+				longThat(l -> l == now.getEpochSecond()),
+				longThat(k -> k == submittingMember));
 	}
 
 	@Test
@@ -305,8 +315,7 @@ public class FeeChargingRecordsHistorianTest {
 		verify(recordCache).setPostConsensus(
 				txnIdA,
 				finalRecord.getReceipt().getStatus(),
-				payerRecord,
-				submittingMember);
+				payerRecord);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
 		verify(ledger).netTransfersInTxn();
@@ -328,10 +337,11 @@ public class FeeChargingRecordsHistorianTest {
 		verify(properties, never()).getIntProperty("ledger.records.ttl");
 		verify(txnCtx, times(1)).consensusTime();
 		// and:
-		verify(creator).createExpiringHistoricalRecord(b, finalRecord, now.getEpochSecond());
-		verify(creator).createExpiringHistoricalRecord(c, finalRecord, now.getEpochSecond());
-		verify(creator).createExpiringHistoricalRecord(d, finalRecord, now.getEpochSecond());
-		verify(creator, never()).createExpiringHistoricalRecord(asAccount(contract), finalRecord, now.getEpochSecond());
+		verify(creator).createExpiringHistoricalRecord(b, finalRecord, now.getEpochSecond(), submittingMember);
+		verify(creator).createExpiringHistoricalRecord(c, finalRecord, now.getEpochSecond(), submittingMember);
+		verify(creator).createExpiringHistoricalRecord(d, finalRecord, now.getEpochSecond(), submittingMember);
+		verify(creator, never()).createExpiringHistoricalRecord(
+				asAccount(contract), finalRecord, now.getEpochSecond(), submittingMember);
 		verify(ledger, never()).addRecord(b, jFinalRecord);
 		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, b));
 		verify(ledger, never()).addRecord(c, jFinalRecord);
@@ -342,7 +352,7 @@ public class FeeChargingRecordsHistorianTest {
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 		// and:
-		verify(creator).createExpiringPayerRecord(effPayer, finalRecord, nows);
+		verify(creator).createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember);
 	}
 
 	@Test
@@ -464,7 +474,7 @@ public class FeeChargingRecordsHistorianTest {
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
 
 		creator = mock(ExpiringCreations.class);
-		given(creator.createExpiringPayerRecord(effPayer, finalRecord, nows)).willReturn(payerRecord);
+		given(creator.createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
 		TransactionBody txn = mock(TransactionBody.class);
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
@@ -545,15 +555,15 @@ public class FeeChargingRecordsHistorianTest {
 				value,
 				asFcq(IntStream.range(0, expiries.size()).mapToObj(i -> {
 					ExpirableTxnRecord record = new ExpirableTxnRecord(
-						null,
-						new byte[0],
-						TxnId.fromGrpc(txnIds.get(i)),
-						RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(consensusTimes.get(i)).build()),
-						"",
-						0L,
-						null,
-						null,
-						null);
+							null,
+							new byte[0],
+							TxnId.fromGrpc(txnIds.get(i)),
+							RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(consensusTimes.get(i)).build()),
+							"",
+							0L,
+							null,
+							null,
+							null);
 					record.setExpiry(expiries.get(i));
 					return record;
 				}).collect(Collectors.toCollection(LinkedList::new))));

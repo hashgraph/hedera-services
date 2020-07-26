@@ -68,11 +68,10 @@ public class RecordCache {
 	public void setPostConsensus(
 			TransactionID txnId,
 			ResponseCodeEnum status,
-			ExpirableTxnRecord record,
-			long submittingMember
+			ExpirableTxnRecord record
 	) {
 		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, status, submittingMember);
+		recentHistory.observe(record, status);
 	}
 
 	public void setFailInvalid(
@@ -92,9 +91,10 @@ public class RecordCache {
 		var record = creator.createExpiringPayerRecord(
 				effectivePayer,
 				grpc,
-				consensusTimestamp.getEpochSecond());
+				consensusTimestamp.getEpochSecond(),
+				submittingMember);
 		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, FAIL_INVALID, submittingMember);
+		recentHistory.observe(record, FAIL_INVALID);
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
