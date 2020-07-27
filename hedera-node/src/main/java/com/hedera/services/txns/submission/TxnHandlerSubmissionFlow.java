@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.apache.logging.log4j.LogManager;

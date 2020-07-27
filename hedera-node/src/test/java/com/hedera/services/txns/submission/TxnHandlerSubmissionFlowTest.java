@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +48,6 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)

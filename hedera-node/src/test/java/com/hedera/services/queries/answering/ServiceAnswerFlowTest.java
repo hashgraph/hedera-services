@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;

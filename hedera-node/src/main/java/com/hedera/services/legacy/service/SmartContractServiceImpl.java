@@ -58,7 +58,6 @@ import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.config.PropertiesLoader;

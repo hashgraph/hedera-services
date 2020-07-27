@@ -63,7 +63,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
