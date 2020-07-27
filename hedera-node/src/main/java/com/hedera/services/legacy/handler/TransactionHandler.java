@@ -597,12 +597,12 @@ public class TransactionHandler {
 
   /**
    * Submits transaction to platform.
+   * Returns whether a platform transaction was created successfully.
+   * Update stat when a platform transaction was NOT created.
    *
    * @param request       tx to be submitted
    * @param txnId request tx id
-   * @throws PlatformTransactionCreationException thrown when transaction not created by platform
-   *                                              due to either large backlog or message size
-   *                                              exceeded transactionMaxBytes
+   *
    */
   public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
