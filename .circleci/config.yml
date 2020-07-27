@@ -122,8 +122,8 @@ commands:
       - run:
           name: Fetch stats from spot nodes
           command: |
-            /repo/.circleci/scripts/collect-node-stats.sh \
-              '<< parameters.append-to-last-stats >>'
+              /repo/.circleci/scripts/collect-node-stats.sh \
+                '<< parameters.append-to-last-stats >>'
       - when:
           condition: << parameters.publish-to-slack >>
           steps:
@@ -140,8 +140,8 @@ commands:
             - run:
                 name: 'Upload the PDF to Slack #hedera-regression channel'
                 command: |
-                    /repo/.circleci/scripts/publish-stats-pdf-to-slack.sh \
-                       "<< parameters.source-desc >>"
+                  /repo/.circleci/scripts/publish-stats-pdf-to-slack.sh \
+                     "<< parameters.source-desc >>"
   svc-app-slack-msg:
     description: Send a message to Slack via the Services Regression app
     parameters:
@@ -363,9 +363,9 @@ commands:
           steps:
             - run: echo "Need to create new spot test net"
             - provision-testnet-hosts:
-                 liveness-timeout-secs: 120
-                 var-file: '<< parameters.var-file >>'
-                 var-region: "us-west-2"
+                liveness-timeout-secs: 120
+                var-file: '<< parameters.var-file >>'
+                var-region: "us-west-2"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
@@ -888,6 +888,28 @@ executors:
     working_directory: /repo
 
 workflows:
+  custom-migration:
+    triggers:
+      - schedule:
+          cron: "0 20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - fast-build-artifact
+      - regression-target-testnet:
+          requires:
+            - fast-build-artifact
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - start-testnet:
+                use-existing-network: true
+                use-hugepage: true
+      - run-custom-migration:
+          requires:
+            - regression-target-testnet
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -2630,3 +2652,22 @@ jobs:
           name: Show swirlds logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+  run-custom-migration:
+    parameters:
+      custom-migration-params:
+        type: string
+        description: parameters for customMigration script
+        default: '/repo/.circleci/scripts/resources/customMigrationConfig.json'
+    executor:
+      name: ci-test-executor
+      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
+      tf_workspace: "net-new-regression"
+      use_existing_network: "1"
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: /
+      - run:
+          name: Run Custom Migration Script
+          command: |
+            /repo/.circleci/scripts/run-custom-migration-script.sh
