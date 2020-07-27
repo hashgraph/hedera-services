@@ -154,8 +154,8 @@ public class HederaLedger {
 	}
 
 	public void doTransfer(AccountID from, AccountID to, long adjustment) {
-		var newFromBalance = computeNewBalance(from, -1 * adjustment);
-		var newToBalance = computeNewBalance(to, adjustment);
+		long newFromBalance = computeNewBalance(from, -1 * adjustment);
+		long newToBalance = computeNewBalance(to, adjustment);
 		setBalance(from, newFromBalance);
 		setBalance(to, newToBalance);
 	}
