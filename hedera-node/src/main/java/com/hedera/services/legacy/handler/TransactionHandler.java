@@ -21,6 +21,7 @@ package com.hedera.services.legacy.handler;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
@@ -124,6 +125,7 @@ public class TransactionHandler {
   private Supplier<StateView> stateView;
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
+  private HederaNodeStats stats;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -168,7 +170,7 @@ public class TransactionHandler {
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null);
+            null, null, null, null, null);
   }
 
   public TransactionHandler(
@@ -183,7 +185,8 @@ public class TransactionHandler {
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
-          FunctionalityThrottling throttling
+          FunctionalityThrottling throttling,
+          HederaNodeStats stats
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -197,6 +200,7 @@ public class TransactionHandler {
     this.usagePrices = usagePrices;
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
+    this.stats = stats;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -606,6 +610,7 @@ public class TransactionHandler {
     if (created) {
       recordCache.addPreConsensus(txnId);
     } else {
+      stats.platformTxnNotCreated();
     }
     return created;
   }
