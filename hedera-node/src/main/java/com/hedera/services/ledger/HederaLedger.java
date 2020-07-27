@@ -154,15 +154,10 @@ public class HederaLedger {
 	}
 
 	public void doTransfer(AccountID from, AccountID to, long adjustment) {
-		TransferList inListForm = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(from)
-						.setAmount(-1 * adjustment))
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(to)
-						.setAmount(adjustment))
-				.build();
-		doTransfers(inListForm);
+		long newFromBalance = computeNewBalance(from, -1 * adjustment);
+		long newToBalance = computeNewBalance(to, adjustment);
+		setBalance(from, newFromBalance);
+		setBalance(to, newToBalance);
 	}
 
 	public void doTransfers(TransferList accountAmounts) {
