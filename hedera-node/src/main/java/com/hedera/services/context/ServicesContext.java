@@ -233,9 +233,11 @@ import java.io.PrintStream;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -301,6 +303,7 @@ public class ServicesContext {
 	private PropertySource properties;
 	private EntityIdSource ids;
 	private FileController fileGrpc;
+	private Set<AccountID> knownAccounts;
 	private AnswerFunctions answerFunctions;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
@@ -812,14 +815,21 @@ public class ServicesContext {
 		return exchange;
 	}
 
+	public Set<AccountID> knownAccounts() {
+		if (knownAccounts == null) {
+			knownAccounts = new HashSet<>();
+		}
+		return knownAccounts;
+	}
+
 	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new FCMapBackingAccounts(accounts()),
-					new ChangeSummaryManager<>()
-			);
+					new FCMapBackingAccounts(knownAccounts(), accounts()),
+					new ChangeSummaryManager<>());
+			delegate.setKnownAccounts(knownAccounts());
 			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(ids(), recordsHistorian(), duplicateClassifier(), delegate);
 		}

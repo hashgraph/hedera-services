@@ -117,6 +117,7 @@ import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -343,6 +344,7 @@ public class ServicesContextTest {
 		assertThat(ctx.lookupRetryingKeyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.nodeDuplicateClassifier(), instanceOf(PerNodeDuplicateClassifier.class));
 		assertThat(ctx.soliditySigsVerifier(), instanceOf(TxnAwareSoliditySigsVerifier.class));
+		assertThat(ctx.knownAccounts(), instanceOf(Set.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

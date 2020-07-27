@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -37,8 +38,10 @@ import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static java.util.stream.Collectors.joining;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,6 +60,8 @@ import org.apache.logging.log4j.Logger;
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
+	final Set<K> NO_KNOWN_ACCOUNTS = Collections.emptySet();
+
 	private final Set<K> deadAccounts = new HashSet<>();
 	private final Class<P> propertyType;
 	private final Supplier<A> newAccount;
@@ -66,6 +71,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	final Map<K, A> mutableRefs = new HashMap<>();
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
+
+	Set<K> knownAccounts = NO_KNOWN_ACCOUNTS;
+	Set<K> createdThisTxn = NO_KNOWN_ACCOUNTS;
 
 	private boolean isInTransaction = false;
 	private Optional<Comparator<K>> keyComparator = Optional.empty();
@@ -81,6 +89,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		this.accounts = accounts;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
+	}
+
+	public void setKnownAccounts(Set<K> knownAccounts) {
+		this.knownAccounts = knownAccounts;
+		createdThisTxn = new HashSet<>();
 	}
 
 	public void setKeyComparator(Comparator<K> keyComparator) {
@@ -102,6 +115,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		mutableRefs.clear();
 		deadAccounts.clear();
 		isInTransaction = false;
+		if (knownAccounts != NO_KNOWN_ACCOUNTS) {
+			createdThisTxn.clear();
+		}
 	}
 
 	void commit() {
@@ -125,6 +141,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					? deadAccounts.stream().sorted(keyComparator.get())
 					: deadAccounts.stream();
 			deadKeys.forEach(accounts::remove);
+
+			if (knownAccounts != NO_KNOWN_ACCOUNTS) {
+				knownAccounts.addAll(createdThisTxn);
+				knownAccounts.removeAll(deadAccounts);
+				createdThisTxn.clear();
+			}
 			deadAccounts.clear();
 
 			isInTransaction = false;
@@ -132,8 +154,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			String changeDesc = "<N/A>";
 			try {
 				changeDesc = changeSetSoFar();
-			} catch (Exception ignore) {
-				log.warn(ignore.getMessage());
+			} catch (Exception f) {
+				log.warn("Unable to reconstruct change set!", f);
 			}
 			log.error("Catastrophic failure during commit of {}!", changeDesc);
 			throw e;
@@ -237,6 +259,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public void create(K id) {
 		assertIsCreatable(id);
+		if (createdThisTxn != NO_KNOWN_ACCOUNTS) {
+			createdThisTxn.add(id);
+		}
 		changes.put(id, new EnumMap<>(propertyType));
 	}
 

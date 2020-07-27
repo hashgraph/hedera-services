@@ -25,13 +25,38 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoAccountId;
 
 public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount> {
+	static final Set<AccountID> NO_KNOWN_ACCOUNTS = Collections.emptySet();
+
+	Set<AccountID> knownAccounts = NO_KNOWN_ACCOUNTS;
 	private final FCMap<MerkleEntityId, MerkleAccount> delegate;
 
 	public FCMapBackingAccounts(FCMap<MerkleEntityId, MerkleAccount> delegate) {
 		this.delegate = delegate;
+	}
+
+	public FCMapBackingAccounts(
+			Set<AccountID> knownAccounts,
+			FCMap<MerkleEntityId, MerkleAccount> delegate
+	) {
+		this.delegate = delegate;
+		this.knownAccounts = knownAccounts;
+		initializeKnownAccounts(delegate, knownAccounts);
+	}
+
+	static void initializeKnownAccounts(FCMap<MerkleEntityId, MerkleAccount> source, Set<AccountID> dest) {
+		source.keySet().stream()
+				.map(id -> AccountID.newBuilder()
+						.setShardNum(id.getShard())
+						.setRealmNum(id.getRealm())
+						.setAccountNum(id.getNum())
+						.build())
+				.forEach(dest::add);
 	}
 
 	@Override
@@ -56,7 +81,9 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 
 	@Override
 	public boolean contains(AccountID id) {
-		return delegate.containsKey(fromPojoAccountId(id));
+		return knownAccounts == NO_KNOWN_ACCOUNTS
+				? delegate.containsKey(fromPojoAccountId(id))
+				: knownAccounts.contains(id);
 	}
 
 	@Override

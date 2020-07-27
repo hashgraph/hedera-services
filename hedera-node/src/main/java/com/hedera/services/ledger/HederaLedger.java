@@ -76,9 +76,9 @@ public class HederaLedger {
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
-			.comparing(AccountID::getAccountNum)
-			.thenComparing(AccountID::getShardNum)
-			.thenComparing(AccountID::getRealmNum);
+			.comparingLong(AccountID::getAccountNum)
+			.thenComparingLong(AccountID::getShardNum)
+			.thenComparingLong(AccountID::getRealmNum);
 
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
@@ -154,15 +154,10 @@ public class HederaLedger {
 	}
 
 	public void doTransfer(AccountID from, AccountID to, long adjustment) {
-		TransferList inListForm = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(from)
-						.setAmount(-1 * adjustment))
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(to)
-						.setAmount(adjustment))
-				.build();
-		doTransfers(inListForm);
+		var newFromBalance = computeNewBalance(from, -1 * adjustment);
+		var newToBalance = computeNewBalance(to, adjustment);
+		setBalance(from, newFromBalance);
+		setBalance(to, newToBalance);
 	}
 
 	public void doTransfers(TransferList accountAmounts) {

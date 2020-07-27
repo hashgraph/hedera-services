@@ -30,7 +30,9 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
@@ -46,6 +48,7 @@ import org.mockito.InOrder;
 
 @RunWith(JUnitPlatform.class)
 public class TransactionalLedgerTest {
+	Set<Long> knownAccounts, createdThisTxn;
 	Supplier<TestAccount> newAccountFactory;
 	BackingAccounts<Long, TestAccount> backingAccounts;
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
@@ -56,6 +59,8 @@ public class TransactionalLedgerTest {
 
 	@BeforeEach
 	private void setup() {
+		createdThisTxn = new HashSet<>();
+		knownAccounts = new HashSet<>();
 		backingAccounts = mock(BackingAccounts.class);
 		given(backingAccounts.getUnsafeRef(1L)).willReturn(account1);
 		given(backingAccounts.getMutableRef(1L)).willReturn(account1);
@@ -64,6 +69,43 @@ public class TransactionalLedgerTest {
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
+	}
+
+	@Test
+	public void whenNoKnownAccountsIsThereResetsCreated() {
+		// setup:
+		createdThisTxn = mock(Set.class);
+
+		// given:
+		subject.createdThisTxn = createdThisTxn;
+		subject.begin();
+
+		// when:
+		subject.create(222L);
+		// and:
+		subject.rollback();
+
+		// then:
+		verify(createdThisTxn, never()).clear();
+	}
+
+	@Test
+	public void whenKnownAccountsIsThereResetsCreated() {
+		// setup:
+		createdThisTxn = mock(Set.class);
+
+		// given:
+		subject.setKnownAccounts(knownAccounts);
+		subject.createdThisTxn = createdThisTxn;
+		subject.begin();
+
+		// when:
+		subject.create(222L);
+		// and:
+		subject.rollback();
+
+		// then:
+		verify(createdThisTxn).clear();
 	}
 
 	@Test
@@ -435,6 +477,9 @@ public class TransactionalLedgerTest {
 
 	@Test
 	public void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
+		// setup:
+		subject.setKnownAccounts(knownAccounts);
+
 		// given:
 		subject.begin();
 
@@ -452,6 +497,9 @@ public class TransactionalLedgerTest {
 		// expect:
 		assertFalse(subject.isInTransaction());
 		assertEquals("{}", subject.changeSetSoFar());
+		// and:
+		assertTrue(knownAccounts.contains(2L));
+		assertFalse(knownAccounts.contains(3L));
 		// and:
 		verify(backingAccounts).replace(1L, new TestAccount(account1.value, things[0], account1.flag));
 		verify(backingAccounts).replace(2L, new TestAccount(2L, things[2], false));

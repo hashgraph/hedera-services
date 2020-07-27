@@ -31,6 +31,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+
+import java.util.Collection;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -44,14 +50,31 @@ class FCMapBackingAccountsTest {
 	private final MerkleAccount aValue = MapValueFactory.newAccount().balance(123L).get();
 	private final MerkleAccount bValue = MapValueFactory.newAccount().balance(122L).get();
 
-	private FCMap map;
+	private Set<AccountID> knownAccounts;
+	private FCMap<MerkleEntityId, MerkleAccount> map;
 	private FCMapBackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
+		knownAccounts = (Set<AccountID>)mock(Set.class);
 		map = mock(FCMap.class);
 
-		subject = new FCMapBackingAccounts(map);
+		subject = new FCMapBackingAccounts(knownAccounts, map);
+	}
+
+	@Test
+	public void initializationWorks() {
+		// setup:
+		Set<MerkleEntityId> actualAccounts = Set.of(aKey, bKey);
+
+		given(map.keySet()).willReturn(actualAccounts);
+
+		// when:
+		FCMapBackingAccounts.initializeKnownAccounts(map, knownAccounts);
+
+		// then:
+		verify(knownAccounts).add(a);
+		verify(knownAccounts).add(b);
 	}
 
 	@Test
@@ -64,7 +87,10 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void usesDelegateContains() {
+	public void usesDelegateIfKnownAccountsUnavail() {
+		// setup:
+		subject.knownAccounts = FCMapBackingAccounts.NO_KNOWN_ACCOUNTS;
+
 		given(map.containsKey(aKey)).willReturn(true);
 		given(map.containsKey(bKey)).willReturn(false);
 
@@ -74,6 +100,24 @@ class FCMapBackingAccountsTest {
 
 		// then:
 		verify(map, times(2)).containsKey(any());
+		verify(knownAccounts, never()).contains(any());
+		// and:
+		assertTrue(hasA);
+		assertFalse(hasB);
+	}
+
+	@Test
+	public void usesKnownAccountsIfAvail() {
+		given(knownAccounts.contains(a)).willReturn(true);
+		given(knownAccounts.contains(b)).willReturn(false);
+
+		// when:
+		boolean hasA = subject.contains(a);
+		boolean hasB = subject.contains(b);
+
+		// then:
+		verify(knownAccounts, times(2)).contains(any());
+		verify(map, never()).containsKey(any());
 		// and:
 		assertTrue(hasA);
 		assertFalse(hasB);
