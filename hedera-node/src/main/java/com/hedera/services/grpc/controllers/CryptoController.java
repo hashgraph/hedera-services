@@ -36,20 +36,20 @@ import org.apache.logging.log4j.Logger;
 public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	private static final Logger log = LogManager.getLogger(CryptoController.class);
 
-	static final String GET_ACCOUNT_INFO_METRIC = "getAccountInfo";
-	static final String GET_ACCOUNT_BALANCE_METRIC = "cryptoGetBalance";
-	static final String GET_ACCOUNT_RECORDS_METRIC = "getAccountRecords";
-	static final String GET_STAKERS_METRIC = "getStakersByAccountID";
-	static final String GET_CLAIM_METRIC = "getClaim";
-	static final String GET_RECEIPT_METRIC = "getTransactionReceipts";
-	static final String GET_RECORD_METRIC = "getTxRecordByTxID";
-	static final String GET_FAST_RECORD_METRIC = "getFastTransactionRecord";
-	static final String CRYPTO_TRANSFER_METRIC = "cryptoTransfer";
-	static final String CRYPTO_DELETE_METRIC = "cryptoDelete";
-	static final String CRYPTO_CREATE_METRIC = "createAccount";
-	static final String CRYPTO_UPDATE_METRIC = "updateAccount";
-	static final String ADD_LIVE_HASH_METRIC = "addLiveHash";
-	static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
+	public static final String GET_ACCOUNT_INFO_METRIC = "getAccountInfo";
+	public static final String GET_ACCOUNT_BALANCE_METRIC = "cryptoGetBalance";
+	public static final String GET_ACCOUNT_RECORDS_METRIC = "getAccountRecords";
+	public static final String GET_STAKERS_METRIC = "getStakersByAccountID";
+	public static final String GET_CLAIM_METRIC = "getClaim";
+	public static final String GET_RECEIPT_METRIC = "getTransactionReceipts";
+	public static final String GET_RECORD_METRIC = "getTxRecordByTxID";
+	public static final String GET_FAST_RECORD_METRIC = "getFastTransactionRecord";
+	public static final String CRYPTO_TRANSFER_METRIC = "cryptoTransfer";
+	public static final String CRYPTO_DELETE_METRIC = "cryptoDelete";
+	public static final String CRYPTO_CREATE_METRIC = "createAccount";
+	public static final String CRYPTO_UPDATE_METRIC = "updateAccount";
+	public static final String ADD_LIVE_HASH_METRIC = "addLiveHash";
+	public static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
 
 	private final MetaAnswers metaAnswers;
 	private final CryptoAnswers cryptoAnswers;

@@ -31,12 +31,6 @@ import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.GET_TOPIC_INFO_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.CREATE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.UPDATE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.DELETE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.SUBMIT_MESSAGE_COUNT;
-
 
 public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceImplBase {
 	private static final Logger log = LogManager.getLogger(ConsensusController.class);
@@ -44,6 +38,12 @@ public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceIm
 	private final HcsAnswers hcsAnswers;
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
+
+	public static final String GET_TOPIC_INFO_METRIC = "getTopicInfo";
+	public static final String CREATE_TOPIC_METRIC = "createTopic";
+	public static final String UPDATE_TOPIC_METRIC = "updateTopic";
+	public static final String DELETE_TOPIC_METRIC = "deleteTopic";
+	public static final String SUBMIT_MESSAGE_METRIC = "submitMessage";
 
 	public ConsensusController(
 			HcsAnswers hcsAnswers,
@@ -57,26 +57,26 @@ public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceIm
 
 	@Override
 	public void getTopicInfo(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToHcs(query, observer, hcsAnswers.topicInfo(), GET_TOPIC_INFO_COUNT);
+		queryHelper.respondToHcs(query, observer, hcsAnswers.topicInfo(), GET_TOPIC_INFO_METRIC);
 	}
 
 	@Override
 	public void createTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, CREATE_TOPIC_COUNT);
+		txnHelper.respondToHcs(signedTxn, observer, CREATE_TOPIC_METRIC);
 	}
 
 	@Override
 	public void updateTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, UPDATE_TOPIC_COUNT);
+		txnHelper.respondToHcs(signedTxn, observer, UPDATE_TOPIC_METRIC);
 	}
 
 	@Override
 	public void deleteTopic(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, DELETE_TOPIC_COUNT);
+		txnHelper.respondToHcs(signedTxn, observer, DELETE_TOPIC_METRIC);
 	}
 
 	@Override
 	public void submitMessage(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToHcs(signedTxn, observer, SUBMIT_MESSAGE_COUNT);
+		txnHelper.respondToHcs(signedTxn, observer, SUBMIT_MESSAGE_METRIC);
 	}
 }
