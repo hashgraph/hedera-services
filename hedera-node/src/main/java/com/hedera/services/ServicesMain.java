@@ -215,6 +215,7 @@ public class ServicesMain implements SwirldMain {
 			try {
 				ctx.systemAccountsCreator().createSystemAccounts(ctx.accounts(), ctx.addressBook());
 				ctx.pause().forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
+				ctx.backingAccounts().syncKnownAccounts();
 			} catch (Exception e) {
 				throwIseOrLogError(new IllegalStateException("Could not create system accounts!", e));
 			}

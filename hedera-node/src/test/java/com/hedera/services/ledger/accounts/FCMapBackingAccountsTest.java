@@ -31,10 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +61,27 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
+	public void syncsCorrectly() {
+		// setup:
+		var delegate = new FCMap<MerkleEntityId, MerkleAccount>();
+		var knownAccounts = new HashSet<AccountID>();
+		// and:
+		subject = new FCMapBackingAccounts(knownAccounts, delegate);
+
+		// given:
+		delegate.put(new MerkleEntityId(1,2, 3), new MerkleAccount());
+
+		// expect:
+		knownAccounts.isEmpty();
+
+		// when:
+		subject.syncKnownAccounts();
+
+		// then:
+		assertEquals(1, knownAccounts.size());
+	}
+
+	@Test
 	public void initializationWorks() {
 		// setup:
 		Set<MerkleEntityId> actualAccounts = Set.of(aKey, bKey);
@@ -70,7 +89,7 @@ class FCMapBackingAccountsTest {
 		given(map.keySet()).willReturn(actualAccounts);
 
 		// when:
-		FCMapBackingAccounts.initializeKnownAccounts(map, knownAccounts);
+		FCMapBackingAccounts.sync(map, knownAccounts);
 
 		// then:
 		verify(knownAccounts).add(a);
@@ -156,7 +175,7 @@ class FCMapBackingAccountsTest {
 
 	@Test
 	public void usesReplaceOnDelegate() {
-		given(map.containsKey(aKey)).willReturn(true);
+		given(knownAccounts.contains(a)).willReturn(true);
 
 		// when:
 		subject.replace(a, bValue);

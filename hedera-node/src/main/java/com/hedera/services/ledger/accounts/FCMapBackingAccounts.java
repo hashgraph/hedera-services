@@ -46,10 +46,14 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	) {
 		this.delegate = delegate;
 		this.knownAccounts = knownAccounts;
-		initializeKnownAccounts(delegate, knownAccounts);
+		sync(delegate, knownAccounts);
 	}
 
-	static void initializeKnownAccounts(FCMap<MerkleEntityId, MerkleAccount> source, Set<AccountID> dest) {
+	public void syncKnownAccounts() {
+		sync(delegate, knownAccounts);
+	}
+
+	static void sync(FCMap<MerkleEntityId, MerkleAccount> source, Set<AccountID> dest) {
 		source.keySet().stream()
 				.map(id -> AccountID.newBuilder()
 						.setShardNum(id.getShard())
@@ -72,7 +76,7 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	@Override
 	public void replace(AccountID id, MerkleAccount account) {
 		MerkleEntityId delegateId = fromPojoAccountId(id);
-		if (!delegate.containsKey(delegateId)) {
+		if (!contains(id)) {
 			delegate.put(delegateId, account);
 		} else {
 			delegate.replace(delegateId, account);

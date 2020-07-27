@@ -335,6 +335,7 @@ public class ServicesContext {
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private LedgerAccountsSource accountSource;
+	private FCMapBackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
@@ -822,12 +823,19 @@ public class ServicesContext {
 		return knownAccounts;
 	}
 
+	public FCMapBackingAccounts backingAccounts() {
+		if (backingAccounts == null) {
+			backingAccounts = new FCMapBackingAccounts(knownAccounts(), accounts());
+		}
+		return backingAccounts;
+	}
+
 	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new FCMapBackingAccounts(knownAccounts(), accounts()),
+					backingAccounts(),
 					new ChangeSummaryManager<>());
 			delegate.setKnownAccounts(knownAccounts());
 			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
