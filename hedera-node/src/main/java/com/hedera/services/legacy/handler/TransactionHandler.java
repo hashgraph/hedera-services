@@ -618,7 +618,7 @@ public class TransactionHandler {
   }
 
   /**
-   * Validates Account IDs and Total Balance in Account Map on Start Up .  // (Q: Where does the accountMap(...) come from?
+   * Validates Account IDs and Total Balance in Account Map on Start Up .  
    * If it finds any invalid Account ID  it stops checking further and returns Invalid Account ID response code.
    * If all the Account IDs are valid, it checks the total balance. If its not equal to expected balance, it
    * returns Invalid Balance response code.

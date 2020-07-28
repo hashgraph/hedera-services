@@ -102,27 +102,34 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyListp).build()).build();
 	}
 
-	    @Test
-		public void testAccountMapBalanceForStartup() throws Exception {
-			long account1Balance = 100000l;
-			long account2Balance = 200000l;
-			// Total Balance is less than 50B
-			account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
-			account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
-			createAccount(account1ID, account1Balance, keys);
-			createAccount(account2ID, account2Balance, keys);
-			ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
+	@Test
+	public void testAccountMapBalanceForStartup() throws Exception {
+		long account1Balance = 100000l;
+		long account2Balance = 200000l;
+		// Total Balance is less than 50B
+		account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
+		account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
+		createAccount(account1ID, account1Balance, keys);
+		createAccount(account2ID, account2Balance, keys);
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
 
-			// Total balance is 50B
-			account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
-			long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
-			createAccount(account3ID, account3Balance, keys);
-			response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.OK, response);
+		// Total balance is 50B
+		account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
+		long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
+		createAccount(account3ID, account3Balance, keys);
+		response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.OK, response);
 
 
-		}
+	}
+	@Test
+	public void testEmptyAccountMapBalanceForStartup() throws Exception {
+		fcMap.clear();
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.OK, response);
+
+	}
 
 	private static Key PrivateKeyToKey(PrivateKey privateKey) {
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
