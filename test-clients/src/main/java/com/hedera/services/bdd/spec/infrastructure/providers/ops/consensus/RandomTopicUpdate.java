@@ -48,8 +48,7 @@ public class RandomTopicUpdate implements OpProvider {
 
 		HapiTopicUpdate op =  updateTopic(target.get())
 				.hasKnownStatusFrom(permissibleOutcomes)
-				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasAnyPrecheck();
+				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 		return Optional.of(op);
 	}
 }

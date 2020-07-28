@@ -41,7 +41,7 @@ public class RandomMessageSubmit implements OpProvider {
         private final SplittableRandom r = new SplittableRandom();
         private final EntityNameProvider<TopicID> topics;
         private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
-        private static byte[] messageBytes = new byte[2048];
+        private static byte[] messageBytes = new byte[1024];
         static {
                 Arrays.fill(messageBytes, (byte) 0b1);
         }
@@ -82,8 +82,7 @@ public class RandomMessageSubmit implements OpProvider {
                         .message(new String(messageBytes))
 //                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
                         .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasAnyPrecheck();
+                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 
                 if (r.nextBoolean()) {
                         op = op.usePresetTimestamp();
