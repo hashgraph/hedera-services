@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -305,6 +304,7 @@ class ServiceAnswerFlowTest {
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);
 		given(service.responseGiven(query, view, OK, 6)).willReturn(response);
+		given(legacyHandler.submitTransaction(platform, userTxn, userTxnId)).willReturn(true);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -312,7 +312,6 @@ class ServiceAnswerFlowTest {
 		// then:
 		assertEquals(response, actual);
 		verify(service, times(2)).requiresNodePayment(query);
-		verify(legacyHandler).submitTransaction(platform, userTxn, userTxnId);
 	}
 
 	@Test
@@ -328,9 +327,7 @@ class ServiceAnswerFlowTest {
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);
-		willThrow(PlatformTransactionCreationException.class)
-				.given(legacyHandler)
-				.submitTransaction(platform, userTxn, userTxnId);
+		given(legacyHandler.submitTransaction(platform, userTxn, userTxnId)).willReturn(false);
 		given(service.responseGiven(query, view, PLATFORM_TRANSACTION_NOT_CREATED, 6)).willReturn(response);
 
 		// when:

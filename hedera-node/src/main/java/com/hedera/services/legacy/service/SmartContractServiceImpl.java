@@ -58,7 +58,6 @@ import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.config.PropertiesLoader;
@@ -240,10 +239,7 @@ public class SmartContractServiceImpl
     }
 
     if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-
-      try {
-        txHandler.submitTransaction(platform, feePayment, body.getTransactionID());
-      } catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
         TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
             "contractCallLocalMethod", null);
         return;
@@ -405,9 +401,7 @@ public class SmartContractServiceImpl
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetInfo, feePayment, scheduledFee);
     if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      try {
-        txHandler.submitTransaction(platform, feePayment, body.getTransactionID());
-      } catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
         TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
             "getContractInfo", null);
         return;
@@ -542,9 +536,7 @@ public class SmartContractServiceImpl
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetBytecode, feePayment, scheduledFee);
     if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      try {
-        txHandler.submitTransaction(platform, feePayment, body.getTransactionID());
-      } catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
         TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
             "contractGetBytecode", null);
         return;
@@ -676,9 +668,7 @@ public class SmartContractServiceImpl
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetRecords, feePayment, scheduledFee);
     if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      try {
-        txHandler.submitTransaction(platform, feePayment, body.getTransactionID());
-      } catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
         TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
             "getTxRecordByContractID", null);
         return;
@@ -823,13 +813,12 @@ public class SmartContractServiceImpl
 
     }
 
-    try {
-      txHandler.submitTransaction(platform, request, transactionBody.getTransactionID());
-      TransactionValidationUtils.transactionResponse(responseObserver,
-          new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
-    } catch (PlatformTransactionCreationException | InvalidProtocolBufferException e) {
+    if (!txHandler.submitTransaction(platform, request, transactionBody.getTransactionID())) {
       TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+      return;
     }
+    TransactionValidationUtils.transactionResponse(responseObserver,
+            new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
     hederaNodeStats.smartContractTransactionSubmitted(transactionRequest);
   }
 
@@ -881,13 +870,13 @@ public class SmartContractServiceImpl
       if (log.isDebugEnabled()) {
         log.debug("In systemDelete :: request : " + TextFormat.shortDebugString(body));
       }
-      txHandler.submitTransaction(platform, request, body.getTransactionID());
+      if (!txHandler.submitTransaction(platform, request, body.getTransactionID())) {
+        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+        return;
+      }
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     } catch (InvalidProtocolBufferException e) {
       precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    } catch (PlatformTransactionCreationException e) {
-      precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED);
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     }
     hederaNodeStats.smartContractTransactionSubmitted("smartContractSystemDelete");
@@ -918,13 +907,13 @@ public class SmartContractServiceImpl
       if (log.isDebugEnabled()) {
         log.debug("In systemUnDelete :: request : " + TextFormat.shortDebugString(body));
       }
-      txHandler.submitTransaction(platform, request, body.getTransactionID());
+      if (!txHandler.submitTransaction(platform, request, body.getTransactionID())) {
+        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+        return;
+      }
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     } catch (InvalidProtocolBufferException e) {
       precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-      TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
-    } catch (PlatformTransactionCreationException e) {
-      precheckResult = new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED);
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
     }
     hederaNodeStats.smartContractTransactionSubmitted("smartContractSystemUndelete");
