@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,9 +49,14 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -76,6 +82,7 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 
 @RunWith(JUnitPlatform.class)
 class ServicesStateTest {
+	Consumer<MerkleNode> mockDigest;
 	Instant now = Instant.now();
 	Transaction platformTxn;
 	Address address;
@@ -105,6 +112,8 @@ class ServicesStateTest {
 	@BeforeEach
 	private void setup() {
 		CONTEXTS.clear();
+		mockDigest = (Consumer<MerkleNode>)mock(Consumer.class);
+		ServicesState.merkleDigest = mockDigest;
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -182,12 +191,101 @@ class ServicesStateTest {
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
 		assertEquals(ApplicationConstants.HEDERA_START_SEQUENCE, subject.networkCtx().seqNo().current());
+		// and:
+		verify(mockDigest, never()).accept(any());
 	}
 
 	@Test
 	public void copyFromStateThrows() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(subject));
+	}
+
+	@Test
+	public void catchesProtobufParseException() {
+		// setup:
+		var platformTxn = mock(Transaction.class);
+
+		given(platformTxn.getContents()).willReturn("not-a-grpc-txn".getBytes());
+
+		// expect:
+		assertDoesNotThrow(() -> subject.expandSignatures(platformTxn));
+	}
+
+	@Test
+	public void logsNonNullHashesFromSavedState() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		ServicesMain.log = mockLog;
+
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+
+		// when:
+		subject.init(platform, book);
+
+		// then:
+		verify(mockDigest).accept(subject);
+		// and:
+		verify(mockLog).info(argThat((String s) -> s.startsWith("[SwirldState Hashes]")));
+
+		// cleanup:
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
+		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
+	}
+
+	@Test
+	public void hashesPrintedAsExpected() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		ServicesMain.log = mockLog;
+		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
+		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
+		Hash topicRootHash = new Hash("sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes());
+		Hash storageRootHash = new Hash("fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes());
+		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
+		// and:
+		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		// and:
+		var expected = String.format("[SwirldState Hashes]\n" +
+				"  Overall        :: %s\n" +
+				"  Accounts       :: %s\n" +
+				"  Storage        :: %s\n" +
+				"  Topics         :: %s\n" +
+				"  NetworkContext :: %s\n" +
+				"  AddressBook    :: %s",
+				overallHash,
+				accountsRootHash,
+				storageRootHash,
+				topicRootHash,
+				ctxHash,
+				bookHash);
+		subject.setHash(overallHash);
+
+		given(topics.getHash()).willReturn(topicRootHash);
+		given(accounts.getHash()).willReturn(accountsRootHash);
+		given(storage.getHash()).willReturn(storageRootHash);
+		given(networkCtx.getHash()).willReturn(ctxHash);
+		given(book.getHash()).willReturn(bookHash);
+
+		// when:
+		subject.printHashes();
+
+		// then:
+		verify(mockLog).info(expected);
+
+		// cleanup:
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 	}
 
 	@Test
@@ -201,7 +299,7 @@ class ServicesStateTest {
 		subject.nodeId = self;
 
 		// when:
-		ServicesState copy = (ServicesState)subject.copy();
+		ServicesState copy = (ServicesState) subject.copy();
 
 		// then:
 		assertTrue(copy.isImmutable());
@@ -348,9 +446,9 @@ class ServicesStateTest {
 		com.hederahashgraph.api.proto.java.Transaction signedTxn =
 				com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 						.setSigMap(SignatureMap.newBuilder()
-							.addSigPair(SignaturePair.newBuilder()
-									.setPubKeyPrefix(mockPk)
-									.setEd25519(mockSig)))
+								.addSigPair(SignaturePair.newBuilder()
+										.setPubKeyPrefix(mockPk)
+										.setEd25519(mockSig)))
 						.build();
 		platformTxn = PlatformTxnFactory.from(signedTxn);
 		JKey key = new JEd25519Key(mockPk.toByteArray());
@@ -358,8 +456,8 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
 
-		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult)payerOrderResult);
-		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult)otherOrderResult);
+		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
+		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);
 		given(ctx.lookupRetryingKeyOrder()).willReturn(keyOrderer);
 
 		// and:
@@ -374,7 +472,8 @@ class ServicesStateTest {
 	}
 
 	@AfterEach
-	private void cleanup() {
+	public void cleanup() {
 		CONTEXTS.clear();
+		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 }

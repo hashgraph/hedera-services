@@ -33,11 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.CREATE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.DELETE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.SUBMIT_MESSAGE_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.UPDATE_TOPIC_COUNT;
-import static com.hedera.services.legacy.services.stats.HederaNodeStats.GET_TOPIC_INFO_COUNT;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -71,7 +66,7 @@ class ConsensusControllerTest {
 
 		// expect:
 		verify(hcsAnswers).topicInfo();
-		verify(queryResponseHelper).respondToHcs(query, queryObserver, null, GET_TOPIC_INFO_COUNT);
+		verify(queryResponseHelper).respondToHcs(query, queryObserver, null, ConsensusController.GET_TOPIC_INFO_METRIC);
 	}
 
 	@Test
@@ -80,7 +75,7 @@ class ConsensusControllerTest {
 		subject.createTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, CREATE_TOPIC_COUNT);
+		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.CREATE_TOPIC_METRIC);
 	}
 
 	@Test
@@ -89,7 +84,7 @@ class ConsensusControllerTest {
 		subject.deleteTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, DELETE_TOPIC_COUNT);
+		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.DELETE_TOPIC_METRIC);
 	}
 
 	@Test
@@ -98,7 +93,7 @@ class ConsensusControllerTest {
 		subject.updateTopic(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, UPDATE_TOPIC_COUNT);
+		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.UPDATE_TOPIC_METRIC);
 	}
 
 	@Test
@@ -107,6 +102,6 @@ class ConsensusControllerTest {
 		subject.submitMessage(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToHcs(txn, txnObserver, SUBMIT_MESSAGE_COUNT);
+		verify(txnResponseHelper).respondToHcs(txn, txnObserver, ConsensusController.SUBMIT_MESSAGE_METRIC);
 	}
 }

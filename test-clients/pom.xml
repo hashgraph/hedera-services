@@ -124,9 +124,6 @@
                   <mainClass>com.hedera.services.bdd.suites.SuiteRunner</mainClass>
                 </manifest>
               </archive>
-<!--              <descriptorRefs>-->
-<!--                <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--              </descriptorRefs>-->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
@@ -153,7 +150,7 @@
     <repository>
       <id>ossrh-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1146</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1154</url>
     </repository>
     <repository>
       <id>Ethereum</id>

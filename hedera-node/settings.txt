@@ -3,7 +3,6 @@ crypto.cpuDigestThreadRatio, 0.1
 crypto.cpuVerifierThreadRatio, 1
 csvAppend, 0
 csvFileName, MainNetStats
-dbBackup.active, 0
 doUpnp, 0
 freezeSettings.active, 1
 freezeSettings.endHour, 6
