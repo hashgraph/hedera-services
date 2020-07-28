@@ -124,9 +124,6 @@
                   <mainClass>com.hedera.services.bdd.suites.SuiteRunner</mainClass>
                 </manifest>
               </archive>
-<!--              <descriptorRefs>-->
-<!--                <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--              </descriptorRefs>-->
               <descriptors>
                 <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
               </descriptors>
