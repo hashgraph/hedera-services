@@ -253,8 +253,7 @@ public class SuiteRunner {
 
 	/**
 	 * Check if the DSL_SUITE_RUNNER_ARGS contain ALL_SUITES.
-	 * If so, add all test suites from CATEGORY_MAP to args that should be run. If there are any tests mentioned with -
-	 * in the beginning while running ALL_SUITES, dont add them to effective args
+	 * If so, add all test suites from CATEGORY_MAP to args that should be run.
 	 *
 	 * @param realArgs
 	 * 		DSL_SUITE_RUNNER_ARGS provided
@@ -268,7 +267,6 @@ public class SuiteRunner {
 			effectiveArgs.addAll(CATEGORY_MAP.keySet());
 			effectiveArgs.addAll(Stream.of(ciArgs).
 					filter(e -> !e.equals("ALL_SUITES")).
-					filter(e -> !checkIfSkipped(e, effectiveArgs)).
 					collect(Collectors.toList()));
 			log.info("Effective args when running ALL_SUITES : " + effectiveArgs.toString());
 			return effectiveArgs.toArray(new String[effectiveArgs.size()]);
@@ -276,16 +274,6 @@ public class SuiteRunner {
 
 		return ciArgs;
 	}
-
-	private static boolean checkIfSkipped(String e, ArrayList<String> effectiveArgs) {
-		boolean isSkipped =  e.startsWith("skip:");
-		if(isSkipped){
-			log.info("Skipping test suite " + e);
-			effectiveArgs.remove(e.substring(e.indexOf(":")+1));
-		}
-		return isSkipped;
-	}
-
 
 	private static List<CategoryResult> runCategories(List<String> args) {
 		argSet = args.stream().collect(Collectors.toSet());
