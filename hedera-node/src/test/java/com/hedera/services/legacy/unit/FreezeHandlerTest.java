@@ -129,5 +129,6 @@ public class FreezeHandlerTest {
 		//check whether new file has been added as expected
 		File file3 = new File("new3.txt");
 		Assertions.assertTrue(file3.exists());
+		file3.delete();
 	}
 }

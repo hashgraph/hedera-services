@@ -244,6 +244,20 @@ class ThrottlingPropsBuilderTest {
 		}
 	}
 
+	@Test
+	void addsEmptyLegacyHcsProperties() {
+		// setup:
+		int networkSize = 5;
+		given(properties.getBooleanProperty(RESPECT_LEGACY_THROTTLING_PROPERTY)).willReturn(false);
+
+		// when:
+		addFromLegacyHcs(baseProps, properties, networkSize);
+
+		// then:
+		assertEquals(baseProps.isEmpty(), true);
+	}
+
+
 	private void givenLegacyBouncerProperties(
 			int networkSize,
 			int txnTps,
