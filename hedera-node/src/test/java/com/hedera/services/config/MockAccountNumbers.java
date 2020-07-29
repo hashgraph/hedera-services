@@ -20,9 +20,6 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.properties.PropertySource;
-
 public class MockAccountNumbers extends AccountNumbers {
 	public MockAccountNumbers() {
 		super(null);
@@ -34,7 +31,7 @@ public class MockAccountNumbers extends AccountNumbers {
 	}
 
 	@Override
-	public long master() {
+	public long systemAdmin() {
 		return 50;
 	}
 
@@ -54,7 +51,11 @@ public class MockAccountNumbers extends AccountNumbers {
 	}
 
 	@Override
+	public long freezeAdmin() { return 58; }
+
+	@Override
 	public boolean isSysAdmin(long num) {
 		return (num == 2) || (num == 50);
 	}
+
 }

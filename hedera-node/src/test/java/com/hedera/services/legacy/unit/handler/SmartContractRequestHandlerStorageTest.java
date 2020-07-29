@@ -23,6 +23,7 @@ package com.hedera.services.legacy.unit.handler;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -70,7 +71,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import java.io.IOException;
@@ -127,7 +127,9 @@ public class SmartContractRequestHandlerStorageTest {
   private static final long contractFileNumber = 333L;
   private static final long contractSequenceNumber = 334L;
   private static final long secondContractSequenceNumber = 668L;
-  SmartContractRequestHandler smartHandler;
+	// FSFC path constants
+	public static String ADDRESS_PATH = "/{0}/s{1}";
+	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
@@ -846,8 +848,8 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String byteCodePath = ApplicationConstants.buildPath(
-        ApplicationConstants.ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
+    String byteCodePath = FeeCalcUtilsTest.buildPath(
+        ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
         Long.toString(newContractId.getContractNum()));
     storageWrapper.delete(byteCodePath, 0, 0);
     // Call the contract to set value

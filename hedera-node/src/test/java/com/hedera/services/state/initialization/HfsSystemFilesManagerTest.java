@@ -165,10 +165,6 @@ class HfsSystemFilesManagerTest {
 				.willReturn(bootstrapJutilPropsLoc);
 		given(properties.getLongProperty("bootstrap.systemFilesExpiry"))
 				.willReturn(expiry);
-		given(properties.getLongProperty("hedera.shard"))
-				.willReturn(1L);
-		given(properties.getLongProperty("hedera.realm"))
-				.willReturn(22L);
 		given(properties.getIntProperty("bootstrap.rates.currentHbarEquiv"))
 				.willReturn(curHbarEquiv);
 		given(properties.getIntProperty("bootstrap.rates.currentCentEquiv"))

@@ -28,8 +28,9 @@ public class AccountNumbers {
 
 	private final PropertySource properties;
 
-	private long master = UNKNOWN_NUMBER;
 	private long treasury = UNKNOWN_NUMBER;
+	private long systemAdmin = UNKNOWN_NUMBER;
+	private long freezeAdmin = UNKNOWN_NUMBER;
 	private long addressBookAdmin = UNKNOWN_NUMBER;
 	private long feeSchedulesAdmin = UNKNOWN_NUMBER;
 	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
@@ -40,40 +41,47 @@ public class AccountNumbers {
 
 	public long treasury() {
 		if (treasury == UNKNOWN_NUMBER) {
-			treasury = properties.getIntProperty("hedera.treasuryAccount.idNum");
+			treasury = properties.getLongProperty("bootstrap.accounts.treasury");
 		}
 		return treasury;
 	}
 
-	public long master() {
-		if (master == UNKNOWN_NUMBER) {
-			master = properties.getIntProperty("hedera.masterAccount.idNum");
+	public long freezeAdmin() {
+		if (freezeAdmin == UNKNOWN_NUMBER) {
+			freezeAdmin = properties.getLongProperty("bootstrap.accounts.freezeAdmin");
 		}
-		return master;
+		return freezeAdmin;
+	}
+
+	public long systemAdmin() {
+		if (systemAdmin == UNKNOWN_NUMBER) {
+			systemAdmin = properties.getLongProperty("bootstrap.accounts.systemAdmin");
+		}
+		return systemAdmin;
 	}
 
 	public long addressBookAdmin() {
 		if (addressBookAdmin == UNKNOWN_NUMBER) {
-			addressBookAdmin = properties.getLongProperty("files.addressBookAdmin.idNum");
+			addressBookAdmin = properties.getLongProperty("bootstrap.accounts.addressBookAdmin");
 		}
 		return addressBookAdmin;
 	}
 
 	public long feeSchedulesAdmin() {
 		if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
-			feeSchedulesAdmin = properties.getLongProperty("files.feeSchedulesAdmin.idNum");
+			feeSchedulesAdmin = properties.getLongProperty("bootstrap.accounts.feeSchedulesAdmin");
 		}
 		return feeSchedulesAdmin;
 	}
 
 	public long exchangeRatesAdmin() {
 		if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
-			exchangeRatesAdmin = properties.getLongProperty("files.exchangeRatesAdmin.idNum");
+			exchangeRatesAdmin = properties.getLongProperty("bootstrap.accounts.exchangeRatesAdmin");
 		}
 		return exchangeRatesAdmin;
 	}
 
 	public boolean isSysAdmin(long num) {
-		return num == treasury() || num == master();
+		return num == treasury() || num == systemAdmin();
 	}
 }

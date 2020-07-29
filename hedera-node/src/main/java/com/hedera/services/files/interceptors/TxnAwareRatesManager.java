@@ -146,7 +146,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	}
 
 	private boolean isMaster() {
-		return txnCtx.activePayer().getAccountNum() == accountNums.master();
+		return txnCtx.activePayer().getAccountNum() == accountNums.systemAdmin();
 	}
 
 	private boolean isTreasury() {

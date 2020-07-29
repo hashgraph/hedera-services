@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
@@ -144,8 +145,8 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	private void assertPropertySourcesExist() {
-		assertFileSourceExists(PropertiesLoader.applicationPropsFilePath);
-		assertFileSourceExists(PropertiesLoader.apiPropertiesFilePath);
+		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.properties.path"));
+		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.permissions.path"));
 	}
 
 	private void assertFileSourceExists(String path) {
@@ -170,18 +171,9 @@ public class StandardizedPropertySources implements PropertySources {
 				PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS;
 
 		Map<String, Supplier<Object>> source = new HashMap<>();
-		source.put("bootstrap.genesisB64Keystore.keyName", () -> ApplicationConstants.START_ACCOUNT);
-		source.put("bootstrap.genesisB64Keystore.path", PropertiesLoader::getGenAccountPath);
-		source.put("bootstrap.feeSchedulesJson.resource", () -> ApplicationConstants.FEE_FILE_PATH);
-		source.put("bootstrap.permissions.path", () -> ApplicationConstants.API_ACCESS_FILE);
-		source.put("bootstrap.properties.path", () -> ApplicationConstants.PROPERTY_FILE);
-		source.put("bootstrap.rates.currentHbarEquiv", PropertiesLoader::getCurrentHbarEquivalent);
-		source.put("bootstrap.rates.currentCentEquiv", PropertiesLoader::getCurrentCentEquivalent);
-		source.put("bootstrap.rates.currentExpiry", PropertiesLoader::getExpiryTime);
-		source.put("bootstrap.rates.nextHbarEquiv", PropertiesLoader::getCurrentHbarEquivalent);
-		source.put("bootstrap.rates.nextCentEquiv", PropertiesLoader::getCurrentCentEquivalent);
-		source.put("bootstrap.rates.nextExpiry", PropertiesLoader::getExpiryTime);
-		source.put("bootstrap.systemFilesExpiry", PropertiesLoader::getExpiryTime);
+
+		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
+
 		source.put("cache.records.ttl", PropertiesLoader::getTxReceiptTTL);
 		source.put("contracts.maxStorageKb", PropertiesLoader::getMaxContractStateSize);
 		source.put("contracts.defaultSendThreshold", PropertiesLoader::getDefaultContractSenderThreshold);
@@ -189,18 +181,9 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
-		source.put("files.addressBook.num", () -> ApplicationConstants.ADDRESS_FILE_ACCOUNT_NUM);
-		source.put("files.addressBookAdmin.idNum", () -> ApplicationConstants.ADDRESS_ACC_NUM);
-		source.put("files.apiPermissions.num", () -> ApplicationConstants.API_PROPERTIES_FILE_NUM);
-		source.put("files.applicationProperties.num", () -> ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM);
-		source.put("files.exchangeRates.num", () -> ApplicationConstants.EXCHANGE_RATE_FILE_ACCOUNT_NUM);
-		source.put("files.exchangeRatesAdmin.idNum", () -> ApplicationConstants.EXCHANGE_ACC_NUM);
-		source.put("files.feeSchedules.num", () -> ApplicationConstants.FEE_FILE_ACCOUNT_NUM);
-		source.put("files.feeSchedulesAdmin.idNum", () -> ApplicationConstants.FEE_ACC_NUM);
 		source.put("files.firstInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM);
 		source.put("files.lastInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM);
 		source.put("files.maxSizeKb", PropertiesLoader::getMaxFileSize);
-		source.put("files.nodeDetails.num", () -> ApplicationConstants.NODE_DETAILS_FILE);
 		source.put("grpc.port", PropertiesLoader::getPort);
 		source.put("grpc.tlsPort", PropertiesLoader::getTlsPort);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
@@ -211,17 +194,13 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
 		source.put("hedera.firstProtectedEntity.num", PropertiesLoader::getProtectedMinEntityNum);
 		source.put("hedera.lastProtectedEntity.num", PropertiesLoader::getProtectedMaxEntityNum);
-		source.put("hedera.masterAccount.idNum", () -> ApplicationConstants.MASTER_ACCT_NUM);
 		source.put("hedera.profiles.active", () -> LEGACY_ENV_ORDER[getEnvironment()]);
-		source.put("hedera.realm", () -> ApplicationConstants.DEFAULT_FILE_REALM);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
-		source.put("hedera.shard", () -> ApplicationConstants.DEFAULT_SHARD);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValididityBufferSecs", PropertiesLoader::getTxMinRemaining);
-		source.put("hedera.treasuryAccount.idNum", () -> ApplicationConstants.GEN_ACCT_NUM);
 		source.put("hedera.versionInfo.resource", () -> VERSION_INFO_PROPERTIES_FILE);
 		source.put("hedera.versionInfo.protoKey", () -> VERSION_INFO_PROPERTIES_PROTO_KEY);
 		source.put("hedera.versionInfo.servicesKey", () -> VERSION_INFO_PROPERTIES_SERVICES_KEY);
@@ -229,10 +208,8 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
-		source.put("ledger.float.hbars", PropertiesLoader::getInitialGenesisCoins);
 		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
-		source.put("ledger.systemAccount.initialHbars", PropertiesLoader::getInitialCoins);
 		source.put("ledger.transfers.maxLen", PropertiesLoader::getTransferAccountListSize);
 		source.put("validation.preConsensus.accountKey.maxLookupRetries", maxLookupRetries);
 		source.put("validation.preConsensus.accountKey.retryBackoffIncrementMs", retryBackoffIncrementMs);

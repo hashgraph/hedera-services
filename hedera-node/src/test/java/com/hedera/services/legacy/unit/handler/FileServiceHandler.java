@@ -23,7 +23,7 @@ package com.hedera.services.legacy.unit.handler;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.utils.EntityIdUtils;
@@ -105,9 +105,9 @@ public class FileServiceHandler {
     }
 
 	public static FileInfo lookupInfo(FileID fid, FCStorageWrapper fcfs) throws Exception {
-		String metaPath = FeeCalcUtils.pathOfMeta(fid);
+		String metaPath = FeeCalcUtilsTest.pathOfMeta(fid);
 		if (fcfs.fileExists(metaPath)) {
-			long size = fcfs.getSize(FeeCalcUtils.pathOf(fid));
+			long size = fcfs.getSize(FeeCalcUtilsTest.pathOf(fid));
 			JFileInfo jInfo = JFileInfo.deserialize(fcfs.fileRead(metaPath));
 			return jInfo.convert(fid, size);
 		} else {
@@ -142,7 +142,7 @@ public class FileServiceHandler {
 				String.format("The file size %d (bytes) is greater than allowed %d (bytes) ", fileSize,
 	  					PropertiesLoader.getMaxFileSize() * 1024L));
 	  }
-      String fileDataPath = FeeCalcUtils.pathOf(fid);
+      String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
       long expireTimeSec =
           RequestBuilder.convertProtoTimeStamp(tx.getExpirationTime()).getEpochSecond();
 
@@ -156,7 +156,7 @@ public class FileServiceHandler {
       // create virtual file for the meta data
       JFileInfo fi = new JFileInfo(false, jkey, expireTimeSec);
 
-      String fileMetaDataPath = FeeCalcUtils.pathOfMeta(fid);
+      String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
       storageWrapper.fileCreate(fileMetaDataPath, fi.serialize(), startTime.getEpochSecond(),
           startTime.getNano(), expireTimeSec, null);
 
@@ -200,7 +200,7 @@ public class FileServiceHandler {
     
     if (ProtectedEntities.hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
       if (fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
-        String fileDataPath = FeeCalcUtils.pathOf(fid);
+        String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
         byte[] fileContent;
         if (appendFlag) {
           byte[] existingContent = storageWrapper.fileRead(fileDataPath);
@@ -285,8 +285,8 @@ public class FileServiceHandler {
     FileUpdateTransactionBody tx = gtx.getFileUpdate();
     FileID fid = tx.getFileID();
     try {
-      String fileDataPath = FeeCalcUtils.pathOf(fid);
-      String fileMetaDataPath = FeeCalcUtils.pathOfMeta(fid);
+      String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
+      String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
       JFileInfo fi = getMetaFileInfo(fid);
       if (fi.isDeleted()) {
         receipt = RequestBuilder.getTransactionReceipt(ResponseCodeEnum.FILE_DELETED,
@@ -423,7 +423,7 @@ public class FileServiceHandler {
   public JFileInfo getMetaFileInfo(FileID fid)
       throws InvalidFileIDException, DeserializationException {
     JFileInfo fileInfo;
-    String fileMetaDataPath = FeeCalcUtils.pathOfMeta(fid);
+    String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
     if (storageWrapper.fileExists(fileMetaDataPath)) {
       byte[] oldBytes = storageWrapper.fileRead(fileMetaDataPath);
       fileInfo = JFileInfo.deserialize(oldBytes);
@@ -442,7 +442,7 @@ public class FileServiceHandler {
     FileID fid = FileID.newBuilder().setFileNum(ApplicationConstants.EXCHANGE_RATE_FILE_ACCOUNT_NUM)
             .setRealmNum(ApplicationConstants.DEFAULT_FILE_REALM)
             .setShardNum(ApplicationConstants.DEFAULT_FILE_SHARD).build();
-    String fileDataPath = FeeCalcUtils.pathOf(fid);
+    String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
 
     SystemFileCreation systemFileCreation = new SystemFileCreation(storageWrapper);
     return systemFileCreation.readExchangeRate(fileDataPath);

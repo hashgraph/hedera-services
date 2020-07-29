@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
 public class FileNumbers {
+	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
 	private long addressBook = UNKNOWN_NUMBER;
@@ -37,48 +38,49 @@ public class FileNumbers {
 
 	private long systemFileCutoff = UNKNOWN_NUMBER;
 
-	public FileNumbers(PropertySource properties) {
+	public FileNumbers(HederaNumbers hederaNums, PropertySource properties) {
+		this.hederaNums = hederaNums;
 		this.properties = properties;
 	}
 
 	public long addressBook() {
 		if (addressBook == UNKNOWN_NUMBER) {
-			addressBook = properties.getLongProperty("files.addressBook.num");
+			addressBook = properties.getLongProperty("bootstrap.files.addressBook");
 		}
 		return addressBook;
 	}
 
 	public long nodeDetails() {
 		if (nodeDetails == UNKNOWN_NUMBER) {
-			nodeDetails = properties.getLongProperty("files.nodeDetails.num");
+			nodeDetails = properties.getLongProperty("bootstrap.files.nodeDetails");
 		}
 		return nodeDetails;
 	}
 
 	public long feeSchedules() {
 		if (feeSchedules == UNKNOWN_NUMBER) {
-			feeSchedules = properties.getLongProperty("files.feeSchedules.num");
+			feeSchedules = properties.getLongProperty("bootstrap.files.feeSchedules");
 		}
 		return feeSchedules;
 	}
 
 	public long exchangeRates() {
 		if (exchangeRates == UNKNOWN_NUMBER) {
-			return properties.getLongProperty("files.exchangeRates.num");
+			return properties.getLongProperty("bootstrap.files.exchangeRates");
 		}
 		return exchangeRates;
 	}
 
 	public long applicationProperties() {
 		if (applicationProperties == UNKNOWN_NUMBER) {
-			applicationProperties = properties.getLongProperty("files.applicationProperties.num");
+			applicationProperties = properties.getLongProperty("bootstrap.files.dynamicNetworkProps");
 		}
 		return applicationProperties;
 	}
 
 	public long apiPermissions() {
 		if (apiPermissions == UNKNOWN_NUMBER) {
-			apiPermissions = properties.getLongProperty("files.apiPermissions.num");
+			apiPermissions = properties.getLongProperty("bootstrap.files.hapiPermissions");
 		}
 		return apiPermissions;
 	}
@@ -92,8 +94,8 @@ public class FileNumbers {
 
 	public FileID toFid(long num) {
 		return FileID.newBuilder()
-				.setRealmNum(properties.getLongProperty("hedera.realm"))
-				.setShardNum(properties.getLongProperty("hedera.shard"))
+				.setShardNum(hederaNums.shard())
+				.setRealmNum(hederaNums.realm())
 				.setFileNum(num)
 				.build();
 	}

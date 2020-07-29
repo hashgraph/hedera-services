@@ -29,7 +29,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.handler.TransactionHandler;
@@ -181,11 +181,11 @@ public class DynamicPropertiesLoadTest {
 		    List<Key> keyList = genWacl();
 		    Key key = keyList.get(0);
 		    JKey jkey = JFileInfo.convertWacl(KeyList.newBuilder().addKeys(key).build());
-		    String fileDataPath = FeeCalcUtils.pathOf(fid);
+		    String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
 		    storageWrapper.fileCreate(fileDataPath, fileData, startTime, 0, expiryTime, null);
 		    JFileInfo jFileInfo = new JFileInfo(false, jkey, expiryTime);
 		    byte[] bytes = jFileInfo.serialize();
-		    String fileMetaDataPath = FeeCalcUtils.pathOfMeta(fid);
+		    String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
 		    storageWrapper.fileCreate(fileMetaDataPath, bytes, startTime, 0, expiryTime, null);
 		  }
 	  

@@ -20,14 +20,14 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 
 public class ExchangeFileInterceptor implements GenericInterceptor {
   @Override
   public void update(FCStorageWrapper storageWrapper, FileID fileID) {
-    String fileDataPath = FeeCalcUtils.pathOf(fileID);
+    String fileDataPath = FeeCalcUtilsTest.pathOf(fileID);
     SystemFileCreation systemFileCreation = new SystemFileCreation(storageWrapper);
     systemFileCreation.readExchangeRate(fileDataPath);
   }

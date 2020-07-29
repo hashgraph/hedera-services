@@ -26,6 +26,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.files.EntityExpiryMapFactory;
@@ -279,6 +280,7 @@ public class ServicesContext {
 	private ProcessLogic logic;
 	private RecordStream recordStream;
 	private QueryFeeCheck queryFeeCheck;
+	private HederaNumbers hederaNums;
 	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
@@ -407,9 +409,16 @@ public class ServicesContext {
 		return currentView;
 	}
 
+	public HederaNumbers hederaNums() {
+		if (hederaNums == null) {
+			hederaNums = new HederaNumbers(properties());
+		}
+		return hederaNums;
+	}
+
 	public FileNumbers fileNums() {
 		if (fileNums == null) {
-			fileNums = new FileNumbers(properties());
+			fileNums = new FileNumbers(hederaNums(), properties());
 		}
 		return fileNums;
 	}
@@ -908,7 +917,7 @@ public class ServicesContext {
 
 	public FileUpdateInterceptor feeSchedulesManager() {
 		if (feeSchedulesManager == null) {
-			feeSchedulesManager = new FeeSchedulesManager(fees(), properties());
+			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
 		}
 		return feeSchedulesManager;
 	}

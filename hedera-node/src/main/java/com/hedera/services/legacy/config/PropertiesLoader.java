@@ -34,8 +34,6 @@ import java.util.Map;
 import java.util.Properties;
 
 public class PropertiesLoader {
-	public static String applicationPropsFilePath = ApplicationConstants.PROPERTY_FILE;
-	public static String apiPropertiesFilePath = ApplicationConstants.API_ACCESS_FILE;
 	public static final Logger log = LogManager.getLogger(PropertiesLoader.class);
 
 	public static CustomProperties applicationProps;

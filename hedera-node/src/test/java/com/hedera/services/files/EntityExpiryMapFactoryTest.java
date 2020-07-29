@@ -21,7 +21,7 @@ package com.hedera.services.files;
  */
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ class EntityExpiryMapFactoryTest {
 	}
 
 	private String asLegacyPath(String fid) {
-		return FeeCalcUtils.pathOf(IdUtils.asFile(fid)).replace("f", "e");
+		return FeeCalcUtilsTest.pathOf(IdUtils.asFile(fid)).replace("f", "e");
 	}
 
 	@Test

@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,6 +21,7 @@ class BootstrapPropertiesTest {
 	BootstrapProperties subject = new BootstrapProperties();
 
 	private String SAMPLE_PROPS_FILE = "src/test/resources/bootstrap/sample.properties";
+	private String SAMPLE_NEW_PROPS_FILE = "src/test/resources/bootstrap/sample-new.properties";
 	private String INVALID_PROPS_FILE = "src/test/resources/bootstrap/not.properties";
 	private String UNREADABLE_PROPS_FILE = "src/test/resources/bootstrap/unreadable.properties";
 	private String MISSING_PROPS_FILE = "src/test/resources/bootstrap/missing.properties";
@@ -28,6 +31,16 @@ class BootstrapPropertiesTest {
 	@BeforeEach
 	public void setup() {
 		subject.LEGACY_PROPS_LOC = MISSING_PROPS_FILE;
+	}
+
+	@Test
+	public void allPropsHaveDefaults() {
+		// expect:
+		for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
+			assertTrue(
+					BOOTSTRAP_PROP_DEFAULTS.containsKey(name),
+					String.format("No default for '%s'!", name));
+		}
 	}
 
 	@Test
@@ -78,76 +91,94 @@ class BootstrapPropertiesTest {
 
 	private void assertOnlyDefaults() {
 		for (String prop : LONG_PROPS) {
-			assertEquals(BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getLongProperty(prop));
+			assertEquals(BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getLongProperty(prop));
 		}
 		for (String prop : STRING_PROPS) {
-			assertEquals(BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getStringProperty(prop));
+			assertEquals(BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getStringProperty(prop));
 		}
 		for (String prop : INTEGER_PROPS) {
-			assertEquals(BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getIntProperty(prop));
+			assertEquals(BOOTSTRAP_PROP_DEFAULTS.get(prop), subject.getIntProperty(prop));
 		}
 	}
 
 	@Test
-	public void usesLegacyOverridesIfPresent() {
+	public void ignoresProblematicLegacyProps() {
 		// setup:
 		subject.LEGACY_PROPS_LOC = LEGACY_PROPS_FILE;
-		subject.BOOTSTRAP_PROPS_LOC = SAMPLE_PROPS_FILE;
+		subject.BOOTSTRAP_PROPS_LOC = MISSING_PROPS_FILE;
+		// and:
+		BootstrapProperties.streamProvider = ignore -> {
+			throw new IOException("Oops!");
+		};
+
+		// expect:
+		assertDoesNotThrow(subject::ensureFileProps);
+
+		// then:
+		assertOnlyDefaults();
+
+		// cleanup:
+		BootstrapProperties.streamProvider = Files::newInputStream;
+	}
+
+	@Test
+	public void usesLegacyPropsForDefaultIfPresent() {
+		// setup:
+		subject.LEGACY_PROPS_LOC = LEGACY_PROPS_FILE;
+		subject.BOOTSTRAP_PROPS_LOC = SAMPLE_NEW_PROPS_FILE;
 
 		// when:
 		subject.ensureFileProps();
 
 		// then:
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisB64Keystore.keyName"),
-				BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.keyName"));
+				BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.keyName"),
+				subject.getStringProperty("bootstrap.genesisB64Keystore.keyName"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisB64Keystore.path"),
-				"src/test/resources/bootstrap/b64GenesisKeyPair.txt");
+				"src/test/resources/bootstrap/b64GenesisKeyPair.txt",
+				subject.getStringProperty("bootstrap.genesisB64Keystore.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisPem.path"),
-				"src/test/resources/bootstrap/genesis.pem");
+				"src/test/resources/bootstrap/genesis.pem",
+				subject.getStringProperty("bootstrap.genesisPem.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisPemPassphrase.path"),
-				"src/test/resources/bootstrap/genesis-passphrase.txt");
+				"src/test/resources/bootstrap/genesis-passphrase.txt",
+				subject.getStringProperty("bootstrap.genesisPemPassphrase.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.feeSchedulesJson.resource"),
-				"FeeSchedule.json");
+				"FeeSchedule.json",
+				subject.getStringProperty("bootstrap.feeSchedulesJson.resource"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.permissions.path"),
-				"src/test/resources/bootstrap/api-permission.properties");
+				"src/test/resources/bootstrap/api-permission.properties",
+				subject.getStringProperty("bootstrap.permissions.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.properties.path"),
-				"src/test/resources/bootstrap/application.properties");
+				"src/test/resources/bootstrap/application.properties",
+				subject.getStringProperty("bootstrap.properties.path"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.currentHbarEquiv"),
-				1);
+				2,
+				subject.getIntProperty("bootstrap.rates.currentHbarEquiv"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.currentCentEquiv"),
-				12);
+				25,
+				subject.getIntProperty("bootstrap.rates.currentCentEquiv"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.rates.currentExpiry"),
-				2000000000L);
+				5000000000L,
+				subject.getLongProperty("bootstrap.rates.currentExpiry"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.nextHbarEquiv"),
-				1);
+				2,
+				subject.getIntProperty("bootstrap.rates.nextHbarEquiv"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.nextCentEquiv"),
-				14);
+				25,
+				subject.getIntProperty("bootstrap.rates.nextCentEquiv"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.rates.nextExpiry"),
-				3000000000L);
+				5000000000L,
+				subject.getLongProperty("bootstrap.rates.nextExpiry"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.systemFilesExpiry"),
-				4000000000L);
+				5000000000L,
+				subject.getLongProperty("bootstrap.systemFilesExpiry"));
 	}
 
 	@Test
 	public void ensuresFilePropsFromExtant() {
 		// setup:
 		var expectedProps = new HashSet<>(BootstrapProperties.BOOTSTRAP_PROP_NAMES);
-		expectedProps.remove("bootstrap.genesisB64Keystore.keyName");
-		expectedProps.remove("bootstrap.genesisB64Keystore.path");
 
 		// given:
 		subject.BOOTSTRAP_PROPS_LOC = SAMPLE_PROPS_FILE;
@@ -163,47 +194,48 @@ class BootstrapPropertiesTest {
 		}
 		// and:
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisB64Keystore.keyName"),
-				BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.keyName"));
+				BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.keyName"),
+				subject.getStringProperty("bootstrap.genesisB64Keystore.keyName")
+		);
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisB64Keystore.path"),
-				BootstrapProperties.BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.path"));
+				BOOTSTRAP_PROP_DEFAULTS.get("bootstrap.genesisB64Keystore.path"),
+				subject.getStringProperty("bootstrap.genesisB64Keystore.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisPem.path"),
-				"src/test/resources/bootstrap/genesis.pem");
+				"src/test/resources/bootstrap/genesis.pem",
+				subject.getStringProperty("bootstrap.genesisPem.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.genesisPemPassphrase.path"),
-				"src/test/resources/bootstrap/genesis-passphrase.txt");
+				"src/test/resources/bootstrap/genesis-passphrase.txt",
+				subject.getStringProperty("bootstrap.genesisPemPassphrase.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.feeSchedulesJson.resource"),
-				"FeeSchedule.json");
+				"FeeSchedule.json",
+				subject.getStringProperty("bootstrap.feeSchedulesJson.resource"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.permissions.path"),
-				"src/test/resources/bootstrap/api-permission.properties");
+				"src/test/resources/bootstrap/api-permission.properties",
+				subject.getStringProperty("bootstrap.permissions.path"));
 		assertEquals(
-				subject.getStringProperty("bootstrap.properties.path"),
-				"src/test/resources/bootstrap/application.properties");
+				"src/test/resources/bootstrap/application.properties",
+				subject.getStringProperty("bootstrap.properties.path"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.currentHbarEquiv"),
-				1);
+				1,
+				subject.getIntProperty("bootstrap.rates.currentHbarEquiv"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.currentCentEquiv"),
-				12);
+				12,
+				subject.getIntProperty("bootstrap.rates.currentCentEquiv"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.rates.currentExpiry"),
-				2000000000L);
+				2000000000L,
+				subject.getLongProperty("bootstrap.rates.currentExpiry"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.nextHbarEquiv"),
-				1);
+				1,
+				subject.getIntProperty("bootstrap.rates.nextHbarEquiv"));
 		assertEquals(
-				subject.getIntProperty("bootstrap.rates.nextCentEquiv"),
-				14);
+				14,
+				subject.getIntProperty("bootstrap.rates.nextCentEquiv"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.rates.nextExpiry"),
-				3000000000L);
+				3000000000L,
+				subject.getLongProperty("bootstrap.rates.nextExpiry"));
 		assertEquals(
-				subject.getLongProperty("bootstrap.systemFilesExpiry"),
-				4000000000L);
+				4000000000L,
+				subject.getLongProperty("bootstrap.systemFilesExpiry"));
 	}
 
 	private static Set<String> LONG_PROPS = Set.of(

@@ -39,11 +39,12 @@ class AccountNumbersTest {
 	@BeforeEach
 	private void setup() {
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("files.addressBookAdmin.idNum")).willReturn(55L);
-		given(properties.getLongProperty("files.feeSchedulesAdmin.idNum")).willReturn(56L);
-		given(properties.getLongProperty("files.exchangeRatesAdmin.idNum")).willReturn(57L);
-		given(properties.getIntProperty("hedera.masterAccount.idNum")).willReturn(50);
-		given(properties.getIntProperty("hedera.treasuryAccount.idNum")).willReturn(2);
+		given(properties.getLongProperty("bootstrap.accounts.addressBookAdmin")).willReturn(55L);
+		given(properties.getLongProperty("bootstrap.accounts.feeSchedulesAdmin")).willReturn(56L);
+		given(properties.getLongProperty("bootstrap.accounts.freezeAdmin")).willReturn(58L);
+		given(properties.getLongProperty("bootstrap.accounts.exchangeRatesAdmin")).willReturn(57L);
+		given(properties.getLongProperty("bootstrap.accounts.systemAdmin")).willReturn(50L);
+		given(properties.getLongProperty("bootstrap.accounts.treasury")).willReturn(2L);
 
 		subject = new AccountNumbers(properties);
 	}
@@ -52,7 +53,8 @@ class AccountNumbersTest {
 	public void hasExpectedNumbers() {
 		// expect:
 		assertEquals(2, subject.treasury());
-		assertEquals(50, subject.master());
+		assertEquals(50, subject.systemAdmin());
+		assertEquals(58, subject.freezeAdmin());
 		assertEquals(55, subject.addressBookAdmin());
 		assertEquals(56, subject.feeSchedulesAdmin());
 		assertEquals(57, subject.exchangeRatesAdmin());
