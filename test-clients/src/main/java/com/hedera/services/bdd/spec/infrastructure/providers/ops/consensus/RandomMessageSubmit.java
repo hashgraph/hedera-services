@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.toSet;
 public class RandomMessageSubmit implements OpProvider {
         private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
 
-        public static final int DEFAULT_NUM_STABLE_TOPICS = 500;
+        public static final int DEFAULT_NUM_STABLE_TOPICS = 5;
         private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
                 TOPIC_EXPIRED,
                 INVALID_TOPIC_ID,
