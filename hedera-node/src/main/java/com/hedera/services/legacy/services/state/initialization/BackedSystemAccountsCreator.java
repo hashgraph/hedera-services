@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.state.initialization;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,28 @@ package com.hedera.services.legacy.services.state.initialization;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.initialization.NodeAccountsCreation;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 
-public class DefaultSystemAccountsCreator implements SystemAccountsCreator {
-	public static final long SUGGESTED_POST_CREATION_PAUSE_MS = 10_000L;
+public class BackedSystemAccountsCreator implements SystemAccountsCreator {
+	private final PropertySource properties;
 
-	private final NodeAccountsCreation delegate = new NodeAccountsCreation();
+	public BackedSystemAccountsCreator(PropertySource properties) {
+		this.properties = properties;
+	}
 
 	@Override
 	public void createSystemAccounts(FCMap<MerkleEntityId, MerkleAccount> accounts, AddressBook addressBook) throws Exception {
-		delegate.initializeNodeAccounts(addressBook, accounts);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void ensureSystemAccounts(FCMapBackingAccounts backingAccounts, AddressBook addressBook) {
-		throw new UnsupportedOperationException();
+		throw new AssertionError("Not implemented");
 	}
 }

@@ -24,6 +24,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -344,6 +345,7 @@ public class ServicesContextTest {
 		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
 		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
 		assertThat(ctx.txnHistories(), instanceOf(Map.class));
+		assertThat(ctx.backingAccounts(), instanceOf(FCMapBackingAccounts.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

@@ -78,9 +78,9 @@ public class HederaLedger {
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
-			.comparing(AccountID::getAccountNum)
-			.thenComparing(AccountID::getShardNum)
-			.thenComparing(AccountID::getRealmNum);
+			.comparingLong(AccountID::getAccountNum)
+			.thenComparingLong(AccountID::getShardNum)
+			.thenComparingLong(AccountID::getRealmNum);
 
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;

@@ -21,6 +21,7 @@ package com.hedera.test.mocks;
  */
 
 import com.google.common.cache.CacheBuilder;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.StandardizedPropertySources;
@@ -75,7 +76,8 @@ public enum TestFeesFactory {
 		FileFeeBuilder fileFees = new FileFeeBuilder();
 		CryptoFeeBuilder cryptoFees = new CryptoFeeBuilder();
 		SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
-		PropertySource properties = new StandardizedPropertySources(ignore -> true).asResolvingSource();
+		PropertySource properties =
+				new StandardizedPropertySources(new BootstrapProperties(), ignore -> true).asResolvingSource();
 		AnswerFunctions answerFunctions = new AnswerFunctions();
 		RecordCache recordCache = new RecordCache(
 				null,

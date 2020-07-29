@@ -45,11 +45,14 @@ import static com.hedera.services.context.properties.StandardizedPropertySources
 
 @RunWith(JUnitPlatform.class)
 public class StandardizedPropertySourcesTest {
-	StandardizedPropertySources subject;
 	Predicate fileSourceExists;
+	PropertySource bootstrapProps;
+
+	StandardizedPropertySources subject;
 
 	@BeforeEach
 	private void setup() {
+		bootstrapProps = mock(PropertySource.class);
 		fileSourceExists = mock(Predicate.class);
 	}
 
@@ -150,8 +153,8 @@ public class StandardizedPropertySourcesTest {
 		PropertySource properties = subject.asResolvingSource();
 
 		// then:
-		assertTrue(properties.containsProperty("bootstrap.customKeystore.masterKey"));
-		assertTrue(properties.containsProperty("bootstrap.customKeystore.path"));
+		assertTrue(properties.containsProperty("bootstrap.genesisB64Keystore.keyName"));
+		assertTrue(properties.containsProperty("bootstrap.genesisB64Keystore.path"));
 		assertTrue(properties.containsProperty("bootstrap.feeSchedulesJson.resource"));
 		assertTrue(properties.containsProperty("bootstrap.permissions.path"));
 		assertTrue(properties.containsProperty("bootstrap.properties.path"));
@@ -196,7 +199,7 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));
 		assertTrue(properties.containsProperty("hedera.shard"));
-		//assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
+		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValididityBufferSecs"));
@@ -210,8 +213,8 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
 		assertTrue(properties.containsProperty("ledger.float.hbars"));
 		assertTrue(properties.containsProperty("ledger.funding.account"));
-		assertTrue(properties.containsProperty("ledger.records.addCacheRecordToState"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
+		assertTrue(properties.containsProperty("ledger.systemAccount.initialHbars"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.tps"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.burstPeriod"));
@@ -238,8 +241,6 @@ public class StandardizedPropertySourcesTest {
 		// then:
 		assertDoesNotThrow(() ->
 				properties.getBooleanProperty("hedera.createSystemFilesOnStartup"));
-		assertDoesNotThrow(() ->
-				properties.getBooleanProperty("ledger.records.addCacheRecordToState"));
 		assertDoesNotThrow(() ->
 				properties.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"));
 		assertDoesNotThrow(() ->
@@ -275,6 +276,6 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	private void givenImpliedSubject() {
-		subject = new StandardizedPropertySources(fileSourceExists);
+		subject = new StandardizedPropertySources(bootstrapProps, fileSourceExists);
 	}
 }

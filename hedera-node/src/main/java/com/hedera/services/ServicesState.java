@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -148,7 +149,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				nodeId,
 				platform,
 				this,
-				new StandardizedPropertySources(PropertiesLoader::getFileExistenceCheck));
+				new StandardizedPropertySources(
+						new BootstrapProperties(),
+						PropertiesLoader::getFileExistenceCheck));
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}

@@ -322,6 +322,7 @@ public class ServicesContext {
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private LedgerAccountsSource accountSource;
+	private FCMapBackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
@@ -800,14 +801,20 @@ public class ServicesContext {
 		return exchange;
 	}
 
+	public FCMapBackingAccounts backingAccounts() {
+		if (backingAccounts == null) {
+			backingAccounts = new FCMapBackingAccounts(accounts());
+		}
+		return backingAccounts;
+	}
+
 	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new FCMapBackingAccounts(accounts()),
-					new ChangeSummaryManager<>()
-			);
+					backingAccounts(),
+					new ChangeSummaryManager<>());
 			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(ids(), creator(), recordsHistorian(), delegate);
 		}
@@ -1019,8 +1026,8 @@ public class ServicesContext {
 					properties(),
 					(TieredHederaFs)hfs(),
 					() -> lookupInCustomStore(
-							properties.getStringProperty("bootstrap.customKeystore.path"),
-							properties.getStringProperty("bootstrap.customKeystore.masterKey")),
+							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
+							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
 					rates -> {
 						GlobalFlag.getInstance().setExchangeRateSet(rates);
 						if (!midnightRates().isInitialized()) {

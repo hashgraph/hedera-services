@@ -29,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -77,10 +76,15 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
+	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
 	private final Map<String, Object> throttlePropsFromSysFile = new HashMap<>();
 
-	public StandardizedPropertySources(Predicate<String> fileSourceExists) {
+	public StandardizedPropertySources(
+			PropertySource bootstrapProps,
+			Predicate<String> fileSourceExists
+	) {
+		this.bootstrapProps = bootstrapProps;
 		this.fileSourceExists = fileSourceExists;
 
 		throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
@@ -160,16 +164,14 @@ public class StandardizedPropertySources implements PropertySources {
 	private Map<String, Supplier<Object>> sourceMap() {
 		Supplier<Object> initOnStartup = () ->
 				PropertiesLoader.getInitializeHederaFlag().equals("YES");
-		Supplier<Object> addCacheRecordToState = () ->
-				"true".equals(Optional.ofNullable(getenv("ADD_CACHE_RECORD_TO_STATE")).orElse("false"));
 		Supplier<Object> maxLookupRetries = () ->
 				PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES;
 		Supplier<Object> retryBackoffIncrementMs = () ->
 				PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS;
 
 		Map<String, Supplier<Object>> source = new HashMap<>();
-		source.put("bootstrap.customKeystore.masterKey", () -> ApplicationConstants.START_ACCOUNT);
-		source.put("bootstrap.customKeystore.path", PropertiesLoader::getGenAccountPath);
+		source.put("bootstrap.genesisB64Keystore.keyName", () -> ApplicationConstants.START_ACCOUNT);
+		source.put("bootstrap.genesisB64Keystore.path", PropertiesLoader::getGenAccountPath);
 		source.put("bootstrap.feeSchedulesJson.resource", () -> ApplicationConstants.FEE_FILE_PATH);
 		source.put("bootstrap.permissions.path", () -> ApplicationConstants.API_ACCESS_FILE);
 		source.put("bootstrap.properties.path", () -> ApplicationConstants.PROPERTY_FILE);
@@ -229,8 +231,8 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
 		source.put("ledger.float.hbars", PropertiesLoader::getInitialGenesisCoins);
 		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
-		source.put("ledger.records.addCacheRecordToState", addCacheRecordToState);
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
+		source.put("ledger.systemAccount.initialHbars", PropertiesLoader::getInitialCoins);
 		source.put("ledger.transfers.maxLen", PropertiesLoader::getTransferAccountListSize);
 		source.put("validation.preConsensus.accountKey.maxLookupRetries", maxLookupRetries);
 		source.put("validation.preConsensus.accountKey.retryBackoffIncrementMs", retryBackoffIncrementMs);

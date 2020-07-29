@@ -71,82 +71,6 @@ public class NodeAccountsCreation {
 	private static long INITIAL_GENESIS_COINS = PropertiesLoader.getInitialGenesisCoins();
 	private static long INITIAL_COINS = PropertiesLoader.getInitialCoins();
 
-	public static void insertAccount(
-			long balance,
-			String publicKey,
-			AccountID accountID,
-			FCMap<MerkleEntityId, MerkleAccount> map
-	) throws DecoderException, NegativeAccountBalanceException {
-		LocalDate date = LocalDate.parse("2018-09-01");
-		long expiryTime = PropertiesLoader.getExpiryTime();
-
-		Key accountKeys = Key.newBuilder()
-				.setKeyList(KeyList.newBuilder()
-						.addKeys(Key.newBuilder()
-								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(publicKey))).build())
-						.build())
-				.build();
-		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
-
-		JKey jKey = JKey.mapKey(accountKeys);
-		MerkleAccount hAccount = new HederaAccountCustomizer()
-				.fundsSentRecordThreshold(INITIAL_GENESIS_COINS)
-				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
-				.isReceiverSigRequired(false)
-				.proxy(EntityId.MISSING_ENTITY_ID)
-				.isDeleted(false)
-				.expiry(expiryTime)
-				.memo("")
-				.isSmartContract(false)
-				.key(jKey)
-				.autoRenewPeriod(date.toEpochDay())
-				.customizing(new MerkleAccount());
-		hAccount.setBalance(balance);
-
-		map.put(merkleEntityId, hAccount);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static Map<String, List<AccountKeyListObj>> readBase64EncodedGenesisKey(String loc) {
-		Map<String, List<AccountKeyListObj>> keysListMap = null;
-		try {
-			var keyBase64Pub = Files.readString(Paths.get(loc));
-			byte[] accountKeyPairHolderBytes = Base64.getDecoder().decode(keyBase64Pub);
-			keysListMap = (Map<String, List<AccountKeyListObj>>) convertFromBytes(accountKeyPairHolderBytes);
-		} catch (IOException | ClassNotFoundException e) {
-			log.error("Unable to deserialize startup keystore!", e);
-		}
-		return keysListMap;
-	}
-
-	private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
-		try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-			 ObjectInput in = new ObjectInputStream(bis)) {
-			return in.readObject();
-		}
-	}
-
-	public static void writeToFile(String path, byte[] data) throws IOException {
-		File f = new File(path);
-		File parent = f.getParentFile();
-		if (parent != null && !parent.exists()) {
-			parent.mkdirs();
-		}
-
-		try (FileOutputStream fos = new FileOutputStream(f, false)) {
-			fos.write(data);
-			fos.flush();
-		} catch (IOException e) {
-			log.error("Error while writing to file {}", path, e);
-			throw e;
-		}
-	}
-
-	public static void writeToFileUTF8(String path, String data) throws IOException {
-		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-		writeToFile(path, bytes);
-	}
-
 	public void initializeNodeAccounts(
 			AddressBook addressBook,
 			FCMap<MerkleEntityId, MerkleAccount> map
@@ -224,4 +148,82 @@ public class NodeAccountsCreation {
 		log.info("Total balance for ledger " + totalLedgerBalance);
 		log.info("Account initialization process completed");
 	}
+
+
+	public static void insertAccount(
+			long balance,
+			String publicKey,
+			AccountID accountID,
+			FCMap<MerkleEntityId, MerkleAccount> map
+	) throws DecoderException, NegativeAccountBalanceException {
+		LocalDate date = LocalDate.parse("2018-09-01");
+		long expiryTime = PropertiesLoader.getExpiryTime();
+
+		Key accountKeys = Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(publicKey))).build())
+						.build())
+				.build();
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
+
+		JKey jKey = JKey.mapKey(accountKeys);
+		MerkleAccount hAccount = new HederaAccountCustomizer()
+				.fundsSentRecordThreshold(INITIAL_GENESIS_COINS)
+				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
+				.isReceiverSigRequired(false)
+				.proxy(EntityId.MISSING_ENTITY_ID)
+				.isDeleted(false)
+				.expiry(expiryTime)
+				.memo("")
+				.isSmartContract(false)
+				.key(jKey)
+				.autoRenewPeriod(date.toEpochDay())
+				.customizing(new MerkleAccount());
+		hAccount.setBalance(balance);
+
+		map.put(merkleEntityId, hAccount);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, List<AccountKeyListObj>> readBase64EncodedGenesisKey(String loc) {
+		Map<String, List<AccountKeyListObj>> keysListMap = null;
+		try {
+			var keyBase64Pub = Files.readString(Paths.get(loc));
+			byte[] accountKeyPairHolderBytes = Base64.getDecoder().decode(keyBase64Pub);
+			keysListMap = (Map<String, List<AccountKeyListObj>>) convertFromBytes(accountKeyPairHolderBytes);
+		} catch (IOException | ClassNotFoundException e) {
+			log.error("Unable to deserialize startup keystore!", e);
+		}
+		return keysListMap;
+	}
+
+	private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+		try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+			 ObjectInput in = new ObjectInputStream(bis)) {
+			return in.readObject();
+		}
+	}
+
+	public static void writeToFile(String path, byte[] data) throws IOException {
+		File f = new File(path);
+		File parent = f.getParentFile();
+		if (parent != null && !parent.exists()) {
+			parent.mkdirs();
+		}
+
+		try (FileOutputStream fos = new FileOutputStream(f, false)) {
+			fos.write(data);
+			fos.flush();
+		} catch (IOException e) {
+			log.error("Error while writing to file {}", path, e);
+			throw e;
+		}
+	}
+
+	public static void writeToFileUTF8(String path, String data) throws IOException {
+		byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
+		writeToFile(path, bytes);
+	}
+
 }
