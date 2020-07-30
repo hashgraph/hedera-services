@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
@@ -39,14 +38,12 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -102,7 +99,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 //				updateFailsWithInsufficientSigs(SigStyle.MAP),
 //				updateFailsWithInsufficientSigs(SigStyle.LIST),
 //				updateFailsIfMissingSigs()
-				cannotSetThresholdNegative()
+//				cannotSetThresholdNegative()
+				updateWithEmptyKey()
 		);
 	}
 
@@ -206,6 +204,24 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 										forKey("testAccount", origKeySigs),
 										forKey("updKey", updKeySigs))
 								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	private HapiApiSpec updateWithEmptyKey() {
+		SigControl origKeySigs = KeyShape.SIMPLE;
+		SigControl updKeySigs = threshOf(0, 0);
+
+		return defaultFailingHapiSpec("UpdateWithEmptyKey")
+				.given(
+						newKeyNamed("origKey").shape(origKeySigs),
+						newKeyNamed("updKey").shape(updKeySigs)
+				).when(
+						cryptoCreate("testAccount")
+								.key("origKey")
+				).then(
+						cryptoUpdate("testAccount")
+								.key("updKey")
+								.hasPrecheck(BAD_ENCODING)
 				);
 	}
 
