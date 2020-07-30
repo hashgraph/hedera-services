@@ -1532,10 +1532,10 @@ jobs:
             cd swirlds-platform; git submodule update --init --recursive --checkout
       - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
       - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
-      - run:
-          name: Run regression tests
-          command: |
-            cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
+#      - run:
+#          name: Run regression tests
+#          command: |
+#            cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
 #      - store-test-results:
 #          path: results/
 #
