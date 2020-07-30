@@ -1534,7 +1534,7 @@ jobs:
           name: checkout and compile platform repository
           command: |
             mkdir ~/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
-            cd ..; git clone --recurse-submodule https://Neeharika-Sompalli@github.com/swirlds/swirlds-platform.git;
+            cd ..; git clone --recurse-submodule https://Neeharika-Sompalli:Neeha@s4uma@github.com/swirlds/swirlds-platform.git;
             cd swirlds-platform; git submodule update --init --recursive --checkout ;
             cd regression;
             git checkout services-regression-JRS;
