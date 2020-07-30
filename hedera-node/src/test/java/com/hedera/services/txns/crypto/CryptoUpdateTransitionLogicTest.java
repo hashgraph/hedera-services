@@ -293,14 +293,14 @@ public class CryptoUpdateTransitionLogicTest {
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
-	@Test
-	public void rejectsKeyWithBadEncoding() {
-		givenValidTxnCtx();
-		given(validator.hasGoodEncoding(any())).willReturn(false);
-
-		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
-	}
+//	@Test
+//	public void rejectsKeyWithBadEncoding() {
+//		givenValidTxnCtx();
+//		given(validator.hasGoodEncoding(any())).willReturn(false);
+//
+//		// expect:
+//		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+//	}
 
 	@Test
 	public void rejectsInvalidExpiry() {
