@@ -303,6 +303,17 @@ public class CryptoUpdateTransitionLogicTest {
 //	}
 
 	@Test
+	public void rejectsKeyWithBadEncoding() {
+		givenValidTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))
+				.build();
+
+		// expect:
+		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
 	public void rejectsInvalidExpiry() {
 		givenValidTxnCtx();
 		given(validator.isValidExpiry(any())).willReturn(false);

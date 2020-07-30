@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -141,9 +142,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
 		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
 
-		if (op.hasKey() && !validator.hasGoodEncoding(op.getKey())) {
-			return BAD_ENCODING;
+		if (op.hasKey()) {
+			try {
+				JKey converted = JKey.mapKey(op.getKey());
+			} catch (DecoderException e) {
+				return BAD_ENCODING;
+			}
 		}
+
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
 		}
