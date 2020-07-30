@@ -890,7 +890,7 @@ executors:
   deploy_services_regression_artifacts:
     description: Test hedera-services regression tests
     docker:
-      - image: swirlds/cci-openjdk:12.0.2
+      - image: qnswirlds/java-builder:0.1.3
       - image: postgres:10.9
         environment:
           POSTGRES_USER: swirlds
