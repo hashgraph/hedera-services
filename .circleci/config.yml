@@ -1521,11 +1521,11 @@ jobs:
     steps:
       - checkout
       - run: cd hedera-services; mvn clean install -DskipTests
-      - checkout https://github.com/swirlds/swirlds-platform.git
-      - run: git submodule update --init --recursive --checkout
+      - run: cd ..; git clone --recurse-submodule https://github.com/swirlds/swirlds-platform.git
+      - run: cd swirlds-platform; git submodule update --init --recursive --checkout
       - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
       - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
-      - run: cd ../swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
+      - run: cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
       - store-test-results:
           path: results/
 
