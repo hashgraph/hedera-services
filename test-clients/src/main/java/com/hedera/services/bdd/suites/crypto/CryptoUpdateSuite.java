@@ -211,7 +211,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		SigControl origKeySigs = KeyShape.SIMPLE;
 		SigControl updKeySigs = threshOf(0, 0);
 
-		return defaultFailingHapiSpec("UpdateWithEmptyKey")
+		return defaultHapiSpec("UpdateWithEmptyKey")
 				.given(
 						newKeyNamed("origKey").shape(origKeySigs),
 						newKeyNamed("updKey").shape(updKeySigs)
