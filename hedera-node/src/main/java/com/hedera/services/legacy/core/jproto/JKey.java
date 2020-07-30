@@ -146,7 +146,7 @@ public abstract class JKey implements Serializable, Cloneable {
 			ContractID cid = key.getContractID();
 			rv = new JContractIDKey(cid);
 		} else {
-			throw new IllegalArgumentException("Key type not implemented: key=" + key);
+			throw new DecoderException("Key type not implemented: key=" + key);
 		}
 
 		return rv;
