@@ -1517,7 +1517,6 @@ jobs:
       MAVEN_OPTS: -Xmx5200m
       IN_CIRCLE_CI: true
       REPO: /repo
-      WORKFLOW-NAME: << parameters.workflow-name >>
     working_directory: /repo
     steps:
       - checkout
