@@ -140,18 +140,17 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
 		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
-		ResponseCodeEnum responseCode;
 
 		if (op.hasKey() && !validator.hasGoodEncoding(op.getKey())) {
-			responseCode = BAD_ENCODING;
-		} else if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-			responseCode = AUTORENEW_DURATION_NOT_IN_RANGE;
-		} else if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-			responseCode = INVALID_EXPIRATION_TIME;
-		} else {
-			responseCode = OK;
+			return BAD_ENCODING;
+		}
+		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+			return AUTORENEW_DURATION_NOT_IN_RANGE;
+		}
+		if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
+			return INVALID_EXPIRATION_TIME;
 		}
 
-		return responseCode;
+		return OK;
 	}
 }
