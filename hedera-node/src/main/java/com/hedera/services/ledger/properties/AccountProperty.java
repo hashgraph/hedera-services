@@ -175,11 +175,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::payerRecords;
 		}
-
-		@Override
-		public boolean requiresMutableRef() {
-			return true;
-		}
 	},
 	HISTORY_RECORDS {
 		@Override
@@ -190,11 +185,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::records;
-		}
-
-		@Override
-		public boolean requiresMutableRef() {
-			return true;
 		}
 	};
 

@@ -188,8 +188,8 @@ public class RepoNewCacheTest {
               .key(new JContractIDKey(0, 0, 2))
               .customizing(someOtherAccount);
     } catch (Exception impossible) {}
-    backingAccounts.replace(IdUtils.asAccount("0.0.1"), someAccount);
-    backingAccounts.replace(IdUtils.asAccount("0.0.2"), someOtherAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.1"), someAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
@@ -206,9 +206,8 @@ public class RepoNewCacheTest {
       e.printStackTrace();
     }
 
-    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
-
     ledger.begin();
+    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
     repository.increaseNonce(someKeyBytes);
     ServicesRepositoryImpl track1 = repository.startTracking();
     track1.addBalance(someKeyBytes, BigInteger.TEN.negate());

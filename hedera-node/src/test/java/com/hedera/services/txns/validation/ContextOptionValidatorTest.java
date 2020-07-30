@@ -63,7 +63,7 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 @RunWith(JUnitPlatform.class)
 public class ContextOptionValidatorTest {
@@ -117,20 +117,20 @@ public class ContextOptionValidatorTest {
 		properties = mock(PropertySource.class);
 		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(100);
 		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(a))).willReturn(aV);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(deleted))).willReturn(deletedV);
-		given(accounts.get(fromPojoContractId(contract))).willReturn(contractV);
-		given(accounts.get(fromPojoContractId(deletedContract))).willReturn(deletedContractV);
+		given(accounts.get(MerkleEntityId.fromAccountId(a))).willReturn(aV);
+		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
+		given(accounts.get(fromContractId(contract))).willReturn(contractV);
+		given(accounts.get(fromContractId(deletedContract))).willReturn(deletedContractV);
 
 		topics = mock(FCMap.class);
 		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
 		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
-		given(topics.get(MerkleEntityId.fromPojoTopicId(topicId))).willReturn(merkleTopic);
-		given(topics.get(MerkleEntityId.fromPojoTopicId(missingTopicId))).willReturn(null);
-		given(topics.get(MerkleEntityId.fromPojoTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
-		given(topics.get(MerkleEntityId.fromPojoTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
+		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(MerkleEntityId.fromTopicId(missingTopicId))).willReturn(null);
+		given(topics.get(MerkleEntityId.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
+		given(topics.get(MerkleEntityId.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
 		wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
 		attr = new JFileInfo(false, wacl, expiry);

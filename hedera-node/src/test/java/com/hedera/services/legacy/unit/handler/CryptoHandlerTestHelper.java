@@ -155,7 +155,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 					isAccountSetForDeletion = true;
 					break;
 				}
-				MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(acctId);
+				MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(acctId);
 				MerkleAccount mapValue = map.get(merkleEntityId);
 				if (mapValue == null) {
 					if (log.isDebugEnabled()) {
@@ -187,7 +187,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 			} else {
 				for (AccountAmount actAmt : accountAmounts) {
 					acctId = actAmt.getAccountID();
-					MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(acctId);
+					MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(acctId);
 					MerkleAccount mapValue = map.getForModify(merkleEntityId);
 					if (log.isDebugEnabled()) {
 						log.debug(
@@ -288,7 +288,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 
 	public boolean validateAccountID(AccountID accountID) {
 		boolean isValid = false;
-		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
 		if (map.containsKey(merkleEntityId)) {
 			MerkleAccount mapValue = map.get(merkleEntityId);
 			if (mapValue != null) {
@@ -303,7 +303,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 	 * The method checks whether an account is set for deletion or not
 	 */
 	public boolean isAccountSetForDelete(AccountID accountID) {
-		MerkleEntityId accountKey = MerkleEntityId.fromPojoAccountId(accountID);
+		MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
 		if (map.containsKey(accountKey)) {
 			MerkleAccount accountValue = map.get(accountKey);
 			return accountValue.isDeleted();
@@ -397,7 +397,7 @@ class AccountOperations {
 	}
 
 	static void markDeleted(AccountID target, FCMap<MerkleEntityId, MerkleAccount> ledger) {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(target);
+		MerkleEntityId key = MerkleEntityId.fromAccountId(target);
 		MerkleAccount account = ledger.getForModify(key);
 		account.setDeleted(true);
 		ledger.replace(key, account);
@@ -427,7 +427,7 @@ class AccountOperations {
 
 	static boolean isValid(AccountID account, FCMap<MerkleEntityId, MerkleAccount> ledger) {
 		return Optional
-				.ofNullable(ledger.get(MerkleEntityId.fromPojoAccountId(account)))
+				.ofNullable(ledger.get(MerkleEntityId.fromAccountId(account)))
 				.map(a -> !a.getKey().hasContractID())
 				.orElse(false);
 	}
@@ -435,7 +435,7 @@ class AccountOperations {
 	static void doTransfer(
 			AccountAmount transfer, FCMap<MerkleEntityId, MerkleAccount> ledger)
 			throws NegativeAccountBalanceException {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(transfer.getAccountID());
+		MerkleEntityId key = MerkleEntityId.fromAccountId(transfer.getAccountID());
 		MerkleAccount account = ledger.getForModify(key);
 		long adjustedBalance = Math.addExact(account.getBalance(), transfer.getAmount());
 		account.setBalance(adjustedBalance);
@@ -475,7 +475,7 @@ class AccountOperations {
 	}
 
 	static long balanceOf(AccountID account, FCMap<MerkleEntityId, MerkleAccount> ledger) {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(account);
+		MerkleEntityId key = MerkleEntityId.fromAccountId(account);
 		return ledger.get(key).getBalance();
 	}
 

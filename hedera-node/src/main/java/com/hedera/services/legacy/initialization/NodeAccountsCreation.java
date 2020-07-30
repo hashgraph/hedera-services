@@ -114,7 +114,7 @@ public class NodeAccountsCreation {
 		for (Address address1 : addressList) {
 			address = address1;
 			var id = EntityIdUtils.accountParsedFromString(address.getMemo());
-			merkleEntityId = MerkleEntityId.fromPojoAccountId(id);
+			merkleEntityId = MerkleEntityId.fromAccountId(id);
 			if (!map.containsKey(merkleEntityId)) {
 				log.info(
 						"The node Public Key for Account Num ===> "
@@ -149,7 +149,6 @@ public class NodeAccountsCreation {
 		log.info("Account initialization process completed");
 	}
 
-
 	public static void insertAccount(
 			long balance,
 			String publicKey,
@@ -165,7 +164,7 @@ public class NodeAccountsCreation {
 								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(publicKey))).build())
 						.build())
 				.build();
-		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
 
 		JKey jKey = JKey.mapKey(accountKeys);
 		MerkleAccount hAccount = new HederaAccountCustomizer()

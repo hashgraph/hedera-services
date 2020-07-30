@@ -391,7 +391,7 @@ public class FeeChargingRecordsHistorianTest {
 
 		MerkleAccount v = new MerkleAccount();
 		IS_SMART_CONTRACT.setter().accept(v, false);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(contract)))).willReturn(v);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
 	}
 
 	private void addSetupForCallToDeletedContract() {
@@ -409,7 +409,7 @@ public class FeeChargingRecordsHistorianTest {
 		MerkleAccount v = new MerkleAccount();
 		IS_SMART_CONTRACT.setter().accept(v, true);
 		IS_DELETED.setter().accept(v, true);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(contract)))).willReturn(v);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
 	}
 
 	private void addSetupForValidContractCall() {
@@ -428,7 +428,7 @@ public class FeeChargingRecordsHistorianTest {
 
 		MerkleAccount v = new MerkleAccount();
 		IS_SMART_CONTRACT.setter().accept(v, true);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(contract)))).willReturn(v);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(contract)))).willReturn(v);
 	}
 
 	private void addSetupForValidContractCreate() {
@@ -544,7 +544,7 @@ public class FeeChargingRecordsHistorianTest {
 			List<Long> consensusTimes,
 			List<TransactionID> txnIds
 	) {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(id);
+		MerkleEntityId key = MerkleEntityId.fromAccountId(id);
 		MerkleAccount value = new MerkleAccount();
 		given(ledger.getBalance(id)).willReturn(balance);
 		given(ledger.fundsSentRecordThreshold(id)).willReturn(sendThreshold);

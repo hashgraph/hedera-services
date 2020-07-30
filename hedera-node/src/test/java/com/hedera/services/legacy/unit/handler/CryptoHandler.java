@@ -31,7 +31,7 @@ public class CryptoHandler {
 
   public boolean validateAccountID(AccountID accountID) {
     boolean isValid = false;
-    MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
+    MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
     if (map.containsKey(merkleEntityId)) {
       MerkleAccount mapValue = map.get(merkleEntityId);
       if (mapValue != null) {
@@ -42,7 +42,7 @@ public class CryptoHandler {
   }
 
   public boolean isAccountSetForDelete(AccountID accountID) {
-    MerkleEntityId accountKey = MerkleEntityId.fromPojoAccountId(accountID);
+    MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
     if (map.containsKey(accountKey)) {
       MerkleAccount accountValue = map.get(accountKey);
       return accountValue.isDeleted();

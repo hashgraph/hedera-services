@@ -25,8 +25,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -80,7 +78,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicId = MerkleEntityId.fromPojoTopicId(op.getTopicID());
+		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
 		var topic = topics.get(topicId);
 		if (!topic.hasAdminKey() && wantsToMutateNonExpiryField(op)) {
 			transactionContext.setStatus(UNAUTHORIZED);

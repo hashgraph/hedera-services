@@ -136,7 +136,7 @@ public class AwareTransactionContextTest {
 		MerkleAccount payerAccount = mock(MerkleAccount.class);
 		given(payerAccount.getKey()).willReturn(payerKey);
 		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(payer))).willReturn(payerAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
 
 		ctx = mock(ServicesContext.class);
 		given(ctx.exchange()).willReturn(exchange);

@@ -82,7 +82,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	private Stream<JKey> keyRequirement(AccountID id) {
-		return Optional.ofNullable(accounts.get(MerkleEntityId.fromPojoAccountId(id)))
+		return Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
 				.map(MerkleAccount::getKey)

@@ -154,7 +154,7 @@ public class FeeDataLookups {
 
 	static public FeeData getConsensusUpdateTopicTransactionFeeMatrices(
 			TransactionBody txBody, SigValueObj sigValObj, FCMap<MerkleEntityId, MerkleTopic> topicFCMap) throws Exception {
-		MerkleTopic merkleTopic = topicFCMap.get(MerkleEntityId.fromPojoTopicId(txBody.getConsensusUpdateTopic().getTopicID()));
+		MerkleTopic merkleTopic = topicFCMap.get(MerkleEntityId.fromTopicId(txBody.getConsensusUpdateTopic().getTopicID()));
 		long rbsIncrease = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
 				txBody.getTransactionID().getTransactionValidStart(),
 				JKey.mapJKey(merkleTopic.getAdminKey()), JKey.mapJKey(merkleTopic.getSubmitKey()),
@@ -178,7 +178,7 @@ public class FeeDataLookups {
 			} else if (txBody.hasCryptoDelete()) {
 				feeMatrices = getCryptoDeleteTransactionFeeMatrices(txBody, sigValObj);
 			} else if (txBody.hasCryptoUpdateAccount()) {
-				MerkleEntityId accountIDMerkleEntityId = MerkleEntityId.fromPojoAccountId(txBody.getTransactionID().getAccountID());
+				MerkleEntityId accountIDMerkleEntityId = MerkleEntityId.fromAccountId(txBody.getTransactionID().getAccountID());
 				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(accountIDMerkleEntityId, accountFCMap);
 				MerkleAccount account = accountFCMap.get(accountIDMerkleEntityId);
 				Key existingKey = JKey.mapJKey(account.getKey());
@@ -189,7 +189,7 @@ public class FeeDataLookups {
 				feeMatrices = getSmartContractCallTransactionFeeMatrices(txBody, sigValObj);
 			} else if (txBody.hasContractUpdateInstance()) {
 				ContractID contractID = txBody.getContractUpdateInstance().getContractID();
-				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(MerkleEntityId.fromPojoContractId(contractID), accountFCMap);
+				Timestamp expirationTimeStamp = FeeCalcUtils.lookupAccountExpiry(MerkleEntityId.fromContractId(contractID), accountFCMap);
 				feeMatrices = getSmartContractUpdateTransactionFeeMatrices(txBody, expirationTimeStamp, sigValObj);
 			} else if (txBody.hasFileCreate()) {
 				feeMatrices = getFileCreateTransactionFeeMatrices(txBody, sigValObj);

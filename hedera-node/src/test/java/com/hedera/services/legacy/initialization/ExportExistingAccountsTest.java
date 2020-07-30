@@ -45,7 +45,7 @@ class ExportExistingAccountsTest {
 		savedAccounts.copyFromExtra(in);
 
 		// given:
-		savedAccounts.get(MerkleEntityId.fromPojoAccountId(EntityIdUtils.accountParsedFromString("1.2.3")))
+		savedAccounts.get(MerkleEntityId.fromAccountId(EntityIdUtils.accountParsedFromString("1.2.3")))
 				.setProxy(null);
 
 		// expect:

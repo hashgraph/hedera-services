@@ -182,7 +182,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	private boolean isCallableContract(AccountID id) {
-		return Optional.ofNullable(accounts.get(MerkleEntityId.fromPojoAccountId(id)))
+		return Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(id)))
 				.map(v -> v.isSmartContract() && !v.isDeleted())
 				.orElse(false);
 	}

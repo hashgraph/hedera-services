@@ -56,7 +56,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 	 */
 	@Override
 	public ContractSigningMetadata lookup(ContractID id) throws Exception {
-		MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoContractId(id));
+		MerkleAccount contract = accounts.get(MerkleEntityId.fromContractId(id));
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			throw new InvalidContractIDException("Invalid contract!", id);
 		} else if (contract.getKey() == null) {

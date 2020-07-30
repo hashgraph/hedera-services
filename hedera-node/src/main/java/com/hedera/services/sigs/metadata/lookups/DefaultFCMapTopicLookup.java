@@ -36,7 +36,7 @@ public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
 
 	@Override
 	public TopicSigningMetadata lookup(TopicID id) throws Exception {
-		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromPojoTopicId(id));
+		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
 		if ((merkleTopic == null) || merkleTopic.isDeleted()) {
 			throw new InvalidTopicIDException("Invalid topic!", id);
 		}

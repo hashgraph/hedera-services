@@ -54,7 +54,6 @@ import org.ethereum.util.ByteUtil;
 import org.ethereum.vm.program.Program;
 import org.spongycastle.pqc.math.linearalgebra.ByteUtils;
 import org.spongycastle.util.encoders.DecoderException;
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -90,7 +89,6 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 
@@ -619,7 +617,7 @@ public class SmartContractRequestHandler {
 		String contractEthAddress = asSolidityAddressHex(id);
 		if (!StringUtils.isEmpty(contractEthAddress)) {
 			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+			MerkleAccount contract = accounts.get(MerkleEntityId.fromAccountId(id));
 			if (contract != null && contract.isSmartContract()) {
 				builder.setContractID(cid)
 						.setBalance(contract.getBalance())
@@ -729,7 +727,7 @@ public class SmartContractRequestHandler {
 	 */
 	public ByteString getContractBytecode(ContractID cid) {
 		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+		MerkleAccount contract = accounts.get(MerkleEntityId.fromAccountId(id));
 		if (contract != null && contract.isSmartContract()) {
 			String contractEthAddress = asSolidityAddressHex(id);
 			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);

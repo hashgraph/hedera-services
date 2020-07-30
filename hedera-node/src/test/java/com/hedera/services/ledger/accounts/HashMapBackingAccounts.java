@@ -42,17 +42,15 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	}
 
 	@Override
-	public MerkleAccount getMutableRef(AccountID id) {
+	public void flushMutableRefs() { }
+
+	@Override
+	public MerkleAccount get(AccountID id) {
 		return accounts.get(id);
 	}
 
 	@Override
-	public MerkleAccount getUnsafeRef(AccountID id) {
-		return accounts.get(id);
-	}
-
-	@Override
-	public void replace(AccountID id, MerkleAccount account) {
+	public void put(AccountID id, MerkleAccount account) {
 		accounts.put(id, account);
 	}
 

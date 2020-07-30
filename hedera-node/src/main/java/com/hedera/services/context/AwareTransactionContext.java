@@ -102,7 +102,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? ctx.accounts().get(MerkleEntityId.fromPojoAccountId(accessor.getPayer())).getKey()
+				? ctx.accounts().get(MerkleEntityId.fromAccountId(accessor.getPayer())).getKey()
 				: EMPTY_HEDERA_KEY;
 	}
 

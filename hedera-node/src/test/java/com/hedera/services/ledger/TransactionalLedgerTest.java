@@ -57,8 +57,7 @@ public class TransactionalLedgerTest {
 	@BeforeEach
 	private void setup() {
 		backingAccounts = mock(BackingAccounts.class);
-		given(backingAccounts.getUnsafeRef(1L)).willReturn(account1);
-		given(backingAccounts.getMutableRef(1L)).willReturn(account1);
+		given(backingAccounts.get(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 
 		newAccountFactory = () -> new TestAccount();
@@ -67,7 +66,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void rollbackClearsMutableRefs() {
+	public void rollbackFlushesMutableRefs() {
 		// given:
 		subject.begin();
 
@@ -77,23 +76,7 @@ public class TransactionalLedgerTest {
 		subject.rollback();
 
 		// then:
-		assertTrue(subject.mutableRefs.isEmpty());
-	}
-
-	@Test
-	public void settingPropWithMutableReqUpdatesChangeset() {
-		// given:
-		subject.begin();
-
-		// when:
-		var obj = subject.get(1L, OBJ);
-
-		// then:
-		assertTrue(subject.mutableRefs.containsKey(1L));
-		assertEquals(account1, subject.mutableRefs.get(1L));
-		// and:
-		assertTrue(subject.changes.get(1L).containsKey(OBJ));
-		assertEquals(account1.thing, subject.changes.get(1L).get(OBJ));
+		verify(backingAccounts).flushMutableRefs();
 	}
 
 	@Test
@@ -110,19 +93,7 @@ public class TransactionalLedgerTest {
 		// then:
 		assertEquals(newAccount1, account);
 		// and:
-		verify(backingAccounts).getMutableRef(1L);
-		verify(backingAccounts, never()).getUnsafeRef(1L);
-	}
-
-	@Test
-	public void getUsesUnsafeRefIfNoPendingChanges() {
-		// when:
-		var account = subject.get(1L);
-
-		// then:
-		assertEquals(account1, account);
-		// and:
-		verify(backingAccounts).getUnsafeRef(1L);
+		verify(backingAccounts).get(1L);
 	}
 
 	@Test
@@ -143,8 +114,10 @@ public class TransactionalLedgerTest {
 
 		// then:
 		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
-			inOrder.verify(backingAccounts).replace(argThat(id::equals), any());
+			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
+		// and:
+		verify(backingAccounts).flushMutableRefs();
 	}
 
 	@Test
@@ -169,7 +142,7 @@ public class TransactionalLedgerTest {
 
 		// then:
 		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
-			inOrder.verify(backingAccounts).replace(argThat(id::equals), any());
+			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
 		// and:
 		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
@@ -179,11 +152,12 @@ public class TransactionalLedgerTest {
 
 	@Test
 	public void requiresManualRollbackIfCommitFails() {
-		given(backingAccounts.getMutableRef(any())).willThrow(IllegalStateException.class);
+		willThrow(IllegalStateException.class).given(backingAccounts).put(any(), any());
 
 		// when:
 		subject.begin();
 		subject.set(1L, OBJ, things[0]);
+		subject.create(2L);
 
 		// then:
 		assertThrows(IllegalStateException.class, () -> subject.commit());
@@ -280,36 +254,6 @@ public class TransactionalLedgerTest {
 	public void throwsOnGettingPropOfMissingAccount() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, OBJ));
-	}
-
-	@Test
-	public void throwsWhenGettingMutableReqPropertiesWithoutTransaction() {
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.get(1L, OBJ));
-	}
-
-	@Test
-	public void usesGetRefWhenAccessingNonMutableReqPropertiesFromExistingAccount() {
-		// when:
-		Object _long = subject.get(1L, LONG);
-
-		// then:
-		assertEquals(1L, _long);
-		verify(backingAccounts).getUnsafeRef(1L);
-	}
-
-	@Test
-	public void usesGetRefWhenAccessingUnchangedPropertiesFromExistingAccounts() {
-		// given:
-		subject.begin();
-		subject.set(1L, FLAG, false);
-
-		// when:
-		Object _long = subject.get(1L, LONG);
-
-		// then:
-		assertEquals(1L, _long);
-		verify(backingAccounts).getUnsafeRef(1L);
 	}
 
 	@Test
@@ -420,20 +364,6 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void resetsMutableRefsAfterCommit() {
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-		// and:
-		subject.commit();
-
-		// then:
-		assertTrue(subject.mutableRefs.isEmpty());
-	}
-
-	@Test
 	public void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
 		// given:
 		subject.begin();
@@ -453,9 +383,8 @@ public class TransactionalLedgerTest {
 		assertFalse(subject.isInTransaction());
 		assertEquals("{}", subject.changeSetSoFar());
 		// and:
-		verify(backingAccounts).replace(1L, new TestAccount(account1.value, things[0], account1.flag));
-		verify(backingAccounts).replace(2L, new TestAccount(2L, things[2], false));
-		verify(backingAccounts, never()).replace(3L, new TestAccount(0L, things[3], false));
+		verify(backingAccounts).put(2L, new TestAccount(2L, things[2], false));
+		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
 		verify(backingAccounts).remove(3L);
 	}
 

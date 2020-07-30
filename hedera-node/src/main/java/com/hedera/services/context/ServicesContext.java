@@ -30,6 +30,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -1071,7 +1072,7 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new FCMapBackingAccounts(accounts()),
+					new PureFCMapBackingAccounts(accounts()),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_ID_SOURCE,

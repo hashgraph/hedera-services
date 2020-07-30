@@ -20,11 +20,13 @@ package com.hedera.services.legacy.services.state.initialization;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.initialization.NodeAccountsCreation;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
 
@@ -39,7 +41,10 @@ public class DefaultSystemAccountsCreator implements SystemAccountsCreator {
 	}
 
 	@Override
-	public void ensureSystemAccounts(FCMapBackingAccounts backingAccounts, AddressBook addressBook) {
+	public void ensureSystemAccounts(
+			BackingAccounts<AccountID, MerkleAccount> backingAccounts,
+			AddressBook addressBook
+	) {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -100,7 +100,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 					.setTopicNum(newEntityId.getAccountNum())
 					.build();
 
-			topics.put(MerkleEntityId.fromPojoTopicId(newTopicId), topic);
+			topics.put(MerkleEntityId.fromTopicId(newTopicId), topic);
 			transactionContext.setCreated(newTopicId);
 			transactionContext.setStatus(SUCCESS);
 		} catch (DecoderException e) {

@@ -143,7 +143,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		assertNotNull(topic);
 		verify(transactionContext).setStatus(SUCCESS);
 		assertEquals(VALID_MEMO, topic.getMemo());
@@ -164,7 +164,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		assertNotNull(topic);
 		verify(transactionContext).setStatus(SUCCESS);
 		assertEquals(EXISTING_MEMO, topic.getMemo());
@@ -181,7 +181,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidMemo();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -198,7 +198,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAdminKey();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -215,7 +215,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidSubmitKey();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -232,7 +232,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidAutoRenewPeriod();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -249,7 +249,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithInvalidExpirationTime();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -266,7 +266,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithAdminKey();
 		givenTransactionWithReducedExpirationTime();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -283,7 +283,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenExistingTopicWithoutAdminKey();
 		givenTransactionWithMemo();
 
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		var originalValues = new MerkleTopic(topic);
 
 		// when:
@@ -342,13 +342,13 @@ class MerkleTopicUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		verify(transactionContext).setStatus(SUCCESS);
 		assertFalse(topic.hasAutoRenewAccountId());
 	}
 
 	private void assertTopicNotUpdated(MerkleTopic originalMerkleTopic, MerkleTopic originalMerkleTopicClone) {
-		var updatedTopic = topics.get(MerkleEntityId.fromPojoTopicId(TOPIC_ID));
+		var updatedTopic = topics.get(MerkleEntityId.fromTopicId(TOPIC_ID));
 		assertSame(originalMerkleTopic, updatedTopic); // No change
 		assertEquals(originalMerkleTopicClone, updatedTopic); // No change in values
 	}
@@ -356,28 +356,28 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private void givenExistingTopicWithAdminKey() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null, EXISTING_AUTORENEW_PERIOD_SECONDS, null,
 				EXISTING_EXPIRATION_TIME);
-		topics.put(MerkleEntityId.fromPojoTopicId(TOPIC_ID), existingTopic);
+		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
 	private void givenExistingTopicWithBothKeys() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), JKey.mapKey(existingKey),
 				EXISTING_AUTORENEW_PERIOD_SECONDS, null, EXISTING_EXPIRATION_TIME);
-		topics.put(MerkleEntityId.fromPojoTopicId(TOPIC_ID), existingTopic);
+		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
 	private void givenExistingTopicWithoutAdminKey() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, null, null, EXISTING_AUTORENEW_PERIOD_SECONDS, null,
 				EXISTING_EXPIRATION_TIME);
-		topics.put(MerkleEntityId.fromPojoTopicId(TOPIC_ID), existingTopic);
+		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 
 	private void givenExistingTopicWithAutoRenewAccount() throws Throwable {
 		var existingTopic = new MerkleTopic(EXISTING_MEMO, JKey.mapKey(existingKey), null, EXISTING_AUTORENEW_PERIOD_SECONDS,
 				EntityId.ofNullableAccountId(MISC_ACCOUNT), EXISTING_EXPIRATION_TIME);
-		topics.put(MerkleEntityId.fromPojoTopicId(TOPIC_ID), existingTopic);
+		topics.put(MerkleEntityId.fromTopicId(TOPIC_ID), existingTopic);
 		given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
 	}
 

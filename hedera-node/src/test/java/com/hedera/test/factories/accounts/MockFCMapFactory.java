@@ -48,12 +48,12 @@ public class MockFCMapFactory {
 	}
 
 	public MockFCMapFactory withAccount(String id, MerkleAccount meta) {
-		MerkleEntityId account = MerkleEntityId.fromPojoAccountId(asAccount(id));
+		MerkleEntityId account = MerkleEntityId.fromAccountId(asAccount(id));
 		given(mock.get(account)).willReturn(meta);
 		return this;
 	}
 	public MockFCMapFactory withContract(String id, MerkleAccount meta) {
-		MerkleEntityId contract = MerkleEntityId.fromPojoContractId(asContract(id));
+		MerkleEntityId contract = MerkleEntityId.fromContractId(asContract(id));
 		given(mock.get(contract)).willReturn(meta);
 		return this;
 	}

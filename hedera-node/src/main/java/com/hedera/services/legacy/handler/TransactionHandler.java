@@ -348,7 +348,7 @@ public class TransactionHandler {
     if (trBody.getTransactionID().hasAccountID()) {
       AccountID payerAccount = trBody.getTransactionID().getAccountID();
       if (isAccountExist(payerAccount)) {
-        Long payerAccountBalance = Optional.ofNullable(accounts.get(MerkleEntityId.fromPojoAccountId(payerAccount)))
+        Long payerAccountBalance = Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(payerAccount)))
                 .map(MerkleAccount::getBalance)
                 .orElse(null);
         long suppliedFee = trBody.getTransactionFee();
@@ -365,7 +365,7 @@ public class TransactionHandler {
         if (returnCode == OK) {
           try {
             SignedTxnAccessor accessor = new SignedTxnAccessor(transaction);
-            JKey payerKey = accounts.get(MerkleEntityId.fromPojoAccountId(payerAccount)).getKey();
+            JKey payerKey = accounts.get(MerkleEntityId.fromAccountId(payerAccount)).getKey();
             Timestamp at = trBody.getTransactionID().getTransactionValidStart();
             FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
             fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();

@@ -49,7 +49,7 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 	 */
 	@Override
 	public AccountSigningMetadata lookup(AccountID id) throws Exception {
-		MerkleAccount account = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
 		if (account == null) {
 			throw new InvalidAccountIDException("Invalid account!", id);
 		}

@@ -104,7 +104,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 				.build();
 
 		// given:
-		given(topics.get(MerkleEntityId.fromPojoTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
 
 		// when:
 		FeeData costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);

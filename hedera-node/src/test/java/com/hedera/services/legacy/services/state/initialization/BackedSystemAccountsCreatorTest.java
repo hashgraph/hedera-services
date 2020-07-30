@@ -20,47 +20,129 @@ package com.hedera.services.legacy.services.state.initialization;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.legacy.config.PropertiesLoader;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.merkle.io.MerkleDataInputStream;
-import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.fcmap.FCMap;
-import com.swirlds.fcmap.internal.FCMInternalNode;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import com.swirlds.fcmap.internal.FCMTree;
-import com.swirlds.fcqueue.FCQueue;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import org.spongycastle.util.encoders.Hex;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class BackedSystemAccountsCreatorTest {
+	private long shard = 1;
+	private long realm = 2;
+	private int numAccounts = 4;
+	private String b64Loc = "somewhere";
+	private String legacyId = "CURSED";
+	private String hexedABytes = "447dc6bdbfc64eb894851825194744662afcb70efb8b23a6a24af98f0c1fd8ad";
+	private JKey genesisKey;
+
+	HederaNumbers hederaNums;
+	AccountNumbers accountNums;
 	PropertySource properties;
+	LegacyEd25519KeyReader legacyReader;
+
+	AddressBook book;
+	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
+
+	BackedSystemAccountsCreator subject;
 
 	@BeforeEach
-	public void setup() {
+	public void setup() throws DecoderException {
+		genesisKey = JKey.mapKey(Key.newBuilder()
+				.setKeyList(KeyList.newBuilder()
+						.addKeys(Key.newBuilder()
+										.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(hexedABytes)))
+						)).build());
+
+		hederaNums = mock(HederaNumbers.class);
+		given(hederaNums.realm()).willReturn(realm);
+		given(hederaNums.shard()).willReturn(shard);
+		accountNums = mock(AccountNumbers.class);
+		given(accountNums.treasury()).willReturn(2L);
 		properties = mock(PropertySource.class);
+		legacyReader = mock(LegacyEd25519KeyReader.class);
+
+		given(properties.getIntProperty("bootstrap.accounts.init.numSystemAccounts")).willReturn(numAccounts);
+		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance")).willReturn(10L);
+		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance")).willReturn(5L);
+		given(properties.getLongProperty("bootstrap.ledger.treasury.initialBalance")).willReturn(80L);
+		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")).willReturn(legacyId);
+		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path")).willReturn(b64Loc);
+
+		var address = mock(Address.class);
+		given(address.getMemo()).willReturn("0.0.3");
+		book = mock(AddressBook.class);
+		given(book.getSize()).willReturn(1);
+		given(book.getAddress(0L)).willReturn(address);
+
+		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
+
+		subject = new BackedSystemAccountsCreator(
+				hederaNums,
+				accountNums,
+				properties,
+				legacyReader);
+	}
+
+	@Test
+	public void throwsOnUnavailableGenesisKeyIfCreating() {
+		givenMissingTreasury();
+		// and:
+		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willThrow(IllegalStateException.class);
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.ensureSystemAccounts(backingAccounts, book));
+	}
+
+	private void givenMissingTreasury() {
+		given(backingAccounts.contains(accountWith(1L))).willReturn(true);
+		given(backingAccounts.contains(accountWith(2L))).willReturn(false);
+		given(backingAccounts.contains(accountWith(3L))).willReturn(true);
+		given(backingAccounts.contains(accountWith(4L))).willReturn(true);
+	}
+
+	private AccountID accountWith(long num) {
+		return IdUtils.asAccount(String.format("1.2.%d", num));
+	}
+
+	private MerkleAccount expectedWith(long balance) {
+//		MerkleAccount hAccount = new HederaAccountCustomizer()
+//				.fundsSentRecordThreshold(INITIAL_GENESIS_COINS)
+//				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
+//				.isReceiverSigRequired(false)
+//				.proxy(EntityId.MISSING_ENTITY_ID)
+//				.isDeleted(false)
+//				.expiry(expiryTime)
+//				.memo("")
+//				.isSmartContract(false)
+//				.key(jKey)
+//				.autoRenewPeriod(date.toEpochDay())
+//				.customizing(new MerkleAccount());
+//		hAccount.setBalance(balance);
+		return null;
 	}
 }

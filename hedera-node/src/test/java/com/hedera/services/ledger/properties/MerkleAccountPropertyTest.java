@@ -56,13 +56,6 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void recordsRequireMutableRef() {
-		// expect:
-		assertTrue(PAYER_RECORDS.requiresMutableRef());
-		assertTrue(HISTORY_RECORDS.requiresMutableRef());
-	}
-
-	@Test
 	public void gettersAndSettersWork() throws Exception {
 		// given:
 		boolean origIsDeleted = false;

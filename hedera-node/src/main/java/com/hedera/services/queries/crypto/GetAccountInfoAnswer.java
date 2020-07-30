@@ -74,7 +74,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				MerkleAccount account = view.accounts().get(MerkleEntityId.fromPojoAccountId(id));
+				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
 				String solidityAddress = asSolidityAddressHex(id);
 				CryptoGetInfoResponse.AccountInfo.Builder info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 						.setKey(asKeyUnchecked(account.getKey()))

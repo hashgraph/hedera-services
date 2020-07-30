@@ -64,7 +64,7 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicMapKey = MerkleEntityId.fromPojoTopicId(topicId);
+		var topicMapKey = MerkleEntityId.fromTopicId(topicId);
 		var topic = topics.get(topicMapKey);
 		if (!topic.hasAdminKey()) {
 			// Topics without adminKeys can't be deleted.

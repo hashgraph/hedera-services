@@ -89,7 +89,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		var topicId = MerkleEntityId.fromPojoTopicId(op.getTopicID());
+		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
 		var mutableTopic = topics.getForModify(topicId);
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(

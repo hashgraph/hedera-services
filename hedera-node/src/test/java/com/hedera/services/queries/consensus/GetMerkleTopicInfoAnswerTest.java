@@ -96,7 +96,7 @@ class GetMerkleTopicInfoAnswerTest {
 				.get();
 		merkleTopic.setRunningHash(hash);
 		merkleTopic.setSequenceNumber(seqNo);
-		MerkleEntityId key = MerkleEntityId.fromPojoTopicId(asTopic(target));
+		MerkleEntityId key = MerkleEntityId.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
 		view = new StateView(topics, StateView.EMPTY_ACCOUNTS);
 		optionValidator = mock(OptionValidator.class);

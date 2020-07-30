@@ -141,7 +141,7 @@ public class HederaLedgerTest {
 					.key(new JContractIDKey(0, 0, 2))
 					.customizing(genesisAccount);
 		} catch (Exception impossible) {}
-		backingAccounts.replace(genesis, genesisAccount);
+		backingAccounts.put(genesis, genesisAccount);
 		ledger = new TransactionalLedger<>(
 				AccountProperty.class,
 				() -> new MerkleAccount(),

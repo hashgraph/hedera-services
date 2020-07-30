@@ -25,7 +25,6 @@ import com.hedera.services.context.properties.PropertySource;
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
 public class AccountNumbers {
-
 	private final PropertySource properties;
 
 	private long treasury = UNKNOWN_NUMBER;

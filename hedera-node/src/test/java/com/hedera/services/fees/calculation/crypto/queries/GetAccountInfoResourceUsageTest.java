@@ -82,7 +82,7 @@ class GetAccountInfoResourceUsageTest {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(asAccount(a));
+		MerkleEntityId key = MerkleEntityId.fromAccountId(asAccount(a));
 
 		// given:
 		Query answerOnlyQuery = accountInfoQuery(a, ANSWER_ONLY);
