@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -307,6 +309,22 @@ public class CryptoUpdateTransitionLogicTest {
 		givenValidTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))
+				.build();
+
+		// expect:
+		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidKey() {
+		Key emptyKey = Key.newBuilder().setThresholdKey(
+				ThresholdKey.newBuilder()
+						.setKeys(KeyList.getDefaultInstance())
+						.setThreshold(0)
+		).build();
+		givenValidTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(emptyKey))
 				.build();
 
 		// expect:
