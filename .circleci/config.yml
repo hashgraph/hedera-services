@@ -1507,14 +1507,14 @@ jobs:
   deploy_services_regression_artifacts:
     description: Test hedera-services regression tests
     #works
-#    docker:
-#      - image: qnswirlds/java-builder:0.1.3
-#      - image: postgres:10
-#        environment:
-#          POSTGRES_USER: swirlds
-#          POSTGRES_PASSWORD: password
-#          POSTGRES_DB: fcfs
-#          resource_class: large
+    docker:
+      - image: qnswirlds/java-builder:0.1.3
+      - image: postgres:10
+        environment:
+          POSTGRES_USER: swirlds
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: fcfs
+          resource_class: large
     environment:
       MAVEN_OPTS: -Xmx5200m
       IN_CIRCLE_CI: true
