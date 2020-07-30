@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -295,11 +297,12 @@ public class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	public void rejectsKeyWithBadEncoding() {
-		givenValidTxnCtx();
-		given(validator.hasGoodEncoding(any())).willReturn(false);
+		rejectsKey(unmappableKey());
+	}
 
-		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+	@Test
+	public void rejectsInvalidKey() {
+		rejectsKey(emptyKey());
 	}
 
 	@Test
@@ -371,6 +374,24 @@ public class CryptoUpdateTransitionLogicTest {
 
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
+	}
+
+	private Key emptyKey() {
+		return Key.newBuilder().setThresholdKey(
+				ThresholdKey.newBuilder()
+						.setKeys(KeyList.getDefaultInstance())
+						.setThreshold(0)
+		).build();
+	}
+
+	private void rejectsKey(Key key) {
+		givenValidTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
+				.build();
+
+		// expect:
+		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenValidTxnCtx() {
