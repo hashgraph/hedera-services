@@ -145,6 +145,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		if (op.hasKey()) {
 			try {
 				JKey converted = JKey.mapKey(op.getKey());
+				if (!converted.isValid()) {
+					return BAD_ENCODING;
+				}
 			} catch (DecoderException e) {
 				return BAD_ENCODING;
 			}
