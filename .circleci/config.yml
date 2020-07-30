@@ -896,8 +896,8 @@ workflows:
             branches:
               only:
                 - master
-      jobs:
-        - deploy_services_regression_artifacts
+    jobs:
+      - deploy_services_regression_artifacts
 
   custom-migration:
     triggers:
