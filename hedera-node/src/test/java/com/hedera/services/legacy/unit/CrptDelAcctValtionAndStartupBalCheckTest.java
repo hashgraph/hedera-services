@@ -149,8 +149,8 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		fcMap.clear();
 		long account1Balance = 100000l;
 		// account id has bad realm value
-		account1ID = RequestBuilder.getAccountIdBuild(1021l, 0l, 0l);
-		createAccount(account1ID, account1Balance, keys, -1L, 0);
+		account1ID = RequestBuilder.getAccountIdBuild(1021l, -1l, 0l);
+		createAccount(account1ID, account1Balance, keys);
 
 		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
 		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
@@ -161,8 +161,8 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		fcMap.clear();
 		long account1Balance = 100000l;
 		// account id has bad shard value
-		account1ID = RequestBuilder.getAccountIdBuild(1021l, 0l, 0l);
-		createAccount(account1ID, account1Balance, keys, 0L, 10L);
+		account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 100l);
+		createAccount(account1ID, account1Balance, keys);
 
 		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
 		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
@@ -193,20 +193,8 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {
 		MerkleEntityId mk = new MerkleEntityId();
 		mk.setNum(payerAccount.getAccountNum());
-		mk.setRealm(0);
-		MerkleAccount mv = new MerkleAccount();
-		mv.setBalance(balance);
-		JKey jkey = JKey.mapKey(key);
-		mv.setKey(jkey);
-		fcMap.put(mk, mv);
-		ComplexKeyManager.setAccountKey(payerAccount, key);
-	}
-
-	private void createAccount(AccountID payerAccount, long balance, Key key, long newRealmId, long newShardId) throws Exception {
-		MerkleEntityId mk = new MerkleEntityId();
-		mk.setNum(payerAccount.getAccountNum());
-		mk.setRealm(newRealmId);
-		mk.setShard(newShardId);
+		mk.setRealm(payerAccount.getRealmNum());
+		mk.setShard(payerAccount.getShardNum());
 		MerkleAccount mv = new MerkleAccount();
 		mv.setBalance(balance);
 		JKey jkey = JKey.mapKey(key);
