@@ -1522,12 +1522,13 @@ jobs:
     steps:
       - checkout
       - run:
-          name: maven compile hedera-services repository
+          name: compile hedera-services repository
           command: |
             mvn clean install -DskipTests
       - run:
-          name: checkout platform repository and compile it
+          name: checkout and compile platform repository
           command: |
+            mkdir ~/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
             cd ..; git clone --recurse-submodule https://github.com/swirlds/swirlds-platform.git;
             cd swirlds-platform; git submodule update --init --recursive --checkout ;
             cd regression;
