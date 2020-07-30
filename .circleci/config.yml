@@ -2355,6 +2355,8 @@ jobs:
       - run-eet-suites:
           dsl-args: "CryptoCreateSuite -TLS=on"
       - run-eet-suites:
+          dsl-args: "CryptoUpdateSuite"
+      - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
           dsl-args: "CryptoRecordSanityChecks"
