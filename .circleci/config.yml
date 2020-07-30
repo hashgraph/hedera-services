@@ -1526,19 +1526,19 @@ jobs:
       - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
       - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
       - run: cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
-      - store-test-results:
-          path: results/
-
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-      - run: mvn -s .circleci.settings.xml dependency:go-offline -DskipTests
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "pom.xml" }}
+#      - store-test-results:
+#          path: results/
+#
+#      - restore_cache:
+#          keys:
+#            - v1-dependencies-{{ checksum "pom.xml" }}
+#            # fallback to using the latest cache if no exact match is found
+#            - v1-dependencies-
+#      - run: mvn -s .circleci.settings.xml dependency:go-offline -DskipTests
+#      - save_cache:
+#          paths:
+#            - ~/.m2
+#          key: v1-dependencies-{{ checksum "pom.xml" }}
   aws-summary:
     executor: ci-test-executor
     steps:
