@@ -615,7 +615,7 @@ public class TransactionHandler {
   }
 
   /**
-   * Validates Account IDs and Total Balance in Account Map on Start Up .
+   * Validates Account IDs and Total Balance in Account Map on Start Up .  
    * If it finds any invalid Account ID  it stops checking further and returns Invalid Account ID response code.
    * If all the Account IDs are valid, it checks the total balance. If its not equal to expected balance, it
    * returns Invalid Balance response code.
@@ -639,7 +639,7 @@ public class TransactionHandler {
         break;
       }
     }
-    if(response == OK) {
+    if(response == OK && !accountMap.isEmpty()) {
     	if(totalBalance != PropertiesLoader.getInitialGenesisCoins()) {
     		response = ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID;
     	}
