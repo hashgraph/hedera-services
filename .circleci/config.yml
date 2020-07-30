@@ -1304,60 +1304,60 @@ workflows:
 
   continuous-integration:
     jobs:
-#      - deploy_services_regression_artifacts
-      - build-artifact:
-          context: SonarCloud
-          filters:
-            branches:
-              ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
-          workflow-name: "Continuous integration"
-      - start-singlejob-testnet:
-          requires:
-            - build-artifact
-          workflow-name: "Continuous integration"
-          infra-branch: services-with-platform070
-      - run-file-scenarios:
-          requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-consensus-and-crypto-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          requires:
-            - run-consensus-and-crypto-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - send-report-to-slack:
-                workflow-name: "Continuous integration"
-                status: Passed
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - cleanup-singlejob-testnet:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
+      - deploy_services_regression_artifacts
+#      - build-artifact:
+#          context: SonarCloud
+#          filters:
+#            branches:
+#              ignore:
+#                - /.*-PERF/
+#                - /.*-REGRESSION/
+#          workflow-name: "Continuous integration"
+#      - start-singlejob-testnet:
+#          requires:
+#            - build-artifact
+#          workflow-name: "Continuous integration"
+#          infra-branch: services-with-platform070
+#      - run-file-scenarios:
+#          requires:
+#            - start-singlejob-testnet
+#          pre-steps:
+#            - attach_workspace:
+#                at: /
+#            - ensure-testnet-for-reruns
+#          post-steps:
+#            - cleanup-rerun-testnet-if-present
+#          workflow-name: "Continuous integration"
+#      - run-consensus-and-crypto-scenarios:
+#          requires:
+#            - run-file-scenarios
+#          pre-steps:
+#            - attach_workspace:
+#                at: /
+#            - run: /repo/.circleci/scripts/echo-env.sh
+#            - ensure-testnet-for-reruns
+#          post-steps:
+#            - cleanup-rerun-testnet-if-present
+#          workflow-name: "Continuous integration"
+#      - run-smart-contract-scenarios:
+#          requires:
+#            - run-consensus-and-crypto-scenarios
+#          pre-steps:
+#            - attach_workspace:
+#                at: /
+#            - ensure-testnet-for-reruns
+#          post-steps:
+#            - send-report-to-slack:
+#                workflow-name: "Continuous integration"
+#                status: Passed
+#            - cleanup-rerun-testnet-if-present
+#          workflow-name: "Continuous integration"
+#      - cleanup-singlejob-testnet:
+#          requires:
+#            - run-smart-contract-scenarios
+#          pre-steps:
+#            - attach_workspace:
+#                at: /
 jobs:
   start-singlejob-testnet:
     parameters:
@@ -1524,12 +1524,14 @@ jobs:
       - run:
           name: maven compile hedera-services repository
           command: |
-            cd hedera-services; mvn clean install -DskipTests
+            mvn clean install -DskipTests
       - run:
           name: checkout platform repository and compile it
           command: |
             cd ..; git clone --recurse-submodule https://github.com/swirlds/swirlds-platform.git;
-            cd swirlds-platform; git submodule update --init --recursive --checkout
+            cd swirlds-platform; git submodule update --init --recursive --checkout ;
+            cd regression;
+            git checkout services-regression-JRS;
       - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
       - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
 #      - run:
