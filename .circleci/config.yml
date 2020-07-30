@@ -897,7 +897,7 @@ workflows:
               only:
                 - master
     jobs:
-      - deploy_services_regression_artifacts
+#      - deploy_services_regression_artifacts
 
   custom-migration:
     triggers:
@@ -1304,7 +1304,7 @@ workflows:
 
   continuous-integration:
     jobs:
-      - deploy_services_regression_artifacts
+#      - deploy_services_regression_artifacts
       - build-artifact:
           context: SonarCloud
           filters:
