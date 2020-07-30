@@ -1304,6 +1304,7 @@ workflows:
 
   continuous-integration:
     jobs:
+      - deploy_services_regression_artifacts
       - build-artifact:
           context: SonarCloud
           filters:
