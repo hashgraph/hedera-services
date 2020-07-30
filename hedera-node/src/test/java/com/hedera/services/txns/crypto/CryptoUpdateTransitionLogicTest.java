@@ -297,29 +297,12 @@ public class CryptoUpdateTransitionLogicTest {
 
 	@Test
 	public void rejectsKeyWithBadEncoding() {
-		givenValidTxnCtx();
-		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
-				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))
-				.build();
-
-		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		rejectsKey(unmappableKey());
 	}
 
 	@Test
 	public void rejectsInvalidKey() {
-		Key emptyKey = Key.newBuilder().setThresholdKey(
-				ThresholdKey.newBuilder()
-						.setKeys(KeyList.getDefaultInstance())
-						.setThreshold(0)
-		).build();
-		givenValidTxnCtx();
-		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
-				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(emptyKey))
-				.build();
-
-		// expect:
-		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
+		rejectsKey(emptyKey());
 	}
 
 	@Test
@@ -391,6 +374,24 @@ public class CryptoUpdateTransitionLogicTest {
 
 	private Key unmappableKey() {
 		return Key.getDefaultInstance();
+	}
+
+	private Key emptyKey() {
+		return Key.newBuilder().setThresholdKey(
+				ThresholdKey.newBuilder()
+						.setKeys(KeyList.getDefaultInstance())
+						.setThreshold(0)
+		).build();
+	}
+
+	private void rejectsKey(Key key) {
+		givenValidTxnCtx();
+		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
+				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(key))
+				.build();
+
+		// expect:
+		assertEquals(BAD_ENCODING, subject.syntaxCheck().apply(cryptoUpdateTxn));
 	}
 
 	private void givenValidTxnCtx() {
