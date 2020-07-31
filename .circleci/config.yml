@@ -1578,8 +1578,8 @@ jobs:
           at: /
       - add_ssh_keys:
           fingerprints:
-            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
-            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
+#            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
+#            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
 #      - checkout
 #      - run:
@@ -1590,7 +1590,7 @@ jobs:
           name: checkout swirlds-platform repos and build
           command: |
             cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-              git clone  --recurse-submodule git@hedera-services-automation:swirlds/swirlds-platform.git
+              git clone  --recurse-submodule git@github.com:swirlds/swirlds-platform.git
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
 
