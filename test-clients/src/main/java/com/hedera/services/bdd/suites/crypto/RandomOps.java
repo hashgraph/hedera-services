@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,38 +47,53 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
-public class HelloWorldSpec extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(HelloWorldSpec.class);
+public class RandomOps extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(RandomOps.class);
 
 	public static void main(String... args) {
-		new HelloWorldSpec().runSuiteSync();
+		new RandomOps().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
-						balancesChangeOnTransfer(),
+						freezeWorks(),
+//						createThenTransferThenUpdateDeleteThenUpdate()
 				}
 		);
 	}
 
-	private HapiApiSpec balancesChangeOnTransfer() {
-		return defaultHapiSpec("BalancesChangeOnTransfer")
+	private HapiApiSpec freezeWorks() {
+		return defaultHapiSpec("FreezeWorks")
+				.given( ).when(
+				).then(
+						freeze().startingIn(60).seconds().andLasting(1).minutes()
+				);
+	}
+
+	private HapiApiSpec createThenTransferThenUpdateDeleteThenUpdate() {
+		return defaultHapiSpec("createThenTransferThenUpdateDeleteThenUpdate")
 				.given(
-						cryptoCreate("sponsor"),
+						newKeyNamed("bombKey"),
+						cryptoCreate("sponsor").sendThreshold(1L),
 						cryptoCreate("beneficiary"),
-						balanceSnapshot("sponsorBefore", "sponsor"),
-						balanceSnapshot("beneficiaryBefore", "beneficiary")
+						cryptoCreate("tbd"),
+						fileCreate("bytecode").path(SupportedContract.inPath("simpleStorage")),
+						contractCreate("simpleStorage").bytecode("bytecode")
 				).when(
-						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
-								.payingWith(GENESIS)
+						contractCall("simpleStorage",
+								ContractCallDetails.SIMPLE_STORAGE_SETTER_ABI,
+								BigInteger.valueOf(1)),
+						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1_234L))
+								.payingWith("sponsor")
 								.memo("Hello World!")
 				).then(
-						getAccountBalance("sponsor")
-								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-						getAccountBalance("beneficiary")
-								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
+						cryptoUpdate("beneficiary").key("bombKey"),
+						sleepFor(2_000),
+						cryptoDelete("tbd"),
+						sleepFor(2_000),
+						cryptoUpdate("beneficiary").key("bombKey")
 				);
 	}
 
