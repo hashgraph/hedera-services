@@ -8,6 +8,8 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,5 +61,16 @@ class PureFCMapBackingAccountsTest {
 		assertTrue(subject.contains(b));
 		// and:
 		verify(map, times(2)).containsKey(any());
+	}
+
+	@Test
+	public void delegatesIdSet() {
+		var ids = Set.of(aKey, bKey);
+		var expectedIds = Set.of(a, b);
+
+		given(map.keySet()).willReturn(ids);
+
+		// expect:
+		assertEquals(expectedIds, subject.idSet());
 	}
 }

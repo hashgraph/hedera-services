@@ -21,6 +21,8 @@ package com.hedera.services.ledger.accounts;
  */
 
 
+import java.util.Set;
+
 /**
  * Defines a type that provides safe and unsafe access to a collection
  * of accounts. ("Safe" implies a defensive copy is returned from the
@@ -65,8 +67,13 @@ public interface BackingAccounts<K, A> {
 	/**
 	 * Checks if the collection contains the account with the given id.
 	 *
-	 * @param id
-	 * @return
+	 * @param id the account in question.
+	 * @return a flag for existence.
 	 */
 	boolean contains(K id);
+
+	/**
+	 * Returns the set of extant account ids.
+	 */
+	Set<K> idSet();
 }

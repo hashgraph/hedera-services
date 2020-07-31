@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class HashMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount> {
 	final AccountID GENESIS = IdUtils.asAccount("0.0.2");
@@ -62,5 +63,10 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	@Override
 	public void remove(AccountID id) {
 		accounts.remove(id);
+	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		return accounts.keySet();
 	}
 }

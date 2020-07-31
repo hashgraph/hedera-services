@@ -5,7 +5,11 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static java.util.stream.Collectors.toSet;
 
 public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount>  {
 	private final FCMap<MerkleEntityId, MerkleAccount> delegate;
@@ -35,5 +39,10 @@ public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, Merk
 	@Override
 	public boolean contains(AccountID id) {
 		return delegate.containsKey(fromAccountId(id));
+	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		return delegate.keySet().stream().map(MerkleEntityId::toAccountId).collect(toSet());
 	}
 }

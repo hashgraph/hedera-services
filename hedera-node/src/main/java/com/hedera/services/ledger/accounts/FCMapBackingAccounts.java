@@ -87,4 +87,9 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 		existingAccounts.remove(id);
 		delegate.remove(fromAccountId(id));
 	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		throw new AssertionError("Not implemented");
+	}
 }
