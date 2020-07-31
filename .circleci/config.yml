@@ -1531,6 +1531,7 @@ jobs:
           name: build services repo
           command: |
                 mvn --no-transfer-progress clean install -DskipTests
+
 #               mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
 
       - run:
