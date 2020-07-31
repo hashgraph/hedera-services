@@ -1588,10 +1588,12 @@ jobs:
 #               mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
 
 #  ssh://git@github.com/username/repo.git
+# git remote set-url origin https://username@github.com/username/reponame.git
       - run:
           name: checkout swirlds-platform repos and build
           command: |
-            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            cd /repo; git remote set-url origin https://hedera-automation@github.com/swirlds/swirlds-platform.git;
+               GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
