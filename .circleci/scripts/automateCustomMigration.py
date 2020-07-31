@@ -264,7 +264,7 @@ def validateTest(testLogPath, logStatement, testName):
         if logStatement in eetLog_f.read():
             print ("{} test passed successfully on node {}".format(testName,n))
         else:
-            print ("{} test failed.. please go through the eet logs".format(testName)
+            print ("{} test failed.. please go through the eet logs".format(testName))
 
 
 def validateLogs():
