@@ -1525,7 +1525,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-            - "11:3e:73:a1:ee:c7:3f:3e:83:73:7e:59:90:86:97:e6"
+            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
       - checkout
       - run:
           name: build services repo
