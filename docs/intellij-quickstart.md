@@ -10,7 +10,7 @@ First, open the top-level *pom.xml* in IntelliJ as a new project.  Then
 run `mvn install` in the root:
 
 <p>
-    <img src="docs/top-level-modules.png"/>
+    <img src="./top-level-modules.png"/>
 </p>
 
 This will both, 
@@ -33,13 +33,13 @@ Run `ServicesMain#main` with an IntelliJ configuration whose working
 directory is the _hedera-node/_ directory of your clone of this repo:
 
 <p>
-    <img src="docs/node-configuration.png" height="300" width="450" />
+    <img src="./node-configuration.png" height="300" width="450" />
 </p>
 
-You will see three black panes appear, including:
+You will see three black panes appear, similar to:
 
 <p>
-    <img src="docs/node-startup.png" height="150" width="600"/>
+    <img src="./node-startup.png" height="150" width="600"/>
 </p>
 
 This node's name is "Alice" because of [Line 26](hedera-node/config.txt#L26)
@@ -69,7 +69,7 @@ Run `HelloWorldSpec#main` with an IntelliJ configuration whose working
 directory is the _test-clients/_ directory of your clone of this repo:
 
 <p>
-    <img src="docs/spec-configuration.png" height="300" width="450" />
+    <img src="./spec-configuration.png" height="300" width="450" />
 </p>
 
 Because [`node=localhost`](test-clients/src/main/resource/spec-default.properties)
