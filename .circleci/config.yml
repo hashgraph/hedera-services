@@ -889,15 +889,19 @@ executors:
 
 workflows:
   nightly-services-regression:
-    triggers:
-      - schedule:
-          cron: "40 12 * * *"
+#    triggers:
+#      - schedule:
+#          cron: "40 12 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+    jobs:
+      - deploy_services_regression_artifacts:
           filters:
             branches:
-              only:
-                - master
-    jobs:
-      - deploy_services_regression_artifacts
+               only:
+                  - JRS-in-circleCI
 
   custom-migration:
     triggers:
@@ -1304,60 +1308,60 @@ workflows:
 
   continuous-integration:
     jobs:
-      - deploy_services_regression_artifacts
-#      - build-artifact:
-#          context: SonarCloud
-#          filters:
-#            branches:
-#              ignore:
-#                - /.*-PERF/
-#                - /.*-REGRESSION/
-#          workflow-name: "Continuous integration"
-#      - start-singlejob-testnet:
-#          requires:
-#            - build-artifact
-#          workflow-name: "Continuous integration"
-#          infra-branch: services-with-platform070
-#      - run-file-scenarios:
-#          requires:
-#            - start-singlejob-testnet
-#          pre-steps:
-#            - attach_workspace:
-#                at: /
-#            - ensure-testnet-for-reruns
-#          post-steps:
-#            - cleanup-rerun-testnet-if-present
-#          workflow-name: "Continuous integration"
-#      - run-consensus-and-crypto-scenarios:
-#          requires:
-#            - run-file-scenarios
-#          pre-steps:
-#            - attach_workspace:
-#                at: /
-#            - run: /repo/.circleci/scripts/echo-env.sh
-#            - ensure-testnet-for-reruns
-#          post-steps:
-#            - cleanup-rerun-testnet-if-present
-#          workflow-name: "Continuous integration"
-#      - run-smart-contract-scenarios:
-#          requires:
-#            - run-consensus-and-crypto-scenarios
-#          pre-steps:
-#            - attach_workspace:
-#                at: /
-#            - ensure-testnet-for-reruns
-#          post-steps:
-#            - send-report-to-slack:
-#                workflow-name: "Continuous integration"
-#                status: Passed
-#            - cleanup-rerun-testnet-if-present
-#          workflow-name: "Continuous integration"
-#      - cleanup-singlejob-testnet:
-#          requires:
-#            - run-smart-contract-scenarios
-#          pre-steps:
-#            - attach_workspace:
-#                at: /
+      - build-artifact:
+          context: SonarCloud
+          filters:
+            branches:
+              ignore:
+                - /.*-PERF/
+                - /.*-REGRESSION/
+                - JRS-in-circleCI
+          workflow-name: "Continuous integration"
+      - start-singlejob-testnet:
+          requires:
+            - build-artifact
+          workflow-name: "Continuous integration"
+          infra-branch: services-with-platform070
+      - run-file-scenarios:
+          requires:
+            - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-consensus-and-crypto-scenarios:
+          requires:
+            - run-file-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - run: /repo/.circleci/scripts/echo-env.sh
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-smart-contract-scenarios:
+          requires:
+            - run-consensus-and-crypto-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - send-report-to-slack:
+                workflow-name: "Continuous integration"
+                status: Passed
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - cleanup-singlejob-testnet:
+          requires:
+            - run-smart-contract-scenarios
+          pre-steps:
+            - attach_workspace:
+                at: /
 jobs:
   start-singlejob-testnet:
     parameters:
@@ -1556,6 +1560,42 @@ jobs:
 #          paths:
 #            - ~/.m2
 #          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+
+  build-platform-and-services:
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - checkout
+      - run:
+          name: mvn install
+          command: |
+            /repo/.circleci/scripts/trap-failure-report.sh \
+               'mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
+      - run:
+          name: checkout swirlds-platform repos and build
+          command: |
+            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+              git clone  --recurse-submodule git@github.com:swirlds/swirlds-platform.git;
+            cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
+            cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS;
+
+            - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
+            - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/.git
+            - repo/.circleci
+            - repo/hapiProto
+            - repo/test-clients
+            - repo/HapiApp2.0
+            - root/.m2
+            - repo/hedera-node
+
+
+
   aws-summary:
     executor: ci-test-executor
     steps:
