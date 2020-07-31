@@ -1533,9 +1533,6 @@ jobs:
       - run:
           name: checkout and compile platform repository
           command: |
-            mkdir -p ~/.ssh ;
-            echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9IOzk8SCp0f8DzG2yaGO4vBVNB68kzLyA6r5/bg0bIXY67+7a1hDxALU1AHWWGUs/ZPQJCJjUzyYK6WxtB2hd/1UZWdBUv1WLAx7DZSc8Av7unOqRv9lmq4+PP4MSw6Hbma3iBxM+RWxL8o3gTvgZxnq4OYgtDyWTbLj4phEXaWaBSam0B09rtVIyKqplFkI8/cMenyatDOKeRmXBuGnI/AS+5BiY11J1V/KbpZrZJXitJ3Bofyl+VbhyNeVYpCpYfCZLcV4RiMbEH8OnCAeUgMEKC22XPQwVMOMrCeH2XaZ5PXBOzlE1UheilyiuNUAutcQdcmUAynIiOfenoUrb neeharikasompalli@Neeharikas-MBP.localdomain' >> ~/.ssh/known_hosts;
-#            mkdir ~/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
             cd ..; git clone --recurse-submodule git@github.com:swirlds/swirlds-platform.git;
             cd swirlds-platform; git submodule update --init --recursive --checkout ;
             cd regression;
