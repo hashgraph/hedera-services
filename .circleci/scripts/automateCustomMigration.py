@@ -259,7 +259,7 @@ for n in range(0, NO_OF_NODES):
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
 
-def validateTest(testLogPath, logStatement, testName)
+def validateTest(testLogPath, logStatement, testName):
     with open(testLogPath) as eetLog_f:
         if logStatement in eetLog_f.read():
             print ("{} test passed successfully on node {}".format(testName,n))
