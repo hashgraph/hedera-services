@@ -897,11 +897,12 @@ workflows:
 #              only:
 #                - master
     jobs:
-      - deploy_services_regression_artifacts:
+      - build-platform-and-services:
           filters:
             branches:
                only:
                   - JRS-in-circleCI
+          workflow-name: "nightly-services-regression"
 
   custom-migration:
     triggers:
@@ -1563,6 +1564,10 @@ jobs:
 
 
   build-platform-and-services:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
