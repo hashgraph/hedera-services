@@ -1533,7 +1533,7 @@ jobs:
       - run:
           name: checkout and compile platform repository
           command: |
-            cd ..; git clone --recurse-submodule https://hedera-automation:@github.com/swirlds/swirlds-platform.git;
+            cd ..; git clone --recurse-submodule git://hedera-automation@github.com/swirlds/swirlds-platform.git;
             cd swirlds-platform; git submodule update --init --recursive --checkout ;
             cd regression;
             git checkout services-regression-JRS;
