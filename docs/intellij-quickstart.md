@@ -42,12 +42,12 @@ You will see three black panes appear, similar to:
     <img src="./node-startup.png" height="150" width="600"/>
 </p>
 
-This node's name is "Alice" because of [Line 26](hedera-node/config.txt#L26)
+This node's name is "Alice" because of [Line 26](../hedera-node/config.txt#L26)
 in the _config.txt_ present in your working directory. (This file determines the 
 Swirlds Browser's startup sequence.) 
 
 Looking closer at _config.txt_, you can see you are running Hedera Services 
-(and not some other Swirlds app) because [Line 12](hedera-node/config.txt#L12) 
+(and not some other Swirlds app) because [Line 12](../hedera-node/config.txt#L12) 
 points to the JAR file you just built; and there are three nodes in your 
 network because you specified "Bob" and "Carol" as well as "Alice".
 
@@ -72,7 +72,7 @@ directory is the _test-clients/_ directory of your clone of this repo:
     <img src="./spec-configuration.png" height="300" width="450" />
 </p>
 
-Because [`node=localhost`](test-clients/src/main/resource/spec-default.properties)
+Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties)
 in the _spec-default.properties_ controlling the `HelloWorldSpec` test, this
 will run against your local network, culminating in logs similar to:
 
