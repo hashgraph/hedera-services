@@ -1581,7 +1581,7 @@ jobs:
 #            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
 #            - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-#      - checkout
+      - checkout
 #      - run:
 #          name: mvn install
 #          command: |
@@ -1592,8 +1592,7 @@ jobs:
       - run:
           name: checkout swirlds-platform repos and build
           command: |
-            cd /repo; git remote set-url origin https://hedera-automation@github.com/swirlds/swirlds-platform.git;
-               GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
