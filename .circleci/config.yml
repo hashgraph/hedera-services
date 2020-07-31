@@ -1539,7 +1539,7 @@ jobs:
           name: checkout and compile platform repository
           command: |
             cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-            git clone --recurse-submodule git@github.com:swirlds/swirlds-platform.git;
+            git clone --recurse-submodule http://hedera-automation@github.com/swirlds/swirlds-platform.git;
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout ;
             cd /repo/swirlds-platform/regression;
             git checkout services-regression-JRS;
