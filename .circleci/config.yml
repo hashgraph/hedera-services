@@ -1510,60 +1510,6 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-  deploy_services_regression_artifacts:
-    description: Test hedera-services regression tests
-    #works
-    docker:
-      - image: qnswirlds/java-builder:0.1.3
-      - image: postgres:10
-        environment:
-          POSTGRES_USER: swirlds
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: fcfs
-          resource_class: large
-    environment:
-      MAVEN_OPTS: -Xmx5200m
-      IN_CIRCLE_CI: true
-      REPO: /repo
-    working_directory: /repo
-    steps:
-      #works
-#      - checkout
-#      - run:
-#          name: compile hedera-services repository
-#          command: |
-#            mvn clean install -DskipTests
-      - add_ssh_keys:
-          fingerprints:
-            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
-      - run:
-          name: checkout and compile platform repository
-          command: |
-            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
-            git clone --recurse-submodule http://hedera-automation@github.com/swirlds/swirlds-platform.git;
-            cd /repo/swirlds-platform; git submodule update --init --recursive --checkout ;
-            cd /repo/swirlds-platform/regression;
-            git checkout services-regression-JRS;
-      - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
-      - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
-#      - run:
-#          name: Run regression tests
-#          command: |
-#            cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
-#      - store-test-results:
-#          path: results/
-#
-#      - restore_cache:
-#          keys:
-#            - v1-dependencies-{{ checksum "pom.xml" }}
-#            # fallback to using the latest cache if no exact match is found
-#            - v1-dependencies-
-#      - run: mvn -s .circleci.settings.xml dependency:go-offline -DskipTests
-#      - save_cache:
-#          paths:
-#            - ~/.m2
-#          key: v1-dependencies-{{ checksum "pom.xml" }}
-
 
   build-platform-and-services:
     parameters:
@@ -1594,8 +1540,6 @@ jobs:
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
 
-#      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
-#      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml clean deploy -DskipTests
       - run:
           name: Run regression tests
           command: |
