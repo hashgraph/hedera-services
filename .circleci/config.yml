@@ -240,6 +240,7 @@ commands:
             - "cf:b2:68:a6:65:3f:98:d2:78:18:45:96:b4:fa:b9:1d"
             - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
             - "e7:fd:e2:48:9c:a1:b7:40:95:03:ab:a4:a5:5c:34:21"
+            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
       - run:
           name: Checkout infrastructure repo
           command: |
