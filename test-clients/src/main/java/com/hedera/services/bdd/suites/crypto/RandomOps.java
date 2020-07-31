@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -39,6 +40,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -65,8 +68,10 @@ public class RandomOps extends HapiApiSuite {
 	}
 
 	private HapiApiSpec freezeWorks() {
-		return defaultHapiSpec("FreezeWorks")
-				.given( ).when(
+		return customHapiSpec("FreezeWorks")
+				.withProperties(Map.of(
+						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
+				)).given( ).when(
 				).then(
 						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);
