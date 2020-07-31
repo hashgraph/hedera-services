@@ -1585,8 +1585,6 @@ jobs:
 #          command: |
 #               mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
 
-#  ssh://git@github.com/username/repo.git
-# git remote set-url origin https://username@github.com/username/reponame.git
       - run:
           name: checkout swirlds-platform repos and build
           command: |
@@ -1595,8 +1593,8 @@ jobs:
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
 
-      - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
-      - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
+      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
+      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml clean deploy -DskipTests
       - persist_to_workspace:
           root: /
           paths:
