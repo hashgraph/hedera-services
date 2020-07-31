@@ -1537,10 +1537,10 @@ jobs:
       - run:
           name: checkout and compile platform repository
           command: |
-            GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
-            cd /repo; git clone --recurse-submodule git@github.com:hedera-automation/swirlds/swirlds-platform.git;
-            cd swirlds-platform; git submodule update --init --recursive --checkout ;
-            cd regression;
+            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            git clone --recurse-submodule git@github.com:hedera-automation/swirlds/swirlds-platform.git;
+            cd /repo/swirlds-platform; git submodule update --init --recursive --checkout ;
+            cd /repo/swirlds-platform/regression;
             git checkout services-regression-JRS;
       - run: mvn -s .circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
       - run: mvn -s .circleci.settings.xml clean deploy -DskipTests
