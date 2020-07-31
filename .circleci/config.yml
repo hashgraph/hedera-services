@@ -1580,9 +1580,10 @@ jobs:
           fingerprints:
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
       - checkout
-#      - run:
-#          name: mvn install
-#          command: |
+      - run:
+          name: build services repo
+          command: |
+                mvn --no-transfer-progress clean install -DskipTests
 #               mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
 
       - run:
@@ -1593,8 +1594,14 @@ jobs:
             cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
             cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
 
-      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
-      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml clean deploy -DskipTests
+#      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml versions:set -DnewVersion=0.6.5.regression-SNAPSHOT
+#      - run: mvn -s /repo/swirlds-platform/.circleci.settings.xml clean deploy -DskipTests
+       - run:
+            name: Run regression tests
+            command: |
+              cd regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
+        - store-test-results:
+            path: results/
       - persist_to_workspace:
           root: /
           paths:
