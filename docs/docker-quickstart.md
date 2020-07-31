@@ -88,13 +88,16 @@ cd test-clients
 ## Stopping or reinitializing the Compose network
 
 As you run operations against the local network, each node will periodically save its state using
-a combination of PostgreSQL tables under _../compose-network/pgdata/_ and state files under, for example,
-_../compose-network/node0/saved/com.hedera.services.ServicesMain/0/hedera/_.
+a combination of PostgreSQL tables under _compose-network/pgdata/_ and state files under, for example,
+_compose-network/node0/saved/com.hedera.services.ServicesMain/0/hedera/_.
 
 To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
 
-Assuming a clean shutdown of the containers, when you restart with `docker-compose start`, 
-the network will load from its last saved state. To completely reinitialize the network, use:
+Given a clean shutdown of the containers, when you restart with `docker-compose start`, 
+the network will load from its last saved state. 
+
+If an you have a problem restarting the network after stopping, you can simply re-initialize
+it via:
 ```
 docker-compose down
 rm -rf compose-network
