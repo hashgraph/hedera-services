@@ -1600,8 +1600,7 @@ jobs:
           name: Run regression tests
           command: |
             cd /repo/swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
-      - store-test-results:
-          path: results/
+
       - persist_to_workspace:
           root: /
           paths:
