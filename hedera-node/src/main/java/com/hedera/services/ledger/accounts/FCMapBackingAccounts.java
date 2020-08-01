@@ -60,7 +60,7 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	}
 
 	@Override
-	public MerkleAccount get(AccountID id) {
+	public MerkleAccount getRef(AccountID id) {
 		return cache.computeIfAbsent(id, ignore -> delegate.getForModify(fromAccountId(id)));
 	}
 
@@ -90,6 +90,11 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 
 	@Override
 	public Set<AccountID> idSet() {
-		throw new AssertionError("Not implemented");
+		return existingAccounts;
+	}
+
+	@Override
+	public MerkleAccount getUnsafeRef(AccountID id) {
+		return delegate.get(fromAccountId(id));
 	}
 }

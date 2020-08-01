@@ -6,7 +6,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static java.util.stream.Collectors.toSet;
@@ -22,7 +21,12 @@ public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, Merk
 	public void flushMutableRefs() { }
 
 	@Override
-	public MerkleAccount get(AccountID id) {
+	public MerkleAccount getRef(AccountID id) {
+		return delegate.get(fromAccountId(id));
+	}
+
+	@Override
+	public MerkleAccount getUnsafeRef(AccountID id) {
 		return delegate.get(fromAccountId(id));
 	}
 

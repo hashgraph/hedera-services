@@ -45,13 +45,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.spongycastle.util.encoders.Hex;
 
 import java.time.Instant;
 import java.util.Set;
 
-import static com.hedera.services.legacy.logic.ApplicationConstants.INITIAL_GENESIS_COINS;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -129,10 +126,10 @@ class BackedSystemAccountsCreatorTest {
 				accountWith(2),
 				accountWith(3),
 				accountWith(4)));
-		given(backingAccounts.get(accountWith(1))).willReturn(expectedWith(stdBalance));
-		given(backingAccounts.get(accountWith(2))).willReturn(expectedWith(treasuryBalance));
-		given(backingAccounts.get(accountWith(3))).willReturn(expectedWith(nodeBalance));
-		given(backingAccounts.get(accountWith(4))).willReturn(expectedWith(stdBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(expectedWith(stdBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(expectedWith(treasuryBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(expectedWith(nodeBalance));
+		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(expectedWith(stdBalance));
 
 		subject = new BackedSystemAccountsCreator(
 				hederaNums,
@@ -214,7 +211,7 @@ class BackedSystemAccountsCreatorTest {
 	}
 
 	@Test
-	public void createsNothingIfAllPresent() throws NegativeAccountBalanceException {
+	public void createsNothingIfAllPresent() {
 		// setup:
 		BackedSystemAccountsCreator.log = mock(Logger.class);
 
@@ -228,8 +225,6 @@ class BackedSystemAccountsCreatorTest {
 		// and:
 		verify(BackedSystemAccountsCreator.log).info(String.format(
 				"Ledger float is %d hBars in %d accounts.", 100, 4));
-		// and:
-		verify(backingAccounts).flushMutableRefs();
 
 		// cleanup:
 		BackedSystemAccountsCreator.log = LogManager.getLogger(BackedSystemAccountsCreator.class);

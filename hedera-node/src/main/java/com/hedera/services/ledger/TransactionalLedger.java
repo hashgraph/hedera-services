@@ -198,7 +198,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		EnumMap<P, Object> changeSet = changes.get(id);
 		boolean hasPendingChanges = changeSet != null;
-		A account = accounts.contains(id) ? accounts.get(id) : newAccount.get();
+		A account = accounts.contains(id) ? accounts.getRef(id) : newAccount.get();
 		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
@@ -216,7 +216,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			}
 		}
 
-		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.get(id));
+		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
 	}
 
 	@Override

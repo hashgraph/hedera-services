@@ -48,7 +48,7 @@ class PureFCMapBackingAccountsTest {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// then:
-		assertSame(aValue, subject.get(a));
+		assertSame(aValue, subject.getRef(a));
 	}
 
 	@Test
@@ -72,5 +72,13 @@ class PureFCMapBackingAccountsTest {
 
 		// expect:
 		assertEquals(expectedIds, subject.idSet());
+	}
+
+	@Test
+	public void delegatesUnsafeGet() {
+		given(map.get(aKey)).willReturn(aValue);
+
+		// expect:
+		assertEquals(aValue, subject.getUnsafeRef(a));
 	}
 }

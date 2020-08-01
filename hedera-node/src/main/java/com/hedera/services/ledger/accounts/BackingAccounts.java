@@ -41,12 +41,20 @@ public interface BackingAccounts<K, A> {
 	void flushMutableRefs();
 
 	/**
-	 * Gets a possibly mutable reference to the actual account with the specified id.
+	 * Gets a possibly mutable reference to the account with the specified id.
 	 *
 	 * @param id the id of the relevant account.
 	 * @return a reference to the account.
 	 */
-	A get(K id);
+	A getRef(K id);
+
+	/**
+	 * Gets a reference to the account with the specified id which should not be mutated.
+	 *
+	 * @param id the id of the relevant account.
+	 * @return a reference to the account.
+	 */
+	A getUnsafeRef(K id);
 
 	/**
 	 * Updates (or creates, if absent) the account with the given id

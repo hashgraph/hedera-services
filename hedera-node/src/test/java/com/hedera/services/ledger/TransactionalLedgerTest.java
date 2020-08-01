@@ -57,7 +57,7 @@ public class TransactionalLedgerTest {
 	@BeforeEach
 	private void setup() {
 		backingAccounts = mock(BackingAccounts.class);
-		given(backingAccounts.get(1L)).willReturn(account1);
+		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 
 		newAccountFactory = () -> new TestAccount();
@@ -93,7 +93,7 @@ public class TransactionalLedgerTest {
 		// then:
 		assertEquals(newAccount1, account);
 		// and:
-		verify(backingAccounts).get(1L);
+		verify(backingAccounts).getRef(1L);
 	}
 
 	@Test

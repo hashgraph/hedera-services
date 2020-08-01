@@ -108,8 +108,8 @@ class FCMapBackingAccountsTest {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// expect:
-		assertEquals(aValue, subject.get(a));
-		assertEquals(aValue, subject.get(a));
+		assertEquals(aValue, subject.getRef(a));
+		assertEquals(aValue, subject.getRef(a));
 		// and:
 		verify(map, times(1)).getForModify(aKey);
 	}
@@ -119,7 +119,7 @@ class FCMapBackingAccountsTest {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// when:
-		subject.get(a);
+		subject.getRef(a);
 
 		// then:
 		assertEquals(aValue, subject.cache.get(a));
@@ -144,7 +144,7 @@ class FCMapBackingAccountsTest {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// when:
-		MerkleAccount v = subject.get(a);
+		MerkleAccount v = subject.getRef(a);
 
 		// then:
 		assertSame(aValue, v);
@@ -167,7 +167,7 @@ class FCMapBackingAccountsTest {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// when:
-		subject.get(a);
+		subject.getRef(a);
 		subject.put(a, aValue);
 
 		// then:
@@ -180,7 +180,7 @@ class FCMapBackingAccountsTest {
 		subject.existingAccounts.add(a);
 
 		// given:
-		subject.get(a);
+		subject.getRef(a);
 
 		// when:
 		assertThrows(IllegalArgumentException.class, () -> subject.put(a, cValue));
@@ -209,10 +209,10 @@ class FCMapBackingAccountsTest {
 		given(map.getForModify(cKey)).willReturn(cValue);
 
 		// when:
-		subject.get(c);
-		subject.get(a);
-		subject.get(d);
-		subject.get(b);
+		subject.getRef(c);
+		subject.getRef(a);
+		subject.getRef(d);
+		subject.getRef(b);
 		// and:
 		subject.flushMutableRefs();
 
@@ -221,5 +221,24 @@ class FCMapBackingAccountsTest {
 		inOrder.verify(map).replace(bKey, bValue);
 		inOrder.verify(map).replace(aKey, aValue);
 		inOrder.verify(map).replace(dKey, dValue);
+	}
+
+	@Test
+	public void returnsExpectedIds() {
+		// setup:
+		var s = Set.of(a, b, c, d);
+		// given:
+		subject.existingAccounts = s;
+
+		// expect:
+		assertSame(s, subject.idSet());
+	}
+
+	@Test
+	public void delegatesUnsafeRef() {
+		given(map.get(aKey)).willReturn(aValue);
+
+		// expect:
+		assertEquals(aValue, subject.getUnsafeRef(a));
 	}
 }
