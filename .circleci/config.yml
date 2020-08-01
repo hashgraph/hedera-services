@@ -1537,15 +1537,15 @@ jobs:
       - run:
           name: checkout swirlds-platform repos and build
           command: |
-            cd /repo; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /repo/swirlds-platform; git submodule update --init --recursive --checkout
-            cd /repo/swirlds-platform/regression;   git checkout services-regression-JRS
+            cd /swirlds-platform; git submodule update --init --recursive --checkout
+            cd /swirlds-platform/regression;   git checkout services-regression-JRS
 
       - run:
           name: Run regression tests
           command: |
-            cd /repo/swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json ../hedera-services
+            cd /swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json /repo
 
       - persist_to_workspace:
           root: /
