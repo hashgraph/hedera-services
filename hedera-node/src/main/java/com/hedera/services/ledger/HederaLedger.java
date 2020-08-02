@@ -29,6 +29,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -42,11 +43,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 
 /**
@@ -88,6 +89,8 @@ public class HederaLedger {
 
 	private final Map<AccountID, Long> priorBalances = new HashMap<>();
 
+	private final TransferList.Builder netTransfers = TransferList.newBuilder();
+
 	public HederaLedger(
 			EntityIdSource ids,
 			EntityCreator creator,
@@ -110,31 +113,32 @@ public class HederaLedger {
 
 	public void rollback() {
 		ledger.rollback();
-		priorBalances.clear();
+		netTransfers.clear();
 	}
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
 		ledger.commit();
-		priorBalances.clear();
+		netTransfers.clear();
 	}
 
 	public TransferList netTransfersInTxn() {
 		ledger.throwIfNotInTxn();
-
-		/* Note we must sort here to ensure a deterministic order
-		* of transfers in the list (an invalid state signature
-		* exception is sure to appear otherwise!) */
-		return TransferList.newBuilder().addAllAccountAmounts(
-			priorBalances.keySet().stream()
-					.sorted(ACCOUNT_ID_COMPARATOR)
-					.filter(ledger::exists)
-					.map(this::netAdjustmentInTxn)
-					.filter(aa -> aa.getAmount() != 0)
-					.collect(toList())
-		).build();
+		int lastZeroRemoved;
+		do {
+			lastZeroRemoved = -1;
+			for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
+				if (netTransfers.getAccountAmounts(i).getAmount() == 0) {
+					netTransfers.removeAccountAmounts(i);
+					lastZeroRemoved = i;
+					break;
+				}
+			}
+		} while (lastZeroRemoved != -1);
+		return netTransfers.build();
 	}
+
 
 	public String currentChangeSet() {
 		if (ledger.isInTransaction()) {
@@ -152,18 +156,18 @@ public class HederaLedger {
 	public void adjustBalance(AccountID id, long adjustment) {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
+
+		updateXfers(id, adjustment);
 	}
 
 	public void doTransfer(AccountID from, AccountID to, long adjustment) {
-		TransferList inListForm = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(from)
-						.setAmount(-1 * adjustment))
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(to)
-						.setAmount(adjustment))
-				.build();
-		doTransfers(inListForm);
+		long newFromBalance = computeNewBalance(from, -1 * adjustment);
+		long newToBalance = computeNewBalance(to, adjustment);
+		setBalance(from, newFromBalance);
+		setBalance(to, newToBalance);
+
+		updateXfers(from, -1 * adjustment);
+		updateXfers(to, adjustment);
 	}
 
 	public void doTransfers(TransferList accountAmounts) {
@@ -172,6 +176,10 @@ public class HederaLedger {
 		for (int i = 0; i < newBalances.length; i++) {
 			setBalance(accountAmounts.getAccountAmounts(i).getAccountID(), newBalances[i]);
 		}
+
+		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
+			updateXfers(aa.getAccountID(), aa.getAmount());
+		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -179,8 +187,10 @@ public class HederaLedger {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
 
-		AccountID id = ids.newAccountId(sponsor);
+		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
+
+		updateXfers(sponsor, -1 * balance);
 
 		return id;
 	}
@@ -189,6 +199,8 @@ public class HederaLedger {
 		ledger.create(id);
 		setBalance(id, balance);
 		customizer.customize(id, ledger);
+
+		updateXfers(id, balance);
 	}
 
 	public void customize(AccountID id, HederaAccountCustomizer customizer) {
@@ -205,6 +217,12 @@ public class HederaLedger {
 
 	public void destroy(AccountID id) {
 		ledger.destroy(id);
+		for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
+			if (netTransfers.getAccountAmounts(i).getAccountID().equals(id)) {
+				netTransfers.removeAccountAmounts(i);
+				return;
+			}
+		}
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */
@@ -342,9 +360,43 @@ public class HederaLedger {
 		ledger.set(id, BALANCE, newBalance);
 	}
 
-	private AccountAmount netAdjustmentInTxn(AccountID id) {
-		long adjustment = getBalance(id) - priorBalances.get(id);
-		return AccountAmount.newBuilder().setAccountID(id).setAmount(adjustment).build();
+	private void updateXfers(AccountID account, long amount) {
+		System.out.println(String.format("--- BEFORE %d | %d ---", account.getAccountNum(), amount));
+		System.out.println(xfersToString());
+		int loc = 0, diff = -1;
+		var soFar = netTransfers.getAccountAmountsBuilderList();
+		for (; loc < soFar.size(); loc++) {
+			diff = ACCOUNT_ID_COMPARATOR.compare(account, soFar.get(loc).getAccountID());
+			if (diff <= 0) {
+				break;
+			}
+		}
+		if (diff == 0) {
+			var aa = soFar.get(loc);
+			long current = aa.getAmount();
+			aa.setAmount(current + amount);
+		} else {
+			if (loc == soFar.size()) {
+				netTransfers.addAccountAmounts(aaBuilderWith(account, amount));
+			} else {
+				netTransfers.addAccountAmounts(loc, aaBuilderWith(account, amount));
+			}
+		}
+		System.out.println("--- AFTER ---");
+		System.out.println(xfersToString());
+		System.out.println("");
+	}
+
+	private String xfersToString() {
+		return netTransfers.getAccountAmountsBuilderList()
+				.stream()
+				.map(aa -> String.format("%s | %d",
+						MerkleEntityId.fromAccountId(aa.getAccountID()).toAbbrevString(), aa.getAmount()))
+				.collect(Collectors.joining(", "));
+	}
+
+	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
 	public enum LedgerTxnEvictionStats {
