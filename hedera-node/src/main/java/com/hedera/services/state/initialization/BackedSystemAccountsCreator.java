@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.state.initialization;
+package com.hedera.services.state.initialization;
 
 /*-
  * ‌
@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -85,12 +84,15 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	) {
 		var nodeAccountNums = getNodeAccountNums(addressBook);
 
-		long N = properties.getIntProperty("bootstrap.accounts.init.numSystemAccounts");
-		long expiry = properties.getLongProperty("bootstrap.systemFilesExpiry");
+		long N = properties.getIntProperty("ledger.numSystemAccounts");
+		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
+		long hbarFloat = properties.getLongProperty("ledger.totalHbarFloat");
 		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
 		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
-		long treasuryBalance = properties.getLongProperty("bootstrap.ledger.treasury.initialBalance");
 		long recordThresholds = properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds");
+		long treasuryBalance = hbarFloat
+				- (nodeBalance * nodeAccountNums.size())
+				- (defaultBalance * (N - nodeAccountNums.size() - 1));
 
 		for (long num = 1; num <= N; num++) {
 			var id = idWith(num);

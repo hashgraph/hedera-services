@@ -244,15 +244,4 @@ public class CryptoTxRecordTransferListTest {
 		fcMap.put(mk, mv);
 		ComplexKeyManager.setAccountKey(payerAccount, key);
 	}
-
-	private ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-		int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
-		return RequestBuilder.getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
-				currentHbarEquivalent, 15, expiryTime);
-	}
-
-
-
 }

@@ -31,6 +31,7 @@ import java.util.Map;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.fcmap.FCMap;
@@ -55,6 +56,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class CrptDelAcctValtionAndStartupBalCheckTest {
 
@@ -101,28 +104,6 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyListp).build()).build();
 	}
 
-	    @Test
-		public void testAccountMapBalanceForStartup() throws Exception {
-			long account1Balance = 100000l;
-			long account2Balance = 200000l;
-			// Total Balance is less than 50B
-			account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
-			account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
-			createAccount(account1ID, account1Balance, keys);
-			createAccount(account2ID, account2Balance, keys);
-			ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
-
-			// Total balance is 50B
-			account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
-			long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
-			createAccount(account3ID, account3Balance, keys);
-			response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.OK, response);
-
-
-		}
-
 	private static Key PrivateKeyToKey(PrivateKey privateKey) {
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -134,28 +115,4 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 	}	
-
-
-	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {
-		MerkleEntityId mk = new MerkleEntityId();
-		mk.setNum(payerAccount.getAccountNum());
-		mk.setRealm(0);
-		MerkleAccount mv = new MerkleAccount();
-		mv.setBalance(balance);
-		JKey jkey = JKey.mapKey(key);
-		mv.setKey(jkey);
-		fcMap.put(mk, mv);
-		ComplexKeyManager.setAccountKey(payerAccount, key);
-	}
-
-	private ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-		int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
-		return RequestBuilder.getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
-				currentHbarEquivalent, 15, expiryTime);
-	}
-
-
-
 }

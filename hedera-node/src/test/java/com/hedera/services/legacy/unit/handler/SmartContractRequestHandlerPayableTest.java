@@ -123,6 +123,7 @@ public class SmartContractRequestHandlerPayableTest {
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  FCMapBackingAccounts backingAccounts;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -140,10 +141,11 @@ public class SmartContractRequestHandlerPayableTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    backingAccounts = new FCMapBackingAccounts(fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(fcMap),
+            backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
@@ -176,7 +178,7 @@ public class SmartContractRequestHandlerPayableTest {
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     ExchangeRateSet rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -686,7 +688,11 @@ public class SmartContractRequestHandlerPayableTest {
     mk.setRealm(0);
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    fcMap.put(mk, mv);
+    if (backingAccounts != null) {
+      backingAccounts.put(payerAccount, mv);
+    } else {
+      fcMap.put(mk, mv);
+    }
   }
 
   private byte[] createFile(String filePath, FileID fileId) {

@@ -45,42 +45,42 @@ public class FileNumbers {
 
 	public long addressBook() {
 		if (addressBook == UNKNOWN_NUMBER) {
-			addressBook = properties.getLongProperty("bootstrap.files.addressBook");
+			addressBook = properties.getLongProperty("files.addressBook");
 		}
 		return addressBook;
 	}
 
 	public long nodeDetails() {
 		if (nodeDetails == UNKNOWN_NUMBER) {
-			nodeDetails = properties.getLongProperty("bootstrap.files.nodeDetails");
+			nodeDetails = properties.getLongProperty("files.nodeDetails");
 		}
 		return nodeDetails;
 	}
 
 	public long feeSchedules() {
 		if (feeSchedules == UNKNOWN_NUMBER) {
-			feeSchedules = properties.getLongProperty("bootstrap.files.feeSchedules");
+			feeSchedules = properties.getLongProperty("files.feeSchedules");
 		}
 		return feeSchedules;
 	}
 
 	public long exchangeRates() {
 		if (exchangeRates == UNKNOWN_NUMBER) {
-			return properties.getLongProperty("bootstrap.files.exchangeRates");
+			return properties.getLongProperty("files.exchangeRates");
 		}
 		return exchangeRates;
 	}
 
 	public long applicationProperties() {
 		if (applicationProperties == UNKNOWN_NUMBER) {
-			applicationProperties = properties.getLongProperty("bootstrap.files.dynamicNetworkProps");
+			applicationProperties = properties.getLongProperty("files.networkProperties");
 		}
 		return applicationProperties;
 	}
 
 	public long apiPermissions() {
 		if (apiPermissions == UNKNOWN_NUMBER) {
-			apiPermissions = properties.getLongProperty("bootstrap.files.hapiPermissions");
+			apiPermissions = properties.getLongProperty("files.hapiPermissions");
 		}
 		return apiPermissions;
 	}

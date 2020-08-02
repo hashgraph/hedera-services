@@ -21,11 +21,11 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.common.cache.CacheBuilder;
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.initialization.NodeAccountsCreation;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
 import com.hedera.services.legacy.util.MockStorageWrapper;
@@ -36,11 +36,11 @@ import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -83,6 +83,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -159,11 +160,6 @@ class PreCheckValidationTest {
 		return transaction;
 	}
 
-	private static ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		return RequestBuilder.getExchangeRateSetBuilder(1, 1, expiryTime, 1, 1, expiryTime);
-	}
-
 	@BeforeAll
 	void initializeState() throws Exception {
 		FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
@@ -174,7 +170,8 @@ class PreCheckValidationTest {
 				nodeAccount, precheckVerifier, TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR), new QueryFeeCheck(accountFCMap));
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(accountFCMap), new MockAccountNumbers());
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -399,7 +396,8 @@ class PreCheckValidationTest {
 				nodeAccount, precheckVerifier,
 				TEST_USAGE_PRICES, TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR), new QueryFeeCheck(accountFCMap));
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(accountFCMap), new MockAccountNumbers());
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -433,7 +431,9 @@ class PreCheckValidationTest {
 				nodeAccount, precheckVerifier,
 				TEST_USAGE_PRICES, TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR), new QueryFeeCheck(accountFCMap));
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(accountFCMap),
+				new MockAccountNumbers());
 
 
 		TxnValidityAndFeeReq result =

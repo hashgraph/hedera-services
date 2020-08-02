@@ -47,12 +47,12 @@ class FileNumbersTest {
 		given(hederaNumbers.realm()).willReturn(24L);
 		given(hederaNumbers.shard()).willReturn(42L);
 
-		given(properties.getLongProperty("bootstrap.files.addressBook")).willReturn(101L);
-		given(properties.getLongProperty("bootstrap.files.nodeDetails")).willReturn(102L);
-		given(properties.getLongProperty("bootstrap.files.dynamicNetworkProps")).willReturn(121L);
-		given(properties.getLongProperty("bootstrap.files.hapiPermissions")).willReturn(122L);
-		given(properties.getLongProperty("bootstrap.files.feeSchedules")).willReturn(111L);
-		given(properties.getLongProperty("bootstrap.files.exchangeRates")).willReturn(112L);
+		given(properties.getLongProperty("files.addressBook")).willReturn(101L);
+		given(properties.getLongProperty("files.nodeDetails")).willReturn(102L);
+		given(properties.getLongProperty("files.networkProperties")).willReturn(121L);
+		given(properties.getLongProperty("files.hapiPermissions")).willReturn(122L);
+		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
+		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
 
 		given(properties.getLongProperty("hedera.lastProtectedEntity.num")).willReturn(1_000L);
 

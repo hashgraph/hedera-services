@@ -182,7 +182,7 @@ public class SmartContractRequestHandlerStorageTest {
     repository = getLocalRepositoryInstance();
     gasPrice = new BigInteger("1");
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     ExchangeRateSet rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,

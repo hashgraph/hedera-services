@@ -40,42 +40,42 @@ public class AccountNumbers {
 
 	public long treasury() {
 		if (treasury == UNKNOWN_NUMBER) {
-			treasury = properties.getLongProperty("bootstrap.accounts.treasury");
+			treasury = properties.getLongProperty("accounts.treasury");
 		}
 		return treasury;
 	}
 
 	public long freezeAdmin() {
 		if (freezeAdmin == UNKNOWN_NUMBER) {
-			freezeAdmin = properties.getLongProperty("bootstrap.accounts.freezeAdmin");
+			freezeAdmin = properties.getLongProperty("accounts.freezeAdmin");
 		}
 		return freezeAdmin;
 	}
 
 	public long systemAdmin() {
 		if (systemAdmin == UNKNOWN_NUMBER) {
-			systemAdmin = properties.getLongProperty("bootstrap.accounts.systemAdmin");
+			systemAdmin = properties.getLongProperty("accounts.systemAdmin");
 		}
 		return systemAdmin;
 	}
 
 	public long addressBookAdmin() {
 		if (addressBookAdmin == UNKNOWN_NUMBER) {
-			addressBookAdmin = properties.getLongProperty("bootstrap.accounts.addressBookAdmin");
+			addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
 		}
 		return addressBookAdmin;
 	}
 
 	public long feeSchedulesAdmin() {
 		if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
-			feeSchedulesAdmin = properties.getLongProperty("bootstrap.accounts.feeSchedulesAdmin");
+			feeSchedulesAdmin = properties.getLongProperty("accounts.feeSchedulesAdmin");
 		}
 		return feeSchedulesAdmin;
 	}
 
 	public long exchangeRatesAdmin() {
 		if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
-			exchangeRatesAdmin = properties.getLongProperty("bootstrap.accounts.exchangeRatesAdmin");
+			exchangeRatesAdmin = properties.getLongProperty("accounts.exchangeRatesAdmin");
 		}
 		return exchangeRatesAdmin;
 	}

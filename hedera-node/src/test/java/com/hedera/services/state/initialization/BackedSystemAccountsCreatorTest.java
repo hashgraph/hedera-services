@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.state.initialization;
+package com.hedera.services.state.initialization;
 
 /*-
  * ‌
@@ -97,21 +97,21 @@ class BackedSystemAccountsCreatorTest {
 		properties = mock(PropertySource.class);
 		legacyReader = mock(LegacyEd25519KeyReader.class);
 
-		given(properties.getIntProperty("bootstrap.accounts.init.numSystemAccounts"))
+		given(properties.getIntProperty("ledger.numSystemAccounts"))
 				.willReturn(numAccounts);
+		given(properties.getLongProperty("ledger.totalHbarFloat"))
+				.willReturn(100L);
 		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance"))
 				.willReturn(10L);
 		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance"))
 				.willReturn(5L);
 		given(properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds"))
 				.willReturn(recordThresholds);
-		given(properties.getLongProperty("bootstrap.ledger.treasury.initialBalance"))
-				.willReturn(80L);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.keyName"))
 				.willReturn(legacyId);
 		given(properties.getStringProperty("bootstrap.genesisB64Keystore.path"))
 				.willReturn(b64Loc);
-		given(properties.getLongProperty("bootstrap.systemFilesExpiry"))
+		given(properties.getLongProperty("bootstrap.system.entityExpiry"))
 				.willReturn(expiry);
 
 		var address = mock(Address.class);
@@ -140,11 +140,11 @@ class BackedSystemAccountsCreatorTest {
 
 	@Test
 	public void throwsOnNegativeBalance() {
-		givenMissingTreasury();
+		givenMissingNode();
 		// and:
 		given(legacyReader.hexedABytesFrom(b64Loc, legacyId)).willReturn(hexedABytes);
 		// and:
-		given(properties.getLongProperty("bootstrap.ledger.treasury.initialBalance"))
+		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance"))
 				.willReturn(-100L);
 
 		// expect:

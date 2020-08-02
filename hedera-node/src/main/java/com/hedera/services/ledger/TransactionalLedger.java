@@ -116,7 +116,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					: changes.keySet().stream();
 			/* Only explicitly update new accounts. */
 			changedKeys
-					.filter(id -> !deadAccounts.contains(id) && !accounts.contains(id))
+					.filter(id -> !deadAccounts.contains(id))
 					.forEach(id -> accounts.put(id, get(id)));
 			changes.clear();
 

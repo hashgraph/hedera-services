@@ -55,6 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -151,7 +152,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				this,
 				new StandardizedPropertySources(
 						new BootstrapProperties(),
-						PropertiesLoader::getFileExistenceCheck));
+						loc -> new File(loc).exists()));
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}

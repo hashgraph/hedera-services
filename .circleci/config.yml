@@ -1278,7 +1278,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - plus-perf-optimizations
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:

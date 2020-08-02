@@ -36,9 +36,6 @@ public class ApplicationConstants {
 	public static int DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE = 1;
 
 	// Signature Algorithm Type Constants
-	public static String GENESIS_ACCOUNT = "GENESIS_ACCOUNT";
-	public static String INITIAL_ACCOUNTS = "INITIAL_ACCOUNTS";
-	public static String START_ACCOUNT = "START_ACCOUNT";
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
 	public static long FEE_FILE_ACCOUNT_NUM = 111;
 	public static long ADDRESS_FILE_ACCOUNT_NUM = 101;
@@ -58,23 +55,11 @@ public class ApplicationConstants {
 	public static final long SYSTEM_DELETE_ACC_NUM = 59;
 	public static final long SYSTEM_UNDELETE_ACC_NUM = 60;
 
-	public static int CLAIM_HASH_SIZE = 48;
 	public static long DEFAULT_SHARD = 0l;
 
-	/** Default NO */
 	public static String NO = "NO";
-	/** Default YES */
-	public static String YES = "YES";
-
 	public static int ZERO = 0;
-	/**
-	 * constant char used to serialize and deserialize empty objects
-	 */
 	public static char P = 'p';
-
-	/**
-	 * constant char used to serialize and deserialize empty objects that is null
-	 */
 	public static char N = 'n';
 	public static char A = 'a';
 
@@ -84,13 +69,6 @@ public class ApplicationConstants {
 	public static int RECORD_STREAM_QU_CAP = 500;
 	public static String ACCT_BAL_EXP_DIR = "data/accountBalances/";
 	public static int ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES = 10;
-	public static String HED_START_PATH = "data/onboard/StartUpAccount.txt";
-	public static String INITIALIZE_HEDERA_LEDGER_FLAG = "NO";
-	public static String GEN_ACCOUNT_PATH = "data/onboard/StartUpAccount.txt";
-	public static String GEN_PUB_KEY_PATH = "data/onboard/GenesisPubKey.txt";
-	public static String GEN_PRIV_KEY_PATH = "data/onboard/GenesisPrivKey.txt";
-	public static String GEN_PUB_KEY_32BYTE_PATH = "data/onboard/GenesisPub32Key.txt";
-	public static String ADDRESS_BOOK = "data/onboard/addressBook.txt";
 
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
@@ -99,13 +77,6 @@ public class ApplicationConstants {
 	public static int TX_MIN_DUR = 5;
 	public static int TX_MAX_DUR = 180;
 	public static int TXN_MIN_VALIDITY_BUFFER_SECS = 10;
-
-	// currentTime(// 08/21/2018 10.00am) and expiryTime(// 100 years from
-	// 08/21/2018)
-	public static long CURRENT_TIME = 1534861917l;
-	public static long EXPIRY_TIME = 4688462211l;
-	public static int CURRENT_HBAR_EQ = 1;
-	public static int CURRENT_CENT_EQ = 12;
 
 	public static long INITIAL_GENESIS_COINS = 5000000000000000000l;
 

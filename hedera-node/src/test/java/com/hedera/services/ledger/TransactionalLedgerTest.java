@@ -384,6 +384,7 @@ public class TransactionalLedgerTest {
 		assertEquals("{}", subject.changeSetSoFar());
 		// and:
 		verify(backingAccounts).put(2L, new TestAccount(2L, things[2], false));
+		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false));
 		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
 		verify(backingAccounts).remove(3L);
 	}

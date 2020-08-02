@@ -196,16 +196,13 @@ public class SmartContractRequestHandlerMiscTest {
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
 
-    //Init SolidityAddress Map
-    SolidityAddress solAddress = new SolidityAddress("abcdefghijklmnop");
-    MerkleEntityId solMerkleEntityId = new MerkleEntityId(0l, 0l, 5l);
     //Init Repository
     repository = getLocalRepositoryInstance();
 
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -703,7 +700,6 @@ public class SmartContractRequestHandlerMiscTest {
     ledger.begin();
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-
     long payerAfter = getBalance(payerAccountId);
     long totalAfter = getTotalBalance();
 

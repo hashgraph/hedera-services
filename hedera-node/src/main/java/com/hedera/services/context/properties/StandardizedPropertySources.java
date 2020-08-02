@@ -20,10 +20,10 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,17 +37,15 @@ import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTR
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
-import static com.hedera.services.throttling.bucket.BucketConfig.*;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_CONFIG_PREFIX;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
 import static com.hedera.services.legacy.config.PropertiesLoader.getEnvironment;
 import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
-import static com.hedera.services.legacy.config.PropertiesLoader.getSkipExitOnStartupFailures;
 import static com.hedera.services.legacy.config.PropertiesLoader.getUniqueListeningPortFlag;
-import static com.hedera.services.legacy.logic.ApplicationConstants.YES;
-import static java.lang.System.getenv;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_CONFIG_PREFIX;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_BURST_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACITY_PROPERTY;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property
@@ -145,8 +143,8 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	private void assertPropertySourcesExist() {
-		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.properties.path"));
-		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.permissions.path"));
+		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"));
+		assertFileSourceExists(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"));
 	}
 
 	private void assertFileSourceExists(String path) {
@@ -163,57 +161,37 @@ public class StandardizedPropertySources implements PropertySources {
 	}
 
 	private Map<String, Supplier<Object>> sourceMap() {
-		Supplier<Object> initOnStartup = () ->
-				PropertiesLoader.getInitializeHederaFlag().equals("YES");
-		Supplier<Object> maxLookupRetries = () ->
-				PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES;
-		Supplier<Object> retryBackoffIncrementMs = () ->
-				PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS;
+		Supplier<Object> maxLookupRetries = () -> PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES;
+		Supplier<Object> retryBackoffIncrementMs = () -> PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS;
 
 		Map<String, Supplier<Object>> source = new HashMap<>();
 
+		/* Bootstrap properties, which include all global/static properties. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
+		source.put("files.firstInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM);
+		source.put("files.lastInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM);
+		source.put("hedera.firstProtectedEntity.num", PropertiesLoader::getProtectedMinEntityNum);
+		source.put("hedera.lastProtectedEntity.num", PropertiesLoader::getProtectedMaxEntityNum);
+		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
 
+		/* Global/dynamic properties. */
 		source.put("cache.records.ttl", PropertiesLoader::getTxReceiptTTL);
 		source.put("contracts.maxStorageKb", PropertiesLoader::getMaxContractStateSize);
 		source.put("contracts.defaultSendThreshold", PropertiesLoader::getDefaultContractSenderThreshold);
 		source.put("contracts.defaultReceiveThreshold", PropertiesLoader::getDefaultContractReceiverThreshold);
-		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
-		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
-		source.put("files.firstInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM);
-		source.put("files.lastInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM);
 		source.put("files.maxSizeKb", PropertiesLoader::getMaxFileSize);
-		source.put("grpc.port", PropertiesLoader::getPort);
-		source.put("grpc.tlsPort", PropertiesLoader::getTlsPort);
-		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
-		source.put("hedera.createSystemFilesOnStartup", initOnStartup);
-		source.put("hedera.createSystemAccountsOnStartup", initOnStartup);
-		source.put("hedera.exitOnNodeStartupFailure", () -> !getSkipExitOnStartupFailures().equals(YES));
-		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
-		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
-		source.put("hedera.firstProtectedEntity.num", PropertiesLoader::getProtectedMinEntityNum);
-		source.put("hedera.lastProtectedEntity.num", PropertiesLoader::getProtectedMaxEntityNum);
-		source.put("hedera.profiles.active", () -> LEGACY_ENV_ORDER[getEnvironment()]);
-		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
-		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);
-		source.put("hedera.transaction.minValididityBufferSecs", PropertiesLoader::getTxMinRemaining);
-		source.put("hedera.versionInfo.resource", () -> VERSION_INFO_PROPERTIES_FILE);
-		source.put("hedera.versionInfo.protoKey", () -> VERSION_INFO_PROPERTIES_PROTO_KEY);
-		source.put("hedera.versionInfo.servicesKey", () -> VERSION_INFO_PROPERTIES_SERVICES_KEY);
-		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
-		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
+		source.put("hedera.transaction.minValidityBufferSecs", PropertiesLoader::getTxMinRemaining);
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
-		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
+		source.put("ledger.maxAccountNum", PropertiesLoader::getConfigAccountNum);
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
 		source.put("ledger.transfers.maxLen", PropertiesLoader::getTransferAccountListSize);
-		source.put("validation.preConsensus.accountKey.maxLookupRetries", maxLookupRetries);
-		source.put("validation.preConsensus.accountKey.retryBackoffIncrementMs", retryBackoffIncrementMs);
-		/* --- Legacy throttling properties, can be removed once new config is in use. --- */
+		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
+		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
 		source.put("throttlingTps", PropertiesLoader::getThrottlingTps);
 		source.put("queriesTps", PropertiesLoader::getQueriesTps);
 		source.put("simpletransferTps", PropertiesLoader::getSimpleTransferTps);
@@ -229,6 +207,24 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("throttling.hcs.getTopicInfo.tps", PropertiesLoader::getGetTopicInfoTps);
 		source.put("throttling.hcs.getTopicInfo.burstPeriod", PropertiesLoader::getGetTopicInfoBurstPeriod);
 
+		/* Node-local/static properties. */
+		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
+		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
+		source.put("grpc.port", PropertiesLoader::getPort);
+		source.put("grpc.tlsPort", PropertiesLoader::getTlsPort);
+		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
+		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
+		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
+		source.put("hedera.profiles.active", () -> LEGACY_ENV_ORDER[getEnvironment()]);
+		source.put("hedera.versionInfo.resource", () -> VERSION_INFO_PROPERTIES_FILE);
+		source.put("hedera.versionInfo.protoKey", () -> VERSION_INFO_PROPERTIES_PROTO_KEY);
+		source.put("hedera.versionInfo.servicesKey", () -> VERSION_INFO_PROPERTIES_SERVICES_KEY);
+		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
+		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
+		source.put("validation.preConsensus.accountKey.maxLookupRetries", maxLookupRetries);
+		source.put("validation.preConsensus.accountKey.retryBackoffIncrementMs", retryBackoffIncrementMs);
+
+		/* Node-local/dynamic properties. */
 		source.put("timer.stats.dump.started", PropertiesLoader::getStartStatsDumpTimer);
 		source.put("timer.stats.dump.value", PropertiesLoader::getStatsDumpTimerValue);
 

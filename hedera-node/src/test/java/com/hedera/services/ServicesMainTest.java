@@ -28,8 +28,8 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -38,12 +38,14 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -110,6 +112,7 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
+	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
 
 	@BeforeEach
 	private void setup() {
@@ -127,6 +130,7 @@ public class ServicesMainTest {
 		systemExits = mock(SystemExits.class);
 		recordStream = mock(RecordStream.class);
 		recordStreamThread = mock(Thread.class);
+		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
@@ -164,6 +168,7 @@ public class ServicesMainTest {
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.propertySanitizer()).willReturn(propertySanitizer);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
+		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 		given(ctx.systemAccountsCreator()).willReturn(systemAccountsCreator);
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
@@ -171,7 +176,6 @@ public class ServicesMainTest {
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
 		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
 
 		subject = new ServicesMain();
 		subject.systemExits = systemExits;
@@ -182,18 +186,6 @@ public class ServicesMainTest {
 	@AfterEach
 	public void cleanup() {
 		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
-	}
-
-	@Test
-	public void doesntFailFastOnMissingNodeAccountIdIfSkippingExits() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(false);
-		given(ctx.nodeAccount()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits, never()).fail(1);
 	}
 
 	@Test
@@ -244,12 +236,9 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exitsOnCreationFailure() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
-
-		willThrow(Exception.class)
-				.given(systemAccountsCreator).createSystemAccounts(any(), any());
+	public void exitsOnCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemAccountsCreator).ensureSystemAccounts(any(), any());
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -386,9 +375,7 @@ public class ServicesMainTest {
 	}
 	
 	@Test
-	public void managesSystemFiles() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemFilesOnStartup")).willReturn(true);
-
+	public void managesSystemFiles() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -403,30 +390,16 @@ public class ServicesMainTest {
 
 	@Test
 	public void createsSystemAccountsIfRequested() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
-
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(systemAccountsCreator).createSystemAccounts(accounts, addressBook);
-		verify(pause).forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
-	}
-
-	@Test
-	public void skipsSystemAccountCreationIfNotRequested() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verifyNoInteractions(systemAccountsCreator);
+		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, addressBook);
+		verify(pause).forMs(ServicesMain.SUGGESTED_POST_CREATION_PAUSE_MS);
 	}
 
 	@Test
 	public void rethrowsAccountsCreationFailureAsIse() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
 		given(ctx.systemAccountsCreator()).willReturn(null);
 
 		// when:

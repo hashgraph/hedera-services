@@ -21,6 +21,7 @@ package com.hedera.services.legacy.handler;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
@@ -106,9 +107,6 @@ public class TransactionHandler {
   public static final Predicate<AccountID> IS_THROTTLE_EXEMPT =
           id -> id.getAccountNum() >= 1 && id.getAccountNum() <= 100L;
 
-  private Set<Long> SUPERUSER_ACCOUNTS = Set.of(
-          PropertiesLoader.getGenesisAccountNum(),
-          PropertiesLoader.getMasterAccountNum());
   private EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES = EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
 
   private static final Logger log = LogManager.getLogger(TransactionHandler.class);
@@ -124,6 +122,7 @@ public class TransactionHandler {
   private Supplier<StateView> stateView;
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
+  private AccountNumbers accountNums;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -144,7 +143,8 @@ public class TransactionHandler {
           FeeCalculator fees,
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
-          QueryFeeCheck queryFeeCheck
+          QueryFeeCheck queryFeeCheck,
+          AccountNumbers accountNums
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -156,6 +156,7 @@ public class TransactionHandler {
     this.precheckVerifier = precheckVerifier;
     this.basicPrecheck = basicPrecheck;
     this.queryFeeCheck = queryFeeCheck;
+    this.accountNums = accountNums;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -168,7 +169,7 @@ public class TransactionHandler {
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null);
+            null, null, null, null, null);
   }
 
   public TransactionHandler(
@@ -183,7 +184,8 @@ public class TransactionHandler {
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
-          FunctionalityThrottling throttling
+          FunctionalityThrottling throttling,
+          AccountNumbers accountNums
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -197,6 +199,7 @@ public class TransactionHandler {
     this.usagePrices = usagePrices;
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
+    this.accountNums = accountNums;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -325,7 +328,7 @@ public class TransactionHandler {
     var permissionKey = permissionFileKeyForTxn(txn);
     if (!StringUtils.isEmpty(permissionKey)) {
       var payer = txn.getTransactionID().getAccountID();
-      if (SUPERUSER_ACCOUNTS.contains(payer.getAccountNum())) {
+      if (accountNums.isSysAdmin(payer.getAccountNum())) {
         return OK;
       } else {
         PermissionedAccountsRange accountRange =  PropertiesLoader.getApiPermission().get(permissionKey);
@@ -557,7 +560,7 @@ public class TransactionHandler {
     var queryName = permissionFileKeyForQuery(query);
     if (!StringUtils.isEmpty(queryName)) {
       AccountID payer = body.getTransactionID().getAccountID();
-      if (SUPERUSER_ACCOUNTS.contains(payer.getAccountNum())) {
+      if (accountNums.isSysAdmin(payer.getAccountNum())) {
         permissionStatus = OK;
       } else {
         PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(queryName);
@@ -614,58 +617,6 @@ public class TransactionHandler {
       throw new PlatformTransactionCreationException(
           "platform tx not created: tx serialized size = " + transaction.length + ", txShortInfo = "
               + com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShort(request));
-    }
-  }
-
-  /**
-   * Validates Account IDs and Total Balance in Account Map on Start Up .
-   * If it finds any invalid Account ID  it stops checking further and returns Invalid Account ID response code.
-   * If all the Account IDs are valid, it checks the total balance. If its not equal to expected balance, it
-   * returns Invalid Balance response code.
-   * If all is well, it returns OK response code.
-   *
-   * @param accountMap
-   * @return
-   */
-  public static ResponseCodeEnum validateAccountIDAndTotalBalInMap(FCMap<MerkleEntityId, MerkleAccount> accountMap) {
-    boolean result = true;
-    MerkleEntityId merkleEntityId = null;
-    long totalBalance =  0;
-    ResponseCodeEnum response = OK;
-    for (Map.Entry<MerkleEntityId, MerkleAccount> account : accountMap.entrySet()) {
-      merkleEntityId = account.getKey();
-      result = validateAccountID(merkleEntityId);
-      MerkleAccount currMv = account.getValue();
-      totalBalance += currMv.getBalance();
-      if (!result) {
-    	response = ResponseCodeEnum.INVALID_ACCOUNT_ID;
-        break;
-      }
-    }
-    if(response == OK) {
-    	if(totalBalance != PropertiesLoader.getInitialGenesisCoins()) {
-    		response = ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID;
-    	}
-    }
-    return response;
-  }
-
-  public static boolean validateAccountID(MerkleEntityId merkleEntityId) {
-    return validateAccountID(merkleEntityId.getNum(), merkleEntityId.getRealm(), merkleEntityId.getShard());
-  }
-
-  public static boolean validateAccountID(long accountNum, long realmNum, long shardNum) {
-    if (accountNum >= PropertiesLoader.getConfigAccountNum()
-        || accountNum <= ApplicationConstants.ZERO
-        || realmNum != PropertiesLoader.getConfigRealmNum()
-        || shardNum != PropertiesLoader.getConfigShardNum()) {
-      log.error("Account Map contains Invalid AccountID .. please check !"
-          + " AccountNum " + accountNum
-          + " Realm Num " + realmNum
-          + " Shard Num " + shardNum);
-      return false;
-    } else {
-      return true;
     }
   }
 }

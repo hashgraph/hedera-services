@@ -37,8 +37,8 @@ class HederaNumbersTest {
 	@BeforeEach
 	private void setup() {
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("bootstrap.hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("bootstrap.hedera.realm")).willReturn(2L);
+		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
+		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
 
 		subject = new HederaNumbers(properties);
 	}

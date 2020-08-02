@@ -30,10 +30,13 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySanitizer;
@@ -112,6 +115,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
@@ -202,7 +206,6 @@ import com.hedera.services.legacy.services.fees.DefaultFeeExemptions;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -210,7 +213,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.services.state.validation.DefaultLedgerValidator;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
@@ -228,7 +230,6 @@ import com.hedera.services.context.properties.PropertySource;
 
 import java.io.PrintStream;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -330,6 +331,7 @@ public class ServicesContext {
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
 	private HfsSystemFilesManager systemFilesManager;
+	private SystemAccountsCreator systemAccountsCreator;
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
 	private AccountRecordsHistorian recordsHistorian;
@@ -349,15 +351,15 @@ public class ServicesContext {
 	private static StateMigrations stateMigrations;
 	private static AccountsExporter accountsExporter;
 	private static PropertySanitizer propertySanitizer;
-	private static SystemAccountsCreator systemAccountsCreator;
 	private static CurrentPlatformStatus platformStatus;
+	private static LegacyEd25519KeyReader b64KeyReader;
 	static {
 		pause = SleepingPause.INSTANCE;
+		b64KeyReader = new LegacyEd25519KeyReader();
 		platformStatus = new DefaultCurrentPlatformStatus();
 		stateMigrations = new DefaultStateMigrations(SleepingPause.INSTANCE);
 		accountsExporter = new DefaultAccountsExporter();
 		propertySanitizer = new DefaultPropertySanitizer();
-		systemAccountsCreator = new DefaultSystemAccountsCreator();
 	}
 
 	public ServicesContext(
@@ -374,7 +376,7 @@ public class ServicesContext {
 
 	public LedgerValidator ledgerValidator() {
 		if (ledgerValidator == null) {
-			ledgerValidator = new DefaultLedgerValidator();
+			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties());
 		}
 		return ledgerValidator;
 	}
@@ -811,7 +813,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public FCMapBackingAccounts backingAccounts() {
+	public BackingAccounts<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
 			backingAccounts = new FCMapBackingAccounts(accounts());
 		}
@@ -1036,6 +1038,7 @@ public class ServicesContext {
 					properties(),
 					(TieredHederaFs)hfs(),
 					() -> lookupInCustomStore(
+							b64KeyReader(),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
 					rates -> {
@@ -1122,9 +1125,10 @@ public class ServicesContext {
 					exchange(),
 					fees(),
 					stateViews(),
-					new BasicPrecheck(validator()),
+					new BasicPrecheck(properties(), validator()),
 					queryFeeCheck(),
-					bucketThrottling());
+					bucketThrottling(),
+					accountNums());
 		}
 		return txns;
 	}
@@ -1202,7 +1206,22 @@ public class ServicesContext {
 		return txnChargingPolicy;
 	}
 
+	public SystemAccountsCreator systemAccountsCreator() {
+		if (systemAccountsCreator == null) {
+			systemAccountsCreator = new BackedSystemAccountsCreator(
+					hederaNums(),
+					accountNums(),
+					properties(),
+					b64KeyReader());
+		}
+		return systemAccountsCreator;
+	}
+
 	/* Context-free infrastructure. */
+	public LegacyEd25519KeyReader b64KeyReader() {
+		return b64KeyReader;
+	}
+
 	public Pause pause() {
 		return pause;
 	}
@@ -1217,10 +1236,6 @@ public class ServicesContext {
 
 	public PropertySanitizer propertySanitizer() {
 		return propertySanitizer;
-	}
-
-	public SystemAccountsCreator systemAccountsCreator() {
-		return systemAccountsCreator;
 	}
 
 	/* Injected dependencies. */

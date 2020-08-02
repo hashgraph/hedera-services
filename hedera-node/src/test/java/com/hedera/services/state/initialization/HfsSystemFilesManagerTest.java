@@ -159,11 +159,11 @@ class HfsSystemFilesManagerTest {
 		fileNumbers.setRealm(22L);
 
 		properties = mock(PropertySource.class);
-		given(properties.getStringProperty("bootstrap.permissions.path"))
+		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
 				.willReturn(bootstrapJutilPermsLoc);
-		given(properties.getStringProperty("bootstrap.properties.path"))
+		given(properties.getStringProperty("bootstrap.networkProperties.path"))
 				.willReturn(bootstrapJutilPropsLoc);
-		given(properties.getLongProperty("bootstrap.systemFilesExpiry"))
+		given(properties.getLongProperty("bootstrap.system.entityExpiry"))
 				.willReturn(expiry);
 		given(properties.getIntProperty("bootstrap.rates.currentHbarEquiv"))
 				.willReturn(curHbarEquiv);

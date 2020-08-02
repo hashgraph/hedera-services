@@ -26,10 +26,9 @@ public class LegacyEd25519KeyReader {
 			var keyPairs = keyPairMap.get(keyPairId);
 			return keyPairs.get(0).getKeyPairList().get(0).getPublicKeyAbyteStr();
 		} catch (Exception e) {
-			log.warn("Unable to deserialize startup keystore!", e);
-			throw new IllegalArgumentException(String.format(
-					"No genesis key could be decrypted from '%s'!",
-					b64EncodedKeyPairLoc));
+			throw new IllegalArgumentException(
+					String.format("No key could be decrypted from '%s'!", b64EncodedKeyPairLoc),
+					e);
 		}
 	}
 

@@ -58,19 +58,6 @@ public class AsyncPropertiesObject {
 	private static String accountBalanceExportDir = ApplicationConstants.ACCT_BAL_EXP_DIR;
 	private static long accountBalanceExportPeriodMinutes = ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES;
 	
-	// path for hedera startup
-	private static String hederaStartupPath = ApplicationConstants.HED_START_PATH;
-	// config property for account creation
-	private static String initializeHederaLedgerFlag = ApplicationConstants.INITIALIZE_HEDERA_LEDGER_FLAG;
-	// node account creation properties
-	private static String genesisAccountPath = ApplicationConstants.GEN_ACCOUNT_PATH;
-	private static String genesisPubKeyPath = ApplicationConstants.GEN_PUB_KEY_PATH;
-	private static String genesisPrivKeyPath = ApplicationConstants.GEN_PRIV_KEY_PATH;
-	private static String genesisPubKey32BytePath = ApplicationConstants.GEN_PUB_KEY_32BYTE_PATH;
-	
-	// system file creation node txt
-	private static String addressBook ;
-	
 	// Server Properties
 	private static int port = ApplicationConstants.APP_PORT;
 	private static int tlsPort = ApplicationConstants.APP_TLS_PORT;
@@ -91,8 +78,7 @@ public class AsyncPropertiesObject {
 	private static int nettyMaxConcurrentCalls = ApplicationConstants.MAX_CONCURRENT_CALLS;
 	private static String nettyMode = ApplicationConstants.NETTY_MODE_DEV;
 	private static int nettyFlowControlWindow = ApplicationConstants.NETTY_FLOW_CONTROL_WINDOW;
-	private static String skipExitOnStartupFailures = ApplicationConstants.NO;
-	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<String, PermissionedAccountsRange>();
+	private static Map<String, PermissionedAccountsRange> apiPermission = new HashMap<>();
 
 	// Timer properties
 	private static boolean startStatsDumpTimer = false;
@@ -150,33 +136,12 @@ public class AsyncPropertiesObject {
 		 accountBalanceExportPeriodMinutes = appConfig
 				.getLong("accountBalanceExportPeriodMinutes", ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES);
 
-		// path for hedera startup
-		 hederaStartupPath = appConfig.getString("hederaStartupPath",
-				 ApplicationConstants.HED_START_PATH);
-		// config property for account creation
-		 initializeHederaLedgerFlag = appConfig.getString("initializeHederaLedgerFlag",
-				 ApplicationConstants.INITIALIZE_HEDERA_LEDGER_FLAG);
-		// node account creation properties
-		 genesisAccountPath = appConfig.getString("genesisAccountPath",
-				 ApplicationConstants.GEN_ACCOUNT_PATH);
-		 genesisPubKeyPath = appConfig.getString("genesisPubKeyPath",
-				 ApplicationConstants.GEN_PUB_KEY_PATH);
-		 genesisPrivKeyPath = appConfig.getString("genesisPrivKeyPath",
-				 ApplicationConstants.GEN_PRIV_KEY_PATH);
-		 genesisPubKey32BytePath = appConfig.getString("genesisPubKey32BytePath",
-				 ApplicationConstants.GEN_PUB_KEY_32BYTE_PATH);	
-		// system file creation node txt
-		 addressBook = appConfig.getString("addressBook", ApplicationConstants.ADDRESS_BOOK);
-		//skipping system exit on startup validations 
-		 skipExitOnStartupFailures =  appConfig.getString("skipExitOnStartupFailures", ApplicationConstants.NO);
-
 		// properties for timers
 		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
 		statsDumpTimerValue = appConfig.getInt("statsDumpTimerValue",60);
 
 	}
-	
-	
+
 	public static void loadApiProperties(CustomProperties apiPermissionProp) {
 		apiPermission.clear();
 		apiPermissionProp.getCustomProperties().forEach((key, value) ->
@@ -272,34 +237,6 @@ public class AsyncPropertiesObject {
 		return accountBalanceExportPeriodMinutes;
 	}
 
-	static String getHederaStartupPath() {
-		return hederaStartupPath;
-	}
-
-	static String getInitializeHederaLedgerFlag() {
-		return initializeHederaLedgerFlag;
-	}
-
-	static String getGenesisAccountPath() {
-		return genesisAccountPath;
-	}
-
-	static String getGEN_PUB_KEY_PATH() {
-		return genesisPubKeyPath;
-	}
-
-	static String getGenesisPrivKeyPath() {
-		return genesisPrivKeyPath;
-	}
-
-	static String getGenesisPubKey32BytePath() {
-		return genesisPubKey32BytePath;
-	}
-
-	static String getAddressBook() {
-		return addressBook;
-	}
-	
 	static int getPort() {
 		return port;
 	}
@@ -360,11 +297,6 @@ public class AsyncPropertiesObject {
 		return nettyMode;
 	}
 	 
-	 static String getSkipExitOnStartupFailures() {
-	   return skipExitOnStartupFailures;
-	 }
-
-
 	static boolean getStartStatsDumpTimer() {
 		return startStatsDumpTimer;
 	}
@@ -372,5 +304,4 @@ public class AsyncPropertiesObject {
 	static int getStatsDumpTimerValue() {
 		return statsDumpTimerValue;
 	}
-
 }

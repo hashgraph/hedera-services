@@ -43,10 +43,11 @@ import java.util.function.Function;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.*;
 
 public class BucketThrottling implements FunctionalityThrottling {
-	private static final Logger log = LogManager.getLogger(ThrottlingPropsBuilder.class);
+	private static final Logger log = LogManager.getLogger(BucketThrottling.class);
 
 	static Consumer<String> displayFn = log::info;
 
@@ -58,7 +59,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 	private static final EnumSet<HederaFunctionality> REAL = EnumSet.complementOf(EnumSet.of(NONE, UNRECOGNIZED));
 	HederaFunctionality[] functions = Arrays.stream(HederaFunctionality.class.getEnumConstants())
 			.filter(REAL::contains)
-			.sorted(Comparator.comparing(Object::toString))
+			.sorted(comparing(Object::toString))
 			.toArray(HederaFunctionality[]::new);
 
 	EnumMap<HederaFunctionality, CapacityTest> capacities = new EnumMap<>(HederaFunctionality.class);
@@ -95,9 +96,11 @@ public class BucketThrottling implements FunctionalityThrottling {
 		capacities.clear();
 		Arrays.stream(functions)
 				.forEach(function -> capacities.put(function, testGiven(throttleProps, function, throttles)));
-		displayFn.accept("--- Resolved node-level throttling ---");
-		List.of(functions).forEach(f -> displayFn.accept(String.format("%s :: %s", f, capacities.get(f))));
-		displayFn.accept("--------------------------------------------");
+		var sb = new StringBuilder("Resolved node-level throttling:");
+		List.of(functions).stream()
+				.sorted(comparing(HederaFunctionality::toString))
+				.forEach(f -> sb.append(String.format("\n  %s=%s", f, capacities.get(f))));
+		displayFn.accept(sb.toString());
 	}
 
 	Map<String, BucketThrottle> throttlesGiven(PropertySource props, Map<String, BucketConfig> config) {

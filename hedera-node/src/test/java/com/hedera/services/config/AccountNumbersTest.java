@@ -39,12 +39,12 @@ class AccountNumbersTest {
 	@BeforeEach
 	private void setup() {
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("bootstrap.accounts.addressBookAdmin")).willReturn(55L);
-		given(properties.getLongProperty("bootstrap.accounts.feeSchedulesAdmin")).willReturn(56L);
-		given(properties.getLongProperty("bootstrap.accounts.freezeAdmin")).willReturn(58L);
-		given(properties.getLongProperty("bootstrap.accounts.exchangeRatesAdmin")).willReturn(57L);
-		given(properties.getLongProperty("bootstrap.accounts.systemAdmin")).willReturn(50L);
-		given(properties.getLongProperty("bootstrap.accounts.treasury")).willReturn(2L);
+		given(properties.getLongProperty("accounts.addressBookAdmin")).willReturn(55L);
+		given(properties.getLongProperty("accounts.feeSchedulesAdmin")).willReturn(56L);
+		given(properties.getLongProperty("accounts.freezeAdmin")).willReturn(58L);
+		given(properties.getLongProperty("accounts.exchangeRatesAdmin")).willReturn(57L);
+		given(properties.getLongProperty("accounts.systemAdmin")).willReturn(50L);
+		given(properties.getLongProperty("accounts.treasury")).willReturn(2L);
 
 		subject = new AccountNumbers(properties);
 	}

@@ -16,14 +16,14 @@ public class HederaNumbers {
 
 	public long realm() {
 		if (realm == UNKNOWN_NUMBER) {
-			realm = properties.getLongProperty("bootstrap.hedera.realm");
+			realm = properties.getLongProperty("hedera.realm");
 		}
 		return realm;
 	}
 
 	public long shard() {
 		if (shard == UNKNOWN_NUMBER) {
-			shard = properties.getLongProperty("bootstrap.hedera.shard");
+			shard = properties.getLongProperty("hedera.shard");
 		}
 		return shard;
 	}

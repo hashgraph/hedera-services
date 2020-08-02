@@ -54,9 +54,9 @@ public class SystemFileCreation {
   }
 
   private ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = PropertiesLoader.getExpiryTime();
-    int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-    int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
+    long expiryTime = Long.MAX_VALUE;
+    int currentHbarEquivalent = 1;
+    int currentCentEquivalent = 12;
     return RequestBuilder
         .getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
             currentHbarEquivalent, 15, expiryTime);
