@@ -336,7 +336,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				null,
 				precheckVerifier,
 				accounts,
-				DEFAULT_NODE);
+				DEFAULT_NODE,
+				new MockAccountNumbers());
 	}
 }
 

@@ -165,11 +165,12 @@ public class TransactionHandler {
           RecordCache recordCache,
           PrecheckVerifier verifier,
           FCMap<MerkleEntityId, MerkleAccount> accounts,
-          AccountID nodeAccount
+          AccountID nodeAccount,
+          AccountNumbers accountNums
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null, null);
+            null, null, null, null, accountNums);
   }
 
   public TransactionHandler(
