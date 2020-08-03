@@ -23,12 +23,6 @@ git clone git@github.com:hashgraph/hedera-services.git
 cd hedera-services
 ```
 
-Ensure the Docker Compose [.env file](../.env) has the following contents:
-```
-TAG=0.6.0
-REGISTRY_PREFIX=gcr.io/hedera-registry/
-```
-
 You can now [start the network](#starting-the-compose-network).
 
 ### Building locally
@@ -94,13 +88,15 @@ _compose-network/node0/saved/com.hedera.services.ServicesMain/0/hedera/_.
 To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
 
 Given a clean shutdown of the containers, when you restart with `docker-compose start`, 
-the network will load from its last saved state. 
+the network will load from its last saved state.  In general, for this to work correctly, 
+you should precede shutting down the network by submitting a `Freeze` transaction; e.g. via the 
+[`FreezeDockerNetwork`](../test-clients/src/main/java/com/hedera/services/bdd/suites/freeze/FreezeDockerNetwork.java)
+client.
 
-If an you have a problem restarting the network after stopping, you can simply re-initialize
-it via:
+If you have a problem restarting the network after stopping, you can re-initialize it via:
 ```
 docker-compose down
-rm -rf compose-network
+rm -rf compose-network/
 ```
 
 ## Understanding the Docker image

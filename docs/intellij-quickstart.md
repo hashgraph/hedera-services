@@ -112,7 +112,8 @@ will run against your local network, culminating in logs similar to:
 Stop the `ServicesMain` process in IntelliJ to shut down the network.
 
 When you restart `ServicesMain`, the nodes will attempt to restore their
-state from the _hedera-node/data/saved_ directory tree. In general, for
+state from the _hedera-node/data/saved_ directory tree. 
+In general, for
 this to work correctly, you should precede shutting down the network
 by submitting a `Freeze` transaction; e.g. via the 
 [`FreezeIntellijNetwork`](../test-clients/src/main/java/com/hedera/services/bdd/suites/freeze/FreezeIntellijNetwork.java)
