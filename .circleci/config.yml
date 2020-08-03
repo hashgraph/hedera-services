@@ -1542,7 +1542,6 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
             cd /swirlds-platform/regression;   git checkout services-regression-JRS
-
       - run:
           name: Run regression tests
           command: |
