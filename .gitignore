@@ -18,6 +18,7 @@ hs_err_pid*
 
 *.sh
 !hedera-node/data/backup/*.sh
+!hapi-proto/add-copyright.sh
 *.json
 !hedera-node/src/test/resources/legacyAccounts.json
 .circleci/*.yml-excerpt
