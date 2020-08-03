@@ -8,3 +8,4 @@ find . -name '*.proto' | while read FILE; do
   tail -n ${TCOUNT} $FILE >> tmp.proto
   mv tmp.proto $FILE
 done
+rm tmp.proto
