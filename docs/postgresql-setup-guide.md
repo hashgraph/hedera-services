@@ -10,18 +10,11 @@ This document describes the standard Swirlds/Hedera configuration for the Postgr
 
 ![](enable-hyper-v-and-containers.png)
 
-### Create a local folder to use with PostgreSQL
-```
-# MacOS / Linux
-mkdir -p ~/Docker/Volumes/PostgreSQL/swirlds-fcfs
-```
-
 ### Run PostgreSQL image as a container
 Execute the following docker commands from the CLI:
 ```
 # MacOS / Linux
 docker run --name postgres -d -p 5432:5432 \
--v ~/Docker/Volumes/PostgreSQL/swirlds-fcfs:/var/lib/postgresql/data \
 --env POSTGRES_PASSWORD=password --env POSTGRES_USER=swirlds \
 --env POSTGRES_DB=fcfs \
 --env PGDATA=/var/lib/postgresql/data/pgdata \
@@ -40,12 +33,6 @@ Notes:
 2. On Windows, you may be asked to authorize the drive sharing as shown below. Press the “Share It” button to allow access.
 
 ![](authorize-drive-sharing.png)
-
-### Copy the [PostgreSQL Configuration file](postgresql.conf) into the appropriate folder
-```
-# MacOS / Linux
-cp docs/postgresql.conf ~/Docker/Volumes/PostgreSQL/swirlds-fcfs/pgdata
-```
 
 ### Control your PostgresSQL container
 ```
