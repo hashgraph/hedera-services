@@ -1337,7 +1337,7 @@ workflows:
           post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
-                status: Passed
+                status: Passed            
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
@@ -1346,7 +1346,6 @@ workflows:
           pre-steps:
             - attach_workspace:
                 at: /
-
 jobs:
   start-singlejob-testnet:
     parameters:
