@@ -1,6 +1,6 @@
 # PostgreSQL Setup Guide
 
-This document describes the standard Swirlds/Hedera configuration for the PostgreSQL local development environment.
+This document describes the standard Hedera configuration for the PostgreSQL local development environment.
 
 ## PostgreSQL Setup for Local Development
 ### Download and Install Docker CE [Windows](https://hub.docker.com/editions/community/docker-ce-desktop-windows) or [MacOS X](https://hub.docker.com/editions/community/docker-ce-desktop-mac)

@@ -120,7 +120,6 @@ public class R5BugChecks extends HapiApiSuite {
 		);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1792 */
 	private HapiApiSpec cannotUseThresholdWithM0() {
 		KeyShape invalid = listOf(SIMPLE, SIMPLE, threshOf(0, 3));
 
