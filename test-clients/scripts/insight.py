@@ -15,7 +15,7 @@
 #  it will list subdirectories under sdk/testing/results and ask
 #  use to choose one subdirectory to scan for results.
 #
-#  Then it scans platform csv files AND swirldslog
+#  Then it scans platform csv files AND swirlds.log
 #
 ############################################################
 

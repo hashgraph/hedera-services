@@ -65,7 +65,7 @@ public interface TransactionContext {
 	 * @return the account id
 	 */
 	AccountID submittingNodeAccount();
-	//Should this be renamed??
+
 	/**
 	 * The member id of the node that submitted the current txn.
 	 *
