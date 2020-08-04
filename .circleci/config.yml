@@ -1546,6 +1546,7 @@ jobs:
       - run:
           name: Run regression tests
           command: |
+            cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/my-key.pem
             cd /swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json /repo
 
       - persist_to_workspace:
