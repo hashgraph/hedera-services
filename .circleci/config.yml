@@ -1540,6 +1540,12 @@ jobs:
             cd /swirlds-platform/regression;   git checkout services-regression-JRS
 
       - run:
+          name: Install necessary net-tools
+          command: |
+            apt-get update;
+            apt-get install net-tools
+
+      - run:
           name: Run regression tests
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
