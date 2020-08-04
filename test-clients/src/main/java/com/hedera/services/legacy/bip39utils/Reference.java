@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
- //should this comment have Hedera?
+
 /**
- * Encapsulation of a Swirlds "reference", which is a 384-bit hash of a public key, file, swirld name, or
+ * Encapsulation of a "reference", which is a 384-bit hash of a public key, file, swirld name, or
  * other entity. It supports converting between byte array and string, for several types of string.
  * Eventually, it may also allow converting between those and a QR code image. It is also legal to
  * instantiate with a 128-bit or 256-bit hash, but for some uses, 128 bits will not be secure against

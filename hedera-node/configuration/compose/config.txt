@@ -1,5 +1,5 @@
 ###############################################################################################
-# Swirlds configuration file, for automatically running multiple instances
+# Configuration file, for automatically running multiple instances
 ###############################################################################################
 swirld, hedera
 app, HederaNode.jar

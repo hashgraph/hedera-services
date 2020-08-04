@@ -273,7 +273,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		AccountID swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
 		AccountID designatedNodeAccount = accessor.getTxn().getNodeAccountID();
 		if (!swirldsMemberAccount.equals(designatedNodeAccount)) {
-			log.warn("Node {} (Swirlds #{}) submitted a txn designated for node {} :: {}",
+			log.warn("Node {} (SwirldsMember #{}) submitted a txn designated for node {} :: {}",
 					readableId(swirldsMemberAccount),
 					ctx.txnCtx().submittingSwirldsMember(),
 					readableId(designatedNodeAccount),

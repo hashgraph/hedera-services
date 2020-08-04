@@ -2534,7 +2534,7 @@ jobs:
       - run-eet-suites:
           dsl-args: FreezeSuite
       - run:
-          name: Show swirlds logs before HGCApp restart
+          name: Show logs before HGCApp restart
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/show_logs.sh'
@@ -2548,7 +2548,7 @@ jobs:
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/show_java_process.sh'
       - run:
-          name: Show swirlds logs after HGCApp restart
+          name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/show_logs.sh'
@@ -2614,7 +2614,7 @@ jobs:
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/show_java_process.sh'
       - run:
-          name: Show swirlds logs after HGCApp restart
+          name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/show_logs.sh'
@@ -2651,7 +2651,7 @@ jobs:
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/firewall_flush_rules.sh'
       - run:
-          name: Show swirlds logs after HGCApp restart
+          name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
   run-custom-migration:
