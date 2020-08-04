@@ -74,7 +74,7 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 				return responseWith(metaValidity.getValidity(), metaValidity.getRequiredFee());
 			}
 
-			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getTxn());
+			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getFunction(), accessor.getTxn());
 			Function<TransactionBody, ResponseCodeEnum> syntaxCheck = logic
 					.map(TransitionLogic::syntaxCheck)
 					.orElse(FALLBACK_SYNTAX_CHECK);

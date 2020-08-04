@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -124,8 +124,10 @@ import com.hedera.services.throttling.TransactionThrottling;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
+
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
+import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
@@ -180,9 +182,12 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -357,6 +362,7 @@ public class ServicesContext {
 	private static PropertySanitizer propertySanitizer;
 	private static CurrentPlatformStatus platformStatus;
 	private static LegacyEd25519KeyReader b64KeyReader;
+
 	static {
 		pause = SleepingPause.INSTANCE;
 		b64KeyReader = new LegacyEd25519KeyReader();
@@ -571,43 +577,44 @@ public class ServicesContext {
 							/* Consensus */
 							new GetTopicInfoResourceUsage()
 					),
-					txnUsageFn(fileFees, cryptoFees, contractFees)
+					txnUsageEstimators(fileFees, cryptoFees, contractFees)
 			);
 		}
 		return fees;
 	}
 
-	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
 			FileFeeBuilder fileFees,
 			CryptoFeeBuilder cryptoFees,
 			SmartContractFeeBuilder contractFees
 	) {
-		return Map.ofEntries(
+		Map<HederaFunctionality, List<TxnResourceUsageEstimator>> estimatorsMap = Map.ofEntries(
 				/* Crypto */
-				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoFees))),
-				entry(CryptoDelete, List.<TxnResourceUsageEstimator>of(new CryptoDeleteResourceUsage(cryptoFees))),
-				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoFees))),
-				entry(CryptoTransfer, List.<TxnResourceUsageEstimator>of(new CryptoTransferResourceUsage(cryptoFees))),
+				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(cryptoFees))),
 				/* Contract */
-				entry(ContractCall, List.<TxnResourceUsageEstimator>of(new ContractCallResourceUsage(contractFees))),
-				entry(ContractCreate, List.<TxnResourceUsageEstimator>of(new ContractCreateResourceUsage(contractFees))),
-				entry(ContractDelete, List.<TxnResourceUsageEstimator>of(new ContractDeleteResourceUsage(contractFees))),
-				entry(ContractUpdate, List.<TxnResourceUsageEstimator>of(new ContractUpdateResourceUsage(contractFees))),
+				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
+				entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
+				entry(ContractDelete, List.of(new ContractDeleteResourceUsage(contractFees))),
+				entry(ContractUpdate, List.of(new ContractUpdateResourceUsage(contractFees))),
 				/* File */
-				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileFees))),
-				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
-				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
-				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),
+				entry(FileCreate, List.of(new FileCreateResourceUsage(fileFees))),
+				entry(FileDelete, List.of(new FileDeleteResourceUsage(fileFees))),
+				entry(FileUpdate, List.of(new FileUpdateResourceUsage())),
+				entry(FileAppend, List.of(new FileAppendResourceUsage(fileFees))),
 				/* Consensus */
-				entry(ConsensusCreateTopic, List.<TxnResourceUsageEstimator>of(new CreateTopicResourceUsage())),
-				entry(ConsensusUpdateTopic, List.<TxnResourceUsageEstimator>of(new UpdateTopicResourceUsage())),
-				entry(ConsensusDeleteTopic, List.<TxnResourceUsageEstimator>of(new DeleteTopicResourceUsage())),
-				entry(ConsensusSubmitMessage, List.<TxnResourceUsageEstimator>of(new SubmitMessageResourceUsage())),
+				entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),
+				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
+				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
+				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* System */
-				entry(Freeze, List.<TxnResourceUsageEstimator>of(new FreezeResourceUsage())),
-				entry(SystemDelete, List.<TxnResourceUsageEstimator>of(new SystemDeleteFileResourceUsage(fileFees))),
-				entry(SystemUndelete, List.<TxnResourceUsageEstimator>of(new SystemUndeleteFileResourceUsage(fileFees)))
-		)::get;
+				entry(Freeze, List.of(new FreezeResourceUsage())),
+				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
+				entry(SystemUndelete, List.of(new SystemUndeleteFileResourceUsage(fileFees)))
+		);
+		return estimatorsMap::get;
 	}
 
 	public AnswerFlow answerFlow() {
@@ -691,7 +698,7 @@ public class ServicesContext {
 					ids(),
 					properties(),
 					txnCtx()::consensusTime,
-					DataMapFactory.dataMapFrom(blobStore())	,
+					DataMapFactory.dataMapFrom(blobStore()),
 					MetadataMapFactory.metaMapFrom(blobStore()));
 			hfs.register(authPolicy());
 			hfs.register(feeSchedulesManager());
@@ -716,12 +723,12 @@ public class ServicesContext {
 	public FileUpdateInterceptor applicationPropertiesReloading() {
 		if (applicationPropertiesReloading == null) {
 			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
-				0,
-				"files.networkProperties",
+					0,
+					"files.networkProperties",
 					properties(),
 					contents -> {
 						var config = uncheckedParse(contents);
-						((StandardizedPropertySources)propertySources()).updateThrottlePropsFrom(config);
+						((StandardizedPropertySources) propertySources()).updateThrottlePropsFrom(config);
 						populateApplicationPropertiesWithProto(config);
 					},
 					ConfigListUtils::isConfigList
@@ -745,26 +752,47 @@ public class ServicesContext {
 
 	public TransitionLogicLookup transitionLogic() {
 		if (transitionLogic == null) {
-			transitionLogic = new TransitionLogicLookup(
-					/* ---- CRYPTO ---- */
-					new CryptoCreateTransitionLogic(ledger(), validator(), txnCtx()),
-					new CryptoUpdateTransitionLogic(ledger(), validator(), txnCtx()),
-					new CryptoDeleteTransitionLogic(ledger(), txnCtx()),
-					new CryptoTransferTransitionLogic(ledger(), validator(), txnCtx()),
-					/* ----- FILE ---- */
-					new FileUpdateTransitionLogic(hfs(), number(), validator(), txnCtx()),
-					new FileCreateTransitionLogic(hfs(), validator(), txnCtx()),
-					new FileDeleteTransitionLogic(hfs(), txnCtx()),
-					new FileAppendTransitionLogic(hfs(), txnCtx()),
-					new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
-					new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()),
-					/* ----- CONSENSUS ---- */
-					new TopicCreateTransitionLogic(accounts(), topics(), ids(), validator(), txnCtx()),
-					new TopicUpdateTransitionLogic(accounts(), topics(), validator(), txnCtx()),
-					new TopicDeleteTransitionLogic(topics(), validator(), txnCtx()),
-					new SubmitMessageTransitionLogic(topics(), validator(), txnCtx()));
+			transitionLogic = new TransitionLogicLookup(transitions());
 		}
 		return transitionLogic;
+	}
+
+	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
+				/* Crypto */
+				entry(CryptoCreate,
+						List.of(new CryptoCreateTransitionLogic(ledger(), validator(), txnCtx()))),
+				entry(CryptoUpdate,
+						List.of(new CryptoUpdateTransitionLogic(ledger(), validator(), txnCtx()))),
+				entry(CryptoDelete,
+						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
+				entry(CryptoTransfer,
+						List.of(new CryptoTransferTransitionLogic(ledger(), validator(), txnCtx()))),
+				/* File */
+				entry(FileUpdate,
+						List.of(new FileUpdateTransitionLogic(hfs(), number(), validator(), txnCtx()))),
+				entry(FileCreate,
+						List.of(new FileCreateTransitionLogic(hfs(), validator(), txnCtx()))),
+				entry(FileDelete,
+						List.of(new FileDeleteTransitionLogic(hfs(), txnCtx()))),
+				entry(FileAppend,
+						List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
+				/* Consensus */
+				entry(ConsensusCreateTopic,
+						List.of(new TopicCreateTransitionLogic(accounts(), topics(), ids(), validator(), txnCtx()))),
+				entry(ConsensusUpdateTopic,
+						List.of(new TopicUpdateTransitionLogic(accounts(), topics(), validator(), txnCtx()))),
+				entry(ConsensusDeleteTopic,
+						List.of(new TopicDeleteTransitionLogic(topics(), validator(), txnCtx()))),
+				entry(ConsensusSubmitMessage,
+						List.of(new SubmitMessageTransitionLogic(topics(), validator(), txnCtx()))),
+				/* System */
+				entry(SystemDelete,
+						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
+				entry(SystemUndelete,
+						List.of(new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx())))
+		);
+		return transitionsMap::get;
 	}
 
 	public EntityIdSource ids() {
@@ -890,12 +918,9 @@ public class ServicesContext {
 
 	public void updateFeature() {
 		if (freeze != null) {
-			//if multiple nodes running on same JVM only first node run update feature
-			String OS = System.getProperty("os.name").toLowerCase();
-
-			//for test purpose, on local test only node 0 runs the script
-			if (OS.indexOf("mac") >= 0) {
-				if (platform.getSelfId().getId() == 0){
+			String os = System.getProperty("os.name").toLowerCase();
+			if (os.indexOf("mac") >= 0) {
+				if (platform.getSelfId().getId() == 0) {
 					freeze.handleUpdateFeature();
 				}
 			} else {
@@ -1043,12 +1068,12 @@ public class ServicesContext {
 	}
 
 	public SystemFilesManager systemFilesManager() {
-		if (systemFilesManager == null)	{
+		if (systemFilesManager == null) {
 			systemFilesManager = new HfsSystemFilesManager(
 					addressBook(),
 					fileNums(),
 					properties(),
-					(TieredHederaFs)hfs(),
+					(TieredHederaFs) hfs(),
 					() -> lookupInCustomStore(
 							b64KeyReader(),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
@@ -1060,7 +1085,7 @@ public class ServicesContext {
 						}
 					},
 					config -> {
-						((StandardizedPropertySources)propertySources()).updateThrottlePropsFrom(config);
+						((StandardizedPropertySources) propertySources()).updateThrottlePropsFrom(config);
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
 					PropertiesLoader::populateAPIPropertiesWithProto);
@@ -1164,7 +1189,8 @@ public class ServicesContext {
 			try {
 				String memoOfAccountId = address().getMemo();
 				accountId = EntityIdUtils.accountParsedFromString(memoOfAccountId);
-			} catch (Exception ignore) {}
+			} catch (Exception ignore) {
+			}
 		}
 		return accountId;
 	}
@@ -1172,7 +1198,8 @@ public class ServicesContext {
 	public AccountID fundingAccount() {
 		try {
 			return EntityIdUtils.accountParsedFromString(properties().getStringProperty("ledger.funding.account"));
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 		return null;
 	}
 

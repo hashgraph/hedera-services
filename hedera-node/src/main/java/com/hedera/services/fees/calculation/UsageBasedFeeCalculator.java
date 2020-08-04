@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
@@ -189,22 +190,17 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private TxnResourceUsageEstimator getTxnUsageEstimator(SignedTxnAccessor accessor) {
 		var usageEstimator = Optional.ofNullable(txnUsageEstimators.apply(accessor.getFunction()))
-				.map(estimators -> from(estimators, accessor));
+				.map(estimators -> from(estimators, accessor.getTxn()));
 		if (usageEstimator.isPresent()) {
 			return usageEstimator.get();
 		}
 		throw new IllegalArgumentException("Missing txn usage estimator!");
 	}
 
-	private TxnResourceUsageEstimator from(List<TxnResourceUsageEstimator> estimators, SignedTxnAccessor accessor) {
-		var n = estimators.size();
-		var txn = accessor.getTxn();
-		if (n > 0) {
-			for (int i = 0; i < n; i++) {
-				var candidate = estimators.get(i);
-				if (candidate.applicableTo(txn)) {
-					return candidate;
-				}
+	private TxnResourceUsageEstimator from(List<TxnResourceUsageEstimator> estimators, TransactionBody txn) {
+		for (TxnResourceUsageEstimator candidate : estimators) {
+			if (candidate.applicableTo(txn)) {
+				return candidate;
 			}
 		}
 		throw new IllegalArgumentException("Missing txn usage estimator!");

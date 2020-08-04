@@ -226,7 +226,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		Optional<TransitionLogic> transitionLogic = ctx.transitionLogic().lookupFor(accessor.getTxn());
+		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
 		ResponseCodeEnum opValidity = transitionLogic.isPresent()
 				? transitionLogic.get().syntaxCheck().apply(accessor.getTxn())
 				: TransactionValidationUtils.validateTxSpecificBody(accessor.getTxn(), ctx.validator());
