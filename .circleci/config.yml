@@ -897,7 +897,7 @@ workflows:
               only:
                 - JRS-in-circleCI
     jobs:
-      - build-platform-and-services
+      - build-platform-and-services:
 #          filters:
 #            branches:
 #               only:
