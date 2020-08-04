@@ -181,9 +181,6 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-	/* XXX
-	https://github.com/swirlds/services-hedera/issues/1529
-	*/
 	private HapiApiSpec updateFailsIfMissingSigs() {
 		SigControl origKeySigs = KeyShape.threshSigs(3, ON, ON, KeyShape.threshSigs(1, OFF, ON));
 		SigControl updKeySigs = KeyShape.listSigs(ON, ON, KeyShape.threshSigs(1, ON, OFF, OFF, OFF));

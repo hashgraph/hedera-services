@@ -1,18 +1,18 @@
 /*
  * @author Leemon Baird
  * <p>
- * (c) 2016-2017 Swirlds, Inc.
+ * (c) 2016-2020 Hedera, Inc.
  * <p>
  * This software is the confidential and proprietary information of  
- * Swirlds, Inc. ("Confidential Information"). You shall not
+ * Hedera, Inc. ("Confidential Information"). You shall not
  * disclose such Confidential Information and shall use it only in
  * accordance with the terms of the license agreement you entered into 
- * with Swirlds.
+ * with Hedera.
  * <p>
- * SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF 
+ * HEDERA MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
  * THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
  * TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR 
+ * PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA SHALL NOT BE LIABLE FOR
  * ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR 
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
+ //should this comment have Hedera?
 /**
  * Encapsulation of a Swirlds "reference", which is a 384-bit hash of a public key, file, swirld name, or
  * other entity. It supports converting between byte array and string, for several types of string.
