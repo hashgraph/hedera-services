@@ -891,11 +891,11 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "52 15 * * *"
+          cron: "45 9 * * *"
           filters:
             branches:
               only:
-                - JRS-in-circleCI
+                - 0379-D-Fix-Comments
     jobs:
       - build-platform-and-services:
 #          filters:
