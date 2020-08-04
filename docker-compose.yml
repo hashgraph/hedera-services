@@ -3,7 +3,6 @@ services:
   node_0:
     container_name: node_0
     image: ${REGISTRY_PREFIX}services-node:${TAG}
-    build: ./
     environment:
       - NODE_ID=0
     volumes:

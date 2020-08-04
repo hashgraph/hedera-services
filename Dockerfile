@@ -41,6 +41,7 @@ RUN mkdir /opt/hedera/services/hapi-proto
 COPY hapi-proto /opt/hedera/services/hapi-proto
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
+RUN rm -rf /opt/hedera/services/hedera-node/data/lib/*
 RUN mkdir /opt/hedera/services/test-clients
 COPY test-clients /opt/hedera/services/test-clients
 RUN mvn install -pl hedera-node -am -DskipTests -Dmaven.gitcommitid.skip=true

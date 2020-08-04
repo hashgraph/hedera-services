@@ -23,11 +23,6 @@ git clone git@github.com:hashgraph/hedera-services.git
 cd hedera-services
 ```
 
-Pull the images:
-```
-docker-compose pull
-```
-
 You can now [start the network](#starting-the-compose-network).
 
 ### Building locally
@@ -50,9 +45,9 @@ TAG=oa-release-r5-rc6-13-gf18d2ff77-dirty
 REGISTRY_PREFIX=
 ```
 
-Third, build the image:
+Third, build the image with an empty registry prefix and the `TAG` from your `.env` file:
 ```
-docker-compose build
+docker build -t services-node:oa-release-r5-rc6-13-gf18d2ff77-dirty .
 ```
 This is a multi-stage build that could take **several minutes**, 
 depending on your environment. If you wish to use the `git describe` 
