@@ -105,7 +105,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		feeCharging.setFor(THRESHOLD_RECORD, thresholdRecordFee);
 		payForThresholdRecords(qualifiers);
 		if (feeCharging.numThresholdFeesCharged() > 0 || cachingFeePaid > 0L) {
-			record = txnCtx.recordSoFar();
+			record = txnCtx.updatedRecordGiven(ledger.netTransfersInTxn());
 		}
 
 		lastCreatedRecord = record;

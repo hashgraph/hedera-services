@@ -225,7 +225,6 @@ public class SmartContractRequestHandler {
 			long createGasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
 			biGasPrice = BigInteger.valueOf(createGasPrice);
 		} catch (Exception e1) {
-			e1.printStackTrace();
 			if (log.isDebugEnabled()) {
 				log.debug("ContractCreate gas coefficient could not be found in fee schedule ", e1);
 			}
@@ -488,8 +487,9 @@ public class SmartContractRequestHandler {
 				long callGasPrice = getContractCallGasPriceInTinyBars(consensusTimeStamp);
 				biGasPrice = BigInteger.valueOf(callGasPrice);
 			} catch (Exception e1) {
-				if (log.isDebugEnabled())
+				if (log.isDebugEnabled()) {
 					log.debug("ContractCall gas coefficient could not be found in fee schedule " + e1.getMessage());
+				}
 				return getFailureTransactionRecord(transaction, consensusTime,
 						ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 			}
@@ -771,7 +771,6 @@ public class SmartContractRequestHandler {
 				ledger.customize(id, customizer);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}

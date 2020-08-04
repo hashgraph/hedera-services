@@ -61,6 +61,7 @@ import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -161,6 +162,39 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
+	public void throwsOnUpdateIfNoRecordSoFar() {
+		// expect:
+		assertThrows(
+				IllegalStateException.class,
+				() -> subject.updatedRecordGiven(withAdjustments(payer, -100, funding, 50, another, 50)));
+	}
+
+	@Test
+	public void updatesAsExpectedIfRecordSoFar() {
+		// setup:
+		subject.recordSoFar = mock(TransactionRecord.Builder.class);
+		subject.hasComputedRecordSoFar = true;
+		// and:
+		var expected = mock(TransactionRecord.class);
+
+		// given:
+		given(itemizableFeeCharging.totalNonThresholdFeesChargedToPayer()).willReturn(123L);
+		var xfers = withAdjustments(payer, -100, funding, 50, another, 50);
+		// and:
+		given(subject.recordSoFar.build()).willReturn(expected);
+		given(subject.recordSoFar.setTransferList(xfers)).willReturn(subject.recordSoFar);
+
+		// when:
+		var actual = subject.updatedRecordGiven(xfers);
+
+		// then:
+		verify(subject.recordSoFar).setTransferList(xfers);
+		verify(subject.recordSoFar).setTransactionFee(123L);
+		// and:
+		assertSame(expected, actual);
+	}
+
+	@Test
 	public void throwsIseIfNoPayerActive() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.activePayer());
@@ -205,17 +239,34 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void resetsEverything() {
+	public void resetsRecordSoFar() {
+		// given:
+		subject.recordSoFar = mock(TransactionRecord.Builder.class);
+
 		// when:
+		subject.resetFor(accessor, now, anotherMemberId);
+
+		// then:
+		verify(subject.recordSoFar).clear();
+	}
+
+	@Test
+	public void resetsEverythingElse() {
+		// given:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(ResponseCodeEnum.SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
+		subject.hasComputedRecordSoFar = true;
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
+
+		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
+		assertFalse(subject.hasComputedRecordSoFar);
+		// and:
 		record = subject.recordSoFar();
 
 		// then:
@@ -224,6 +275,7 @@ public class AwareTransactionContextTest {
 		assertEquals(0, record.getTransactionFee());
 		assertFalse(record.hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
+		assertTrue(subject.hasComputedRecordSoFar);
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:

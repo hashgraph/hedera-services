@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -40,6 +41,9 @@ public class SignedTxnAccessor {
 	private Transaction signedTxn;
 	private TransactionID txnId;
 	private TransactionBody txn;
+	private HederaFunctionality function;
+
+
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -62,6 +66,10 @@ public class SignedTxnAccessor {
 
 	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {
 		this(signedTxn.toByteArray());
+	}
+
+	public HederaFunctionality getFunction() {
+		throw new AssertionError("Not implemented");
 	}
 
 	public Transaction getSignedTxn4Log() {

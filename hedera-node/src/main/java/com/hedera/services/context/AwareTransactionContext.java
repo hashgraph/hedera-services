@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
@@ -78,6 +79,9 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 
+	boolean hasComputedRecordSoFar;
+	TransactionRecord.Builder recordSoFar = TransactionRecord.newBuilder();
+
 	public AwareTransactionContext(ServicesContext ctx) {
 		this.ctx = ctx;
 	}
@@ -95,8 +99,10 @@ public class AwareTransactionContext implements TransactionContext {
 		recordConfig = noopRecordConfig;
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
+		hasComputedRecordSoFar = false;
 
 		ctx.charging().resetFor(accessor, submittingNodeAccount());
+		recordSoFar.clear();
 	}
 
 	@Override
@@ -138,7 +144,7 @@ public class AwareTransactionContext implements TransactionContext {
 		if (log.isDebugEnabled()) {
 			logItemized();
 		}
-		TransactionRecord.Builder record = TransactionRecord.newBuilder()
+		recordSoFar
 				.setMemo(accessor.getTxn().getMemo())
 				.setReceipt(receiptSoFar())
 				.setTransferList(ctx.ledger().netTransfersInTxn())
@@ -147,16 +153,31 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp);
 
-		recordConfig.accept(record);
+		recordConfig.accept(recordSoFar);
+		hasComputedRecordSoFar = true;
 
-		return record.build();
+		return recordSoFar.build();
+	}
+
+	@Override
+	public TransactionRecord updatedRecordGiven(TransferList listWithNewFees) {
+		if (!hasComputedRecordSoFar) {
+			throw new IllegalStateException(String.format(
+					"No record exists to be updated with '%s'!",
+					readableTransferList(listWithNewFees)));
+		}
+
+		long amount = ctx.charging().totalNonThresholdFeesChargedToPayer() + otherNonThresholdFees;
+		recordSoFar.setTransferList(listWithNewFees).setTransactionFee(amount);
+
+		return recordSoFar.build();
 	}
 
 	private void logItemized() {
 		Transaction signedTxn = accessor().getSignedTxn4Log();
-		String readableTransferList = MiscUtils.readableTransferList(itemizedRepresentation());
+		String readableTransferList = readableTransferList(itemizedRepresentation());
 		log.debug(
-				"Transfer list with temized fees for {} is {}",
+				"Transfer list with itemized fees for {} is {}",
 				signedTxn,
 				readableTransferList);
 	}

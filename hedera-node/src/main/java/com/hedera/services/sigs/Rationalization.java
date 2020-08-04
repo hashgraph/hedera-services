@@ -57,19 +57,23 @@ public class Rationalization {
     }
 
     public SignatureStatus execute() {
-        log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor.getSignedTxn4Log());
+        log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
         List<Signature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
         SignatureStatus payerStatus = expandIn(
                 realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-        if ( !SUCCESS.name().equals( payerStatus.getStatusCode().name() ) ) {
-            log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+        if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+            }
             return payerStatus;
         }
         SignatureStatus otherPartiesStatus = expandIn(
                 realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-        if ( !SUCCESS.name().equals( otherPartiesStatus.getStatusCode().name() ) ) {
-            log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
+        if (!SUCCESS.name().equals(otherPartiesStatus.getStatusCode().name())) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
+            }
             return otherPartiesStatus;
         }
 

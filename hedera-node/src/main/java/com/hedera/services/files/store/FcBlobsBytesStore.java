@@ -90,11 +90,15 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 		if (pathedBlobs.containsKey(meta)) {
 			var blob = pathedBlobs.getForModify(meta);
 			blob.modify(value);
-			log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			if (log.isDebugEnabled()) {
+				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			}
 			pathedBlobs.put(meta, blob);
 		} else {
 			var blob = blobFactory.apply(value);
-			log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			if (log.isDebugEnabled()) {
+				log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			}
 			pathedBlobs.put(at(path), blob);
 		}
 		return null;

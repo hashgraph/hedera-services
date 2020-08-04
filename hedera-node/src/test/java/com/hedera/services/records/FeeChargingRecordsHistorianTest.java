@@ -77,6 +77,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willReturn;
 
 @RunWith(JUnitPlatform.class)
 public class FeeChargingRecordsHistorianTest {
@@ -212,7 +213,8 @@ public class FeeChargingRecordsHistorianTest {
 				any(),
 				longThat(l -> l == now.getEpochSecond()),
 				longThat(k -> k == submittingMember));
-		verify(txnCtx, times(2)).recordSoFar();
+		verify(txnCtx).recordSoFar();
+		verify(txnCtx).updatedRecordGiven(any());
 	}
 
 	@Test
@@ -318,8 +320,9 @@ public class FeeChargingRecordsHistorianTest {
 				payerRecord);
 		verify(ledger).doTransfer(a, funding, aBalance);
 		// and:
-		verify(ledger).netTransfersInTxn();
-		verify(txnCtx, times(2)).recordSoFar();
+		verify(ledger, times(2)).netTransfersInTxn();
+		verify(txnCtx).recordSoFar();
+		verify(txnCtx).updatedRecordGiven(any());
 		verify(fees).computeStorageFee(record);
 		// and:
 		verify(ledger, times(2)).getBalance(a);
@@ -446,6 +449,7 @@ public class FeeChargingRecordsHistorianTest {
 				.setReceipt(TransactionReceipt.newBuilder().setContractID(asContract(contractToUse)))
 				.build();
 		given(txnCtx.recordSoFar()).willReturn(record);
+		given(txnCtx.updatedRecordGiven(any())).willReturn(record);
 		given(txnCtx.status()).willReturn(ResponseCodeEnum.SUCCESS);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
@@ -485,7 +489,8 @@ public class FeeChargingRecordsHistorianTest {
 		given(txnCtx.status()).willReturn(SUCCESS);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(txnCtx.recordSoFar()).willReturn(record).willReturn(finalRecord);
+		given(txnCtx.recordSoFar()).willReturn(record);
+		given(txnCtx.updatedRecordGiven(any())).willReturn(finalRecord);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
