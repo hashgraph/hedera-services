@@ -139,7 +139,6 @@ public class HederaLedger {
 		return netTransfers.build();
 	}
 
-
 	public String currentChangeSet() {
 		if (ledger.isInTransaction()) {
 			return ledger.changeSetSoFar();
@@ -361,8 +360,6 @@ public class HederaLedger {
 	}
 
 	private void updateXfers(AccountID account, long amount) {
-		System.out.println(String.format("--- BEFORE %d | %d ---", account.getAccountNum(), amount));
-		System.out.println(xfersToString());
 		int loc = 0, diff = -1;
 		var soFar = netTransfers.getAccountAmountsBuilderList();
 		for (; loc < soFar.size(); loc++) {
@@ -382,17 +379,6 @@ public class HederaLedger {
 				netTransfers.addAccountAmounts(loc, aaBuilderWith(account, amount));
 			}
 		}
-		System.out.println("--- AFTER ---");
-		System.out.println(xfersToString());
-		System.out.println("");
-	}
-
-	private String xfersToString() {
-		return netTransfers.getAccountAmountsBuilderList()
-				.stream()
-				.map(aa -> String.format("%s | %d",
-						MerkleEntityId.fromAccountId(aa.getAccountID()).toAbbrevString(), aa.getAmount()))
-				.collect(Collectors.joining(", "));
 	}
 
 	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
