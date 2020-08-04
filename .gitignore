@@ -21,6 +21,7 @@ hs_err_pid*
 
 *.sh
 !hedera-node/data/backup/*.sh
+!hedera-node/configuration/compose/init.db/*.sh
 *.json
 !hedera-node/src/test/resources/legacyAccounts.json
 .circleci/*.yml-excerpt
