@@ -1532,9 +1532,6 @@ jobs:
           name: build services repo
           command: |
                 mvn --no-transfer-progress clean install -DskipTests
-
-#               mvn --no-transfer-progress clean install -DskipTests | tee /repo/test-clients/output/hapi-client.log'
-
       - run:
           name: checkout swirlds-platform repos and build
           command: |
@@ -1559,8 +1556,6 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
-
-
 
   aws-summary:
     executor: ci-test-executor
