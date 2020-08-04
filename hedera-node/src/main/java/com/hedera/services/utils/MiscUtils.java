@@ -257,7 +257,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static HederaFunctionality functionalityOfTxn(TransactionBody txn) throws UnknownHederaFunctionality {
+	public static HederaFunctionality functionOf(TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;
 		} else if (txn.hasSystemUndelete()) {

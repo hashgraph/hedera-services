@@ -24,7 +24,6 @@ import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
@@ -39,7 +38,6 @@ import com.hedera.test.mocks.TestFeesFactory;
 import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -83,7 +81,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -138,7 +135,7 @@ class PreCheckValidationTest {
 	}
 
 	public long getTransactionFee(TransactionBody txn, SigValueObj sigValueObj) throws Exception {
-		HederaFunctionality function = MiscUtils.functionalityOfTxn(txn);
+		HederaFunctionality function = MiscUtils.functionOf(txn);
 		Timestamp at = txn.getTransactionID().getTransactionValidStart();
 		FeeData prices = TEST_USAGE_PRICES.pricesGiven(function, at);
 		FeeData usageMetrics = FeeDataLookups.computeUsageMetrics(txn, fileServiceHandler, accountFCMap, topicFCMap,

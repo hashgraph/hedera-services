@@ -28,10 +28,10 @@ import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
@@ -46,7 +46,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
-import static com.hedera.services.utils.MiscUtils.functionalityOfTxn;
+import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hederahashgraph.fee.FeeBuilder.getTransactionRecordFeeInTinyCents;
 
@@ -63,21 +63,21 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private final PropertySource properties;
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
-	private final List<TxnResourceUsageEstimator> txnUsageEstimators;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
+	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
 	public UsageBasedFeeCalculator(
 			PropertySource properties,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			List<TxnResourceUsageEstimator> txnUsageEstimators,
-			List<QueryResourceUsageEstimator> queryUsageEstimators
+			List<QueryResourceUsageEstimator> queryUsageEstimators,
+			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
 		this.properties = properties;
 		this.usagePrices = usagePrices;
-		this.txnUsageEstimators = txnUsageEstimators;
 		this.queryUsageEstimators = queryUsageEstimators;
+		this.txnUsageEstimators = txnUsageEstimators;
 	}
 
 	@Override
@@ -128,8 +128,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			Function<QueryResourceUsageEstimator, FeeData> usageFn
 	) {
 		try {
-			QueryResourceUsageEstimator usageEstimator = getApplicableEstimator(query);
-			FeeData queryUsage = usageFn.apply(usageEstimator);
+			var usageEstimator = getQueryUsageEstimator(query);
+			var queryUsage = usageFn.apply(usageEstimator);
 			return FeeBuilder.getFeeObject(usagePrices, queryUsage, exchange.rate(at));
 		} catch (Exception illegal) {
 			log.warn("Unexpected failure for {}!", query, illegal);
@@ -151,7 +151,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private FeeData uncheckedPricesGiven(SignedTxnAccessor accessor, Timestamp at) {
 		try {
-			return usagePrices.pricesGiven(functionalityOfTxn(accessor.getTxn()), at);
+			return usagePrices.pricesGiven(functionOf(accessor.getTxn()), at);
 		} catch (Exception e) {
 			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxn4Log(), e);
 		}
@@ -166,38 +166,48 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			ExchangeRate rate
 	) {
 		try {
-			SigValueObj sigUsage = getSigUsage(accessor, payerKey);
-
-			TxnResourceUsageEstimator usageEstimator = getApplicableEstimator(accessor.getTxn());
-			FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-
+			var sigUsage = getSigUsage(accessor, payerKey);
+			var usageEstimator = getTxnUsageEstimator(accessor);
+			var metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
 			return FeeBuilder.getFeeObject(prices, metrics, rate);
 		} catch (Exception illegal) {
-			log.warn("Unexpected failure for {}, key {}!", accessor.getSignedTxn4Log(), payerKey, illegal);
-			throw new IllegalArgumentException("UsageBasedFeeCalculator#feeGiven");
+			var msg = String.format("Unable to compute fee for %s, key %s!", accessor.getSignedTxn4Log(), payerKey);
+			throw new IllegalArgumentException(msg, illegal);
 		}
 	}
 
-	private QueryResourceUsageEstimator getApplicableEstimator(Query query) {
+	private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
 		Optional<QueryResourceUsageEstimator> usageEstimator = queryUsageEstimators
 				.stream()
 				.filter(estimator -> estimator.applicableTo(query))
 				.findAny();
-		if (!usageEstimator.isPresent()) {
-			throw new IllegalArgumentException("Missing query usage estimator!");
+		if (usageEstimator.isPresent()) {
+			return usageEstimator.get();
 		}
-		return usageEstimator.get();
+		throw new IllegalArgumentException("Missing query usage estimator!");
 	}
 
-	private TxnResourceUsageEstimator getApplicableEstimator(TransactionBody txn) {
-		Optional<TxnResourceUsageEstimator> usageEstimator = txnUsageEstimators
-				.stream()
-				.filter(estimator -> estimator.applicableTo(txn))
-				.findAny();
-		if (!usageEstimator.isPresent()) {
-			throw new IllegalArgumentException("Missing txn usage estimator!");
+	private TxnResourceUsageEstimator getTxnUsageEstimator(SignedTxnAccessor accessor) {
+		var usageEstimator = Optional.ofNullable(txnUsageEstimators.apply(accessor.getFunction()))
+				.map(estimators -> from(estimators, accessor));
+		if (usageEstimator.isPresent()) {
+			return usageEstimator.get();
 		}
-		return usageEstimator.get();
+		throw new IllegalArgumentException("Missing txn usage estimator!");
+	}
+
+	private TxnResourceUsageEstimator from(List<TxnResourceUsageEstimator> estimators, SignedTxnAccessor accessor) {
+		var n = estimators.size();
+		var txn = accessor.getTxn();
+		if (n > 0) {
+			for (int i = 0; i < n; i++) {
+				var candidate = estimators.get(i);
+				if (candidate.applicableTo(txn)) {
+					return candidate;
+				}
+			}
+		}
+		throw new IllegalArgumentException("Missing txn usage estimator!");
 	}
 
 	private SigValueObj getSigUsage(SignedTxnAccessor accessor, JKey payerKey) {

@@ -29,6 +29,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -180,6 +181,8 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import com.hedera.services.utils.Pause;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -247,6 +250,7 @@ import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
 import static io.grpc.ServerInterceptors.intercept;
+import static java.util.Map.entry;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -555,32 +559,6 @@ public class ServicesContext {
 					exchange(),
 					usagePrices(),
 					List.of(
-							/* Crypto */
-							new CryptoCreateResourceUsage(cryptoFees),
-							new CryptoDeleteResourceUsage(cryptoFees),
-							new CryptoUpdateResourceUsage(cryptoFees),
-							new CryptoTransferResourceUsage(cryptoFees),
-							/* Contract */
-							new ContractCallResourceUsage(contractFees),
-							new ContractCreateResourceUsage(contractFees),
-							new ContractDeleteResourceUsage(contractFees),
-							new ContractUpdateResourceUsage(contractFees),
-							/* File */
-							new FileCreateResourceUsage(fileFees),
-							new FileDeleteResourceUsage(fileFees),
-							new FileUpdateResourceUsage(),
-							new FileAppendResourceUsage(fileFees),
-							new SystemDeleteFileResourceUsage(fileFees),
-							new SystemUndeleteFileResourceUsage(fileFees),
-							/* Consensus */
-							new CreateTopicResourceUsage(),
-							new UpdateTopicResourceUsage(),
-							new DeleteTopicResourceUsage(),
-							new SubmitMessageResourceUsage(),
-							/* System */
-							new FreezeResourceUsage()
-					),
-					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
 							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
@@ -592,10 +570,44 @@ public class ServicesContext {
 							new GetFileContentsResourceUsage(fileFees),
 							/* Consensus */
 							new GetTopicInfoResourceUsage()
-					)
+					),
+					txnUsageFn(fileFees, cryptoFees, contractFees)
 			);
 		}
 		return fees;
+	}
+
+	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+			FileFeeBuilder fileFees,
+			CryptoFeeBuilder cryptoFees,
+			SmartContractFeeBuilder contractFees
+	) {
+		return Map.ofEntries(
+				/* Crypto */
+				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoDelete, List.<TxnResourceUsageEstimator>of(new CryptoDeleteResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoTransfer, List.<TxnResourceUsageEstimator>of(new CryptoTransferResourceUsage(cryptoFees))),
+				/* Contract */
+				entry(ContractCall, List.<TxnResourceUsageEstimator>of(new ContractCallResourceUsage(contractFees))),
+				entry(ContractCreate, List.<TxnResourceUsageEstimator>of(new ContractCreateResourceUsage(contractFees))),
+				entry(ContractDelete, List.<TxnResourceUsageEstimator>of(new ContractDeleteResourceUsage(contractFees))),
+				entry(ContractUpdate, List.<TxnResourceUsageEstimator>of(new ContractUpdateResourceUsage(contractFees))),
+				/* File */
+				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileFees))),
+				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
+				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
+				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),
+				/* Consensus */
+				entry(ConsensusCreateTopic, List.<TxnResourceUsageEstimator>of(new CreateTopicResourceUsage())),
+				entry(ConsensusUpdateTopic, List.<TxnResourceUsageEstimator>of(new UpdateTopicResourceUsage())),
+				entry(ConsensusDeleteTopic, List.<TxnResourceUsageEstimator>of(new DeleteTopicResourceUsage())),
+				entry(ConsensusSubmitMessage, List.<TxnResourceUsageEstimator>of(new SubmitMessageResourceUsage())),
+				/* System */
+				entry(Freeze, List.<TxnResourceUsageEstimator>of(new FreezeResourceUsage())),
+				entry(SystemDelete, List.<TxnResourceUsageEstimator>of(new SystemDeleteFileResourceUsage(fileFees))),
+				entry(SystemUndelete, List.<TxnResourceUsageEstimator>of(new SystemUndeleteFileResourceUsage(fileFees)))
+		)::get;
 	}
 
 	public AnswerFlow answerFlow() {
@@ -705,7 +717,7 @@ public class ServicesContext {
 		if (applicationPropertiesReloading == null) {
 			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
 				0,
-				"files.applicationProperties.num",
+				"files.networkProperties",
 					properties(),
 					contents -> {
 						var config = uncheckedParse(contents);
@@ -722,7 +734,7 @@ public class ServicesContext {
 		if (apiPermissionsReloading == null) {
 			apiPermissionsReloading = new ValidatingCallbackInterceptor(
 					0,
-					"files.apiPermissions.num",
+					"files.hapiPermissions",
 					properties(),
 					contents -> populateAPIPropertiesWithProto(uncheckedParse(contents)),
 					ConfigListUtils::isConfigList
@@ -1171,7 +1183,7 @@ public class ServicesContext {
 		return address;
 	}
 
-	public AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>>	queryableStorage() {
+	public AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage() {
 		if (queryableStorage == null) {
 			queryableStorage = new AtomicReference<>(storage());
 		}

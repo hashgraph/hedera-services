@@ -242,7 +242,7 @@ public class MiscUtilsTest {
 	public void throwsOnUnexpectedFunctionality() {
 		// expect:
 		assertThrows(UnknownHederaFunctionality.class, () -> {
-			functionalityOfTxn(TransactionBody.getDefaultInstance());
+			functionOf(TransactionBody.getDefaultInstance());
 		});
 	}
 
@@ -515,7 +515,7 @@ public class MiscUtilsTest {
 			TransactionBody.Builder txn = TransactionBody.newBuilder();
 			setter.setDefaultInstanceOnTxn(txn);
 			try {
-				assertEquals(function, functionalityOfTxn(txn.build()));
+				assertEquals(function, functionOf(txn.build()));
 			} catch (UnknownHederaFunctionality uhf) {
 				throw new IllegalStateException(uhf);
 			}

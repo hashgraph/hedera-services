@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.CreateTopicResourceUsage;
@@ -54,6 +55,7 @@ import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.FileFeeBuilder;
@@ -61,9 +63,31 @@ import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import static java.util.Map.entry;
 
 public enum TestFeesFactory {
 	FEES_FACTORY;
@@ -89,32 +113,6 @@ public enum TestFeesFactory {
 				exchange,
 				TEST_USAGE_PRICES,
 				List.of(
-						/* Crypto */
-						new CryptoCreateResourceUsage(cryptoFees),
-						new CryptoDeleteResourceUsage(cryptoFees),
-						new CryptoUpdateResourceUsage(cryptoFees),
-						new CryptoTransferResourceUsage(cryptoFees),
-						/* Contract */
-						new ContractCallResourceUsage(contractFees),
-						new ContractCreateResourceUsage(contractFees),
-						new ContractDeleteResourceUsage(contractFees),
-						new ContractUpdateResourceUsage(contractFees),
-						/* File */
-						new FileCreateResourceUsage(fileFees),
-						new FileDeleteResourceUsage(fileFees),
-						new FileUpdateResourceUsage(),
-						new FileAppendResourceUsage(fileFees),
-						new SystemDeleteFileResourceUsage(fileFees),
-						new SystemUndeleteFileResourceUsage(fileFees),
-						/* Consensus */
-						new CreateTopicResourceUsage(),
-						new UpdateTopicResourceUsage(),
-						new DeleteTopicResourceUsage(),
-						new SubmitMessageResourceUsage(),
-						/* System */
-						new FreezeResourceUsage()
-				),
-				List.of(
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),
 						/* Crypto */
@@ -122,7 +120,41 @@ public enum TestFeesFactory {
 						new GetAccountRecordsResourceUsage(answerFunctions, cryptoFees),
 						/* Consensus */
 						new GetTopicInfoResourceUsage()
-				)
+				),
+				txnUsageFn(fileFees, cryptoFees, contractFees)
 		);
+	}
+
+	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageFn(
+			FileFeeBuilder fileFees,
+			CryptoFeeBuilder cryptoFees,
+			SmartContractFeeBuilder contractFees
+	) {
+		return Map.ofEntries(
+				/* Crypto */
+				entry(CryptoCreate, List.<TxnResourceUsageEstimator>of(new CryptoCreateResourceUsage(cryptoFees))),
+				entry(CryptoDelete, List.<TxnResourceUsageEstimator>of(new CryptoDeleteResourceUsage(cryptoFees))),
+				entry(CryptoUpdate, List.<TxnResourceUsageEstimator>of(new CryptoUpdateResourceUsage(cryptoFees))),
+				entry(CryptoTransfer, List.<TxnResourceUsageEstimator>of(new CryptoTransferResourceUsage(cryptoFees))),
+				/* Contract */
+				entry(ContractCall, List.<TxnResourceUsageEstimator>of(new ContractCallResourceUsage(contractFees))),
+				entry(ContractCreate, List.<TxnResourceUsageEstimator>of(new ContractCreateResourceUsage(contractFees))),
+				entry(ContractDelete, List.<TxnResourceUsageEstimator>of(new ContractDeleteResourceUsage(contractFees))),
+				entry(ContractUpdate, List.<TxnResourceUsageEstimator>of(new ContractUpdateResourceUsage(contractFees))),
+				/* File */
+				entry(FileCreate, List.<TxnResourceUsageEstimator>of(new FileCreateResourceUsage(fileFees))),
+				entry(FileDelete, List.<TxnResourceUsageEstimator>of(new FileDeleteResourceUsage(fileFees))),
+				entry(FileUpdate, List.<TxnResourceUsageEstimator>of(new FileUpdateResourceUsage())),
+				entry(FileAppend, List.<TxnResourceUsageEstimator>of(new FileAppendResourceUsage(fileFees))),
+				/* Consensus */
+				entry(ConsensusCreateTopic, List.<TxnResourceUsageEstimator>of(new CreateTopicResourceUsage())),
+				entry(ConsensusUpdateTopic, List.<TxnResourceUsageEstimator>of(new UpdateTopicResourceUsage())),
+				entry(ConsensusDeleteTopic, List.<TxnResourceUsageEstimator>of(new DeleteTopicResourceUsage())),
+				entry(ConsensusSubmitMessage, List.<TxnResourceUsageEstimator>of(new SubmitMessageResourceUsage())),
+				/* System */
+				entry(Freeze, List.<TxnResourceUsageEstimator>of(new FreezeResourceUsage())),
+				entry(SystemDelete, List.<TxnResourceUsageEstimator>of(new SystemDeleteFileResourceUsage(fileFees))),
+				entry(SystemUndelete, List.<TxnResourceUsageEstimator>of(new SystemUndeleteFileResourceUsage(fileFees)))
+		)::get;
 	}
 }
