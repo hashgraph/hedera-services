@@ -23,6 +23,11 @@ git clone git@github.com:hashgraph/hedera-services.git
 cd hedera-services
 ```
 
+Pull the images:
+```
+docker-compose pull
+```
+
 You can now [start the network](#starting-the-compose-network).
 
 ### Building locally
