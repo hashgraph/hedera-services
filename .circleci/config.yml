@@ -890,13 +890,13 @@ executors:
 
 workflows:
   nightly-services-regression:
-#    triggers:
-#      - schedule:
-#          cron: "40 12 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "30 10 * * *"
+          filters:
+            branches:
+              only:
+                - JRS-in-circleCI
     jobs:
       - build-platform-and-services:
           filters:
