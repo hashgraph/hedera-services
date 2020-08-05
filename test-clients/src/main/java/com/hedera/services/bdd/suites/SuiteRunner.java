@@ -66,6 +66,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -262,7 +263,7 @@ public class SuiteRunner {
 	 * @return effective args after examining DSL_SUITE_RUNNER_ARGS
 	 */
 	private static String[] getEffectiveDSLSuiteRunnerArgs(String realArgs) {
-		ArrayList<String> effectiveArgs = new ArrayList<>();
+		Set<String> effectiveArgs = new HashSet<>();
 		String[] ciArgs = realArgs.split("\\s+");
 
 		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {
