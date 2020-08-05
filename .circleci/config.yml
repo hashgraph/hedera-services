@@ -889,16 +889,23 @@ executors:
 
 workflows:
   nightly-services-regression:
-    triggers:
-      - schedule:
-          cron: "16 6 * * *"
+    jobs:
+      - build-platform-and-services:
           filters:
             branches:
               only:
                 - JRS-in-circleCI
-    jobs:
-      - build-platform-and-services:
-          workflow-name: "nightly-regression"
+          workflow-name: "nightly-services-regression"
+#    triggers:
+#      - schedule:
+#          cron: "16 6 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - JRS-in-circleCI
+#    jobs:
+#      - build-platform-and-services:
+#          workflow-name: "nightly-regression"
 
   custom-migration:
     triggers:
