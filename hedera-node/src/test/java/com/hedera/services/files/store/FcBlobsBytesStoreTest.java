@@ -258,7 +258,7 @@ class FcBlobsBytesStoreTest {
 
 		// when:
 		var copy = blobs.copy();
-		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
+		var replaced = copy.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
 
 		// then:
 		assertFalse(replaced.getDelegate().isDeleted());

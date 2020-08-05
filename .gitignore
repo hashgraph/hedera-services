@@ -44,6 +44,7 @@ hedera-node/output/
 hedera-node/target/
 hedera-node/forensics
 hedera-node/pgdata
+hedera-node/temp
 !hedera-node/forensics/start-investigation.py
 hapi-proto/target/
 hapi-proto/src/main/proto/doc/index.html

@@ -100,8 +100,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
-	public ServicesState(NodeId nodeId, List<MerkleNode> children) {
+	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
 		this(children);
+		this.ctx = ctx;
 		this.nodeId = nodeId;
 	}
 
@@ -192,7 +193,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	/* --- FastCopyable --- */
 	@Override
 	public synchronized ServicesState copy() {
-		return new ServicesState(nodeId, List.of(
+		return new ServicesState(ctx, nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
 				topics().copy(),

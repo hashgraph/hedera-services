@@ -102,19 +102,14 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	@Override
-	public FCMElement copy(boolean shouldBeMutable) {
+	public MerkleAccount copy() {
 		var records = records();
 		var payerRecords = payerRecords();
 
 		return new MerkleAccount(List.of(
 				state().copy(),
-				records.isImmutable() ? records : records.copy(shouldBeMutable),
-				payerRecords.isImmutable() ? payerRecords : payerRecords.copy(shouldBeMutable)));
-	}
-
-	@Override
-	public MerkleAccount copy() {
-		return (MerkleAccount) copy(false);
+				records.isImmutable() ? records : records.copy(),
+				payerRecords.isImmutable() ? payerRecords : payerRecords.copy()));
 	}
 
 	@Override

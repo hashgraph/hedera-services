@@ -70,12 +70,11 @@ networks:
     ensureScenarioPayerHbars: 100000
     nodes:
     - {account: 3, ipv4Addr: '127.0.0.1:50211'}
-    scenarioPayer: 1001
     scenarios:
       feeSnapshots:
         appendToSnapshotCsv: false
         ignoreCostAnswer: true
-        opsConfig: {bytecode: 1002, memoLength: 32}
+        opsConfig: {memoLength: 32}
         scheduleDesc: Bootstrap
         tinyBarsToOffer: 10000000000
       sysFilesDown:
