@@ -21,6 +21,7 @@ package com.hedera.services.legacy.handler;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
@@ -62,7 +63,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
@@ -124,6 +124,7 @@ public class TransactionHandler {
   private Supplier<StateView> stateView;
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
+  private HederaNodeStats stats;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -168,7 +169,7 @@ public class TransactionHandler {
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null);
+            null, null, null, null, null);
   }
 
   public TransactionHandler(
@@ -183,7 +184,8 @@ public class TransactionHandler {
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
-          FunctionalityThrottling throttling
+          FunctionalityThrottling throttling,
+          HederaNodeStats stats
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -197,6 +199,7 @@ public class TransactionHandler {
     this.usagePrices = usagePrices;
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
+    this.stats = stats;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -241,10 +244,6 @@ public class TransactionHandler {
   public boolean isAccountExist(AccountID acctId) {
     MerkleEntityId merkleEntityId = new MerkleEntityId(acctId.getShardNum(), acctId.getRealmNum(), acctId.getAccountNum());
     return accounts.get(merkleEntityId) != null;
-  }
-
-  public void addReceiptEntry(TransactionID txnId) {
-    recordCache.addPreConsensus(txnId);
   }
 
   /**
@@ -597,28 +596,26 @@ public class TransactionHandler {
 
   /**
    * Submits transaction to platform.
+   * Returns whether a platform transaction was created successfully.
+   * Update stat when a platform transaction was NOT created.
    *
    * @param request       tx to be submitted
    * @param txnId request tx id
-   * @throws PlatformTransactionCreationException thrown when transaction not created by platform
-   *                                              due to either large backlog or message size
-   *                                              exceeded transactionMaxBytes
+   *
    */
-  public void submitTransaction(Platform platform, Transaction request, TransactionID txnId)
-      throws PlatformTransactionCreationException, InvalidProtocolBufferException {
+  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
-    boolean status = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (status) {
+    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
+    if (created) {
       recordCache.addPreConsensus(txnId);
     } else {
-      throw new PlatformTransactionCreationException(
-          "platform tx not created: tx serialized size = " + transaction.length + ", txShortInfo = "
-              + com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShort(request));
+      stats.platformTxnNotCreated();
     }
+    return created;
   }
 
   /**
-   * Validates Account IDs and Total Balance in Account Map on Start Up .
+   * Validates Account IDs and Total Balance in Account Map on Start Up .  
    * If it finds any invalid Account ID  it stops checking further and returns Invalid Account ID response code.
    * If all the Account IDs are valid, it checks the total balance. If its not equal to expected balance, it
    * returns Invalid Balance response code.
@@ -642,7 +639,7 @@ public class TransactionHandler {
         break;
       }
     }
-    if(response == OK) {
+    if(response == OK && !accountMap.isEmpty()) {
     	if(totalBalance != PropertiesLoader.getInitialGenesisCoins()) {
     		response = ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID;
     	}

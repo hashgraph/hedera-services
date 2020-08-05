@@ -1104,7 +1104,8 @@ public class ServicesContext {
 					stateViews(),
 					new BasicPrecheck(validator()),
 					queryFeeCheck(),
-					bucketThrottling());
+					bucketThrottling(),
+					stats());
 		}
 		return txns;
 	}

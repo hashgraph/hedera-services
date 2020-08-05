@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +48,6 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -138,9 +136,7 @@ class TxnHandlerSubmissionFlowTest {
 	public void catchesPlatformCreateEx() throws Exception {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(OK);
-		willThrow(PlatformTransactionCreationException.class)
-				.given(txnHandler)
-				.submitTransaction(platform, signedTxn, txnId);
+		given(txnHandler.submitTransaction(platform, signedTxn, txnId)).willReturn(false);
 
 		// when:
 		TransactionResponse response = subject.submit(signedTxn);
@@ -153,12 +149,12 @@ class TxnHandlerSubmissionFlowTest {
 	public void followsHappyPathToOk() throws Exception {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(OK);
+		given(txnHandler.submitTransaction(platform, signedTxn, txnId)).willReturn(true);
 
 		// when:
 		TransactionResponse response = subject.submit(signedTxn);
 
 		// then:
-		verify(txnHandler).submitTransaction(platform, signedTxn, txnId);
 		assertEquals(OK, response.getNodeTransactionPrecheckCode());
 	}
 

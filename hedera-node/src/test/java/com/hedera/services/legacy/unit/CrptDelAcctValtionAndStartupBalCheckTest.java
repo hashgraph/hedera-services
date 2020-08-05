@@ -56,6 +56,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.platform.runner.JUnitPlatform;
 
 public class CrptDelAcctValtionAndStartupBalCheckTest {
 
@@ -102,27 +104,78 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyListp).build()).build();
 	}
 
-	    @Test
-		public void testAccountMapBalanceForStartup() throws Exception {
-			long account1Balance = 100000l;
-			long account2Balance = 200000l;
-			// Total Balance is less than 50B
-			account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
-			account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
-			createAccount(account1ID, account1Balance, keys);
-			createAccount(account2ID, account2Balance, keys);
-			ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
+	@Test
+	public void testAccountMapBalanceForStartup() throws Exception {
+		long account1Balance = 100000l;
+		long account2Balance = 200000l;
+		// Total Balance is less than 50B
+		account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
+		account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
+		createAccount(account1ID, account1Balance, keys);
+		createAccount(account2ID, account2Balance, keys);
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
 
-			// Total balance is 50B
-			account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
-			long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
-			createAccount(account3ID, account3Balance, keys);
-			response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.OK, response);
+		// Total balance is 50B
+		account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
+		long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
+		createAccount(account3ID, account3Balance, keys);
+		response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.OK, response);
+	}
+
+	@Test
+	public void testInvalidAccountIdWithZeroAcctNumForStartup() throws Exception {
+		long account1Balance = 100000l;
+		// account id as 0.0.0
+		account1ID = RequestBuilder.getAccountIdBuild(0l, 0l, 0l);
+		createAccount(account1ID, account1Balance, keys);
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
+	}
+
+	@Test
+	public void testInvalidAccountIdWithTooLargeAcctNumForStartup2() throws Exception {
+		long account1Balance = 100000l;
+		// account num as larger than allowef
+		account1ID = RequestBuilder.getAccountIdBuild(PropertiesLoader.getConfigAccountNum() + 1, 0l, 0l);
+		createAccount(account1ID, account1Balance, keys);
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
+	}
+
+	@Test
+	public void testInvalidAccountIdDueToInvalidRealmForStartup() throws Exception {
+		fcMap.clear();
+		long account1Balance = 100000l;
+		// account id has bad realm value
+		account1ID = RequestBuilder.getAccountIdBuild(1021l, -1l, 0l);
+		createAccount(account1ID, account1Balance, keys);
+
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
+	}
+
+	@Test
+	public void testInvalidAccountIdDueToInvalidShardForStartup() throws Exception {
+		fcMap.clear();
+		long account1Balance = 100000l;
+		// account id has bad shard value
+		account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 100l);
+		createAccount(account1ID, account1Balance, keys);
+
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, response);
+	}
 
 
-		}
+	@Test
+	public void testEmptyAccountMapBalanceForStartup() throws Exception {
+		fcMap.clear();
+		ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
+		Assert.assertEquals(ResponseCodeEnum.OK, response);
+
+	}
 
 	private static Key PrivateKeyToKey(PrivateKey privateKey) {
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
@@ -134,13 +187,14 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
-	}	
+	}
 
 
 	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {
 		MerkleEntityId mk = new MerkleEntityId();
 		mk.setNum(payerAccount.getAccountNum());
-		mk.setRealm(0);
+		mk.setRealm(payerAccount.getRealmNum());
+		mk.setShard(payerAccount.getShardNum());
 		MerkleAccount mv = new MerkleAccount();
 		mv.setBalance(balance);
 		JKey jkey = JKey.mapKey(key);
