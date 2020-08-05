@@ -72,7 +72,7 @@ public class RepoNewCacheTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(accountMap),
+            new FCMapBackingAccounts(() -> accountMap),
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
@@ -170,7 +170,7 @@ public class RepoNewCacheTest {
     FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(accountMap);
+    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),

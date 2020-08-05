@@ -69,7 +69,7 @@ class FcBlobsBytesStoreTest {
 				.willReturn(blobA)
 				.willReturn(blobB);
 
-		subject = new FcBlobsBytesStore(blobFactory, pathedBlobs);
+		subject = new FcBlobsBytesStore(blobFactory, () -> pathedBlobs);
 	}
 
 	@Test

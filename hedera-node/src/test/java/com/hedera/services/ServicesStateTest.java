@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -160,6 +161,15 @@ class ServicesStateTest {
 		systemExits = mock(SystemExits.class);
 
 		subject = new ServicesState();
+	}
+
+	@Test
+	public void fullArgsConstructorUpdatesContext() {
+		// when:
+		subject = new ServicesState(ctx, self, Collections.emptyList());
+
+		// then:
+		verify(ctx).update(subject);
 	}
 
 	@Test
@@ -291,6 +301,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.nodeId = self;
+		subject.ctx = ctx;
 
 		// when:
 		ServicesState copy = (ServicesState) subject.copy();

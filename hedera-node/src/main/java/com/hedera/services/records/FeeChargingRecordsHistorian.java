@@ -37,11 +37,13 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hedera.services.fees.TxnFeeType.CACHE_RECORD;
 import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.THRESHOLD_RECORD_FEE;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toSet;
 
@@ -61,14 +63,14 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
 	private final ItemizableFeeCharging feeCharging;
-	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public FeeChargingRecordsHistorian(
 			RecordCache recordCache,
 			FeeCalculator fees,
 			TransactionContext txnCtx,
 			ItemizableFeeCharging feeCharging,
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			ExpiryManager expiries
 	) {
 		this.fees = fees;
@@ -135,7 +137,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void reviewExistingRecords() {
-		expiries.resumeTrackingFrom(accounts);
+		expiries.resumeTrackingFrom(accounts.get());
 	}
 
 	private boolean qualifiesForRecord(AccountAmount adjustment, long recordFee) {
@@ -182,7 +184,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	private boolean isCallableContract(AccountID id) {
-		return Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(id)))
+		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.map(v -> v.isSmartContract() && !v.isDeleted())
 				.orElse(false);
 	}

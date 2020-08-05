@@ -99,7 +99,8 @@ class MerkleTopicCreateTransitionLogicTest {
 		accounts.clear();
 		topics.clear();
 
-		subject = new TopicCreateTransitionLogic(accounts, topics, entityIdSource, validator, transactionContext);
+		subject = new TopicCreateTransitionLogic(
+				() -> accounts, () -> topics, entityIdSource, validator, transactionContext);
 	}
 
 	@Test

@@ -163,12 +163,16 @@ class PreCheckValidationTest {
 		fileServiceHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
 
 		precheckVerifier = mock(PrecheckVerifier.class);
-		transactionHandler = new TransactionHandler(recordCache, accountFCMap,
-				nodeAccount, precheckVerifier, TEST_USAGE_PRICES,
+		transactionHandler = new TransactionHandler(
+				recordCache,
+				() -> accountFCMap,
+				nodeAccount,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
+				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accountFCMap), new MockAccountNumbers());
+				new QueryFeeCheck(() -> accountFCMap), new MockAccountNumbers());
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -389,12 +393,18 @@ class PreCheckValidationTest {
 
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-		TransactionHandler localTransactionHandler = new TransactionHandler(recordCache, accountFCMap,
-				nodeAccount, precheckVerifier,
-				TEST_USAGE_PRICES, TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
+		TransactionHandler localTransactionHandler = new TransactionHandler(
+				recordCache,
+				() -> accountFCMap,
+				nodeAccount,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				TEST_EXCHANGE,
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accountFCMap), new MockAccountNumbers());
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers());
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -424,12 +434,17 @@ class PreCheckValidationTest {
 				ExpirableTxnRecord.fromGprc(transactionRecord));
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-		TransactionHandler localTransactionHandler = new TransactionHandler(localRecordCache, accountFCMap,
-				nodeAccount, precheckVerifier,
-				TEST_USAGE_PRICES, TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
+		TransactionHandler localTransactionHandler = new TransactionHandler(
+				localRecordCache,
+				() -> accountFCMap,
+				nodeAccount,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				TEST_EXCHANGE,
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accountFCMap),
+				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers());
 
 

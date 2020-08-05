@@ -6,14 +6,15 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static java.util.stream.Collectors.toSet;
 
 public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount>  {
-	private final FCMap<MerkleEntityId, MerkleAccount> delegate;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
-	public PureFCMapBackingAccounts(FCMap<MerkleEntityId, MerkleAccount> delegate) {
+	public PureFCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -22,12 +23,12 @@ public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, Merk
 
 	@Override
 	public MerkleAccount getRef(AccountID id) {
-		return delegate.get(fromAccountId(id));
+		return delegate.get().get(fromAccountId(id));
 	}
 
 	@Override
 	public MerkleAccount getUnsafeRef(AccountID id) {
-		return delegate.get(fromAccountId(id));
+		return delegate.get().get(fromAccountId(id));
 	}
 
 	@Override
@@ -42,11 +43,11 @@ public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, Merk
 
 	@Override
 	public boolean contains(AccountID id) {
-		return delegate.containsKey(fromAccountId(id));
+		return delegate.get().containsKey(fromAccountId(id));
 	}
 
 	@Override
 	public Set<AccountID> idSet() {
-		return delegate.keySet().stream().map(MerkleEntityId::toAccountId).collect(toSet());
+		return delegate.get().keySet().stream().map(MerkleEntityId::toAccountId).collect(toSet());
 	}
 }

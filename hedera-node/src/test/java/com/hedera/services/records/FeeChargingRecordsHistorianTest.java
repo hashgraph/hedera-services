@@ -514,7 +514,7 @@ public class FeeChargingRecordsHistorianTest {
 				fees,
 				txnCtx,
 				itemizableFeeCharging,
-				accounts,
+				() -> accounts,
 				expiries);
 		subject.setLedger(ledger);
 		subject.setCreator(creator);
@@ -535,7 +535,7 @@ public class FeeChargingRecordsHistorianTest {
 				fees,
 				txnCtx,
 				itemizableFeeCharging,
-				accounts,
+				() -> accounts,
 				expiries);
 		subject.setLedger(ledger);
 	}

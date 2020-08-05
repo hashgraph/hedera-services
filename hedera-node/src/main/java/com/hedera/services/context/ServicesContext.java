@@ -267,9 +267,10 @@ import static java.util.stream.Collectors.toMap;
  */
 public class ServicesContext {
 	/* Injected dependencies. */
+	ServicesState state;
+
 	private final NodeId id;
 	private final Platform platform;
-	private ServicesState state;
 	private final PropertySources propertySources;
 
 	/* Context-sensitive singletons. */
@@ -384,6 +385,14 @@ public class ServicesContext {
 		this.propertySources = propertySources;
 	}
 
+	public void update(ServicesState state) {
+		this.state = state;
+
+		queryableAccounts().set(accounts());
+		queryableTopics().set(topics());
+		queryableStorage().set(storage());
+	}
+
 	public LedgerValidator ledgerValidator() {
 		if (ledgerValidator == null) {
 			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties());
@@ -400,7 +409,7 @@ public class ServicesContext {
 
 	public Map<String, byte[]> blobStore() {
 		if (blobStore == null) {
-			blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storage());
+			blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage);
 		}
 		return blobStore;
 	}
@@ -408,16 +417,16 @@ public class ServicesContext {
 	public Supplier<StateView> stateViews() {
 		if (stateViews == null) {
 			stateViews = () -> new StateView(
-					queryableTopics().get(),
-					queryableAccounts().get(),
-					queryableStorage().get());
+					() -> queryableTopics().get(),
+					() -> queryableAccounts().get(),
+					() -> queryableStorage().get());
 		}
 		return stateViews;
 	}
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(topics(), accounts(), storage());
+			currentView = new StateView(this::topics, this::accounts, this::storage);
 		}
 		return currentView;
 	}
@@ -549,7 +558,7 @@ public class ServicesContext {
 
 	public QueryFeeCheck queryFeeCheck() {
 		if (queryFeeCheck == null) {
-			queryFeeCheck = new QueryFeeCheck(accounts());
+			queryFeeCheck = new QueryFeeCheck(this::accounts);
 		}
 		return queryFeeCheck;
 	}
@@ -632,7 +641,7 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			SigMetadataLookup lookups = defaultLookupsFor(hfs(), accounts(), topics());
+			SigMetadataLookup lookups = defaultLookupsFor(hfs(), this::accounts, this::topics);
 			keyOrder = new HederaSigningOrder(number(), lookups);
 		}
 		return keyOrder;
@@ -648,7 +657,7 @@ public class ServicesContext {
 	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			SigMetadataLookup lookups =
-					defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), accounts(), topics());
+					defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
 			lookupRetryingKeyOrder = new HederaSigningOrder(number(), lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -715,7 +724,7 @@ public class ServicesContext {
 					syncVerifier(),
 					txnCtx(),
 					StandardSyncActivationCheck::allKeysAreActive,
-					accounts());
+					this::accounts);
 		}
 		return soliditySigsVerifier;
 	}
@@ -779,13 +788,17 @@ public class ServicesContext {
 						List.of(new FileAppendTransitionLogic(hfs(), txnCtx()))),
 				/* Consensus */
 				entry(ConsensusCreateTopic,
-						List.of(new TopicCreateTransitionLogic(accounts(), topics(), ids(), validator(), txnCtx()))),
+						List.of(new TopicCreateTransitionLogic(
+								this::accounts, this::topics, ids(), validator(), txnCtx()))),
 				entry(ConsensusUpdateTopic,
-						List.of(new TopicUpdateTransitionLogic(accounts(), topics(), validator(), txnCtx()))),
+						List.of(new TopicUpdateTransitionLogic(
+								this::accounts, this::topics, validator(), txnCtx()))),
 				entry(ConsensusDeleteTopic,
-						List.of(new TopicDeleteTransitionLogic(topics(), validator(), txnCtx()))),
+						List.of(new TopicDeleteTransitionLogic(
+								this::topics, validator(), txnCtx()))),
 				entry(ConsensusSubmitMessage,
-						List.of(new SubmitMessageTransitionLogic(topics(), validator(), txnCtx()))),
+						List.of(new SubmitMessageTransitionLogic(
+								this::topics, validator(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
@@ -797,7 +810,7 @@ public class ServicesContext {
 
 	public EntityIdSource ids() {
 		if (ids == null) {
-			ids = new SeqNoEntityIdSource(seqNo());
+			ids = new SeqNoEntityIdSource(this::seqNo);
 		}
 		return ids;
 	}
@@ -833,7 +846,7 @@ public class ServicesContext {
 					fees(),
 					txnCtx(),
 					charging(),
-					accounts(),
+					this::accounts,
 					expiries());
 		}
 		return recordsHistorian;
@@ -855,7 +868,7 @@ public class ServicesContext {
 
 	public BackingAccounts<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
-			backingAccounts = new FCMapBackingAccounts(accounts());
+			backingAccounts = new FCMapBackingAccounts(this::accounts);
 		}
 		return backingAccounts;
 	}
@@ -1038,8 +1051,8 @@ public class ServicesContext {
 					repository(),
 					fundingAccount(),
 					ledger(),
-					accounts(),
-					storage(),
+					this::accounts,
+					this::storage,
 					accountSource(),
 					txnCtx(),
 					exchange(),
@@ -1112,7 +1125,7 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new PureFCMapBackingAccounts(accounts()),
+					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_ID_SOURCE,
@@ -1155,7 +1168,7 @@ public class ServicesContext {
 			txns = new TransactionHandler(
 					recordCache(),
 					precheckVerifier(),
-					accounts(),
+					this::accounts,
 					nodeAccount(),
 					txnThrottling(),
 					usagePrices(),

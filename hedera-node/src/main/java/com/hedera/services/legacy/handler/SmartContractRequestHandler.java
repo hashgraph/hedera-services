@@ -120,8 +120,8 @@ public class SmartContractRequestHandler {
 	private HederaLedger ledger;
 	private LedgerAccountsSource ledgerSource;
 	private ServicesRepositoryRoot repository;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -134,8 +134,8 @@ public class SmartContractRequestHandler {
 			ServicesRepositoryRoot repository,
 			AccountID funding,
 			HederaLedger ledger,
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			LedgerAccountsSource ledgerSource,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
@@ -152,7 +152,7 @@ public class SmartContractRequestHandler {
 		this.funding = funding;
 		this.ledger = ledger;
 		this.exchange = exchange;
-		this.storageMap = storageMap;
+		this.storage = storage;
 		this.ledgerSource = ledgerSource;
 		this.txnCtx = txnCtx;
 		this.usagePrices = usagePrices;
@@ -161,7 +161,7 @@ public class SmartContractRequestHandler {
 		this.sigsVerifier = sigsVerifier;
 		this.entityExpiries = entityExpiries;
 
-		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storageMap);
+		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storage);
 		storageView = storageMapFrom(blobStore);
 		bytecodeView = bytecodeMapFrom(blobStore);
 	}
@@ -617,7 +617,7 @@ public class SmartContractRequestHandler {
 		String contractEthAddress = asSolidityAddressHex(id);
 		if (!StringUtils.isEmpty(contractEthAddress)) {
 			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			MerkleAccount contract = accounts.get(MerkleEntityId.fromAccountId(id));
+			MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
 			if (contract != null && contract.isSmartContract()) {
 				builder.setContractID(cid)
 						.setBalance(contract.getBalance())
@@ -727,7 +727,7 @@ public class SmartContractRequestHandler {
 	 */
 	public ByteString getContractBytecode(ContractID cid) {
 		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get(MerkleEntityId.fromAccountId(id));
+		MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
 		if (contract != null && contract.isSmartContract()) {
 			String contractEthAddress = asSolidityAddressHex(id);
 			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);
@@ -743,7 +743,7 @@ public class SmartContractRequestHandler {
 	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
 	 */
 	public ResponseCodeEnum validateContractExistence(ContractID cid) {
-		return PureValidation.queryableContractStatus(cid, accounts);
+		return PureValidation.queryableContractStatus(cid, accounts.get());
 	}
 
 	/**

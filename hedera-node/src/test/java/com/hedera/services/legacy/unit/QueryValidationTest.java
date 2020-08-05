@@ -115,7 +115,7 @@ class QueryValidationTest {
     transactionHandler = new TransactionHandler(
             mock(RecordCache.class),
             precheckVerifier,
-            map,
+            () -> map,
             nodeAccount,
             new MockAccountNumbers());
     transactionHandler.setBasicPrecheck(

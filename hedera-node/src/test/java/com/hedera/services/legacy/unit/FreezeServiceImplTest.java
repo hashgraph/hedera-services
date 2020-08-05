@@ -137,15 +137,15 @@ public class FreezeServiceImplTest {
     HbarCentExchange exchange = new OneToOneRates();
     transactionHandler = new TransactionHandler(
             receiptCache,
-            accountFCMap,
+            () -> accountFCMap,
             nodeAccountId,
             precheckVerifier,
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(topicFCMap, accountFCMap),
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap),
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-            new QueryFeeCheck(accountFCMap),
+            new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers());
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
             "./configuration/dev/application.properties",

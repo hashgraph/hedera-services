@@ -29,6 +29,10 @@ import com.hedera.services.legacy.exception.AdminKeyNotExistException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.function.Supplier;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+
 /**
  * Contract signing metadata lookup backed by a {@code FCMap<MapKey, MapValue}.
  *
@@ -38,9 +42,9 @@ import com.swirlds.fcmap.FCMap;
  * @author Michael Tinker
  */
 public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
-	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public DefaultFCMapContractLookup(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	public DefaultFCMapContractLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -56,7 +60,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 	 */
 	@Override
 	public ContractSigningMetadata lookup(ContractID id) throws Exception {
-		MerkleAccount contract = accounts.get(MerkleEntityId.fromContractId(id));
+		MerkleAccount contract = accounts.get().get(fromContractId(id));
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			throw new InvalidContractIDException("Invalid contract!", id);
 		} else if (contract.getKey() == null) {

@@ -167,7 +167,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(fcMap),
+            new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
@@ -215,8 +215,8 @@ public class SmartContractRequestHandlerMiscTest {
             repository,
             feeCollAccountId,
             ledger,
-            fcMap,
-            storageMap,
+            () -> fcMap,
+            () -> storageMap,
             ledgerSource,
             null,
             exchange,

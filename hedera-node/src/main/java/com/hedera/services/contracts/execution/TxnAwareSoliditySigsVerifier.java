@@ -34,24 +34,26 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static java.util.stream.Collectors.toList;
 
 public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final SyncVerifier syncVerifier;
 	private final TransactionContext txnCtx;
 	private final SyncActivationCheck check;
-	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public TxnAwareSoliditySigsVerifier(
 			SyncVerifier syncVerifier,
 			TransactionContext txnCtx,
 			SyncActivationCheck check,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
@@ -82,31 +84,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	private Stream<JKey> keyRequirement(AccountID id) {
-		return Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(id)))
+		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
 				.map(MerkleAccount::getKey)
 				.stream();
 	}
-
-//	private boolean syncKeysAreActive(List<JKey> keys, PlatformTxnAccessor accessor) {
-//		var sigFactory = new BodySigningSigFactory(accessor.getTxnBytes());
-//		var sigBytes = DEFAULT_SIG_BYTES.allPartiesSigBytesFor(accessor.getSignedTxn());
-//
-//		var creationResult = createEd25519PlatformSigsFrom(keys, sigBytes, sigFactory);
-//		if (creationResult.hasFailed()) {
-//			return false;
-//		} else {
-//			var sigs = creationResult.getPlatformSigs();
-//			syncVerifier.verifySync(sigs);
-//
-//			var sigsFn = pkToSigMapFrom(sigs);
-//			for (JKey key : keys) {
-//				if (!isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID)) {
-//					return false;
-//				}
-//			}
-//			return true;
-//		}
-//	}
 }

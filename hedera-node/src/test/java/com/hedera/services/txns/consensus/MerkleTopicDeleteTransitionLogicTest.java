@@ -72,7 +72,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		topics.clear();
 
-		subject = new TopicDeleteTransitionLogic(topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test
@@ -117,7 +117,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-		subject = new TopicDeleteTransitionLogic(topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test

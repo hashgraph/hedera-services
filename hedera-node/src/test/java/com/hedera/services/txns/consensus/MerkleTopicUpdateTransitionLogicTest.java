@@ -101,7 +101,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.isValidEntityMemo(VALID_MEMO)).willReturn(true);
 		given(validator.isValidEntityMemo(TOO_LONG_MEMO)).willReturn(false);
 
-		subject = new TopicUpdateTransitionLogic(accounts, topics, validator, transactionContext);
+		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext);
 	}
 
 	@Test

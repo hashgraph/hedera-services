@@ -104,6 +104,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		this(children);
 		this.ctx = ctx;
 		this.nodeId = nodeId;
+		ctx.update(this);
 	}
 
 	/* --- MerkleInternal --- */

@@ -86,6 +86,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -112,7 +113,7 @@ public class TransactionHandler {
   private static final Logger log = LogManager.getLogger(TransactionHandler.class);
   private RecordCache recordCache;
   private PrecheckVerifier precheckVerifier;
-  private FCMap<MerkleEntityId, MerkleAccount> accounts;
+  private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
   private FunctionalityThrottling throttling;
   private AccountID nodeAccount;
   private TransactionThrottling txnThrottling;
@@ -135,7 +136,7 @@ public class TransactionHandler {
 
   public TransactionHandler(
           RecordCache recordCache,
-          FCMap<MerkleEntityId, MerkleAccount> accounts,
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           PrecheckVerifier precheckVerifier,
           UsagePricesProvider usagePrices,
@@ -164,7 +165,7 @@ public class TransactionHandler {
   public TransactionHandler(
           RecordCache recordCache,
           PrecheckVerifier verifier,
-          FCMap<MerkleEntityId, MerkleAccount> accounts,
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           AccountNumbers accountNums
   ) {
@@ -176,7 +177,7 @@ public class TransactionHandler {
   public TransactionHandler(
           RecordCache recordCache,
           PrecheckVerifier precheckVerifier,
-          FCMap<MerkleEntityId, MerkleAccount> accounts,
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           TransactionThrottling txnThrottling,
           UsagePricesProvider usagePrices,
@@ -244,7 +245,7 @@ public class TransactionHandler {
 
   public boolean isAccountExist(AccountID acctId) {
     MerkleEntityId merkleEntityId = new MerkleEntityId(acctId.getShardNum(), acctId.getRealmNum(), acctId.getAccountNum());
-    return accounts.get(merkleEntityId) != null;
+    return accounts.get().get(merkleEntityId) != null;
   }
 
   public void addReceiptEntry(TransactionID txnId) {
@@ -352,7 +353,7 @@ public class TransactionHandler {
     if (trBody.getTransactionID().hasAccountID()) {
       AccountID payerAccount = trBody.getTransactionID().getAccountID();
       if (isAccountExist(payerAccount)) {
-        Long payerAccountBalance = Optional.ofNullable(accounts.get(MerkleEntityId.fromAccountId(payerAccount)))
+        Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
                 .map(MerkleAccount::getBalance)
                 .orElse(null);
         long suppliedFee = trBody.getTransactionFee();
@@ -369,7 +370,7 @@ public class TransactionHandler {
         if (returnCode == OK) {
           try {
             SignedTxnAccessor accessor = new SignedTxnAccessor(transaction);
-            JKey payerKey = accounts.get(MerkleEntityId.fromAccountId(payerAccount)).getKey();
+            JKey payerKey = accounts.get().get(fromAccountId(payerAccount)).getKey();
             Timestamp at = trBody.getTransactionID().getTransactionValidStart();
             FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
             fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();
@@ -461,7 +462,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-        var rationalStatus = PureValidation.queryableAccountStatus(txn.getTransactionID().getAccountID(), accounts);
+        var rationalStatus = PureValidation.queryableAccountStatus(txn.getTransactionID().getAccountID(), accounts.get());
         returnCode = (rationalStatus == INVALID_ACCOUNT_ID) ? PAYER_ACCOUNT_NOT_FOUND : OK;
     }
 
@@ -587,7 +588,7 @@ public class TransactionHandler {
   @SuppressWarnings("unchecked")
   public List<ExpirableTxnRecord> getAllTransactionRecordFCM(MerkleEntityId merkleEntityId) {
     try {
-      MerkleAccount account = accounts.get(merkleEntityId);
+      MerkleAccount account = accounts.get().get(merkleEntityId);
       if (account != null) {
         return account.recordList();
       } else {

@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
@@ -50,14 +51,14 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
 
-	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private final FCMap<MerkleEntityId, MerkleTopic> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
 	public TopicUpdateTransitionLogic(
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
-			FCMap<MerkleEntityId, MerkleTopic> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext
 	) {
@@ -72,14 +73,14 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		var transactionBody = transactionContext.accessor().getTxn();
 		var op = transactionBody.getConsensusUpdateTopic();
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics);
+		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
 		if (topicStatus != OK) {
 			transactionContext.setStatus(topicStatus);
 			return;
 		}
 
 		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
-		var topic = topics.get(topicId);
+		var topic = topics.get().get(topicId);
 		if (!topic.hasAdminKey() && wantsToMutateNonExpiryField(op)) {
 			transactionContext.setStatus(UNAUTHORIZED);
 			return;
@@ -88,9 +89,9 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var mutableTopic = topics.getForModify(topicId);
+		var mutableTopic = topics.get().getForModify(topicId);
 		applyNewFields(op, mutableTopic);
-		topics.put(topicId, mutableTopic);
+		topics.get().put(topicId, mutableTopic);
 		transactionContext.setStatus(SUCCESS);
 	}
 
@@ -182,7 +183,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
 			return false;
 		}
-		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts)) {
+		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts.get())) {
 			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
 			return false;
 		}

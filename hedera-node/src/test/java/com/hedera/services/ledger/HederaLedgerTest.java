@@ -133,7 +133,7 @@ public class HederaLedgerTest {
 
 	private void setupWithLiveFcBackedLedger() {
 		backingMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-		backingAccounts = new FCMapBackingAccounts(backingMap);
+		backingAccounts = new FCMapBackingAccounts(() -> backingMap);
 		MerkleAccount genesisAccount = new MerkleAccount();
 		try {
 			genesisAccount.setBalance(50_000_000_000L);

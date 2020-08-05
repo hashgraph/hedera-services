@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -43,10 +44,10 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
-	private final FCMap<MerkleEntityId, MerkleTopic> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 
 	public SubmitMessageTransitionLogic(
-			FCMap<MerkleEntityId, MerkleTopic> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,
 			TransactionContext transactionContext
 	) {
@@ -65,7 +66,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics);
+		var topicStatus = validator.queryableTopicStatus(op.getTopicID(), topics.get());
 		if (OK != topicStatus) {
 			transactionContext.setStatus(topicStatus);
 			return;
@@ -90,13 +91,13 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 		}
 
 		var topicId = MerkleEntityId.fromTopicId(op.getTopicID());
-		var mutableTopic = topics.getForModify(topicId);
+		var mutableTopic = topics.get().getForModify(topicId);
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());
-			topics.put(topicId, mutableTopic);
+			topics.get().put(topicId, mutableTopic);
 			transactionContext.setTopicRunningHash(mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
 			transactionContext.setStatus(SUCCESS);
 		} catch (Exception e) {

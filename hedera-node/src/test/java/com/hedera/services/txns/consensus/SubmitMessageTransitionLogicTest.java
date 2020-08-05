@@ -71,7 +71,7 @@ class SubmitMessageTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		topics.clear();
 
-		subject = new SubmitMessageTransitionLogic(topics, validator, transactionContext);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test

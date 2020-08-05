@@ -93,15 +93,15 @@ public class TxnHandlerVerifySigRegressionTest {
 				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes())).build();
 		subject = new TransactionHandler(
 				null,
-				accounts,
+				() -> accounts,
 				DEFAULT_NODE,
 				null,
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(null, accounts),
+				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accounts),
+				new QueryFeeCheck(() -> accounts),
 				new MockAccountNumbers());
 
 		// expect:
@@ -322,11 +322,11 @@ public class TxnHandlerVerifySigRegressionTest {
 		stats = mock(HederaNodeStats.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, accounts, null));
+				defaultLookupsFor(null, () -> accounts, () -> null));
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
-						defaultLookupsPlusAccountRetriesFor( null, accounts, null, MN, MN, stats));
+						defaultLookupsPlusAccountRetriesFor( null, () -> accounts, () -> null, MN, MN, stats));
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
@@ -335,7 +335,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		subject = new TransactionHandler(
 				null,
 				precheckVerifier,
-				accounts,
+				() -> accounts,
 				DEFAULT_NODE,
 				new MockAccountNumbers());
 	}

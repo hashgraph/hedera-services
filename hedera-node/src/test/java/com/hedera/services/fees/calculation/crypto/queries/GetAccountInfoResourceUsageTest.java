@@ -63,7 +63,7 @@ class GetAccountInfoResourceUsageTest {
 		aValue = MapValueFactory.newAccount().accountKeys(aKey).get();
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		subject = new GetAccountInfoResourceUsage(usageEstimator);
 	}

@@ -212,7 +212,7 @@ public class SmartContractServiceImplTest {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
 				() -> new MerkleAccount(),
-				new FCMapBackingAccounts(accountFCMap),
+				new FCMapBackingAccounts(() -> accountFCMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
 				mock(EntityIdSource.class),
@@ -260,13 +260,15 @@ public class SmartContractServiceImplTest {
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		transactionHandler = new TransactionHandler(
 				recordCache,
-				accountFCMap,
+				() -> accountFCMap,
 				nodeAccountId,
 				precheckVerifier,
-				TEST_USAGE_PRICES, TestExchangeRates.TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(topicFCMap, accountFCMap),
+				TEST_USAGE_PRICES,
+				TestExchangeRates.TEST_EXCHANGE,
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accountFCMap),
+				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers());
 		HbarCentExchange exchange = mock(HbarCentExchange.class);
 		long expiryTime = Long.MAX_VALUE;
@@ -281,8 +283,8 @@ public class SmartContractServiceImplTest {
 				repository,
 				feeCollectionAccountId,
 				ledger,
-				accountFCMap,
-				storageMap,
+				() -> accountFCMap,
+				() -> storageMap,
 				ledgerSource,
 				null,
 				exchange,

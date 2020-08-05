@@ -31,6 +31,7 @@ import com.swirlds.common.Address;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
@@ -108,7 +109,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? ctx.accounts().get(MerkleEntityId.fromAccountId(accessor.getPayer())).getKey()
+				? ctx.accounts().get(fromAccountId(accessor.getPayer())).getKey()
 				: EMPTY_HEDERA_KEY;
 	}
 

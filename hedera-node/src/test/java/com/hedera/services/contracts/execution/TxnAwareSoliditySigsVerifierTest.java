@@ -88,7 +88,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		areActive = mock(SyncActivationCheck.class);
 
-		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, accounts);
+		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
 	}
 
 	@Test

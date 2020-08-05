@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -40,12 +41,12 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	* must be flushed (i.e. replaced) before the end of {@code flush}. */
 	Map<AccountID, MerkleAccount> cache = new HashMap<>();
 
-	private final FCMap<MerkleEntityId, MerkleAccount> delegate;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
-	public FCMapBackingAccounts(FCMap<MerkleEntityId, MerkleAccount> delegate) {
+	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 
-		delegate.keySet().stream()
+		delegate.get().keySet().stream()
 				.map(MerkleEntityId::toAccountId)
 				.forEach(existingAccounts::add);
 	}
@@ -55,20 +56,20 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 		cache.keySet()
 				.stream()
 				.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-				.forEach(id -> delegate.replace(fromAccountId(id), cache.get(id)));
+				.forEach(id -> delegate.get().replace(fromAccountId(id), cache.get(id)));
 		cache.clear();
 	}
 
 	@Override
 	public MerkleAccount getRef(AccountID id) {
-		return cache.computeIfAbsent(id, ignore -> delegate.getForModify(fromAccountId(id)));
+		return cache.computeIfAbsent(id, ignore -> delegate.get().getForModify(fromAccountId(id)));
 	}
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
 		MerkleEntityId delegateId = fromAccountId(id);
 		if (!existingAccounts.contains(id)) {
-			delegate.put(delegateId, account);
+			delegate.get().put(delegateId, account);
 			existingAccounts.add(id);
 		} else if (!cache.containsKey(id) || (cache.get(id) != account)) {
 			throw new IllegalArgumentException(String.format(
@@ -85,7 +86,7 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	@Override
 	public void remove(AccountID id) {
 		existingAccounts.remove(id);
-		delegate.remove(fromAccountId(id));
+		delegate.get().remove(fromAccountId(id));
 	}
 
 	@Override
@@ -95,6 +96,6 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 
 	@Override
 	public MerkleAccount getUnsafeRef(AccountID id) {
-		return delegate.get(fromAccountId(id));
+		return delegate.get().get(fromAccountId(id));
 	}
 }

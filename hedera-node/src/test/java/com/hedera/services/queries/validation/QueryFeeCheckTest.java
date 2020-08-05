@@ -77,7 +77,7 @@ class QueryFeeCheckTest {
 		given(accounts.containsKey(argThat(brokeKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(nodeKey::equals))).willReturn(true);
 
-		subject = new QueryFeeCheck(accounts);
+		subject = new QueryFeeCheck(() -> accounts);
 	}
 
 	@Test

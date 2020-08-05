@@ -54,7 +54,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		topics = mock(FCMap.class);
-		view = new StateView(topics, StateView.EMPTY_ACCOUNTS);
+		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

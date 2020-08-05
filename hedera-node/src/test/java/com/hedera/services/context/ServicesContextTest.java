@@ -125,6 +125,7 @@ import java.util.function.Supplier;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -164,6 +165,38 @@ public class ServicesContextTest {
 		properties = mock(PropertySource.class);
 		propertySources = mock(PropertySources.class);
 		given(propertySources.asResolvingSource()).willReturn(properties);
+	}
+
+	@Test
+	public void updatesStateAsExpected() {
+		// setup:
+		var newState = mock(ServicesState.class);
+		var newAccounts = mock(FCMap.class);
+		var newTopics = mock(FCMap.class);
+		var newStorage = mock(FCMap.class);
+
+		given(newState.accounts()).willReturn(newAccounts);
+		given(newState.topics()).willReturn(newTopics);
+		given(newState.storage()).willReturn(newStorage);
+		// given:
+		var subject = new ServicesContext(id, platform, state, propertySources);
+		// and:
+		var accountsRef = subject.queryableAccounts();
+		var topicsRef = subject.queryableTopics();
+		var storageRef = subject.queryableStorage();
+
+		// when:
+		subject.update(newState);
+
+		// then:
+		assertSame(newState, subject.state);
+		assertSame(accountsRef, subject.queryableAccounts());
+		assertSame(topicsRef, subject.queryableTopics());
+		assertSame(storageRef, subject.queryableStorage());
+		// and:
+		assertSame(newAccounts, subject.queryableAccounts().get());
+		assertSame(newTopics, subject.queryableTopics().get());
+		assertSame(newStorage, subject.queryableStorage().get());
 	}
 
 	@Test
