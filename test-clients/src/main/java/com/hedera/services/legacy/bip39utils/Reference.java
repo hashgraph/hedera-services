@@ -1,21 +1,3 @@
-/*
- * @author Leemon Baird
- * <p>
- * (c) 2016-2017 Swirlds, Inc.
- * <p>
- * This software is the confidential and proprietary information of  
- * Swirlds, Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into 
- * with Swirlds.
- * <p>
- * SWIRLDS MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF 
- * THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
- * TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, OR NON-INFRINGEMENT. SWIRLDS SHALL NOT BE LIABLE FOR 
- * ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR 
- * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
- */
 package com.hedera.services.legacy.bip39utils;
 
 /*-
@@ -51,7 +33,7 @@ import java.util.regex.Pattern;
 
 
 /**
- * Encapsulation of a Swirlds "reference", which is a 384-bit hash of a public key, file, swirld name, or
+ * Encapsulation of a "reference", which is a 384-bit hash of a public key, file, swirld name, or
  * other entity. It supports converting between byte array and string, for several types of string.
  * Eventually, it may also allow converting between those and a QR code image. It is also legal to
  * instantiate with a 128-bit or 256-bit hash, but for some uses, 128 bits will not be secure against

@@ -76,7 +76,7 @@ node_0      | 2020-04-29 15:05:28.815 INFO  133  ServicesMain - Now current plat
 node_1      | 2020-04-29 15:05:28.854 INFO  133  ServicesMain - Now current platform status = ACTIVE in HederaNode#1.
 ```
 
-Notice that the Hedera Services and Swirlds Platform logs for each node are externalized 
+Notice that the Hedera Services and  Platform logs for each node are externalized 
 under paths of the form _compose-network/node0/output/_. 
 
 You can now run operations against your local network using any HAPI client. For example:
@@ -109,7 +109,7 @@ rm -rf compose-network
 
 In general, the `services-node` image will be run with three bind mounts---one to provide
 the configuration and bootstrap assets; one to externalize the saved state data; and one to
-externalize the Hedera Services and Swirlds Platform logs. For example:
+externalize the Hedera Services and Platform logs. For example:
 
 ```
   docker run -d --name node0 \

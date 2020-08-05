@@ -1,7 +1,7 @@
 # Hedera Services Node
 
 Implements the Hedera cryptocurrency, consensus, smart contract, and file 
-services on the Swirlds platform.
+services on the Platform.
 
 ## Overview
 

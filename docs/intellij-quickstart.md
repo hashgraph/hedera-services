@@ -1,6 +1,6 @@
 # IntelliJ quickstart
 
-**IMPORTANT** The current implementation of Swirlds Platform has a non-negotiable dependency
+**IMPORTANT** The current implementation of Platform has a non-negotiable dependency
 on PostgreSQL. Use the included [Docker-based PostgreSQL setup guide](./postgresql-setup-guide.md)
 to ensure you have an appropriately configured PostgreSQL instance before continuing.
 
@@ -27,7 +27,7 @@ This will both,
 Now browse to `com.hedera.services.ServicesMain`. Its
 `main` method starts a network of Hedera Service nodes by 
 calling `com.swirlds.platform.Browser#main`, which is the
-entrypoint to bootstrap any Swirlds Platform apps.
+entrypoint to bootstrap any Platform apps.
 
 Run `ServicesMain#main` with an IntelliJ configuration whose working 
 directory is the _hedera-node/_ directory of your clone of this repo:
@@ -44,16 +44,16 @@ You will see three black panes appear, similar to:
 
 This node's name is "Alice" because of [Line 26](../hedera-node/config.txt#L26)
 in the _config.txt_ present in your working directory. (This file determines the 
-Swirlds Browser's startup sequence.) 
+Browser's startup sequence.) 
 
 Looking closer at _config.txt_, you can see you are running Hedera Services 
-(and not some other Swirlds app) because [Line 12](../hedera-node/config.txt#L12) 
+(and not some other app) because [Line 12](../hedera-node/config.txt#L12) 
 points to the JAR file you just built; and there are three nodes in your 
 network because you specified "Bob" and "Carol" as well as "Alice".
 
 In fact Alice, Bob, and Carol are all running on your local machine; and 
 communicating via the loopback interface. But each still has a private 
-instance of the Swirlds Platform, and keeps its own state, just as it would in a 
+instance of the Platform, and keeps its own state, just as it would in a 
 true distributed network.
 
 ## Submitting transactions to your local network
