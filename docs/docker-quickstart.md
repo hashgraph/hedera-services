@@ -75,6 +75,7 @@ under paths of the form _compose-network/node0/output/_.
 
 You can now run operations against your local network using any HAPI client. For example:
 ```
+./mvnw install -DskipTests
 cd test-clients
 ../mvnw exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.compose.LocalNetworkCheck -Dexec.cleanupDaemonThreads=false
 ```
