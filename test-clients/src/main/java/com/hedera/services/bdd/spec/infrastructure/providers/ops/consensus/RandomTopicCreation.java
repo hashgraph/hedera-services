@@ -58,6 +58,7 @@ public class RandomTopicCreation implements OpProvider {
                                 .adminKeyName(key.get())
                                 .submitKeyName(key.get())
                                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                                .hasAnyPrecheck()
                                 .hasKnownStatusFrom(permissibleOutcomes);
 
                 return Optional.of(op);

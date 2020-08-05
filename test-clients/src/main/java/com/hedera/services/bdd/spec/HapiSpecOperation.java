@@ -202,7 +202,6 @@ public abstract class HapiSpecOperation {
 
 	protected Consumer<TransactionBody.Builder> bodyDef(HapiApiSpec spec) {
 		return builder -> {
-			customTxnId.ifPresent(name -> spec.registry().getTxnId(name));
 			payer.ifPresent(payerId -> {
 				var id = TxnUtils.asId(payerId, spec);
 				TransactionID txnId = builder.getTransactionID().toBuilder().setAccountID(id).build();
@@ -213,6 +212,11 @@ public abstract class HapiSpecOperation {
 						spec.registry().getTimestamp(txnName)).build();
 				builder.setTransactionID(txnId);
 			}
+			customTxnId.ifPresent(name -> {
+				TransactionID id = spec.registry().getTxnId(name);
+				builder.setTransactionID(id);
+			});
+
 			node.ifPresent(nodeId -> builder.setNodeAccountID(nodeId));
 			validDurationSecs.ifPresent(s -> {
 				builder.setTransactionValidDuration(Duration.newBuilder().setSeconds(s).build());
