@@ -3,12 +3,8 @@ services:
   node_0:
     container_name: node_0
     image: ${REGISTRY_PREFIX}services-node:${TAG}
-    build: ./
     environment:
       - NODE_ID=0
-    networks:
-      swirld:
-        ipv4_address: 172.20.1.0
     volumes:
       - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node0/saved:/opt/hedera/services/data/saved"
@@ -20,9 +16,6 @@ services:
     image: ${REGISTRY_PREFIX}services-node:${TAG}
     environment:
       - NODE_ID=1
-    networks:
-      swirld:
-        ipv4_address: 172.20.2.1
     volumes:
       - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node1/saved:/opt/hedera/services/data/saved"
@@ -34,9 +27,6 @@ services:
     image: ${REGISTRY_PREFIX}services-node:${TAG}
     environment:
       - NODE_ID=2
-    networks:
-      swirld:
-        ipv4_address: 172.20.3.2
     volumes:
       - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node2/saved:/opt/hedera/services/data/saved"
@@ -44,7 +34,7 @@ services:
     ports:
       - 50215:50211
   postgres:
-    container_name: swirld-postgres
+    container_name: hedera-postgres
     image: postgres:10.9-alpine
     stop_grace_period: 2m
     environment:
@@ -54,12 +44,3 @@ services:
     volumes:
       - "./compose-network/pgdata:/var/lib/postgresql/data/pgdata"
       - "./hedera-node/configuration/compose/init.db:/docker-entrypoint-initdb.d"
-    networks:
-      swirld:
-        ipv4_address: 172.20.4.2
-networks:
-  swirld:
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16
