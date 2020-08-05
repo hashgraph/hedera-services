@@ -4,6 +4,8 @@ services:
     container_name: node_0
     image: ${REGISTRY_PREFIX}services-node:${TAG}
     build: ./
+    environment:
+      - NODE_ID=0
     networks:
       swirld:
         ipv4_address: 172.20.1.0
@@ -16,6 +18,8 @@ services:
   node_1:
     container_name: node_1
     image: ${REGISTRY_PREFIX}services-node:${TAG}
+    environment:
+      - NODE_ID=1
     networks:
       swirld:
         ipv4_address: 172.20.2.1
@@ -28,6 +32,8 @@ services:
   node_2:
     container_name: node_2
     image: ${REGISTRY_PREFIX}services-node:${TAG}
+    environment:
+      - NODE_ID=2
     networks:
       swirld:
         ipv4_address: 172.20.3.2
@@ -44,10 +50,10 @@ services:
     environment:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=swirlds
-      - POSTGRES_DB=fcfs
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - "./compose-network/pgdata:/var/lib/postgresql/data/pgdata"
+      - "./hedera-node/configuration/compose/init.db:/docker-entrypoint-initdb.d"
     networks:
       swirld:
         ipv4_address: 172.20.4.2

@@ -67,7 +67,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		} catch (FileNotFoundException fnfe) {
 			tlsServer = null;
 			String message = nettyAction("Could not start", true, tlsPort, false);
-			log.error(message, fnfe);
+			log.warn("{} ({}).", message, fnfe.getMessage());
 			println.accept(message);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);

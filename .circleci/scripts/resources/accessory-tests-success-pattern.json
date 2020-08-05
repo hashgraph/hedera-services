@@ -16,12 +16,6 @@
         "Run OCTokenIT test": "OCTokenIT - Regression summary: This run is successful.",
         "Run SmartContractFailFirst test": "SmartContractFailFirst - Regression summary: This run is successful.",
         "Run SmartContractSelfDestruct test": "SmartContractSelfDestruct - Regression summary: This run is successful.",
-        "Run SmartContractSimpleStorage test": "SmartContractSimpleStorage - Regression summary: This run is successful.",
-        "Run TopicCreateSpecs test" : "SuiteRunner - TopicCreateSpecs                 :: 1/1 suites ran OK",
-        "Run TopicUpdateSpecs test" : "SuiteRunner - TopicUpdateSpecs                 :: 1/1 suites ran OK",
-        "Run TopicDeleteSpecs test" : "SuiteRunner - TopicDeleteSpecs                 :: 1/1 suites ran OK",
-        "Run SubmitMessageSpecs test" : "SuiteRunner - SubmitMessageSpecs               :: 1/1 suites ran OK",
-        "Run TopicGetInfoSpecs test" : "SuiteRunner - TopicGetInfoSpecs                :: 1/1 suites ran OK",
-        "Run ConsensusThrottlesSpecs test" : "SuiteRunner - ConsensusThrottlesSpecs          :: 1/1 suites ran OK"
+        "Run SmartContractSimpleStorage test": "SmartContractSimpleStorage - Regression summary: This run is successful."
     }
 }

@@ -85,6 +85,7 @@ public class RequestValidationTest {
                 () -> StateView.EMPTY_VIEW,
                 new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
                 null,
+                null,
                 null);
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));

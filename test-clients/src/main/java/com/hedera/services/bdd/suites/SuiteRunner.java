@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -65,6 +66,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -149,6 +151,7 @@ public class SuiteRunner {
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
 		/* Functional tests - CRYPTO */
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
+		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
 		/* Functional tests - CONTRACTS */
 		put("NewOpInConstructorSpecs", aof(new NewOpInConstructorSuite()));
 		put("DeprecatedContractKeySpecs", aof(new DeprecatedContractKeySuite()));
@@ -233,7 +236,7 @@ public class SuiteRunner {
 	}
 
 	private static Map<String, String> arbitraryOverrides(String[] effArgs) {
-		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*)=(.*)");
+		var MISC_OVERRIDE_PATTERN = Pattern.compile("([^-].*?)=(.*)");
 		return Stream.of(effArgs)
 				.map(arg -> MISC_OVERRIDE_PATTERN.matcher(arg))
 				.filter(Matcher::matches)
@@ -260,7 +263,7 @@ public class SuiteRunner {
 	 * @return effective args after examining DSL_SUITE_RUNNER_ARGS
 	 */
 	private static String[] getEffectiveDSLSuiteRunnerArgs(String realArgs) {
-		ArrayList<String> effectiveArgs = new ArrayList<>();
+		Set<String> effectiveArgs = new HashSet<>();
 		String[] ciArgs = realArgs.split("\\s+");
 
 		if (Stream.of(ciArgs).anyMatch("ALL_SUITES"::equals)) {

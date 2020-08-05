@@ -578,6 +578,8 @@ default_stat_names = [
     "getTopicInfoRcv/sec",
     "getTopicInfoSub",
     "getTopicInfoSub/sec",
+    "avgHdlSubMsgSize",
+    "platformTxnNotCreated/sec",
     "avgAcctLookupRetryAttempts",
     "avgAcctRetryWaitMs",
     "getStakersByAccountIDRcv",
