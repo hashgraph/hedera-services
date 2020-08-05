@@ -891,17 +891,13 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "52 4 * * *"
+          cron: "2 5 * * *"
           filters:
             branches:
               only:
                 - JRS-in-circleCI
     jobs:
       - build-platform-and-services:
-#          filters:
-#            branches:
-#               only:
-#                  - JRS-in-circleCI
           workflow-name: "nightly-services-regression"
 
   custom-migration:
