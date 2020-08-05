@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "53 18 * * *"
+          cron: "0 19 * * *"
           filters:
             branches:
               only:
@@ -899,9 +899,6 @@ workflows:
     jobs:
       - build-platform-and-services:
           workflow-name: "nightly-services-regression"
-#    jobs:
-#      - build-platform-and-services:
-#          workflow-name: "nightly-regression"
 
   custom-migration:
     triggers:
