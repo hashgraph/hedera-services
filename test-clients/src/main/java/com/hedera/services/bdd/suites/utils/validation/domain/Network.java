@@ -26,14 +26,24 @@ public class Network {
 	public static final String SCENARIO_PAYER_NAME = "scenarioPayer";
 
 	private static final long DEFAULT_INITIAL_HBARS = 25;
+	private static final long DEFAULT_NODE = 3;
 
 	long bootstrap;
+	long defaultNode = DEFAULT_NODE;
 	long ensureScenarioPayerHbars = DEFAULT_INITIAL_HBARS;
 
 	Long scenarioPayer;
 
 	List<Node> nodes;
 	Scenarios scenarios;
+
+	public long getDefaultNode() {
+		return defaultNode;
+	}
+
+	public void setDefaultNode(long defaultNode) {
+		this.defaultNode = defaultNode;
+	}
 
 	public long getBootstrap() {
 		return bootstrap;

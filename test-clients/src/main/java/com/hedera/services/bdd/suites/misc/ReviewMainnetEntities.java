@@ -20,21 +20,14 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
-import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.SplittableRandom;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
@@ -42,8 +35,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ReviewMainnetEntities.class);
@@ -57,8 +50,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						reviewObjects(),
 //						checkTls(),
-//						xfer(),
-						doSomething(),
+						xfer(),
+//						doSomething(),
 				}
 		);
 	}
@@ -73,41 +66,32 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 		final String DIRECT_NODES = "35.237.194.97:0.0.3,13.71.127.1:0.0.6,27.110.33.145:0.0.7,20.49.137.94:0.0.12," +
 				"35.245.226.22:0.0.4,34.72.55.137:0.0.5,35.203.26.115:0.0.8,34.77.3.213:0.0.9," + // Ubuntu
 				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"; // CentOS
+		final String DIRECT_MAINNET = "50.28.79.14:0.0.3";
 
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
-						"nodes", DIRECT_NODES,
+						"nodes", DIRECT_MAINNET,
 						"default.payer", "0.0.950",
 						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-				)).given(
-						cryptoCreate("somebody")
-								.setNode("0.0.4")
-								.balance(1L)
-				).when().then(
-						withOpContext((spec, opLog) -> {
-							byte[] passphraseBytes = new byte[16];
-							new SplittableRandom().nextBytes(passphraseBytes);
-							KeyFactory.PEM_PASSPHRASE = Base64.encodeBase64String(passphraseBytes);
-							spec.keys().exportSimpleKey(String.format("somebody.pem"), "somebody");
-							var loc = String.format("somebody-passphrase.txt");
-							try (BufferedWriter out = Files.newWriter(new File(loc), Charset.defaultCharset())) {
-								out.write(KeyFactory.PEM_PASSPHRASE);
-							}
-						})
+				)).given( ).when().then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
 				);
 	}
 
 	private HapiApiSpec xfer() {
-		final String NODES = "35.237.208.135:0.0.3";
+		final String NODES = "35.237.200.180:0.0.3";
+		final long ONE_HBAR = 100_000_000L;
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
 						"nodes", NODES,
 						"default.payer", "0.0.950",
 						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
 				)).given(
-				).when().then(
+				).when(
+//						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 100 * ONE_HBAR))
+				).then(
 						getAccountBalance(GENESIS).logged(),
-						getAccountInfo("0.0.58").logged()
+						getAccountBalance("0.0.55").logged()
 				);
 	}
 
