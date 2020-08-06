@@ -99,7 +99,7 @@ class BackedSystemAccountsCreatorTest {
 
 		given(properties.getIntProperty("ledger.numSystemAccounts"))
 				.willReturn(numAccounts);
-		given(properties.getLongProperty("ledger.totalHbarFloat"))
+		given(properties.getLongProperty("ledger.totalTinyBarFloat"))
 				.willReturn(100L);
 		given(properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance"))
 				.willReturn(10L);
@@ -224,7 +224,7 @@ class BackedSystemAccountsCreatorTest {
 		verify(backingAccounts, never()).put(any(), any());
 		// and:
 		verify(BackedSystemAccountsCreator.log).info(String.format(
-				"Ledger float is %d hBars in %d accounts.", 100, 4));
+				"Ledger float is %d tinyBars in %d accounts.", 100, 4));
 
 		// cleanup:
 		BackedSystemAccountsCreator.log = LogManager.getLogger(BackedSystemAccountsCreator.class);

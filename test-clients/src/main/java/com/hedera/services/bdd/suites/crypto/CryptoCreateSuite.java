@@ -89,8 +89,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidNestedThresholdKey(),
 				createAnAccountThresholdKeyWithInvalidThreshold(),
 				createAnAccountInvalidED25519(),
-				xferRequiresCrypto(),
-				invalidDurationGetsMeaningfulResponse()
+				invalidDurationGetsMeaningfulResponse(),
+				xferRequiresCrypto()
 		);
 	}
 
@@ -98,14 +98,19 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("XferRequiresCrypto")
 				.given(
 						fileCreate("bytecode").fromResource("Multipurpose.bin"),
-						contractCreate("multi")
+						contractCreate("multiAdmin")
+								.bytecode("bytecode")
+								.balance(1_234),
+						contractCreate("multiNoAdmin")
 								.bytecode("bytecode")
 								.balance(1_234),
 						cryptoCreate("misc")
 				).when().then(
-						cryptoTransfer(tinyBarsFromTo("multi", "misc", 1))
+						cryptoTransfer(tinyBarsFromTo("misc", "multiAdmin", 1))
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						cryptoTransfer(tinyBarsFromTo("misc", "multi", 1))
+						cryptoTransfer(tinyBarsFromTo("multiAdmin", "misc", 1))
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(tinyBarsFromTo("multiNoAdmin", "misc", 1))
 								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				);
 	}

@@ -149,7 +149,7 @@ public class BootstrapProperties implements PropertySource {
 			"hedera.realm",
 			"hedera.shard",
 			"ledger.numSystemAccounts",
-			"ledger.totalHbarFloat"
+			"ledger.totalTinyBarFloat"
 	));
 
 	private static final Map<String, Function<String, Object>> BOOTSTRAP_PROP_TRANSFORMS = Map.ofEntries(
@@ -178,6 +178,6 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.rates.nextExpiry", AS_LONG),
 			entry("bootstrap.system.entityExpiry", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
-			entry("ledger.totalHbarFloat", AS_LONG)
+			entry("ledger.totalTinyBarFloat", AS_LONG)
 	);
 }

@@ -57,7 +57,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.realm", 0L),
 			entry("hedera.shard", 0L),
 			entry("ledger.numSystemAccounts", 100),
-			entry("ledger.totalHbarFloat", 5000000000000000000L)
+			entry("ledger.totalTinyBarFloat", 5000000000000000000L)
 	);
 
 	@Test

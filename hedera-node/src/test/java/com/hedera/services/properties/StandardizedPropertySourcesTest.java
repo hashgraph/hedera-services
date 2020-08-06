@@ -187,7 +187,7 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
 		assertTrue(properties.containsProperty("ledger.funding.account"));
 		assertTrue(properties.containsProperty("ledger.maxAccountNum"));
-		assertTrue(properties.containsProperty("ledger.totalHbarFloat"));
+		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.tps"));

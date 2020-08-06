@@ -40,7 +40,7 @@ class BasedLedgerValidatorTest {
 
 		properties = mock(PropertySource.class);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn(5L);
-		given(properties.getLongProperty("ledger.totalHbarFloat")).willReturn(100L);
+		given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(100L);
 
 		subject = new BasedLedgerValidator(hederaNums, properties);
 	}

@@ -86,11 +86,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
-		long hbarFloat = properties.getLongProperty("ledger.totalHbarFloat");
+		long tinyBarFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		long nodeBalance = properties.getLongProperty("bootstrap.ledger.nodeAccounts.initialBalance");
 		long defaultBalance = properties.getLongProperty("bootstrap.ledger.systemAccounts.initialBalance");
 		long recordThresholds = properties.getLongProperty("bootstrap.ledger.systemAccounts.recordThresholds");
-		long treasuryBalance = hbarFloat
+		long treasuryBalance = tinyBarFloat
 				- (nodeBalance * nodeAccountNums.size())
 				- (defaultBalance * (N - nodeAccountNums.size() - 1));
 
@@ -110,7 +110,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 		var allIds = accounts.idSet();
 		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getUnsafeRef(id).getBalance()).sum();
-		var msg = String.format("Ledger float is %d hBars in %d accounts.", ledgerFloat, allIds.size());
+		var msg = String.format("Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
 		log.info(msg);
 		accounts.flushMutableRefs();
 	}

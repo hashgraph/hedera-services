@@ -35,7 +35,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 	@Override
 	public boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		long actualFloat = accounts.values().stream().mapToLong(MerkleAccount::getBalance).sum();
-		long expectedFloat = properties.getLongProperty("ledger.totalHbarFloat");
+		long expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 
 		return expectedFloat == actualFloat;
 	}
