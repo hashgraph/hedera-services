@@ -1408,13 +1408,6 @@ workflows:
             - attach_workspace:
                 at: /
 jobs:
-  test-slack:
-    executor: ci-test-executor
-    steps:
-      - checkout
-      - svc-app-slack-msg: 
-          text: Testing new API token from CircleCI context env
-          channel: hedera-cicd
   start-singlejob-testnet:
     parameters:
       infra-branch:
