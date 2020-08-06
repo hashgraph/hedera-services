@@ -144,8 +144,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		validateLedgerState();
-		log.info("Ledger state ok.");
 		loadPropertiesAndPermissions();
 		log.info("Initialized properties and permissions.");
 		startRecordStreamThread();
@@ -154,6 +152,8 @@ public class ServicesMain implements SwirldMain {
 		log.info("Netty started.");
 		createSystemAccountsIfNeeded();
 		log.info("System accounts rationalized.");
+		validateLedgerState();
+		log.info("Ledger state ok.");
 		createSystemFilesIfNeeded();
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
@@ -268,7 +268,7 @@ public class ServicesMain implements SwirldMain {
 		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
 		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
 			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
-			systemExits.fail(1);
+			throw new IllegalStateException("Invalid total tinyBar float!");
 		}
 		if (ctx.nodeAccount() == null) {
 			throw new IllegalStateException("Unknown ledger account!");
