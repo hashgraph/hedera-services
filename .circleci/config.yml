@@ -1349,64 +1349,66 @@ workflows:
 
   continuous-integration:
     jobs: 
-      - build-artifact:
-          context: SonarCloud
-          filters:
-            branches:
-              ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
-          workflow-name: "Continuous integration"
-      - start-singlejob-testnet:
+      - test-slack:
           context: Slack
-          requires:
-            - build-artifact
-          workflow-name: "Continuous integration"
-          infra-branch: services-with-platform070
-      - run-file-scenarios:
-          context: Slack
-          requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-consensus-and-crypto-scenarios:
-          context: Slack
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          context: Slack
-          requires:
-            - run-consensus-and-crypto-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - send-report-to-slack:
-                workflow-name: "Continuous integration"
-                status: Passed            
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - cleanup-singlejob-testnet:
-          context: Slack
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
+#     - build-artifact:
+#         context: SonarCloud
+#         filters:
+#           branches:
+#             ignore:
+#               - /.*-PERF/
+#               - /.*-REGRESSION/
+#         workflow-name: "Continuous integration"
+#     - start-singlejob-testnet:
+#         context: Slack
+#         requires:
+#           - build-artifact
+#         workflow-name: "Continuous integration"
+#         infra-branch: services-with-platform070
+#     - run-file-scenarios:
+#         context: Slack
+#         requires:
+#           - start-singlejob-testnet
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - run-consensus-and-crypto-scenarios:
+#         context: Slack
+#         requires:
+#           - run-file-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - run: /repo/.circleci/scripts/echo-env.sh
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - run-smart-contract-scenarios:
+#         context: Slack
+#         requires:
+#           - run-consensus-and-crypto-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - send-report-to-slack:
+#               workflow-name: "Continuous integration"
+#               status: Passed            
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - cleanup-singlejob-testnet:
+#         context: Slack
+#         requires:
+#           - run-smart-contract-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
 jobs:
   test-slack:
     executor: ci-test-executor
@@ -1414,6 +1416,7 @@ jobs:
       - checkout
       - svc-app-slack-msg: 
           text: Testing new API token from CircleCI context env
+          channel: hedera-cicd
   start-singlejob-testnet:
     parameters:
       infra-branch:
