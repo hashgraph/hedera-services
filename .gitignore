@@ -16,12 +16,16 @@ compose-network/
 *.log
 hs_err_pid*
 
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
 *.sh
 !hedera-node/data/backup/*.sh
+!hedera-node/configuration/compose/init.db/*.sh
 *.json
 !hedera-node/src/test/resources/legacyAccounts.json
 .circleci/*.yml-excerpt
-hedera-node/*.sh
+hedera-node/temp/
 hedera-node/*.csv
 hedera-node/swirlds.jar
 hedera-node/build.sh

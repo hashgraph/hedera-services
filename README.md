@@ -5,11 +5,11 @@
 
 The child modules in this repository define and implement the API to the 
 services offered by the nodes in the Hedera public network, which is built 
-on the Swirlds Platform.
+on the Platform.
 
 ## Overview of child modules
 * _hapi-proto/_ - protobuf defining the Hedera API.
-* _hedera-node/_ - implementation of Hedera services on the Swirlds platform.
+* _hedera-node/_ - implementation of Hedera services on the Platform.
 * _test-clients/_ - client libraries for end-to-end testing of the Hedera network.
 
 ## JVM
