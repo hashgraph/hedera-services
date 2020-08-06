@@ -897,8 +897,10 @@ workflows:
               only:
                 - master
     jobs:
-      - fast-build-artifact
+      - fast-build-artifact:
+          context: Slack
       - regression-target-testnet:
+          context: Slack
           requires:
             - fast-build-artifact
           pre-steps:
@@ -908,6 +910,7 @@ workflows:
                 use-existing-network: true
                 use-hugepage: true
       - run-custom-migration:
+          context: Slack
           requires:
             - regression-target-testnet
   nightly-simulate-network-outage:
@@ -920,13 +923,16 @@ workflows:
                   - master
     jobs:
       - fast-build-artifact:
+          context: Slack
           workflow-name: "nightly-simulate-network-outage"
       - start-singlejob-testnet:
+          context: Slack
           requires:
             - fast-build-artifact
           workflow-name: "nightly-simulate-network-outage"
           infra-branch: services-with-platform070
       - run-accessory-tests:
+          context: Slack
           requires:
             - start-singlejob-testnet
           pre-steps:
@@ -938,6 +944,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "nightly-simulate-network-outage"
       - run-network-sim:
+          context: Slack
           requires:
             - run-accessory-tests
           pre-steps:
@@ -949,6 +956,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "nightly-simulate-network-outage"
       - rerun-accessory-tests:
+          context: Slack
           requires:
             - run-network-sim
           pre-steps:
@@ -963,12 +971,12 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "nightly-simulate-network-outage"
       - cleanup-singlejob-testnet:
+          context: Slack
           requires:
             - rerun-accessory-tests 
           pre-steps:
             - attach_workspace:
                 at: /
-
   feature-update-regression:
     triggers:
         - schedule:
@@ -979,11 +987,13 @@ workflows:
                   - master
     jobs:
       - fast-build-artifact:
+          context: Slack
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
           workflow-name: "feature-update-regression"
       - regression-target-testnet:
+          context: Slack
           requires:
             - fast-build-artifact
           pre-steps:
@@ -992,6 +1002,7 @@ workflows:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
       - run-accessory-tests:
+          context: Slack
           requires:
             - regression-target-testnet
           post-steps:
@@ -1000,6 +1011,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "feature-update-regression"
       - run-update-feature:
+          context: Slack
           requires:
             - run-accessory-tests
           post-steps:
@@ -1008,6 +1020,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "feature-update-regression"
       - run-update-jar-files:
+          context: Slack
           requires:
             - run-update-feature
           post-steps:
@@ -1017,6 +1030,7 @@ workflows:
           new-marker : "new marker string"
           workflow-name: "feature-update-regression"
       - rerun-accessory-tests:
+          context: Slack
           requires:
             - run-update-jar-files
           post-steps:
@@ -1028,6 +1042,7 @@ workflows:
             - cleanup-rerun-testnet-if-present
           workflow-name: "feature-update-regression"
       - cleanup-singlejob-testnet:
+          context: Slack
           requires:
             - rerun-accessory-tests
           pre-steps:
@@ -1044,10 +1059,12 @@ workflows:
                   - master
     jobs:
       - fast-build-artifact:
+          context: Slack
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
       - regression-target-testnet:
+          context: Slack
           requires:
             - fast-build-artifact
           pre-steps:
@@ -1293,59 +1310,67 @@ workflows:
 
   continuous-integration:
     jobs:
-      - build-artifact:
-          context: SonarCloud
-          filters:
-            branches:
-              ignore:
-                - /.*-PERF/
-                - /.*-REGRESSION/
-          workflow-name: "Continuous integration"
-      - start-singlejob-testnet:
-          requires:
-            - build-artifact
-          workflow-name: "Continuous integration"
-          infra-branch: services-with-platform070
-      - run-file-scenarios:
-          requires:
-            - start-singlejob-testnet
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-consensus-and-crypto-scenarios:
-          requires:
-            - run-file-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - run: /repo/.circleci/scripts/echo-env.sh
-            - ensure-testnet-for-reruns
-          post-steps:
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - run-smart-contract-scenarios:
-          requires:
-            - run-consensus-and-crypto-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - ensure-testnet-for-reruns
-          post-steps:
-            - send-report-to-slack:
-                workflow-name: "Continuous integration"
-                status: Passed            
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "Continuous integration"
-      - cleanup-singlejob-testnet:
-          requires:
-            - run-smart-contract-scenarios
-          pre-steps:
-            - attach_workspace:
-                at: /
+      - svc-app-slack-msg:
+          context: Slack
+          text: Testing new API token from CircleCI context env
+#     - build-artifact:
+#         context: SonarCloud
+#         filters:
+#           branches:
+#             ignore:
+#               - /.*-PERF/
+#               - /.*-REGRESSION/
+#         workflow-name: "Continuous integration"
+#     - start-singlejob-testnet:
+#         context: Slack
+#         requires:
+#           - build-artifact
+#         workflow-name: "Continuous integration"
+#         infra-branch: services-with-platform070
+#     - run-file-scenarios:
+#         context: Slack
+#         requires:
+#           - start-singlejob-testnet
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - run-consensus-and-crypto-scenarios:
+#         context: Slack
+#         requires:
+#           - run-file-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - run: /repo/.circleci/scripts/echo-env.sh
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - run-smart-contract-scenarios:
+#         context: Slack
+#         requires:
+#           - run-consensus-and-crypto-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
+#           - ensure-testnet-for-reruns
+#         post-steps:
+#           - send-report-to-slack:
+#               workflow-name: "Continuous integration"
+#               status: Passed            
+#           - cleanup-rerun-testnet-if-present
+#         workflow-name: "Continuous integration"
+#     - cleanup-singlejob-testnet:
+#         context: Slack
+#         requires:
+#           - run-smart-contract-scenarios
+#         pre-steps:
+#           - attach_workspace:
+#               at: /
 jobs:
   start-singlejob-testnet:
     parameters:
