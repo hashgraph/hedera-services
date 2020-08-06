@@ -256,7 +256,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
 		try {
-			return payerSigIsActive(accessor, ctx.keyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return payerSigIsActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
@@ -269,11 +269,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			JKey wacl = ctx.hfs().getattr(id).getWacl();
 			return otherPartySigsAreActive(
 					accessor,
-					ctx.keyOrder(),
+					ctx.backedKeyOrder(),
 					IN_HANDLE_SUMMARY_FACTORY,
 					forTopLevelFile((JKeyList)wacl));
 		} else {
-			return otherPartySigsAreActive(accessor, ctx.keyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return otherPartySigsAreActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		}
 	}
 
@@ -327,7 +327,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
-		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.keyOrder(), DEFAULT_SIG_BYTES);
+		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), DEFAULT_SIG_BYTES);
 		if (!sigStatus.isError()) {
 			ctx.stats().signatureVerified(sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC);
 		}

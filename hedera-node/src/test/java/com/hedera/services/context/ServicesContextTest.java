@@ -324,6 +324,7 @@ public class ServicesContextTest {
 		assertThat(ctx.ledger(), instanceOf(HederaLedger.class));
 		assertThat(ctx.txnCtx(), instanceOf(AwareTransactionContext.class));
 		assertThat(ctx.keyOrder(), instanceOf(HederaSigningOrder.class));
+		assertThat(ctx.backedKeyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.validator(), instanceOf(ContextOptionValidator.class));
 		assertThat(ctx.hcsAnswers(), instanceOf(HcsAnswers.class));
 		assertThat(ctx.issEventInfo(), instanceOf(IssEventInfo.class));
@@ -350,7 +351,7 @@ public class ServicesContextTest {
 		assertThat(ctx.storagePersistence(), instanceOf(BlobStoragePersistence.class));
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
 		assertThat(ctx.networkGrpc(), instanceOf(NetworkController.class));
-		assertThat(ctx.number(), instanceOf(EntityNumbers.class));
+		assertThat(ctx.entityNums(), instanceOf(EntityNumbers.class));
 		assertThat(ctx.authPolicy(), instanceOf(TxnAwareAuthPolicy.class));
 		assertThat(ctx.feeSchedulesManager(), instanceOf(FeeSchedulesManager.class));
 		assertThat(ctx.submissionFlow(), instanceOf(TxnHandlerSubmissionFlow.class));

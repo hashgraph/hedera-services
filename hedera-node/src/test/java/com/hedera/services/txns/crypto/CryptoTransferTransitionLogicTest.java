@@ -29,6 +29,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -67,9 +68,22 @@ public class CryptoTransferTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
+		given(validator.hasOnlyCryptoAccounts(any())).willReturn(true);
 		withRubberstampingValidator();
 
 		subject = new CryptoTransferTransitionLogic(ledger, validator, txnCtx);
+	}
+
+	@Test
+	public void requiresOnlyCryptoAccounts() {
+		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+		given(validator.hasOnlyCryptoAccounts(any())).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// expect:
+		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 
 	@Test

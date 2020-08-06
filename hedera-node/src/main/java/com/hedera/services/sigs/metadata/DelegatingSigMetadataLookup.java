@@ -20,6 +20,8 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HederaFs;
@@ -59,6 +61,20 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final ContractSigMetaLookup contractSigMetaLookup;
 	private final TopicSigMetaLookup topicSigMetaLookup;
 	private final static Pause pause = SleepingPause.INSTANCE;
+
+	public static DelegatingSigMetadataLookup backedLookupsFor(
+			HederaFs hfs,
+			BackingAccounts<AccountID, MerkleAccount> backingAccounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+	) {
+		return new DelegatingSigMetadataLookup(
+				new HfsSigMetaLookup(hfs),
+				new BackedAccountLookup(backingAccounts),
+				new DefaultFCMapContractLookup(accounts),
+				new DefaultFCMapTopicLookup(topics)
+		);
+	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,

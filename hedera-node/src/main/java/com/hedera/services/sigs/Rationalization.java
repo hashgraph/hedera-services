@@ -97,9 +97,7 @@ public class Rationalization {
             if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
                 return candidateSigs;
             }
-        } catch (IndexOutOfBoundsException ignore) {
-            log.warn(ignore.getMessage());
-        }
+        } catch (IndexOutOfBoundsException ignore) { }
         syncVerifier.verifySync(realSigs);
         return realSigs;
     }
