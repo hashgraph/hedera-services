@@ -151,11 +151,11 @@ commands:
       github-user:
         description: A GitHub user to mention
         type: string
-        default: nobody-in-particular
+        default: ''
       channel:
         description: A channel ID to target.
         type: string
-        default: CKWHL8R9A
+        default: hedera-regression
       readable:
         description: Human-readable channel description.
         type: string
