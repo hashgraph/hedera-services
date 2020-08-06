@@ -6,7 +6,6 @@ csvAppend, 1
 csvFileName, MainNetStats
 doUpnp, 0
 enableEventStreaming, true
-eventsLogDir, /opt/hgcapp/eventsStreams
 eventsLogPeriod, 5
 lockLogTimeout, 4000
 maxEventQueueForCons,1000
