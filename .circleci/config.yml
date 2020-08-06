@@ -1310,6 +1310,7 @@ workflows:
 
   continuous-integration:
     jobs:
+      - checkout
       - test-slack:
           context: Slack
 #     - build-artifact:
@@ -1372,7 +1373,7 @@ workflows:
 #               at: /
 jobs:
   test-slack:
-    executor: ci-test-executor
+    executor: build-executor
     steps:
       - svc-app-slack-msg: 
           text: Testing new API token from CircleCI context env
