@@ -98,15 +98,10 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 				logErrorAndResponse(errorMsg, precheckResult, log, responseObserver);
 				return;
 			}
-
-			com.swirlds.common.Transaction transaction = new com.swirlds.common.Transaction(request.toByteArray());
-			boolean created = platform.createTransaction(transaction);
-			if (!created) {
+			if (!txHandler.submitTransaction(platform, request, transactionBody.getTransactionID())) {
 				TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
 				return;
 			}
-
-			txHandler.addReceiptEntry(transactionBody.getTransactionID());
 			transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
 		} catch (InvalidProtocolBufferException ex) {
 			transactionResponse(responseObserver,

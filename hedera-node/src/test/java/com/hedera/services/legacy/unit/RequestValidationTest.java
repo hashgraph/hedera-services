@@ -88,7 +88,8 @@ public class RequestValidationTest {
                 new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
                 null,
                 null,
-                new MockAccountNumbers());
+                new MockAccountNumbers(),
+                null);
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 

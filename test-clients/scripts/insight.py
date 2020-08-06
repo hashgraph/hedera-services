@@ -15,7 +15,7 @@
 #  it will list subdirectories under sdk/testing/results and ask
 #  use to choose one subdirectory to scan for results.
 #
-#  Then it scans platform csv files AND swirldslog
+#  Then it scans platform csv files AND log
 #
 ############################################################
 
@@ -578,6 +578,8 @@ default_stat_names = [
     "getTopicInfoRcv/sec",
     "getTopicInfoSub",
     "getTopicInfoSub/sec",
+    "avgHdlSubMsgSize",
+    "platformTxnNotCreated/sec",
     "avgAcctLookupRetryAttempts",
     "avgAcctRetryWaitMs",
     "getStakersByAccountIDRcv",
@@ -1245,7 +1247,7 @@ def scan_gc_logs(directory):
 
 
 #
-# scan swirlds log files given a directory
+# scan log files given a directory
 #
 def scan_swirlds_log(directory):
     # find a list of swirlds.log files
@@ -1465,7 +1467,7 @@ fig_per_page = fig_per_row * row_per_page
 
 scan_csv_and_logs()
 
-# stat_data_dict contains both csv stat names and swirlds log key errors
+# stat_data_dict contains both csv stat names and log key errors
 total_figures = len(stat_data_dict) - 1  # not including timestamp
 
 num_pages = math.ceil(total_figures / fig_per_page)

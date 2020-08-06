@@ -1189,7 +1189,8 @@ public class ServicesContext {
 					new BasicPrecheck(properties(), validator()),
 					queryFeeCheck(),
 					bucketThrottling(),
-					accountNums());
+					accountNums(),
+					stats());
 		}
 		return txns;
 	}

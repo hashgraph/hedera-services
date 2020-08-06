@@ -174,6 +174,7 @@ public class ServicesMainTest {
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
 		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 
@@ -269,9 +270,9 @@ public class ServicesMainTest {
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(stateMigrations).runAllFor(ctx);
+		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
-		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);

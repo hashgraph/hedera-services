@@ -242,8 +242,6 @@ else
           echo "Found curl ... using curl"
         fi
         if [ -z "$MVNW_USERNAME" ] || [ -z "$MVNW_PASSWORD" ]; then
-            jarUrl=${jarUrl%$'\r'}
-            echo "|$jarUrl|"
             curl -o "$wrapperJarPath" "$jarUrl" -f
         else
             curl --user $MVNW_USERNAME:$MVNW_PASSWORD -o "$wrapperJarPath" "$jarUrl" -f

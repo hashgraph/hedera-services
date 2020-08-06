@@ -22,6 +22,7 @@ package com.hedera.services.legacy.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
@@ -63,7 +64,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
@@ -124,6 +124,7 @@ public class TransactionHandler {
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
   private AccountNumbers accountNums;
+  private HederaNodeStats stats;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -171,7 +172,8 @@ public class TransactionHandler {
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null, accountNums);
+            null, null, null, null,
+            accountNums, null);
   }
 
   public TransactionHandler(
@@ -187,7 +189,8 @@ public class TransactionHandler {
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
           FunctionalityThrottling throttling,
-          AccountNumbers accountNums
+          AccountNumbers accountNums,
+          HederaNodeStats stats
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -202,6 +205,7 @@ public class TransactionHandler {
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
     this.accountNums = accountNums;
+    this.stats = stats;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -246,10 +250,6 @@ public class TransactionHandler {
   public boolean isAccountExist(AccountID acctId) {
     MerkleEntityId merkleEntityId = new MerkleEntityId(acctId.getShardNum(), acctId.getRealmNum(), acctId.getAccountNum());
     return accounts.get().get(merkleEntityId) != null;
-  }
-
-  public void addReceiptEntry(TransactionID txnId) {
-    recordCache.addPreConsensus(txnId);
   }
 
   /**
@@ -602,23 +602,21 @@ public class TransactionHandler {
 
   /**
    * Submits transaction to platform.
+   * Returns whether a platform transaction was created successfully.
+   * Update stat when a platform transaction was NOT created.
    *
    * @param request       tx to be submitted
    * @param txnId request tx id
-   * @throws PlatformTransactionCreationException thrown when transaction not created by platform
-   *                                              due to either large backlog or message size
-   *                                              exceeded transactionMaxBytes
+   *
    */
-  public void submitTransaction(Platform platform, Transaction request, TransactionID txnId)
-      throws PlatformTransactionCreationException, InvalidProtocolBufferException {
+  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
-    boolean status = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (status) {
+    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
+    if (created) {
       recordCache.addPreConsensus(txnId);
     } else {
-      throw new PlatformTransactionCreationException(
-          "platform tx not created: tx serialized size = " + transaction.length + ", txShortInfo = "
-              + com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShort(request));
+      stats.platformTxnNotCreated();
     }
+    return created;
   }
 }

@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toMap;
 
 /**
  * Provides a static method to determine if a Hedera key is <i>active</i> relative to
- * a set of Swirlds platform signatures corresponding to its simple keys.
+ * a set of platform signatures corresponding to its simple keys.
  *
  * @author Michael Tinker
  * @see JKey
@@ -118,11 +118,11 @@ public class HederaKeyActivation {
 	}
 
 	/**
-	 * Tests whether a Hedera key's top-level signature is activated by a given set of Swirlds
+	 * Tests whether a Hedera key's top-level signature is activated by a given set of
 	 * platform signatures, using the platform sigs to test activation of the simple keys in the
 	 * Hedera key.
 	 *
-	 * <p><b>IMPORTANT:</b> The Swirlds sigs must be supplied in the order that a DFS traversal
+	 * <p><b>IMPORTANT:</b> The sigs must be supplied in the order that a DFS traversal
 	 * of the Hedera key tree structure encounters the corresponding simple keys.
 	 *
 	 * @param key the top-level Hedera key to test for activation.
@@ -158,7 +158,7 @@ public class HederaKeyActivation {
 	}
 
 	/**
-	 * Factory for a source of Swirlds platform signatures backed by a list.
+	 * Factory for a source of platform signatures backed by a list.
 	 *
 	 * @param sigs the backing list of platform sigs.
 	 * @return a supplier that produces the backing list sigs by public key.

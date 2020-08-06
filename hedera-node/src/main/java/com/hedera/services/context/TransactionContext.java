@@ -68,7 +68,7 @@ public interface TransactionContext {
 	AccountID submittingNodeAccount();
 
 	/**
-	 * The Swirlds member id of the node that submitted the current txn.
+	 * The member id of the node that submitted the current txn.
 	 *
 	 * @return the member id
 	 */

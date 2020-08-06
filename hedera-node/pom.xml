@@ -6,7 +6,7 @@
 
   <groupId>com.hedera.services</groupId>
   <artifactId>hedera-node</artifactId>
-  <description>Hedera Services node built on the Swirlds platform</description>
+  <description>Hedera Services node built on the Platform</description>
   <name>Hedera Services Node</name>
 
   <parent>

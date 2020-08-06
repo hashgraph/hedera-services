@@ -126,6 +126,7 @@ public class HederaNodeStats {
 	private StatsRunningAverage avgAcctRetryWaitMs;
 	private StatsRunningAverage avgHdlSubMsgSize;
 	private StatsSpeedometer acctLookupRetriesPerSecond;
+	private StatsSpeedometer platformTxnNotCreatedPerSecond;
 
 	/** size of the queue from which we take records and write to RecordStream file */
 	private int recordStreamQueueSize = 0;
@@ -291,6 +292,21 @@ public class HederaNodeStats {
 				null,//
 				null,//
 				() -> getRecordStreamQueueSize())
+		);
+
+		platformTxnNotCreatedPerSecond = new StatsSpeedometer(DEFAULT_HALF_LIFE);
+		platform.addAppStatEntry(new StatEntry(//
+				"app",//
+				"platformTxnNotCreated/sec",//
+				"number of platform transactions not created per second",
+				"%,13.6f",//
+				platformTxnNotCreatedPerSecond,//
+				(h) -> {
+					platformTxnNotCreatedPerSecond.reset(h);
+					return platformTxnNotCreatedPerSecond;
+				},//
+				platformTxnNotCreatedPerSecond::reset,//
+				() -> getPlatformTxnNotCreatedPerSecond())
 		);
 
 		platform.appStatInit();
@@ -465,6 +481,14 @@ public class HederaNodeStats {
 
 	public double getAvgHdlSubMsgSize() {
 		return avgHdlSubMsgSize.getWeightedMean();
+	}
+
+	public void platformTxnNotCreated() {
+		platformTxnNotCreatedPerSecond.update(1);
+	}
+
+	public double getPlatformTxnNotCreatedPerSecond() {
+		return platformTxnNotCreatedPerSecond.getCyclesPerSecond();
 	}
 
 	/**

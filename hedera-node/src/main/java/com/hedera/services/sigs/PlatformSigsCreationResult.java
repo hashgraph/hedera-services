@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Encapsulates a (mutable) result of an attempt to create Swirlds {@link Signature}
+ * Encapsulates a (mutable) result of an attempt to create {@link Signature}
  * instances from a list of public keys and a source of the cryptographic signatures
  * associated to those keys.
  *

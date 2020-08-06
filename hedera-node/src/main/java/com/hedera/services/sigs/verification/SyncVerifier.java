@@ -33,7 +33,7 @@ import java.util.List;
  */
 public interface SyncVerifier {
 	/**
-	 * Synchronously verify a list of Swirlds {@link Signature} objects <b>in-place</b>.
+	 * Synchronously verify a list of {@link Signature} objects <b>in-place</b>.
 	 *
 	 * @param unknownSigs the sigs to verify.
 	 */
