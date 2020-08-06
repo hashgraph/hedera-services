@@ -1310,9 +1310,7 @@ workflows:
 
   continuous-integration:
     jobs:
-      - svc-app-slack-msg:
-          context: Slack
-          text: Testing new API token from CircleCI context env
+      - test-slack
 #     - build-artifact:
 #         context: SonarCloud
 #         filters:
@@ -1372,6 +1370,12 @@ workflows:
 #           - attach_workspace:
 #               at: /
 jobs:
+  test-slack:
+    executor: ci-test-executor
+    steps:
+      - svc-app-slack-msg: 
+          context: Slack
+          text: Testing new API token from CircleCI context env
   start-singlejob-testnet:
     parameters:
       infra-branch:
