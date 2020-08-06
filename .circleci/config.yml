@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "43 1 * * *"
+          cron: "57 1 * * *"
           filters:
             branches:
               only:
@@ -1540,7 +1540,7 @@ jobs:
           command: |
             apt-get update;
             apt-get install net-tools;
-            apt-get install python3-matplotlib
+            sudo apt-get install python3-matplotlib
 
       - run:
           name: Run regression tests
