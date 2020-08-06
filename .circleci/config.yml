@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "59 3 * * *"
+          cron: "41 4 * * *"
           filters:
             branches:
               only:
@@ -1543,7 +1543,8 @@ jobs:
             sudo apt install -y python3.7;
             sudo rm /usr/bin/python3;
             sudo ln -s python3.7 /usr/bin/python3;
-            DEBIAN_FRONTEND=noninteractive apt-get -y install python3-matplotlib
+            sudo apt install python3-pip;
+            pip3 -q install matplotlib;
 
       - run:
           name: Run regression tests
