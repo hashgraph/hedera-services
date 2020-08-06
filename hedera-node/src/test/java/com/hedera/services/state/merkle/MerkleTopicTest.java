@@ -9,6 +9,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -22,11 +23,8 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class MerkleTopicTest {
@@ -122,7 +120,7 @@ class MerkleTopicTest {
 						"deleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[1]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[1]) + ", " +
-						"runningHash=71bf381c886baf6ac5628662b3abde8d5a88091c6df1ddd20e60b080e8d3a6fb6cc32f3f3ebc609868054bdd2f71c7ba, " +
+						"runningHash=3c8e1604b2cd20068f02976fa10217491561cc864b7bff28451e1f1a0a8c58c02df56f60562f129e845e0ba16e3420eb, " +
 						"sequenceNumber=1, " +
 						"autoRenewSecs=2234567, " +
 						"autoRenewAccount=2.4.6}",
@@ -135,7 +133,7 @@ class MerkleTopicTest {
 						"deleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[2]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[2]) + ", " +
-						"runningHash=763845692fe8df8ccac8d93658333073ee935ad351f28a2e5fc96cdbe682b0b62271eff9990b6a2aa988497d53b4d094, " +
+						"runningHash=a19f77d351424204e3eeec1bb42bcdc728e521483bb99103dc7fa7c527db0c14aeefe4b0a8a7d0924b2f2c4a1d237bc5, " +
 						"sequenceNumber=2, " +
 						"autoRenewSecs=3234567, " +
 						"autoRenewAccount=3.6.9}",
@@ -145,6 +143,7 @@ class MerkleTopicTest {
 	private MerkleTopic topicFrom(int s) throws IOException, NoSuchAlgorithmException {
 		long v = 1_234_567L + s * 1_000_000L;
 		long t = s + 1;
+		AccountID payer = AccountID.newBuilder().setAccountNum(123).build();
 		TopicID id = TopicID.newBuilder().setTopicNum(s).build();
 		var topic = new MerkleTopic(
 				memos[s],
@@ -155,6 +154,7 @@ class MerkleTopicTest {
 				new RichInstant(v, s));
 		for (int i = 0; i < s; i++) {
 			topic.updateRunningHashAndSequenceNumber(
+					payer,
 					"Hello world!".getBytes(),
 					id,
 					Instant.ofEpochSecond(v, i));

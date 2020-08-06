@@ -21,12 +21,14 @@ package com.hedera.services.context.domain.topic;
  */
 
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.ByteArrayConverter;
 import com.hedera.test.utils.InstantConverter;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hedera.test.utils.TopicIDConverter;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -281,11 +283,12 @@ public class MerkleTopicTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"0, message, 1.2.3, 0000, 1577401723000000000, ccfff7a72f4203fc215e9d3c59492ebcbb9487535c68e92a41d43fcc4212bd61c99a775cbf8df8b7dc06ad8ccd536f6e",
-			"1, '', 0.0.0, , 1577401723987654321, 337b5ab555695927181c9a82297c079be415448925481690ebca78f65c3b23a156f19647e67a423399e0a7b5c47f5935",
-			"0, , , , , 6c5943b38db24baa690c553be60c9b06ab2a03141df3744dc2c99d1c07d4196dda8b6861bd7d2ea6aa090a80abbfa61a"
+			"0, message, 4.5.6, 1.2.3, 0000, 1577401723000000000, 46d4ef0126b7be6c1c11ea854d5732a50aa0d7fb17b325c6977cec284c76814f969234d67c0b8cc414b9c84ff3e2bcb3",
+			"1, '', 7.8.9, 0.0.0, , 1577401723987654321, 7547461ccf9bc8b598006f84c86bedee16967ba661da6f0c59c33476f8010932969b85aae59aff067e01e0fac6d45bda",
+			"0, , 10.11.12, , , , 79200c525a751761dc25356d3dd01a34cf2a517e9c78e4b359ffd792f98f33f1ac1440dcd5e282abe73f6b265356218b"
 	})
 	public void updateRunningHash(long initialSequenceNumber, String message,
+								  @ConvertWith(AccountIDConverter.class) AccountID payer,
 								  @ConvertWith(TopicIDConverter.class) TopicID topicId,
 								  @ConvertWith(ByteArrayConverter.class) byte[] initialRunningHash,
 								  @ConvertWith(InstantConverter.class) Instant consensusTimestampSeconds,
@@ -294,7 +297,7 @@ public class MerkleTopicTest {
 		var topic = new MerkleTopic();
 		topic.setSequenceNumber(initialSequenceNumber);
 		topic.setRunningHash(initialRunningHash);
-		topic.updateRunningHashAndSequenceNumber(StringUtils.getBytesUtf8(message), topicId, consensusTimestampSeconds);
+		topic.updateRunningHashAndSequenceNumber(payer, StringUtils.getBytesUtf8(message), topicId, consensusTimestampSeconds);
 
 		// expect:
 		assertEquals(initialSequenceNumber + 1, topic.getSequenceNumber());

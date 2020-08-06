@@ -94,6 +94,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
 		try {
 			mutableTopic.updateRunningHashAndSequenceNumber(
+					transactionBody.getTransactionID().getAccountID(),
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());
