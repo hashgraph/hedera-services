@@ -5,6 +5,8 @@ import slack
 import argparse
 import ntpath
 
+NOBODY='nobody-in-particular'
+
 GITHUB_TO_SLACK_USER_ID = {
     'tinker-michaelj': 'UKW68U6TD',
     'qnswirlds': 'UEVPV4HDY',
@@ -32,7 +34,7 @@ def get_slack_channel_id(args):
         return CHANNEL_NAME_TO_CHANNEL_ID.get(args.channel)
 
 def get_github_user(args):
-    if args.github_user:
+    if args.github_user and not args.github_user == NOBODY:
         return args.github_user
     if get_env_var('CIRCLECI') == 'true':
         print('Get GitHub user from CircleCI env var')
