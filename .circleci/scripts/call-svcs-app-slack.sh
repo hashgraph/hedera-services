@@ -11,5 +11,4 @@ if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
 fi
 echo "Params for svcs-app-slack.py: ${PARAMS[*]}"
 
-SLACK_API_TOKEN=xoxb-344480056389-890228995125-MfvKfFwJtL0ba2Ms8HDf8656 \
-  python3 ${REPO}/.circleci/scripts/svcs-app-slack.py ${PARAMS[*]}
+python3 ${REPO}/.circleci/scripts/svcs-app-slack.py ${PARAMS[*]}
