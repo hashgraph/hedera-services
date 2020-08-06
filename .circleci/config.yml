@@ -1538,8 +1538,6 @@ jobs:
       - run:
           name: Install necessary net-tools
           command: |
-#            apt-get update;
-#            apt-get install net-tools;
             sudo apt update -y;
             sudo apt install net-tools;
             sudo apt install -y python3.7;
