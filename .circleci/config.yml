@@ -151,7 +151,7 @@ commands:
       github-user:
         description: A GitHub user to mention
         type: string
-        default: ''
+        default: 'nobody-in-particular'
       channel:
         description: A channel ID to target.
         type: string
@@ -1372,7 +1372,7 @@ workflows:
 #               at: /
 jobs:
   test-slack:
-    executor: build-executor
+    executor: ci-test-executor
     steps:
       - checkout
       - svc-app-slack-msg: 
