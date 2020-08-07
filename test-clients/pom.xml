@@ -111,6 +111,25 @@
             </configuration>
           </execution>
           <execution>
+            <id>suite-runner-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>SuiteRunner</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>com.hedera.services.bdd.suites.SuiteRunner</mainClass>
+                </manifest>
+              </archive>
+              <descriptors>
+                <descriptor>src/main/resource/assemblies/modified-jar-with-dependencies.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
             <phase>package</phase>
             <goals>
               <goal>single</goal>

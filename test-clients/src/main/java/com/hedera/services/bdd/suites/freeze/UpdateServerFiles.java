@@ -44,6 +44,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 		if (args.length > 1) {
 			fileIDString = args[1];
 		}
+
 		new UpdateServerFiles().runSuiteSync();
 	}
 
@@ -70,6 +71,10 @@ public class UpdateServerFiles extends HapiApiSuite {
 	private HapiApiSpec uploadGivenDirectory() {
 
 		log.info("Creating zip file from " + uploadPath);
+		//create directory if uploadPath doesn't exist
+		if (!new File(uploadPath).exists()) {
+			new File(uploadPath).mkdirs();
+		}
 		final String temp_dir = "temp/";
 		final String sdk_dir = temp_dir + "sdk/";
 		byte[] data = null;

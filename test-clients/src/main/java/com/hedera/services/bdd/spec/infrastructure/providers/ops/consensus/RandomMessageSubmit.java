@@ -10,14 +10,18 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.concurrent.SynchronousQueue;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
@@ -26,7 +30,7 @@ import static java.util.stream.Collectors.toSet;
 public class RandomMessageSubmit implements OpProvider {
         private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
 
-        public static final int DEFAULT_NUM_STABLE_TOPICS = 500;
+        public static final int DEFAULT_NUM_STABLE_TOPICS = 5;
         private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
                 TOPIC_EXPIRED,
                 INVALID_TOPIC_ID,
@@ -37,6 +41,10 @@ public class RandomMessageSubmit implements OpProvider {
         private final SplittableRandom r = new SplittableRandom();
         private final EntityNameProvider<TopicID> topics;
         private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
+        private static byte[] messageBytes = new byte[1024];
+        static {
+                Arrays.fill(messageBytes, (byte) 0b1);
+        }
 
         public RandomMessageSubmit(EntityNameProvider<TopicID> topics) {
                 this.topics = topics;
@@ -71,14 +79,15 @@ public class RandomMessageSubmit implements OpProvider {
                 }
 
                 HapiMessageSubmit op = submitMessageTo(target.get())
-                        .message("Hello Hedera")
-                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+                        .message(new String(messageBytes))
+//                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
+                        .hasKnownStatusFrom(permissibleOutcomes)
+                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+
                 if (r.nextBoolean()) {
                         op = op.usePresetTimestamp();
                 }
 
                 return Optional.of(op);
         }
-
 }

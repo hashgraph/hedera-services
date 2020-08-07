@@ -9,9 +9,9 @@ package com.hedera.services.legacy.stream;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,7 +85,7 @@ public class RecordStream implements Runnable {
 	HederaNodeStats stats;
 	boolean inFreeze;
 	String recordStreamsDirectory;
-  
+
 	public RecordStream(
 			Platform platform,
 			HederaNodeStats stats,
@@ -164,9 +164,8 @@ public class RecordStream implements Runnable {
 				file = new File(fileName);
 
 				if (file.exists() && !file.isDirectory()) {
-					if (log.isDebugEnabled()) {
-						log.debug("Record file {} already exists ", fileName);
-					}
+					//should not exist already
+					log.error("ERROR: Record file {} already exists ", fileName);
 					return;
 				} else {
 					stream = new FileOutputStream(file, false);
@@ -285,7 +284,7 @@ public class RecordStream implements Runnable {
 			log.info("Hash of current record stream file after closing {}", Hex.encodeHexString(prevFileHash));
 
 			byte[] signature = platform.sign(prevFileHash);
-      
+
 			if (log.isDebugEnabled()) {
 				log.debug("Signature: " + Hex.encodeHexString(signature));
 			}
@@ -379,7 +378,7 @@ public class RecordStream implements Runnable {
 				//close existing file to protect data
 				close();
 			} catch (Exception e) {
-				log.error("Unexpected exception {}", ExceptionUtils.getStackTrace(e));
+				log.error("Unexpected exception {} {}", this.fileName, ExceptionUtils.getStackTrace(e));
 				//close existing file to protect data
 				close();
 			}
