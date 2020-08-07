@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -42,7 +42,6 @@ import org.apache.commons.codec.binary.Hex;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -68,7 +67,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSI
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
-import static com.hedera.services.legacy.initialization.NodeAccountsCreation.readBase64EncodedGenesisKey;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -127,14 +125,9 @@ public class MiscUtils {
 				.toString();
 	}
 
-	public static JKey lookupInCustomStore(String storeLoc, String keyName) {
+	public static JKey lookupInCustomStore(LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
 		try {
-			Map<String, List<AccountKeyListObj>> store = readBase64EncodedGenesisKey(storeLoc);
-			List<AccountKeyListObj> objs = store.get(keyName);
-			var pubKey = objs.get(0).getKeyPairList().get(0).getPublicKeyAbyteStr();
-			return new JEd25519Key(commonsHexToBytes(pubKey));
-		} catch (InvalidKeySpecException e) {
-			throw new IllegalArgumentException(e);
+			return new JEd25519Key(commonsHexToBytes(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (DecoderException e) {
 			throw new IllegalArgumentException(e);
 		}
@@ -264,7 +257,7 @@ public class MiscUtils {
 		}
 	}
 
-	public static HederaFunctionality functionalityOfTxn(TransactionBody txn) throws UnknownHederaFunctionality {
+	public static HederaFunctionality functionOf(TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;
 		} else if (txn.hasSystemUndelete()) {

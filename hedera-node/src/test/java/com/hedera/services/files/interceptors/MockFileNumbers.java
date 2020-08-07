@@ -36,7 +36,7 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	public MockFileNumbers() {
-		super(null);
+		super(null, null);
 	}
 
 	@Override

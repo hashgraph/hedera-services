@@ -21,6 +21,7 @@ package com.hedera.services.sigs;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.validation.QueryFeeCheck;
@@ -36,6 +37,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestExchangeRates;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
@@ -91,15 +93,16 @@ public class TxnHandlerVerifySigRegressionTest {
 				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes())).build();
 		subject = new TransactionHandler(
 				null,
-				accounts,
+				() -> accounts,
 				DEFAULT_NODE,
 				null,
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(null, accounts),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accounts));
+				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts),
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(() -> accounts),
+				new MockAccountNumbers());
 
 		// expect:
 		assertFalse(subject.verifySignature(invalidSignedTxn));
@@ -319,11 +322,11 @@ public class TxnHandlerVerifySigRegressionTest {
 		stats = mock(HederaNodeStats.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, accounts, null));
+				defaultLookupsFor(null, () -> accounts, () -> null));
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
-						defaultLookupsPlusAccountRetriesFor( null, accounts, null, MN, MN, stats));
+						defaultLookupsPlusAccountRetriesFor( null, () -> accounts, () -> null, MN, MN, stats));
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
@@ -332,8 +335,9 @@ public class TxnHandlerVerifySigRegressionTest {
 		subject = new TransactionHandler(
 				null,
 				precheckVerifier,
-				accounts,
-				DEFAULT_NODE);
+				() -> accounts,
+				DEFAULT_NODE,
+				new MockAccountNumbers());
 	}
 }
 

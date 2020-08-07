@@ -71,9 +71,6 @@ public class FileDeleteSuite extends HapiApiSuite {
 		);
 	}
 
-	/* XXX
-	https://github.com/swirlds/services-hedera/issues/1714
-	*/
 	private HapiApiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
 		KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
 		SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));

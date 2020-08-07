@@ -46,11 +46,11 @@ import static com.hedera.services.sigs.utils.StatusUtils.successFor;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 
 /**
- * Provides two operations that act in-place on the {@link Signature} list of a Swirlds
+ * Provides two operations that act in-place on the {@link Signature} list of a
  * {@link com.swirlds.common.Transaction} whose contents are known to be a valid
  * Hedera gRPC {@link Transaction}.
  *
- * <p>These operations allow Hedera Services use the Swirlds Platform to efficiently
+ * <p>These operations allow Hedera Services use the Platform to efficiently
  * verify <i>many</i> of the cryptographic signatures in its gRPC transactions. (There
  * are still cases where Hedera Services does a single-threaded verification itself.)
  *
@@ -59,7 +59,7 @@ import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
  * <ol>
  *     <li> First, {@code expandIn} checks which Hedera keys must have active signatures
  *     for the wrapped gRPC txn to be valid; and creates the cryptographic signatures
- *     at the bases of the signing hierarchies for these keys. It then asks the Swirlds
+ *     at the bases of the signing hierarchies for these keys. It then asks the
  *     Platform to efficiently verify these cryptographic signatures, by setting them
  *     in the sigs list of the platform txn.
  *     </li> Next, {@code rationalizeIn} checks if the relevant Hedera keys have changed
@@ -167,15 +167,25 @@ public class HederaToPlatformSigOps {
 		}
 
 		public SignatureStatus execute() {
-			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor.getSignedTxn4Log());
+			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 			SignatureStatus payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if ( !SUCCESS.name().equals( payerStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding Hedera payer sigs for txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+			if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding Hedera payer sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							payerStatus);
+				}
 				return payerStatus;
 			}
 			SignatureStatus otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if ( !SUCCESS.name().equals( otherStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding other Hedera sigs for txn {}: {}", txnAccessor.getTxnId(), otherStatus);
+			if (!SUCCESS.name().equals( otherStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding other Hedera sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							otherStatus);
+				}
 			}
 			return otherStatus;
 		}

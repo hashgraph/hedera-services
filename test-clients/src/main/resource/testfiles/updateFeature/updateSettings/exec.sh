@@ -81,6 +81,7 @@ if [[ "$unamestr" == 'Linux' ]]; then
 
     else
         shell_echo $LINENO $0 "Running on Linux"
+        sleep 15 # wait platform save database properly
         kill $processId
 
         shell_echo $LINENO $0 "Wait for HGCApp to quit"

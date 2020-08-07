@@ -23,12 +23,6 @@ git clone git@github.com:hashgraph/hedera-services.git
 cd hedera-services
 ```
 
-Ensure the Docker Compose [.env file](../.env) has the following contents:
-```
-TAG=0.6.0
-REGISTRY_PREFIX=gcr.io/hedera-registry/
-```
-
 You can now [start the network](#starting-the-compose-network).
 
 ### Building locally
@@ -51,9 +45,9 @@ TAG=oa-release-r5-rc6-13-gf18d2ff77-dirty
 REGISTRY_PREFIX=
 ```
 
-Third, build the image:
+Third, build the image with an empty registry prefix and the `TAG` from your `.env` file:
 ```
-docker-compose build
+docker build -t services-node:oa-release-r5-rc6-13-gf18d2ff77-dirty .
 ```
 This is a multi-stage build that could take **several minutes**, 
 depending on your environment. If you wish to use the `git describe` 
@@ -76,11 +70,12 @@ node_0      | 2020-04-29 15:05:28.815 INFO  133  ServicesMain - Now current plat
 node_1      | 2020-04-29 15:05:28.854 INFO  133  ServicesMain - Now current platform status = ACTIVE in HederaNode#1.
 ```
 
-Notice that the Hedera Services and Swirlds Platform logs for each node are externalized 
+Notice that the Hedera Services and  Platform logs for each node are externalized 
 under paths of the form _compose-network/node0/output/_. 
 
 You can now run operations against your local network using any HAPI client. For example:
 ```
+./mvnw install -DskipTests
 cd test-clients
 ../mvnw exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.compose.LocalNetworkCheck -Dexec.cleanupDaemonThreads=false
 ```
@@ -94,13 +89,15 @@ _compose-network/node0/saved/com.hedera.services.ServicesMain/0/hedera/_.
 To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
 
 Given a clean shutdown of the containers, when you restart with `docker-compose start`, 
-the network will load from its last saved state. 
+the network will load from its last saved state.  In general, for this to work correctly, 
+you should precede shutting down the network by submitting a `Freeze` transaction; e.g. via the 
+[`FreezeDockerNetwork`](../test-clients/src/main/java/com/hedera/services/bdd/suites/freeze/FreezeDockerNetwork.java)
+client.
 
-If an you have a problem restarting the network after stopping, you can simply re-initialize
-it via:
+If you have a problem restarting the network after stopping, you can re-initialize it via:
 ```
 docker-compose down
-rm -rf compose-network
+rm -rf compose-network/
 ```
 
 ## Understanding the Docker image
@@ -109,7 +106,7 @@ rm -rf compose-network
 
 In general, the `services-node` image will be run with three bind mounts---one to provide
 the configuration and bootstrap assets; one to externalize the saved state data; and one to
-externalize the Hedera Services and Swirlds Platform logs. For example:
+externalize the Hedera Services and Platform logs. For example:
 
 ```
   docker run -d --name node0 \

@@ -23,7 +23,6 @@ package com.hedera.services;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -37,12 +36,10 @@ import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
@@ -57,9 +54,10 @@ import static com.swirlds.common.PlatformStatus.MAINTENANCE;
  * @author Michael Tinker
  */
 public class ServicesMain implements SwirldMain {
-	public static Logger log = LogManager.getLogger(ServicesMain.class);
+	private static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
 
-	public static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
+	static final long SUGGESTED_POST_CREATION_PAUSE_MS = 0L;
+	public static Logger log = LogManager.getLogger(ServicesMain.class);
 
 	SystemExits systemExits = new JvmSystemExits();
 	Supplier<Charset> defaultCharset = Charset::defaultCharset;
@@ -146,8 +144,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		validateLedgerState();
-		log.info("Ledger state ok.");
 		loadPropertiesAndPermissions();
 		log.info("Initialized properties and permissions.");
 		startRecordStreamThread();
@@ -156,6 +152,8 @@ public class ServicesMain implements SwirldMain {
 		log.info("Netty started.");
 		createSystemAccountsIfNeeded();
 		log.info("System accounts rationalized.");
+		validateLedgerState();
+		log.info("Ledger state ok.");
 		createSystemFilesIfNeeded();
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
@@ -173,20 +171,12 @@ public class ServicesMain implements SwirldMain {
 		ctx.recordStreamThread().start();
 	}
 
-	private void throwIseOrLogError(IllegalStateException ise) {
-		if (ctx.properties().getBooleanProperty("hedera.exitOnNodeStartupFailure")) {
-			throw ise;
-		} else {
-			log.error("Not exiting despite severe error!", ise);
-		}
-	}
-
 	private void exportAccountsIfDesired() {
 		try {
 			String path = ctx.properties().getStringProperty("hedera.accountsExportPath");
 			ctx.accountsExporter().toFile(ctx.accounts(), path);
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not export accounts!", e));
+			throw new IllegalStateException("Could not export accounts!", e);
 		}
 	}
 
@@ -197,7 +187,7 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().loadFeeSchedules();
 			ctx.systemFilesManager().loadExchangeRates();
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not create system files!", e));
+			throw new IllegalStateException("Could not create system files!", e);
 		}
 	}
 
@@ -206,18 +196,16 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().loadApplicationProperties();
 			ctx.systemFilesManager().loadApiPermissions();
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not create Config Properties system files!", e));
+			throw new IllegalStateException("Could not create Config Properties system files!", e);
 		}
 	}
 
 	private void createSystemAccountsIfNeeded() {
-		if (ctx.properties().getBooleanProperty("hedera.createSystemAccountsOnStartup")) {
-			try {
-				ctx.systemAccountsCreator().createSystemAccounts(ctx.accounts(), ctx.addressBook());
-				ctx.pause().forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
-			} catch (Exception e) {
-				throwIseOrLogError(new IllegalStateException("Could not create system accounts!", e));
-			}
+		try {
+			ctx.systemAccountsCreator().ensureSystemAccounts(ctx.backingAccounts(), ctx.addressBook());
+			ctx.pause().forMs(SUGGESTED_POST_CREATION_PAUSE_MS);
+		} catch (Exception e) {
+			throw new IllegalStateException("Could not create system accounts!", e);
 		}
 	}
 
@@ -280,17 +268,15 @@ public class ServicesMain implements SwirldMain {
 		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
 		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
 			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
-			systemExits.fail(1);
+			throw new IllegalStateException("Invalid total tinyBar float!");
 		}
 		if (ctx.nodeAccount() == null) {
-			throwIseOrLogError(new IllegalStateException("Unknown ledger account!"));
+			throw new IllegalStateException("Unknown ledger account!");
 		}
 	}
 
 	private void reviewRecordExpirations() {
-		long consensusTimeOfLastHandledTxn =
-				Optional.ofNullable(ctx.consensusTimeOfLastHandledTxn()).map(Instant::getEpochSecond).orElse(0L);
-		ctx.recordsHistorian().reviewExistingRecords(consensusTimeOfLastHandledTxn);
+		ctx.recordsHistorian().reviewExistingRecords();
 	}
 
 	void logInfoWithConsoleEcho(String s) {

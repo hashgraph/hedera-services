@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,6 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -98,9 +100,13 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
-	public ServicesState(NodeId nodeId, List<MerkleNode> children) {
+	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
 		this(children);
+		this.ctx = ctx;
 		this.nodeId = nodeId;
+		if (ctx != null) {
+			ctx.update(this);
+		}
 	}
 
 	/* --- MerkleInternal --- */
@@ -148,7 +154,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				nodeId,
 				platform,
 				this,
-				new StandardizedPropertySources(PropertiesLoader::getFileExistenceCheck));
+				new StandardizedPropertySources(
+						new BootstrapProperties(),
+						loc -> new File(loc).exists()));
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
@@ -187,8 +195,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	/* --- FastCopyable --- */
 	@Override
-	public synchronized FastCopyable copy() {
-		return new ServicesState(nodeId, List.of(
+	public synchronized ServicesState copy() {
+		return new ServicesState(ctx, nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
 				topics().copy(),
@@ -211,7 +219,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	@Override
 	@Deprecated
 	public void copyFrom(SerializableDataInputStream in) throws IOException {
-		log.info("Restoring context of Services node {} from legacy (Swirlds Platform v0.6.x) state...", nodeId);
+		log.info("Restoring context of Services node {} from legacy (Platform v0.6.x) state...", nodeId);
 		in.readLong();
 		networkCtx().seqNo().deserialize(in);
 		legacyTmpBookSupplier.get().copyFrom(in);
@@ -236,23 +244,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		accounts().copyFromExtra(in);
 		storage().copyFromExtra(in);
 		topics().copyFromExtra(in);
-	}
-
-	@Override
-	@Deprecated
-	public void copyTo(SerializableDataOutputStream outputStream) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyToExtra(SerializableDataOutputStream outputStream) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void copyFrom(SwirldState _state) {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --------------- */

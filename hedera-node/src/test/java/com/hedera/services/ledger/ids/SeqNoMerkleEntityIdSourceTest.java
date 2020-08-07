@@ -40,7 +40,7 @@ class SeqNoMerkleEntityIdSourceTest {
 	@BeforeEach
 	private void setup() {
 		seqNo = mock(SequenceNumber.class);
-		subject = new SeqNoEntityIdSource(seqNo);
+		subject = new SeqNoEntityIdSource(() -> seqNo);
 	}
 
 	@Test

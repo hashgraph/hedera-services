@@ -36,7 +36,7 @@ class NoopRecordsHistorianTest {
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewRecords);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::purgeExpiredRecords);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setLedger(null));
-		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords(0L));
+		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords());
 		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());
 	}
 }

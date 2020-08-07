@@ -89,7 +89,7 @@ class GetTxnRecordAnswerTest {
 	private void setup() {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 
@@ -150,6 +150,22 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
+	public void recognizesUnavailableRecordFromMiss() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+				.willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
+	}
+
+	@Test
 	public void respectsMetaValidity() throws Throwable {
 		// given:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
@@ -177,28 +193,11 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckOkForCachedRecord() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
-
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(true);
-
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
-
-		// then:
-		assertEquals(OK, validity);
-		verify(answerFunctions, never()).txnRecord(recordCache, view, query);
-	}
-
-	@Test
 	public void syntaxCheckPrioritizesAccountStatus() throws Throwable {
 		// setup:
 		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(false);
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
-		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.empty());
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -211,21 +210,6 @@ class GetTxnRecordAnswerTest {
 	public void syntaxCheckShortCircuitsOnDefaultAccountID() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(Query.getDefaultInstance(), view));
-	}
-
-	@Test
-	public void syntaxCheckNotFoundForUnfindableRecord() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
-
-		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.empty());
-		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
-
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
-
-		// then:
-		assertEquals(RECORD_NOT_FOUND, validity);
 	}
 
 	@Test

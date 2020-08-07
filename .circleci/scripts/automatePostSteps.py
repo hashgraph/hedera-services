@@ -172,7 +172,7 @@ def validateLogs():
 	os.chdir(START_DIR)
 
 	for n in range(0, NO_OF_NODES):
-		loaded_log = "SwirldsPlatform - Platform {} has loaded a saved state for round {}".format(n, SIGNEDSTATE)
+		loaded_log = "Platform {} has loaded a saved state for round {}".format(n, SIGNEDSTATE)
 		with open( "output/{}/swirlds.log".format(n)) as swirldsLog_f:
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))

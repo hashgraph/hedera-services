@@ -21,6 +21,7 @@ package com.hedera.services.files.interceptors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.files.FileUpdateInterceptor;
@@ -51,11 +52,12 @@ public class FeeSchedulesManager implements FileUpdateInterceptor {
 			new AbstractMap.SimpleImmutableEntry<>(FEE_SCHEDULE_FILE_PART_UPLOADED, true);
 
 	public FeeSchedulesManager(
-			FeeCalculator fees,
-			PropertySource properties
+			FileNumbers fileNums,
+			FeeCalculator fees
 	) {
 		this.fees = fees;
-		fileNum = properties.getLongProperty("files.feeSchedules.num");
+
+		fileNum = fileNums.feeSchedules();
 	}
 
 	@Override

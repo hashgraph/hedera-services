@@ -102,10 +102,10 @@ public class MerkleAccountTest {
 		MerkleAccount.serdes = serdes;
 
 		records = mock(FCQueue.class);
-		given(records.copy(anyBoolean())).willReturn(records);
+		given(records.copy()).willReturn(records);
 		given(records.isImmutable()).willReturn(false);
 		payerRecords = mock(FCQueue.class);
-		given(payerRecords.copy(anyBoolean())).willReturn(payerRecords);
+		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
 
 		state = new MerkleAccountState(
@@ -132,14 +132,14 @@ public class MerkleAccountTest {
 	@Test
 	public void fastCopyUsesImmutableFcqs() {
 		// when:
-		var copy = subject.copy(false);
+		var copy = subject.copy();
 
 		// then:
 		verify(records).isImmutable();
-		verify(records).copy(false);
+		verify(records).copy();
 		// and:
 		verify(payerRecords).isImmutable();
-		verify(payerRecords).copy(false);
+		verify(payerRecords).copy();
 	}
 
 	@Test
@@ -202,12 +202,8 @@ public class MerkleAccountTest {
 	@Test
 	public void unsupportedOperationsThrow() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyToExtra(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.diffCopyTo(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.diffCopyFrom(null, null));
 	}
 
 	@Test
@@ -218,8 +214,8 @@ public class MerkleAccountTest {
 		var three = two.copy();
 
 		// then:
-		verify(records).copy(false);
-		verify(payerRecords).copy(false);
+		verify(records).copy();
+		verify(payerRecords).copy();
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
@@ -239,8 +235,8 @@ public class MerkleAccountTest {
 		var copy = subject.copy();
 
 		// then:
-		verify(records).copy(false);
-		verify(payerRecords).copy(false);
+		verify(records).copy();
+		verify(payerRecords).copy();
 		// and:
 		assertEquals(records, copy.records());
 		assertEquals(payerRecords, copy.payerRecords());
@@ -255,8 +251,8 @@ public class MerkleAccountTest {
 		var copy = subject.copy();
 
 		// then:
-		verify(records, never()).copy(anyBoolean());
-		verify(payerRecords, never()).copy(anyBoolean());
+		verify(records, never()).copy();
+		verify(payerRecords, never()).copy();
 		// and:
 		assertEquals(records, copy.records());
 		assertEquals(payerRecords, copy.payerRecords());

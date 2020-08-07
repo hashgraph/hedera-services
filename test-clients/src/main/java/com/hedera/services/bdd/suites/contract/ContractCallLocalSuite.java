@@ -95,9 +95,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				);
 	}
 
-	/*
-	C.f. https://github.com/swirlds/services-hedera/issues/1543
-	 */
 	private HapiApiSpec impureCallFails() {
 		return defaultHapiSpec("ImpureCallFails")
 				.given(
@@ -148,9 +145,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				);
 	}
 
-	/*
-	https://github.com/swirlds/services-hedera/issues/1543
-	 */
 	private HapiApiSpec undersizedMaxResultFails() {
 		return defaultHapiSpec("UndersizedMaxResult")
 				.given(

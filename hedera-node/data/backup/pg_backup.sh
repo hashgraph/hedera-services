@@ -53,8 +53,8 @@ EX_CONFIG=78		# configuration error
 # 	$4 - Database server password
 #	$5 - Database server catalog
 #	$6 - Snapshot identifier
-#	$7 - Swirlds Application ID
-#	$8 - Swirlds World ID
+#	$7 - Application ID
+#	$8 - World ID
 #	$9 - Saved State Node Number
 #	$10 - Saved State Round Number
 

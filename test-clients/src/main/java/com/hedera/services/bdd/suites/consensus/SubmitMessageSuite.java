@@ -54,14 +54,14 @@ public class SubmitMessageSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-//				topicIdIsValidated(),
-//				messageIsValidated(),
-				messageSubmissionSimple()
-//				messageSubmissionIncreasesSeqNo(),
-//				messageSubmissionWithSubmitKey(),
-//				messageSubmissionMultiple(),
-//				messageSubmissionOverSize(),
-//				feeAsExpected()
+				topicIdIsValidated(),
+				messageIsValidated(),
+				messageSubmissionSimple(),
+				messageSubmissionIncreasesSeqNo(),
+				messageSubmissionWithSubmitKey(),
+				messageSubmissionMultiple(),
+				messageSubmissionOverSize(),
+				feeAsExpected()
 		);
 	}
 
@@ -109,7 +109,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				)
 				.then(
 						submitMessageTo("testTopic")
-								.message("12345678901234567890123456789012")
+								.message("testmessage")
 								.payingWith("civilian")
 								.hasKnownStatus(SUCCESS)
 				);

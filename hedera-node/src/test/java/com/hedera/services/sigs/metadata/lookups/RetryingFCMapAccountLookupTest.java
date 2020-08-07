@@ -57,7 +57,7 @@ public class RetryingFCMapAccountLookupTest {
 	private Pause pause;
 	private final Pause defaultPause = SleepingPause.INSTANCE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
-	private final MerkleEntityId accountKey = MerkleEntityId.fromPojoAccountId(account);
+	private final MerkleEntityId accountKey = MerkleEntityId.fromAccountId(account);
 	private final MerkleAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();
 	private static JKey accountKeys;
 	private static final int RETRY_WAIT_MS = 10;
@@ -83,7 +83,7 @@ public class RetryingFCMapAccountLookupTest {
 	public void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 
 		// when:
 		AccountSigningMetadata meta = subject.lookup(account);
@@ -99,7 +99,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 
@@ -120,7 +120,7 @@ public class RetryingFCMapAccountLookupTest {
 	public void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(defaultPause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(defaultPause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(stats);
 
@@ -140,7 +140,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 
@@ -160,7 +160,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 

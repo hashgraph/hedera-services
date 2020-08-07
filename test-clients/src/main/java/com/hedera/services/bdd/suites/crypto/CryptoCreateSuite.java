@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -71,7 +72,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-				bizarreEdgeCase()
+				invalidPayerSigNotQueryable()
 //				vanillaCreateSucceeds()
 //				requiresNewKeyToSign()
 		);
@@ -87,25 +88,47 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountInvalidThresholdKey(),
 				createAnAccountInvalidNestedThresholdKey(),
 				createAnAccountThresholdKeyWithInvalidThreshold(),
-				createAnAccountInvalidED25519()
-//				invalidDurationGetsMeaningfulResponse()
+				createAnAccountInvalidED25519(),
+				invalidDurationGetsMeaningfulResponse(),
+				xferRequiresCrypto()
 		);
+	}
+
+	private HapiApiSpec xferRequiresCrypto() {
+		return defaultHapiSpec("XferRequiresCrypto")
+				.given(
+						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						contractCreate("multiAdmin")
+								.bytecode("bytecode")
+								.balance(1_234),
+						contractCreate("multiNoAdmin")
+								.bytecode("bytecode")
+								.balance(1_234),
+						cryptoCreate("misc")
+				).when().then(
+						cryptoTransfer(tinyBarsFromTo("misc", "multiAdmin", 1))
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(tinyBarsFromTo("multiAdmin", "misc", 1))
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(tinyBarsFromTo("multiNoAdmin", "misc", 1))
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
+				);
 	}
 
 	public static HapiApiSpec invalidDurationGetsMeaningfulResponse() {
 		return defaultHapiSpec("InvalidDurationGetsMeaningfulResponse")
 				.given().when().then(
-					cryptoCreate("broken")
-							.autoRenewSecs(1L)
-							.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
+						cryptoCreate("broken")
+								.autoRenewSecs(1L)
+								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
 				);
 	}
 
-	private HapiApiSpec bizarreEdgeCase() {
+	private HapiApiSpec invalidPayerSigNotQueryable() {
 		KeyShape origShape = listOf(3);
 		KeyShape newShape = SIMPLE;
 
-		return defaultHapiSpec("BizarreEdgeCase")
+		return defaultHapiSpec("InvalidPayerSigNotQueryable")
 				.given(
 						UtilVerbs.newKeyNamed("newKey").shape(newShape),
 						UtilVerbs.newKeyNamed("origKey").shape(origShape),
@@ -133,7 +156,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	/* C.f. https://github.com/swirlds/services-hedera/issues/1728 */
 	private HapiApiSpec requiresNewKeyToSign() {
 		KeyShape shape = listOf(SIMPLE, listOf(2), threshOf(1, 3));
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON), sigs(OFF, OFF, ON)));
@@ -231,7 +253,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		//build a threshold key with one of key is invalid
 		Key randomKey1 = Key.newBuilder().setEd25519(ByteString.copyFrom(randomUtf8Bytes(32))).build();
 		Key randomKey2 = Key.newBuilder().setEd25519(ByteString.copyFrom(randomUtf8Bytes(32))).build();
-		Key shortKey = Key.newBuilder().setEd25519 (ByteString.copyFrom(new byte[10])).build();
+		Key shortKey = Key.newBuilder().setEd25519(ByteString.copyFrom(new byte[10])).build();
 
 		KeyList invalidKeyList = KeyList.newBuilder().addKeys(randomKey1)
 				.addKeys(randomKey2).addKeys(shortKey).build();
@@ -319,7 +341,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec createAnAccountInvalidED25519() {
 		long initialBalance = 10_000L;
 		Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();
-		Key shortKey = Key.newBuilder().setEd25519 (ByteString.copyFrom(new byte[10])).build();
+		Key shortKey = Key.newBuilder().setEd25519(ByteString.copyFrom(new byte[10])).build();
 		return defaultHapiSpec("createAnAccountInvalidED25519")
 				.given().when().then(
 						withOpContext((spec, opLog) -> {

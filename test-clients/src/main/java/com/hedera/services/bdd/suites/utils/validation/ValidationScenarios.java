@@ -233,6 +233,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -276,6 +277,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"nodes", nodes(),
 							"default.fee", "" + tinyBarsToOffer,
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"cost.snapshot.dir", "fees",
 							"cost.snapshot.mode", "TAKE",
 							"startupAccounts.literal", payerKeystoreLiteral()
@@ -413,6 +415,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -496,6 +499,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -530,6 +534,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							LongStream.of(payers).mapToObj(payer ->
@@ -567,6 +572,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -654,6 +660,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(flattened(
 							Arrays.stream(accounts)
@@ -680,6 +687,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
@@ -703,6 +711,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 					).when().then(
@@ -737,6 +746,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -770,6 +780,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -918,6 +929,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1070,6 +1082,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1258,6 +1271,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1537,6 +1551,10 @@ public class ValidationScenarios extends HapiApiSuite {
 				.stream()
 				.map(node -> String.format("%s:0.0.%d", node.getIpv4Addr(), node.getAccount()))
 				.collect(Collectors.joining(","));
+	}
+
+	private static String defaultNode() {
+		return String.format("0.0.%d", targetNetwork().getDefaultNode());
 	}
 
 	private static String primaryPayer() {

@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.text.MessageFormat;
+import java.util.MissingResourceException;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.*;
@@ -44,8 +46,38 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
 import static com.hedera.services.legacy.logic.ApplicationConstants.*;
 
 @RunWith(JUnitPlatform.class)
-class FeeCalcUtilsTest {
+public class FeeCalcUtilsTest {
+	public static String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
+	/**
+	 * Default value for the prefix for the virtual metadata file
+	 */
+	public static String ARTIFACTS_PREFIX_FILE_INFO = "k";
 	private final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
+
+	public static String pathOf(FileID fid) {
+		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);
+	}
+
+	public static String pathOfMeta(FileID fid) {
+		return path(ARTIFACTS_PREFIX_FILE_INFO, fid);
+	}
+
+	private static String path(String buildMarker, FileID fid) {
+		return String.format(
+				"%s%s%d",
+				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
+				buildMarker,
+				fid.getFileNum());
+	}
+
+	public static String buildPath(String path, Object... params) {
+		try {
+			return MessageFormat.format(path, params);
+		} catch (final MissingResourceException e) {
+			e.printStackTrace();
+		}
+		return path;
+	}
 
 	@Test
 	public void returnsAccountExpiryIfAvail() {

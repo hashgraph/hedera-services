@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -146,7 +147,7 @@ public class MiscUtilsTest {
 		writeB64EncodedKeyPair(new File(tmpLoc), kp);
 
 		// when:
-		var masterKey = lookupInCustomStore(tmpLoc, "START_ACCOUNT");
+		var masterKey = lookupInCustomStore(new LegacyEd25519KeyReader(), tmpLoc, "START_ACCOUNT");
 
 		// then:
 		assertArrayEquals(expected, masterKey.getEd25519());
@@ -241,7 +242,7 @@ public class MiscUtilsTest {
 	public void throwsOnUnexpectedFunctionality() {
 		// expect:
 		assertThrows(UnknownHederaFunctionality.class, () -> {
-			functionalityOfTxn(TransactionBody.getDefaultInstance());
+			functionOf(TransactionBody.getDefaultInstance());
 		});
 	}
 
@@ -514,7 +515,7 @@ public class MiscUtilsTest {
 			TransactionBody.Builder txn = TransactionBody.newBuilder();
 			setter.setDefaultInstanceOnTxn(txn);
 			try {
-				assertEquals(function, functionalityOfTxn(txn.build()));
+				assertEquals(function, functionOf(txn.build()));
 			} catch (UnknownHederaFunctionality uhf) {
 				throw new IllegalStateException(uhf);
 			}
