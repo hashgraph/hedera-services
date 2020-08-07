@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
@@ -51,8 +52,8 @@ public class BucketThrottling implements FunctionalityThrottling {
 
 	static Consumer<String> displayFn = log::info;
 
-	private final AddressBook book;
 	private final PropertySource properties;
+	private final Supplier<AddressBook> book;
 	private final Function<PropertySource, Map<String, BucketConfig>> getBuckets;
 	private final BiFunction<PropertySource, Integer, PropertySource> getThrottleProps;
 
@@ -65,7 +66,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 	EnumMap<HederaFunctionality, CapacityTest> capacities = new EnumMap<>(HederaFunctionality.class);
 
 	public BucketThrottling(
-			AddressBook book,
+			Supplier<AddressBook> book,
 			PropertySource properties,
 			Function<PropertySource, Map<String, BucketConfig>> getBuckets,
 			BiFunction<PropertySource, Integer, PropertySource> getThrottleProps
@@ -90,7 +91,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 	}
 
 	public void rebuild() {
-		var throttleProps = getThrottleProps.apply(properties, book.getSize());
+		var throttleProps = getThrottleProps.apply(properties, book.get().getSize());
 		var config = getBuckets.apply(throttleProps);
 		var throttles = throttlesGiven(throttleProps, config);
 		capacities.clear();
@@ -104,7 +105,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 	}
 
 	Map<String, BucketThrottle> throttlesGiven(PropertySource props, Map<String, BucketConfig> config) {
-		var networkSize = book.getSize();
+		var networkSize = book.get().getSize();
 		var throttles = config.keySet()
 				.stream()
 				.collect(toMap(Function.identity(), bucket -> config.get(bucket).asNodeThrottle(networkSize)));

@@ -472,7 +472,7 @@ public class ServicesContext {
 	public BucketThrottling bucketThrottling() {
 		if (bucketThrottling == null) {
 			bucketThrottling = new BucketThrottling(
-					addressBook(),
+					this::addressBook,
 					properties(),
 					props -> bucketsIn(props).stream().collect(toMap(Function.identity(), b -> namedIn(props, b))),
 					ThrottlingPropsBuilder::withPrioritySource);
@@ -972,7 +972,7 @@ public class ServicesContext {
 					accountNums(),
 					properties(),
 					txnCtx(),
-					midnightRates(),
+					this::midnightRates,
 					GlobalFlag.getInstance()::setExchangeRateSet,
 					limitPercent -> (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent));
 		}
