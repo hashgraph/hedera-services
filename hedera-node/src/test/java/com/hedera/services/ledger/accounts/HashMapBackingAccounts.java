@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class HashMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount> {
 	final AccountID GENESIS = IdUtils.asAccount("0.0.2");
@@ -42,17 +43,15 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	}
 
 	@Override
-	public MerkleAccount getMutableRef(AccountID id) {
+	public void flushMutableRefs() { }
+
+	@Override
+	public MerkleAccount getRef(AccountID id) {
 		return accounts.get(id);
 	}
 
 	@Override
-	public MerkleAccount getUnsafeRef(AccountID id) {
-		return accounts.get(id);
-	}
-
-	@Override
-	public void replace(AccountID id, MerkleAccount account) {
+	public void put(AccountID id, MerkleAccount account) {
 		accounts.put(id, account);
 	}
 
@@ -64,5 +63,15 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	@Override
 	public void remove(AccountID id) {
 		accounts.remove(id);
+	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		return accounts.keySet();
+	}
+
+	@Override
+	public MerkleAccount getUnsafeRef(AccountID id) {
+		return accounts.get(id);
 	}
 }

@@ -28,7 +28,8 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -41,11 +42,12 @@ import org.apache.logging.log4j.Logger;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.ledger.properties.AccountProperty.*;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 
 /**
@@ -73,32 +75,35 @@ import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAd
 @SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final Logger log = LogManager.getLogger(HederaLedger.class);
+	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
-			.comparing(AccountID::getAccountNum)
-			.thenComparing(AccountID::getShardNum)
-			.thenComparing(AccountID::getRealmNum);
+			.comparingLong(AccountID::getAccountNum)
+			.thenComparingLong(AccountID::getShardNum)
+			.thenComparingLong(AccountID::getRealmNum);
 
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
-	private final ScopedDuplicateClassifier duplicateClassifier;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	private final Map<AccountID, Long> priorBalances = new HashMap<>();
 
+	private final TransferList.Builder netTransfers = TransferList.newBuilder();
+
 	public HederaLedger(
 			EntityIdSource ids,
+			EntityCreator creator,
 			AccountRecordsHistorian historian,
-			ScopedDuplicateClassifier duplicateClassifier,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger
 	) {
 		this.ids = ids;
 		this.ledger = ledger;
 		this.historian = historian;
-		this.duplicateClassifier = duplicateClassifier;
 
+		creator.setLedger(this);
 		historian.setLedger(this);
+		historian.setCreator(creator);
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -108,31 +113,30 @@ public class HederaLedger {
 
 	public void rollback() {
 		ledger.rollback();
-		priorBalances.clear();
+		netTransfers.clear();
 	}
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
-		duplicateClassifier.incorporateCommitment();
 		ledger.commit();
-		priorBalances.clear();
+		netTransfers.clear();
 	}
 
 	public TransferList netTransfersInTxn() {
 		ledger.throwIfNotInTxn();
-
-		/* Note we must sort here to ensure a deterministic order
-		* of transfers in the list (an invalid state signature
-		* exception is sure to appear otherwise!) */
-		return TransferList.newBuilder().addAllAccountAmounts(
-			priorBalances.keySet().stream()
-					.sorted(ACCOUNT_ID_COMPARATOR)
-					.filter(ledger::exists)
-					.map(this::netAdjustmentInTxn)
-					.filter(aa -> aa.getAmount() != 0)
-					.collect(toList())
-		).build();
+		int lastZeroRemoved;
+		do {
+			lastZeroRemoved = -1;
+			for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
+				if (netTransfers.getAccountAmounts(i).getAmount() == 0) {
+					netTransfers.removeAccountAmounts(i);
+					lastZeroRemoved = i;
+					break;
+				}
+			}
+		} while (lastZeroRemoved != -1);
+		return netTransfers.build();
 	}
 
 	public String currentChangeSet() {
@@ -151,18 +155,18 @@ public class HederaLedger {
 	public void adjustBalance(AccountID id, long adjustment) {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
+
+		updateXfers(id, adjustment);
 	}
 
 	public void doTransfer(AccountID from, AccountID to, long adjustment) {
-		TransferList inListForm = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(from)
-						.setAmount(-1 * adjustment))
-				.addAccountAmounts(AccountAmount.newBuilder()
-						.setAccountID(to)
-						.setAmount(adjustment))
-				.build();
-		doTransfers(inListForm);
+		long newFromBalance = computeNewBalance(from, -1 * adjustment);
+		long newToBalance = computeNewBalance(to, adjustment);
+		setBalance(from, newFromBalance);
+		setBalance(to, newToBalance);
+
+		updateXfers(from, -1 * adjustment);
+		updateXfers(to, adjustment);
 	}
 
 	public void doTransfers(TransferList accountAmounts) {
@@ -171,6 +175,10 @@ public class HederaLedger {
 		for (int i = 0; i < newBalances.length; i++) {
 			setBalance(accountAmounts.getAccountAmounts(i).getAccountID(), newBalances[i]);
 		}
+
+		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
+			updateXfers(aa.getAccountID(), aa.getAmount());
+		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -178,8 +186,10 @@ public class HederaLedger {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
 
-		AccountID id = ids.newAccountId(sponsor);
+		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
+
+		updateXfers(sponsor, -1 * balance);
 
 		return id;
 	}
@@ -188,6 +198,8 @@ public class HederaLedger {
 		ledger.create(id);
 		setBalance(id, balance);
 		customizer.customize(id, ledger);
+
+		updateXfers(id, balance);
 	}
 
 	public void customize(AccountID id, HederaAccountCustomizer customizer) {
@@ -204,6 +216,12 @@ public class HederaLedger {
 
 	public void destroy(AccountID id) {
 		ledger.destroy(id);
+		for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
+			if (netTransfers.getAccountAmounts(i).getAccountID().equals(id)) {
+				netTransfers.removeAccountAmounts(i);
+				return;
+			}
+		}
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */
@@ -241,24 +259,39 @@ public class HederaLedger {
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
 	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
+		return addReturningEarliestExpiry(id, HISTORY_RECORDS, record);
+	}
+
+	public long addPayerRecord(AccountID id, ExpirableTxnRecord record) {
+		return addReturningEarliestExpiry(id, PAYER_RECORDS, record);
+	}
+
+	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, property);
 		records.offer(record);
-		ledger.set(id, TRANSACTION_RECORDS, records);
+		ledger.set(id, property, records);
 		return records.peek().getExpiry();
 	}
 
 	public long purgeExpiredRecords(AccountID id, long now) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, TRANSACTION_RECORDS);
-		long newEarliestExpiry = -1;
+		return purge(id, HISTORY_RECORDS, now, NOOP_CB);
+	}
+
+	public long purgeExpiredPayerRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
+		return purge(id, PAYER_RECORDS, now, cb);
+	}
+
+	private long purge(
+			AccountID id,
+			AccountProperty recordsProp,
+			long now,
+			Consumer<ExpirableTxnRecord> cb
+	) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, recordsProp);
 		int numBefore = records.size();
 
-		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			records.poll();
-		}
-		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpiry();
-		}
-		ledger.set(id, TRANSACTION_RECORDS, records);
+		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
+		ledger.set(id, recordsProp, records);
 
 		int numPurged = numBefore - records.size();
 		LedgerTxnEvictionStats.INSTANCE.recordPurgedFromAnAccount(numPurged);
@@ -266,6 +299,21 @@ public class HederaLedger {
 				() -> numPurged,
 				() -> readableId(id));
 
+		return newEarliestExpiry;
+	}
+
+	private long purgeForNewEarliestExpiry(
+			FCQueue<ExpirableTxnRecord> records,
+			long now,
+			Consumer<ExpirableTxnRecord> cb
+	) {
+		long newEarliestExpiry = -1;
+		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
+			cb.accept(records.poll());
+		}
+		if (!records.isEmpty()) {
+			newEarliestExpiry = records.peek().getExpiry();
+		}
 		return newEarliestExpiry;
 	}
 
@@ -311,9 +359,30 @@ public class HederaLedger {
 		ledger.set(id, BALANCE, newBalance);
 	}
 
-	private AccountAmount netAdjustmentInTxn(AccountID id) {
-		long adjustment = getBalance(id) - priorBalances.get(id);
-		return AccountAmount.newBuilder().setAccountID(id).setAmount(adjustment).build();
+	private void updateXfers(AccountID account, long amount) {
+		int loc = 0, diff = -1;
+		var soFar = netTransfers.getAccountAmountsBuilderList();
+		for (; loc < soFar.size(); loc++) {
+			diff = ACCOUNT_ID_COMPARATOR.compare(account, soFar.get(loc).getAccountID());
+			if (diff <= 0) {
+				break;
+			}
+		}
+		if (diff == 0) {
+			var aa = soFar.get(loc);
+			long current = aa.getAmount();
+			aa.setAmount(current + amount);
+		} else {
+			if (loc == soFar.size()) {
+				netTransfers.addAccountAmounts(aaBuilderWith(account, amount));
+			} else {
+				netTransfers.addAccountAmounts(loc, aaBuilderWith(account, amount));
+			}
+		}
+	}
+
+	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
 	public enum LedgerTxnEvictionStats {

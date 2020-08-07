@@ -73,33 +73,13 @@ public class SolidityAddress implements FastCopyable {
 	}
 
 	@Override
-	public void copyTo(final SerializableDataOutputStream outStream) throws IOException {
-		serialize(outStream);
-	}
-
-	@Override
 	public void copyFrom(final SerializableDataInputStream inStream) throws IOException {
-
-	}
-
-	@Override
-	public void copyToExtra(final SerializableDataOutputStream outStream) throws IOException {
 
 	}
 
 	@Override
 	public void copyFromExtra(final SerializableDataInputStream inStream) throws IOException {
 
-	}
-
-	@Override
-	public void diffCopyTo(final SerializableDataOutputStream outStream, final SerializableDataInputStream inStream) throws IOException {
-		serialize(outStream);
-	}
-
-	@Override
-	public void diffCopyFrom(final SerializableDataOutputStream outStream, final SerializableDataInputStream inStream) throws IOException {
-		deserialize(inStream, this);
 	}
 
 	@Override

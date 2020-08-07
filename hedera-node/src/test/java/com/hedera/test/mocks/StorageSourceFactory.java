@@ -31,6 +31,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 
 public class StorageSourceFactory {
 	public static DbSource<byte[]> from(FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
-		return new BlobStorageSource(bytecodeMapFrom(new FcBlobsBytesStore(MerkleOptionalBlob::new, storageMap)));
+		return new BlobStorageSource(bytecodeMapFrom(
+				new FcBlobsBytesStore(MerkleOptionalBlob::new, () -> storageMap)));
 	}
 }

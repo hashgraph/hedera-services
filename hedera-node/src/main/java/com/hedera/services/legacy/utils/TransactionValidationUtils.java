@@ -282,7 +282,7 @@ public class TransactionValidationUtils {
 			return INVALID_TRANSACTION_START;
 		}
 		Instant startTime = convertProtoTimeStamp(transactionBody.getTransactionID().getTransactionValidStart());
-		if (!accountMap.containsKey(MerkleEntityId.fromPojoAccountId(transactionBody.getNodeAccountID()))) {
+		if (!accountMap.containsKey(MerkleEntityId.fromAccountId(transactionBody.getNodeAccountID()))) {
 			return INVALID_NODE_ACCOUNT;
 		} else if (startTime.isAfter(consensusTime)) {
 			return INVALID_TRANSACTION_START;
@@ -294,7 +294,7 @@ public class TransactionValidationUtils {
 		}
 
 		AccountID payerAccount = transactionBody.getTransactionID().getAccountID();
-		MerkleEntityId payerAccountKey = MerkleEntityId.fromPojoAccountId(payerAccount);
+		MerkleEntityId payerAccountKey = MerkleEntityId.fromAccountId(payerAccount);
 		MerkleAccount payerAccountDetails = accountMap.get(payerAccountKey);
 		if (payerAccountDetails == null) {
 			return ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;

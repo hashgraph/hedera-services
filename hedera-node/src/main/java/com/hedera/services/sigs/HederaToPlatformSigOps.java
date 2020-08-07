@@ -167,15 +167,25 @@ public class HederaToPlatformSigOps {
 		}
 
 		public SignatureStatus execute() {
-			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor.getSignedTxn4Log());
+			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 			SignatureStatus payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if ( !SUCCESS.name().equals( payerStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding Hedera payer sigs for txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+			if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding Hedera payer sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							payerStatus);
+				}
 				return payerStatus;
 			}
 			SignatureStatus otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if ( !SUCCESS.name().equals( otherStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding other Hedera sigs for txn {}: {}", txnAccessor.getTxnId(), otherStatus);
+			if (!SUCCESS.name().equals( otherStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding other Hedera sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							otherStatus);
+				}
 			}
 			return otherStatus;
 		}

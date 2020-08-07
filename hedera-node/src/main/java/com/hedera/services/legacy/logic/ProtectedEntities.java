@@ -37,8 +37,8 @@ import java.util.function.LongPredicate;
 public class ProtectedEntities {
   private static final long MAX_PROTECTED_ENTITY_NUM = PropertiesLoader.getProtectedMaxEntityNum();
   private static final long MIN_PROTECTED_ENTITY_NUM = PropertiesLoader.getProtectedMinEntityNum();
-  private static final long GENESIS_NUM = PropertiesLoader.getGenesisAccountNum();
-  private static final long MASTER_NUM = PropertiesLoader.getMasterAccountNum();
+  private static final long GENESIS_NUM = 2L;
+  private static final long MASTER_NUM = 55L;
   private static final long MASTER_CONTROL_RANGE_MAX_NUM = ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM;
   private static final long MASTER_CONTROL_RANGE_MIN_NUM = ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM;
   private static final long ADDRESS_ACC_NUM = ApplicationConstants.ADDRESS_ACC_NUM;
@@ -52,8 +52,8 @@ public class ProtectedEntities {
   private static long NODE_DETAILS_FILE = ApplicationConstants.NODE_DETAILS_FILE;
   private static long FEE_FILE_ACCOUNT_NUM = ApplicationConstants.FEE_FILE_ACCOUNT_NUM;
   private static long EXCHANGE_RATE_FILE_ACCOUNT_NUM = ApplicationConstants.EXCHANGE_RATE_FILE_ACCOUNT_NUM;
-  public static long DEFAULT_SHARD = ApplicationConstants.DEFAULT_SHARD;
-  public static long DEFAULT_REALM = ApplicationConstants.DEFAULT_FILE_REALM;
+  public static long DEFAULT_SHARD = 0L;
+  public static long DEFAULT_REALM = 0L;
   private static long APPLICATION_PROPERTIES_FILE_NUM = ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM;
   private static long API_PROPERTIES_FILE_NUM = ApplicationConstants.API_PROPERTIES_FILE_NUM;
   

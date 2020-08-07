@@ -51,7 +51,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType responseType) {
 	    try {
-			MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromPojoTopicId(query.getConsensusGetTopicInfo().getTopicID()));
+			MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 			int bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) +
 					BASIC_ACCTID_SIZE +  // topicID
 					getTopicInfoSize(merkleTopic);

@@ -33,8 +33,8 @@ public class DataMapFactory {
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 
-	private  DataMapFactory(){
-		throw new IllegalStateException("Factory class");
+	DataMapFactory() {
+		throw new IllegalStateException();
 	}
 
 	public static Map<FileID, byte[]> dataMapFrom(Map<String, byte[]> store) {

@@ -22,6 +22,7 @@ package com.hedera.services.txns.file;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.state.submerkle.EntityId.ofNullableFileId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -47,16 +49,16 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
-	private final Map<FileID, Long> oldExpiries;
 	private final TransactionContext txnCtx;
+	private final Map<EntityId, Long> expiries;
 
 	public FileSysDelTransitionLogic(
 			HederaFs hfs,
-			Map<FileID, Long> oldExpiries,
+			Map<EntityId, Long> expiries,
 			TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
-		this.oldExpiries = oldExpiries;
+		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 	}
 
@@ -85,7 +87,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 				info.setDeleted(true);
 				info.setExpirationTimeSeconds(newExpiry);
 				hfs.setattr(tbd, info);
-				oldExpiries.put(tbd, oldExpiry);
+				expiries.put(ofNullableFileId(tbd), oldExpiry);
 			}
 			txnCtx.setStatus(SUCCESS);
 		} catch (Exception unknown) {

@@ -30,11 +30,11 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -94,16 +94,13 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
@@ -170,12 +167,12 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(fcMap),
+            new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     Source<byte[], AccountState> repDatabase = ledgerSource;
@@ -199,16 +196,13 @@ public class SmartContractRequestHandlerMiscTest {
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
 
-    //Init SolidityAddress Map
-    SolidityAddress solAddress = new SolidityAddress("abcdefghijklmnop");
-    MerkleEntityId solMerkleEntityId = new MerkleEntityId(0l, 0l, 5l);
     //Init Repository
     repository = getLocalRepositoryInstance();
 
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -221,8 +215,8 @@ public class SmartContractRequestHandlerMiscTest {
             repository,
             feeCollAccountId,
             ledger,
-            fcMap,
-            storageMap,
+            () -> fcMap,
+            () -> storageMap,
             ledgerSource,
             null,
             exchange,
@@ -230,7 +224,8 @@ public class SmartContractRequestHandlerMiscTest {
             TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true);
+            ignore -> true,
+            null);
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
@@ -705,7 +700,6 @@ public class SmartContractRequestHandlerMiscTest {
     ledger.begin();
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-
     long payerAfter = getBalance(payerAccountId);
     long totalAfter = getTotalBalance();
 

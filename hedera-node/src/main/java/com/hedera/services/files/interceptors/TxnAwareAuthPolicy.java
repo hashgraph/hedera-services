@@ -176,7 +176,7 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 
 	private void setMasterDecision() {
 		accountDecisions.put(
-				accountWith(accountNums.master()),
+				accountWith(accountNums.systemAdmin()),
 				id -> masterScope.contains(id.getFileNum()) ? YES_VERDICT : UNAUTHORIZED_VERDICT);
 	}
 

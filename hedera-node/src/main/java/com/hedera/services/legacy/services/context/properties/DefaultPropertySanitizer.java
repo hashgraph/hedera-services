@@ -34,7 +34,9 @@ public class DefaultPropertySanitizer implements PropertySanitizer {
 	@Override
 	public void sanitize(PropertySources propertySources) {
 		if (!PropertiesLoader.validExchangeRateAllowedPercentage()) {
-			log.warn("Limited exchange rate percentage change to {}%!", ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE);
+			log.warn(
+					"Limited exchange rate percentage change to {}%!",
+					ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE);
 		}
 	}
 }

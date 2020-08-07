@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -82,7 +83,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		AccountID target = spec.registry().getAccountID(account);
+		AccountID target = TxnUtils.asId(account, spec);
 		CryptoDeleteTransactionBody opBody = spec
 				.txns()
 				.<CryptoDeleteTransactionBody, CryptoDeleteTransactionBody.Builder>

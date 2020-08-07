@@ -52,10 +52,10 @@ class QueryFeeCheckTest {
 	AccountID aBroke = asAccount("0.0.13257");
 	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L;
 	MerkleAccount broke, rich;
-	MerkleEntityId missingKey = MerkleEntityId.fromPojoAccountId(aMissing);
-	MerkleEntityId richKey = MerkleEntityId.fromPojoAccountId(aRich);
-	MerkleEntityId brokeKey = MerkleEntityId.fromPojoAccountId(aBroke);
-	MerkleEntityId nodeKey = MerkleEntityId.fromPojoAccountId(aNode);
+	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
+	MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
+	MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
+	MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
 
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
@@ -77,7 +77,7 @@ class QueryFeeCheckTest {
 		given(accounts.containsKey(argThat(brokeKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(nodeKey::equals))).willReturn(true);
 
-		subject = new QueryFeeCheck(accounts);
+		subject = new QueryFeeCheck(() -> accounts);
 	}
 
 	@Test

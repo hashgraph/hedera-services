@@ -21,7 +21,10 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.util.Optional;
 
@@ -51,6 +54,14 @@ public interface AccountRecordsHistorian {
 	void setLedger(HederaLedger ledger);
 
 	/**
+	 * Injects the expiring entity creator which the historian
+	 * should use to create records.
+	 *
+	 * @param creator the creator of expiring entities.
+	 */
+	void setCreator(EntityCreator creator);
+
+	/**
 	 * At the moment before committing the active transaction, forms a
 	 * final record by adding a {@link ExpirableTxnRecord} to any
 	 * ledger accounts that qualify for the history of the active
@@ -68,17 +79,14 @@ public interface AccountRecordsHistorian {
 
 	/**
 	 * Invites the historian to build any auxiliary data structures
-	 * needed to purge expired records, given a lower bound on the
-	 * time of the next transaction to be processed.
-	 *
-	 * @param consensusTimeOfLastHandledTxn the current data-driven time.
+	 * needed to purge expired records.
 	 */
-	void reviewExistingRecords(long consensusTimeOfLastHandledTxn);
+	void reviewExistingRecords();
 
 	/**
 	 * Returns the last record created, if it exists.
 	 *
 	 * @return an optional record.
 	 */
-	Optional<ExpirableTxnRecord> lastCreatedRecord();
+	Optional<TransactionRecord> lastCreatedRecord();
 }

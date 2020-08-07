@@ -10,8 +10,9 @@ freezeSettings.endMin, 10
 freezeSettings.startHour, 6
 freezeSettings.startMin, 0
 maxOutgoingSyncs, 2
-roundsExpired, 500
+reconnect.active, 0
 showInternalStats, 1
+state.roundsExpired, 500
 state.roundsStale, 25
 state.saveStatePeriod, 300
 state.signedStateDisk, 10

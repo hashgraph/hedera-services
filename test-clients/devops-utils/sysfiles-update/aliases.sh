@@ -46,3 +46,5 @@ alias editProperties='/tools/run/editAppProperties.sh'
 alias editPermissions='/tools/run/editApiPermissions.sh'
 alias editExchangeRates='/tools/run/editExchangeRates.sh'
 alias editFeeSchedule='/tools/run/editFeeSchedule.sh'
+
+alias changeKey='/tools/run/pemReKey.sh'

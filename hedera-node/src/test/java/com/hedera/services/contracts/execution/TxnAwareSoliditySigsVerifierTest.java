@@ -81,14 +81,14 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 
 		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(payer))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(noSigRequired))).willReturn(noSigReqAccount);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(smartContract))).willReturn(contract);
+		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(smartContract))).willReturn(contract);
 
 		areActive = mock(SyncActivationCheck.class);
 
-		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, accounts);
+		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
 	}
 
 	@Test

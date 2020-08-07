@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 public class PureValidation {
 	public static ResponseCodeEnum queryableFileStatus(FileID id, StateView view) {
@@ -55,7 +55,7 @@ public class PureValidation {
 	}
 
 	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		MerkleAccount account = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()
@@ -65,7 +65,7 @@ public class PureValidation {
 	}
 
 	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
-		MerkleAccount contract = contracts.get(fromPojoContractId(cid));
+		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
 				.map(v -> v.isDeleted()

@@ -1015,7 +1015,7 @@ public class HederaSigningOrderTest {
 
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookup.orElse(defaultLookupsFor(hfs, accounts, topics)),
+				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics)),
 				waclSigns,
 				updateAccountSigns);
 	}

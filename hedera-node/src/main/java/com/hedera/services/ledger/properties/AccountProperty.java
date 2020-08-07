@@ -165,7 +165,18 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getProxy;
 		}
 	},
-	TRANSACTION_RECORDS {
+	PAYER_RECORDS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, r) -> a.setPayerRecords((FCQueue<ExpirableTxnRecord>)r);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::payerRecords;
+		}
+	},
+	HISTORY_RECORDS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>)r);
@@ -174,11 +185,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::records;
-		}
-
-		@Override
-		public boolean requiresMutableRef() {
-			return true;
 		}
 	};
 

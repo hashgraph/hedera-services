@@ -22,7 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static com.hedera.services.legacy.logic.ApplicationConstants.FEE_FILE_ACCOUNT_NUM;

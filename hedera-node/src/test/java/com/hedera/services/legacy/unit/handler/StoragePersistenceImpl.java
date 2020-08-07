@@ -21,16 +21,17 @@ package com.hedera.services.legacy.unit.handler;
  */
 
 
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.datasource.StoragePersistence;
 
 public class StoragePersistenceImpl implements StoragePersistence {
+	public static String ADDRESS_APENDED_PATH = "/{0}/d{1}";
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 
 	public StoragePersistenceImpl(FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
@@ -67,8 +68,8 @@ public class StoragePersistenceImpl implements StoragePersistence {
 
 	private String getAddressAppendedPath(byte[] key) {
 		AccountID acctId = EntityIdUtils.accountParsedFromSolidityAddress(key);
-		String path = ApplicationConstants.buildPath(
-				ApplicationConstants.ADDRESS_APENDED_PATH, Long.toString(acctId.getRealmNum()),
+		String path = FeeCalcUtilsTest.buildPath(
+				ADDRESS_APENDED_PATH, Long.toString(acctId.getRealmNum()),
 				Long.toString(acctId.getAccountNum()));//    /0/d2341/
 		return path;
 	}

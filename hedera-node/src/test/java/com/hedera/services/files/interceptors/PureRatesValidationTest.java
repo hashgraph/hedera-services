@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import static com.hedera.services.files.interceptors.PureRatesValidation.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(JUnitPlatform.class)
 class PureRatesValidationTest {
@@ -146,5 +147,11 @@ class PureRatesValidationTest {
 		}
 
 		return Pair.of(newH, (int) newC);
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, PureRatesValidation::new);
 	}
 }

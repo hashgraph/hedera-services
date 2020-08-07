@@ -33,7 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(ContractUpdateResourceUsage.class);
@@ -52,7 +52,7 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
 		try {
-			MerkleEntityId id = fromPojoContractId(txn.getContractUpdateInstance().getContractID());
+			MerkleEntityId id = fromContractId(txn.getContractUpdateInstance().getContractID());
 			Timestamp expiry = lookupAccountExpiry(id, view.accounts());
 			return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
 		} catch (Exception e) {

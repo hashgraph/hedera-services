@@ -20,12 +20,12 @@ package com.hedera.services.records;
  * ‍
  */
 
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.common.cache.Cache;
+import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -43,18 +42,29 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
-import java.util.Optional;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.utils.MiscUtils.sha384HashOf;
+import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.utils.MiscUtils.sha384HashOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class RecordCacheTest {
+	long submittingMember = 1L;
 	private TransactionID txnIdA = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
 			.setAccountID(asAccount("0.0.2"))
@@ -88,21 +98,59 @@ class RecordCacheTest {
 			.setTransactionFee(123L)
 			.build();
 
-	private ExpirableTxnRecord jaRecord = ExpirableTxnRecord.fromGprc(aRecord);
+	private ExpirableTxnRecord record = ExpirableTxnRecord.fromGprc(aRecord);
 
-	private Cache delegate;
+	private EntityCreator creator;
+	private Cache<TransactionID, Boolean> receiptCache;
+	private Map<TransactionID, TxnIdRecentHistory> histories;
+
 	private RecordCache subject;
 
 	@BeforeEach
 	private void setup() {
-		delegate = mock(Cache.class);
-		subject = new RecordCache(delegate);
+		creator = mock(EntityCreator.class);
+		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
+		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
+		subject = new RecordCache(creator, receiptCache, histories);
+	}
+
+	@Test
+	public void getsReceiptWithKnownStatusPostConsensus() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(record);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// expect:
+		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
 	}
 
 	@Test
 	public void getsNullReceiptWhenMissing() {
 		// expect:
 		assertNull(subject.getReceipt(txnIdA));
+	}
+
+	@Test
+	public void getsReceiptWithUnknownStatusPreconsensus() {
+		given(histories.get(txnIdA)).willReturn(null);
+		given(receiptCache.getIfPresent(txnIdA)).willReturn(Boolean.TRUE);
+
+		// expect:
+		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
+	}
+
+	@Test
+	public void getsReceiptWithUnknownStatusWhenNotLegacyQueryable() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(null);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// expect:
+		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
 	}
 
 	@Test
@@ -113,7 +161,19 @@ class RecordCacheTest {
 
 	@Test
 	public void getsNullRecordWhenPreconsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.empty());
+		given(histories.get(txnIdA)).willReturn(null);
+
+		// expect:
+		assertNull(subject.getRecord(txnIdA));
+	}
+
+	@Test
+	public void getsNullRecordWhenNotLegacyQueryable() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(null);
+		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
 		assertNull(subject.getRecord(txnIdA));
@@ -121,36 +181,39 @@ class RecordCacheTest {
 
 	@Test
 	public void getsRecordWhenPresent() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+
+		given(history.legacyQueryableRecord()).willReturn(record);
+		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
 		assertEquals(aRecord, subject.getRecord(txnIdA));
 	}
 
 	@Test
-	public void getsReceiptWithKnownStatusPostConsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
-
-		// expect:
-		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
-	}
-
-	@Test
-	public void addsEmptyOptionalForPreconsensusReceipt() {
+	public void addsMarkerForPreconsensusReceipt() {
 		// when:
 		subject.addPreConsensus(txnIdB);
 
 		// then:
-		verify(delegate).put(txnIdB, Optional.empty());
+		verify(receiptCache).put(txnIdB, Boolean.TRUE);
 	}
 
 	@Test
 	public void delegatesToPutPostConsensus() {
-		// when:
-		subject.setPostConsensus(txnIdA, jaRecord);
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
+		given(histories.computeIfAbsent(argThat(txnIdA::equals), any())).willReturn(history);
+
+		// when:
+		subject.setPostConsensus(
+				txnIdA,
+				aRecord.getReceipt().getStatus(),
+				record);
 		// then:
-		verify(delegate).put(txnIdA, Optional.of(jaRecord));
+		verify(history).observe(record, aRecord.getReceipt().getStatus());
 	}
 
 	@Test
@@ -163,67 +226,64 @@ class RecordCacheTest {
 					.setTransactionID(txnId)
 					.setMemo("Catastrophe!"))
 				.build();
+		// and:
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
 		// and:
-		ArgumentCaptor<Optional<ExpirableTxnRecord>> captor = ArgumentCaptor.forClass(Optional.class);
+		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
+		// and:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+		// and:
+		AccountID effectivePayer = IdUtils.asAccount("0.0.3");
+
+		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(history);
 
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
+		// and:
+		var grpc = TransactionRecord.newBuilder()
+				.setTransactionID(txnId)
+				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
+				.setMemo(accessor.getTxn().getMemo())
+				.setTransactionHash(sha384HashOf(accessor))
+				.setConsensusTimestamp(asTimestamp(consensusTime))
+				.build();
+		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
+		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
+		expectedRecord.setSubmittingMember(submittingMember);
+		given(creator.createExpiringPayerRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
 		// when:
-		subject.setFailInvalid(accessor, consensusTime);
+		subject.setFailInvalid(
+				effectivePayer,
+				accessor,
+				consensusTime,
+				submittingMember);
 
 		// then:
-		verify(delegate).put(argThat(txnId::equals), captor.capture());
+		verify(history).observe(
+				argThat(expectedRecord::equals),
+				argThat(FAIL_INVALID::equals));
+	}
+
+	@Test
+	public void usesHistoryThenCacheToTestReceiptPresence() {
+		given(histories.containsKey(txnIdA)).willReturn(true);
+		given(receiptCache.getIfPresent(txnIdA)).willReturn(null);
 		// and:
-		ExpirableTxnRecord record = captor.getValue().get();
-		assertEquals("FAIL_INVALID", record.getReceipt().getStatus());
-		assertEquals("Catastrophe!", record.getMemo());
-		assertEquals(txnId, record.getTxnId().toGrpc());
-		assertEquals(asTimestamp(consensusTime), record.getConsensusTimestamp().toGrpc());
-		assertArrayEquals(sha384HashOf(accessor).toByteArray(), record.getTxnHash(), "Wrong hash!");
-	}
-
-	@Test
-	public void getsReceiptWithUnknownStatusPreconsensus() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.empty());
-
-		// expect:
-		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
-	}
-
-	@Test
-	public void usesDelegateToTestRecordPresence() {
-		given(delegate.getIfPresent(txnIdC)).willReturn(null);
-		given(delegate.getIfPresent(txnIdB)).willReturn(Optional.empty());
-		given(delegate.getIfPresent(txnIdA)).willReturn(Optional.of(jaRecord));
-
-		// when:
-		boolean hasA = subject.isRecordPresent(txnIdA);
-		boolean hasB = subject.isRecordPresent(txnIdB);
-		boolean hasC = subject.isRecordPresent(txnIdC);
-
-		// then:
-		verify(delegate, times(3)).getIfPresent(any());
+		given(histories.containsKey(txnIdB)).willReturn(false);
+		given(receiptCache.getIfPresent(txnIdB)).willReturn(RecordCache.MARKER);
 		// and:
-		assertTrue(hasA);
-		assertFalse(hasB);
-		assertFalse(hasC);
-	}
-
-	@Test
-	public void usesDelegateToTestReceiptPresence() {
-		given(delegate.getIfPresent(txnIdA)).willReturn(null);
-		given(delegate.getIfPresent(txnIdB)).willReturn(Optional.empty());
+		given(histories.containsKey(txnIdC)).willReturn(false);
+		given(receiptCache.getIfPresent(txnIdC)).willReturn(null);
 
 		// when:
 		boolean hasA = subject.isReceiptPresent(txnIdA);
 		boolean hasB = subject.isReceiptPresent(txnIdB);
+		boolean hasC = subject.isReceiptPresent(txnIdC);
 
 		// then:
-		verify(delegate, times(2)).getIfPresent(any());
-		// and:
-		assertFalse(hasA);
+		assertTrue(hasA);
 		assertTrue(hasB);
+		assertFalse(hasC);
 	}
 }

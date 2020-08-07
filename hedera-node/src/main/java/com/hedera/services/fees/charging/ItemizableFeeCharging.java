@@ -60,9 +60,10 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	AccountID node;
 	AccountID funding;
+	AccountID submittingNode;
 	Set<AccountID> thresholdFeePayers = new HashSet<>();
-	EnumMap<TxnFeeType, Long> nodeFeesCharged = new EnumMap<>(TxnFeeType.class);
 	EnumMap<TxnFeeType, Long> payerFeesCharged = new EnumMap<>(TxnFeeType.class);
+	EnumMap<TxnFeeType, Long> submittingNodeFeesCharged = new EnumMap<>(TxnFeeType.class);
 
 	public ItemizableFeeCharging(
 			FeeExemptions exemptions,
@@ -86,23 +87,28 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		return Optional.ofNullable(payerFeesCharged.get(fee)).orElse(0L);
 	}
 
+	public long chargedToSubmittingNode(TxnFeeType fee) {
+		return Optional.ofNullable(submittingNodeFeesCharged.get(fee)).orElse(0L);
+	}
+
 	public int numThresholdFeesCharged() {
 		return thresholdFeePayers.size();
 	}
 
-	public void resetFor(SignedTxnAccessor accessor) {
+	public void resetFor(SignedTxnAccessor accessor, AccountID submittingNode) {
 		super.resetFor(accessor);
 
 		node = accessor.getTxn().getNodeAccountID();
 		funding = properties.getAccountProperty("ledger.funding.account");
+		this.submittingNode = submittingNode;
 
-		nodeFeesCharged.clear();
 		payerFeesCharged.clear();
 		thresholdFeePayers.clear();
+		submittingNodeFeesCharged.clear();
 	}
 
 	/**
-	 * Fees for a correctly signed txn submitted by an a irresponsible node are itemized as:
+	 * Fees for a txn submitted by an a irresponsible node are itemized as:
 	 * <ol>
 	 *    <li>Received by funding, sent by the submitting node, for network operating costs.</li>
 	 * </ol>
@@ -127,17 +133,15 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	public TransferList itemizedFees() {
 		TransferList.Builder fees = TransferList.newBuilder();
 
-		if (!nodeFeesCharged.isEmpty()) {
-			includeIfCharged(NETWORK, node, nodeFeesCharged, fees);
-		} else if (!payerFeesCharged.isEmpty()) {
+		if (!submittingNodeFeesCharged.isEmpty()) {
+			includeIfCharged(NETWORK, submittingNode, submittingNodeFeesCharged, fees);
+		} else {
 			AccountID payer = accessor.getPayer();
 
 			includeIfCharged(NETWORK, payer, payerFeesCharged, fees);
 			includeIfCharged(NODE, payer, payerFeesCharged, fees);
 			includeIfCharged(SERVICE, payer, payerFeesCharged, fees);
 			includeIfCharged(CACHE_RECORD, payer, payerFeesCharged, fees);
-		} else {
-			// Condition is not handled - NoOp
 		}
 
 		if (!thresholdFeePayers.isEmpty()) {
@@ -185,11 +189,11 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	@Override
-	public void chargeNodeUpTo(EnumSet<TxnFeeType> fees) {
+	public void chargeSubmittingNodeUpTo(EnumSet<TxnFeeType> fees) {
 		pay(
 				fees,
 				() -> {},
-				(fee) -> chargeUpTo(node, funding, fee));
+				(fee) -> chargeUpTo(submittingNode, funding, fee));
 	}
 
 	@Override
@@ -271,10 +275,9 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		} else {
 			if (source.equals(accessor.getPayer())) {
 				payerFeesCharged.put(fee, amount);
-			} else if (source.equals(node)) {
-				nodeFeesCharged.put(fee, amount);
-			} else {
-				// Condition is not handled - NoOp
+			}
+			if (source.equals(submittingNode)) {
+				submittingNodeFeesCharged.put(fee, amount);
 			}
 		}
 	}

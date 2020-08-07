@@ -32,7 +32,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -63,7 +63,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.config.PropertiesLoader;
@@ -86,16 +86,13 @@ import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -126,6 +123,7 @@ public class SmartContractRequestHandlerPayableTest {
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  FCMapBackingAccounts backingAccounts;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -143,15 +141,16 @@ public class SmartContractRequestHandlerPayableTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+    backingAccounts = new FCMapBackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(fcMap),
+            backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     Source<byte[], AccountState> repDatabase = ledgerSource;
@@ -179,7 +178,7 @@ public class SmartContractRequestHandlerPayableTest {
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     ExchangeRateSet rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -192,8 +191,8 @@ public class SmartContractRequestHandlerPayableTest {
             repository,
             feeCollAccountId,
             ledger,
-            fcMap,
-            storageMap,
+            () -> fcMap,
+            () -> storageMap,
             ledgerSource,
             null,
             exchange,
@@ -201,7 +200,8 @@ public class SmartContractRequestHandlerPayableTest {
             TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true);
+            ignore -> true,
+            null);
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(
@@ -324,37 +324,6 @@ public class SmartContractRequestHandlerPayableTest {
     // function, not all payable functions.
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeDeposit(DEPOSIT_AMOUNT + 1));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, DEPOSIT_AMOUNT);
-    consensusTime = new Date().toInstant();
-    seqNumber.getAndIncrement();
-    ledger.begin();
-    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-    ledger.commit();
-
-    Assert.assertNotNull(record);
-    Assert.assertNotNull(record.getTransactionID());
-    Assert.assertNotNull(record.getReceipt());
-    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-  }
-
-  @Test
-  @Disabled
-  @DisplayName("04 ContractDepositCall: negative value")
-  public void contractDepositCallNegative() {
-    // Create the contract
-    byte[] contractBytes = createFile(PAYABLE_TEST_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    // Call the contract to deposit value
-    // System does not allow negative values.
-    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeDeposit(-1));
-    body = getCallTransactionBody(newContractId, dataToSet, 250000L, -1L);
     consensusTime = new Date().toInstant();
     seqNumber.getAndIncrement();
     ledger.begin();
@@ -719,7 +688,11 @@ public class SmartContractRequestHandlerPayableTest {
     mk.setRealm(0);
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    fcMap.put(mk, mv);
+    if (backingAccounts != null) {
+      backingAccounts.put(payerAccount, mv);
+    } else {
+      fcMap.put(mk, mv);
+    }
   }
 
   private byte[] createFile(String filePath, FileID fileId) {

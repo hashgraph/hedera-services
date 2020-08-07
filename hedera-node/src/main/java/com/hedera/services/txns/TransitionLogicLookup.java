@@ -20,10 +20,13 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -37,12 +40,10 @@ import static java.util.stream.Collectors.toList;
  * @author Michael Tinker
  */
 public class TransitionLogicLookup {
-	private final TransitionLogic[] logics;
-	private final List<Predicate<TransactionBody>> relevance;
+	private final Function<HederaFunctionality, List<TransitionLogic>> transitions;
 
-	public TransitionLogicLookup(TransitionLogic... logics) {
-		this.logics = logics;
-		this.relevance = Stream.of(logics).map(TransitionLogic::applicability).collect(toList());
+	public TransitionLogicLookup(Function<HederaFunctionality, List<TransitionLogic>> transitions) {
+		this.transitions = transitions;
 	}
 
 	/**
@@ -51,11 +52,17 @@ public class TransitionLogicLookup {
 	 * @param txn the txn to find logic for.
 	 * @return relevant transition logic, if it exists.
 	 */
-	public Optional<TransitionLogic> lookupFor(TransactionBody txn) {
-		return IntStream.range(0, logics.length)
-				.filter(i -> relevance.get(i).test(txn))
-				.boxed()
-				.findAny()
-				.map(i -> logics[i]);
+	public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
+		return Optional.ofNullable(transitions.apply(function))
+				.flatMap(transitions -> from(transitions, txn));
+	}
+
+	private Optional<TransitionLogic> from(List<TransitionLogic> transitions, TransactionBody txn) {
+		for (TransitionLogic candidate : transitions) {
+			if (candidate.applicability().test(txn)) {
+				return Optional.of(candidate);
+			}
+		}
+		return Optional.empty();
 	}
 }
