@@ -84,6 +84,7 @@ public class FreezeHandler {
 		if (transactionBody.getFreeze().hasUpdateFile()) {
 			//save the file ID and will be used after platform goes into maintenance mode
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
+			log.info("{} saved updateFeatureFile {}", LOG_PREFIX, updateFeatureFile);
 		}
 		try {
 			platform.setFreezeTime(
