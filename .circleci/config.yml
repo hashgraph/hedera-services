@@ -895,7 +895,7 @@ workflows:
           filters:
             branches:
               only:
-                - JRS-in-circleCI
+                - master
     jobs:
       - build-platform-and-services:
           workflow-name: "nightly-services-regression"
@@ -1368,7 +1368,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - JRS-in-circleCI
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1597,7 +1596,7 @@ jobs:
             cd /swirlds-platform/regression;   git checkout services-regression-JRS
 
       - run:
-          name: Install necessary net-tools
+          name: Install necessary tools
           command: |
             sudo apt update -y;
             sudo apt install net-tools;
@@ -1609,10 +1608,24 @@ jobs:
             pip3 -q install matplotlib;
 
       - run:
-          name: Run regression tests
+          name: Save PEM file to keys folder
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
+
+      - run:
+          name: Run various suites in SuiteRunner
+          command: |
             cd /swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json /repo
+
+      - run:
+          name: Performance Regression
+          command: |
+            cd /swirlds-platform/regression; ./regression_services.sh AwsServicesLoadTestRegressionCfg.json /repo
+
+      - run:
+          name: Network Error Regression
+          command: |
+            cd /swirlds-platform/regression; ./regression_services.sh AwsSerivceRegressionNetworkError.json /repo
 
       - persist_to_workspace:
           root: /
