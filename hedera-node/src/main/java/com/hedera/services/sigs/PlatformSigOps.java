@@ -29,7 +29,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import java.util.List;
 
 /**
- * Provides static methods to work with Swirlds {@link com.swirlds.common.crypto.Signature} objects.
+ * Provides static methods to work with {@link com.swirlds.common.crypto.Signature} objects.
  *
  * @author Michael Tinker
  */
@@ -39,7 +39,7 @@ public class PlatformSigOps {
 		throw new IllegalStateException("Utility Class");
 	}
 	/**
-	 * Return the result of trying to create one or more Swirlds platform sigs using a given
+	 * Return the result of trying to create one or more platform sigs using a given
 	 * {@link TxnScopedPlatformSigFactory}, where this {@code factory} should be invoked for
 	 * each public key in a left-to-right DFS traversal of the simple keys from a list of
 	 * Hedera keys, using signature bytes from a given {@link PubKeyToSigBytes}.
@@ -49,7 +49,7 @@ public class PlatformSigOps {
 	 * @param sigBytes
 	 * 		a source of cryptographic signatures to associate to the public keys.
 	 * @param factory
-	 * 		a factory to convert public keys and cryptographic sigs into Swirlds sigs.
+	 * 		a factory to convert public keys and cryptographic sigs into sigs.
 	 * @return the result of attempting this creation.
 	 */
 	public static PlatformSigsCreationResult createEd25519PlatformSigsFrom(

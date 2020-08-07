@@ -41,7 +41,7 @@ public class StatusUtils {
 	 *
 	 * @param inHandleCtx flag indicating if success occurred in the dynamic context of
 	 * {@code handleTransaction}.
-	 * @param platformTxn the Swirlds platform txn experiencing success.
+	 * @param platformTxn the platform txn experiencing success.
 	 * @return the desired representation of success.
 	 */
 	public static SignatureStatus successFor(boolean inHandleCtx, PlatformTxnAccessor platformTxn) {

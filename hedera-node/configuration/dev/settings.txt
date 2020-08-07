@@ -1,28 +1,23 @@
-showInternalStats,  1
-signedStateDisk,    5
-saveStatePeriod,    900
-signedStateKeep,    10
-throttleTransactionQueueSize, 100000
-maxEventQueueForCons, 1000
-# check if throttle7extra 0.2 is too much
-throttle7extra, 0.5
-cpuVerifierThreadRatio, 0.5
-cpuDigestThreadRatio, 0.5
-numConnections,1000
-lockLogTimeout,4000
-# check if maxOutgoingSyncs 3 is a better option
-maxOutgoingSyncs, 4
-doUpnp, 0
-forceCpuVerification, 1
-forceCpuDigest, 1
-# TURN OFF for migration.
 checkSignedStateFromDisk, 1
+crypto.cpuDigestThreadRatio, 0.5
+crypto.cpuVerifierThreadRatio, 0.5
+crypto.forceCpu, 1
+csvAppend, 1
+csvFileName, MainNetStats
+doUpnp, 0
+enableEventStreaming, true
+eventsLogPeriod, 5
+lockLogTimeout, 4000
+maxEventQueueForCons,1000
+maxOutgoingSyncs, 4
+numConnections, 1000
+roundsExpired, 500
+showInternalStats, 1
+state.roundsStale, 25
+state.saveStatePeriod, 900
+state.signedStateDisk, 5
+state.signedStateKeep, 10
+throttle7extra, 0.5
+throttleTransactionQueueSize, 100000
 useLoopbackIp, 0
 useTLS, 1
-roundsExpired, 500
-roundsStale, 25
-csvFileName,MainNetStats
-csvAppend, 1
-enableEventStreaming, true
-eventsLogDir, /opt/hgcapp/eventsStreams
-eventsLogPeriod, 5

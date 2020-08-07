@@ -67,7 +67,6 @@ public class FileCreateSuite extends HapiApiSuite {
 		);
 	}
 
-	/* C.f. https://github.com/swirlds/services-hedera/issues/1728 */
 	private HapiApiSpec createFailsWithMissingSigs() {
 		KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));

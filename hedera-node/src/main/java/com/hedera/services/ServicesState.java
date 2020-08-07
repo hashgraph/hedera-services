@@ -211,7 +211,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	@Override
 	@Deprecated
 	public void copyFrom(SerializableDataInputStream in) throws IOException {
-		log.info("Restoring context of Services node {} from legacy (Swirlds Platform v0.6.x) state...", nodeId);
+		log.info("Restoring context of Services node {} from legacy (Platform v0.6.x) state...", nodeId);
 		in.readLong();
 		networkCtx().seqNo().deserialize(in);
 		legacyTmpBookSupplier.get().copyFrom(in);

@@ -133,7 +133,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	/* C.f. https://github.com/swirlds/services-hedera/issues/1728 */
 	private HapiApiSpec requiresNewKeyToSign() {
 		KeyShape shape = listOf(SIMPLE, listOf(2), threshOf(1, 3));
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON), sigs(OFF, OFF, ON)));
