@@ -31,7 +31,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
@@ -72,12 +72,12 @@ public class RepoNewCacheTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(accountMap),
+            new FCMapBackingAccounts(() -> accountMap),
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
@@ -170,7 +170,7 @@ public class RepoNewCacheTest {
     FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(accountMap);
+    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
@@ -188,12 +188,12 @@ public class RepoNewCacheTest {
               .key(new JContractIDKey(0, 0, 2))
               .customizing(someOtherAccount);
     } catch (Exception impossible) {}
-    backingAccounts.replace(IdUtils.asAccount("0.0.1"), someAccount);
-    backingAccounts.replace(IdUtils.asAccount("0.0.2"), someOtherAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.1"), someAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
@@ -206,9 +206,8 @@ public class RepoNewCacheTest {
       e.printStackTrace();
     }
 
-    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
-
     ledger.begin();
+    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
     repository.increaseNonce(someKeyBytes);
     ServicesRepositoryImpl track1 = repository.startTracking();
     track1.addBalance(someKeyBytes, BigInteger.TEN.negate());

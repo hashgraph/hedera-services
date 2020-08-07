@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
@@ -31,7 +30,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
@@ -97,9 +95,15 @@ public class SpecUtils {
 	}
 
 	public static void main(String... args) throws Exception {
-		var genesisLoc = new File("src/main/resource/mainnet-account950.pem");
-		var txt = asSerializedLegacyOcKeystore(genesisLoc, "swirlds", asAccount("0.0.950"));
-		var out = newBufferedWriter(Paths.get("MainStartupAccount.txt"));
+		var pemLoc = new File("pretend-genesis.pem");
+		var passphrase = "guessAgain";
+
+		var b64Loc = "PretendStartupAccount.txt";
+		var literal = "0.0.2";
+
+		var txt = asSerializedLegacyOcKeystore(pemLoc, passphrase, asAccount(literal));
+		var out = newBufferedWriter(Paths.get(b64Loc));
+
 		out.write(txt);
 		out.close();
 	}

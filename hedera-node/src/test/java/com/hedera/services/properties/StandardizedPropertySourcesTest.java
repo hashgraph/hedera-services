@@ -20,6 +20,7 @@ package com.hedera.services.properties;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -33,6 +34,7 @@ import org.junit.runner.RunWith;
 
 import java.util.function.Predicate;
 
+import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,11 +47,14 @@ import static com.hedera.services.context.properties.StandardizedPropertySources
 
 @RunWith(JUnitPlatform.class)
 public class StandardizedPropertySourcesTest {
-	StandardizedPropertySources subject;
 	Predicate fileSourceExists;
+	PropertySource bootstrapProps;
+
+	StandardizedPropertySources subject;
 
 	@BeforeEach
 	private void setup() {
+		bootstrapProps = mock(PropertySource.class);
 		fileSourceExists = mock(Predicate.class);
 	}
 
@@ -150,18 +155,6 @@ public class StandardizedPropertySourcesTest {
 		PropertySource properties = subject.asResolvingSource();
 
 		// then:
-		assertTrue(properties.containsProperty("bootstrap.customKeystore.masterKey"));
-		assertTrue(properties.containsProperty("bootstrap.customKeystore.path"));
-		assertTrue(properties.containsProperty("bootstrap.feeSchedulesJson.resource"));
-		assertTrue(properties.containsProperty("bootstrap.permissions.path"));
-		assertTrue(properties.containsProperty("bootstrap.properties.path"));
-		assertTrue(properties.containsProperty("bootstrap.rates.currentHbarEquiv"));
-		assertTrue(properties.containsProperty("bootstrap.rates.currentCentEquiv"));
-		assertTrue(properties.containsProperty("bootstrap.rates.currentExpiry"));
-		assertTrue(properties.containsProperty("bootstrap.rates.nextHbarEquiv"));
-		assertTrue(properties.containsProperty("bootstrap.rates.nextCentEquiv"));
-		assertTrue(properties.containsProperty("bootstrap.rates.nextExpiry"));
-		assertTrue(properties.containsProperty("bootstrap.systemFilesExpiry"));
 		assertTrue(properties.containsProperty("cache.records.ttl"));
 		assertTrue(properties.containsProperty("contracts.defaultSendThreshold"));
 		assertTrue(properties.containsProperty("contracts.defaultReceiveThreshold"));
@@ -169,38 +162,22 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("dev.defaultListeningNodeAccount"));
 		assertTrue(properties.containsProperty("dev.onlyDefaultNodeListens"));
 		assertTrue(properties.containsProperty("exchangeRates.intradayChange.limitPercent"));
-		assertTrue(properties.containsProperty("files.addressBook.num"));
-		assertTrue(properties.containsProperty("files.addressBookAdmin.idNum"));
-		assertTrue(properties.containsProperty("files.apiPermissions.num"));
-		assertTrue(properties.containsProperty("files.applicationProperties.num"));
-		assertTrue(properties.containsProperty("files.exchangeRates.num"));
-		assertTrue(properties.containsProperty("files.exchangeRatesAdmin.idNum"));
-		assertTrue(properties.containsProperty("files.feeSchedules.num"));
-		assertTrue(properties.containsProperty("files.feeSchedulesAdmin.idNum"));
 		assertTrue(properties.containsProperty("files.firstInAdminScope.num"));
 		assertTrue(properties.containsProperty("files.lastInAdminScope.num"));
 		assertTrue(properties.containsProperty("files.maxSizeKb"));
-		assertTrue(properties.containsProperty("files.nodeDetails.num"));
 		assertTrue(properties.containsProperty("grpc.port"));
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));
-		assertTrue(properties.containsProperty("hedera.createSystemFilesOnStartup"));
-		assertTrue(properties.containsProperty("hedera.createSystemAccountsOnStartup"));
-		assertTrue(properties.containsProperty("hedera.exitOnNodeStartupFailure"));
 		assertTrue(properties.containsProperty("hedera.exportAccountsOnStartup"));
 		assertTrue(properties.containsProperty("hedera.exportBalancesOnNewSignedState"));
 		assertTrue(properties.containsProperty("hedera.firstProtectedEntity.num"));
 		assertTrue(properties.containsProperty("hedera.lastProtectedEntity.num"));
-		assertTrue(properties.containsProperty("hedera.masterAccount.idNum"));
 		assertTrue(properties.containsProperty("hedera.profiles.active"));
-		assertTrue(properties.containsProperty("hedera.realm"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));
-		assertTrue(properties.containsProperty("hedera.shard"));
-		//assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
+		assertTrue(properties.containsProperty("hedera.transaction.maxMemoUtf8Bytes"));
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));
-		assertTrue(properties.containsProperty("hedera.transaction.minValididityBufferSecs"));
-		assertTrue(properties.containsProperty("hedera.treasuryAccount.idNum"));
+		assertTrue(properties.containsProperty("hedera.transaction.minValidityBufferSecs"));
 		assertTrue(properties.containsProperty("hedera.versionInfo.resource"));
 		assertTrue(properties.containsProperty("hedera.versionInfo.protoKey"));
 		assertTrue(properties.containsProperty("hedera.versionInfo.servicesKey"));
@@ -208,9 +185,9 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("iss.roundsToDump"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
-		assertTrue(properties.containsProperty("ledger.float.hbars"));
 		assertTrue(properties.containsProperty("ledger.funding.account"));
-		assertTrue(properties.containsProperty("ledger.records.addCacheRecordToState"));
+		assertTrue(properties.containsProperty("ledger.maxAccountNum"));
+		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.tps"));
@@ -228,6 +205,21 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	@Test
+	public void usesBootstrapSourceAsApropos() {
+		givenImpliedSubject();
+
+		// when:
+		PropertySource properties = subject.asResolvingSource();
+		// and:
+		BOOTSTRAP_PROP_NAMES.forEach(properties::getProperty);
+
+		// then:
+		for (String bootstrapProp : BOOTSTRAP_PROP_NAMES) {
+			verify(bootstrapProps).getProperty(bootstrapProp);
+		}
+	}
+
+	@Test
 	public void selectedSuppliersWork() {
 		given(fileSourceExists.test(any())).willReturn(true);
 		givenImpliedSubject();
@@ -237,32 +229,42 @@ public class StandardizedPropertySourcesTest {
 
 		// then:
 		assertDoesNotThrow(() ->
-				properties.getBooleanProperty("hedera.createSystemFilesOnStartup"));
-		assertDoesNotThrow(() ->
-				properties.getBooleanProperty("ledger.records.addCacheRecordToState"));
-		assertDoesNotThrow(() ->
 				properties.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"));
 		assertDoesNotThrow(() ->
 				properties.getIntProperty("validation.preConsensus.accountKey.retryBackoffIncrementMs"));
 	}
 
 	@Test
-	public void failsOnMissingAppProps() {
-		given(fileSourceExists.test(ApplicationConstants.PROPERTY_FILE)).willReturn(false);
+	public void failsOnMissingApiPermissionProps() {
+		given(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"))
+				.willReturn("application.properties");
+		given(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"))
+				.willReturn("api-permission.properties");
+		// and:
+		given(fileSourceExists.test("application.properties")).willReturn(true);
+		given(fileSourceExists.test("api-permission.properties")).willReturn(false);
 		givenImpliedSubject();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.assertSourcesArePresent());
+		verify(fileSourceExists).test("application.properties");
+		verify(fileSourceExists).test("api-permission.properties");
 	}
 
 	@Test
-	public void failsOnMissingApiPermissionProps() {
-		given(fileSourceExists.test(ApplicationConstants.PROPERTY_FILE)).willReturn(true);
-		given(fileSourceExists.test(ApplicationConstants.API_ACCESS_FILE)).willReturn(false);
+	public void failsOnMissingAppProps() {
+		given(bootstrapProps.getStringProperty("bootstrap.networkProperties.path"))
+				.willReturn("application.properties");
+		given(bootstrapProps.getStringProperty("bootstrap.hapiPermissions.path"))
+				.willReturn("api-permission.properties");
+		// and:
+		given(fileSourceExists.test("application.properties")).willReturn(false);
 		givenImpliedSubject();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.assertSourcesArePresent());
+		verify(fileSourceExists).test("application.properties");
+		verify(fileSourceExists,never()).test("api-permission.properties");
 	}
 
 	@Test
@@ -275,6 +277,6 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	private void givenImpliedSubject() {
-		subject = new StandardizedPropertySources(fileSourceExists);
+		subject = new StandardizedPropertySources(bootstrapProps, fileSourceExists);
 	}
 }

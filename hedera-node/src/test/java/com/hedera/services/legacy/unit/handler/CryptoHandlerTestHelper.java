@@ -39,7 +39,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InsufficientBalanceException;
 import com.hedera.services.legacy.exception.InvalidTransactionException;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -55,6 +54,15 @@ import static com.hedera.services.legacy.unit.handler.AccountOperations.recordOf
 import static java.util.stream.Collectors.joining;
 
 public class CryptoHandlerTestHelper extends CryptoHandler {
+	public static final String INSUFFICIENT_BAL = "INSUFFICIENT_BALANCE";
+	public static final String INSUFFICIENT_FEE = "INSUFFICIENT_FEE";
+	public static final String PAYER_ACCOUNT_NOT_FOUND = "PAYER_ACCOUNT_NOT_FOUND";
+	public static final String BAD_ENCODING = "BAD_ENCODING";
+	public static final String KEY_REQUIRED = "KEY_REQUIRED";
+	public static final String INSUFFICIENT_PAYER_BALANCE = "INSUFFICIENT_PAYER_BALANCE";
+	public static final String INSUFFICIENT_ACCOUNT_BALANCE = "INSUFFICIENT_ACCOUNT_BALANCE";
+	public static final String ACCOUNT_ETHADDRESS_NOT_FOUND = "ACCOUNT_ETHADDRESS_NOT_FOUND";
+	public static final String ACCOUNT_NOT_FOUND = "ACCOUNT_NOT_FOUND";
 	private static final Logger log = LogManager.getLogger(CryptoHandlerTestHelper.class);
 	private FCMap<MerkleEntityId, MerkleAccount> map;
 	private GlobalFlag globalFlag;
@@ -83,31 +91,31 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 	  }
 
 	  switch (ex.getMessage()) {
-		case (ApplicationConstants.INSUFFICIENT_PAYER_BALANCE):
+		case (INSUFFICIENT_PAYER_BALANCE):
 		  return ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
-		case (ApplicationConstants.INSUFFICIENT_BAL):
+		case (INSUFFICIENT_BAL):
 		  return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
-		case (ApplicationConstants.BAD_ENCODING):
+		case (BAD_ENCODING):
 		  return ResponseCodeEnum.BAD_ENCODING;
 
-		case (ApplicationConstants.KEY_REQUIRED):
+		case (KEY_REQUIRED):
 		  return ResponseCodeEnum.KEY_REQUIRED;
 
-		case (ApplicationConstants.INSUFFICIENT_FEE):
+		case (INSUFFICIENT_FEE):
 		  return ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
-		case (ApplicationConstants.PAYER_ACCOUNT_NOT_FOUND):
+		case (PAYER_ACCOUNT_NOT_FOUND):
 		  return ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
-		case (ApplicationConstants.INSUFFICIENT_ACCOUNT_BALANCE):
+		case (INSUFFICIENT_ACCOUNT_BALANCE):
 		  return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
-		case (ApplicationConstants.ACCOUNT_ETHADDRESS_NOT_FOUND):
+		case (ACCOUNT_ETHADDRESS_NOT_FOUND):
 		  return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-		case (ApplicationConstants.ACCOUNT_NOT_FOUND):
+		case (ACCOUNT_NOT_FOUND):
 		  return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 		default:
@@ -147,14 +155,14 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 					isAccountSetForDeletion = true;
 					break;
 				}
-				MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(acctId);
+				MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(acctId);
 				MerkleAccount mapValue = map.get(merkleEntityId);
 				if (mapValue == null) {
 					if (log.isDebugEnabled()) {
 						log.debug("@@ Null values detected: actAmt=" + actAmt + "; mapValue=" + mapValue + "; "
 								+ " mapKey :: " + merkleEntityId.toString() + "cryptoTransferTx=" + cryptoTransferTx);
 					}
-					throw new InvalidTransactionException(ApplicationConstants.ACCOUNT_NOT_FOUND);
+					throw new InvalidTransactionException(ACCOUNT_NOT_FOUND);
 				}
 				if (actAmt.getAmount() < 0) {
 					if (log.isDebugEnabled()) {
@@ -166,7 +174,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 						if (log.isDebugEnabled()) {
 							log.debug("Insufficient balance in account ID  :: " + acctId.getAccountNum());
 						}
-						throw new InsufficientBalanceException(ApplicationConstants.INSUFFICIENT_BAL);
+						throw new InsufficientBalanceException(INSUFFICIENT_BAL);
 					}
 				}
 			}
@@ -179,7 +187,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 			} else {
 				for (AccountAmount actAmt : accountAmounts) {
 					acctId = actAmt.getAccountID();
-					MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(acctId);
+					MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(acctId);
 					MerkleAccount mapValue = map.getForModify(merkleEntityId);
 					if (log.isDebugEnabled()) {
 						log.debug(
@@ -280,7 +288,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 
 	public boolean validateAccountID(AccountID accountID) {
 		boolean isValid = false;
-		MerkleEntityId merkleEntityId = MerkleEntityId.fromPojoAccountId(accountID);
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
 		if (map.containsKey(merkleEntityId)) {
 			MerkleAccount mapValue = map.get(merkleEntityId);
 			if (mapValue != null) {
@@ -295,7 +303,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 	 * The method checks whether an account is set for deletion or not
 	 */
 	public boolean isAccountSetForDelete(AccountID accountID) {
-		MerkleEntityId accountKey = MerkleEntityId.fromPojoAccountId(accountID);
+		MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
 		if (map.containsKey(accountKey)) {
 			MerkleAccount accountValue = map.get(accountKey);
 			return accountValue.isDeleted();
@@ -389,7 +397,7 @@ class AccountOperations {
 	}
 
 	static void markDeleted(AccountID target, FCMap<MerkleEntityId, MerkleAccount> ledger) {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(target);
+		MerkleEntityId key = MerkleEntityId.fromAccountId(target);
 		MerkleAccount account = ledger.getForModify(key);
 		account.setDeleted(true);
 		ledger.replace(key, account);
@@ -419,7 +427,7 @@ class AccountOperations {
 
 	static boolean isValid(AccountID account, FCMap<MerkleEntityId, MerkleAccount> ledger) {
 		return Optional
-				.ofNullable(ledger.get(MerkleEntityId.fromPojoAccountId(account)))
+				.ofNullable(ledger.get(MerkleEntityId.fromAccountId(account)))
 				.map(a -> !a.getKey().hasContractID())
 				.orElse(false);
 	}
@@ -427,7 +435,7 @@ class AccountOperations {
 	static void doTransfer(
 			AccountAmount transfer, FCMap<MerkleEntityId, MerkleAccount> ledger)
 			throws NegativeAccountBalanceException {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(transfer.getAccountID());
+		MerkleEntityId key = MerkleEntityId.fromAccountId(transfer.getAccountID());
 		MerkleAccount account = ledger.getForModify(key);
 		long adjustedBalance = Math.addExact(account.getBalance(), transfer.getAmount());
 		account.setBalance(adjustedBalance);
@@ -467,7 +475,7 @@ class AccountOperations {
 	}
 
 	static long balanceOf(AccountID account, FCMap<MerkleEntityId, MerkleAccount> ledger) {
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(account);
+		MerkleEntityId key = MerkleEntityId.fromAccountId(account);
 		return ledger.get(key).getBalance();
 	}
 

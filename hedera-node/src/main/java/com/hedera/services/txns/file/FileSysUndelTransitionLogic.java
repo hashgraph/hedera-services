@@ -22,6 +22,7 @@ package com.hedera.services.txns.file;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -41,16 +42,16 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 
 	private final HederaFs hfs;
-	private final Map<FileID, Long> oldExpiries;
 	private final TransactionContext txnCtx;
+	private final Map<EntityId, Long> expiries;
 
 	public FileSysUndelTransitionLogic(
 			HederaFs hfs,
-			Map<FileID, Long> oldExpiries,
+			Map<EntityId, Long> expiries,
 			TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
-		this.oldExpiries = oldExpiries;
+		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 	}
 
@@ -58,16 +59,17 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		var op = txnCtx.accessor().getTxn().getSystemUndelete();
 		var tbu = op.getFileID();
+		var entity = EntityId.ofNullableFileId(tbu);
 		var attr = new AtomicReference<JFileInfo>();
 
-		var validity = tryLookup(tbu, attr);
+		var validity = tryLookup(tbu, entity, attr);
 		if (validity != OK)	 {
 			txnCtx.setStatus(validity);
 			return;
 		}
 
 		var info = attr.get();
-		var oldExpiry = oldExpiries.get(tbu);
+		var oldExpiry = expiries.get(entity);
 		if (oldExpiry <= txnCtx.consensusTime().getEpochSecond()) {
 			hfs.rm(tbu);
 		} else {
@@ -75,12 +77,16 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
 			info.setExpirationTimeSeconds(oldExpiry);
 			hfs.sudoSetattr(tbu, info);
 		}
-		oldExpiries.remove(tbu);
+		expiries.remove(entity);
 		txnCtx.setStatus(SUCCESS);
 	}
 
-	private ResponseCodeEnum tryLookup(FileID tbu, AtomicReference<JFileInfo> attr) {
-		if (!oldExpiries.containsKey(tbu) || !hfs.exists(tbu)) {
+	private ResponseCodeEnum tryLookup(
+			FileID tbu,
+			EntityId entity,
+			AtomicReference<JFileInfo> attr
+	) {
+		if (!expiries.containsKey(entity) || !hfs.exists(tbu)) {
 			return INVALID_FILE_ID;
 		}
 

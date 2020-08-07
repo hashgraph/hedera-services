@@ -23,6 +23,7 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -81,7 +82,7 @@ class FileSysDelTransitionLogicTest {
 	PlatformTxnAccessor accessor;
 
 	HederaFs hfs;
-	Map<FileID, Long> oldExpiries;
+	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
 
 	FileSysDelTransitionLogic subject;
@@ -134,7 +135,7 @@ class FileSysDelTransitionLogicTest {
 		assertTrue(attr.isDeleted());;
 		assertEquals(oldExpiry, attr.getExpirationTimeSeconds());
 		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(tbd, Long.valueOf(oldExpiry));
+		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -166,7 +167,7 @@ class FileSysDelTransitionLogicTest {
 		assertTrue(attr.isDeleted());;
 		assertEquals(newExpiry, attr.getExpirationTimeSeconds());
 		inOrder.verify(hfs).setattr(tbd, attr);
-		inOrder.verify(oldExpiries).put(tbd, Long.valueOf(oldExpiry));
+		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 

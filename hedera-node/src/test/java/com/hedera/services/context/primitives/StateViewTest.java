@@ -79,7 +79,7 @@ class StateViewTest {
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 
-		subject = new StateView(StateView.EMPTY_TOPICS, StateView.EMPTY_ACCOUNTS);
+		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, StateView.EMPTY_ACCOUNTS_SUPPLIER);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 	}

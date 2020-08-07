@@ -33,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Adds retry-with-backoff functionality to the {@link DefaultFCMapAccountLookup} by
@@ -58,7 +59,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	final private HederaNodeStats stats;
 
 	public RetryingFCMapAccountLookup(
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			int maxRetries,
 			int retryWaitIncrementMs,
 			Pause pause,
@@ -76,7 +77,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 			Pause pause,
 			PropertySource properties,
 			HederaNodeStats stats,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		super(accounts);
 		this.stats = stats;

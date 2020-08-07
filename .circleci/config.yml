@@ -1061,14 +1061,14 @@ workflows:
             - attach_workspace:
                 at: /
 
-  nightly-regression:
+  nightly-regression-for-sdk070:
     triggers:
       - schedule:
-            cron: "0 5,9,13 * * *"
+            cron: "0 16,21 * * *"
             filters:
               branches:
                 only:
-                  - master
+                  - 0347-M-UpgradeToSdk070beta1
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1368,6 +1368,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 0347-M-UpgradeToSdk070beta1
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

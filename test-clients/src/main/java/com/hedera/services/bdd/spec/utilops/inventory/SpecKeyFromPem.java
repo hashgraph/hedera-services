@@ -104,8 +104,15 @@ public class SpecKeyFromPem extends UtilOp {
 		var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
 		var key = populatedFrom(ocKeystore);
 		var real = actualName();
-		linkedId.ifPresent(s -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s)));
-		linkSupplier.ifPresent(fn -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(fn.get())));
+		linkedId.ifPresent(s -> {
+			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveKey(s, key);
+		});
+		linkSupplier.ifPresent(fn -> {
+			var s = fn.get();
+			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveKey(s, key);
+		});
 		spec.registry().saveKey(real, key);
 		spec.keys().incorporate(real, ocKeystore, control);
 		return false;

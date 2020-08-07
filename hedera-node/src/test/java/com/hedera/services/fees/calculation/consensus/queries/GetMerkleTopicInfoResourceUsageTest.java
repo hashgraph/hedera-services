@@ -54,7 +54,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		topics = mock(FCMap.class);
-		view = new StateView(topics, StateView.EMPTY_ACCOUNTS);
+		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER);
 
 		subject = new GetTopicInfoResourceUsage();
 	}
@@ -104,7 +104,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 				.build();
 
 		// given:
-		given(topics.get(MerkleEntityId.fromPojoTopicId(topicId))).willReturn(merkleTopic);
+		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
 
 		// when:
 		FeeData costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);

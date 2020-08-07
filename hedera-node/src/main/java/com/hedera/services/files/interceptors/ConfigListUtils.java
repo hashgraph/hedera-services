@@ -28,9 +28,10 @@ import org.apache.logging.log4j.Logger;
 public class ConfigListUtils {
 	public static final Logger log = LogManager.getLogger(ConfigListUtils.class);
 
-	private ConfigListUtils(){
-		throw new IllegalStateException("Utility class");
+	ConfigListUtils() {
+		throw new IllegalStateException();
 	}
+
 	public static boolean isConfigList(byte[] data) {
 		try {
 			ServicesConfigurationList.parseFrom(data);

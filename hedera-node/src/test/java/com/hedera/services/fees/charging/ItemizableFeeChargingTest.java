@@ -54,7 +54,8 @@ import static com.hedera.services.fees.TxnFeeType.*;
 class ItemizableFeeChargingTest {
 	long network = 500L, service = 200L, node = 100L, thresholdRecord = 150L, cacheRecord = 50L;
 
-	AccountID submittingNode = IdUtils.asAccount("0.0.3");
+	AccountID givenNode = IdUtils.asAccount("0.0.3");
+	AccountID submittingNode = IdUtils.asAccount("0.0.4");
 	AccountID payer = IdUtils.asAccount("0.0.1001");
 	AccountID funding = IdUtils.asAccount("0.0.98");
 	AccountID participant = IdUtils.asAccount("0.0.2002");
@@ -75,7 +76,7 @@ class ItemizableFeeChargingTest {
 		exemptions = mock(FeeExemptions.class);
 		properties = mock(PropertySource.class);
 
-		given(txn.getNodeAccountID()).willReturn(submittingNode);
+		given(txn.getNodeAccountID()).willReturn(givenNode);
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getPayer()).willReturn(payer);
 		given(properties.getAccountProperty("ledger.funding.account")).willReturn(funding);
@@ -83,11 +84,26 @@ class ItemizableFeeChargingTest {
 		subject = new ItemizableFeeCharging(exemptions, properties);
 		subject.setLedger(ledger);
 
-		subject.resetFor(accessor);
+		subject.resetFor(accessor, submittingNode);
 	}
 
 	@Test
-	public void reportsChargedFees() {
+	public void reportsChargedFeesForSubmittingNode() {
+		givenKnownFeeAmounts();
+		given(ledger.getBalance(submittingNode)).willReturn(Long.MAX_VALUE);
+
+		// when:
+		subject.chargeSubmittingNodeUpTo(NETWORK_NODE_SERVICE_FEES);
+
+		// then:
+		assertEquals(network, subject.chargedToSubmittingNode(NETWORK));
+		assertEquals(service, subject.chargedToSubmittingNode(SERVICE));
+		// and:
+		assertEquals(0, subject.chargedToSubmittingNode(CACHE_RECORD));
+	}
+
+	@Test
+	public void reportsChargedFeesForPayer() {
 		givenKnownFeeAmounts();
 
 		// when:
@@ -127,7 +143,7 @@ class ItemizableFeeChargingTest {
 	@Test
 	public void doesntRecordSelfPayments() {
 		givenKnownFeeAmounts();
-		given(accessor.getPayer()).willReturn(submittingNode);
+		given(accessor.getPayer()).willReturn(givenNode);
 
 		// when:
 		subject.chargePayer(EnumSet.of(NODE));
@@ -143,11 +159,11 @@ class ItemizableFeeChargingTest {
 		given(ledger.getBalance(submittingNode)).willReturn(network / 2);
 
 		// when:
-		subject.chargeNodeUpTo(EnumSet.of(NETWORK));
+		subject.chargeSubmittingNodeUpTo(EnumSet.of(NETWORK));
 
 		// then:
 		verify(ledger).doTransfer(submittingNode, funding, network / 2);
-		assertEquals(network / 2, subject.nodeFeesCharged.get(NETWORK).longValue());
+		assertEquals(network / 2, subject.submittingNodeFeesCharged.get(NETWORK).longValue());
 	}
 
 	@Test
@@ -156,11 +172,11 @@ class ItemizableFeeChargingTest {
 		given(ledger.getBalance(submittingNode)).willReturn(network * 2);
 
 		// when:
-		subject.chargeNodeUpTo(EnumSet.of(NETWORK));
+		subject.chargeSubmittingNodeUpTo(EnumSet.of(NETWORK));
 
 		// then:
 		verify(ledger).doTransfer(submittingNode, funding, network);
-		assertEquals(network, subject.nodeFeesCharged.get(NETWORK).longValue());
+		assertEquals(network, subject.submittingNodeFeesCharged.get(NETWORK).longValue());
 	}
 
 	@Test
@@ -217,7 +233,7 @@ class ItemizableFeeChargingTest {
 		given(ledger.getBalance(submittingNode)).willReturn(network - 1);
 
 		// when:
-		subject.chargeNodeUpTo(NETWORK_FEE);
+		subject.chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		TransferList itemizedFees = subject.itemizedFees();
 
@@ -233,7 +249,7 @@ class ItemizableFeeChargingTest {
 	public void itemizesWhenNodeIsPayer() {
 		givenKnownFeeAmounts();
 		given(ledger.getBalance(any())).willReturn(Long.MAX_VALUE);
-		given(accessor.getPayer()).willReturn(submittingNode);
+		given(accessor.getPayer()).willReturn(givenNode);
 
 		// when:
 		subject.chargePayer(NETWORK_NODE_SERVICE_FEES);
@@ -248,10 +264,10 @@ class ItemizableFeeChargingTest {
 				itemizedFees.getAccountAmountsList(),
 				contains(
 						aa(funding, network),
-						aa(submittingNode, -network),
+						aa(givenNode, -network),
 						aa(funding, service),
-						aa(submittingNode, -service),
-						aa(submittingNode, -cacheRecord),
+						aa(givenNode, -service),
+						aa(givenNode, -cacheRecord),
 						aa(funding, cacheRecord),
 						aa(funding, thresholdRecord),
 						aa(payer, -thresholdRecord),
@@ -278,7 +294,7 @@ class ItemizableFeeChargingTest {
 				contains(
 						aa(funding, network),
 						aa(payer, -network),
-						aa(submittingNode, node),
+						aa(givenNode, node),
 						aa(payer, -node),
 						aa(funding, service),
 						aa(payer, -service),
@@ -304,9 +320,9 @@ class ItemizableFeeChargingTest {
 		// then:
 		verify(ledger).doTransfer(participant, funding, network);
 		verify(ledger).doTransfer(participant, funding, service);
-		verify(ledger).doTransfer(participant, submittingNode, node);
+		verify(ledger).doTransfer(participant, givenNode, node);
 		// and:
-		assertTrue(subject.nodeFeesCharged.isEmpty());
+		assertTrue(subject.submittingNodeFeesCharged.isEmpty());
 		assertTrue(subject.payerFeesCharged.isEmpty());
 	}
 
@@ -337,7 +353,7 @@ class ItemizableFeeChargingTest {
 		// then:
 		verify(ledger).doTransfer(payer, funding, network);
 		verify(ledger).doTransfer(payer, funding, service);
-		verify(ledger).doTransfer(payer, submittingNode, node);
+		verify(ledger).doTransfer(payer, givenNode, node);
 		// and:
 		assertEquals(network, subject.payerFeesCharged.get(NETWORK).longValue());
 		assertEquals(service, subject.payerFeesCharged.get(SERVICE).longValue());
@@ -356,7 +372,7 @@ class ItemizableFeeChargingTest {
 
 		// then:
 		verify(ledger).doTransfer(payer, funding, network);
-		verify(ledger).doTransfer(payer, submittingNode, node / 2);
+		verify(ledger).doTransfer(payer, givenNode, node / 2);
 		// and:
 		assertEquals(network, subject.payerFeesCharged.get(NETWORK).longValue());
 		assertEquals(node / 2, subject.payerFeesCharged.get(NODE).longValue());
@@ -370,13 +386,13 @@ class ItemizableFeeChargingTest {
 		EnumMap<TxnFeeType, Long> paidByNode = mock(EnumMap.class);
 
 		// given:
-		subject.funding = submittingNode;
-		subject.nodeFeesCharged = paidByNode;
+		subject.funding = givenNode;
+		subject.submittingNodeFeesCharged = paidByNode;
 		subject.payerFeesCharged = paidByPayer;
 		subject.thresholdFeePayers = threshPayers;
 
 		// when:
-		subject.resetFor(accessor);
+		subject.resetFor(accessor, submittingNode);
 
 		// then:
 		verify(paidByNode).clear();

@@ -23,7 +23,6 @@ package com.hedera.services.txns.consensus;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -72,7 +71,7 @@ class SubmitMessageTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		topics.clear();
 
-		subject = new SubmitMessageTransitionLogic(topics, validator, transactionContext);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test
@@ -100,7 +99,7 @@ class SubmitMessageTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
 		assertEquals(1L, topic.getSequenceNumber()); // Starts at 0.
 
@@ -203,7 +202,7 @@ class SubmitMessageTransitionLogicTest {
 	}
 
 	private void assertUnchangedTopics() {
-		var topic = topics.get(MerkleEntityId.fromPojoTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)));
 		assertEquals(0L, topic.getSequenceNumber());
 		assertArrayEquals(new byte[48], topic.getRunningHash());
 	}
@@ -226,14 +225,14 @@ class SubmitMessageTransitionLogicTest {
 	private void givenValidTransactionContext() {
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromPojoTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextNoMessage() {
 		givenTransaction(ConsensusSubmitMessageTransactionBody.newBuilder()
 				.setTopicID(asTopic(TOPIC_ID)).setTopicID(asTopic(TOPIC_ID)));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromPojoTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextInvalidTopic() {
@@ -251,7 +250,7 @@ class SubmitMessageTransitionLogicTest {
 		givenTransaction(getBasicValidTransactionBodyBuilder()
 				.setChunkInfo(chunkInfo));
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(MerkleEntityId.fromPojoTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(MerkleEntityId.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private TransactionID txnId(AccountID payer, long epochSecond) {

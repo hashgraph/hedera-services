@@ -37,8 +37,8 @@ public class MetadataMapFactory {
 	private static final int REALM_INDEX = 1;
 	private static final int ACCOUNT_INDEX = 2;
 
-	private  MetadataMapFactory(){
-		throw new IllegalStateException("Factory class");
+	MetadataMapFactory(){
+		throw new IllegalStateException();
 	}
 
 	public static Map<FileID, JFileInfo> metaMapFrom(Map<String, byte[]> store) {

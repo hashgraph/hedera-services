@@ -20,6 +20,7 @@ package com.hedera.services.files.interceptors;
  * ‍
  */
 
+import com.hedera.services.files.MetadataMapFactory;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.junit.jupiter.api.Assertions;
@@ -29,6 +30,7 @@ import org.junit.runner.RunWith;
 
 import static com.hedera.services.files.interceptors.ConfigListUtils.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(JUnitPlatform.class)
@@ -66,5 +68,11 @@ class ConfigListUtilsTest {
 	public void parses() {
 		// expect:
 		Assertions.assertEquals(example, uncheckedParse(example.toByteArray()));
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, ConfigListUtils::new);
 	}
 }

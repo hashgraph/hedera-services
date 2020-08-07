@@ -20,7 +20,7 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.services.files.DataMapFactory.*;
 
@@ -57,7 +58,7 @@ class DataMapFactoryTest {
 		// given:
 		var fid = IdUtils.asFile("0.2.3");
 		// and:
-		var expected = FeeCalcUtils.pathOf(fid);
+		var expected = FeeCalcUtilsTest.pathOf(fid);
 
 		// when:
 		var actual = toKeyString(fid);
@@ -67,7 +68,7 @@ class DataMapFactoryTest {
 	}
 
 	private String asLegacyPath(String fid) {
-		return FeeCalcUtils.pathOf(IdUtils.asFile(fid));
+		return FeeCalcUtilsTest.pathOf(IdUtils.asFile(fid));
 	}
 
 	@Test
@@ -112,5 +113,11 @@ class DataMapFactoryTest {
 
 		dataMap.clear();
 		assertTrue(dataMap.isEmpty());
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, DataMapFactory::new);
 	}
 }

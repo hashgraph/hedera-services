@@ -22,7 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;
@@ -54,9 +54,9 @@ public class SystemFileCreation {
   }
 
   private ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = PropertiesLoader.getExpiryTime();
-    int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-    int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
+    long expiryTime = Long.MAX_VALUE;
+    int currentHbarEquivalent = 1;
+    int currentCentEquivalent = 12;
     return RequestBuilder
         .getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
             currentHbarEquivalent, 15, expiryTime);

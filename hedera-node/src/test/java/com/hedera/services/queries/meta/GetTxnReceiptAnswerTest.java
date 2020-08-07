@@ -92,7 +92,7 @@ class GetTxnReceiptAnswerTest {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId);
 
-		given(recordCache.isReceiptPresent(validTxnId)).willReturn(false);
+		given(recordCache.getReceipt(validTxnId)).willReturn(null);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -107,7 +107,6 @@ class GetTxnReceiptAnswerTest {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
 
-		given(recordCache.isReceiptPresent(validTxnId)).willReturn(true);
 		given(recordCache.getReceipt(validTxnId)).willReturn(receipt);
 
 		// when:

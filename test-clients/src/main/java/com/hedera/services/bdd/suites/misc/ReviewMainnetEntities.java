@@ -22,11 +22,7 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.CryptoTransfer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,10 +32,11 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
 public class ReviewMainnetEntities extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ReviewMainnetEntities.class);
@@ -52,9 +49,50 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						reviewObjects(),
-						checkTls(),
+//						checkTls(),
+						xfer(),
+//						doSomething(),
 				}
 		);
+	}
+
+	private HapiApiSpec doSomething() {
+		final String PROXIES = "35.237.194.97:0.0.3,35.186.171.76:0.0.4,35.194.0.222:0.0.5,35.197.115.53:0.0.6," +
+				"35.236.103.219:0.0.7,35.203.12.99:0.0.8,34.76.93.218:0.0.9,34.89.9.244:0.0.10," +
+				"34.107.118.148:0.0.11,34.91.239.212:0.0.12,35.200.11.146:0.0.13," +
+				"34.96.218.21:0.0.14,35.240.220.53:0.0.15";
+		final String NODES = "35.237.208.135:0.0.3,35.245.226.22:0.0.4,"
+				+ "34.68.9.203:0.0.5,34.83.131.197:0.0.6";
+		final String DIRECT_NODES = "35.237.194.97:0.0.3,13.71.127.1:0.0.6,27.110.33.145:0.0.7,20.49.137.94:0.0.12," +
+				"35.245.226.22:0.0.4,34.72.55.137:0.0.5,35.203.26.115:0.0.8,34.77.3.213:0.0.9," + // Ubuntu
+				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"; // CentOS
+		final String DIRECT_MAINNET = "50.28.79.14:0.0.3";
+
+		return customHapiSpec("xfer")
+				.withProperties(Map.of(
+						"nodes", DIRECT_MAINNET,
+						"default.payer", "0.0.950",
+						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+				)).given( ).when().then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+				);
+	}
+
+	private HapiApiSpec xfer() {
+		final String NODES = "35.237.200.180:0.0.3";
+		final long ONE_HBAR = 100_000_000L;
+		return customHapiSpec("xfer")
+				.withProperties(Map.of(
+						"nodes", NODES,
+						"default.payer", "0.0.950",
+						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+				)).given(
+				).when(
+//						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 100 * ONE_HBAR))
+				).then(
+						getAccountBalance(GENESIS).logged(),
+						getAccountBalance("0.0.55").logged()
+				);
 	}
 
 	private HapiApiSpec checkTls() {

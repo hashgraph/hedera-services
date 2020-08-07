@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.test.utils.IdUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,12 @@ class MerkleEntityIdTest {
 	}
 
 	@Test
+	public void toAccountIdWorks() {
+		// expect:
+		assertEquals(IdUtils.asAccount("13.25.7"), subject.toAccountId());
+	}
+
+	@Test
 	public void objectContractMet() {
 		// given:
 		var one = new MerkleEntityId();
@@ -85,12 +92,8 @@ class MerkleEntityIdTest {
 		var defaultSubject = new MerkleEntityId();
 
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyToExtra(null));
 		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFrom(null));
 		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.diffCopyTo(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> defaultSubject.diffCopyFrom(null, null));
 	}
 
 	@Test

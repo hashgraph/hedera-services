@@ -113,7 +113,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
                 Optional.ofNullable(newExpirationTimestamp).map(RichInstant::toGrpc).orElse(null));
 
         // when:
-        given(topics.get(MerkleEntityId.fromPojoTopicId(topicId))).willReturn(merkleTopic);
+        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
         FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
 
         // expect:

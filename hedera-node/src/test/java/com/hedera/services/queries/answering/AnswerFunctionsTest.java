@@ -85,8 +85,8 @@ class AnswerFunctionsTest {
 		payerAccount.records().offer(targetRecord);
 
 		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(target)))).willReturn(payerAccount);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		recordCache = mock(RecordCache.class);
 
@@ -98,21 +98,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(absentTxnId);
 
-		given(recordCache.isRecordPresent(absentTxnId)).willReturn(false);
-
-		// when:
-		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
-
-		// then:
-		assertFalse(record.isPresent());
-	}
-
-	@Test
-	public void returnsEmptyOptionalWhenMissing() {
-		// setup:
-		Query validQuery = getRecordQuery(missingTxnId);
-
-		given(recordCache.isRecordPresent(missingTxnId)).willReturn(false);
+		given(recordCache.getRecord(absentTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -126,7 +112,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(false);
+		given(recordCache.getRecord(targetTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -140,7 +126,6 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(true);
 		given(recordCache.getRecord(targetTxnId)).willReturn(cachedTargetRecord);
 
 		// when:
@@ -149,6 +134,7 @@ class AnswerFunctionsTest {
 		// then:
 		assertEquals(cachedTargetRecord, record.get());
 		verify(accounts, never()).get(any());
+		verify(recordCache, never()).isReceiptPresent(any());
 	}
 
 	ExpirableTxnRecord constructTargetRecord() {

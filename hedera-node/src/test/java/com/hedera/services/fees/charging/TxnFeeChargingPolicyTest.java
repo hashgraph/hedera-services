@@ -66,7 +66,7 @@ class TxnFeeChargingPolicyTest {
 
 		// then:
 		verify(charging).setFor(NETWORK, network);
-		verify(charging).chargeNodeUpTo(NETWORK_FEE);
+		verify(charging).chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		assertEquals(OK, outcome);
 	}
@@ -116,7 +116,7 @@ class TxnFeeChargingPolicyTest {
 		charging.setLedger(ledger);
 
 		// when:
-		charging.resetFor(accessor);
+		charging.resetFor(accessor, submittingNode);
 		ResponseCodeEnum outcome = subject.applyForDuplicate(charging, fee);
 
 		// then:
@@ -223,7 +223,7 @@ class TxnFeeChargingPolicyTest {
 		// and:
 		verify(charging).isPayerWillingToCover(NETWORK_FEE);
 		verify(charging).canPayerAfford(NETWORK_FEE);
-		verify(charging).chargeNodeUpTo(NETWORK_FEE);
+		verify(charging).chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
@@ -241,7 +241,7 @@ class TxnFeeChargingPolicyTest {
 		verify(charging).setFor(SERVICE, service);
 		// and:
 		verify(charging).isPayerWillingToCover(NETWORK_FEE);
-		verify(charging).chargeNodeUpTo(NETWORK_FEE);
+		verify(charging).chargeSubmittingNodeUpTo(NETWORK_FEE);
 		// and:
 		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}

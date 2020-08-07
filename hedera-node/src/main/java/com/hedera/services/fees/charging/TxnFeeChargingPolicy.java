@@ -80,7 +80,7 @@ public class TxnFeeChargingPolicy {
 	 */
 	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fee) {
 		charging.setFor(NETWORK, fee.getNetworkFee());
-		charging.chargeNodeUpTo(NETWORK_FEE);
+		charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
 		return OK;
 	}
 
@@ -92,10 +92,10 @@ public class TxnFeeChargingPolicy {
 		setStandardFees(charging, fee);
 
 		if (!charging.isPayerWillingToCover(NETWORK_FEE)) {
-			charging.chargeNodeUpTo(NETWORK_FEE);
+			charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
 			return INSUFFICIENT_TX_FEE;
 		} else if (!charging.canPayerAfford(NETWORK_FEE)) {
-			charging.chargeNodeUpTo(NETWORK_FEE);
+			charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
 			return applyGivenNodeDueDiligence(charging, discount);
