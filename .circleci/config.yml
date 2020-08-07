@@ -685,7 +685,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - release/0.6
+                  - X-release/0.6-disabled
     jobs:
       - fast-build-artifact
 #        context: SonarCloud
