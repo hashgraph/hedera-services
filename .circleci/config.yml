@@ -2674,7 +2674,7 @@ jobs:
       - run:
           name: wait HGCApp restarted
           command: |
-            sleep 300
+            sleep 600
       - run:
           name: Show java process
           command: |
