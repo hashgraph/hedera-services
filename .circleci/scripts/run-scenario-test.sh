@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -eE
 
 if [ $# -lt 3 ]; then
   echo "USAGE: $0 fqcn node-terraform-index node-account [other-args]"
