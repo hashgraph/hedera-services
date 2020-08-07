@@ -992,19 +992,25 @@ workflows:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
           workflow-name: "feature-update-regression"
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
-          pre-steps:
-            - start-testnet
-          post-steps:
-            - save-this-job-client-logs:
-                workflow-name: "feature-update-regression"
+          workflow-name: "feature udpate"
+          infra-branch: services-with-platform070
+      # - regression-target-testnet:
+      #     context: Slack
+      #     requires:
+      #       - fast-build-artifact
+      #     pre-steps:
+      #       - start-testnet
+      #     post-steps:
+      #       - save-this-job-client-logs:
+      #           workflow-name: "feature-update-regression"
       - run-accessory-tests:
           context: Slack
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
