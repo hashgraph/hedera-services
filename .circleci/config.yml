@@ -978,19 +978,15 @@ workflows:
             - attach_workspace:
                 at: /
   feature-update-regression:
-#    triggers:
-#        - schedule:
-#            cron: "0 8 * * *"
-#            filters:
-#              branches:
-#                only:
-#                  - master
+    triggers:
+        - schedule:
+            cron: "0 8 * * *"
+            filters:
+              branches:
+                only:
+                  - master
     jobs:
       - fast-build-artifact:
-          filters:
-            branches:
-              only:
-                - 00404-D-feature-update-testnet
           context: Slack
           post-steps:
             - save-this-job-client-logs:
@@ -1360,7 +1356,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 00404-D-feature-update-testnet
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
