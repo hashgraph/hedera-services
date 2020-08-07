@@ -65,8 +65,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveTests()
-//				negativeTests()
+				positiveTests(),
+				negativeTests()
 		);
 	}
 
@@ -137,11 +137,11 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("VanillaTransferSucceeds")
 				.given(
-//						UtilVerbs.inParallel(
+						UtilVerbs.inParallel(
 							cryptoCreate("payer"),
 							cryptoCreate("payeeSigReq").receiverSigRequired(true),
 							cryptoCreate("payeeNoSigReq")
-//						)
+						)
 				).when(
 						cryptoTransfer(
 								tinyBarsFromTo("payer", "payeeSigReq", 1_000L),
