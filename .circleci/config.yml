@@ -992,19 +992,19 @@ workflows:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
           workflow-name: "feature-update-regression"
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
-          pre-steps:
-            - start-testnet
+          workflow-name: "feature-update-regression"
+          infra-branch: services-with-platform070
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
       - run-accessory-tests:
           context: Slack
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
@@ -1049,14 +1049,14 @@ workflows:
             - attach_workspace:
                 at: /
 
-  nightly-regression-for-sdk070:
+  nightly-regression:
     triggers:
       - schedule:
-            cron: "0 16,21 * * *"
+            cron: "0 5,9,13 * * *"
             filters:
               branches:
                 only:
-                  - 0347-M-UpgradeToSdk070beta1
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1356,7 +1356,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 0347-M-UpgradeToSdk070beta1
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
