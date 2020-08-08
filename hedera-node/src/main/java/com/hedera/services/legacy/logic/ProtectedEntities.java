@@ -35,18 +35,16 @@ import java.util.function.LongPredicate;
  * @author Hua Li Created on 2019-07-31
  */
 public class ProtectedEntities {
-  private static final long MAX_PROTECTED_ENTITY_NUM = PropertiesLoader.getProtectedMaxEntityNum();
-  private static final long MIN_PROTECTED_ENTITY_NUM = PropertiesLoader.getProtectedMinEntityNum();
+  private static final long MAX_PROTECTED_ENTITY_NUM = 1000;
+  private static final long MIN_PROTECTED_ENTITY_NUM = 1;
   private static final long GENESIS_NUM = 2L;
-  private static final long MASTER_NUM = 55L;
-  private static final long MASTER_CONTROL_RANGE_MAX_NUM = ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM;
-  private static final long MASTER_CONTROL_RANGE_MIN_NUM = ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM;
-  private static final long ADDRESS_ACC_NUM = ApplicationConstants.ADDRESS_ACC_NUM;
-  private static final long FEE_ACC_NUM = ApplicationConstants.FEE_ACC_NUM;
-  private static final long EXCHANGE_ACC_NUM = ApplicationConstants.EXCHANGE_ACC_NUM;
-  private static final long FREEZE_ACC_NUM = ApplicationConstants.FREEZE_ACC_NUM;
-  private static final long SYSTEM_DELETE_ACC_NUM = ApplicationConstants.SYSTEM_DELETE_ACC_NUM;
-  private static final long SYSTEM_UNDELETE_ACC_NUM = ApplicationConstants.SYSTEM_UNDELETE_ACC_NUM;
+  private static final long MASTER_NUM = 50L;
+  private static final long ADDRESS_ACC_NUM = 55L;
+  private static final long FEE_ACC_NUM = 56L;
+  private static final long EXCHANGE_ACC_NUM = 57L;
+  private static final long FREEZE_ACC_NUM = 58L;
+  private static final long SYSTEM_DELETE_ACC_NUM = 59L;
+  private static final long SYSTEM_UNDELETE_ACC_NUM = 60L;
   
   private static long ADDRESS_FILE_ACCOUNT_NUM = ApplicationConstants.ADDRESS_FILE_ACCOUNT_NUM;
   private static long NODE_DETAILS_FILE = ApplicationConstants.NODE_DETAILS_FILE;
@@ -82,7 +80,7 @@ public class ProtectedEntities {
           isMasterAccount((AccountID) entity)) { // master account cannot update itself
         return false;
       }
-      else if (seq >= MASTER_CONTROL_RANGE_MIN_NUM && seq <= MASTER_CONTROL_RANGE_MAX_NUM)
+      else if (seq >= 50 && seq <= 80)
         rv = true;
       else if(seq == ADDRESS_FILE_ACCOUNT_NUM || seq == NODE_DETAILS_FILE || seq == FEE_FILE_ACCOUNT_NUM || seq == EXCHANGE_RATE_FILE_ACCOUNT_NUM
     		  || seq == APPLICATION_PROPERTIES_FILE_NUM || seq == API_PROPERTIES_FILE_NUM )
@@ -383,7 +381,7 @@ public class ProtectedEntities {
     boolean rv = true;
     long seq = getEntityNumber(acctId);
     if (isMasterAccount(payerAccount) && !isMasterAccount(acctId)) {
-      if (seq >= MASTER_CONTROL_RANGE_MIN_NUM && seq <= MASTER_CONTROL_RANGE_MAX_NUM) {
+      if (seq >= 50 && seq <= 80) {
         rv = false;
       }
     } 

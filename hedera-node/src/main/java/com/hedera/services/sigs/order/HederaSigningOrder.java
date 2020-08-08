@@ -67,21 +67,21 @@ import static java.util.stream.Collectors.toList;
 public class HederaSigningOrder {
 	private static final Logger log = LogManager.getLogger(HederaSigningOrder.class);
 
-	final EntityNumbers number;
+	final EntityNumbers entityNums;
 	final SigMetadataLookup sigMetaLookup;
 	final Predicate<TransactionBody> targetWaclSigns;
 	final BiPredicate<AccountID, AccountID> updateAccountSigns;
 
-	public HederaSigningOrder(EntityNumbers number, SigMetadataLookup sigMetaLookup) {
-		this(number, sigMetaLookup, ProtectedEntities::shouldWaclSign, ProtectedEntities::shouldExistingAccountSign);
+	public HederaSigningOrder(EntityNumbers entityNums, SigMetadataLookup sigMetaLookup) {
+		this(entityNums, sigMetaLookup, ProtectedEntities::shouldWaclSign, ProtectedEntities::shouldExistingAccountSign);
 	}
 	public HederaSigningOrder(
-			EntityNumbers number,
+			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
 			Predicate<TransactionBody> targetWaclSigns,
 			BiPredicate<AccountID, AccountID> updateAccountSigns
 	) {
-		this.number = number;
+		this.entityNums = entityNums;
 		this.sigMetaLookup = sigMetaLookup;
 		this.targetWaclSigns = targetWaclSigns;
 		this.updateAccountSigns = updateAccountSigns;
@@ -203,13 +203,13 @@ public class HederaSigningOrder {
 	private List<JKey> forInvolvedFiles(TransactionBody txn) throws Exception {
 		if (isFileTxn(txn)) {
 			var waclShouldSign = targetWaclSigns.test(txn);
-			var payerIsSysAdmin = number.ofAccount().isSysAdmin(txn.getTransactionID().getAccountID().getAccountNum());
+			var isSuperuser = entityNums.accounts().isSuperuser(txn.getTransactionID().getAccountID().getAccountNum());
 			if (txn.hasFileCreate()) {
 				return forFileCreate(txn.getFileCreate());
 			} else if (txn.hasFileAppend()) {
-				return forFileAppend(txn.getFileAppend(), waclShouldSign, payerIsSysAdmin);
+				return forFileAppend(txn.getFileAppend(), waclShouldSign, isSuperuser);
 			} else if (txn.hasFileUpdate()) {
-				return forFileUpdate(txn.getFileUpdate(), waclShouldSign, payerIsSysAdmin);
+				return forFileUpdate(txn.getFileUpdate(), waclShouldSign, isSuperuser);
 			} else if (txn.hasFileDelete()) {
 				return forFileDelete(txn.getFileDelete());
 			} else {
@@ -285,10 +285,10 @@ public class HederaSigningOrder {
 	private List<JKey> forFileUpdate(
 			FileUpdateTransactionBody op,
 			boolean waclShouldSign,
-			boolean payerIsSysAdmin
+			boolean payerIsSuperuser
 	) throws Exception {
 		var target = op.getFileID();
-		if (payerIsSysAdmin && number.ofFile().isSystem(target.getFileNum())) {
+		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
 			return emptyList();
 		} else {
 			return accumulated(keys -> {
@@ -305,10 +305,10 @@ public class HederaSigningOrder {
 	private List<JKey> forFileAppend(
 			FileAppendTransactionBody op,
 			boolean waclShouldSign,
-			boolean payerIsSysAdmin
+			boolean payerIsSuperuser
 	) throws Exception {
 		var target = op.getFileID();
-		if (payerIsSysAdmin && number.ofFile().isSystem(target.getFileNum())) {
+		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
 			return emptyList();
 		} else {
 			return waclShouldSign ? forPossiblyImmutableFile(target) : emptyList();

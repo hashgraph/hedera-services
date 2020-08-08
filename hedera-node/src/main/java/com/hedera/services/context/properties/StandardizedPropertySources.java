@@ -168,10 +168,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 		/* Bootstrap properties, which include all global/static properties. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
-		source.put("files.firstInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MIN_NUM);
-		source.put("files.lastInAdminScope.num", () -> ApplicationConstants.MASTER_CONTROL_RANGE_MAX_NUM);
-		source.put("hedera.firstProtectedEntity.num", PropertiesLoader::getProtectedMinEntityNum);
-		source.put("hedera.lastProtectedEntity.num", PropertiesLoader::getProtectedMaxEntityNum);
 		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
 
 		/* Global/dynamic properties. */

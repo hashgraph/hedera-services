@@ -534,7 +534,7 @@ public class ServicesContext {
 
 	public EntityNumbers entityNums() {
 		if (entityNums == null) {
-			entityNums = new EntityNumbers(fileNums(), accountNums());
+			entityNums = new EntityNumbers(fileNums(), hederaNums(), accountNums());
 		}
 		return entityNums;
 	}

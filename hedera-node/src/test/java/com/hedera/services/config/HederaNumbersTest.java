@@ -37,6 +37,7 @@ class HederaNumbersTest {
 	@BeforeEach
 	private void setup() {
 		properties = mock(PropertySource.class);
+		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(123L);
 		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
 		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
 
@@ -48,5 +49,6 @@ class HederaNumbersTest {
 		// expect:
 		assertEquals(1L, subject.shard());
 		assertEquals(2L, subject.realm());
+		assertEquals(123L, subject.numReservedSystemEntities());
 	}
 }

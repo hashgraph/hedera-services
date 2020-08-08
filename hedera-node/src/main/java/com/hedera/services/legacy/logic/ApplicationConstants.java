@@ -43,19 +43,6 @@ public class ApplicationConstants {
 	public static long NODE_DETAILS_FILE = 102;
 	public static long DEFAULT_FILE_SHARD = 0;
 	public static long DEFAULT_FILE_REALM = 0;
-	public static long HEDERA_START_SEQUENCE = 1001;
-
-	// Constants related to protected entities
-	public static final long MASTER_CONTROL_RANGE_MAX_NUM = 80;
-	public static final long MASTER_CONTROL_RANGE_MIN_NUM = 50;
-	public static final long ADDRESS_ACC_NUM = 55;
-	public static final long FEE_ACC_NUM = 56;
-	public static final long EXCHANGE_ACC_NUM = 57;
-	public static final long FREEZE_ACC_NUM = 58;
-	public static final long SYSTEM_DELETE_ACC_NUM = 59;
-	public static final long SYSTEM_UNDELETE_ACC_NUM = 60;
-
-	public static long DEFAULT_SHARD = 0l;
 
 	public static String NO = "NO";
 	public static int ZERO = 0;
@@ -90,11 +77,6 @@ public class ApplicationConstants {
 
 	public static long DEF_CONT_SEND_THRESHOLD = 1000000000000000000L;
 	public static long DEF_CONT_RECEIVE_THRESHOLD = 1000000000000000000L;
-
-	public static int GEN_ACCT_NUM = 2;
-	public static int MASTER_ACCT_NUM = 50;
-	public static int PROTECT_ENT_MAX_NUM = 1000;
-	public static int PROTECT_ENT_MIN_NUM = 1;
 
 	public static long CONFIG_ACCT_NUM = 100_000_000;
 

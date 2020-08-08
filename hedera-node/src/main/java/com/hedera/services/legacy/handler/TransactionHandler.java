@@ -64,7 +64,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
@@ -78,9 +77,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -330,7 +327,7 @@ public class TransactionHandler {
     var permissionKey = permissionFileKeyForTxn(txn);
     if (!StringUtils.isEmpty(permissionKey)) {
       var payer = txn.getTransactionID().getAccountID();
-      if (accountNums.isSysAdmin(payer.getAccountNum())) {
+      if (accountNums.isSuperuser(payer.getAccountNum())) {
         return OK;
       } else {
         PermissionedAccountsRange accountRange =  PropertiesLoader.getApiPermission().get(permissionKey);
@@ -562,7 +559,7 @@ public class TransactionHandler {
     var queryName = permissionFileKeyForQuery(query);
     if (!StringUtils.isEmpty(queryName)) {
       AccountID payer = body.getTransactionID().getAccountID();
-      if (accountNums.isSysAdmin(payer.getAccountNum())) {
+      if (accountNums.isSuperuser(payer.getAccountNum())) {
         permissionStatus = OK;
       } else {
         PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(queryName);

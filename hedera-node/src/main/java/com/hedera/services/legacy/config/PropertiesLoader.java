@@ -176,14 +176,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
 	}
 
-	public static long getProtectedMaxEntityNum() {
-		return SyncPropertiesObject.getProtectedMaxEntityNum();
-	}
-
-	public static long getProtectedMinEntityNum() {
-		return SyncPropertiesObject.getProtectedMinEntityNum();
-	}
-
 	public static long getDefaultContractSenderThreshold() {
 		return SyncPropertiesObject.getDefaultContractSenderThreshold();
 	}
