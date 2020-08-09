@@ -27,7 +27,6 @@ import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;

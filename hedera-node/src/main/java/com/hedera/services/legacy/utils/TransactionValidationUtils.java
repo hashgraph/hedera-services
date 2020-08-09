@@ -23,7 +23,7 @@ package com.hedera.services.legacy.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -44,24 +44,16 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.swirlds.common.Platform;
-import com.swirlds.fcmap.FCMap;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.builder.RequestBuilder.convertProtoTimeStamp;
 
 @Deprecated
 public class TransactionValidationUtils {

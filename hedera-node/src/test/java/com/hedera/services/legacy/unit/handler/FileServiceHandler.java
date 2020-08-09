@@ -51,7 +51,6 @@ import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.hedera.services.legacy.exception.InvalidFileWACLException;
 import com.hedera.services.legacy.exception.SerializationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.io.IOException;
@@ -72,8 +71,10 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * @author hua
  */
 public class FileServiceHandler {
-  public static final LongPredicate IS_PROPERTIES_OR_PERMISSIONS = num ->
-          (num == ProtectedEntities.APPLICATION_PROPERTIES_FILE_NUM) || (num == ProtectedEntities.API_PROPERTIES_FILE_NUM);
+  public static final LongPredicate IS_PROPERTIES_OR_PERMISSIONS = num -> (num == 121) || (num == 122);
+  public static final long ADDRESS_ACC_NUM = 55L;
+  public static final long FEE_ACC_NUM = 56L;
+  public static final long EXCHANGE_ACC_NUM = 57L;
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
 
   private GlobalFlag globalFlag;
@@ -147,21 +148,21 @@ public class FileServiceHandler {
       }
       else if (seq >= 50 && seq <= 80)
         rv = true;
-      else if(seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || seq == ProtectedEntities.FEE_FILE_ACCOUNT_NUM || seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM
-    		  || seq == ProtectedEntities.APPLICATION_PROPERTIES_FILE_NUM || seq == ProtectedEntities.API_PROPERTIES_FILE_NUM )
+      else if(seq == 101 || seq == 102 || seq == 111 || seq == 112
+    		  || seq == 121 || seq == 122 )
         rv = true;
     } else if(account.equals(entity)) { // protected accounts can update themselves (excluding master account)
       return true;
-    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.ADDRESS_ACC_NUM))) {
-      if (seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+    } else if (account.equals(genAccountID(ADDRESS_ACC_NUM))) {
+      if (seq == 101 || seq == 102 || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
         rv = true;
       }
-    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.FEE_ACC_NUM))) {
-      if (seq == ProtectedEntities.FEE_FILE_ACCOUNT_NUM) {
+    } else if (account.equals(genAccountID(FEE_ACC_NUM))) {
+      if (seq == 111) {
         rv = true;
       }
-    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.EXCHANGE_ACC_NUM))) {
-      if (seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+    } else if (account.equals(genAccountID(EXCHANGE_ACC_NUM))) {
+      if (seq == 112 || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
         rv = true;
       }
     } else {
@@ -225,7 +226,11 @@ public class FileServiceHandler {
     return rv;
   }
 
-  /**
+	public static AccountID genAccountID(long accNum) {
+	  return AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accNum).build();
+	}
+
+	/**
    * Creates a file on the ledger.
    */
   public TransactionRecord createFile(TransactionBody gtx, Instant timestamp, FileID fid,
@@ -309,7 +314,7 @@ public class FileServiceHandler {
       return returnCode;
     
     if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
-      if (fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
+      if (fid.getFileNum() == 111) {
         String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
         byte[] fileContent;
         if (appendFlag) {
@@ -451,16 +456,14 @@ public class FileServiceHandler {
                 }
               }
 
-            } else if (validateCode.equals(ResponseCodeEnum.OK) &&
-                    fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
+            } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 111) {
               feeScheduleInterceptor.update(storageWrapper, fid);
-            } else if (validateCode.equals(ResponseCodeEnum.OK)
-                    && fid.getFileNum() == ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM) {
+            } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 121) {
               System.out.println("Calling appProps interceptor");
             	ApplicationPropertiesInterceptor appPropertiesInterceptor = new ApplicationPropertiesInterceptor();
             	appPropertiesInterceptor.update(storageWrapper, fid);
              }else if (validateCode.equals(ResponseCodeEnum.OK)
-                     && fid.getFileNum() == ApplicationConstants.API_PROPERTIES_FILE_NUM) {
+                     && fid.getFileNum() == 122) {
              	APIPropertiesInterceptor apiPropertiesInterceptor = new APIPropertiesInterceptor();
              	apiPropertiesInterceptor.update(storageWrapper, fid);
               }

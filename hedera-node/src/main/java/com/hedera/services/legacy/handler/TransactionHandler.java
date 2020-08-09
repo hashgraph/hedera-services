@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.legacy.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -65,7 +66,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
@@ -118,6 +118,7 @@ public class TransactionHandler {
   private UsagePricesProvider usagePrices;
   private HbarCentExchange exchange;
   private FeeCalculator fees;
+  private FeeExemptions exemptions;
   private Supplier<StateView> stateView;
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
@@ -146,7 +147,8 @@ public class TransactionHandler {
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
           AccountNumbers accountNums,
-          SystemOpPolicies systemOpPolicies
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -160,6 +162,7 @@ public class TransactionHandler {
     this.queryFeeCheck = queryFeeCheck;
     this.accountNums = accountNums;
     this.systemOpPolicies = systemOpPolicies;
+    this.exemptions = exemptions;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -170,12 +173,13 @@ public class TransactionHandler {
           Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           AccountNumbers accountNums,
-          SystemOpPolicies systemOpPolicies
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
             null, null, null, null,
-            accountNums, null, systemOpPolicies);
+            accountNums, null, systemOpPolicies, exemptions);
   }
 
   public TransactionHandler(
@@ -193,7 +197,8 @@ public class TransactionHandler {
           FunctionalityThrottling throttling,
           AccountNumbers accountNums,
           HederaNodeStats stats,
-          SystemOpPolicies systemOpPolicies
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -210,6 +215,7 @@ public class TransactionHandler {
     this.accountNums = accountNums;
     this.stats = stats;
     this.systemOpPolicies = systemOpPolicies;
+    this.exemptions = exemptions;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -346,23 +352,26 @@ public class TransactionHandler {
     return NOT_SUPPORTED;
   }
 
-  private TxnValidityAndFeeReq validateTransactionFeeCoverage(Transaction transaction, TransactionBody trBody) {
+  private TxnValidityAndFeeReq validateTransactionFeeCoverage(
+          TransactionBody txn,
+          SignedTxnAccessor accessor
+  ) {
     ResponseCodeEnum returnCode = OK;
-    if (ProtectedEntities.isFree(trBody)) {
+    if (exemptions.hasExemptPayer(accessor)) {
       return new TxnValidityAndFeeReq(returnCode);
     }
 
     long fee = 0L;
     long feeRequired = 0L;
-    if (trBody.getTransactionID().hasAccountID()) {
-      AccountID payerAccount = trBody.getTransactionID().getAccountID();
+    if (txn.getTransactionID().hasAccountID()) {
+      AccountID payerAccount = txn.getTransactionID().getAccountID();
       if (isAccountExist(payerAccount)) {
         Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
                 .map(MerkleAccount::getBalance)
                 .orElse(null);
-        long suppliedFee = trBody.getTransactionFee();
-        long payerChangeDuringTxn = !trBody.hasCryptoTransfer() ? 0L :
-            trBody.getCryptoTransfer().getTransfers().getAccountAmountsList()
+        long suppliedFee = txn.getTransactionFee();
+        long payerChangeDuringTxn = !txn.hasCryptoTransfer() ? 0L :
+            txn.getCryptoTransfer().getTransfers().getAccountAmountsList()
                     .stream()
                     .filter(aa -> aa.getAccountID().equals(payerAccount))
                     .mapToLong(AccountAmount::getAmount)
@@ -373,9 +382,8 @@ public class TransactionHandler {
 
         if (returnCode == OK) {
           try {
-            SignedTxnAccessor accessor = new SignedTxnAccessor(transaction);
             JKey payerKey = accounts.get().get(fromAccountId(payerAccount)).getKey();
-            Timestamp at = trBody.getTransactionID().getTransactionValidStart();
+            Timestamp at = txn.getTransactionID().getTransactionValidStart();
             FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
             fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();
           } catch (Exception e) {
@@ -389,16 +397,16 @@ public class TransactionHandler {
             feeRequired = fee;
           } else if (payerAccountBalance < fee) {
             returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-          } else if (trBody.hasContractCreateInstance()) {
-            ContractCreateTransactionBody createBody = trBody.getContractCreateInstance();
+          } else if (txn.hasContractCreateInstance()) {
+            ContractCreateTransactionBody createBody = txn.getContractCreateInstance();
             long gasInTransacton = createBody.getGas();
             long gasCost = gasInTransacton * getGasPrice(HederaFunctionality.ContractCreate);
             long balance = createBody.getInitialBalance();
             if (payerAccountBalance < (fee + gasCost + balance)) {
               returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
             }
-          } else if (trBody.hasContractCall()) {
-            ContractCallTransactionBody callBody = trBody.getContractCall();
+          } else if (txn.hasContractCall()) {
+            ContractCallTransactionBody callBody = txn.getContractCall();
             long gasCost = callBody.getGas() * getGasPrice(HederaFunctionality.ContractCall);
             long amount = callBody.getAmount();
             if (payerAccountBalance < (fee + gasCost + amount)) {
@@ -509,7 +517,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(transaction, txn);
+      TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(txn, accessor);
       returnCode = localResp.getValidity();
       feeRequired = localResp.getRequiredFee();
     }

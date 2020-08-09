@@ -20,12 +20,7 @@ package com.hedera.services.legacy.logic;
  * ‍
  */
 
-import java.text.MessageFormat;
-import java.util.MissingResourceException;
-
 public class ApplicationConstants {
-	public static final long APPLICATION_PROPERTIES_FILE_NUM = 121;
-	public static final long API_PROPERTIES_FILE_NUM = 122;
 	public static String NETTY_MODE_DEV = "DEV";
 
 	public static String LEDGER_PATH = "/{0}/";
@@ -37,10 +32,7 @@ public class ApplicationConstants {
 
 	// Signature Algorithm Type Constants
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
-	public static long FEE_FILE_ACCOUNT_NUM = 111;
-	public static long ADDRESS_FILE_ACCOUNT_NUM = 101;
 	public static long EXCHANGE_RATE_FILE_ACCOUNT_NUM = 112;
-	public static long NODE_DETAILS_FILE = 102;
 	public static long DEFAULT_FILE_SHARD = 0;
 	public static long DEFAULT_FILE_REALM = 0;
 

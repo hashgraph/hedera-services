@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -101,6 +102,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		// given:
 		Transaction invalidSignedTxn = Transaction.newBuilder()
 				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes())).build();
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		subject = new TransactionHandler(
 				null,
 				() -> accounts,
@@ -113,7 +115,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accounts),
 				new MockAccountNumbers(),
-				new SystemOpPolicies(new MockEntityNumbers()));
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 
 		// expect:
 		assertFalse(subject.verifySignature(invalidSignedTxn));
@@ -347,13 +350,15 @@ public class TxnHandlerVerifySigRegressionTest {
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		subject = new TransactionHandler(
 				null,
 				precheckVerifier,
 				() -> accounts,
 				DEFAULT_NODE,
 				new MockAccountNumbers(),
-				new SystemOpPolicies(new MockEntityNumbers()));
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 	}
 }
 

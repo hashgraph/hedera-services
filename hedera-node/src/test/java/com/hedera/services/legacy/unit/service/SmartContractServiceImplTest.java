@@ -34,6 +34,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -260,6 +261,7 @@ public class SmartContractServiceImplTest {
 
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -272,7 +274,8 @@ public class SmartContractServiceImplTest {
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
-				new SystemOpPolicies(new MockEntityNumbers()));
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 		HbarCentExchange exchange = mock(HbarCentExchange.class);
 		long expiryTime = Long.MAX_VALUE;
 		ExchangeRateSet rates = RequestBuilder

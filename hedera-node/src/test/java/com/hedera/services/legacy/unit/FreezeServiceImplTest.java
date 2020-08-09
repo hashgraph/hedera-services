@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -137,6 +138,7 @@ public class FreezeServiceImplTest {
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     HbarCentExchange exchange = new OneToOneRates();
+    var policies = new SystemOpPolicies(new MockEntityNumbers());
     transactionHandler = new TransactionHandler(
             receiptCache,
             () -> accountFCMap,
@@ -149,7 +151,8 @@ public class FreezeServiceImplTest {
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),
-            new SystemOpPolicies(new MockEntityNumbers()));
+            policies,
+            new StandardExemptions(new MockAccountNumbers(), policies));
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");

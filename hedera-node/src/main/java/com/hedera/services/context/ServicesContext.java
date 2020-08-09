@@ -29,6 +29,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -215,7 +216,6 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.migration.DefaultStateMigrations;
 import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
-import com.hedera.services.legacy.services.fees.DefaultFeeExemptions;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
@@ -877,7 +877,7 @@ public class ServicesContext {
 
 	public FeeExemptions exemptions() {
 		if (exemptions == null) {
-			exemptions = new DefaultFeeExemptions();
+			exemptions = new StandardExemptions(accountNums(), systemOpPolicies());
 		}
 		return exemptions;
 	}
@@ -1210,7 +1210,8 @@ public class ServicesContext {
 					bucketThrottling(),
 					accountNums(),
 					stats(),
-					systemOpPolicies());
+					systemOpPolicies(),
+					exemptions());
 		}
 		return txns;
 	}
