@@ -23,6 +23,7 @@ package com.hedera.services.legacy.handler;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
@@ -122,6 +123,7 @@ public class TransactionHandler {
   private QueryFeeCheck queryFeeCheck;
   private AccountNumbers accountNums;
   private HederaNodeStats stats;
+  private SystemOpPolicies systemOpPolicies;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -143,7 +145,8 @@ public class TransactionHandler {
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
-          AccountNumbers accountNums
+          AccountNumbers accountNums,
+          SystemOpPolicies systemOpPolicies
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -156,6 +159,7 @@ public class TransactionHandler {
     this.basicPrecheck = basicPrecheck;
     this.queryFeeCheck = queryFeeCheck;
     this.accountNums = accountNums;
+    this.systemOpPolicies = systemOpPolicies;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -165,12 +169,13 @@ public class TransactionHandler {
           PrecheckVerifier verifier,
           Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
-          AccountNumbers accountNums
+          AccountNumbers accountNums,
+          SystemOpPolicies systemOpPolicies
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
             null, null, null, null,
-            accountNums, null);
+            accountNums, null, systemOpPolicies);
   }
 
   public TransactionHandler(
@@ -187,7 +192,8 @@ public class TransactionHandler {
           QueryFeeCheck queryFeeCheck,
           FunctionalityThrottling throttling,
           AccountNumbers accountNums,
-          HederaNodeStats stats
+          HederaNodeStats stats,
+          SystemOpPolicies systemOpPolicies
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -203,6 +209,7 @@ public class TransactionHandler {
     this.throttling = throttling;
     this.accountNums = accountNums;
     this.stats = stats;
+    this.systemOpPolicies = systemOpPolicies;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -439,10 +446,12 @@ public class TransactionHandler {
 
     ResponseCodeEnum returnCode = OK;
     long feeRequired = 0L;
+    SignedTxnAccessor accessor = null;
     TransactionBody txn = TransactionBody.getDefaultInstance();
     try {
-      txn = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
-    } catch (Exception e1) {
+      accessor = new SignedTxnAccessor(transaction);
+      txn = accessor.getTxn();
+    } catch (InvalidProtocolBufferException e1) {
       returnCode = INVALID_TRANSACTION_BODY;
     }
 
@@ -496,7 +505,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      returnCode = ProtectedEntities.validateProtectedEntities(txn);
+      returnCode = systemOpPolicies.check(accessor).asStatus();
     }
 
     if (returnCode == OK) {

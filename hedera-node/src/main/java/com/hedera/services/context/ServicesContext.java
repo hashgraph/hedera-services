@@ -35,7 +35,7 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -310,6 +310,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
+	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
 	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
@@ -1014,6 +1015,13 @@ public class ServicesContext {
 		return fileGrpc;
 	}
 
+	public SystemOpPolicies systemOpPolicies() {
+		if (systemOpPolicies == null) {
+			systemOpPolicies = new SystemOpPolicies(entityNums());
+		}
+		return systemOpPolicies;
+	}
+
 	public CryptoController cryptoGrpc() {
 		if (cryptoGrpc == null) {
 			cryptoGrpc = new CryptoController(
@@ -1190,7 +1198,8 @@ public class ServicesContext {
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),
-					stats());
+					stats(),
+					systemOpPolicies());
 		}
 		return txns;
 	}

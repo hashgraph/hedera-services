@@ -26,6 +26,7 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -384,6 +385,7 @@ public class ServicesContextTest {
 		assertThat(ctx.systemAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
 		assertThat(ctx.b64KeyReader(), instanceOf(LegacyEd25519KeyReader.class));
 		assertThat(ctx.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
+		assertThat(ctx.systemOpPolicies(), instanceOf(SystemOpPolicies.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

@@ -33,6 +33,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -269,7 +271,8 @@ public class SmartContractServiceImplTest {
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
-				new MockAccountNumbers());
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 		HbarCentExchange exchange = mock(HbarCentExchange.class);
 		long expiryTime = Long.MAX_VALUE;
 		ExchangeRateSet rates = RequestBuilder

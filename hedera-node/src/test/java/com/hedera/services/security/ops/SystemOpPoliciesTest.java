@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -232,6 +234,138 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
+	public void systemDeleteRecognizesImpermissibleContractDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(123)));
+		// expect:
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesImpermissibleContractUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(123)));
+		// expect:
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesUnauthorizedContractUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(1234)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesAuthorizedContractUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysUndeleteTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(1234)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesAuthorizedFileUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysUndeleteTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(1234)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesUnauthorizedFileUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(1234)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemUndeleteRecognizesImpermissibleFileUndel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setSystemUndelete(SystemUndeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(123)));
+		// expect:
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemDeleteRecognizesImpermissibleFileDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(123)));
+		// expect:
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemDeleteRecognizesUnauthorizedFileDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(1234)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemDeleteRecognizesAuthorizedFileDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysDeleteTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setFileID(file(1234)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemDeleteRecognizesUnauthorizedContractDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(1234)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void systemDeleteRecognizesAuthorizedContractDel() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysDeleteTxn()
+				.setSystemDelete(SystemDeleteTransactionBody
+						.newBuilder()
+						.setContractID(contract(1234)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
 	public void fileAppendRecognizesUnnecessary() throws InvalidProtocolBufferException {
 		// given:
 		var txn = exchangeRatesAdminTxn()
@@ -397,6 +531,14 @@ class SystemOpPoliciesTest {
 
 	private TransactionBody.Builder sysAdminTxn() {
 		return txnWithPayer(50);
+	}
+
+	private TransactionBody.Builder sysDeleteTxn() {
+		return txnWithPayer(59);
+	}
+
+	private TransactionBody.Builder sysUndeleteTxn() {
+		return txnWithPayer(60);
 	}
 
 	private TransactionBody.Builder exchangeRatesAdminTxn() {

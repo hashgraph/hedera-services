@@ -115,7 +115,58 @@ public class FileServiceHandler {
 		}
 	}
 
-	/**
+  /**
+   * Checks if an account has authority to update an entity based on the following rules: Treasury
+   * account can update all entities below 0.0.1001 Account 0.0.50 can update all entities from
+   * 0.0.50 - 0.0.80 Network Function Master Account A/c 0.0.50 - Update all Network Function
+   * accounts & perform all the Network Functions listed below Network Function Accounts
+   * A/c 0.0.55 - Update Address Book files (0.0.101/102) + Properties/Permission files (0.0.121/122)
+   * A/c 0.0.56 - Update Fee schedule (0.0.111)
+   * A/c 0.0.57 - Update Exchange Rate (0.0.112) + Properties/Permission files (0.0.121/122)
+   *
+   * @param account account to be checked
+   * @param entity entity to be updated
+   * @return true if the account has the authority to update the entity, false otherwise
+   */
+  public static boolean hasAuthorityToUpdate(AccountID account, Object entity) {
+    if (ProtectedEntities.isTreasury(account)) {
+      return true;
+    }
+
+    boolean rv = false;
+    long seq = ProtectedEntities.getEntityNumber(entity);
+    if (ProtectedEntities.isMasterAccount(account)) {
+      if((entity instanceof AccountID) &&
+          ProtectedEntities.isMasterAccount((AccountID) entity)) { // master account cannot update itself
+        return false;
+      }
+      else if (seq >= 50 && seq <= 80)
+        rv = true;
+      else if(seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || seq == ProtectedEntities.FEE_FILE_ACCOUNT_NUM || seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM
+    		  || seq == ProtectedEntities.APPLICATION_PROPERTIES_FILE_NUM || seq == ProtectedEntities.API_PROPERTIES_FILE_NUM )
+        rv = true;
+    } else if(account.equals(entity)) { // protected accounts can update themselves (excluding master account)
+      return true;
+    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.ADDRESS_ACC_NUM))) {
+      if (seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || ProtectedEntities.IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+        rv = true;
+      }
+    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.FEE_ACC_NUM))) {
+      if (seq == ProtectedEntities.FEE_FILE_ACCOUNT_NUM) {
+        rv = true;
+      }
+    } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.EXCHANGE_ACC_NUM))) {
+      if (seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM || ProtectedEntities.IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+        rv = true;
+      }
+    } else {
+      //NoOp
+    }
+
+    return rv;
+  }
+
+  /**
    * Creates a file on the ledger.
    */
   public TransactionRecord createFile(TransactionBody gtx, Instant timestamp, FileID fid,
@@ -198,7 +249,7 @@ public class FileServiceHandler {
     if (!ProtectedEntities.isProtectedEntity(fid))
       return returnCode;
     
-    if (ProtectedEntities.hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
+    if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
       if (fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
         String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
         byte[] fileContent;

@@ -22,26 +22,39 @@ package com.hedera.services.security.ops;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.FileAppend;
-import com.hederahashgraph.api.proto.java.FileUpdate;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import static com.hedera.services.security.ops.SystemOpAuthorization.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 import java.util.EnumMap;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.security.ops.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.services.security.ops.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+
 public class SystemOpPolicies {
 	private final EntityNumbers entityNums;
 
-	private final EnumMap<HederaFunctionality, Function<TransactionBody, SystemOpAuthorization>> functionPolicies =
-			new EnumMap<>(HederaFunctionality.class);
+	private final EnumMap<HederaFunctionality, Function<TransactionBody, SystemOpAuthorization>> functionPolicies;
 
 	public SystemOpPolicies(EntityNumbers entityNums) {
 		this.entityNums = entityNums;
+
+		functionPolicies = new EnumMap<>(HederaFunctionality.class);
 
 		functionPolicies.put(FileDelete, this::checkFileDelete);
 		functionPolicies.put(CryptoDelete, this::checkCryptoDelete);
@@ -53,12 +66,72 @@ public class SystemOpPolicies {
 		functionPolicies.put(FileAppend, this::checkFileAppend);
 
 		functionPolicies.put(Freeze, this::checkFreeze);
+		functionPolicies.put(SystemDelete, this::checkSystemDelete);
+		functionPolicies.put(SystemUndelete, this::checkSystemUndelete);
 	}
 
 	public SystemOpAuthorization check(SignedTxnAccessor accessor) {
-		return Optional.ofNullable(functionPolicies.get(accessor.getFunction()))
-				.map(opCheck -> opCheck.apply(accessor.getTxn()))
+		return check(accessor.getTxn(), accessor.getFunction());
+	}
+
+	public SystemOpAuthorization check(TransactionBody txn, HederaFunctionality function) {
+		return Optional.ofNullable(functionPolicies.get(function))
+				.map(opCheck -> opCheck.apply(txn))
 				.orElse(UNNECESSARY);
+	}
+
+	private SystemOpAuthorization checkSystemUndelete(TransactionBody txn) {
+		var op = txn.getSystemUndelete();
+		long payer = payerFor(txn);
+		if (op.hasFileID()) {
+			return checkSystemUndeleteFile(payer, op.getFileID());
+		} else {
+			return checkSystemUndeleteContract(payer, op.getContractID());
+		}
+	}
+
+	private SystemOpAuthorization checkSystemDelete(TransactionBody txn) {
+		var op = txn.getSystemDelete();
+		long payer = payerFor(txn);
+		if (op.hasFileID()) {
+			return checkSystemDeleteFile(payer, op.getFileID());
+		} else {
+			return checkSystemDeleteContract(payer, op.getContractID());
+		}
+	}
+
+	private SystemOpAuthorization checkSystemUndeleteFile(long payerAccount, FileID id) {
+		return entityNums.isSystemFile(id)
+				? IMPERMISSIBLE
+				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+	}
+
+	private SystemOpAuthorization checkSystemUndeleteContract(long payerAccount, ContractID id) {
+		return entityNums.isSystemContract(id)
+				? IMPERMISSIBLE
+				: (hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+	}
+
+	private SystemOpAuthorization checkSystemDeleteFile(long payerAccount, FileID id) {
+		return entityNums.isSystemFile(id)
+				? IMPERMISSIBLE
+				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+	}
+
+	private SystemOpAuthorization checkSystemDeleteContract(long payerAccount, ContractID id) {
+		return entityNums.isSystemContract(id)
+				? IMPERMISSIBLE
+				: (hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED);
+	}
+
+	private boolean hasSysDelPrivileges(long payerAccount) {
+		return entityNums.accounts().isSuperuser(payerAccount) ||
+				payerAccount == entityNums.accounts().systemDeleteAdmin();
+	}
+
+	private boolean hasSysUndelPrivileges(long payerAccount) {
+		return entityNums.accounts().isSuperuser(payerAccount) ||
+				payerAccount == entityNums.accounts().systemUndeleteAdmin();
 	}
 
 	private SystemOpAuthorization checkFreeze(TransactionBody txn) {
@@ -66,7 +139,6 @@ public class SystemOpPolicies {
 		boolean isAuthorized = payer == entityNums.accounts().treasury() ||
 				payer == entityNums.accounts().systemAdmin() ||
 				payer == entityNums.accounts().freezeAdmin();
-
 		return isAuthorized ? AUTHORIZED : UNAUTHORIZED;
 	}
 

@@ -22,8 +22,10 @@ package com.hedera.services.legacy.unit;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
@@ -89,7 +91,8 @@ public class RequestValidationTest {
                 null,
                 null,
                 new MockAccountNumbers(),
-                null);
+                null,
+                new SystemOpPolicies(new MockEntityNumbers()));
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 

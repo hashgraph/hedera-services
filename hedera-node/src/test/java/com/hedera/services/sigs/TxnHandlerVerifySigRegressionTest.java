@@ -25,6 +25,7 @@ import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.validation.QueryFeeCheck;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.utils.PrecheckUtils;
@@ -102,7 +103,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accounts),
-				new MockAccountNumbers());
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 
 		// expect:
 		assertFalse(subject.verifySignature(invalidSignedTxn));
@@ -337,7 +339,8 @@ public class TxnHandlerVerifySigRegressionTest {
 				precheckVerifier,
 				() -> accounts,
 				DEFAULT_NODE,
-				new MockAccountNumbers());
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 	}
 }
 

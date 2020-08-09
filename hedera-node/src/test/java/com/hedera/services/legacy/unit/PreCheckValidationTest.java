@@ -22,6 +22,8 @@ package com.hedera.services.legacy.unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.handler.TransactionHandler;
@@ -172,7 +174,9 @@ class PreCheckValidationTest {
 				TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(() -> accountFCMap), new MockAccountNumbers());
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -404,7 +408,8 @@ class PreCheckValidationTest {
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
-				new MockAccountNumbers());
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -445,8 +450,8 @@ class PreCheckValidationTest {
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
-				new MockAccountNumbers());
-
+				new MockAccountNumbers(),
+				new SystemOpPolicies(new MockEntityNumbers()));
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

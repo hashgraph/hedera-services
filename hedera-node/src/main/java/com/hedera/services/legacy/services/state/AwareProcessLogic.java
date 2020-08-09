@@ -217,7 +217,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		var sysAuthStatus = ProtectedEntities.validateProtectedEntities(accessor.getTxn());
+		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
 		if (sysAuthStatus != OK) {
 			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;

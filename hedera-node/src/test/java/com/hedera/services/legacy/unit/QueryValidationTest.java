@@ -23,10 +23,12 @@ package com.hedera.services.legacy.unit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
@@ -117,7 +119,8 @@ class QueryValidationTest {
             precheckVerifier,
             () -> map,
             nodeAccount,
-            new MockAccountNumbers());
+            new MockAccountNumbers(),
+            new SystemOpPolicies(new MockEntityNumbers()));
     transactionHandler.setBasicPrecheck(
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR));
     byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
