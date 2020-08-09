@@ -22,6 +22,8 @@ package com.hedera.services.security.ops;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.FileAppend;
+import com.hederahashgraph.api.proto.java.FileUpdate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -44,6 +46,13 @@ public class SystemOpPolicies {
 		functionPolicies.put(FileDelete, this::checkFileDelete);
 		functionPolicies.put(CryptoDelete, this::checkCryptoDelete);
 		functionPolicies.put(ContractDelete, this::checkContractDelete);
+
+		functionPolicies.put(CryptoUpdate, this::checkCryptoUpdate);
+		functionPolicies.put(ContractUpdate, this::checkContractUpdate);
+		functionPolicies.put(FileUpdate, this::checkFileUpdate);
+		functionPolicies.put(FileAppend, this::checkFileAppend);
+
+		functionPolicies.put(Freeze, this::checkFreeze);
 	}
 
 	public SystemOpAuthorization check(SignedTxnAccessor accessor) {
@@ -52,17 +61,60 @@ public class SystemOpPolicies {
 				.orElse(UNNECESSARY);
 	}
 
+	private SystemOpAuthorization checkFreeze(TransactionBody txn) {
+		var payer = payerFor(txn);
+		boolean isAuthorized = payer == entityNums.accounts().treasury() ||
+				payer == entityNums.accounts().systemAdmin() ||
+				payer == entityNums.accounts().freezeAdmin();
+
+		return isAuthorized ? AUTHORIZED : UNAUTHORIZED;
+	}
+
+	private SystemOpAuthorization checkContractUpdate(TransactionBody txn) {
+		var target = txn.getContractUpdateInstance().getContractID();
+		return entityNums.isSystemContract(target)
+				? (canUpdate(payerFor(txn), target.getContractNum()) ? AUTHORIZED : UNAUTHORIZED)
+				: UNNECESSARY;
+	}
+
+	private SystemOpAuthorization checkFileUpdate(TransactionBody txn) {
+		var target = txn.getFileUpdate().getFileID();
+		return entityNums.isSystemFile(target)
+				? (canUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
+				: UNNECESSARY;
+	}
+
+	private SystemOpAuthorization checkFileAppend(TransactionBody txn) {
+		var target = txn.getFileAppend().getFileID();
+		return entityNums.isSystemFile(target)
+				? (canUpdate(payerFor(txn), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED)
+				: UNNECESSARY;
+	}
+
+	private SystemOpAuthorization checkCryptoUpdate(TransactionBody txn) {
+		var target = txn.getCryptoUpdateAccount().getAccountIDToUpdate();
+		return entityNums.isSystemAccount(target)
+				? (canUpdate(payerFor(txn), target.getAccountNum()) ? AUTHORIZED : UNAUTHORIZED)
+				: UNNECESSARY;
+	}
+
 	private SystemOpAuthorization checkContractDelete(TransactionBody txn) {
-		return entityNums.isSystemContract(
-				txn.getContractDeleteInstance().getContractID()) ? IMPERMISSIBLE : UNNECESSARY;
+		return entityNums.isSystemContract(txn.getContractDeleteInstance().getContractID())
+				? IMPERMISSIBLE : UNNECESSARY;
 	}
 
 	private SystemOpAuthorization checkCryptoDelete(TransactionBody txn) {
-		return entityNums.isSystemAccount(txn.getCryptoDelete().getDeleteAccountID()) ? IMPERMISSIBLE : UNNECESSARY;
+		return entityNums.isSystemAccount(txn.getCryptoDelete().getDeleteAccountID())
+				? IMPERMISSIBLE : UNNECESSARY;
 	}
 
 	private SystemOpAuthorization checkFileDelete(TransactionBody txn) {
-		return entityNums.isSystemFile(txn.getFileDelete().getFileID()) ? IMPERMISSIBLE : UNNECESSARY;
+		return entityNums.isSystemFile(txn.getFileDelete().getFileID())
+				? IMPERMISSIBLE : UNNECESSARY;
+	}
+
+	private long payerFor(TransactionBody txn) {
+		return txn.getTransactionID().getAccountID().getAccountNum();
 	}
 
 	boolean canUpdate(long payerAccount, long systemEntity) {

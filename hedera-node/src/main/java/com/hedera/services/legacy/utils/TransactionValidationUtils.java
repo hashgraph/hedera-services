@@ -267,44 +267,6 @@ public class TransactionValidationUtils {
 		responseObserver.onCompleted();
 	}
 
-	/**
-	 * Performs basic transaction body validations (required fields , filed format , filed size etc)
-	 *
-	 * @return OK if validation passed or specific NodeTransactionPrecheckCode for failed validation
-	 */
-	public static ResponseCodeEnum validateTxBodyPostConsensus(
-			TransactionBody transactionBody,
-			Instant consensusTime,
-			FCMap<MerkleEntityId, MerkleAccount> accountMap
-	) {
-		long txnValidStart = transactionBody.getTransactionID().getTransactionValidStart().getSeconds();
-		if (txnValidStart < Instant.MIN.getEpochSecond() || txnValidStart > Instant.MAX.getEpochSecond()) {
-			return INVALID_TRANSACTION_START;
-		}
-		Instant startTime = convertProtoTimeStamp(transactionBody.getTransactionID().getTransactionValidStart());
-		if (!accountMap.containsKey(MerkleEntityId.fromAccountId(transactionBody.getNodeAccountID()))) {
-			return INVALID_NODE_ACCOUNT;
-		} else if (startTime.isAfter(consensusTime)) {
-			return INVALID_TRANSACTION_START;
-		}
-
-		ResponseCodeEnum result = ProtectedEntities.validateProtectedEntities(transactionBody);
-		if (result != OK) {
-			return result;
-		}
-
-		AccountID payerAccount = transactionBody.getTransactionID().getAccountID();
-		MerkleEntityId payerAccountKey = MerkleEntityId.fromAccountId(payerAccount);
-		MerkleAccount payerAccountDetails = accountMap.get(payerAccountKey);
-		if (payerAccountDetails == null) {
-			return ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-		} else if (payerAccountDetails.getBalance() < transactionBody.getTransactionFee()) {
-			return ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-		}
-
-		return OK;
-	}
-
 	public static void logAndConstructResponseWhenCreateTxFailed(
 			Logger log,
 			StreamObserver<Response> responseObserver,

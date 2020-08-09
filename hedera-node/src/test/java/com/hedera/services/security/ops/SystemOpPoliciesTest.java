@@ -27,9 +27,15 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -37,7 +43,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.security.ops.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.services.security.ops.SystemOpAuthorization.UNAUTHORIZED;
 import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -122,63 +130,231 @@ class SystemOpPoliciesTest {
 	}
 
 	@Test
+	public void cryptoUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysAdminTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(75)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void cryptoUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(1001)));
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setCryptoUpdateAccount(CryptoUpdateTransactionBody
+						.newBuilder()
+						.setAccountIDToUpdate(account(75)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileUpdate(FileUpdateTransactionBody
+						.newBuilder()
+						.setFileID(file(111)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileAppendRecognizesUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileAppend(FileAppendTransactionBody
+						.newBuilder()
+						.setFileID(file(111)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileAppendRecognizesAuthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileAppend(FileAppendTransactionBody
+						.newBuilder()
+						.setFileID(file(112)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void treasuryCanFreeze() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setFreeze(FreezeTransactionBody.getDefaultInstance());
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void sysAdminCanFreeze() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysAdminTxn()
+				.setFreeze(FreezeTransactionBody.getDefaultInstance());
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void freezeAdminCanFreeze() throws InvalidProtocolBufferException {
+		// given:
+		var txn = freezeAdminTxn()
+				.setFreeze(FreezeTransactionBody.getDefaultInstance());
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void randomAdminCannotFreeze() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFreeze(FreezeTransactionBody.getDefaultInstance());
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileAppendRecognizesUnnecessary() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileAppend(FileAppendTransactionBody
+						.newBuilder()
+						.setFileID(file(1122)));
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setContractUpdateInstance(ContractUpdateTransactionBody
+						.newBuilder()
+						.setContractID(contract(123)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void contractUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysAdminTxn()
+				.setContractUpdateInstance(ContractUpdateTransactionBody
+						.newBuilder()
+						.setContractID(contract(123)));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void contractUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setContractUpdateInstance(ContractUpdateTransactionBody
+						.newBuilder()
+						.setContractID(contract(1233)));
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileUpdate(FileUpdateTransactionBody
+						.newBuilder()
+						.setFileID(file(112)));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
+		// given:
+		var txn = exchangeRatesAdminTxn()
+				.setFileUpdate(FileUpdateTransactionBody
+						.newBuilder()
+						.setFileID(file(1122)));
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
 	public void systemFilesCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
-		var txn = superuserTxn()
+		var txn = treasuryTxn()
 				.setFileDelete(FileDeleteTransactionBody
 						.newBuilder()
 						.setFileID(file(100)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), IMPERMISSIBLE);
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
 	}
 
 	@Test
 	public void civilianFilesAreDeletable() throws InvalidProtocolBufferException {
 		// given:
-		var txn = superuserTxn()
+		var txn = treasuryTxn()
 				.setFileDelete(FileDeleteTransactionBody
 						.newBuilder()
 						.setFileID(file(1001)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), UNNECESSARY);
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
 	}
 
 	@Test
 	public void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
-		var txn = superuserTxn()
+		var txn = treasuryTxn()
 				.setContractDeleteInstance(ContractDeleteTransactionBody
 						.newBuilder()
 						.setContractID(contract(100)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), IMPERMISSIBLE);
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
 	}
 
 	@Test
 	public void civilianContractsAreDeletable() throws InvalidProtocolBufferException {
 		// given:
-		var txn = superuserTxn()
+		var txn = treasuryTxn()
 				.setContractDeleteInstance(ContractDeleteTransactionBody
 						.newBuilder()
 						.setContractID(contract(1001)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), UNNECESSARY);
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
 	}
 
 	@Test
 	public void systemAccountsCannotBeDeleted() throws InvalidProtocolBufferException {
 		// given:
-		var txn = superuserTxn()
+		var txn = treasuryTxn()
 				.setCryptoDelete(CryptoDeleteTransactionBody
 						.newBuilder()
 						.setDeleteAccountID(account(100)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), IMPERMISSIBLE);
+		assertEquals(IMPERMISSIBLE, subject.check(accessor(txn)));
 	}
 
 	@Test
@@ -190,7 +366,17 @@ class SystemOpPoliciesTest {
 						.setDeleteAccountID(account(1001)));
 
 		// expect:
-		assertEquals(subject.check(accessor(txn)), UNNECESSARY);
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void createAccountAlwaysOk() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
+
+		// expect:
+		assertEquals(UNNECESSARY, subject.check(accessor(txn)));
 	}
 
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {
@@ -201,14 +387,26 @@ class SystemOpPoliciesTest {
 		return txnWithPayer(75231);
 	}
 
-	private TransactionBody.Builder superuserTxn() {
+	private TransactionBody.Builder treasuryTxn() {
 		return txnWithPayer(2);
+	}
+
+	private TransactionBody.Builder freezeAdminTxn() {
+		return txnWithPayer(58);
+	}
+
+	private TransactionBody.Builder sysAdminTxn() {
+		return txnWithPayer(50);
+	}
+
+	private TransactionBody.Builder exchangeRatesAdminTxn() {
+		return txnWithPayer(57);
 	}
 
 	private TransactionBody.Builder txnWithPayer(long num) {
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(account(2)));
+						.setAccountID(account(num)));
 
 	}
 
