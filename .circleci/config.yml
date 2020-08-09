@@ -1356,7 +1356,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 0398-M-ExemptSysAdminFees
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

@@ -32,7 +32,6 @@ import com.hedera.services.legacy.exception.InvalidAutoRenewAccountIDException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.hedera.services.legacy.exception.InvalidTopicIDException;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,17 +68,14 @@ public class HederaSigningOrder {
 
 	final EntityNumbers entityNums;
 	final SigMetadataLookup sigMetaLookup;
-	final Predicate<TransactionBody> targetWaclSigns;
-	final BiPredicate<AccountID, AccountID> updateAccountSigns;
+	final Predicate<TransactionBody> updateAccountSigns;
+	final BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns;
 
-	public HederaSigningOrder(EntityNumbers entityNums, SigMetadataLookup sigMetaLookup) {
-		this(entityNums, sigMetaLookup, ProtectedEntities::shouldWaclSign, ProtectedEntities::shouldExistingAccountSign);
-	}
 	public HederaSigningOrder(
 			EntityNumbers entityNums,
 			SigMetadataLookup sigMetaLookup,
-			Predicate<TransactionBody> targetWaclSigns,
-			BiPredicate<AccountID, AccountID> updateAccountSigns
+			Predicate<TransactionBody> updateAccountSigns,
+			BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns
 	) {
 		this.entityNums = entityNums;
 		this.sigMetaLookup = sigMetaLookup;
@@ -192,7 +188,7 @@ public class HederaSigningOrder {
 		} else if (txn.hasCryptoTransfer()) {
 			return forCryptoTransfer(txn.getCryptoTransfer());
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return forCryptoUpdate(txn.getCryptoUpdateAccount(), txn.getTransactionID().getAccountID());
+			return forCryptoUpdate(txn.getCryptoUpdateAccount(), updateAccountSigns.test(txn));
 		} else if (txn.hasCryptoDelete()) {
 			return forCryptoDelete(txn.getCryptoDelete());
 	    } else {
@@ -202,13 +198,14 @@ public class HederaSigningOrder {
 
 	private List<JKey> forInvolvedFiles(TransactionBody txn) throws Exception {
 		if (isFileTxn(txn)) {
-			var waclShouldSign = targetWaclSigns.test(txn);
 			var isSuperuser = entityNums.accounts().isSuperuser(txn.getTransactionID().getAccountID().getAccountNum());
 			if (txn.hasFileCreate()) {
 				return forFileCreate(txn.getFileCreate());
 			} else if (txn.hasFileAppend()) {
+				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileAppend);
 				return forFileAppend(txn.getFileAppend(), waclShouldSign, isSuperuser);
 			} else if (txn.hasFileUpdate()) {
+				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileUpdate);
 				return forFileUpdate(txn.getFileUpdate(), waclShouldSign, isSuperuser);
 			} else if (txn.hasFileDelete()) {
 				return forFileDelete(txn.getFileDelete());
@@ -338,11 +335,11 @@ public class HederaSigningOrder {
 		});
 	}
 
-	private List<JKey> forCryptoUpdate(CryptoUpdateTransactionBody op, AccountID payer) throws Exception {
+	private List<JKey> forCryptoUpdate(CryptoUpdateTransactionBody op, boolean targetMustSign) throws Exception {
 		return accumulated(keys -> {
 			AccountID target = op.getAccountIDToUpdate();
 			AccountSigningMetadata sigMeta = sigMetaLookup.lookup(target);
-			if (updateAccountSigns.test(payer, target)) {
+			if (targetMustSign) {
 				keys.add(sigMeta.getKey());
 			}
 			if (hasNewAccountKey(op)) {

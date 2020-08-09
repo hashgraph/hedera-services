@@ -30,6 +30,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
@@ -57,6 +58,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.function.LongPredicate;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,6 +72,8 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * @author hua
  */
 public class FileServiceHandler {
+  public static final LongPredicate IS_PROPERTIES_OR_PERMISSIONS = num ->
+          (num == ProtectedEntities.APPLICATION_PROPERTIES_FILE_NUM) || (num == ProtectedEntities.API_PROPERTIES_FILE_NUM);
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
 
   private GlobalFlag globalFlag;
@@ -129,15 +134,15 @@ public class FileServiceHandler {
    * @return true if the account has the authority to update the entity, false otherwise
    */
   public static boolean hasAuthorityToUpdate(AccountID account, Object entity) {
-    if (ProtectedEntities.isTreasury(account)) {
+    if (isTreasury(account)) {
       return true;
     }
 
     boolean rv = false;
-    long seq = ProtectedEntities.getEntityNumber(entity);
-    if (ProtectedEntities.isMasterAccount(account)) {
+    long seq = getEntityNumber(entity);
+    if (isMasterAccount(account)) {
       if((entity instanceof AccountID) &&
-          ProtectedEntities.isMasterAccount((AccountID) entity)) { // master account cannot update itself
+          isMasterAccount((AccountID) entity)) { // master account cannot update itself
         return false;
       }
       else if (seq >= 50 && seq <= 80)
@@ -148,7 +153,7 @@ public class FileServiceHandler {
     } else if(account.equals(entity)) { // protected accounts can update themselves (excluding master account)
       return true;
     } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.ADDRESS_ACC_NUM))) {
-      if (seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || ProtectedEntities.IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+      if (seq == ProtectedEntities.ADDRESS_FILE_ACCOUNT_NUM || seq == ProtectedEntities.NODE_DETAILS_FILE || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
         rv = true;
       }
     } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.FEE_ACC_NUM))) {
@@ -156,11 +161,65 @@ public class FileServiceHandler {
         rv = true;
       }
     } else if (account.equals(ProtectedEntities.genAccountID(ProtectedEntities.EXCHANGE_ACC_NUM))) {
-      if (seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM || ProtectedEntities.IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+      if (seq == ProtectedEntities.EXCHANGE_RATE_FILE_ACCOUNT_NUM || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
         rv = true;
       }
     } else {
       //NoOp
+    }
+
+    return rv;
+  }
+
+  /**
+   * Checks if the entity is protected, i.e. with ID number below 1000.
+   *
+   * @param entityID the ID of the entity
+   * @return true if the entity should be protected, false otherwise
+   */
+  public static boolean isProtectedEntity(Object entityID) {
+    long entityNum = -1l;
+    long realmNum = -1l;
+    long shardNum = -1l;
+    if (entityID instanceof AccountID) {
+      AccountID accID = (AccountID) entityID;
+      entityNum = accID.getAccountNum();
+      realmNum = accID.getRealmNum();
+      shardNum = accID.getShardNum();
+    } else if (entityID instanceof FileID) {
+      FileID fileID = (FileID) entityID;
+      entityNum = fileID.getFileNum();
+      realmNum = fileID.getRealmNum();
+      shardNum = fileID.getShardNum();
+    } else {
+      ContractID contratID = (ContractID) entityID;
+      entityNum = contratID.getContractNum();
+      realmNum = contratID.getRealmNum();
+      shardNum = contratID.getShardNum();
+    }
+
+    boolean rv = (shardNum == 0) && (realmNum == 0) && (entityNum >= 1)
+        && (entityNum <= 1000);
+    return rv;
+  }
+
+  public static boolean isMasterAccount(AccountID account) {
+    return (account.getShardNum() == 0 && account.getRealmNum() == 0 && account.getAccountNum() == 50);
+  }
+
+  public static boolean isTreasury(AccountID account) {
+    return (account.getShardNum() == 0 && account.getRealmNum() == 0 && account.getAccountNum() == 2);
+  }
+
+  public static long getEntityNumber(Object entity) {
+    long rv = -1l;
+
+    if (entity instanceof AccountID) {
+      rv = ((AccountID) entity).getAccountNum();
+    } else if (entity instanceof FileID) {
+      rv = ((FileID) entity).getFileNum();
+    } else { // contract ID
+      rv = ((ContractID) entity).getContractNum();
     }
 
     return rv;
@@ -246,7 +305,7 @@ public class FileServiceHandler {
     ResponseCodeEnum returnCode = ResponseCodeEnum.OK;
 
     // we're only concerned about system files, which are protected entities
-    if (!ProtectedEntities.isProtectedEntity(fid))
+    if (!isProtectedEntity(fid))
       return returnCode;
     
     if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
@@ -305,8 +364,7 @@ public class FileServiceHandler {
 
       // If is not small change, if this Transaction is signed by Account 0.0.50(Master Account) or 0.0.2(Treasury), we should log a message and update Exchange Rate File; else we should log a error message and return ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED
       if (!isSmallChange(exchangeRateSet)) {
-        if (ProtectedEntities.isMasterAccount(accountID) || ProtectedEntities
-            .isTreasury(accountID)) {
+        if (isMasterAccount(accountID) || isTreasury(accountID)) {
           log.info(
               "Exchange Rate File Update changes the Exchange Rate by a percentage greater than Exchange_Rate_Allowed_Percentage by {}",
               () -> EntityIdUtils.readableId(accountID));
@@ -383,7 +441,7 @@ public class FileServiceHandler {
               // When MasterAccount updates file 0.0.112, it should also overwrite the ExchangeRateSet value which is saved in HGCAppState
               AccountID updater = gtx.getTransactionID().getAccountID();
 
-              if (ProtectedEntities.isMasterAccount(updater)) {
+              if (isMasterAccount(updater)) {
                 log.info("Master account is updating the Exchange Rate file 0.0.112");
                 ExchangeRateSet exchangeRateSet = readExchangeRateSetFromFile(storageWrapper);
 

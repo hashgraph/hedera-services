@@ -35,7 +35,9 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -122,6 +124,7 @@ import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
@@ -646,7 +649,7 @@ public class ServicesContext {
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
 			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics);
-			keyOrder = new HederaSigningOrder(entityNums(), lookups);
+			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
 	}
@@ -654,9 +657,26 @@ public class ServicesContext {
 	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
 			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts);
-			backedKeyOrder = new HederaSigningOrder(entityNums(), lookups);
+			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
+	}
+
+	public HederaSigningOrder lookupRetryingKeyOrder() {
+		if (lookupRetryingKeyOrder == null) {
+			var lookups = defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
+			lookupRetryingKeyOrder = keyOrderWith(lookups);
+		}
+		return lookupRetryingKeyOrder;
+	}
+
+	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
+		var policies = systemOpPolicies();
+		return new HederaSigningOrder(
+				entityNums(),
+				lookups,
+				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
+				(txn, function) -> policies.check(txn, function) != AUTHORIZED);
 	}
 
 	public StoragePersistence storagePersistence() {
@@ -664,15 +684,6 @@ public class ServicesContext {
 			storagePersistence = new BlobStoragePersistence(storageMapFrom(blobStore()));
 		}
 		return storagePersistence;
-	}
-
-	public HederaSigningOrder lookupRetryingKeyOrder() {
-		if (lookupRetryingKeyOrder == null) {
-			SigMetadataLookup lookups =
-					defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
-			lookupRetryingKeyOrder = new HederaSigningOrder(entityNums(), lookups);
-		}
-		return lookupRetryingKeyOrder;
 	}
 
 	public SyncVerifier syncVerifier() {
