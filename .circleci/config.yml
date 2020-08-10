@@ -2435,6 +2435,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
+      - run-eet-suites:
+          dsl-args: "VersionInfoSpec"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
       - postgres-get-counts
