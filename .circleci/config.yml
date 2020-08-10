@@ -733,7 +733,7 @@ commands:
       liveness-pattern-count:
         description: How many repetitions of the liveness pattern should occur
         type: integer
-#        default: 3
+        default: 3
       signed-state-pattern-count:
         description: How many repetitions of the signed state pattern should occur
         type: integer
