@@ -25,23 +25,49 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * The relationship of an operation to its required system privileges, if any.
+ *
+ * The {@link SystemOpAuthorization#asStatus()} method returns a
+ * {@link ResponseCodeEnum} that is appropriate for use as the
+ * precheck status in a HAPI {@link com.hederahashgraph.api.proto.java.TransactionResponse}.
+ * Therefore both {@link SystemOpAuthorization#UNNECESSARY#asStatus()} and
+ * {@link SystemOpAuthorization#AUTHORIZED#asStatus()} return {@link ResponseCodeEnum#OK},
+ * since in either case the operation should pass precheck---at least
+ * based on its required system privileges.
+ */
 public enum SystemOpAuthorization {
+	/**
+	 * The operation does not require any system privileges.
+	 */
 	UNNECESSARY {
 		@Override
 		public ResponseCodeEnum asStatus() {
 			return OK;
 		}
-	}, UNAUTHORIZED {
+	},
+	/**
+	 * The operation requires system privileges that its payer does not have.
+	 */
+	UNAUTHORIZED {
 		@Override
 		public ResponseCodeEnum asStatus() {
 			return AUTHORIZATION_FAILED;
 		}
-	}, IMPERMISSIBLE {
+	},
+	/**
+	 * The operation cannot be performed, no matter the privileges of its payer.
+	 */
+	IMPERMISSIBLE {
 		@Override
 		public ResponseCodeEnum asStatus() {
 			return ENTITY_NOT_ALLOWED_TO_DELETE;
 		}
-	}, AUTHORIZED {
+	},
+	/**
+	 * The operation requires system privileges, and its payer has those privileges.
+	 */
+	AUTHORIZED {
 		@Override
 		public ResponseCodeEnum asStatus() {
 			return OK;
