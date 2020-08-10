@@ -733,7 +733,7 @@ commands:
       liveness-pattern-count:
         description: How many repetitions of the liveness pattern should occur
         type: integer
-        default: 3
+#        default: 3
       signed-state-pattern-count:
         description: How many repetitions of the signed state pattern should occur
         type: integer
@@ -898,6 +898,7 @@ workflows:
                 - master
     jobs:
       - build-platform-and-services:
+          context: Slack
           workflow-name: "nightly-services-regression"
 
   custom-migration:
@@ -1585,11 +1586,11 @@ jobs:
             - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
       - checkout
       - run:
-          name: build services repo
+          name: Build hedera-services repo
           command: |
                 mvn --no-transfer-progress clean install -DskipTests
       - run:
-          name: checkout swirlds-platform repos and build
+          name: Checkout swirlds-platform repos and build
           command: |
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
@@ -1607,6 +1608,8 @@ jobs:
             sudo ln -s python3.7 /usr/bin/python3;
             sudo apt install python3-pip;
             pip3 -q install matplotlib;
+            sudo apt-get install -y python3-setuptools;
+            pip3 install awscli;
 
       - run:
           name: Save PEM file to keys folder
@@ -1624,9 +1627,14 @@ jobs:
             cd /swirlds-platform/regression; ./regression_services.sh AwsServicesLoadTestRegressionCfg.json /repo
 
       - run:
-          name: Network Error Regression
+          name: Run Network Error regression tests
           command: |
             cd /swirlds-platform/regression; ./regression_services.sh AwsSerivceRegressionNetworkError.json /repo
+
+      - run:
+          name: Sync to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
       - persist_to_workspace:
           root: /
