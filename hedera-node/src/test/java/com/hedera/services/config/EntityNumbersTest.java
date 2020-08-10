@@ -57,12 +57,15 @@ class EntityNumbersTest {
 		// given:
 		var sysFile = IdUtils.asFile("0.0.1000");
 		var civFile = IdUtils.asFile("0.0.1001");
+		var nonsenseFile = IdUtils.asFile("0.0.0");
 		// and:
 		var sysAccount = IdUtils.asAccount("0.0.1000");
 		var civAccount = IdUtils.asAccount("0.0.1001");
+		var nonsenseAccount = IdUtils.asAccount("0.0.0");
 		// and:
 		var sysContract = IdUtils.asContract("0.0.1000");
 		var civContract = IdUtils.asContract("0.0.1001");
+		var nonsenseContract = IdUtils.asContract("0.0.0");
 
 		// expect:
 		assertTrue(subject.isSystemFile(sysFile));
@@ -71,5 +74,9 @@ class EntityNumbersTest {
 		assertFalse(subject.isSystemAccount(civAccount));
 		assertTrue(subject.isSystemContract(sysContract));
 		assertFalse(subject.isSystemContract(civContract));
+		// and:
+		assertFalse(subject.isSystemAccount(nonsenseAccount));
+		assertFalse(subject.isSystemFile(nonsenseFile));
+		assertFalse(subject.isSystemContract(nonsenseContract));
 	}
 }

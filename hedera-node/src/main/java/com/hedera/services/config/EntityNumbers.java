@@ -42,15 +42,18 @@ public class EntityNumbers {
 	}
 
 	public boolean isSystemFile(FileID id) {
-		return id.getFileNum() <= hederaNumbers.numReservedSystemEntities();
+		var num = id.getFileNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
 	}
 
 	public boolean isSystemAccount(AccountID id) {
-		return id.getAccountNum() <= hederaNumbers.numReservedSystemEntities();
+		var num = id.getAccountNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
 	}
 
 	public boolean isSystemContract(ContractID id) {
-		return id.getContractNum() <= hederaNumbers.numReservedSystemEntities();
+		var num = id.getContractNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
 	}
 
 	public HederaNumbers all() {

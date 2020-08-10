@@ -137,7 +137,9 @@ public class HapiApiClients {
 		});
 		int after = stubCount();
 		this.defaultNode = defaultNode;
-		log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+		if (after > before) {
+			log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+		}
 	}
 
 	private int stubCount() {
