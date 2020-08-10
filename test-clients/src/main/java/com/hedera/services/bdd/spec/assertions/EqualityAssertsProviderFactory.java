@@ -39,6 +39,17 @@ public class EqualityAssertsProviderFactory {
 		};
 	}
 
+	public static <T> ErroringAssertsProvider<T> shouldNotBe(T unexpected) {
+		return ignore -> actual -> {
+			try {
+				Assert.assertNotEquals(unexpected, actual);
+			} catch (Throwable t) {
+				return Arrays.asList(t);
+			}
+			return Collections.EMPTY_LIST;
+		};
+	}
+
 	public static <T> ErroringAssertsProvider<T> shouldBe(Function<HapiApiSpec, T> expectation) {
 		return spec -> actual -> {
 			try {

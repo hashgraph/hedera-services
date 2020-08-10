@@ -40,7 +40,7 @@ public class ApplicationPropertiesInterceptor implements GenericInterceptor {
 
   @Override
   public void update(FCStorageWrapper storageWrapper, FileID fid) {
-    if(fid.getFileNum()!= ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM) {
+    if(fid.getFileNum()!= 121) {
       return; // Don't update if FileID is not a Application Properties File
     }
     String fileDataPath = FeeCalcUtilsTest.pathOf(fid);

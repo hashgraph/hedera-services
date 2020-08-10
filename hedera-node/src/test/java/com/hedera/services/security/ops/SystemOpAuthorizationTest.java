@@ -1,4 +1,5 @@
-package com.hedera.services.config;
+package com.hedera.services.security.ops;
+
 /*-
  * ‌
  * Hedera Services Node
@@ -8,9 +9,9 @@ package com.hedera.services.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,36 +20,24 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
-class HederaNumbersTest {
-	PropertySource properties;
-	HederaNumbers subject;
-
-	@BeforeEach
-	private void setup() {
-		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(123L);
-		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
-
-		subject = new HederaNumbers(properties);
-	}
-
+class SystemOpAuthorizationTest {
 	@Test
-	public void hasExpectedNumbers() {
+	public void haveExpectedStatusRepresentations() {
 		// expect:
-		assertEquals(1L, subject.shard());
-		assertEquals(2L, subject.realm());
-		assertEquals(123L, subject.numReservedSystemEntities());
+		assertEquals(OK, UNNECESSARY.asStatus());
+		assertEquals(OK, AUTHORIZED.asStatus());
+		assertEquals(ENTITY_NOT_ALLOWED_TO_DELETE, IMPERMISSIBLE.asStatus());
+		assertEquals(AUTHORIZATION_FAILED, UNAUTHORIZED.asStatus());
 	}
 }

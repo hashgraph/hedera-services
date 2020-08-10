@@ -312,7 +312,7 @@ public class FeeChargingRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(exemptions).isExemptFromFees(txnCtx.accessor().getTxn());
+		verify(exemptions).hasExemptPayer(txnCtx.accessor());
 		verify(fees).computeCachingFee(record);
 		verify(recordCache).setPostConsensus(
 				txnIdA,

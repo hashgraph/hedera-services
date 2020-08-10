@@ -22,6 +22,9 @@ package com.hedera.services.legacy.unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.legacy.handler.TransactionHandler;
@@ -163,6 +166,7 @@ class PreCheckValidationTest {
 		fileServiceHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
 
 		precheckVerifier = mock(PrecheckVerifier.class);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -172,7 +176,10 @@ class PreCheckValidationTest {
 				TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(() -> accountFCMap), new MockAccountNumbers());
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -393,6 +400,7 @@ class PreCheckValidationTest {
 
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -404,7 +412,9 @@ class PreCheckValidationTest {
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
-				new MockAccountNumbers());
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -434,6 +444,7 @@ class PreCheckValidationTest {
 				ExpirableTxnRecord.fromGprc(transactionRecord));
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				localRecordCache,
 				() -> accountFCMap,
@@ -445,8 +456,9 @@ class PreCheckValidationTest {
 				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
-				new MockAccountNumbers());
-
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

@@ -43,7 +43,11 @@ class AccountNumbersTest {
 		given(properties.getLongProperty("accounts.feeSchedulesAdmin")).willReturn(56L);
 		given(properties.getLongProperty("accounts.freezeAdmin")).willReturn(58L);
 		given(properties.getLongProperty("accounts.exchangeRatesAdmin")).willReturn(57L);
+		given(properties.getLongProperty("accounts.systemDeleteAdmin")).willReturn(59L);
+		given(properties.getLongProperty("accounts.systemUndeleteAdmin")).willReturn(60L);
 		given(properties.getLongProperty("accounts.systemAdmin")).willReturn(50L);
+		given(properties.getLongProperty("accounts.systemAdmin.firstManaged")).willReturn(51L);
+		given(properties.getLongProperty("accounts.systemAdmin.lastManaged")).willReturn(80L);
 		given(properties.getLongProperty("accounts.treasury")).willReturn(2L);
 
 		subject = new AccountNumbers(properties);
@@ -58,14 +62,18 @@ class AccountNumbersTest {
 		assertEquals(55, subject.addressBookAdmin());
 		assertEquals(56, subject.feeSchedulesAdmin());
 		assertEquals(57, subject.exchangeRatesAdmin());
+		assertEquals(59, subject.systemDeleteAdmin());
+		assertEquals(60, subject.systemUndeleteAdmin());
+		assertEquals(51, subject.firstManagedBySysAdmin());
+		assertEquals(80, subject.lastManagedBySysAdmin());
 	}
 
 	@Test
 	public void recognizesAdmins() {
 		// expect:
-		assertTrue(subject.isSysAdmin(2));
-		assertTrue(subject.isSysAdmin(50));
-		assertFalse(subject.isSysAdmin(3));
-		assertFalse(subject.isSysAdmin(55));
+		assertTrue(subject.isSuperuser(2));
+		assertTrue(subject.isSuperuser(50));
+		assertFalse(subject.isSuperuser(3));
+		assertFalse(subject.isSuperuser(55));
 	}
 }

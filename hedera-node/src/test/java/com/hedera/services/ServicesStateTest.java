@@ -200,7 +200,7 @@ class ServicesStateTest {
 		assertEquals(book, subject.addressBook());
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
-		assertEquals(ApplicationConstants.HEDERA_START_SEQUENCE, subject.networkCtx().seqNo().current());
+		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		// and:
 		verify(mockDigest, never()).accept(any());
 	}

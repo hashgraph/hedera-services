@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,27 +20,37 @@ package com.hedera.services.bdd.suites.file;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -58,7 +68,30 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						allowsDeleteWithOneTopLevelSig(),
 						supportsImmutableFiles(),
+						addressBookAdminExemptFromFeesGivenAuthorizedOps(),
 				}
+		);
+	}
+
+	private HapiApiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+		long amount = 100 * 100_000_000L;
+		AtomicReference<byte[]> origContents = new AtomicReference<>();
+		return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps").given(
+				cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, amount)),
+				fileCreate("tbu"),
+				getFileContents(NODE_DETAILS).consumedBy(origContents::set)
+		).when(
+				fileUpdate(NODE_DETAILS)
+						.payingWith(ADDRESS_BOOK_CONTROL)
+						.contents(ignore -> ByteString.copyFrom(origContents.get()))
+						.via("authorizedTxn"),
+				fileUpdate("tbu")
+						.payingWith(ADDRESS_BOOK_CONTROL)
+						.contents("This is something new.")
+						.via("unauthorizedTxn")
+		).then(
+				getTxnRecord("unauthorizedTxn").has(recordWith().feeDifferentThan(0L)),
+				getTxnRecord("authorizedTxn").has(recordWith().fee(0L))
 		);
 	}
 

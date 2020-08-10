@@ -29,12 +29,15 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.security.ops.SystemOpAuthorization;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -122,6 +125,7 @@ import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
@@ -212,7 +216,6 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.migration.DefaultStateMigrations;
 import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
-import com.hedera.services.legacy.services.fees.DefaultFeeExemptions;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
@@ -310,6 +313,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
+	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
 	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
@@ -534,7 +538,7 @@ public class ServicesContext {
 
 	public EntityNumbers entityNums() {
 		if (entityNums == null) {
-			entityNums = new EntityNumbers(fileNums(), accountNums());
+			entityNums = new EntityNumbers(fileNums(), hederaNums(), accountNums());
 		}
 		return entityNums;
 	}
@@ -645,7 +649,7 @@ public class ServicesContext {
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
 			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics);
-			keyOrder = new HederaSigningOrder(entityNums(), lookups);
+			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
 	}
@@ -653,9 +657,26 @@ public class ServicesContext {
 	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
 			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts);
-			backedKeyOrder = new HederaSigningOrder(entityNums(), lookups);
+			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
+	}
+
+	public HederaSigningOrder lookupRetryingKeyOrder() {
+		if (lookupRetryingKeyOrder == null) {
+			var lookups = defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
+			lookupRetryingKeyOrder = keyOrderWith(lookups);
+		}
+		return lookupRetryingKeyOrder;
+	}
+
+	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
+		var policies = systemOpPolicies();
+		return new HederaSigningOrder(
+				entityNums(),
+				lookups,
+				txn -> policies.check(txn, CryptoUpdate) != AUTHORIZED,
+				(txn, function) -> policies.check(txn, function) != AUTHORIZED);
 	}
 
 	public StoragePersistence storagePersistence() {
@@ -663,15 +684,6 @@ public class ServicesContext {
 			storagePersistence = new BlobStoragePersistence(storageMapFrom(blobStore()));
 		}
 		return storagePersistence;
-	}
-
-	public HederaSigningOrder lookupRetryingKeyOrder() {
-		if (lookupRetryingKeyOrder == null) {
-			SigMetadataLookup lookups =
-					defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
-			lookupRetryingKeyOrder = new HederaSigningOrder(entityNums(), lookups);
-		}
-		return lookupRetryingKeyOrder;
 	}
 
 	public SyncVerifier syncVerifier() {
@@ -865,7 +877,7 @@ public class ServicesContext {
 
 	public FeeExemptions exemptions() {
 		if (exemptions == null) {
-			exemptions = new DefaultFeeExemptions();
+			exemptions = new StandardExemptions(accountNums(), systemOpPolicies());
 		}
 		return exemptions;
 	}
@@ -1012,6 +1024,13 @@ public class ServicesContext {
 			fileGrpc = new FileController(fileAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return fileGrpc;
+	}
+
+	public SystemOpPolicies systemOpPolicies() {
+		if (systemOpPolicies == null) {
+			systemOpPolicies = new SystemOpPolicies(entityNums());
+		}
+		return systemOpPolicies;
 	}
 
 	public CryptoController cryptoGrpc() {
@@ -1190,7 +1209,9 @@ public class ServicesContext {
 					queryFeeCheck(),
 					bucketThrottling(),
 					accountNums(),
-					stats());
+					stats(),
+					systemOpPolicies(),
+					exemptions());
 		}
 		return txns;
 	}
