@@ -1635,17 +1635,6 @@ jobs:
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
-      - persist_to_workspace:
-          root: /
-          paths:
-            - repo/.git
-            - repo/.circleci
-            - repo/hapiProto
-            - repo/test-clients
-            - repo/HapiApp2.0
-            - root/.m2
-            - repo/hedera-node
-
   aws-summary:
     executor: ci-test-executor
     steps:
