@@ -2673,6 +2673,7 @@ jobs:
           dsl-args: "UpdateServerFiles"
       - run:
           name: wait HGCApp restarted
+          no_output_timeout: 11m
           command: |
             sleep 600
       - run:
