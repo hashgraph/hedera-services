@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RecordStreamValidation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 
-	private static final String PATH_TO_LOCAL_STREAMS = "../HapiApp2.0/data/recordstreams";
+	private static final String PATH_TO_LOCAL_STREAMS = "../hedera-node/data/recordstreams";
 
 	public static void main(String... args) {
 		new RecordStreamValidation().runSuiteSync();

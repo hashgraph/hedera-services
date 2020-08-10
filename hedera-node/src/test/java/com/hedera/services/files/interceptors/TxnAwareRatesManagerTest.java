@@ -109,7 +109,7 @@ class TxnAwareRatesManagerTest {
 				new MockAccountNumbers(),
 				properties,
 				txnCtx,
-				midnightRates,
+				() -> midnightRates,
 				postUpdateCb,
 				intradayLimitFactory);
 	}

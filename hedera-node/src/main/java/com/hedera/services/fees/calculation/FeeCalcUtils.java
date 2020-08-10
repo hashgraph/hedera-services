@@ -20,19 +20,14 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static com.hedera.services.legacy.logic.ApplicationConstants.ARTIFACTS_PREFIX_FILE_CONTENT;
-import static com.hedera.services.legacy.logic.ApplicationConstants.ARTIFACTS_PREFIX_FILE_INFO;
-import static com.hedera.services.legacy.logic.ApplicationConstants.LEDGER_PATH;
-import static com.hedera.services.legacy.logic.ApplicationConstants.buildPath;
 
 /**
  * Provides various helpers useful for estimating resource usage
@@ -70,19 +65,4 @@ public class FeeCalcUtils {
 				.orElse(ZERO_EXPIRY);
 	}
 
-	public static String pathOf(FileID fid) {
-		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);
-	}
-
-	public static String pathOfMeta(FileID fid) {
-		return path(ARTIFACTS_PREFIX_FILE_INFO, fid);
-	}
-
-	private static String path(String buildMarker, FileID fid) {
-		return String.format(
-				"%s%s%d",
-				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
-				buildMarker,
-				fid.getFileNum());
-	}
 }

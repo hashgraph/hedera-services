@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,6 +42,7 @@ import static java.util.Collections.swap;
 
 public class RandomFileUpdate implements OpProvider {
 	private SplittableRandom r = new SplittableRandom();
+
 	private enum Targets {
 		CONTENTS, EXPIRY, WACL
 	}
@@ -82,6 +83,10 @@ public class RandomFileUpdate implements OpProvider {
 			return Optional.empty();
 		}
 
+		if (target.get().endsWith("-bytecode")) {
+			return Optional.empty();
+		}
+
 		var op = TxnVerbs.fileUpdate(target.get())
 				.hasPrecheckFrom(permissiblePrechecks)
 				.hasKnownStatusFrom(permissibleOutcomes);
@@ -93,7 +98,7 @@ public class RandomFileUpdate implements OpProvider {
 			swap(couldUpdate, i, i + r.nextInt(n - i));
 		}
 		for (int i = 0; i < howMany; i++) {
-			switch (couldUpdate.get(i))	 {
+			switch (couldUpdate.get(i)) {
 				case EXPIRY:
 					op.extendingExpiryBy(1_234L);
 					break;

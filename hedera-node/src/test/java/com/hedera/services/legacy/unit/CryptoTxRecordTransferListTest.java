@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.CryptoHandlerTestHelper;
 import com.hedera.services.legacy.util.ComplexKeyManager;
@@ -245,15 +244,4 @@ public class CryptoTxRecordTransferListTest {
 		fcMap.put(mk, mv);
 		ComplexKeyManager.setAccountKey(payerAccount, key);
 	}
-
-	private ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-		int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
-		return RequestBuilder.getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
-				currentHbarEquivalent, 15, expiryTime);
-	}
-
-
-
 }

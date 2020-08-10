@@ -68,7 +68,7 @@ class GetAccountRecordsResourceUsageTest {
 		aValue.records().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(), usageEstimator);
 	}
@@ -87,7 +87,7 @@ class GetAccountRecordsResourceUsageTest {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
-		MerkleEntityId key = MerkleEntityId.fromPojoAccountId(asAccount(a));
+		MerkleEntityId key = MerkleEntityId.fromAccountId(asAccount(a));
 
 		// given:
 		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);

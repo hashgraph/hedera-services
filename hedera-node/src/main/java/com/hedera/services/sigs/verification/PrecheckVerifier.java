@@ -94,7 +94,6 @@ public class PrecheckVerifier {
 
 			return reqKeys.stream().allMatch(key -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID));
 		} catch (InvalidPayerAccountException ignore) {
-			log.warn(ignore.getMessage());
 			return false;
 		}
 	}

@@ -20,7 +20,6 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;

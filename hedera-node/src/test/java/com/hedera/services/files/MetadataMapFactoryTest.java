@@ -20,7 +20,7 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
@@ -113,7 +113,7 @@ class MetadataMapFactoryTest {
 		// given:
 		var fid = IdUtils.asFile("0.2.3");
 		// and:
-		var expected = FeeCalcUtils.pathOfMeta(fid);
+		var expected = FeeCalcUtilsTest.pathOfMeta(fid);
 
 		// when:
 		var actual = toKeyString(fid);
@@ -175,6 +175,12 @@ class MetadataMapFactoryTest {
 	}
 
 	private String asLegacyPath(String fid) {
-		return FeeCalcUtils.pathOfMeta(IdUtils.asFile(fid));
+		return FeeCalcUtilsTest.pathOfMeta(IdUtils.asFile(fid));
+	}
+
+	@Test
+	public void cannotBeConstructed() {
+		// expect:
+		assertThrows(IllegalStateException.class, MetadataMapFactory::new);
 	}
 }

@@ -632,7 +632,7 @@ public class SmartContractServiceImpl
     List<TransactionRecord> txRecord = null;
     try {
       txRecord = ExpirableTxnRecord.allToGrpc(
-          txHandler.getAllTransactionRecordFCM(MerkleEntityId.fromPojoContractId(query.getContractID())));
+          txHandler.getAllTransactionRecordFCM(MerkleEntityId.fromContractId(query.getContractID())));
     } catch (ConcurrentModificationException ex) {
       TransactionValidationUtils.constructGetAccountRecordsErrorResponse(responseObserver,
           ResponseCodeEnum.RECORD_NOT_FOUND,0);

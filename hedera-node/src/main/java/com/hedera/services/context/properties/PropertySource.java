@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -37,6 +38,9 @@ import java.util.stream.Stream;
  */
 public interface PropertySource {
 	Logger log = LogManager.getLogger(PropertySource.class);
+
+	Function<String, Object> AS_INT = Integer::valueOf;
+	Function<String, Object> AS_LONG = Long::valueOf;
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);

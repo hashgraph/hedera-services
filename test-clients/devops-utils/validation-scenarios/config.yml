@@ -67,23 +67,17 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
   localhost:
     bootstrap: 2
-    ensureScenarioPayerHbars: 300
+    ensureScenarioPayerHbars: 100000
     nodes:
-    - {account: 3, ipv4Addr: '127.0.0.1:50213'}
+    - {account: 3, ipv4Addr: '127.0.0.1:50211'}
     scenarioPayer: 1001
     scenarios:
-      feeSnapshots:
-        appendToSnapshotCsv: true
-        ignoreCostAnswer: true
-        opsConfig: {bytecode: 1002, memoLength: 32}
-        scheduleDesc: Bootstrap
-        tinyBarsToOffer: 10000000000
-      sysFilesDown:
-        evalMode: snapshot
-        numsToFetch: [111]
-      sysFilesUp:
-        updates:
-        - {num: 111, payer: 2}
+      consensus: {persistent: 1010}
+      contract:
+        persistent: {bytecode: 1007, luckyNo: 42, num: 1008, source: Multipurpose.sol}
+      crypto: {receiver: 1003, sender: 1002}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 1005}
   staging:
     bootstrap: 2
     ensureScenarioPayerHbars: 25

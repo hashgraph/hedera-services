@@ -133,7 +133,7 @@ class BucketThrottlingTest {
 		getThrottleProps = mock(BiFunction.class);
 		given(getThrottleProps.apply(properties, networkSize)).willReturn(throttleProps);
 
-		subject = new BucketThrottling(book, properties, getBuckets, getThrottleProps);
+		subject = new BucketThrottling(() -> book, properties, getBuckets, getThrottleProps);
 	}
 
 	@Test

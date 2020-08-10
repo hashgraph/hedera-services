@@ -50,7 +50,7 @@ class TopicResourceUsageTestBase {
 
     void setup() throws Throwable {
         topics = mock(FCMap.class);
-        view = new StateView(topics, StateView.EMPTY_ACCOUNTS);
+        view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER);
     }
 
     protected void checkServicesFee(FeeData feeData, int extraRbh) {

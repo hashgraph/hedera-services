@@ -102,37 +102,20 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	@Override
-	public FCMElement copy(boolean shouldBeMutable) {
+	public MerkleAccount copy() {
 		var records = records();
 		var payerRecords = payerRecords();
 
 		return new MerkleAccount(List.of(
 				state().copy(),
-				records.isImmutable() ? records : records.copy(shouldBeMutable),
-				payerRecords.isImmutable() ? payerRecords : payerRecords.copy(shouldBeMutable)));
-	}
-
-	@Override
-	public MerkleAccount copy() {
-		return (MerkleAccount) copy(false);
+				records.isImmutable() ? records : records.copy(),
+				payerRecords.isImmutable() ? payerRecords : payerRecords.copy()));
 	}
 
 	@Override
 	public void delete() {
 		records().delete();
 		payerRecords().delete();
-	}
-
-	@Override
-	@Deprecated
-	public void copyTo(SerializableDataOutputStream out) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
-	public void copyToExtra(SerializableDataOutputStream out) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -144,16 +127,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	@Override
 	@Deprecated
 	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void diffCopyTo(SerializableDataOutputStream out, SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void diffCopyFrom(SerializableDataOutputStream out, SerializableDataInputStream in) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -203,6 +176,10 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	public void setRecords(FCQueue<ExpirableTxnRecord> records) {
 		setChild(RECORDS_CHILD_INDEX, records);
+	}
+
+	public void setPayerRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
+		setChild(PAYER_RECORDS_CHILD_INDEX, payerRecords);
 	}
 
 	/* ----  Bean  ---- */

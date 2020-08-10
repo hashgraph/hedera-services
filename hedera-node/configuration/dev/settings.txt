@@ -6,14 +6,13 @@ csvAppend, 1
 csvFileName, MainNetStats
 doUpnp, 0
 enableEventStreaming, true
-eventsLogDir, /opt/hgcapp/eventsStreams
 eventsLogPeriod, 5
 lockLogTimeout, 4000
 maxEventQueueForCons,1000
 maxOutgoingSyncs, 4
 numConnections, 1000
-roundsExpired, 500
 showInternalStats, 1
+state.roundsExpired, 500
 state.roundsStale, 25
 state.saveStatePeriod, 900
 state.signedStateDisk, 5

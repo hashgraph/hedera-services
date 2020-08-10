@@ -145,8 +145,6 @@ public class MerkleTopicTest {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.copyFrom(null));
 		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.copyFromExtra(null));
-		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.diffCopyTo(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> merkleTopic.diffCopyFrom(null, null));
 	}
 
 	@Test

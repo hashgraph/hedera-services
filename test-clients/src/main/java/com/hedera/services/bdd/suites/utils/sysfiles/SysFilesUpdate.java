@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -45,14 +46,17 @@ import com.hederahashgraph.api.proto.java.Setting;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
@@ -63,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.SplittableRandom;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -93,10 +98,14 @@ public class SysFilesUpdate extends HapiApiSuite {
 	static String DEFAULT_SYSFILE_KEY = "defaultSysFile";
 	static String DEFAULT_SYSFILE_PEM_LOC = "defaultSysFile.pem";
 
+	static String accountToReKey;
+	static String reKeyAccountPemLoc;
+	static String reKeyAccountPemPassphrase;
+
 	static ObjectMapper mapper = new ObjectMapper();
 
 	enum Action {
-		DOWNLOAD, UPDATE, UNKNOWN
+		DOWNLOAD, UPDATE, REPLACE_KEY, UNKNOWN
 	}
 
 	enum SystemFile {
@@ -171,6 +180,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 				return List.of(downloadTargetAsHumanFriendly());
 			case UPDATE:
 				return List.of(updateTargetFromHumanReadable());
+			case REPLACE_KEY:
+				return List.of(rekeyAccount());
 			default:
 				throw new AssertionError("Impossible action!");
 		}
@@ -180,6 +191,40 @@ public class SysFilesUpdate extends HapiApiSuite {
 		return (!forDownload && target == SystemFile.FEE_SCHEDULE)
 				? feeScheduleLoc
 				: path(String.format("%s-%s", nodesOverride.replace(":", "_"), basename));
+	}
+
+	private HapiApiSpec rekeyAccount() {
+		String nodesOverride = envNodes();
+
+		return customHapiSpec(String.format("ReKey-%s", accountToReKey))
+				.withProperties(Map.of(
+						"nodes", nodesOverride,
+						"default.payer", defaultPayerOverride,
+						"startupAccounts.path", startupAccountsPathOverride
+				)).given(
+						newKeyNamed("replacementKey"),
+						keyFromPem(reKeyAccountPemLoc)
+								.name("existingKey")
+								.passphrase(reKeyAccountPemPassphrase)
+								.linkedTo(accountToReKey)
+				).when(
+						withOpContext((spec, opLog) -> {
+							byte[] passphraseBytes = new byte[16];
+							new SplittableRandom().nextBytes(passphraseBytes);
+							KeyFactory.PEM_PASSPHRASE = Base64.encodeBase64String(passphraseBytes);
+							spec.keys().exportSimpleKey(
+									String.format("new-account%s.pem", accountToReKey),
+									"replacementKey");
+							var loc = String.format("new-account%s-passphrase.txt", accountToReKey);
+							try (BufferedWriter out = Files.newWriter(new File(loc), Charset.defaultCharset())) {
+								out.write(KeyFactory.PEM_PASSPHRASE);
+							}
+						})
+				).then(
+						cryptoUpdate(accountToReKey)
+								.key("replacementKey")
+								.signedBy(GENESIS, "existingKey", "replacementKey")
+				);
 	}
 
 	private HapiApiSpec downloadTargetAsHumanFriendly() {
@@ -389,27 +434,54 @@ public class SysFilesUpdate extends HapiApiSuite {
 			if (startupAccountsPathOverride.endsWith(".pem")) {
 				b64EncodePem();
 			}
-			target = SystemFile.ADDRESS_BOOK;
-			if (args.length >= 4) {
-				if ("102".equals(args[3])) {
-					target = SystemFile.NODE_DETAILS;
-				} else if ("121".equals(args[3])) {
-					target = SystemFile.APPLICATION_PROPERTIES;
-				} else if ("122".equals(args[3])) {
-					target = SystemFile.API_PERMISSIONS;
-				} else if ("112".equals(args[3])) {
-					target = SystemFile.EXCHANGE_RATES;
-				} else if ("111".equals(args[3])) {
-					target = SystemFile.FEE_SCHEDULE;
-					if (action == Action.UPDATE) {
-						if (args.length != 5) {
-							System.out.println(
-									String.format(
-											"Args (%s) don't include a path to the fee schedule JSON for the update!",
-											Arrays.toString(args)));
-							System.exit(1);
+			if (action == Action.REPLACE_KEY) {
+				if (args.length < 4) {
+					System.out.println(
+							String.format(
+									"Args (%s) don't include an account to update at position 4!",
+									Arrays.toString(args)));
+					System.exit(1);
+				}
+				accountToReKey = String.format("0.0.%s", args[3]);
+				if (args.length < 5) {
+					System.out.println(
+							String.format(
+									"Args (%s) don't include a PEM to update at position 5!",
+									Arrays.toString(args)));
+					System.exit(1);
+				}
+				reKeyAccountPemLoc = args[4];
+				reKeyAccountPemPassphrase = System.getenv("REKEY_PASSPHRASE");
+				if (Optional.ofNullable(reKeyAccountPemPassphrase).orElse("").length() == 0) {
+					System.out.println(
+							String.format(
+									"Env var '%s' doesn't have a non-empty passphrase!",
+									Arrays.toString(args)));
+					System.exit(1);
+				}
+			} else {
+				target = SystemFile.ADDRESS_BOOK;
+				if (args.length >= 4) {
+					if ("102".equals(args[3])) {
+						target = SystemFile.NODE_DETAILS;
+					} else if ("121".equals(args[3])) {
+						target = SystemFile.APPLICATION_PROPERTIES;
+					} else if ("122".equals(args[3])) {
+						target = SystemFile.API_PERMISSIONS;
+					} else if ("112".equals(args[3])) {
+						target = SystemFile.EXCHANGE_RATES;
+					} else if ("111".equals(args[3])) {
+						target = SystemFile.FEE_SCHEDULE;
+						if (action == Action.UPDATE) {
+							if (args.length != 5) {
+								System.out.println(
+										String.format(
+												"Args (%s) don't include a path to the fee schedule JSON for the update!",
+												Arrays.toString(args)));
+								System.exit(1);
+							}
+							feeScheduleLoc = args[4];
 						}
-						feeScheduleLoc = args[4];
 					}
 				}
 			}

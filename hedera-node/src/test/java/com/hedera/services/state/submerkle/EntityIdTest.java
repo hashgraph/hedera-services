@@ -82,8 +82,8 @@ public class EntityIdTest {
 
 		// expect:
 		assertEquals(one, one);
-		assertNotEquals(null, one);
-		assertNotEquals(new Object(), one);
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
 		assertNotEquals(two, one);
 		assertEquals(one, three);
 		// and:

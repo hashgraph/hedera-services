@@ -70,10 +70,14 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			CryptoTransferTransactionBody op = txnCtx.accessor().getTxn().getCryptoTransfer();
+			var transfers = txnCtx.accessor().getTxn().getCryptoTransfer().getTransfers();
 
-			ledger.doTransfers(op.getTransfers());
+			if (!validator.hasOnlyCryptoAccounts(transfers)) {
+				txnCtx.setStatus(INVALID_ACCOUNT_ID);
+				return;
+			}
 
+			ledger.doTransfers(transfers);
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);

@@ -88,8 +88,13 @@ public class GetTxnRecordAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				response.setHeader(answerOnlyHeader(OK));
-				response.setTransactionRecord(answerFunctions.txnRecord(recordCache, view, query).get());
+				var record = answerFunctions.txnRecord(recordCache, view, query);
+				if (record.isEmpty()) {
+					response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
+				} else {
+					response.setHeader(answerOnlyHeader(OK));
+					response.setTransactionRecord(record.get());
+				}
 			}
 		}
 
@@ -106,17 +111,8 @@ public class GetTxnRecordAnswer implements AnswerService {
 		if (fallbackId.equals(AccountID.getDefaultInstance())) {
 			return INVALID_ACCOUNT_ID;
 		}
-		if (recordCache.isRecordPresent(txnId)) {
-			return OK;
-		}
 
-		ResponseCodeEnum validity = optionValidator.queryableAccountStatus(fallbackId, view.accounts());
-		if (validity != OK) {
-			return validity;
-		}
-		Optional<TransactionRecord> record = answerFunctions.txnRecord(recordCache, view, query);
-
-		return record.isPresent() ? OK : RECORD_NOT_FOUND;
+		return optionValidator.queryableAccountStatus(fallbackId, view.accounts());
 	}
 
 	@Override

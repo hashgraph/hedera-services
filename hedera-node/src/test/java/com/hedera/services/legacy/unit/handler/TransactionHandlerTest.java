@@ -20,6 +20,7 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -98,7 +99,7 @@ public class TransactionHandlerTest {
 		subject = new TransactionHandler(
 				recordCache,
 				precheckVerifier,
-				accounts,
+				() -> accounts,
 				nodeAccount,
 				txnThrottling,
 				usagePrices,
@@ -108,6 +109,7 @@ public class TransactionHandlerTest {
 				basicPrecheck,
 				queryFeeCheck,
 				throttling,
+				new MockAccountNumbers(),
 				stats);
 	}
 

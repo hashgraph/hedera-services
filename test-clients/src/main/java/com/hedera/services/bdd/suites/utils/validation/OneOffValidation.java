@@ -34,10 +34,14 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -86,8 +90,19 @@ public class OneOffValidation extends HapiApiSuite {
 //				xferWithTls(),
 //				bootstrapBalanceCheck(),
 //				createAnAccount(),
-				checkAppProperties(),
+//				checkAppProperties(),
+				createAContract(),
 		});
+	}
+
+	private HapiApiSpec createAContract() {
+		return defaultHapiSpec("CreateAContract").given(
+				fileCreate("bytecode").path("src/main/resource/Multipurpose.bin")
+		).when(
+				contractCreate("something").bytecode("bytecode").via("createTxn")
+		).then(
+				getTxnRecord("createTxn").logged()
+		);
 	}
 
 	private HapiApiSpec checkAppProperties() {

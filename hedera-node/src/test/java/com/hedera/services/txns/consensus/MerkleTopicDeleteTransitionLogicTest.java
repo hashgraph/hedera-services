@@ -39,7 +39,7 @@ import org.mockito.InOrder;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoTopicId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static junit.framework.TestCase.assertTrue;
@@ -50,7 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 @RunWith(JUnitPlatform.class)
 class MerkleTopicDeleteTransitionLogicTest {
 	final private String TOPIC_ID = "8.6.75309";
-	final private MerkleEntityId topicFcKey = fromPojoTopicId(asTopic(TOPIC_ID));
+	final private MerkleEntityId topicFcKey = fromTopicId(asTopic(TOPIC_ID));
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
@@ -72,7 +72,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		topics.clear();
 
-		subject = new TopicDeleteTransitionLogic(topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test
@@ -117,7 +117,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-		subject = new TopicDeleteTransitionLogic(topics, validator, transactionContext);
+		subject = new TopicDeleteTransitionLogic(() -> topics, validator, transactionContext);
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(fromPojoTopicId(asTopic(TOPIC_ID)));
+		var topic = topics.get(fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
 		assertFalse(topic.isDeleted());
 		verify(transactionContext).setStatus(UNAUTHORIZED);
@@ -167,13 +167,13 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
 		var topicWithAdminKey = new MerkleTopic();
 		topicWithAdminKey.setAdminKey(MISC_ACCOUNT_KT.asJKey());
-		topics.put(fromPojoTopicId(asTopic(TOPIC_ID)), topicWithAdminKey);
+		topics.put(fromTopicId(asTopic(TOPIC_ID)), topicWithAdminKey);
 	}
 
 	private void givenTransactionContextNoAdminKey() {
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 		given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
-		topics.put(fromPojoTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
+		topics.put(fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
 	}
 
 	private void givenTransactionContextInvalidTopic() {

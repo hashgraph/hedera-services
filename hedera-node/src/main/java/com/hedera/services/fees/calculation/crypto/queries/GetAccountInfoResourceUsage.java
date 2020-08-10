@@ -58,7 +58,7 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
 		try {
 			CryptoGetInfoQuery infoQuery = query.getCryptoGetInfo();
-			MerkleEntityId key = MerkleEntityId.fromPojoAccountId(infoQuery.getAccountID());
+			MerkleEntityId key = MerkleEntityId.fromAccountId(infoQuery.getAccountID());
 			MerkleAccount account = view.accounts().get(key);
 
 			return usageEstimator.getAccountInfoQueryFeeMatrices(

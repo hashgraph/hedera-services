@@ -20,7 +20,7 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hederahashgraph.api.proto.java.FileID;
 
 public interface GenericInterceptor {

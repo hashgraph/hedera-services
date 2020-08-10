@@ -23,6 +23,7 @@ package com.hedera.services.txns.file;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -79,7 +80,7 @@ class FileSysUndelTransitionLogicTest {
 	PlatformTxnAccessor accessor;
 
 	HederaFs hfs;
-	Map<FileID, Long> oldExpiries;
+	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
 
 	FileSysUndelTransitionLogic subject;
@@ -120,7 +121,7 @@ class FileSysUndelTransitionLogicTest {
 		assertFalse(deletedAttr.isDeleted());
 		assertEquals(oldFutureExpiry, deletedAttr.getExpirationTimeSeconds());
 		inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
-		inOrder.verify(oldExpiries).remove(deleted);
+		inOrder.verify(oldExpiries).remove(EntityId.ofNullableFileId(deleted));
 		inOrder.verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -133,7 +134,7 @@ class FileSysUndelTransitionLogicTest {
 
 		// then:
 		verify(hfs).rm(deleted);
-		verify(oldExpiries).remove(deleted);
+		verify(oldExpiries).remove(EntityId.ofNullableFileId(deleted));
 		verify(hfs, never()).sudoSetattr(any(), any());
 	}
 
@@ -214,19 +215,20 @@ class FileSysUndelTransitionLogicTest {
 				id = deleted;
 				break;
 		}
+		EntityId entity = EntityId.ofNullableFileId(id);
 
 		switch (expiryType) {
 			case NONE:
-				given(oldExpiries.containsKey(id)).willReturn(false);
-				given(oldExpiries.get(id)).willReturn(null);
+				given(oldExpiries.containsKey(entity)).willReturn(false);
+				given(oldExpiries.get(entity)).willReturn(null);
 				break;
 			case FUTURE:
-				given(oldExpiries.containsKey(id)).willReturn(true);
-				given(oldExpiries.get(id)).willReturn(oldFutureExpiry);
+				given(oldExpiries.containsKey(entity)).willReturn(true);
+				given(oldExpiries.get(entity)).willReturn(oldFutureExpiry);
 				break;
 			case PAST:
-				given(oldExpiries.containsKey(id)).willReturn(true);
-				given(oldExpiries.get(id)).willReturn(oldPastExpiry);
+				given(oldExpiries.containsKey(entity)).willReturn(true);
+				given(oldExpiries.get(entity)).willReturn(oldPastExpiry);
 				break;
 		}
 

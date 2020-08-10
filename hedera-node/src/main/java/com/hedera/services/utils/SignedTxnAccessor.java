@@ -21,13 +21,19 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.List;
+import java.util.function.Function;
+
+import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -40,6 +46,15 @@ public class SignedTxnAccessor {
 	private Transaction signedTxn;
 	private TransactionID txnId;
 	private TransactionBody txn;
+	private HederaFunctionality function;
+
+	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
+		try {
+			return functionOf(txn);
+		} catch (UnknownHederaFunctionality ignore) {
+			return NONE;
+		}
+	};
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -62,6 +77,13 @@ public class SignedTxnAccessor {
 
 	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {
 		this(signedTxn.toByteArray());
+	}
+
+	public HederaFunctionality getFunction() {
+		if (function == null) {
+			function = functionExtractor.apply(getTxn());
+		}
+		return function;
 	}
 
 	public Transaction getSignedTxn4Log() {

@@ -35,7 +35,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)

@@ -278,18 +278,6 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
 
     @Override
     @Deprecated
-    public void copyTo(SerializableDataOutputStream out) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
-    public void copyToExtra(SerializableDataOutputStream out) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
     public void copyFrom(SerializableDataInputStream in) {
         throw new UnsupportedOperationException();
     }
@@ -297,16 +285,6 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
     @Override
     @Deprecated
     public void copyFromExtra(SerializableDataInputStream in) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void diffCopyTo(SerializableDataOutputStream out, SerializableDataInputStream in) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void diffCopyFrom(SerializableDataOutputStream out, SerializableDataInputStream in) {
         throw new UnsupportedOperationException();
     }
 

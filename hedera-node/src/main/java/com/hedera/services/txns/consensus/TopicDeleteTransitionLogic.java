@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -41,12 +42,15 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 
-	private final FCMap<MerkleEntityId, MerkleTopic> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicDeleteTransitionLogic(FCMap<MerkleEntityId, MerkleTopic> topics, OptionValidator validator,
-									  TransactionContext transactionContext) {
+	public TopicDeleteTransitionLogic(
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			OptionValidator validator,
+			TransactionContext transactionContext
+	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
@@ -57,24 +61,24 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 		var op = transactionContext.accessor().getTxn().getConsensusDeleteTopic();
 		var topicId = op.getTopicID();
 
-		var topicStatus = validator.queryableTopicStatus(topicId, topics);
+		var topicStatus = validator.queryableTopicStatus(topicId, topics.get());
 		if (OK != topicStatus) {
 			// Should not get here as the adminKey lookup should have failed.
 			transactionContext.setStatus(topicStatus);
 			return;
 		}
 
-		var topicMapKey = MerkleEntityId.fromPojoTopicId(topicId);
-		var topic = topics.get(topicMapKey);
+		var topicMapKey = MerkleEntityId.fromTopicId(topicId);
+		var topic = topics.get().get(topicMapKey);
 		if (!topic.hasAdminKey()) {
 			// Topics without adminKeys can't be deleted.
 			transactionContext.setStatus(UNAUTHORIZED);
 			return;
 		}
 
-		var mutableTopic = topics.getForModify(topicMapKey);
+		var mutableTopic = topics.get().getForModify(topicMapKey);
 		mutableTopic.setDeleted(true);
-		topics.put(topicMapKey, mutableTopic);
+		topics.get().put(topicMapKey, mutableTopic);
 
 		transactionContext.setStatus(SUCCESS);
 	}
