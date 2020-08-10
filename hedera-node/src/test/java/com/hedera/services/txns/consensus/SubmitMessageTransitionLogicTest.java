@@ -106,7 +106,7 @@ class SubmitMessageTransitionLogicTest {
 
 		// Hash depends on prior state of topic (default topic object has 0s for runningHash and 0L for seqNum),
 		// consensus timestamp, message.
-		assertEquals("bd9ec4df57667d55b922c3b1ad7dee2566bb018efe13d68cd0696fb4181694cc4d7aa2186cd8dff6e22849d663f94bf1",
+		assertEquals("c44860f057eca2ea865821f5211420afe231dc2a485c277405d14f8421bb97f4a34ddd53db84bcf064045d10e7fca822",
 				MiscUtils.commonsBytesToHex(topic.getRunningHash()));
 
 		verify(transactionContext).setStatus(SUCCESS);
