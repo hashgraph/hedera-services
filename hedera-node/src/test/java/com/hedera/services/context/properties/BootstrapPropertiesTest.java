@@ -69,6 +69,8 @@ class BootstrapPropertiesTest {
 			entry("accounts.systemAdmin", 50L),
 			entry("accounts.systemAdmin.firstManaged", 51L),
 			entry("accounts.systemAdmin.lastManaged", 80L),
+			entry("accounts.systemDeleteAdmin", 59L),
+			entry("accounts.systemUndeleteAdmin", 60L),
 			entry("accounts.treasury", 2L),
 			entry("files.addressBook", 101L),
 			entry("files.networkProperties", 121L),
