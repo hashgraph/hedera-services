@@ -1007,19 +1007,19 @@ workflows:
       #     post-steps:
       #       - save-this-job-client-logs:
       #           workflow-name: "feature-update-regression"
-      - run-accessory-tests:
-          context: Slack
-          requires:
-            - start-singlejob-testnet
-          post-steps:
-            - save-this-job-client-logs:
-                workflow-name: "feature-update-regression"
-            - cleanup-rerun-testnet-if-present
-          workflow-name: "feature-update-regression"
+      # - run-accessory-tests:
+      #     context: Slack
+      #     requires:
+      #       - start-singlejob-testnet
+      #     post-steps:
+      #       - save-this-job-client-logs:
+      #           workflow-name: "feature-update-regression"
+      #       - cleanup-rerun-testnet-if-present
+      #     workflow-name: "feature-update-regression"
       - run-update-feature:
           context: Slack
           requires:
-            - run-accessory-tests
+            - start-singlejob-testnet
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
