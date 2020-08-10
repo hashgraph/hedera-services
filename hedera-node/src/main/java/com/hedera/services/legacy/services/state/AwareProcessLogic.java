@@ -28,12 +28,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
-import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,7 +44,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
-import java.util.Optional;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
@@ -220,9 +216,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		ResponseCodeEnum metaValidity = assessPostConsensusValidity(accessor, consensusTime);
-		if (metaValidity != OK) {
-			ctx.txnCtx().setStatus(metaValidity);
+		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
+		if (sysAuthStatus != OK) {
+			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;
 		}
 
@@ -248,10 +244,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 
 		ctx.stats().transactionHandled(accessor.getTxn());
-	}
-
-	private ResponseCodeEnum assessPostConsensusValidity(PlatformTxnAccessor accessor, Instant consensusTime) {
-		return TransactionValidationUtils.validateTxBodyPostConsensus(accessor.getTxn(), consensusTime, ctx.accounts());
 	}
 
 	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
@@ -289,12 +281,14 @@ public class AwareProcessLogic implements ProcessLogic {
 		Instant consensusTime = ctx.txnCtx().consensusTime();
 		PlatformTxnAccessor accessor = ctx.txnCtx().accessor();
 
-		AccountID swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
-		AccountID designatedNodeAccount = accessor.getTxn().getNodeAccountID();
-		if (!swirldsMemberAccount.equals(designatedNodeAccount)) {
-			log.warn("Node {} (Member #{}) submitted a txn designated for node {} :: {}",
+		var swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
+		var designatedNodeAccount = accessor.getTxn().getNodeAccountID();
+		boolean designatedNodeExists = ctx.backingAccounts().contains(designatedNodeAccount);
+		if (!designatedNodeExists || !swirldsMemberAccount.equals(designatedNodeAccount)) {
+			log.warn("Node {} (Member #{}) submitted a txn designated for {} node {} :: {}",
 					readableId(swirldsMemberAccount),
 					ctx.txnCtx().submittingSwirldsMember(),
+					designatedNodeExists ? "other" : "nonexistent",
 					readableId(designatedNodeAccount),
 					accessor.getSignedTxn4Log());
 			ctx.txnCtx().setStatus(INVALID_NODE_ACCOUNT);
@@ -317,9 +311,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			return true;
 		}
 
-		var chronology = ctx.validator().chronologyStatus(accessor, consensusTime);
-		if (chronology != OK) {
-			ctx.txnCtx().setStatus(chronology);
+		var cronStatus = ctx.validator().chronologyStatus(accessor, consensusTime);
+		if (cronStatus != OK) {
+			ctx.txnCtx().setStatus(cronStatus);
 			return true;
 		}
 

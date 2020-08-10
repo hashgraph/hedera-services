@@ -31,16 +31,16 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.Assert.assertEquals;
 
 public class SysDelSysUndelSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SysDelSysUndelSpec.class);
@@ -56,8 +56,30 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						systemDeleteThenUndeleteRestoresContentsAndExpiry(),
 						systemDeleteWithPastExpiryDestroysFile(),
+						distinguishesAdminPrivileges(),
 				}
 		);
+	}
+
+	private HapiApiSpec distinguishesAdminPrivileges() {
+		var lifetime = 100_000L;
+
+		return defaultHapiSpec("DistinguishesAdminPrivileges")
+				.given(
+						fileCreate("misc")
+								.lifetime(lifetime)
+								.contents(ORIG_FILE)
+				).when(
+				).then(
+						systemFileDelete("misc")
+								.payingWith(SYSTEM_UNDELETE_ADMIN)
+								.hasPrecheck(NOT_SUPPORTED),
+						systemFileUndelete("misc")
+								.payingWith(SYSTEM_DELETE_ADMIN)
+								.hasPrecheck(AUTHORIZATION_FAILED),
+						systemFileDelete(ADDRESS_BOOK)
+								.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+				);
 	}
 
 	private HapiApiSpec systemDeleteWithPastExpiryDestroysFile() {
@@ -70,12 +92,14 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 								.contents(ORIG_FILE)
 				).when(
 						systemFileDelete("misc")
+								.payingWith(SYSTEM_DELETE_ADMIN)
 								.updatingExpiry(666),
 						getFileInfo("misc")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(INVALID_FILE_ID)
 				).then(
 						systemFileUndelete("misc")
+								.payingWith(SYSTEM_UNDELETE_ADMIN)
 								.hasKnownStatus(INVALID_FILE_ID)
 				);
 	}
@@ -95,12 +119,16 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 						})
 				).when(
 						systemFileDelete("misc")
+								.payingWith(SYSTEM_DELETE_ADMIN)
+								.fee(0L)
 								.updatingExpiry(now + lifetime / 2),
 						getFileInfo("misc")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(OK)
 						        .hasDeleted(true),
 						systemFileUndelete("misc")
+								.payingWith(SYSTEM_UNDELETE_ADMIN)
+								.fee(0L)
 				).then(
 						getFileContents("misc")
 								.hasContents(ignore -> ORIG_FILE),

@@ -31,8 +31,12 @@ public class AccountNumbers {
 	private long systemAdmin = UNKNOWN_NUMBER;
 	private long freezeAdmin = UNKNOWN_NUMBER;
 	private long addressBookAdmin = UNKNOWN_NUMBER;
+	private long systemDeleteAdmin = UNKNOWN_NUMBER;
 	private long feeSchedulesAdmin = UNKNOWN_NUMBER;
 	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
+	private long systemUndeleteAdmin = UNKNOWN_NUMBER;
+	private long lastManagedBySysAdmin = UNKNOWN_NUMBER;
+	private long firstManagedBySysAdmin = UNKNOWN_NUMBER;
 
 	public AccountNumbers(PropertySource properties) {
 		this.properties = properties;
@@ -59,6 +63,20 @@ public class AccountNumbers {
 		return systemAdmin;
 	}
 
+	public long firstManagedBySysAdmin() {
+		if (firstManagedBySysAdmin == UNKNOWN_NUMBER) {
+			firstManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.firstManaged");
+		}
+		return firstManagedBySysAdmin;
+	}
+
+	public long lastManagedBySysAdmin() {
+		if (lastManagedBySysAdmin == UNKNOWN_NUMBER) {
+			lastManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.lastManaged");
+		}
+		return lastManagedBySysAdmin;
+	}
+
 	public long addressBookAdmin() {
 		if (addressBookAdmin == UNKNOWN_NUMBER) {
 			addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
@@ -80,7 +98,21 @@ public class AccountNumbers {
 		return exchangeRatesAdmin;
 	}
 
-	public boolean isSysAdmin(long num) {
+	public long systemDeleteAdmin() {
+		if (systemDeleteAdmin == UNKNOWN_NUMBER) {
+			systemDeleteAdmin = properties.getLongProperty("accounts.systemDeleteAdmin");
+		}
+		return systemDeleteAdmin;
+	}
+
+	public long systemUndeleteAdmin() {
+		if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
+			systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
+		}
+		return systemUndeleteAdmin;
+	}
+
+	public boolean isSuperuser(long num) {
 		return num == treasury() || num == systemAdmin();
 	}
 }

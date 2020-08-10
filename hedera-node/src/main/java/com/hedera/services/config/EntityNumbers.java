@@ -20,22 +20,51 @@ package com.hedera.services.config;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+
 public class EntityNumbers {
 	public static final long UNKNOWN_NUMBER = Long.MIN_VALUE;
 
 	private final FileNumbers fileNumbers;
+	private final HederaNumbers hederaNumbers;
 	private final AccountNumbers accountNumbers;
 
-	public EntityNumbers(FileNumbers fileNumbers, AccountNumbers accountNumbers) {
+	public EntityNumbers(
+			FileNumbers fileNumbers,
+			HederaNumbers hederaNumbers,
+			AccountNumbers accountNumbers
+	) {
 		this.fileNumbers = fileNumbers;
+		this.hederaNumbers = hederaNumbers;
 		this.accountNumbers = accountNumbers;
 	}
 
-	public FileNumbers ofFile() {
+	public boolean isSystemFile(FileID id) {
+		var num = id.getFileNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
+	}
+
+	public boolean isSystemAccount(AccountID id) {
+		var num = id.getAccountNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
+	}
+
+	public boolean isSystemContract(ContractID id) {
+		var num = id.getContractNum();
+		return 1 <= num && num <= hederaNumbers.numReservedSystemEntities();
+	}
+
+	public HederaNumbers all() {
+		return hederaNumbers;
+	}
+
+	public FileNumbers files() {
 		return fileNumbers;
 	}
 
-	public AccountNumbers ofAccount() {
+	public AccountNumbers accounts() {
 		return accountNumbers;
 	}
 }

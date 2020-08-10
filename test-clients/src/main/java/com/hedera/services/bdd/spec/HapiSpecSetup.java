@@ -349,4 +349,8 @@ public class HapiSpecSetup {
 	}
 	public AccountID strongControlAccount() { return props.getAccount("strong.control.account"); }
 	public String strongControlName() { return props.get("strong.control.name"); }
+	public AccountID systemDeleteAdmin() { return props.getAccount("systemDeleteAdmin.account"); }
+	public String systemDeleteAdminName() { return props.get("systemDeleteAdmin.name"); }
+	public AccountID systemUndeleteAdmin() { return props.getAccount("systemUndeleteAdmin.account"); }
+	public String systemUndeleteAdminName() { return props.get("systemUndeleteAdmin.name"); }
 }

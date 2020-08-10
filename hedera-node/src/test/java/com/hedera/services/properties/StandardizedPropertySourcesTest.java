@@ -162,15 +162,11 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("dev.defaultListeningNodeAccount"));
 		assertTrue(properties.containsProperty("dev.onlyDefaultNodeListens"));
 		assertTrue(properties.containsProperty("exchangeRates.intradayChange.limitPercent"));
-		assertTrue(properties.containsProperty("files.firstInAdminScope.num"));
-		assertTrue(properties.containsProperty("files.lastInAdminScope.num"));
 		assertTrue(properties.containsProperty("files.maxSizeKb"));
 		assertTrue(properties.containsProperty("grpc.port"));
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));
 		assertTrue(properties.containsProperty("hedera.exportAccountsOnStartup"));
 		assertTrue(properties.containsProperty("hedera.exportBalancesOnNewSignedState"));
-		assertTrue(properties.containsProperty("hedera.firstProtectedEntity.num"));
-		assertTrue(properties.containsProperty("hedera.lastProtectedEntity.num"));
 		assertTrue(properties.containsProperty("hedera.profiles.active"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));

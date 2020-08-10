@@ -22,6 +22,6 @@ package com.hedera.services.config;
 
 public class MockEntityNumbers extends EntityNumbers {
 	public MockEntityNumbers() {
-		super(new MockFileNumbers(), new MockAccountNumbers());
+		super(new MockFileNumbers(), new MockHederaNumbers(), new MockAccountNumbers());
 	}
 }
