@@ -141,6 +141,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
 				assertArrayEquals("Bad running hash!", expectedRunningHash,
 						actualRunningHash.toByteArray());
+				spec.registry().saveBytes(topicToValidate.get(), actualRunningHash);
 			}
 		}
 	}

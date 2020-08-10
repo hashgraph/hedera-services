@@ -237,7 +237,12 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				)
 				.then(
 						getTxnRecord("submitMessage1")
-								.hasCorrectRunningHash(topic, message1)
+								.hasCorrectRunningHash(topic, message1),
+						submitMessageTo(topic)
+								.message(message2)
+								.via("submitMessage2"),
+						getTxnRecord("submitMessage2")
+								.hasCorrectRunningHash(topic, message2)
 				);
 	}
 
