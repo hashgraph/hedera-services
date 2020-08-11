@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
@@ -80,7 +81,7 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
 
     public static final int MAX_MEMO_BYTES = 1_024;
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
-    public static final long RUNNING_HASH_VERSION = 2L;
+    public static final long RUNNING_HASH_VERSION = 3L;
 
     static final int MERKLE_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
@@ -303,6 +304,7 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
      * @throws NoSuchAlgorithmException If the crypto library on this system doesn't support the SHA384 algorithm
      */
     public void updateRunningHashAndSequenceNumber(
+            AccountID payer,
             @Nullable byte[] message,
             @Nullable TopicID topicId,
             @Nullable Instant consensusTimestamp
@@ -321,6 +323,9 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
         try (var out = new ObjectOutputStream(boas)) {
             out.writeObject(getRunningHash());
             out.writeLong(RUNNING_HASH_VERSION);
+            out.writeLong(payer.getShardNum());
+            out.writeLong(payer.getRealmNum());
+            out.writeLong(payer.getAccountNum());
             out.writeLong(topicId.getShardNum());
             out.writeLong(topicId.getRealmNum());
             out.writeLong(topicId.getTopicNum());

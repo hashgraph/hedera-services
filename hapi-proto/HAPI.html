@@ -8340,7 +8340,7 @@ IF the topicRunningHashVersion is &#39;0&#39; or &#39;1&#39;, then the input dat
 7. The topicSequenceNumber from above (8 bytes)
 8. The message bytes from the ConsensusSubmitMessage (variable).
 
-Otherwise, IF the topicRunningHashVersion is &#39;2&#39;, then the input data to the SHA-384 digest are, in order:
+IF the topicRunningHashVersion is &#39;2&#39;, then the input data to the SHA-384 digest are, in order:
 ---
 1. The previous running hash of the topic (48 bytes)
 2. The topicRunningHashVersion below (8 bytes)
@@ -8350,7 +8350,22 @@ Otherwise, IF the topicRunningHashVersion is &#39;2&#39;, then the input data to
 6. The number of seconds since the epoch before the ConsensusSubmitMessage reached consensus (8 bytes)
 7. The number of nanoseconds since 6. before the ConsensusSubmitMessage reached consensus (4 bytes)
 8. The topicSequenceNumber from above (8 bytes)
-9. The output of the SHA-384 digest of the message bytes from the consensusSubmitMessage (48 bytes) </p></td>
+9. The output of the SHA-384 digest of the message bytes from the consensusSubmitMessage (48 bytes)
+
+Otherwise, IF the topicRunningHashVersion is &#39;3&#39;, then the input data to the SHA-384 digest are, in order:
+---
+1. The previous running hash of the topic (48 bytes)
+2. The topicRunningHashVersion below (8 bytes)
+3. The payer account&#39;s shard (8 bytes)
+4. The payer account&#39;s realm (8 bytes)
+5. The payer account&#39;s number (8 bytes)
+6. The topic&#39;s shard (8 bytes)
+7. The topic&#39;s realm (8 bytes)
+8. The topic&#39;s number (8 bytes)
+9. The number of seconds since the epoch before the ConsensusSubmitMessage reached consensus (8 bytes)
+10. The number of nanoseconds since 9. before the ConsensusSubmitMessage reached consensus (4 bytes)
+11. The topicSequenceNumber from above (8 bytes)
+12. The output of the SHA-384 digest of the message bytes from the consensusSubmitMessage (48 bytes) </p></td>
                 </tr>
               
                 <tr>

@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
@@ -61,7 +62,8 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				messageSubmissionWithSubmitKey(),
 				messageSubmissionMultiple(),
 				messageSubmissionOverSize(),
-				feeAsExpected()
+				feeAsExpected(),
+				messageSubmissionCorrectlyUpdatesRunningHash()
 		);
 	}
 
@@ -212,6 +214,35 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				)
 				.then(
 						validateFee("submitMessage", 0.0002)
+				);
+	}
+
+	private HapiApiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
+		String topic = "testTopic";
+		String message1 = "Hello world!";
+		String message2 = "Hello world again!";
+
+		return defaultHapiSpec("messageSubmissionCorrectlyUpdatesRunningHash")
+				.given(
+						createTopic(topic),
+						getTopicInfo(topic)
+								.hasSeqNo(0)
+								.hasRunningHash(new byte[48])
+								.saveRunningHash()
+				)
+				.when(
+						submitMessageTo(topic)
+								.message(message1)
+								.via("submitMessage1")
+				)
+				.then(
+						getTxnRecord("submitMessage1")
+								.hasCorrectRunningHash(topic, message1),
+						submitMessageTo(topic)
+								.message(message2)
+								.via("submitMessage2"),
+						getTxnRecord("submitMessage2")
+								.hasCorrectRunningHash(topic, message2)
 				);
 	}
 
