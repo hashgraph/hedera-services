@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,10 +34,6 @@ import java.util.List;
  * @author Michael Tinker
  */
 public class PlatformSigOps {
-
-	private PlatformSigOps(){
-		throw new IllegalStateException("Utility Class");
-	}
 	/**
 	 * Return the result of trying to create one or more platform sigs using a given
 	 * {@link TxnScopedPlatformSigFactory}, where this {@code factory} should be invoked for
@@ -59,16 +55,18 @@ public class PlatformSigOps {
 	) {
 		PlatformSigsCreationResult result = new PlatformSigsCreationResult();
 		for (JKey pk : pubKeys) {
-			HederaKeyTraversal.visitSimpleKeys(pk, simpleKey -> createPlatformSigFor(simpleKey, sigBytes, factory, result));
+			HederaKeyTraversal.visitSimpleKeys(pk,
+					simpleKey -> createPlatformSigFor(simpleKey, sigBytes, factory, result));
 		}
 		return result;
 	}
 
-	private static void createPlatformSigFor(JKey pk,
-											 PubKeyToSigBytes sigBytes,
-											 TxnScopedPlatformSigFactory factory,
-											 PlatformSigsCreationResult result
-	){
+	private static void createPlatformSigFor(
+			JKey pk,
+			PubKeyToSigBytes sigBytes,
+			TxnScopedPlatformSigFactory factory,
+			PlatformSigsCreationResult result
+	) {
 		if (result.hasFailed()) {
 			return;
 		}

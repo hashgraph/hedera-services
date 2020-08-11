@@ -76,8 +76,7 @@ class TxnAwareAuthPolicyTest {
 		txnCtx = mock(TransactionContext.class);
 
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("hedera.firstProtectedEntity.num")).willReturn(1L);
-		given(properties.getLongProperty("hedera.lastProtectedEntity.num")).willReturn(1_000L);
+		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
 
 		subject = new TxnAwareAuthPolicy(
 				new MockFileNumbers(),

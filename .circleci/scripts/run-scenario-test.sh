@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 if [ $# -lt 3 ]; then
   echo "USAGE: $0 fqcn node-terraform-index node-account [other-args]"
   exit 1
@@ -31,7 +30,6 @@ while [ $I -lt ${#TF_HOSTS[@]} ]; do
   I=$((I+1))
 done
 
-
 OTHER_ARGS=$4
 cd $TEST_CLIENTS_DIR
 if [ ! -f "$CLIENT_RESOURCES_REBUILD_FINGERPRINT" ]; then
@@ -48,10 +46,8 @@ if [ ! -f "$CLIENT_RESOURCES_REBUILD_FINGERPRINT" ]; then
 fi
 ci_echo "Running legacy scenario $FCQN vs $ALL_NODES (suggested ${NODE}:0.0.${NODE_ACCOUNT})..."
 
-
 NODES=$ALL_NODES \
   mvn -e -q exec:java \
     -Dexec.mainClass=$FCQN \
     -Dexec.args="$NODE $NODE_ACCOUNT $OTHER_ARGS" \
     -Dexec.cleanupDaemonThreads=false
-ci_echo "End of running legacy scenario $FCQN test."

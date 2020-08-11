@@ -29,11 +29,6 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	@Override
-	public boolean isSystem(long num) {
-		return num <= 1_000L;
-	}
-
-	@Override
 	public long addressBook() {
 		return 101;
 	}

@@ -46,9 +46,6 @@ public class SyncPropertiesObject {
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
 
-	private static long protectedMaxEntityNum = ApplicationConstants.PROTECT_ENT_MAX_NUM;
-	private static long protectedMinEntityNum = ApplicationConstants.PROTECT_ENT_MIN_NUM;
-
 	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
 
 	private static long defaultContractSenderThreshold = ApplicationConstants.DEF_CONT_SEND_THRESHOLD;
@@ -101,9 +98,6 @@ public class SyncPropertiesObject {
 		defaultContractSenderThreshold = appConfig.getLong("defaultContractSenderThreshold", ApplicationConstants.DEF_CONT_SEND_THRESHOLD);
 		defaultContractReceiverThreshold = appConfig.getLong("defaultContractReceiverThreshold",
 				ApplicationConstants.DEF_CONT_RECEIVE_THRESHOLD);
-
-		protectedMaxEntityNum = appConfig.getLong("protectedMaxEntityNum", ApplicationConstants.PROTECT_ENT_MAX_NUM);
-		protectedMinEntityNum = appConfig.getLong("protectedMinEntityNum", ApplicationConstants.PROTECT_ENT_MIN_NUM);
 
 		// if a node account's balance is less than this value tinybars, we should log
 		// Insufficient Node Balance warning;
@@ -172,14 +166,6 @@ public class SyncPropertiesObject {
 
 	static long getMAXIMUM_AUTORENEW_DURATION() {
 		return maximumAutoRenewDuration;
-	}
-
-	static long getProtectedMaxEntityNum() {
-		return protectedMaxEntityNum;
-	}
-
-	static long getProtectedMinEntityNum() {
-		return protectedMinEntityNum;
 	}
 
 	static int getTransferListSizeLimit() {

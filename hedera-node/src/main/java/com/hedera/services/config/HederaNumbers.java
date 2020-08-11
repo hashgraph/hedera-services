@@ -29,6 +29,7 @@ public class HederaNumbers {
 
 	private long realm = UNKNOWN_NUMBER;
 	private long shard = UNKNOWN_NUMBER;
+	private long numReservedSystemEntities = UNKNOWN_NUMBER;
 
 	public HederaNumbers(PropertySource properties) {
 		this.properties = properties;
@@ -46,5 +47,12 @@ public class HederaNumbers {
 			shard = properties.getLongProperty("hedera.shard");
 		}
 		return shard;
+	}
+
+	public long numReservedSystemEntities() {
+		if (numReservedSystemEntities == UNKNOWN_NUMBER) {
+			numReservedSystemEntities = properties.getLongProperty("hedera.numReservedSystemEntities");
+		}
+		return numReservedSystemEntities;
 	}
 }

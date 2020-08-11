@@ -132,7 +132,7 @@ class TxnFeeChargingPolicyTest {
 
 	private static class NoExemptions implements FeeExemptions {
 		@Override
-		public boolean isExemptFromFees(TransactionBody txn) {
+		public boolean hasExemptPayer(SignedTxnAccessor accessor) {
 			return false;
 		}
 

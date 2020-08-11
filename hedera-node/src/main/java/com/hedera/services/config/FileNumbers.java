@@ -85,13 +85,6 @@ public class FileNumbers {
 		return apiPermissions;
 	}
 
-	public boolean isSystem(long num) {
-		if (systemFileCutoff == UNKNOWN_NUMBER) {
-			systemFileCutoff = properties.getLongProperty("hedera.lastProtectedEntity.num");
-		}
-		return num <= systemFileCutoff;
-	}
-
 	public FileID toFid(long num) {
 		return FileID.newBuilder()
 				.setShardNum(hederaNums.shard())

@@ -54,7 +54,7 @@ class FileNumbersTest {
 		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
 		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
 
-		given(properties.getLongProperty("hedera.lastProtectedEntity.num")).willReturn(1_000L);
+		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
 
 		subject = new FileNumbers(hederaNumbers, properties);
 	}
@@ -68,8 +68,6 @@ class FileNumbersTest {
 		assertEquals(112, subject.exchangeRates());
 		assertEquals(121, subject.applicationProperties());
 		assertEquals(122, subject.apiPermissions());
-		assertTrue(subject.isSystem(1_000));
-		assertFalse(subject.isSystem(1_001));
 	}
 
 	@Test

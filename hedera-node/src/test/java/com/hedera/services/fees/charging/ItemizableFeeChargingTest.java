@@ -215,7 +215,9 @@ class ItemizableFeeChargingTest {
 
 		givenKnownFeeAmounts();
 		given(ledger.getBalance(payer)).willReturn(Long.MAX_VALUE);
-		given(exemptions.isExemptFromFees(txn)).willReturn(true);
+		given(exemptions.hasExemptPayer(accessor)).willReturn(true);
+		// and:
+		subject.resetFor(accessor);
 
 		// when:
 		subject.chargePayer(allPossibleFees);

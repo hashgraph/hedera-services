@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,7 +64,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.legacy.logic.ApplicationConstants.HEDERA_START_SEQUENCE;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
@@ -93,7 +92,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	ServicesContext ctx;
 
-	public ServicesState() { }
+	public ServicesState() {
+	}
 
 	public ServicesState(List<MerkleNode> children) {
 		super(ChildIndices.NUM_V1_CHILDREN);
@@ -134,14 +134,17 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		/* Note this overrides the address book from the saved state if it is present. */
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
+		var bootstrapProps = new BootstrapProperties();
 		if (getNumberOfChildren() < ChildIndices.NUM_V1_CHILDREN) {
+			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
-					new SequenceNumber(HEDERA_START_SEQUENCE),
+					new SequenceNumber(seqStart),
 					new ExchangeRates());
 			setChild(ChildIndices.NETWORK_CTX, networkCtx);
 			setChild(ChildIndices.TOPICS, new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
-			setChild(ChildIndices.STORAGE, new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
+			setChild(ChildIndices.STORAGE,
+					new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
@@ -150,13 +153,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			printHashes();
 		}
 
-		ctx = new ServicesContext(
-				nodeId,
-				platform,
-				this,
-				new StandardizedPropertySources(
-						new BootstrapProperties(),
-						loc -> new File(loc).exists()));
+		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
+		ctx = new ServicesContext( nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
@@ -191,7 +189,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	@Override
-	public void noMoreTransactions() { }
+	public void noMoreTransactions() {
+	}
 
 	/* --- FastCopyable --- */
 	@Override
@@ -256,12 +255,12 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public void printHashes() {
 		ServicesMain.log.info(String.format("[SwirldState Hashes]\n" +
-				"  Overall        :: %s\n" +
-				"  Accounts       :: %s\n" +
-				"  Storage        :: %s\n" +
-				"  Topics         :: %s\n" +
-				"  NetworkContext :: %s\n" +
-				"  AddressBook    :: %s",
+						"  Overall        :: %s\n" +
+						"  Accounts       :: %s\n" +
+						"  Storage        :: %s\n" +
+						"  Topics         :: %s\n" +
+						"  NetworkContext :: %s\n" +
+						"  AddressBook    :: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),

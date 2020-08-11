@@ -32,11 +32,13 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Set.of;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class BootstrapProperties implements PropertySource {
 	private static Map<String, Object> MISSING_PROPS = null;
@@ -136,18 +138,12 @@ public class BootstrapProperties implements PropertySource {
 		return BOOTSTRAP_PROP_NAMES;
 	}
 
-	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(of(
-			"accounts.addressBookAdmin",
-			"accounts.exchangeRatesAdmin",
-			"accounts.feeSchedulesAdmin",
-			"accounts.freezeAdmin",
-			"accounts.systemAdmin",
-			"accounts.treasury",
+	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
-			"bootstrap.genesisB64Keystore.path",
 			"bootstrap.genesisB64Keystore.keyName",
-			"bootstrap.genesisPem.path",
+			"bootstrap.genesisB64Keystore.path",
 			"bootstrap.genesisPemPassphrase.path",
+			"bootstrap.genesisPem.path",
 			"bootstrap.hapiPermissions.path",
 			"bootstrap.ledger.nodeAccounts.initialBalance",
 			"bootstrap.ledger.systemAccounts.initialBalance",
@@ -159,18 +155,37 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.rates.nextHbarEquiv",
 			"bootstrap.rates.nextCentEquiv",
 			"bootstrap.rates.nextExpiry",
-			"bootstrap.system.entityExpiry",
+			"bootstrap.system.entityExpiry"
+	);
+
+	private static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
+			"accounts.addressBookAdmin",
+			"accounts.exchangeRatesAdmin",
+			"accounts.feeSchedulesAdmin",
+			"accounts.freezeAdmin",
+			"accounts.systemAdmin",
+			"accounts.systemAdmin.firstManaged",
+			"accounts.systemAdmin.lastManaged",
+			"accounts.systemDeleteAdmin",
+			"accounts.systemUndeleteAdmin",
+			"accounts.treasury",
 			"files.addressBook",
 			"files.networkProperties",
 			"files.exchangeRates",
 			"files.feeSchedules",
 			"files.hapiPermissions",
 			"files.nodeDetails",
+			"hedera.numReservedSystemEntities",
 			"hedera.realm",
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat"
-	));
+	);
+
+	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
+			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS)
+					.flatMap(Set::stream)
+					.collect(toSet()));
 
 	private static final Map<String, Function<String, Object>> BOOTSTRAP_PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
@@ -178,6 +193,10 @@ public class BootstrapProperties implements PropertySource {
 			entry("accounts.feeSchedulesAdmin", AS_LONG),
 			entry("accounts.freezeAdmin", AS_LONG),
 			entry("accounts.systemAdmin", AS_LONG),
+			entry("accounts.systemDeleteAdmin", AS_LONG),
+			entry("accounts.systemUndeleteAdmin", AS_LONG),
+			entry("accounts.systemAdmin.firstManaged", AS_LONG),
+			entry("accounts.systemAdmin.lastManaged", AS_LONG),
 			entry("accounts.treasury", AS_LONG),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
@@ -185,6 +204,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("files.feeSchedules", AS_LONG),
 			entry("files.hapiPermissions", AS_LONG),
 			entry("files.nodeDetails", AS_LONG),
+			entry("hedera.numReservedSystemEntities", AS_LONG),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.shard", AS_LONG),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
