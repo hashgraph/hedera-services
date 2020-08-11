@@ -189,6 +189,7 @@ public class SuiteRunner {
 
 	private static final String TLS_ARG = "-TLS";
 	private static final String NODE_SELECTOR_ARG = "-NODE";
+	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 
 	public static void main(String... args) {
@@ -202,7 +203,7 @@ public class SuiteRunner {
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
 			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					String.valueOf(EXPECTED_CI_NETWORK_SIZE)).split("=")[1]);
+					"-NETWORKSIZE="+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
