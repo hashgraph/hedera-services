@@ -22,13 +22,17 @@ package com.hedera.services.legacy.unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -42,6 +46,7 @@ import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
@@ -76,9 +81,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.BDDMockito.*;
 
 /**
- * Working directory should be HapiApp2.0/
+ * Working directory should be hedera-node/
  */
-//@RunWith(JUnitPlatform.class)
 
 @RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -103,7 +107,6 @@ public class FreezeServiceImplTest {
   private Key key;
   private Map<String, PrivateKey> pubKey2privKeyMap;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
-  private FCStorageWrapper fcStorageWrapper;
 
   @BeforeAll
   public void setUp() throws Exception {
@@ -127,24 +130,29 @@ public class FreezeServiceImplTest {
     mv.setKey(JKey.mapKey(key));
     accountFCMap.put(mk, mv);
 
-    receiptCache = new RecordCache(CacheBuilder.newBuilder().build());
-
-    fcStorageWrapper = new FCStorageWrapper(storageMap);
+    receiptCache = new RecordCache(
+            null,
+            CacheBuilder.newBuilder().build(),
+            new HashMap<>());
 
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     HbarCentExchange exchange = new OneToOneRates();
+    var policies = new SystemOpPolicies(new MockEntityNumbers());
     transactionHandler = new TransactionHandler(
             receiptCache,
-            accountFCMap,
+            () -> accountFCMap,
             nodeAccountId,
             precheckVerifier,
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(topicFCMap, accountFCMap),
-            new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
-            new QueryFeeCheck(accountFCMap));
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap),
+            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+            new QueryFeeCheck(() -> accountFCMap),
+            new MockAccountNumbers(),
+            policies,
+            new StandardExemptions(new MockAccountNumbers(), policies));
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");
@@ -154,12 +162,14 @@ public class FreezeServiceImplTest {
   }
 
   private static ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = PropertiesLoader.getExpiryTime();
-    return RequestBuilder.getExchangeRateSetBuilder(1, 1, expiryTime, 1, 1, expiryTime);
+    long expiryTime = Long.MAX_VALUE;
+    return RequestBuilder.getExchangeRateSetBuilder(
+            1, 1, expiryTime,
+            1, 1, expiryTime);
   }
 
   private static class OneToOneRates implements HbarCentExchange {
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
   	ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
   	        1, 1, expiryTime,
             1, 1, expiryTime);
@@ -218,7 +228,10 @@ public class FreezeServiceImplTest {
     TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
             TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.OK))
             .build();
-    receiptCache.setPostConsensus(txID, ExpirableTxnRecord.fromGprc(record));
+    receiptCache.setPostConsensus(
+            txID,
+            record.getReceipt().getStatus(),
+            ExpirableTxnRecord.fromGprc(record));
   }
 
   /**

@@ -99,7 +99,8 @@ class MerkleTopicCreateTransitionLogicTest {
 		accounts.clear();
 		topics.clear();
 
-		subject = new TopicCreateTransitionLogic(accounts, topics, entityIdSource, validator, transactionContext);
+		subject = new TopicCreateTransitionLogic(
+				() -> accounts, () -> topics, entityIdSource, validator, transactionContext);
 	}
 
 	@Test
@@ -142,7 +143,7 @@ class MerkleTopicCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		var topic = topics.get(MerkleEntityId.fromPojoAccountId(NEW_TOPIC_ID));
+		var topic = topics.get(MerkleEntityId.fromAccountId(NEW_TOPIC_ID));
 		assertNotNull(topic);
 		assertEquals(VALID_MEMO, topic.getMemo());
 		assertArrayEquals(JKey.mapKey(key).serialize(), topic.getAdminKey().serialize());

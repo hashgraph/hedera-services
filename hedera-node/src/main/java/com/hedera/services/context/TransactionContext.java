@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 
@@ -76,10 +77,14 @@ public interface TransactionContext {
 	/**
 	 * Returns the Hedera account id paying for the current txn
 	 *
-	 * @throws IllegalStateException  if there is no active txn
+	 * @throws IllegalStateException if there is no active txn
 	 * @return the ad
 	 */
 	AccountID activePayer();
+
+	default AccountID effectivePayer() {
+		return isPayerSigKnownActive() ? activePayer() : submittingNodeAccount();
+	}
 
 	/**
 	 * If there is an active payer signature, returns the Hedera key used to sign.
@@ -111,6 +116,16 @@ public interface TransactionContext {
 	 * @return the historical record of processing the current txn thus far.
 	 */
 	TransactionRecord recordSoFar();
+
+	/**
+	 * Returns the last record created by {@link TransactionContext#recordSoFar()},
+	 * with the transfer list and fees updated.
+	 *
+	 * @param listWithNewFees the new transfer list to use in the record.
+	 * @return the updated historical record of processing the current txn thus far.
+	 * @throws IllegalStateException if {@code recordSoFar} has not been called for the active txn.
+	 */
+	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
 
 	/**
 	 * Gets an accessor to the consensus {@link com.swirlds.common.Transaction}

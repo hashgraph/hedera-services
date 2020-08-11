@@ -78,7 +78,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 				.setAccountID(id);
 
 		if (validity == OK) {
-			MerkleEntityId key = MerkleEntityId.fromPojoAccountId(id);
+			MerkleEntityId key = MerkleEntityId.fromAccountId(id);
 			opAnswer.setBalance(accounts.get(key).getBalance());
 		}
 

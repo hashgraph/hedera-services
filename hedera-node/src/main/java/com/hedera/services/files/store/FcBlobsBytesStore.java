@@ -30,6 +30,7 @@ import java.util.AbstractMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -37,11 +38,11 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	public static Logger log = LogManager.getLogger(FcBlobsBytesStore.class);
 
 	private final Function<byte[], MerkleOptionalBlob> blobFactory;
-	private final FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs;
+	private final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> pathedBlobs;
 
 	public FcBlobsBytesStore(
 			Function<byte[], MerkleOptionalBlob> blobFactory,
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> pathedBlobs
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> pathedBlobs
 	) {
 		this.blobFactory = blobFactory;
 		this.pathedBlobs = pathedBlobs;
@@ -53,7 +54,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
 	@Override
 	public void clear() {
-		pathedBlobs.clear();
+		pathedBlobs.get().clear();
 	}
 
 	/**
@@ -68,7 +69,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	 */
 	@Override
 	public byte[] remove(Object path) {
-		pathedBlobs.remove(at(path));
+		pathedBlobs.get().remove(at(path));
 		return null;
 	}
 
@@ -87,44 +88,48 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 	@Override
 	public byte[] put(String path, byte[] value) {
 		var meta = at(path);
-		if (pathedBlobs.containsKey(meta)) {
-			var blob = pathedBlobs.getForModify(meta);
+		if (pathedBlobs.get().containsKey(meta)) {
+			var blob = pathedBlobs.get().getForModify(meta);
 			blob.modify(value);
-			log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			pathedBlobs.put(meta, blob);
+			if (log.isDebugEnabled()) {
+				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			}
+			pathedBlobs.get().put(meta, blob);
 		} else {
 			var blob = blobFactory.apply(value);
-			log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
-			pathedBlobs.put(at(path), blob);
+			if (log.isDebugEnabled()) {
+				log.debug("Putting {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
+			}
+			pathedBlobs.get().put(at(path), blob);
 		}
 		return null;
 	}
 
 	@Override
 	public byte[] get(Object path) {
-		return Optional.ofNullable(pathedBlobs.get(at(path)))
+		return Optional.ofNullable(pathedBlobs.get().get(at(path)))
 				.map(MerkleOptionalBlob::getData)
 				.orElse(null);
 	}
 
 	@Override
 	public boolean containsKey(Object path) {
-		return pathedBlobs.containsKey(at(path));
+		return pathedBlobs.get().containsKey(at(path));
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return pathedBlobs.isEmpty();
+		return pathedBlobs.get().isEmpty();
 	}
 
 	@Override
 	public int size() {
-		return pathedBlobs.size();
+		return pathedBlobs.get().size();
 	}
 
 	@Override
 	public Set<Entry<String, byte[]>> entrySet() {
-		return pathedBlobs.entrySet()
+		return pathedBlobs.get().entrySet()
 				.stream()
 				.map(entry -> new SimpleEntry<>(entry.getKey().getPath(), entry.getValue().getData()))
 				.collect(toSet());

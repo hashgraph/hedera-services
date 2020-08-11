@@ -199,7 +199,7 @@ commands:
       workflow-name:
         description: The current workflow tag
         type: string
-        default: 'none-workflow'      
+        default: 'none-workflow'
     steps:
       - run:
           name: Cleanup old test client log storage
@@ -213,7 +213,7 @@ commands:
       workflow-name:
         description: The current workflow name
         type: string
-        default: 'none-workflow'      
+        default: 'none-workflow'
     steps:
       - run:
           name: Save the client side log files for this job
@@ -888,6 +888,19 @@ executors:
     working_directory: /repo
 
 workflows:
+  nightly-services-regression:
+    triggers:
+      - schedule:
+          cron: "0 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services:
+          context: Slack
+          workflow-name: "nightly-services-regression"
+
   custom-migration:
     triggers:
       - schedule:
@@ -973,7 +986,7 @@ workflows:
       - cleanup-singlejob-testnet:
           context: Slack
           requires:
-            - rerun-accessory-tests 
+            - rerun-accessory-tests
           pre-steps:
             - attach_workspace:
                 at: /
@@ -996,17 +1009,11 @@ workflows:
           context: Slack
           requires:
             - fast-build-artifact
-          workflow-name: "feature udpate"
+          workflow-name: "feature-update-regression"
           infra-branch: services-with-platform070
-      # - regression-target-testnet:
-      #     context: Slack
-      #     requires:
-      #       - fast-build-artifact
-      #     pre-steps:
-      #       - start-testnet
-      #     post-steps:
-      #       - save-this-job-client-logs:
-      #           workflow-name: "feature-update-regression"
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
       # - run-accessory-tests:
       #     context: Slack
       #     requires:
@@ -1015,7 +1022,6 @@ workflows:
       #       - save-this-job-client-logs:
       #           workflow-name: "feature-update-regression"
       #       - cleanup-rerun-testnet-if-present
-      #     workflow-name: "feature-update-regression"
       - run-update-feature:
           context: Slack
           requires:
@@ -1403,7 +1409,7 @@ workflows:
           post-steps:
             - send-report-to-slack:
                 workflow-name: "Continuous integration"
-                status: Passed            
+                status: Passed
             - cleanup-rerun-testnet-if-present
           workflow-name: "Continuous integration"
       - cleanup-singlejob-testnet:
@@ -1559,6 +1565,89 @@ jobs:
             - repo/HapiApp2.0
             - root/.m2
             - repo/hedera-node
+
+  build-platform-and-services:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - attach_workspace:
+          at: /
+      - add_ssh_keys:
+          fingerprints:
+            - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
+            - "14:21:e9:81:1f:ae:df:ec:11:60:4a:49:e0:b9:bb:58"
+            - "e7:a6:3e:34:3e:d8:fe:64:2c:7f:b6:57:45:03:44:ac"
+      - checkout
+      - run:
+          name: Build hedera-services repo
+          command: |
+                mvn --no-transfer-progress clean install -DskipTests
+      - run:
+          name: Checkout swirlds-platform repos and build
+          command: |
+            cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+              git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
+            cd /swirlds-platform; git submodule update --init --recursive --checkout
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config
+
+      - run:
+          name: Install necessary tools
+          command: |
+            sudo apt update -y;
+            sudo apt install net-tools;
+            sudo apt install -y curl;
+            sudo apt install -y python3.7;
+            sudo rm /usr/bin/python3;
+            sudo ln -s python3.7 /usr/bin/python3;
+            sudo apt install python3-pip;
+            pip3 -q install matplotlib;
+            sudo apt-get install -y python3-setuptools;
+            pip3 install awscli;
+
+      - run:
+          name: Save PEM file to keys folder
+          command: |
+            cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
+
+      - run:
+          name: Run various suites in SuiteRunner
+          command: |
+            cd /swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json /repo
+
+      - run:
+          name: Sync results of SuiteRunner suites to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Performance regression
+          command: |
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services.sh AwsServicesLoadTestRegressionCfg.json /repo
+
+      - run:
+          name: Sync results of performance regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Run network error regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services.sh AwsSerivceRegressionNetworkError.json /repo
+
+      - run:
+          name: Sync results of network error regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
   aws-summary:
     executor: ci-test-executor
     steps:

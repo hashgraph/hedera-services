@@ -30,6 +30,7 @@ import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -87,6 +88,7 @@ class UsageBasedFeeCalculatorTest {
 					asAccount("2.3.4"), -50,
 					asAccount("3.4.5"), -50))
 			.build();
+	Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
 	PropertySource properties;
 	UsageBasedFeeCalculator subject;
@@ -115,12 +117,14 @@ class UsageBasedFeeCalculatorTest {
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		properties = mock(PropertySource.class);
 
+		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>)mock(Function.class);
+
 		subject = new UsageBasedFeeCalculator(
 				properties,
 				exchange,
 				usagePrices,
-				List.of(incorrectOpEstimator, correctOpEstimator),
-				List.of(incorrectQueryEstimator, correctQueryEstimator));
+				List.of(incorrectQueryEstimator, correctQueryEstimator),
+				txnUsageEstimators);
 	}
 
 	@Test
@@ -230,7 +234,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesOpDelegateAsExpected() throws Exception {
+	public void invokesOpDelegateAsExpectedWithOneOption() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),
@@ -239,12 +243,11 @@ class UsageBasedFeeCalculatorTest {
 		FeeObject expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
 		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-		given(incorrectOpEstimator.applicableTo(accessor.getTxn())).willReturn(false);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
 		given(correctOpEstimator.usageGiven(
 				argThat(accessor.getTxn()::equals),
 				argThat(factory.apply(expectedSigUsage)),
 				argThat(view::equals))).willReturn(resourceUsage);
-		given(incorrectOpEstimator.usageGiven(any(), any(), any())).willThrow(RuntimeException.class);
 		given(exchange.activeRate()).willReturn(currentRate);
 
 		// when:
@@ -257,7 +260,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesOpDelegateAsExpectedForEstimate() throws Exception {
+	public void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),
@@ -267,6 +270,7 @@ class UsageBasedFeeCalculatorTest {
 
 		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
 		given(incorrectOpEstimator.applicableTo(accessor.getTxn())).willReturn(false);
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(incorrectOpEstimator, correctOpEstimator));
 		given(correctOpEstimator.usageGiven(
 				argThat(accessor.getTxn()::equals),
 				argThat(factory.apply(expectedSigUsage)),
@@ -295,13 +299,12 @@ class UsageBasedFeeCalculatorTest {
 				FeeBuilder.getSignatureSize(signedTxn));
 		FeeObject expectedFees = FeeBuilder.getFeeObject(DEFAULT_USAGE_PRICES, resourceUsage, currentRate);
 
+		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
 		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-		given(incorrectOpEstimator.applicableTo(accessor.getTxn())).willReturn(false);
 		given(correctOpEstimator.usageGiven(
 				argThat(accessor.getTxn()::equals),
 				argThat(factory.apply(expectedSigUsage)),
 				argThat(view::equals))).willReturn(resourceUsage);
-		given(incorrectOpEstimator.usageGiven(any(), any(), any())).willThrow(RuntimeException.class);
 		given(exchange.rate(at)).willReturn(currentRate);
 		given(usagePrices.pricesGiven(CryptoCreate, at)).willThrow(RuntimeException.class);
 

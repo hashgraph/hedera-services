@@ -71,6 +71,6 @@ public class AssertUtils {
 
 	@FunctionalInterface
 	interface ThrowingAssert {
-		public void assertThrowable(HapiApiSpec spec, Object o) throws Throwable;
+		void assertThrowable(HapiApiSpec spec, Object o) throws Throwable;
 	}
 }

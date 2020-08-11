@@ -24,10 +24,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.state.submerkle.SequenceNumber;
 
-public class SeqNoEntityIdSource implements EntityIdSource {
-	private final SequenceNumber seqNo;
+import java.util.function.Supplier;
 
-	public SeqNoEntityIdSource(SequenceNumber seqNo) {
+public class SeqNoEntityIdSource implements EntityIdSource {
+	private final Supplier<SequenceNumber> seqNo;
+
+	public SeqNoEntityIdSource(Supplier<SequenceNumber> seqNo) {
 		this.seqNo = seqNo;
 	}
 
@@ -36,7 +38,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 		return AccountID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())
-				.setAccountNum(seqNo.getAndIncrement())
+				.setAccountNum(seqNo.get().getAndIncrement())
 				.build();
 	}
 
@@ -45,7 +47,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 		return FileID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())
-				.setFileNum(seqNo.getAndIncrement())
+				.setFileNum(seqNo.get().getAndIncrement())
 				.build();
 	}
 }

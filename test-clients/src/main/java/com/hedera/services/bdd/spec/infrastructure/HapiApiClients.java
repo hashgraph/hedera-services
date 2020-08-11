@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartCont
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc.NetworkServiceBlockingStub;
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -46,6 +47,7 @@ import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -68,11 +70,12 @@ public class HapiApiClients {
 	private final List<NodeConnectInfo> nodes;
 	private final Map<AccountID, String> stubIds;
 	private final Map<AccountID, String> tlsStubIds;
+	private List<ManagedChannel> channels;
 
 	private final ManagedChannel createNettyChannel(NodeConnectInfo node, boolean useTls) {
 		try {
 			ManagedChannel channel;
-			String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
+			String[] protocols = new String[] { "TLSv1.2", "TLSv1.3" };
 			List<String> ciphers = Arrays.asList(
 //					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
 					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
@@ -95,6 +98,7 @@ public class HapiApiClients {
 						.usePlaintext()
 						.build();
 			}
+			channels.add(channel);
 			return channel;
 		} catch (Exception e) {
 			log.error("Error creating Netty channel", e);
@@ -103,6 +107,7 @@ public class HapiApiClients {
 	}
 
 	private HapiApiClients(List<NodeConnectInfo> nodes, AccountID defaultNode) {
+		this.channels = new ArrayList<>();
 		this.nodes = nodes;
 		stubIds = nodes
 				.stream()
@@ -132,7 +137,9 @@ public class HapiApiClients {
 		});
 		int after = stubCount();
 		this.defaultNode = defaultNode;
-		log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+		if (after > before) {
+			log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+		}
 	}
 
 	private int stubCount() {
@@ -186,5 +193,15 @@ public class HapiApiClients {
 				.add("default", HapiPropertySource.asAccountString(defaultNode))
 				.toString();
 
+	}
+
+	/**
+	 * Close all netty channels that are opened for clients
+	 */
+	public void closeChannels() {
+		if (channels.isEmpty()) {
+			return;
+		}
+		channels.forEach(channel -> channel.shutdown());
 	}
 }

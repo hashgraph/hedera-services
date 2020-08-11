@@ -20,6 +20,7 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -30,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import com.google.protobuf.ByteString;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -57,7 +59,9 @@ class TxnHandlerSubmissionFlowTest {
 	long feeRequired = 1_234L;
 	TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
 	Transaction signedTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder().setTransactionID(txnId))
+			.setBody(TransactionBody.newBuilder()
+					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+					.setTransactionID(txnId))
 			.build();
 	TxnValidityAndFeeReq okMeta = new TxnValidityAndFeeReq(OK);
 
@@ -77,7 +81,7 @@ class TxnHandlerSubmissionFlowTest {
 		syntaxCheck = mock(Function.class);
 		given(logic.syntaxCheck()).willReturn(syntaxCheck);
 		logicLookup = mock(TransitionLogicLookup.class);
-		given(logicLookup.lookupFor(signedTxn.getBody())).willReturn(Optional.of(logic));
+		given(logicLookup.lookupFor(CryptoTransfer, signedTxn.getBody())).willReturn(Optional.of(logic));
 
 		subject = new TxnHandlerSubmissionFlow(platform, txnHandler, logicLookup);
 	}
@@ -161,7 +165,7 @@ class TxnHandlerSubmissionFlowTest {
 	@Test
 	public void usesFallbackSyntaxCheckIfNotSupported() throws Exception {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
-		given(logicLookup.lookupFor(any())).willReturn(Optional.empty());
+		given(logicLookup.lookupFor(any(), any())).willReturn(Optional.empty());
 
 		// when:
 		TransactionResponse response = subject.submit(signedTxn);

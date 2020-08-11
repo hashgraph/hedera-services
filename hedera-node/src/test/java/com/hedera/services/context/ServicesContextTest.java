@@ -24,6 +24,13 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.keys.LegacyEd25519KeyReader;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -62,11 +69,10 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.txns.diligence.PerNodeDuplicateClassifier;
-import com.hedera.services.txns.diligence.TxnAwareDuplicateClassifier;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -74,7 +80,7 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.records.FeePayingRecordsHistorian;
+import com.hedera.services.records.FeeChargingRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -91,12 +97,9 @@ import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
-import com.hedera.services.legacy.services.fees.DefaultFeeExemptions;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
-import com.hedera.services.legacy.services.state.validation.DefaultLedgerValidator;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.services.utils.DefaultAccountsExporter;
 import com.hedera.services.legacy.stream.RecordStream;
@@ -123,6 +126,7 @@ import java.util.function.Supplier;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -162,6 +166,38 @@ public class ServicesContextTest {
 		properties = mock(PropertySource.class);
 		propertySources = mock(PropertySources.class);
 		given(propertySources.asResolvingSource()).willReturn(properties);
+	}
+
+	@Test
+	public void updatesStateAsExpected() {
+		// setup:
+		var newState = mock(ServicesState.class);
+		var newAccounts = mock(FCMap.class);
+		var newTopics = mock(FCMap.class);
+		var newStorage = mock(FCMap.class);
+
+		given(newState.accounts()).willReturn(newAccounts);
+		given(newState.topics()).willReturn(newTopics);
+		given(newState.storage()).willReturn(newStorage);
+		// given:
+		var subject = new ServicesContext(id, platform, state, propertySources);
+		// and:
+		var accountsRef = subject.queryableAccounts();
+		var topicsRef = subject.queryableTopics();
+		var storageRef = subject.queryableStorage();
+
+		// when:
+		subject.update(newState);
+
+		// then:
+		assertSame(newState, subject.state);
+		assertSame(accountsRef, subject.queryableAccounts());
+		assertSame(topicsRef, subject.queryableTopics());
+		assertSame(storageRef, subject.queryableStorage());
+		// and:
+		assertSame(newAccounts, subject.queryableAccounts().get());
+		assertSame(newTopics, subject.queryableTopics().get());
+		assertSame(newStorage, subject.queryableStorage().get());
 	}
 
 	@Test
@@ -289,6 +325,7 @@ public class ServicesContextTest {
 		assertThat(ctx.ledger(), instanceOf(HederaLedger.class));
 		assertThat(ctx.txnCtx(), instanceOf(AwareTransactionContext.class));
 		assertThat(ctx.keyOrder(), instanceOf(HederaSigningOrder.class));
+		assertThat(ctx.backedKeyOrder(), instanceOf(HederaSigningOrder.class));
 		assertThat(ctx.validator(), instanceOf(ContextOptionValidator.class));
 		assertThat(ctx.hcsAnswers(), instanceOf(HcsAnswers.class));
 		assertThat(ctx.issEventInfo(), instanceOf(IssEventInfo.class));
@@ -304,7 +341,7 @@ public class ServicesContextTest {
 		assertThat(ctx.usagePrices(), instanceOf(AwareFcfsUsagePrices.class));
 		assertThat(ctx.currentView(), instanceOf(StateView.class));
 		assertThat(ctx.blobStore(), instanceOf(FcBlobsBytesStore.class));
-		assertThat(ctx.oldExpiries(), instanceOf(Map.class));
+		assertThat(ctx.entityExpiries(), instanceOf(Map.class));
 		assertThat(ctx.syncVerifier(), instanceOf(SyncVerifier.class));
 		assertThat(ctx.txnThrottling(), instanceOf(TransactionThrottling.class));
 		assertThat(ctx.bucketThrottling(), instanceOf(BucketThrottling.class));
@@ -315,7 +352,7 @@ public class ServicesContextTest {
 		assertThat(ctx.storagePersistence(), instanceOf(BlobStoragePersistence.class));
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
 		assertThat(ctx.networkGrpc(), instanceOf(NetworkController.class));
-		assertThat(ctx.number(), instanceOf(EntityNumbers.class));
+		assertThat(ctx.entityNums(), instanceOf(EntityNumbers.class));
 		assertThat(ctx.authPolicy(), instanceOf(TxnAwareAuthPolicy.class));
 		assertThat(ctx.feeSchedulesManager(), instanceOf(FeeSchedulesManager.class));
 		assertThat(ctx.submissionFlow(), instanceOf(TxnHandlerSubmissionFlow.class));
@@ -326,7 +363,7 @@ public class ServicesContextTest {
 		assertThat(ctx.precheckVerifier(), instanceOf(PrecheckVerifier.class));
 		assertThat(ctx.apiPermissionsReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
-		assertThat(ctx.recordsHistorian(), instanceOf(FeePayingRecordsHistorian.class));
+		assertThat(ctx.recordsHistorian(), instanceOf(FeeChargingRecordsHistorian.class));
 		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
 		assertThat(ctx.txnChargingPolicy(), instanceOf(TxnFeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));
@@ -334,15 +371,22 @@ public class ServicesContextTest {
 		assertThat(ctx.queryableStorage(), instanceOf(AtomicReference.class));
 		assertThat(ctx.systemFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(ctx.queryResponseHelper(), instanceOf(QueryResponseHelper.class));
-		assertThat(ctx.duplicateClassifier(), instanceOf(TxnAwareDuplicateClassifier.class));
 		assertThat(ctx.solidityLifecycle(), instanceOf(SolidityLifecycle.class));
 		assertThat(ctx.charging(), instanceOf(ItemizableFeeCharging.class));
 		assertThat(ctx.repository(), instanceOf(ServicesRepositoryRoot.class));
 		assertThat(ctx.newPureRepo(), instanceOf(Supplier.class));
 		assertThat(ctx.exchangeRatesManager(), instanceOf(TxnAwareRatesManager.class));
 		assertThat(ctx.lookupRetryingKeyOrder(), instanceOf(HederaSigningOrder.class));
-		assertThat(ctx.nodeDuplicateClassifier(), instanceOf(PerNodeDuplicateClassifier.class));
 		assertThat(ctx.soliditySigsVerifier(), instanceOf(TxnAwareSoliditySigsVerifier.class));
+		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
+		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
+		assertThat(ctx.txnHistories(), instanceOf(Map.class));
+		assertThat(ctx.backingAccounts(), instanceOf(FCMapBackingAccounts.class));
+		assertThat(ctx.systemAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
+		assertThat(ctx.b64KeyReader(), instanceOf(LegacyEd25519KeyReader.class));
+		assertThat(ctx.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
+		assertThat(ctx.systemOpPolicies(), instanceOf(SystemOpPolicies.class));
+		assertThat(ctx.exemptions(), instanceOf(StandardExemptions.class));
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));
@@ -352,12 +396,9 @@ public class ServicesContextTest {
 		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));
 		assertThat(ctx.propertySanitizer(), instanceOf(DefaultPropertySanitizer.class));
 		assertThat(ctx.stateMigrations(), instanceOf(DefaultStateMigrations.class));
-		assertThat(ctx.ledgerValidator(), instanceOf(DefaultLedgerValidator.class));
 		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));
-		assertThat(ctx.systemAccountsCreator(), instanceOf(DefaultSystemAccountsCreator.class));
 		assertThat(ctx.balancesExporter(), instanceOf(DefaultBalancesExporter.class));
-		assertThat(ctx.exemptions(), instanceOf(DefaultFeeExemptions.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
 

@@ -46,12 +46,4 @@ public interface BeanProperty<A> {
 	 * @return the getter on the target type.
 	 */
 	Function<A, Object> getter();
-
-	/**
-	 * Indicates if the property must be gotten from an object an object
-	 * obtained via {@link com.hedera.services.ledger.accounts.BackingAccounts#getMutableRef(Object)}.
-	 */
-	default boolean requiresMutableRef() {
-		return false;
-	}
 }

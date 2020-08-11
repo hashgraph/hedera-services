@@ -76,6 +76,7 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.path(Path.of("./", "exchangeRates.bin").toString())
 				).then(
+						UtilVerbs.sleepFor(1000L),
 						getAccountBalance(EXCHANGE_RATE_CONTROL)
 								.hasTinyBars(changeFromSnapshot("pre", 0))
 				);

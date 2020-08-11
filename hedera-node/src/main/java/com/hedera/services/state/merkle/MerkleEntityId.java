@@ -36,7 +36,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Objects;
 
 public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, MerkleLeaf {
 	static final int MERKLE_VERSION = 1;
@@ -54,16 +53,16 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 		this.num = num;
 	}
 
-	public static MerkleEntityId fromPojoAccountId(AccountID pojo) {
-		return new MerkleEntityId(pojo.getShardNum(), pojo.getRealmNum(), pojo.getAccountNum());
+	public static MerkleEntityId fromAccountId(AccountID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
 	}
 
-	public static MerkleEntityId fromPojoTopicId(TopicID pojo) {
-		return new MerkleEntityId(pojo.getShardNum(), pojo.getRealmNum(), pojo.getTopicNum());
+	public static MerkleEntityId fromTopicId(TopicID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTopicNum());
 	}
 
-	public static MerkleEntityId fromPojoContractId(ContractID pojo) {
-		return new MerkleEntityId(pojo.getShardNum(), pojo.getRealmNum(), pojo.getContractNum());
+	public static MerkleEntityId fromContractId(ContractID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getContractNum());
 	}
 
 	@Deprecated
@@ -146,17 +145,6 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 
 	@Override
 	@Deprecated
-	public void copyTo(SerializableDataOutputStream out) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void copyToExtra(SerializableDataOutputStream out) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@Deprecated
 	public void copyFrom(SerializableDataInputStream in) {
 		throw new UnsupportedOperationException();
 	}
@@ -164,16 +152,6 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 	@Override
 	@Deprecated
 	public void copyFromExtra(SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void diffCopyTo(SerializableDataOutputStream out, SerializableDataInputStream in) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void diffCopyFrom(SerializableDataOutputStream out, SerializableDataInputStream in) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -213,5 +191,13 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 
 	public String toAbbrevString() {
 		return String.format("%d.%d.%d", shard, realm, num);
+	}
+
+	public AccountID toAccountId() {
+		return AccountID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setAccountNum(num)
+				.build();
 	}
 }

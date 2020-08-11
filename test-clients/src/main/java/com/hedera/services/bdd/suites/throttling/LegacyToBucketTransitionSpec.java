@@ -112,6 +112,7 @@ public class LegacyToBucketTransitionSpec extends HapiApiSuite {
 						UtilVerbs.sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
+						UtilVerbs.sleepFor(1_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
 				);
@@ -179,6 +180,7 @@ public class LegacyToBucketTransitionSpec extends HapiApiSuite {
 						UtilVerbs.sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
+						UtilVerbs.sleepFor(1_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES).contents(ignore -> initialProps.get())
 				);

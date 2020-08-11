@@ -20,14 +20,18 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -95,10 +99,11 @@ public class TransactionHandlerTest {
 		throttling = mock(FunctionalityThrottling.class);
 		stats = mock(HederaNodeStats.class);
 
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		subject = new TransactionHandler(
 				recordCache,
 				precheckVerifier,
-				accounts,
+				() -> accounts,
 				nodeAccount,
 				txnThrottling,
 				usagePrices,
@@ -108,7 +113,10 @@ public class TransactionHandlerTest {
 				basicPrecheck,
 				queryFeeCheck,
 				throttling,
-				stats);
+				new MockAccountNumbers(),
+				stats,
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 	}
 
 	@Test

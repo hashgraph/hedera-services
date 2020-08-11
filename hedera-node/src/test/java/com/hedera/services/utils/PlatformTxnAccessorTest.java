@@ -24,7 +24,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.goterl.lazycode.lazysodium.interfaces.Sign;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignatureList;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,25 +34,80 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static org.mockito.BDDMockito.*;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class PlatformTxnAccessorTest {
 	private static final byte[] NONSENSE = "Jabberwocky".getBytes();
-	private static final TransactionBody A_PARSEABLE_TXN = TransactionBody.newBuilder()
+	TransactionBody someTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
+
+	@Test
+	public void extractorReturnsNoneWhenExpected() {
+		// expect:
+		assertEquals(HederaFunctionality.NONE, SignedTxnAccessor.functionExtractor.apply(someTxn));
+	}
+
+	@Test
+	public void extractorReturnsExpectedFunction() {
+		// given:
+		someTxn = someTxn.toBuilder()
+				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
+				.build();
+
+		// expect:
+		assertEquals(ConsensusCreateTopic, SignedTxnAccessor.functionExtractor.apply(someTxn));
+	}
+
+	@Test
+	public void usesExtractorToGetFunctionAsExpected() {
+		// setup:
+		var memory = SignedTxnAccessor.functionExtractor;
+		Function<TransactionBody, HederaFunctionality> mockFn =
+				(Function<TransactionBody, HederaFunctionality>)mock(Function.class);
+		SignedTxnAccessor.functionExtractor = mockFn;
+		// and:
+		someTxn = someTxn.toBuilder()
+				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
+				.build();
+		Transaction signedTxn = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.build();
+
+		given(mockFn.apply(any())).willReturn(ConsensusCreateTopic);
+		var subject = SignedTxnAccessor.uncheckedFrom(signedTxn);
+
+		// when:
+		var first = subject.getFunction();
+		var second = subject.getFunction();
+
+		// then:
+		assertEquals(ConsensusCreateTopic, first);
+		assertEquals(second, first);
+		// and:
+		verify(mockFn, times(1)).apply(any());
+
+		// cleanup:
+		SignedTxnAccessor.functionExtractor = memory;
+	}
 
 	@Test
 	public void allowsUncheckedConstruction() {
@@ -97,7 +153,7 @@ public class PlatformTxnAccessorTest {
 	public void usesBodyCorrectly() throws Exception {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBody(A_PARSEABLE_TXN)
+				.setBody(someTxn)
 				.build();
 		com.swirlds.common.Transaction platformTxn =
 				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
@@ -106,15 +162,15 @@ public class PlatformTxnAccessorTest {
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
 
 		// then:
-		assertEquals(A_PARSEABLE_TXN, subject.getTxn());
-		assertThat(List.of(subject.getTxnBytes()), contains(A_PARSEABLE_TXN.toByteArray()));
+		assertEquals(someTxn, subject.getTxn());
+		assertThat(List.of(subject.getTxnBytes()), contains(someTxn.toByteArray()));
 	}
 
 	@Test
 	public void usesBodyBytesCorrectly() throws Exception {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBodyBytes(A_PARSEABLE_TXN.toByteString())
+				.setBodyBytes(someTxn.toByteString())
 				.build();
 		com.swirlds.common.Transaction platformTxn =
 				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
@@ -123,14 +179,14 @@ public class PlatformTxnAccessorTest {
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
 
 		// then:
-		assertEquals(A_PARSEABLE_TXN, subject.getTxn());
-		assertThat(List.of(subject.getTxnBytes()), contains(A_PARSEABLE_TXN.toByteArray()));
+		assertEquals(someTxn, subject.getTxn());
+		assertThat(List.of(subject.getTxnBytes()), contains(someTxn.toByteArray()));
 	}
 
 	@Test
 	public void getsCorrectLoggableForm() throws Exception {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBodyBytes(A_PARSEABLE_TXN.toByteString())
+				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(SignatureMap.newBuilder().addSigPair(
 						SignaturePair.newBuilder()
 								.setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
@@ -150,7 +206,7 @@ public class PlatformTxnAccessorTest {
 
 		// then:
 		assertEquals(ByteString.EMPTY, signedTxn4Log.getBodyBytes());
-		assertEquals(A_PARSEABLE_TXN, signedTxn4Log.getBody());
+		assertEquals(someTxn, signedTxn4Log.getBody());
 		assertEquals(signedTxnWithBody, asBodyBytes);
 	}
 
@@ -159,7 +215,7 @@ public class PlatformTxnAccessorTest {
 		// given:
 		AccountID payer = asAccount("0.0.2");
 		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBodyBytes(A_PARSEABLE_TXN.toByteString())
+				.setBodyBytes(someTxn.toByteString())
 				.build();
 		com.swirlds.common.Transaction platformTxn =
 				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());

@@ -23,25 +23,14 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.services.context.ServicesContext;
-
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
-import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
-
-import com.hedera.services.keys.RevocationServiceCharacteristics;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -55,13 +44,34 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
-import java.util.Optional;
+
+import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
+import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.services.keys.RevocationServiceCharacteristics.forTopLevelFile;
+import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
+import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
+import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
+import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -112,7 +122,11 @@ public class AwareProcessLogic implements ProcessLogic {
 				wasCommitted = true;
 			} catch (Exception unrecoverable) {
 				warnOf(unrecoverable, "txn commit");
-				ctx.recordCache().setFailInvalid(accessor, consensusTime);
+				ctx.recordCache().setFailInvalid(
+						ctx.txnCtx().effectivePayer(),
+						accessor,
+						consensusTime,
+						submittingMember);
 				ctx.ledger().rollback();
 			} finally {
 				if (wasCommitted) {
@@ -146,7 +160,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private void addRecordToStream() {
-		TransactionRecord finalRecord = ctx.recordsHistorian().lastCreatedRecord().get().asGrpc();
+		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
 	}
 
@@ -155,7 +169,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		updateMidnightRatesIfAppropriateAt(consensusTime);
 		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
 		ctx.recordsHistorian().purgeExpiredRecords();
-		ctx.duplicateClassifier().shiftDetectionWindow();
 
 		if (ctx.issEventInfo().status() == ONGOING_ISS) {
 			var resetPeriod = ctx.properties().getIntProperty("iss.reset.periodSecs");
@@ -165,14 +178,17 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 
-
 		final SignatureStatus sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
 		}
 
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-		DuplicateClassification duplicity = ctx.duplicateClassifier().duplicityOfActiveTxn();
+
+		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
+		var duplicity = (recentHistory == null)
+				? BELIEVED_UNIQUE
+				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
 		if (nodeIgnoredDueDiligence(duplicity)) {
 			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
 			return;
@@ -181,13 +197,12 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (duplicity == DUPLICATE) {
 			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
-			log.warn(accessor.getSignedTxn4Log());
 			return;
 		}
 
-		ResponseCodeEnum chargingStatus = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
-		if (chargingStatus != OK) {
-			ctx.txnCtx().setStatus(chargingStatus);
+		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
+		if (chargingOutcome != OK) {
+			ctx.txnCtx().setStatus(chargingOutcome);
 			return;
 		}
 
@@ -201,13 +216,13 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		ResponseCodeEnum metaValidity = assessPostConsensusValidity(accessor, consensusTime);
-		if (metaValidity != OK) {
-			ctx.txnCtx().setStatus(metaValidity);
+		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
+		if (sysAuthStatus != OK) {
+			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;
 		}
 
-		Optional<TransitionLogic> transitionLogic = ctx.transitionLogic().lookupFor(accessor.getTxn());
+		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
 		ResponseCodeEnum opValidity = transitionLogic.isPresent()
 				? transitionLogic.get().syntaxCheck().apply(accessor.getTxn())
 				: TransactionValidationUtils.validateTxSpecificBody(accessor.getTxn(), ctx.validator());
@@ -231,13 +246,9 @@ public class AwareProcessLogic implements ProcessLogic {
 		ctx.stats().transactionHandled(accessor.getTxn());
 	}
 
-	private ResponseCodeEnum assessPostConsensusValidity(PlatformTxnAccessor accessor, Instant consensusTime) {
-		return TransactionValidationUtils.validateTxBodyPostConsensus(accessor.getTxn(), consensusTime, ctx.accounts());
-	}
-
 	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
 		try {
-			return payerSigIsActive(accessor, ctx.keyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return payerSigIsActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
@@ -250,11 +261,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			JKey wacl = ctx.hfs().getattr(id).getWacl();
 			return otherPartySigsAreActive(
 					accessor,
-					ctx.keyOrder(),
+					ctx.backedKeyOrder(),
 					IN_HANDLE_SUMMARY_FACTORY,
-					RevocationServiceCharacteristics.forTopLevelFile((JKeyList)wacl));
+					forTopLevelFile((JKeyList)wacl));
 		} else {
-			return otherPartySigsAreActive(accessor, ctx.keyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return otherPartySigsAreActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		}
 	}
 
@@ -270,12 +281,14 @@ public class AwareProcessLogic implements ProcessLogic {
 		Instant consensusTime = ctx.txnCtx().consensusTime();
 		PlatformTxnAccessor accessor = ctx.txnCtx().accessor();
 
-		AccountID swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
-		AccountID designatedNodeAccount = accessor.getTxn().getNodeAccountID();
-		if (!swirldsMemberAccount.equals(designatedNodeAccount)) {
-			log.warn("Node {} (Member #{}) submitted a txn designated for node {} :: {}",
+		var swirldsMemberAccount = ctx.txnCtx().submittingNodeAccount();
+		var designatedNodeAccount = accessor.getTxn().getNodeAccountID();
+		boolean designatedNodeExists = ctx.backingAccounts().contains(designatedNodeAccount);
+		if (!designatedNodeExists || !swirldsMemberAccount.equals(designatedNodeAccount)) {
+			log.warn("Node {} (Member #{}) submitted a txn designated for {} node {} :: {}",
 					readableId(swirldsMemberAccount),
 					ctx.txnCtx().submittingSwirldsMember(),
+					designatedNodeExists ? "other" : "nonexistent",
 					readableId(designatedNodeAccount),
 					accessor.getSignedTxn4Log());
 			ctx.txnCtx().setStatus(INVALID_NODE_ACCOUNT);
@@ -298,9 +311,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			return true;
 		}
 
-		ResponseCodeEnum chronologyStatus = ctx.validator().chronologyStatus(accessor, consensusTime);
-		if (chronologyStatus != OK) {
-			ctx.txnCtx().setStatus(chronologyStatus);
+		var cronStatus = ctx.validator().chronologyStatus(accessor, consensusTime);
+		if (cronStatus != OK) {
+			ctx.txnCtx().setStatus(cronStatus);
 			return true;
 		}
 
@@ -308,10 +321,9 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(PlatformTxnAccessor accessor) {
-		SignatureStatus sigStatus =
-				rationalizeIn(accessor, ctx.syncVerifier(), ctx.keyOrder(), DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
+		var sigStatus = rationalizeIn(accessor, ctx.syncVerifier(), ctx.backedKeyOrder(), DEFAULT_SIG_BYTES);
 		if (!sigStatus.isError()) {
-			ctx.stats().signatureVerified(sigStatus.getStatusCode() == SignatureStatusCode.SUCCESS_VERIFY_ASYNC);
+			ctx.stats().signatureVerified(sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC);
 		}
 		return sigStatus;
 	}

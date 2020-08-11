@@ -54,7 +54,6 @@ import org.ethereum.util.ByteUtil;
 import org.ethereum.vm.program.Program;
 import org.spongycastle.pqc.math.linearalgebra.ByteUtils;
 import org.spongycastle.util.encoders.DecoderException;
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -90,7 +89,6 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 
@@ -116,13 +114,14 @@ public class SmartContractRequestHandler {
 
 	private Map<byte[], byte[]> storageView;
 	private Map<byte[], byte[]> bytecodeView;
+	private Map<EntityId, Long> entityExpiries;
 
 	private AccountID funding;
 	private HederaLedger ledger;
 	private LedgerAccountsSource ledgerSource;
 	private ServicesRepositoryRoot repository;
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
+	private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage;
 	private HbarCentExchange exchange;
 	private TransactionContext txnCtx;
 	private UsagePricesProvider usagePrices;
@@ -135,8 +134,8 @@ public class SmartContractRequestHandler {
 			ServicesRepositoryRoot repository,
 			AccountID funding,
 			HederaLedger ledger,
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			LedgerAccountsSource ledgerSource,
 			TransactionContext txnCtx,
 			HbarCentExchange exchange,
@@ -144,7 +143,8 @@ public class SmartContractRequestHandler {
 			PropertySource properties,
 			Supplier<ServicesRepositoryRoot> newPureRepo,
 			SolidityLifecycle lifecycle,
-			SoliditySigsVerifier sigsVerifier
+			SoliditySigsVerifier sigsVerifier,
+			Map<EntityId, Long> entityExpiries
 	) {
 		this.repository = repository;
 		this.newPureRepo = newPureRepo;
@@ -152,15 +152,16 @@ public class SmartContractRequestHandler {
 		this.funding = funding;
 		this.ledger = ledger;
 		this.exchange = exchange;
-		this.storageMap = storageMap;
+		this.storage = storage;
 		this.ledgerSource = ledgerSource;
 		this.txnCtx = txnCtx;
 		this.usagePrices = usagePrices;
 		this.properties = properties;
 		this.lifecycle = lifecycle;
 		this.sigsVerifier = sigsVerifier;
+		this.entityExpiries = entityExpiries;
 
-		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storageMap);
+		var blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, storage);
 		storageView = storageMapFrom(blobStore);
 		bytecodeView = bytecodeMapFrom(blobStore);
 	}
@@ -224,7 +225,6 @@ public class SmartContractRequestHandler {
 			long createGasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
 			biGasPrice = BigInteger.valueOf(createGasPrice);
 		} catch (Exception e1) {
-			e1.printStackTrace();
 			if (log.isDebugEnabled()) {
 				log.debug("ContractCreate gas coefficient could not be found in fee schedule ", e1);
 			}
@@ -487,8 +487,9 @@ public class SmartContractRequestHandler {
 				long callGasPrice = getContractCallGasPriceInTinyBars(consensusTimeStamp);
 				biGasPrice = BigInteger.valueOf(callGasPrice);
 			} catch (Exception e1) {
-				if (log.isDebugEnabled())
+				if (log.isDebugEnabled()) {
 					log.debug("ContractCall gas coefficient could not be found in fee schedule " + e1.getMessage());
+				}
 				return getFailureTransactionRecord(transaction, consensusTime,
 						ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 			}
@@ -616,7 +617,7 @@ public class SmartContractRequestHandler {
 		String contractEthAddress = asSolidityAddressHex(id);
 		if (!StringUtils.isEmpty(contractEthAddress)) {
 			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+			MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
 			if (contract != null && contract.isSmartContract()) {
 				builder.setContractID(cid)
 						.setBalance(contract.getBalance())
@@ -726,7 +727,7 @@ public class SmartContractRequestHandler {
 	 */
 	public ByteString getContractBytecode(ContractID cid) {
 		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get(MerkleEntityId.fromPojoAccountId(id));
+		MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
 		if (contract != null && contract.isSmartContract()) {
 			String contractEthAddress = asSolidityAddressHex(id);
 			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);
@@ -742,7 +743,7 @@ public class SmartContractRequestHandler {
 	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
 	 */
 	public ResponseCodeEnum validateContractExistence(ContractID cid) {
-		return PureValidation.queryableContractStatus(cid, accounts);
+		return PureValidation.queryableContractStatus(cid, accounts.get());
 	}
 
 	/**
@@ -759,26 +760,17 @@ public class SmartContractRequestHandler {
 		ContractID cid = op.getContractID();
 		long newExpiry = op.getExpirationTime().getSeconds();
 		TransactionReceipt receipt;
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		receipt = updateDeleteFlag(cid, true);
 		try {
 			if (receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				AccountID id = asAccount(cid);
 				long oldExpiry = ledger.expiry(id);
-				String path = getSystemTempFilePath(cid);
-				storageWrapper.fileCreate(
-						path,
-						Long.toString(oldExpiry).getBytes(),
-						consensusTimestamp.getEpochSecond(),
-						consensusTimestamp.getNano(),
-						newExpiry,
-						null);
-
+				var entity = EntityId.ofNullableContractId(cid);
+				entityExpiries.put(entity, oldExpiry);
 				HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
 				ledger.customize(id, customizer);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
 		}
@@ -801,17 +793,15 @@ public class SmartContractRequestHandler {
 	 * @return Details of contract undeletion result
 	 */
 	public TransactionRecord systemUndelete(TransactionBody txBody, Instant consensusTimestamp) {
-		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		SystemUndeleteTransactionBody op = txBody.getSystemUndelete();
 		ContractID cid = op.getContractID();
+		var entity = EntityId.ofNullableContractId(cid);
 		TransactionReceipt receipt = getTransactionReceipt(SUCCESS, exchange.activeRates());
 
-		String path = getSystemTempFilePath(cid);
 		long oldExpiry = 0;
 		try {
-			if (storageWrapper.fileExists(path)) {
-				byte[] oldBytes = storageWrapper.fileRead(path);
-				oldExpiry = Longs.fromByteArray(oldBytes);
+			if (entityExpiries.containsKey(entity)) {
+				oldExpiry = entityExpiries.get(entity);
 			} else {
 				receipt = getTransactionReceipt(INVALID_FILE_ID, exchange.activeRates());
 			}
@@ -829,7 +819,7 @@ public class SmartContractRequestHandler {
 					}
 				}
 			}
-			storageWrapper.delete(path, consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano());
+			entityExpiries.remove(entity);
 		} catch (Exception e) {
 			log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
 			receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
@@ -843,11 +833,6 @@ public class SmartContractRequestHandler {
 	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
 		ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
-	}
-
-	private String getSystemTempFilePath(ContractID contractID) {
-		return ApplicationConstants.buildPath(ApplicationConstants.SYSTEM_TEMP_FILE_PATH,
-				Long.toString(contractID.getRealmNum()), Long.toString(contractID.getContractNum()));
 	}
 
 	/**

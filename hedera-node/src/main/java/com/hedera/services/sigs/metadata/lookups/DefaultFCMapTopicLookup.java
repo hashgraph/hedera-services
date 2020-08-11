@@ -27,16 +27,20 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.swirlds.fcmap.FCMap;
 
-public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
-	private final FCMap<MerkleEntityId, MerkleTopic> topics;
+import java.util.function.Supplier;
 
-	public DefaultFCMapTopicLookup(FCMap<MerkleEntityId, MerkleTopic> topics) {
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+
+public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+
+	public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
 		this.topics = topics;
 	}
 
 	@Override
 	public TopicSigningMetadata lookup(TopicID id) throws Exception {
-		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromPojoTopicId(id));
+		MerkleTopic merkleTopic = topics.get().get(fromTopicId(id));
 		if ((merkleTopic == null) || merkleTopic.isDeleted()) {
 			throw new InvalidTopicIDException("Invalid topic!", id);
 		}

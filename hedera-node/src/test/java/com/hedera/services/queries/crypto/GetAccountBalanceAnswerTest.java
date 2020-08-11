@@ -44,7 +44,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromPojoContractId;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -63,9 +63,9 @@ class GetAccountBalanceAnswerTest {
 	@BeforeEach
 	private void setup() {
 		accounts = mock(FCMap.class);
-		given(accounts.get(MerkleEntityId.fromPojoAccountId(asAccount(idLit)))).willReturn(accountV);
-		given(accounts.get(fromPojoContractId(asContract(idLit)))).willReturn(contractV);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(idLit)))).willReturn(accountV);
+		given(accounts.get(fromContractId(asContract(idLit)))).willReturn(contractV);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountBalanceAnswer(optionValidator);

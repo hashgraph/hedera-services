@@ -63,11 +63,12 @@ public class GetTxnReceiptAnswer implements AnswerService {
 		TransactionGetReceiptResponse.Builder opResponse = TransactionGetReceiptResponse.newBuilder();
 
 		if (validity == OK) {
-			TransactionID txnId = op.getTransactionID();
-			if (!recordCache.isReceiptPresent(txnId)) {
+			var txnId = op.getTransactionID();
+			var receipt = recordCache.getReceipt(txnId);
+			if (receipt == null) {
 				validity = RECEIPT_NOT_FOUND;
 			} else {
-				opResponse.setReceipt(recordCache.getReceipt(txnId));
+				opResponse.setReceipt(receipt);
 			}
 		}
 		opResponse.setHeader(answerOnlyHeader(validity));

@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
@@ -53,28 +54,37 @@ public class StateView {
 
 	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
 			new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+	public static final Supplier<FCMap<MerkleEntityId, MerkleTopic>> EMPTY_TOPICS_SUPPLIER =
+			() -> EMPTY_TOPICS;
+
 	public static final FCMap<MerkleEntityId, MerkleAccount> EMPTY_ACCOUNTS =
 			new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+	public static final Supplier<FCMap<MerkleEntityId, MerkleAccount>> EMPTY_ACCOUNTS_SUPPLIER =
+			() -> EMPTY_ACCOUNTS;
+
 	public static final FCMap<MerkleBlobMeta, MerkleOptionalBlob> EMPTY_STORAGE =
 			new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS, EMPTY_ACCOUNTS);
+	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
+			() -> EMPTY_STORAGE;
+
+	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
 
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
-	private final FCMap<MerkleEntityId, MerkleTopic> topics;
-	private final FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public StateView(
-			FCMap<MerkleEntityId, MerkleTopic> topics,
-			FCMap<MerkleEntityId, MerkleAccount> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
-		this(topics, accounts, EMPTY_STORAGE);
+		this(topics, accounts, EMPTY_STORAGE_SUPPLIER);
 	}
 
 	public StateView(
-			FCMap<MerkleEntityId, MerkleTopic> topics,
-			FCMap<MerkleEntityId, MerkleAccount> accounts,
-			FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
@@ -115,10 +125,10 @@ public class StateView {
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return topics;
+		return topics.get();
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return accounts;
+		return accounts.get();
 	}
 }

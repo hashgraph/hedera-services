@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -163,6 +164,15 @@ class ServicesStateTest {
 	}
 
 	@Test
+	public void fullArgsConstructorUpdatesContext() {
+		// when:
+		subject = new ServicesState(ctx, self, Collections.emptyList());
+
+		// then:
+		verify(ctx).update(subject);
+	}
+
+	@Test
 	public void getsNodeAccount() {
 		// setup:
 		subject.nodeId = self;
@@ -190,15 +200,9 @@ class ServicesStateTest {
 		assertEquals(book, subject.addressBook());
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
-		assertEquals(ApplicationConstants.HEDERA_START_SEQUENCE, subject.networkCtx().seqNo().current());
+		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		// and:
 		verify(mockDigest, never()).accept(any());
-	}
-
-	@Test
-	public void copyFromStateThrows() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyFrom(subject));
 	}
 
 	@Test
@@ -297,6 +301,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.nodeId = self;
+		subject.ctx = ctx;
 
 		// when:
 		ServicesState copy = (ServicesState) subject.copy();
@@ -321,8 +326,6 @@ class ServicesStateTest {
 	public void sanityChecks() {
 		assertEquals(ServicesState.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ServicesState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyTo(null));
-		assertThrows(UnsupportedOperationException.class, () -> subject.copyToExtra(null));
 	}
 
 	@Test

@@ -48,7 +48,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         try {
-            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromPojoTopicId(txn.getConsensusUpdateTopic().getTopicID()));
+            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
             long rbsIncrease = getUpdateTopicRbsIncrease(
                     txn.getTransactionID().getTransactionValidStart(),
                     JKey.mapJKey(merkleTopic.getAdminKey()),

@@ -1,5 +1,25 @@
 package com.hedera.services.sigs;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -57,24 +77,28 @@ public class Rationalization {
     }
 
     public SignatureStatus execute() {
-        log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor.getSignedTxn4Log());
+        log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
         List<Signature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
-        SignatureStatus payerStatus = expandIn(
+        var payerStatus = expandIn(
                 realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-        if ( !SUCCESS.name().equals( payerStatus.getStatusCode().name() ) ) {
-            log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+        if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+            }
             return payerStatus;
         }
-        SignatureStatus otherPartiesStatus = expandIn(
+        var otherPartiesStatus = expandIn(
                 realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-        if ( !SUCCESS.name().equals( otherPartiesStatus.getStatusCode().name() ) ) {
-            log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
+        if (!SUCCESS.name().equals(otherPartiesStatus.getStatusCode().name())) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
+            }
             return otherPartiesStatus;
         }
 
-        List<Signature> rationalizedPayerSigs = rationalize(realPayerSigs, 0);
-        List<Signature> rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
+        var rationalizedPayerSigs = rationalize(realPayerSigs, 0);
+        var rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
 
         if (rationalizedPayerSigs == realPayerSigs || rationalizedOtherPartySigs == realOtherPartySigs) {
             txnAccessor.getPlatformTxn().clear();
@@ -89,13 +113,11 @@ public class Rationalization {
 
     private List<Signature> rationalize(List<Signature> realSigs, int startingAt) {
         try {
-            List<Signature> candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
+            var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
             if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
                 return candidateSigs;
             }
-        } catch (IndexOutOfBoundsException ignore) {
-            log.warn(ignore.getMessage());
-        }
+        } catch (IndexOutOfBoundsException ignore) { }
         syncVerifier.verifySync(realSigs);
         return realSigs;
     }

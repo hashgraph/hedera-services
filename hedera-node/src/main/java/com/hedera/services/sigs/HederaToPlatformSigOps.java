@@ -167,15 +167,25 @@ public class HederaToPlatformSigOps {
 		}
 
 		public SignatureStatus execute() {
-			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor.getSignedTxn4Log());
-			SignatureStatus payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if ( !SUCCESS.name().equals( payerStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding Hedera payer sigs for txn {}: {}", txnAccessor.getTxnId(), payerStatus);
+			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
+			var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
+			if (!SUCCESS.name().equals(payerStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding Hedera payer sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							payerStatus);
+				}
 				return payerStatus;
 			}
-			SignatureStatus otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if ( !SUCCESS.name().equals( otherStatus.getStatusCode().name() ) ) {
-				log.debug("Failed expanding other Hedera sigs for txn {}: {}", txnAccessor.getTxnId(), otherStatus);
+			var otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
+			if (!SUCCESS.name().equals( otherStatus.getStatusCode().name())) {
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed expanding other Hedera sigs for txn {}: {}",
+							txnAccessor.getTxnId(),
+							otherStatus);
+				}
 			}
 			return otherStatus;
 		}
@@ -184,13 +194,12 @@ public class HederaToPlatformSigOps {
 				Function<Transaction, PubKeyToSigBytes> sigsFn,
 				BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
 		) {
-			SigningOrderResult<SignatureStatus> orderResult =
-					keysFn.apply(txnAccessor.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
+			var orderResult = keysFn.apply(txnAccessor.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
 			if (orderResult.hasErrorReport()) {
 				return orderResult.getErrorReport();
 			}
 
-			PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
+			var creationResult = createEd25519PlatformSigsFrom(
 					orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxn()), sigFactory);
 			if (!creationResult.hasFailed()) {
 				txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new Signature[0]));

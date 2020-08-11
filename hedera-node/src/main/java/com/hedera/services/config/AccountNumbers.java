@@ -25,14 +25,18 @@ import com.hedera.services.context.properties.PropertySource;
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
 public class AccountNumbers {
-
 	private final PropertySource properties;
 
-	private long master = UNKNOWN_NUMBER;
 	private long treasury = UNKNOWN_NUMBER;
+	private long systemAdmin = UNKNOWN_NUMBER;
+	private long freezeAdmin = UNKNOWN_NUMBER;
 	private long addressBookAdmin = UNKNOWN_NUMBER;
+	private long systemDeleteAdmin = UNKNOWN_NUMBER;
 	private long feeSchedulesAdmin = UNKNOWN_NUMBER;
 	private long exchangeRatesAdmin = UNKNOWN_NUMBER;
+	private long systemUndeleteAdmin = UNKNOWN_NUMBER;
+	private long lastManagedBySysAdmin = UNKNOWN_NUMBER;
+	private long firstManagedBySysAdmin = UNKNOWN_NUMBER;
 
 	public AccountNumbers(PropertySource properties) {
 		this.properties = properties;
@@ -40,40 +44,75 @@ public class AccountNumbers {
 
 	public long treasury() {
 		if (treasury == UNKNOWN_NUMBER) {
-			treasury = properties.getIntProperty("hedera.treasuryAccount.idNum");
+			treasury = properties.getLongProperty("accounts.treasury");
 		}
 		return treasury;
 	}
 
-	public long master() {
-		if (master == UNKNOWN_NUMBER) {
-			master = properties.getIntProperty("hedera.masterAccount.idNum");
+	public long freezeAdmin() {
+		if (freezeAdmin == UNKNOWN_NUMBER) {
+			freezeAdmin = properties.getLongProperty("accounts.freezeAdmin");
 		}
-		return master;
+		return freezeAdmin;
+	}
+
+	public long systemAdmin() {
+		if (systemAdmin == UNKNOWN_NUMBER) {
+			systemAdmin = properties.getLongProperty("accounts.systemAdmin");
+		}
+		return systemAdmin;
+	}
+
+	public long firstManagedBySysAdmin() {
+		if (firstManagedBySysAdmin == UNKNOWN_NUMBER) {
+			firstManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.firstManaged");
+		}
+		return firstManagedBySysAdmin;
+	}
+
+	public long lastManagedBySysAdmin() {
+		if (lastManagedBySysAdmin == UNKNOWN_NUMBER) {
+			lastManagedBySysAdmin = properties.getLongProperty("accounts.systemAdmin.lastManaged");
+		}
+		return lastManagedBySysAdmin;
 	}
 
 	public long addressBookAdmin() {
 		if (addressBookAdmin == UNKNOWN_NUMBER) {
-			addressBookAdmin = properties.getLongProperty("files.addressBookAdmin.idNum");
+			addressBookAdmin = properties.getLongProperty("accounts.addressBookAdmin");
 		}
 		return addressBookAdmin;
 	}
 
 	public long feeSchedulesAdmin() {
 		if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
-			feeSchedulesAdmin = properties.getLongProperty("files.feeSchedulesAdmin.idNum");
+			feeSchedulesAdmin = properties.getLongProperty("accounts.feeSchedulesAdmin");
 		}
 		return feeSchedulesAdmin;
 	}
 
 	public long exchangeRatesAdmin() {
 		if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
-			exchangeRatesAdmin = properties.getLongProperty("files.exchangeRatesAdmin.idNum");
+			exchangeRatesAdmin = properties.getLongProperty("accounts.exchangeRatesAdmin");
 		}
 		return exchangeRatesAdmin;
 	}
 
-	public boolean isSysAdmin(long num) {
-		return num == treasury() || num == master();
+	public long systemDeleteAdmin() {
+		if (systemDeleteAdmin == UNKNOWN_NUMBER) {
+			systemDeleteAdmin = properties.getLongProperty("accounts.systemDeleteAdmin");
+		}
+		return systemDeleteAdmin;
+	}
+
+	public long systemUndeleteAdmin() {
+		if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
+			systemUndeleteAdmin = properties.getLongProperty("accounts.systemUndeleteAdmin");
+		}
+		return systemUndeleteAdmin;
+	}
+
+	public boolean isSuperuser(long num) {
+		return num == treasury() || num == systemAdmin();
 	}
 }

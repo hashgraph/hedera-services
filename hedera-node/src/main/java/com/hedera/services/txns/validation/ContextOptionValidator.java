@@ -125,7 +125,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
-		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromPojoTopicId(id));
+		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
 
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)

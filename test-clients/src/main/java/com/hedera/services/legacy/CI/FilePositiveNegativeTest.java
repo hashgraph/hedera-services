@@ -355,8 +355,9 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       txHolder[0] = txSigned;
 
     log.info("\n-----------------------------------");
+    log.info("  -- FileID: " + fid.getFileNum());
+    log.info("  -- Payer: " + payerID.getAccountNum());
     log.info("FileAppend: request = " + txSigned);
-
     FileServiceBlockingStub stub = getStub(nodeID);
     TransactionResponse response = stub.appendContent(txSigned);
     log.info("FileAppend Response :: " + response);

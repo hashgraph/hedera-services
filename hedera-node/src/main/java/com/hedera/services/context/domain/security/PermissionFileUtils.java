@@ -21,9 +21,7 @@ package com.hedera.services.context.domain.security;
  */
 
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfo;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.NetworkGetVersionInfo;
 import com.hederahashgraph.api.proto.java.Query;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -31,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.EnumMap;
 
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
-import static com.hedera.services.utils.MiscUtils.functionalityOfTxn;
+import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
 public class PermissionFileUtils {
@@ -39,7 +37,7 @@ public class PermissionFileUtils {
 
 	public static String permissionFileKeyForTxn(TransactionBody txn) {
 		try {
-			return permissionKeys.get(functionalityOfTxn(txn));
+			return permissionKeys.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality ignore) {
 			return "";
 		}

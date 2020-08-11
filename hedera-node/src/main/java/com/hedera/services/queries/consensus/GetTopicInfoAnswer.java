@@ -120,7 +120,7 @@ public class GetTopicInfoAnswer implements AnswerService {
 	private static ConsensusTopicInfo.Builder infoBuilder(ConsensusGetTopicInfoQuery op, StateView view) {
 
 		TopicID id = op.getTopicID();
-		MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromPojoTopicId(id));
+		MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(id));
 		ConsensusTopicInfo.Builder info = ConsensusTopicInfo.newBuilder();
 		if (merkleTopic.hasMemo()) {
 			info.setMemo(merkleTopic.getMemo());

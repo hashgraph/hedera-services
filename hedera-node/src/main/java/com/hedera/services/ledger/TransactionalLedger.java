@@ -64,7 +64,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	final Map<K, A> mutableRefs = new HashMap<>();
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
@@ -99,8 +98,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
 		changes.clear();
-		mutableRefs.clear();
 		deadAccounts.clear();
+		accounts.flushMutableRefs();
 		isInTransaction = false;
 	}
 
@@ -115,17 +114,19 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			Stream<K> changedKeys = keyComparator.isPresent()
 					? changes.keySet().stream().sorted(keyComparator.get())
 					: changes.keySet().stream();
+			/* Only explicitly update new accounts. */
 			changedKeys
 					.filter(id -> !deadAccounts.contains(id))
-					.forEach(id -> accounts.replace(id, get(id)));
+					.forEach(id -> accounts.put(id, get(id)));
 			changes.clear();
-			mutableRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
 					? deadAccounts.stream().sorted(keyComparator.get())
 					: deadAccounts.stream();
 			deadKeys.forEach(accounts::remove);
 			deadAccounts.clear();
+
+			accounts.flushMutableRefs();
 
 			isInTransaction = false;
 		} catch (Exception e) {
@@ -197,13 +198,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		EnumMap<P, Object> changeSet = changes.get(id);
 		boolean hasPendingChanges = changeSet != null;
-		A account;
-		if (!accounts.contains(id)) {
-			account = newAccount.get();
-		} else {
-			account = hasPendingChanges ? mutableRefTo(id) : accounts.getUnsafeRef(id);
-		}
-
+		A account = accounts.contains(id) ? accounts.getRef(id) : newAccount.get();
 		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
@@ -213,6 +208,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public Object get(K id, P property) {
 		throwIfMissing(id);
+
 		if (hasPendingChange(id, property)) {
 			EnumMap<P, Object> changeSet = changes.get(id);
 			if (changeSet != null) {
@@ -220,18 +216,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			}
 		}
 
-		var value = property.getter().apply(
-				isPendingCreation(id)
-						? newAccount.get()
-						: property.requiresMutableRef() ? mutableRefTo(id) : accounts.getUnsafeRef(id));
-		if (property.requiresMutableRef()) {
-			set(id, property, value);
-		}
-		return value;
-	}
-
-	private A mutableRefTo(K id) {
-		return mutableRefs.computeIfAbsent(id, accounts::getMutableRef);
+		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
 	}
 
 	@Override
@@ -276,12 +261,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	void throwIfNotInTxn() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("No active transaction!");
-		}
-	}
-
-	private void throwIfUnsaved(K id) {
-		if (isZombie(id) || !accounts.contains(id)) {
-			throw new MissingAccountException(id);
 		}
 	}
 

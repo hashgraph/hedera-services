@@ -23,18 +23,19 @@ package com.hedera.services.legacy.unit.handler;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import static com.hedera.services.legacy.util.SCEncoding.*;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -70,7 +71,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import java.io.IOException;
@@ -97,16 +97,13 @@ import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
 import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -130,7 +127,9 @@ public class SmartContractRequestHandlerStorageTest {
   private static final long contractFileNumber = 333L;
   private static final long contractSequenceNumber = 334L;
   private static final long secondContractSequenceNumber = 668L;
-  SmartContractRequestHandler smartHandler;
+	// FSFC path constants
+	public static String ADDRESS_PATH = "/{0}/s{1}";
+	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
@@ -153,12 +152,12 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(fcMap),
+            new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     Source<byte[], AccountState> repDatabase = ledgerSource;
@@ -183,7 +182,7 @@ public class SmartContractRequestHandlerStorageTest {
     repository = getLocalRepositoryInstance();
     gasPrice = new BigInteger("1");
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     ExchangeRateSet rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -196,8 +195,8 @@ public class SmartContractRequestHandlerStorageTest {
             repository,
             feeCollAccountId,
             ledger,
-            fcMap,
-            storageMap,
+            () -> fcMap,
+            () -> storageMap,
             ledgerSource,
             null,
             exchange,
@@ -205,7 +204,8 @@ public class SmartContractRequestHandlerStorageTest {
             TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true);
+            ignore -> true,
+            null);
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
@@ -848,8 +848,8 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String byteCodePath = ApplicationConstants.buildPath(
-        ApplicationConstants.ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
+    String byteCodePath = FeeCalcUtilsTest.buildPath(
+        ADDRESS_PATH, Long.toString(newContractId.getRealmNum()),
         Long.toString(newContractId.getContractNum()));
     storageWrapper.delete(byteCodePath, 0, 0);
     // Call the contract to set value

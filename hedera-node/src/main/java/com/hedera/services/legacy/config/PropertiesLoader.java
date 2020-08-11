@@ -9,9 +9,9 @@ package com.hedera.services.legacy.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,21 +21,17 @@ package com.hedera.services.legacy.config;
  */
 
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.CustomProperties;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 public class PropertiesLoader {
-	public static String applicationPropsFilePath = ApplicationConstants.PROPERTY_FILE;
-	public static String apiPropertiesFilePath = ApplicationConstants.API_ACCESS_FILE;
 	public static final Logger log = LogManager.getLogger(PropertiesLoader.class);
 
 	public static CustomProperties applicationProps;
@@ -49,23 +45,23 @@ public class PropertiesLoader {
 	public static void populateApplicationPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
 		Properties properties = new Properties();
 		serviceConfigList.getNameValueList().forEach(setting -> {
-			properties.setProperty(setting.getName(), setting.getValue());			
+			properties.setProperty(setting.getName(), setting.getValue());
 		});
-		applicationProps = new CustomProperties(properties);		
+		applicationProps = new CustomProperties(properties);
 		SyncPropertiesObject.loadSynchProperties(applicationProps);
 		AsyncPropertiesObject.loadAsynchProperties(applicationProps);
-		log.info("Application Properties Populated with these values :: "+applicationProps.getCustomProperties());
+		log.info("Application Properties Populated with these values :: " + applicationProps.getCustomProperties());
 		updateCallbacks.forEach(Runnable::run);
 	}
-	
+
 	public static void populateAPIPropertiesWithProto(ServicesConfigurationList serviceConfigList) {
 		Properties properties = new Properties();
 		serviceConfigList.getNameValueList().forEach(setting -> {
-			properties.setProperty(setting.getName(), setting.getValue());			
+			properties.setProperty(setting.getName(), setting.getValue());
 		});
-		apiProperties = new CustomProperties(properties);		
-		AsyncPropertiesObject.loadApiProperties(apiProperties);		
-		log.info("API Properties Populated with these values :: "+apiProperties.getCustomProperties());
+		apiProperties = new CustomProperties(properties);
+		AsyncPropertiesObject.loadApiProperties(apiProperties);
+		log.info("API Properties Populated with these values :: " + apiProperties.getCustomProperties());
 	}
 
 	public static double getCreateTopicTps() {
@@ -112,36 +108,8 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTransferListSizeLimit();
 	}
 
-	public static long getExpiryTime() {
-		return SyncPropertiesObject.getExpiryTime();
-	}
-
-	public static String getHederaStartupPath() {
-		return AsyncPropertiesObject.getHederaStartupPath();
-	}
-
-	public static String getGenAccountPath() {
-		return AsyncPropertiesObject.getGenesisAccountPath();
-	}
-
-	public static String getGenPub32KeyPath() {
-		return AsyncPropertiesObject.getGenesisPubKey32BytePath();
-	}
-
-	public static String getGenPubKeyPath() {
-		return AsyncPropertiesObject.getGEN_PUB_KEY_PATH();
-	}
-
-	public static String getGenPrivKeyPath() {
-		return AsyncPropertiesObject.getGenesisPrivKeyPath();
-	}
-
 	public static long getInitialGenesisCoins() {
 		return SyncPropertiesObject.getInitialGenesisCoins();
-	}
-
-	public static long getInitialCoins() {
-		return SyncPropertiesObject.getInitialCoins();
 	}
 
 	public static long getDefaultContractDurationInSec() {
@@ -176,19 +144,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getQueriesTps();
 	}
 
-	public static boolean getFileExistenceCheck(String propertyFile) {
-		File f = new File(propertyFile);
-		return f.exists();
-	}
-
-	public static String getAddressBook() {
-		return AsyncPropertiesObject.getAddressBook();
-	}
-
-	public static String getInitializeHederaFlag() {
-		return AsyncPropertiesObject.getInitializeHederaLedgerFlag();
-	}
-
 	public static String getFeeCollectionAccount() {
 		return SyncPropertiesObject.getDefaultFeeCollectionAccount();
 	}
@@ -221,22 +176,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
 	}
 
-	public static long getGenesisAccountNum() {
-		return SyncPropertiesObject.getGenesisAccountNum();
-	}
-
-	public static long getMasterAccountNum() {
-		return SyncPropertiesObject.getMasterAccountNum();
-	}
-
-	public static long getProtectedMaxEntityNum() {
-		return SyncPropertiesObject.getProtectedMaxEntityNum();
-	}
-
-	public static long getProtectedMinEntityNum() {
-		return SyncPropertiesObject.getProtectedMinEntityNum();
-	}
-
 	public static long getDefaultContractSenderThreshold() {
 		return SyncPropertiesObject.getDefaultContractSenderThreshold();
 	}
@@ -249,28 +188,12 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getNodeAccountBalanceValidity();
 	}
 
-	public static int getCurrentHbarEquivalent() {
-		return SyncPropertiesObject.getCurrentHbarEquivalent();
-	}
-
-	public static int getCurrentCentEquivalent() {
-		return SyncPropertiesObject.getCurrentCentEquivalent();
-	}
-
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
 	}
 
 	public static long getConfigAccountNum() {
 		return SyncPropertiesObject.getConfigAccountNum();
-	}
-
-	public static long getConfigRealmNum() {
-		return SyncPropertiesObject.getConfigRealmNum();
-	}
-
-	public static long getConfigShardNum() {
-		return SyncPropertiesObject.getConfigShardNum();
 	}
 
 	public static int getlocalCallEstReturnBytes() {
@@ -301,7 +224,7 @@ public class PropertiesLoader {
 	 * If Exchange_Rate_Allowed_Percentage in application.properties is invalid,
 	 * i.e. <=0, we set it to be DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE, and
 	 * return false; else return true;
-	 * 
+	 *
 	 * @return
 	 */
 	public static boolean validExchangeRateAllowedPercentage() {
@@ -375,17 +298,13 @@ public class PropertiesLoader {
 	public static String getNettyMode() {
 		return AsyncPropertiesObject.getNettyMode();
 	}
-	
-	 public static int getMaxGasLimit() {
-		 return SyncPropertiesObject.getMaxGasLimit();
+
+	public static int getMaxGasLimit() {
+		return SyncPropertiesObject.getMaxGasLimit();
 	}
 
-    public static String getSkipExitOnStartupFailures() {
-      return AsyncPropertiesObject.getSkipExitOnStartupFailures();
-    }
-    
-    public static int getMaxFileSize() {
-		 return SyncPropertiesObject.getMaxFileSize();
+	public static int getMaxFileSize() {
+		return SyncPropertiesObject.getMaxFileSize();
 	}
 
 	public static boolean getStartStatsDumpTimer() {
@@ -395,5 +314,4 @@ public class PropertiesLoader {
 	public static int getStatsDumpTimerValue() {
 		return AsyncPropertiesObject.getStatsDumpTimerValue();
 	}
-
 }

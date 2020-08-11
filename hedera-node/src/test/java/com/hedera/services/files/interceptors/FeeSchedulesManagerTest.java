@@ -20,11 +20,10 @@ package com.hedera.services.files.interceptors;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.FileID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,12 +37,13 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import static com.hedera.services.files.interceptors.FeeSchedulesManager.OK_FOR_NOW_VERDICT;
+import static com.hedera.services.files.interceptors.FeeSchedulesManager.YES_VERDICT;
 import static com.hedera.test.utils.IdUtils.asFile;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.files.interceptors.FeeSchedulesManager.YES_VERDICT;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class FeeSchedulesManagerTest {
@@ -56,7 +56,6 @@ class FeeSchedulesManagerTest {
 	FileID feeSchedule = asFile("0.0.111");
 	FileID otherFile = asFile("0.0.911");
 
-	PropertySource properties;
 	FeeCalculator fees;
 
 	FeeSchedulesManager subject;
@@ -76,11 +75,7 @@ class FeeSchedulesManagerTest {
 
 		fees = mock(FeeCalculator.class);
 
-		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("files.feeSchedules.num")).willReturn(111L);
-		given(properties.getLongProperty("files.feeSchedulesAdmin.idNum")).willReturn(56L);
-
-		subject = new FeeSchedulesManager(fees, properties);
+		subject = new FeeSchedulesManager(new MockFileNumbers(), fees);
 	}
 
 	@Test

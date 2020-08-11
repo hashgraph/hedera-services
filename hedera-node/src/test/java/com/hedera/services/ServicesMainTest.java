@@ -28,8 +28,8 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -38,12 +38,14 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -67,7 +69,6 @@ import java.time.Instant;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -77,7 +78,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.atLeastOnce;
 
 @RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
@@ -112,6 +112,7 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
+	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
 
 	@BeforeEach
 	private void setup() {
@@ -129,6 +130,7 @@ public class ServicesMainTest {
 		systemExits = mock(SystemExits.class);
 		recordStream = mock(RecordStream.class);
 		recordStreamThread = mock(Thread.class);
+		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
@@ -166,14 +168,15 @@ public class ServicesMainTest {
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.propertySanitizer()).willReturn(propertySanitizer);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
+		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 		given(ctx.systemAccountsCreator()).willReturn(systemAccountsCreator);
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
+		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
 		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
 		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
 
 		subject = new ServicesMain();
 		subject.systemExits = systemExits;
@@ -187,63 +190,9 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void shouldAlwaysFailFastOnUnexpectedInitialLedgerBalance() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(anyBoolean());
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits,atLeastOnce()).fail(1);
-	}
-
-	@Test
-	public void shouldNotFailOnExpectedInitialLedgerBalance() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits,never()).fail(1);
-	}
-	
-	@Test
-	public void shouldFailFastOnMissingNodeAccountIdIfSkippingNotExits() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
-		given(ctx.nodeAccount()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits, atLeastOnce()).fail(1);
-	}
-
-
-	@Test
-	public void doesntFailFastOnMissingNodeAccountIdIfSkippingExits() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(false);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
-		given(ctx.nodeAccount()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits, never()).fail(1);
-	}
-
-
-
-	@Test
 	public void failsFastOnNonUtf8DefaultCharset() {
 		// setup:
 		subject.defaultCharset = () -> StandardCharsets.US_ASCII;
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -260,14 +209,13 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(systemExits, atLeastOnce()).fail(1);
+		verify(systemExits).fail(1);
 	}
 
 	@Test
 	public void exitsOnApplicationPropertiesLoading() {
 		willThrow(IllegalStateException.class)
 				.given(systemFilesManager).loadApplicationProperties();
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -280,7 +228,6 @@ public class ServicesMainTest {
 	public void exitsOnAddressBookCreationFailure() {
 		willThrow(IllegalStateException.class)
 				.given(systemFilesManager).createAddressBookIfMissing();
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -290,13 +237,9 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exitsOnCreationFailure() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
-
-		willThrow(Exception.class)
-				.given(systemAccountsCreator).createSystemAccounts(any(), any());
+	public void exitsOnCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemAccountsCreator).ensureSystemAccounts(any(), any());
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -327,10 +270,10 @@ public class ServicesMainTest {
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(stateMigrations).runAllFor(ctx);
+		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
-		inOrder.verify(recordStreamThread).start();
-		inOrder.verify(recordsHistorian).reviewExistingRecords(33L);
+		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);
 
@@ -433,9 +376,7 @@ public class ServicesMainTest {
 	}
 	
 	@Test
-	public void managesSystemFiles() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemFilesOnStartup")).willReturn(true);
-
+	public void managesSystemFiles() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -450,32 +391,17 @@ public class ServicesMainTest {
 
 	@Test
 	public void createsSystemAccountsIfRequested() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
-
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(systemAccountsCreator).createSystemAccounts(accounts, addressBook);
-		verify(pause).forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
-	}
-
-	@Test
-	public void skipsSystemAccountCreationIfNotRequested() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verifyNoInteractions(systemAccountsCreator);
+		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, addressBook);
+		verify(pause).forMs(ServicesMain.SUGGESTED_POST_CREATION_PAUSE_MS);
 	}
 
 	@Test
 	public void rethrowsAccountsCreationFailureAsIse() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
 		given(ctx.systemAccountsCreator()).willReturn(null);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -501,7 +427,6 @@ public class ServicesMainTest {
 		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(PATH);
 		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(true);
 		given(ctx.accountsExporter()).willReturn(null);
-		given(ledgerValidator.hasExpectedTotalBalance(accounts)).willReturn(true);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));

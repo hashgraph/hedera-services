@@ -41,6 +41,7 @@ import java.util.OptionalInt;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE;
@@ -61,7 +62,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
 	private final TransactionContext txnCtx;
-	private final ExchangeRates midnightRates;
+	private final Supplier<ExchangeRates> midnightRates;
 	private final Consumer<ExchangeRateSet> postUpdateCb;
 	private final IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory;
 
@@ -70,7 +71,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 			AccountNumbers accountNums,
 			PropertySource properties,
 			TransactionContext txnCtx,
-			ExchangeRates midnightRates,
+			Supplier<ExchangeRates> midnightRates,
 			Consumer<ExchangeRateSet> postUpdateCb,
 			IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory
 	) {
@@ -105,7 +106,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	private Map.Entry<ResponseCodeEnum, Boolean> checkBound(Optional<ExchangeRateSet> rates){
 		var bound = properties.getIntProperty("exchangeRates.intradayChange.limitPercent");
 		var intradayLimit = intradayLimitFactory.apply(bound);
-		if (isSudoer() || ( rates.isPresent() && intradayLimit.test(midnightRates, rates.get()))) {
+		if (isSudoer() || (rates.isPresent() && intradayLimit.test(midnightRates.get(), rates.get()))) {
 			return YES_VERDICT;
 		} else {
 			return LIMIT_EXCEEDED_VERDICT;
@@ -117,9 +118,9 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 		if (isRates(id)) {
 			uncheckedParseFrom(newContents).ifPresentOrElse(rates -> {
 				postUpdateCb.accept(rates);
-				if (isMaster()) {
+				if (isSysAdmin()) {
 					log.info("Overwriting midnight rates with {}", rates);
-					midnightRates.replaceWith(rates);
+					midnightRates.get().replaceWith(rates);
 				}
 			}, () -> {
 				log.error("Rates postUpdate called with invalid data by {}!", txnCtx.accessor().getSignedTxn4Log());
@@ -142,11 +143,11 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	}
 
 	private boolean isSudoer() {
-		return isMaster() || isTreasury();
+		return isSysAdmin() || isTreasury();
 	}
 
-	private boolean isMaster() {
-		return txnCtx.activePayer().getAccountNum() == accountNums.master();
+	private boolean isSysAdmin() {
+		return txnCtx.activePayer().getAccountNum() == accountNums.systemAdmin();
 	}
 
 	private boolean isTreasury() {
@@ -157,7 +158,6 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 		try {
 			return Optional.of(ExchangeRateSet.parseFrom(data));
 		} catch (InvalidProtocolBufferException ignore) {
-			log.warn(ignore.getMessage());
 			return Optional.empty();
 		}
 	}
