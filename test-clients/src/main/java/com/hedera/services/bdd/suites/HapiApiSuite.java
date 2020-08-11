@@ -85,6 +85,8 @@ public abstract class HapiApiSuite {
 	public static final String ADDRESS_BOOK_CONTROL = HapiSpecSetup.getDefaultInstance().addressBookControlName();
 	public static final String FEE_SCHEDULE_CONTROL = HapiSpecSetup.getDefaultInstance().feeScheduleControlName();
 	public static final String EXCHANGE_RATE_CONTROL = HapiSpecSetup.getDefaultInstance().exchangeRatesControlName();
+	public static final String SYSTEM_DELETE_ADMIN = HapiSpecSetup.getDefaultInstance().systemDeleteAdminName();
+	public static final String SYSTEM_UNDELETE_ADMIN = HapiSpecSetup.getDefaultInstance().systemUndeleteAdminName();
 
 	public static final String NODE_DETAILS = HapiSpecSetup.getDefaultInstance().nodeDetailsName();
 	public static final String ADDRESS_BOOK = HapiSpecSetup.getDefaultInstance().addressBookName();

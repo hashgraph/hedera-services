@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldBe;
+import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldNotBe;
 import static java.util.Collections.EMPTY_LIST;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
@@ -107,6 +108,10 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts feeDifferentThan(Long amount) {
+		registerTypedProvider("transactionFee", shouldNotBe(amount));
+		return this;
+	}
 
 	public TransactionRecordAsserts memo(String text) {
 		registerTypedProvider("memo", shouldBe(text));

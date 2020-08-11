@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -67,6 +68,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	Optional<String> readablePath = Optional.empty();
 	Optional<String> snapshotPath = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
+	Optional<Consumer<byte[]>> contentsCb = Optional.empty();
 	Optional<Function<HapiApiSpec, ByteString>> expContentFn = Optional.empty();
 	Optional<UnaryOperator<byte[]>> afterBytesTransform = Optional.empty();
 
@@ -86,6 +88,11 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
 	public HapiGetFileContents saveTo(String path) {
 		snapshotPath = Optional.of(path);
+		return this;
+	}
+
+	public HapiGetFileContents consumedBy(Consumer<byte[]> cb) {
+		contentsCb = Optional.of(cb);
 		return this;
 	}
 
@@ -188,6 +195,8 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 					response.getFileGetContents().getFileContents().getContents()
 			);
 		}
+		contentsCb.ifPresent(cb ->
+				cb.accept(response.getFileGetContents().getFileContents().getContents().toByteArray()));
 	}
 
 	@Override

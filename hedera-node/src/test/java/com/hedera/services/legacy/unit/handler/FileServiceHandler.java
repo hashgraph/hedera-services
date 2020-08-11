@@ -30,6 +30,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
@@ -50,13 +51,14 @@ import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.hedera.services.legacy.exception.InvalidFileWACLException;
 import com.hedera.services.legacy.exception.SerializationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.function.LongPredicate;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,6 +71,10 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * @author hua
  */
 public class FileServiceHandler {
+  public static final LongPredicate IS_PROPERTIES_OR_PERMISSIONS = num -> (num == 121) || (num == 122);
+  public static final long ADDRESS_ACC_NUM = 55L;
+  public static final long FEE_ACC_NUM = 56L;
+  public static final long EXCHANGE_ACC_NUM = 57L;
   private static final Logger log = LogManager.getLogger(FileServiceHandler.class);
 
   private GlobalFlag globalFlag;
@@ -113,6 +119,115 @@ public class FileServiceHandler {
 		} else {
 			throw new InvalidFileIDException(String.format("No such file '%s'!", readableId(fid)), fid);
 		}
+	}
+
+  /**
+   * Checks if an account has authority to update an entity based on the following rules: Treasury
+   * account can update all entities below 0.0.1001 Account 0.0.50 can update all entities from
+   * 0.0.50 - 0.0.80 Network Function Master Account A/c 0.0.50 - Update all Network Function
+   * accounts & perform all the Network Functions listed below Network Function Accounts
+   * A/c 0.0.55 - Update Address Book files (0.0.101/102) + Properties/Permission files (0.0.121/122)
+   * A/c 0.0.56 - Update Fee schedule (0.0.111)
+   * A/c 0.0.57 - Update Exchange Rate (0.0.112) + Properties/Permission files (0.0.121/122)
+   *
+   * @param account account to be checked
+   * @param entity entity to be updated
+   * @return true if the account has the authority to update the entity, false otherwise
+   */
+  public static boolean hasAuthorityToUpdate(AccountID account, Object entity) {
+    if (isTreasury(account)) {
+      return true;
+    }
+
+    boolean rv = false;
+    long seq = getEntityNumber(entity);
+    if (isMasterAccount(account)) {
+      if((entity instanceof AccountID) &&
+          isMasterAccount((AccountID) entity)) { // master account cannot update itself
+        return false;
+      }
+      else if (seq >= 50 && seq <= 80)
+        rv = true;
+      else if(seq == 101 || seq == 102 || seq == 111 || seq == 112
+    		  || seq == 121 || seq == 122 )
+        rv = true;
+    } else if(account.equals(entity)) { // protected accounts can update themselves (excluding master account)
+      return true;
+    } else if (account.equals(genAccountID(ADDRESS_ACC_NUM))) {
+      if (seq == 101 || seq == 102 || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+        rv = true;
+      }
+    } else if (account.equals(genAccountID(FEE_ACC_NUM))) {
+      if (seq == 111) {
+        rv = true;
+      }
+    } else if (account.equals(genAccountID(EXCHANGE_ACC_NUM))) {
+      if (seq == 112 || IS_PROPERTIES_OR_PERMISSIONS.test(seq)) {
+        rv = true;
+      }
+    } else {
+      //NoOp
+    }
+
+    return rv;
+  }
+
+  /**
+   * Checks if the entity is protected, i.e. with ID number below 1000.
+   *
+   * @param entityID the ID of the entity
+   * @return true if the entity should be protected, false otherwise
+   */
+  public static boolean isProtectedEntity(Object entityID) {
+    long entityNum = -1l;
+    long realmNum = -1l;
+    long shardNum = -1l;
+    if (entityID instanceof AccountID) {
+      AccountID accID = (AccountID) entityID;
+      entityNum = accID.getAccountNum();
+      realmNum = accID.getRealmNum();
+      shardNum = accID.getShardNum();
+    } else if (entityID instanceof FileID) {
+      FileID fileID = (FileID) entityID;
+      entityNum = fileID.getFileNum();
+      realmNum = fileID.getRealmNum();
+      shardNum = fileID.getShardNum();
+    } else {
+      ContractID contratID = (ContractID) entityID;
+      entityNum = contratID.getContractNum();
+      realmNum = contratID.getRealmNum();
+      shardNum = contratID.getShardNum();
+    }
+
+    boolean rv = (shardNum == 0) && (realmNum == 0) && (entityNum >= 1)
+        && (entityNum <= 1000);
+    return rv;
+  }
+
+  public static boolean isMasterAccount(AccountID account) {
+    return (account.getShardNum() == 0 && account.getRealmNum() == 0 && account.getAccountNum() == 50);
+  }
+
+  public static boolean isTreasury(AccountID account) {
+    return (account.getShardNum() == 0 && account.getRealmNum() == 0 && account.getAccountNum() == 2);
+  }
+
+  public static long getEntityNumber(Object entity) {
+    long rv = -1l;
+
+    if (entity instanceof AccountID) {
+      rv = ((AccountID) entity).getAccountNum();
+    } else if (entity instanceof FileID) {
+      rv = ((FileID) entity).getFileNum();
+    } else { // contract ID
+      rv = ((ContractID) entity).getContractNum();
+    }
+
+    return rv;
+  }
+
+	public static AccountID genAccountID(long accNum) {
+	  return AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accNum).build();
 	}
 
 	/**
@@ -195,11 +310,11 @@ public class FileServiceHandler {
     ResponseCodeEnum returnCode = ResponseCodeEnum.OK;
 
     // we're only concerned about system files, which are protected entities
-    if (!ProtectedEntities.isProtectedEntity(fid))
+    if (!isProtectedEntity(fid))
       return returnCode;
     
-    if (ProtectedEntities.hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
-      if (fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
+    if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
+      if (fid.getFileNum() == 111) {
         String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
         byte[] fileContent;
         if (appendFlag) {
@@ -254,8 +369,7 @@ public class FileServiceHandler {
 
       // If is not small change, if this Transaction is signed by Account 0.0.50(Master Account) or 0.0.2(Treasury), we should log a message and update Exchange Rate File; else we should log a error message and return ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED
       if (!isSmallChange(exchangeRateSet)) {
-        if (ProtectedEntities.isMasterAccount(accountID) || ProtectedEntities
-            .isTreasury(accountID)) {
+        if (isMasterAccount(accountID) || isTreasury(accountID)) {
           log.info(
               "Exchange Rate File Update changes the Exchange Rate by a percentage greater than Exchange_Rate_Allowed_Percentage by {}",
               () -> EntityIdUtils.readableId(accountID));
@@ -332,7 +446,7 @@ public class FileServiceHandler {
               // When MasterAccount updates file 0.0.112, it should also overwrite the ExchangeRateSet value which is saved in HGCAppState
               AccountID updater = gtx.getTransactionID().getAccountID();
 
-              if (ProtectedEntities.isMasterAccount(updater)) {
+              if (isMasterAccount(updater)) {
                 log.info("Master account is updating the Exchange Rate file 0.0.112");
                 ExchangeRateSet exchangeRateSet = readExchangeRateSetFromFile(storageWrapper);
 
@@ -342,16 +456,14 @@ public class FileServiceHandler {
                 }
               }
 
-            } else if (validateCode.equals(ResponseCodeEnum.OK) &&
-                    fid.getFileNum() == ApplicationConstants.FEE_FILE_ACCOUNT_NUM) {
+            } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 111) {
               feeScheduleInterceptor.update(storageWrapper, fid);
-            } else if (validateCode.equals(ResponseCodeEnum.OK)
-                    && fid.getFileNum() == ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM) {
+            } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 121) {
               System.out.println("Calling appProps interceptor");
             	ApplicationPropertiesInterceptor appPropertiesInterceptor = new ApplicationPropertiesInterceptor();
             	appPropertiesInterceptor.update(storageWrapper, fid);
              }else if (validateCode.equals(ResponseCodeEnum.OK)
-                     && fid.getFileNum() == ApplicationConstants.API_PROPERTIES_FILE_NUM) {
+                     && fid.getFileNum() == 122) {
              	APIPropertiesInterceptor apiPropertiesInterceptor = new APIPropertiesInterceptor();
              	apiPropertiesInterceptor.update(storageWrapper, fid);
               }

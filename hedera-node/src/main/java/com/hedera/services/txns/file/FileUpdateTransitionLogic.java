@@ -58,18 +58,18 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final HederaFs hfs;
-	private final EntityNumbers number;
+	private final EntityNumbers entityNums;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 
 	public FileUpdateTransitionLogic(
 			HederaFs hfs,
-			EntityNumbers number,
+			EntityNumbers entityNums,
 			OptionValidator validator,
 			TransactionContext txnCtx
 	) {
 		this.hfs = hfs;
-		this.number = number;
+		this.entityNums = entityNums;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 	}
@@ -93,9 +93,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			}
 			if (attr.getWacl().isEmpty() && (op.hasKeys() || !op.getContents().isEmpty())) {
 				/* The transaction is trying to update an immutable file; in general, not a legal operation,
-				but the semantics change for a sys admin (i.e., master or treasury) updating a system file. */
-				var isSysFile = number.ofFile().isSystem(target.getFileNum());
-				var isSysAdmin = number.ofAccount().isSysAdmin(txnCtx.activePayer().getAccountNum());
+				but the semantics change for a superuser (i.e., sysadmin or treasury) updating a system file. */
+				var isSysFile = entityNums.isSystemFile(target);
+				var isSysAdmin = entityNums.accounts().isSuperuser(txnCtx.activePayer().getAccountNum());
 				if (!(isSysAdmin && isSysFile)) {
 					txnCtx.setStatus(UNAUTHORIZED);
 					return;

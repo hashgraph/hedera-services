@@ -68,7 +68,6 @@ class FieldSourcedFeeScreeningTest {
 		given(accessor.getPayer()).willReturn(payer);
 
 		given(exemptions.isExemptFromRecordFees(master)).willReturn(true);
-		given(exemptions.isExemptFromFees(systemFileUpdateTxn)).willReturn(true);
 
 		subject = new FieldSourcedFeeScreening(exemptions);
 		subject.setBalanceCheck(check);
@@ -97,9 +96,12 @@ class FieldSourcedFeeScreeningTest {
 		EnumSet<TxnFeeType> allPossibleFees = EnumSet.of(NETWORK, NODE, SERVICE, CACHE_RECORD, THRESHOLD_RECORD);
 
 		givenKnownFeeAmounts();
+		given(exemptions.hasExemptPayer(accessor)).willReturn(true);
 		given(accessor.getTxn()).willReturn(systemFileUpdateTxn);
 		given(systemFileUpdateTxn.getTransactionFee()).willReturn(Long.MAX_VALUE);
 		given(check.canAfford(argThat(payer::equals), anyLong())).willReturn(false);
+		// and:
+		subject.resetFor(accessor);
 
 		// when:
 		boolean viability = subject.isPayerWillingnessCredible() &&

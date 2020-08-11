@@ -82,7 +82,7 @@ public class TransferListSizeTest {
   private int TRANSFER_ACCOUNTS_LIST_SIZE_LIMIT = 10;
   private String LOG_PREFIX = ">>>>> ";
   protected SequenceNumber sequenceNum = new SequenceNumber(
-      ApplicationConstants.HEDERA_START_SEQUENCE);
+      1001L);
   private final long nodeAccount = 3L;
   private final long payerAccount = sequenceNum.getAndIncrement();
   private final long feeCollAccount = sequenceNum.getAndIncrement();

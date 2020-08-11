@@ -20,6 +20,7 @@ package com.hedera.services.fees;
  * ‍
  */
 
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -30,6 +31,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * @author Michael Tinker
  */
 public interface FeeExemptions {
-	boolean isExemptFromFees(TransactionBody txn);
+	boolean hasExemptPayer(SignedTxnAccessor accessor);
 	boolean isExemptFromRecordFees(AccountID id);
 }

@@ -80,7 +80,7 @@ public class Rationalization {
         log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
         List<Signature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
-        SignatureStatus payerStatus = expandIn(
+        var payerStatus = expandIn(
                 realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
         if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
             if (log.isDebugEnabled()) {
@@ -88,7 +88,7 @@ public class Rationalization {
             }
             return payerStatus;
         }
-        SignatureStatus otherPartiesStatus = expandIn(
+        var otherPartiesStatus = expandIn(
                 realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
         if (!SUCCESS.name().equals(otherPartiesStatus.getStatusCode().name())) {
             if (log.isDebugEnabled()) {
@@ -97,8 +97,8 @@ public class Rationalization {
             return otherPartiesStatus;
         }
 
-        List<Signature> rationalizedPayerSigs = rationalize(realPayerSigs, 0);
-        List<Signature> rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
+        var rationalizedPayerSigs = rationalize(realPayerSigs, 0);
+        var rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
 
         if (rationalizedPayerSigs == realPayerSigs || rationalizedOtherPartySigs == realOtherPartySigs) {
             txnAccessor.getPlatformTxn().clear();
@@ -113,7 +113,7 @@ public class Rationalization {
 
     private List<Signature> rationalize(List<Signature> realSigs, int startingAt) {
         try {
-            List<Signature> candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
+            var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
             if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
                 return candidateSigs;
             }

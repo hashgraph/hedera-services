@@ -30,7 +30,9 @@ import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -63,6 +65,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -88,9 +91,9 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 @RunWith(JUnitPlatform.class)
 public class HederaSigningOrderTest {
 	private static final boolean IN_HANDLE_TXN_DYNAMIC_CTX = false;
-	private static final Predicate<TransactionBody> WACL_NEVER_SIGNS = (txn) -> false;
-	private static final Predicate<TransactionBody> WACL_ALWAYS_SIGNS = (txn) -> true;
-	private static final BiPredicate<AccountID, AccountID> UPDATE_ACCOUNT_ALWAYS_SIGNS = (a, b) -> true;
+	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_NEVER_SIGNS = (txn, f) -> false;
+	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_ALWAYS_SIGNS = (txn, f) -> true;
+	private static final Predicate<TransactionBody> UPDATE_ACCOUNT_ALWAYS_SIGNS = txn -> true;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 		new DelegatingSigMetadataLookup(
 				id -> { throw new Exception(); },
@@ -240,10 +243,10 @@ public class HederaSigningOrderTest {
 	public void getsCryptoUpdateVanillaNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		BiPredicate<AccountID, AccountID> updateSigReqs = (BiPredicate<AccountID, AccountID>)mock(BiPredicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
-		given(updateSigReqs.test(DEFAULT_PAYER, MISC_ACCOUNT)).willReturn(true);
+		given(updateSigReqs.test(txn)).willReturn(true);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -252,17 +255,17 @@ public class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(MISC_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
-		verify(updateSigReqs).test(DEFAULT_PAYER, MISC_ACCOUNT);
+		verify(updateSigReqs).test(txn);
 	}
 
 	@Test
 	public void getsCryptoUpdateProtectedNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		BiPredicate<AccountID, AccountID> updateSigReqs = (BiPredicate<AccountID, AccountID>)mock(BiPredicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
-		given(updateSigReqs.test(DEFAULT_PAYER, MISC_ACCOUNT)).willReturn(false);
+		given(updateSigReqs.test(txn)).willReturn(false);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -271,41 +274,41 @@ public class HederaSigningOrderTest {
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
 				contains(NEW_ACCOUNT_KT.asKey()));
-		verify(updateSigReqs).test(DEFAULT_PAYER, MISC_ACCOUNT);
+		verify(updateSigReqs).test(txn);
 	}
 
 	@Test
 	public void getsCryptoUpdateProtectedNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		BiPredicate<AccountID, AccountID> updateSigReqs = (BiPredicate<AccountID, AccountID>)mock(BiPredicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
-		given(updateSigReqs.test(DEFAULT_PAYER, MISC_ACCOUNT)).willReturn(false);
+		given(updateSigReqs.test(txn)).willReturn(false);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
-		verify(updateSigReqs).test(DEFAULT_PAYER, MISC_ACCOUNT);
+		verify(updateSigReqs).test(txn);
 	}
 
 	@Test
 	public void getsCryptoUpdateVanillaNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		BiPredicate<AccountID, AccountID> updateSigReqs = (BiPredicate<AccountID, AccountID>)mock(BiPredicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
-		given(updateSigReqs.test(DEFAULT_PAYER, MISC_ACCOUNT)).willReturn(true);
+		given(updateSigReqs.test(txn)).willReturn(true);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
-		verify(updateSigReqs).test(DEFAULT_PAYER, MISC_ACCOUNT);
+		verify(updateSigReqs).test(txn);
 	}
 
 	@Test
@@ -978,13 +981,13 @@ public class HederaSigningOrderTest {
 	}
 	private void setupFor(
 			TxnHandlingScenario scenario,
-			BiPredicate<AccountID, AccountID> updateAccountSigns
+			Predicate<TransactionBody> updateAccountSigns
 	) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS, updateAccountSigns);
 	}
 	private void setupFor(
 			TxnHandlingScenario scenario,
-			Predicate<TransactionBody> waclSigns
+			BiPredicate<TransactionBody, HederaFunctionality> waclSigns
 	) throws Throwable {
 		setupFor(scenario, waclSigns, UPDATE_ACCOUNT_ALWAYS_SIGNS);
 	}
@@ -996,16 +999,16 @@ public class HederaSigningOrderTest {
 	}
 	private void setupFor(
 			TxnHandlingScenario scenario,
-			Predicate<TransactionBody> waclSigns,
-			BiPredicate<AccountID, AccountID> updateAccountSigns
+			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
+			Predicate<TransactionBody> updateAccountSigns
 	) throws Throwable {
 		setupFor(scenario, waclSigns, updateAccountSigns, Optional.empty());
 	}
 
 	private void setupFor(
 			TxnHandlingScenario scenario,
-			Predicate<TransactionBody> waclSigns,
-			BiPredicate<AccountID, AccountID> updateAccountSigns,
+			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
+			Predicate<TransactionBody> updateAccountSigns,
 			Optional<SigMetadataLookup> sigMetaLookup
 	) throws Throwable {
 		txn = scenario.platformTxn().getTxn();
@@ -1016,8 +1019,8 @@ public class HederaSigningOrderTest {
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics)),
-				waclSigns,
-				updateAccountSigns);
+				updateAccountSigns,
+				waclSigns);
 	}
 
 	private void aMockSummaryFactory() {

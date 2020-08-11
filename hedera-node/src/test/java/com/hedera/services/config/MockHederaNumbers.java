@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.fees;
+package com.hedera.services.config;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,19 +20,25 @@ package com.hedera.services.legacy.services.fees;
  * ‍
  */
 
-import com.hedera.services.fees.FeeExemptions;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.logic.ProtectedEntities;
+import com.hedera.services.context.properties.PropertySource;
 
-public class DefaultFeeExemptions implements FeeExemptions {
-	@Override
-	public boolean isExemptFromRecordFees(AccountID id) {
-		return ProtectedEntities.isFreePayer(id);
+public class MockHederaNumbers extends HederaNumbers {
+	public MockHederaNumbers() {
+		super(null);
 	}
 
 	@Override
-	public boolean isExemptFromFees(TransactionBody txn) {
-		return ProtectedEntities.isFree(txn);
+	public long realm() {
+		return 0L;
+	}
+
+	@Override
+	public long shard() {
+		return 0L;
+	}
+
+	@Override
+	public long numReservedSystemEntities() {
+		return 1_000L;
 	}
 }
