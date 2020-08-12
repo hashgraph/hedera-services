@@ -48,7 +48,7 @@ public class HederaNodeStatsTest {
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
 		stats = new HederaNodeStats(platform, 0, log);
-		verify(platform, times(208)).addAppStatEntry(any(StatEntry.class));
+		verify(platform, times(207)).addAppStatEntry(any(StatEntry.class));
 		verify(platform, times(1)).appStatInit();
 	}
 
@@ -204,9 +204,8 @@ public class HederaNodeStatsTest {
 		String statToTest = "cryptoTransfer";
 		assertEquals(0, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 10; i++) {
-			stats.transactionHandled(statToTest, i);
+			stats.transactionHandled(statToTest);
 			assertEquals(i, stats.getCountStat(statToTest, HederaNodeStats.HANDLED_SUFFIX));
-			assertTrue(stats.getAvgHdlTxSize() > 0.0);
 		}
 	}
 
@@ -254,7 +253,7 @@ public class HederaNodeStatsTest {
 		String fileTransactionHdlStat = "createFile";
 		assertEquals(0.0, stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX));
 		for (int i = 1; i <= 20; i++) {
-			stats.transactionHandled(fileTransactionHdlStat, 5678);
+			stats.transactionHandled(fileTransactionHdlStat);
 		}
 		String smartContractTransactionRcvStat = "contractCallMethod";
 		assertEquals(0.0, stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX));
@@ -265,6 +264,5 @@ public class HederaNodeStatsTest {
 		assertTrue(stats.getSpeedometerStat(cryptoQuerySubStat, HederaNodeStats.SUBMITTED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(fileTransactionHdlStat, HederaNodeStats.HANDLED_SUFFIX) > 0.0);
 		assertTrue(stats.getSpeedometerStat(smartContractTransactionRcvStat, HederaNodeStats.RECEIVED_SUFFIX) > 0.0);
-		assertEquals(5678.0, stats.getAvgHdlTxSize());
 	}
 }
