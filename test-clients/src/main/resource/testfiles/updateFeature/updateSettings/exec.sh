@@ -104,6 +104,8 @@ if [[ "$unamestr" == 'Linux' ]]; then
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     shell_echo $LINENO $0 "Running on macOS"
+    sleep 15 # wait platform save database properly
+
     kill $processId
 
     shell_echo $LINENO $0 "Wait for HGCApp to quit"
