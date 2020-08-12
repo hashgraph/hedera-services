@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 
@@ -52,6 +53,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	private OptionalInt totalChunks = OptionalInt.empty();
 	private OptionalInt chunkNumber = OptionalInt.empty();
 	private Optional<String> initialTransactionPayer = Optional.empty();
+	private Optional<TransactionID> initialTransactionID = Optional.empty();
 	private boolean clearMessage = false;
 
 	public HapiMessageSubmit(String topic) {
@@ -103,6 +105,11 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return chunkInfo(totalChunks, chunkNumber);
 	}
 
+	public HapiMessageSubmit chunkInfo(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+		this.initialTransactionID = Optional.of(initialTransactionID);
+		return chunkInfo(totalChunks, chunkNumber);
+	}
+
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		TopicID id = resolveTopicId(spec);
@@ -118,8 +125,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
 								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 										.newBuilder()
-										.setInitialTransactionID(asTransactionID(spec,
-												initialTransactionPayer.isPresent() ? initialTransactionPayer : payer))
+										.setInitialTransactionID(initialTransactionID.orElse(asTransactionID(spec,
+												initialTransactionPayer.isPresent() ? initialTransactionPayer : payer)))
 										.setTotal(totalChunks.getAsInt())
 										.setNumber(chunkNumber.getAsInt())
 										.build();

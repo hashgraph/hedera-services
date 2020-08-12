@@ -46,16 +46,16 @@ public class RunLoadTest extends UtilOp {
 	private static final int DEFAULT_TPS_TOLERANCE_PERCENTAGE = 5;
 	private static final long DEFAULT_DURATION = 30;
 	private static final TimeUnit DEFAULT_DURATION_UNIT = TimeUnit.SECONDS;
+	private static final int DEFAULT_THREADS = 1;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
 	private IntSupplier secsAllowedBelowTolerance = () -> DEFAULT_SECS_ALLOWED_BELOW_TOLERANCE;
 	private LongSupplier testDuration = () -> DEFAULT_DURATION;
 	private Supplier<TimeUnit> ofUnit = () -> DEFAULT_DURATION_UNIT;
+	private IntSupplier threads = () -> DEFAULT_THREADS;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
-
-	private int numberOfThreads = 1;
 
 	private AtomicLong totalOpsAllThread = new AtomicLong();
 
@@ -74,8 +74,8 @@ public class RunLoadTest extends UtilOp {
 		return this;
 	}
 
-	public RunLoadTest setNumberOfThreads(int numberOfThreads) {
-		this.numberOfThreads = numberOfThreads;
+	public RunLoadTest setNumberOfThreads(IntSupplier numberOfThreads) {
+		this.threads = numberOfThreads;
 		return this;
 	}
 
@@ -95,6 +95,7 @@ public class RunLoadTest extends UtilOp {
 	}
 
 	protected boolean threadMode(HapiApiSpec spec) {
+		int numberOfThreads = threads.getAsInt();
 		Thread[] threadClients = new Thread[numberOfThreads];
 
 		// Dynamically instantiate test case thread and pass arguments to it

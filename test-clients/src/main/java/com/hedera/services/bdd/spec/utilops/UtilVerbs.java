@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
@@ -60,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
@@ -74,16 +76,17 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
@@ -239,6 +242,43 @@ public class UtilVerbs {
 				.setValue(value)
 				.build();
 	}
+
+	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+
+			ByteString msg = ByteString.copyFrom(
+					Files.readAllBytes(Paths.get(filePath))
+			);
+			int size = msg.size();
+			int totalChunks = (size + chunkSize - 1) / chunkSize;
+			int position = 0;
+			int currentChunk = 0;
+			var initialTransactionID = asTransactionID(spec, Optional.of(payer));
+
+			while (position < size) {
+				++currentChunk;
+				int newPosition = Math.min(size, position + chunkSize);
+				HapiMessageSubmit subOp = submitMessageTo(topic)
+						.message(msg.substring(position, newPosition))
+						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
+						.payingWith(payer)
+						.hasKnownStatus(SUCCESS)
+						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+						.noLogging()
+						.suppressStats(true)
+						.deferStatusResolution();
+				if (1 == currentChunk) {
+					subOp = subOp.usePresetTimestamp();
+				}
+				opsList.add(subOp);
+				position = newPosition;
+			}
+
+			CustomSpecAssert.allRunFor(spec, opsList);
+		});
+	}
+
 	public static HapiSpecOperation updateLargeFile(
 			String payer,
 			String fileName,
