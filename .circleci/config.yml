@@ -854,7 +854,6 @@ executors:
       MAVEN_OPTS: -Xmx3200m
       IN_CIRCLE_CI: true
       REPO: /repo
-      INFRASTRUCTURE_REPO: /infrastructure
       WORKFLOW-NAME: << parameters.workflow-name >>
     working_directory: /repo
 
@@ -1265,51 +1264,6 @@ workflows:
     jobs:
       - aws-summary
 
-  chunking-performance:
-    jobs:
-      - fast-build-artifact:
-          post-steps:
-            - fetch-testnet-control-assets:
-                infra-branch: "hashgraph-hedera-services"
-            - persist_to_workspace:
-                root: /
-                paths:
-                  - infrastructure
-      - run-chunking-load-test:
-          name: chunking-load-test-node0-client1
-          requires:
-            - fast-build-artifact
-          ci-properties-map: "tps=250,mins=180,threads=2,messageSize=5800,isChunk=true"
-          node-terraform-index: 0
-          node-account: 3
-      - run-chunking-load-test:
-          name: chunking-load-test-node1-client1
-          requires:
-            - fast-build-artifact
-          ci-properties-map: "tps=250,mins=180,threads=2,messageSize=5800,isChunk=true"
-          node-terraform-index: 1
-          node-account: 4
-      - run-chunking-load-test:
-          name: chunking-load-test-node2-client1
-          requires:
-            - fast-build-artifact
-          ci-properties-map: "tps=250,mins=180,threads=2,messageSize=5800,isChunk=true"
-          node-terraform-index: 2
-          node-account: 5
-      - run-chunking-load-test:
-          name: chunking-load-test-node3-client1
-          requires:
-            - fast-build-artifact
-          ci-properties-map: "tps=250,mins=180,threads=2,messageSize=5800,isChunk=true"
-          node-terraform-index: 3
-          node-account: 6
-      - chunking-load-test-summary:
-          requires:
-            - chunking-load-test-node0-client1
-            - chunking-load-test-node1-client1
-            - chunking-load-test-node2-client1
-            - chunking-load-test-node3-client1
-
   continuous-integration:
     jobs:
       - build-artifact:
@@ -1319,7 +1273,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - chunk-perf-test
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           requires:
@@ -2666,42 +2619,3 @@ jobs:
           name: Show swirlds logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
-  run-chunking-load-test:
-    parameters:
-      node-terraform-index:
-        description: Index into array of Terraform-provisioned hosts
-        type: integer
-        default: 0
-      node-account:
-        description: Seq num of the Hedera account id for specified node.
-        type: integer
-        default: 3
-      ci-properties-map:
-        description: Key=value pairs to configure suite behavior
-        type: string
-        default: ''
-    executor:
-      name: ci-test-executor
-      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-chunking-performance"
-      use_existing_network: "1"
-    parallelism: 1
-    steps:
-      - attach_workspace:
-          at: /
-      - run-eet-suites:
-          dsl-args: "SubmitMessageLoadTest"
-          ci-properties-map: << parameters.ci-properties-map >>
-          node-terraform-index: << parameters.node-terraform-index >>
-          node-account: << parameters.node-account >>
-  chunking-load-test-summary:
-    executor:
-      name: ci-test-executor
-      tf_dir: "/infrastructure/terraform/deployments/aws-4-node-psql-swirlds"
-      tf_workspace: "net-chunking-performance"
-      use_existing_network: "1"
-    steps:
-      - attach_workspace:
-          at: /
-      - publish-platform-stats:
-          source-desc: HCS chunking performance
