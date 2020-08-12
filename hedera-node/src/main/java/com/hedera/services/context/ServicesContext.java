@@ -972,7 +972,7 @@ public class ServicesContext {
 					stats(),
 					nodeAccount(),
 					properties().getStringProperty("hedera.recordStream.logDir"),
-					properties().getLongProperty("hedera.recordStream.logPeriod"));
+					properties());
 		}
 		return recordStream;
 	}

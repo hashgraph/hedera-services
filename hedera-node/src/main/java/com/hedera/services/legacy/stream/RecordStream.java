@@ -21,6 +21,7 @@ package com.hedera.services.legacy.stream;
  */
 
 import com.google.common.primitives.Ints;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -77,7 +78,6 @@ public class RecordStream implements Runnable {
 	private File file;
 	private LinkedBlockingQueue<Triple<Transaction, TransactionRecord, Instant>> recordBuffer;
 	private Instant lastRecordConsensusTimeStamp = null;
-	private long recordLogPeriod;
 	private byte[] prevFileHash;
 	MessageDigest md;
 	MessageDigest mdForContent;
@@ -86,18 +86,20 @@ public class RecordStream implements Runnable {
 	boolean inFreeze;
 	String recordStreamsDirectory;
 
+	private final PropertySource properties;
+
 	public RecordStream(
 			Platform platform,
 			HederaNodeStats stats,
 			AccountID nodeAccountID,
 			String directory,
-			long recordLogPeriod
+			PropertySource properties
 	) {
 		this.stats = stats;
 		this.platform = platform;
+		this.properties = properties;
 		this.logDirectory = directory;
 		this.nodeAccountID = EntityIdUtils.asLiteralString(nodeAccountID);
-		this.recordLogPeriod = recordLogPeriod;
 		this.recordBuffer = new LinkedBlockingQueue<>(PropertiesLoader.getRecordStreamQueueCapacity());
 
 		if (!directory.endsWith(File.separator)) {
@@ -331,6 +333,7 @@ public class RecordStream implements Runnable {
 						TimeUnit.MILLISECONDS);
 				stats.updateRecordStreamQueueSize(getRecordStreamQueueSize());
 
+				long recordLogPeriod = properties.getLongProperty("hedera.recordStream.logPeriod");
 				if (record != null) {
 					Instant currentCensusesTimeStamp = record.getRight();
 
