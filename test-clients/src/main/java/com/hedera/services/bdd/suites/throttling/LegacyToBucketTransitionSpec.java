@@ -29,8 +29,8 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.net.swarm.Util;
 import org.junit.Assert;
 import org.junit.runners.Suite;
@@ -112,6 +112,7 @@ public class LegacyToBucketTransitionSpec extends HapiApiSuite {
 						UtilVerbs.sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
+						UtilVerbs.sleepFor(1_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
 				);
@@ -179,6 +180,7 @@ public class LegacyToBucketTransitionSpec extends HapiApiSuite {
 						UtilVerbs.sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
+						UtilVerbs.sleepFor(1_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES).contents(ignore -> initialProps.get())
 				);

@@ -1,27 +1,20 @@
-showInternalStats,  1
-# check if numKeepRounds 500 is too much
-roundsStale,  25
-roundsExpired, 500
-signedStateDisk,    10
-saveStatePeriod,    300
-throttleTransactionQueueSize, 6000
-# check if throttle7extra 0.2 is too much
-throttle7extra, 0.2
-# check if maxOutgoingSyncs 3 is a better option
-maxOutgoingSyncs, 2
-doUpnp, 0
-forceCpuVerification, 1
-forceCpuDigest, 1
-cpuDigestThreadRatio, 0.1
-cpuVerifierThreadRatio, 1
-csvFileName, MainNetStats
-csvAppend, 0
 checkSignedStateFromDisk, 1
-
-freezeSettings.active,          1
-freezeSettings.startHour,     	6
-freezeSettings.startMin,   		0
-freezeSettings.endHour,    		6
-freezeSettings.endMin,     		10
-
-dbBackup.active, 0
+crypto.cpuDigestThreadRatio, 0.1
+crypto.cpuVerifierThreadRatio, 1
+csvAppend, 0
+csvFileName, MainNetStats
+doUpnp, 0
+freezeSettings.active, 1
+freezeSettings.endHour, 6
+freezeSettings.endMin, 10
+freezeSettings.startHour, 6
+freezeSettings.startMin, 0
+maxOutgoingSyncs, 2
+reconnect.active, 0
+showInternalStats, 1
+state.roundsExpired, 500
+state.roundsStale, 25
+state.saveStatePeriod, 300
+state.signedStateDisk, 10
+throttle7extra, 0.2
+throttleTransactionQueueSize, 6000

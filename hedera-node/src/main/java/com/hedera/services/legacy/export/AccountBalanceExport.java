@@ -21,9 +21,9 @@ package com.hedera.services.legacy.export;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.legacy.core.ExportAccountObject;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.exports.AccountBalance;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.legacy.config.PropertiesLoader;
@@ -120,7 +120,7 @@ public class AccountBalanceExport {
   public String exportAccountsBalanceCSVFormat(ServicesState servicesState, Instant consensusTimestamp) throws InvalidTotalAccountBalanceException {
     // get the export path from Properties
     log.debug("exportAccountsBalanceCSVFormat called. {}", consensusTimestamp);
-    FCMap<MapKey, HederaAccount> accountMap = servicesState.getAccountMap();
+    FCMap<MerkleEntityId, MerkleAccount> accountMap = servicesState.accounts();
     String nodeAccountID = readableId(servicesState.getNodeAccountId());
 
     if (!accountBalanceExportDir.endsWith(File.separator)) {
@@ -136,26 +136,27 @@ public class AccountBalanceExport {
     }
     String fileName =  dir + consensusTimestamp + "_Balances.csv";
     fileName = fileName.replace(":", "_");
-    List<ExportAccountObject> acctObjList = new ArrayList<>();
-    ExportAccountObject exAccObj;
+    List<AccountBalance> acctObjList = new ArrayList<>();
+    AccountBalance exAccObj;
     if(log.isDebugEnabled()){
       log.debug("Size of accountMap :: {}", accountMap.size());
     }
     long totalBalance = 0L;
 
-    for (Map.Entry<MapKey, HederaAccount> item : accountMap.entrySet()) {
-      MapKey currKey = item.getKey();
-      HederaAccount currMv = item.getValue();
+    for (Map.Entry<MerkleEntityId, MerkleAccount> item : accountMap.entrySet()) {
+      MerkleEntityId currKey = item.getKey();
+      MerkleAccount currMv = item.getValue();
       totalBalance += currMv.getBalance();
-      exAccObj = new ExportAccountObject(
-              currKey.getShardNum(), currKey.getRealmNum(), currKey.getAccountNum(), currMv.getBalance());
+      exAccObj = new AccountBalance(
+              currKey.getShard(), currKey.getRealm(), currKey.getNum(), currMv.getBalance());
       acctObjList.add(exAccObj);
       //check if the account is a node account
-      long nodeId = nodeAccounts.getOrDefault(getAccountIDString(currKey), -1l);
+      long nodeId = nodeAccounts.getOrDefault(currKey.toAbbrevString(), -1l);
       if (nodeId != -1l) {
         //check if its balance is less than nodeAccountBalanceValidity
-        if (currMv.getBalance() < nodeAccountBalanceValidity) {
-          log.warn( "Insufficient Node Balance Error - Node" + nodeId + " (" + getAccountIDString(currKey) + ") balance: " + currMv.getBalance());
+        long balance = currMv.getBalance();
+        if (balance < nodeAccountBalanceValidity) {
+          log.warn("Node {} ({}) has insufficient balance {}!", nodeId, currKey.toAbbrevString(), balance);
         }
       }
     }
@@ -164,19 +165,14 @@ public class AccountBalanceExport {
       String  errorMessage = "Total balance " + totalBalance + " is different from " + initialGenesisCoins;
       throw new InvalidTotalAccountBalanceException(errorMessage);
     }
-    Collections.sort(acctObjList, new Comparator<ExportAccountObject>() {
-      @Override
-      public int compare(ExportAccountObject o1, ExportAccountObject o2) {
-        return (int) (o1.getAccountNum() - o2.getAccountNum());
-      }
-    });
+    Collections.sort(acctObjList);
     try (FileWriter file = new FileWriter(fileName)) {
       file.write("TimeStamp:");
       file.write(consensusTimestamp.toString());
       file.write(System.getProperty(lineSperator));
       file.write("shardNum,realmNum,accountNum,balance");
       file.write(System.getProperty(lineSperator));
-      for (ExportAccountObject exAcctObj : acctObjList) {
+      for (AccountBalance exAcctObj : acctObjList) {
         file.write(getAccountData(exAcctObj));
       }
       if(log.isDebugEnabled()){
@@ -194,21 +190,12 @@ public class AccountBalanceExport {
    * @param exportAcctObj
    * @return
    */
-  private static String getAccountData(ExportAccountObject exportAcctObj) {
+  private static String getAccountData(AccountBalance exportAcctObj) {
     StringBuilder accountData = new StringBuilder();
-    accountData.append(exportAcctObj.getShardNum()).append(",").append(exportAcctObj.getRealmNum()).append(",")
-        .append(exportAcctObj.getAccountNum()).append(",").append(exportAcctObj.getBalance())
+    accountData.append(exportAcctObj.getShard()).append(",").append(exportAcctObj.getRealm()).append(",")
+        .append(exportAcctObj.getNum()).append(",").append(exportAcctObj.getBalance())
         .append(System.getProperty(lineSperator));
     return accountData.toString();
-  }
-
-  /**
-   * method to get accountID string
-   * @param mapKey
-   * @return
-   */
-  private static String getAccountIDString(MapKey mapKey) {
-    return mapKey.getShardNum() + "." + mapKey.getRealmNum() + "." + mapKey.getAccountNum();
   }
 
   /**

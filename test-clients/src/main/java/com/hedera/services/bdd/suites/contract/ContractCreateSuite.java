@@ -34,8 +34,8 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
@@ -90,7 +90,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	/* C.f. https://github.com/swirlds/services-hedera/issues/1728 */
 	private HapiApiSpec createFailsIfMissingSigs() {
 		KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
 		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));

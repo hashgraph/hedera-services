@@ -20,25 +20,22 @@ package com.hedera.services.records;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.common.cache.Cache;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.SleepingPause.INSTANCE;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class RecordCacheFactoryTest {
@@ -48,7 +45,7 @@ class RecordCacheFactoryTest {
 	private TransactionID txnIdB = TransactionID.newBuilder()
 			.setAccountID(asAccount("2.2.0"))
 			.build();
-	private JTransactionRecord record = new JTransactionRecord();
+	private TransactionRecord record = TransactionRecord.getDefaultInstance();
 
 	private PropertySource properties;
 	private RecordCacheFactory subject;
@@ -62,14 +59,14 @@ class RecordCacheFactoryTest {
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(1);
 
 		// when:
-		Cache<TransactionID, Optional<JTransactionRecord>> cache = subject.getRecordCache();
-		cache.put(txnIdA, Optional.of(record));
+		var cache = subject.getRecordCache();
+		cache.put(txnIdA, RecordCache.MARKER);
 
 		// then:
-		assertEquals(record, cache.getIfPresent(txnIdA).get());
+		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		assertNull(cache.getIfPresent(txnIdB));
 		INSTANCE.forMs(500L);
-		assertEquals(record, cache.getIfPresent(txnIdA).get());
+		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		INSTANCE.forMs(500L);
 		assertNull(cache.getIfPresent(txnIdA));
 	}

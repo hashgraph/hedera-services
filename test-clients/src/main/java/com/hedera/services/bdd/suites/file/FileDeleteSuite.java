@@ -24,8 +24,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,9 +71,6 @@ public class FileDeleteSuite extends HapiApiSuite {
 		);
 	}
 
-	/* XXX
-	https://github.com/swirlds/services-hedera/issues/1714
-	*/
 	private HapiApiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
 		KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
 		SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));

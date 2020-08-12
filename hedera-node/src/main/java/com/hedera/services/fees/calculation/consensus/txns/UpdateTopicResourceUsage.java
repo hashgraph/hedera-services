@@ -20,9 +20,10 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,7 +36,6 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
@@ -48,14 +48,14 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         try {
-            Topic topic = view.topics().get(getMapKey(txn.getConsensusUpdateTopic().getTopicID()));
+            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
             long rbsIncrease = getUpdateTopicRbsIncrease(
                     txn.getTransactionID().getTransactionValidStart(),
-                    JKey.mapJKey(topic.getAdminKey()),
-                    JKey.mapJKey(topic.getSubmitKey()),
-                    topic.getMemo(),
-                    topic.hasAutoRenewAccountId(),
-                    lookupExpiry(topic),
+                    JKey.mapJKey(merkleTopic.getAdminKey()),
+                    JKey.mapJKey(merkleTopic.getSubmitKey()),
+                    merkleTopic.getMemo(),
+                    merkleTopic.hasAutoRenewAccountId(),
+                    lookupExpiry(merkleTopic),
                     txn.getConsensusUpdateTopic());
             return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
         } catch (Exception illegal) {
@@ -64,10 +64,10 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
         }
     }
 
-    private Timestamp lookupExpiry(Topic topic) {
+    private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
         try {
             return Timestamp.newBuilder()
-                    .setSeconds(topic.getExpirationTimestamp().getSeconds())
+                    .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
                     .build();
         } catch (NullPointerException e) {
 			/* Effect is to charge nothing for RBH */

@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,11 +33,11 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JAccountID.convert;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.util.function.Function;
@@ -114,7 +115,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			customizer.expiry(op.getExpirationTime().getSeconds());
 		}
 		if (op.hasProxyAccountID()) {
-			customizer.proxy(convert(op.getProxyAccountID()));
+			customizer.proxy(EntityId.ofNullableAccountId(op.getProxyAccountID()));
 		}
 		if (op.hasReceiverSigRequiredWrapper()) {
 			customizer.isReceiverSigRequired(op.getReceiverSigRequiredWrapper().getValue());
@@ -140,18 +141,25 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	private ResponseCodeEnum validate(TransactionBody cryptoUpdateTxn) {
 		CryptoUpdateTransactionBody op = cryptoUpdateTxn.getCryptoUpdateAccount();
-		ResponseCodeEnum responseCode;
 
-		if (op.hasKey() && !validator.hasGoodEncoding(op.getKey())) {
-			responseCode = BAD_ENCODING;
-		} else if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-			responseCode = AUTORENEW_DURATION_NOT_IN_RANGE;
-		} else if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-			responseCode = INVALID_EXPIRATION_TIME;
-		} else {
-			responseCode = OK;
+		if (op.hasKey()) {
+			try {
+				JKey converted = JKey.mapKey(op.getKey());
+				if (!converted.isValid()) {
+					return BAD_ENCODING;
+				}
+			} catch (DecoderException e) {
+				return BAD_ENCODING;
+			}
 		}
 
-		return responseCode;
+		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
+			return AUTORENEW_DURATION_NOT_IN_RANGE;
+		}
+		if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
+			return INVALID_EXPIRATION_TIME;
+		}
+
+		return OK;
 	}
 }

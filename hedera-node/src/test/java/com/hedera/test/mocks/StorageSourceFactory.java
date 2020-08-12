@@ -22,15 +22,16 @@ package com.hedera.test.mocks;
 
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.datasource.DbSource;
 
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 
 public class StorageSourceFactory {
-	public static DbSource<byte[]> from(FCMap<StorageKey, StorageValue> storageMap) {
-		return new BlobStorageSource(bytecodeMapFrom(new FcBlobsBytesStore(StorageValue::new, storageMap)));
+	public static DbSource<byte[]> from(FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap) {
+		return new BlobStorageSource(bytecodeMapFrom(
+				new FcBlobsBytesStore(MerkleOptionalBlob::new, () -> storageMap)));
 	}
 }

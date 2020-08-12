@@ -38,6 +38,7 @@ import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
  * @author Michael Tinker
  */
 public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
+	private boolean payerExemption;
 	private BalanceCheck check;
 	private final FeeExemptions exemptions;
 	protected SignedTxnAccessor accessor;
@@ -53,6 +54,7 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 
 	public void resetFor(SignedTxnAccessor accessor) {
 		this.accessor = accessor;
+		payerExemption = exemptions.hasExemptPayer(accessor);
 	}
 
 	public void setFor(TxnFeeType fee, long amount) {
@@ -75,14 +77,14 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 	}
 
 	protected boolean isPayerExempt() {
-		return exemptions.isExemptFromFees(accessor.getTxn());
+		return payerExemption;
 	}
 
 	@Override
 	public boolean canParticipantAfford(AccountID participant, EnumSet<TxnFeeType> fees) {
 		long exemptAmount = 0;
 		if (fees.contains(THRESHOLD_RECORD)) {
-			exemptAmount +=  exemptions.isExemptFromRecordFees(participant) ? feeAmounts.get(THRESHOLD_RECORD) : 0;
+			exemptAmount += exemptions.isExemptFromRecordFees(participant) ? feeAmounts.get(THRESHOLD_RECORD) : 0;
 		}
 		long netAmount = totalAmountOf(fees) - exemptAmount;
 		return check.canAfford(participant, netAmount);

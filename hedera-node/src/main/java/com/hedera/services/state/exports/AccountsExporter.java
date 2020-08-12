@@ -20,10 +20,10 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
 public interface AccountsExporter {
-	void toFile(FCMap<MapKey, HederaAccount> accounts, String path) throws Exception;
+	void toFile(FCMap<MerkleEntityId, MerkleAccount> accounts, String path) throws Exception;
 }

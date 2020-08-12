@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.MiscUtils.functionalityOfTxn;
+import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FEE;
 import static java.util.stream.Collectors.toMap;
 
@@ -104,7 +104,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	public FeeData activePrices() {
 		try {
 			TransactionBody txn = txnCtx.accessor().getTxn();
-			HederaFunctionality function = functionalityOfTxn(txn);
+			HederaFunctionality function = functionOf(txn);
 			Timestamp at = txn.getTransactionID().getTransactionValidStart();
 			return pricesGiven(function, at);
 		} catch (Exception e) {
@@ -120,9 +120,12 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			FeeData usagePrices = functionUsagePrices.get(function);
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
-		} catch (Exception e) {
-			log.warn("Only default usage prices available for function {} @ {}!", function, at);
-			log.warn(e.getMessage());
+		} catch (Exception ignore) {
+			log.warn(
+					"Only default usage prices available for function {} @ {}.{}!",
+					function,
+					at.getSeconds(),
+					at.getNanos());
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

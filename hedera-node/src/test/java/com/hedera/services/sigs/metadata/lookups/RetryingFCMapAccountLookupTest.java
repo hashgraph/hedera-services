@@ -28,8 +28,8 @@ import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
@@ -52,13 +52,13 @@ import static com.hedera.test.factories.accounts.MapValueFactory.*;
 public class RetryingFCMapAccountLookupTest {
 	private PropertySource properties;
 	private HederaNodeStats stats;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private RetryingFCMapAccountLookup subject;
 	private Pause pause;
 	private final Pause defaultPause = SleepingPause.INSTANCE;
 	private final AccountID account = IdUtils.asAccount("0.0.1337");
-	private final MapKey accountKey = MapKey.getMapKey(account);
-	private final HederaAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();
+	private final MerkleEntityId accountKey = MerkleEntityId.fromAccountId(account);
+	private final MerkleAccount accountValue = newAccount().receiverSigRequired(true).accountKeys(accountKeys).get();
 	private static JKey accountKeys;
 	private static final int RETRY_WAIT_MS = 10;
 
@@ -71,7 +71,7 @@ public class RetryingFCMapAccountLookupTest {
 	private void setup() {
 		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
-		accounts = (FCMap<MapKey, HederaAccount>)mock(FCMap.class);
+		accounts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
 		properties = mock(PropertySource.class);
 		given(properties.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"))
 				.willReturn(2);
@@ -83,7 +83,7 @@ public class RetryingFCMapAccountLookupTest {
 	public void neverRetriesIfAccountAlreadyExists() throws Exception {
 		given(accounts.get(accountKey)).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 
 		// when:
 		AccountSigningMetadata meta = subject.lookup(account);
@@ -99,7 +99,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 
@@ -120,7 +120,7 @@ public class RetryingFCMapAccountLookupTest {
 	public void retriesOnceWithSleepingPause() throws Exception {
 		given(accounts.get(accountKey)).willReturn(null).willReturn(accountValue);
 		// and:
-		subject = new RetryingFCMapAccountLookup(defaultPause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(defaultPause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(stats);
 
@@ -140,7 +140,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 
@@ -160,7 +160,7 @@ public class RetryingFCMapAccountLookupTest {
 		given(pause.forMs(anyLong())).willReturn(true).willReturn(false);
 		given(accounts.get(accountKey)).willReturn(null).willReturn(null).willReturn(null);
 		// and:
-		subject = new RetryingFCMapAccountLookup(pause, properties, stats, accounts);
+		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 		// and:
 		InOrder inOrder = inOrder(pause, stats);
 

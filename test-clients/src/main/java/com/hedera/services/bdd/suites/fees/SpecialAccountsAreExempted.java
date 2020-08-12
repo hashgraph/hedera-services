@@ -28,8 +28,8 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -76,6 +76,7 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.path(Path.of("./", "exchangeRates.bin").toString())
 				).then(
+						UtilVerbs.sleepFor(1000L),
 						getAccountBalance(EXCHANGE_RATE_CONTROL)
 								.hasTinyBars(changeFromSnapshot("pre", 0))
 				);

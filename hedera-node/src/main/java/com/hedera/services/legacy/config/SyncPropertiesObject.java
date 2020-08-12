@@ -20,7 +20,6 @@ package com.hedera.services.legacy.config;
  * ‍
  */
 
-
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.logic.CustomProperties;
 
@@ -31,7 +30,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  * In other words, they impact state of system.
  */
 public class SyncPropertiesObject {
-
 	// Tx record & receipt ttl setting in seconds
 	private static int txReceiptTTL = ApplicationConstants.TX_RECEIPT_TTL;
 	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
@@ -41,28 +39,12 @@ public class SyncPropertiesObject {
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
-	// currentTime(// 08/21/2018 10.00am) and expiryTime(// 100 years from
-	// 08/21/2018)
-	private static long currentTime =ApplicationConstants.CURRENT_TIME;
-	private static long expiryTime = ApplicationConstants.EXPIRY_TIME;
-	private static long currentShard = ApplicationConstants.ZERO;
-	private static int currentHbarEquivalent= ApplicationConstants.CURRENT_HBAR_EQ;
-	private static int currentCentEquivalent = ApplicationConstants.CURRENT_CENT_EQ;
-
 	private static long initialGenesisCoins = ApplicationConstants.INITIAL_GENESIS_COINS;
-	private static long initialCoins =ApplicationConstants.ZERO;
 	private static String defaultFeeCollectionAccount = ApplicationConstants.DEFAULT_FEE_COLLECTION_ACCOUNT;
-	// default valid duration of the contract in seconds
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
 
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
-	private static int claimHashSize = ApplicationConstants.CLAIM_HASH_SIZE;
-
-	private static long genesisAccountNum = ApplicationConstants.GEN_ACCT_NUM;
-	private static long masterAccountNum = ApplicationConstants.MASTER_ACCT_NUM;
-	private static long protectedMaxEntityNum = ApplicationConstants.PROTECT_ENT_MAX_NUM;
-	private static long protectedMinEntityNum = ApplicationConstants.PROTECT_ENT_MIN_NUM;
 
 	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
 
@@ -74,8 +56,6 @@ public class SyncPropertiesObject {
 	private static long nodeAccountBalanceValidity = ApplicationConstants.ZERO;
 
 	private static long configAccountNum = ApplicationConstants.CONFIG_ACCT_NUM;
-	private static long configRealmNum = ApplicationConstants.ZERO;
-	private static long configShardNum = ApplicationConstants.ZERO;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
@@ -105,23 +85,13 @@ public class SyncPropertiesObject {
 		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
-		// currentTime(// 08/21/2018 10.00am) and expiryTime(// 100 years from
-		// 08/21/2018)
-		currentTime = appConfig.getLong("currentTime", ApplicationConstants.CURRENT_TIME);
-		expiryTime = appConfig.getLong("expiryTime", ApplicationConstants.EXPIRY_TIME);
-		currentShard = appConfig.getLong("currentShard", ApplicationConstants.ZERO);
-		currentHbarEquivalent = appConfig.getInt("currentHbarEquivalent", ApplicationConstants.CURRENT_HBAR_EQ);
-		currentCentEquivalent = appConfig.getInt("currentCentEquivalent", ApplicationConstants.CURRENT_CENT_EQ);
-
 		initialGenesisCoins = appConfig.getLong("initialGenesisCoins", ApplicationConstants.INITIAL_GENESIS_COINS);
-		initialCoins = appConfig.getLong("initialCoins", ApplicationConstants.ZERO);
 		defaultFeeCollectionAccount = appConfig.getString("defaultFeeCollectionAccount", ApplicationConstants.DEFAULT_FEE_COLLECTION_ACCOUNT);
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
 
 		minimumAutoRenewDuration = appConfig.getLong("minimumAutoRenewDuration", ApplicationConstants.MINIMUM_AUTORENEW_DURATION);
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
-		claimHashSize = appConfig.getInt("claimHashSize", ApplicationConstants.CLAIM_HASH_SIZE);
 
 		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
 
@@ -129,18 +99,11 @@ public class SyncPropertiesObject {
 		defaultContractReceiverThreshold = appConfig.getLong("defaultContractReceiverThreshold",
 				ApplicationConstants.DEF_CONT_RECEIVE_THRESHOLD);
 
-		genesisAccountNum = appConfig.getLong("genesisAccountNum", ApplicationConstants.GEN_ACCT_NUM);
-		masterAccountNum = appConfig.getLong("masterAccountNum", ApplicationConstants.MASTER_ACCT_NUM);
-		protectedMaxEntityNum = appConfig.getLong("protectedMaxEntityNum", ApplicationConstants.PROTECT_ENT_MAX_NUM);
-		protectedMinEntityNum = appConfig.getLong("protectedMinEntityNum", ApplicationConstants.PROTECT_ENT_MIN_NUM);
-
 		// if a node account's balance is less than this value tinybars, we should log
 		// Insufficient Node Balance warning;
 		nodeAccountBalanceValidity = appConfig.getLong("nodeAccountBalanceValidity", ApplicationConstants.ZERO);
 
 		configAccountNum = appConfig.getLong("configAccountNum", ApplicationConstants.CONFIG_ACCT_NUM);
-		configRealmNum = appConfig.getLong("configRealmNum", ApplicationConstants.ZERO);
-		configShardNum = appConfig.getLong("configShardNum", ApplicationConstants.ZERO);
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
@@ -185,32 +148,8 @@ public class SyncPropertiesObject {
 		return keyExpansionDepth;
 	}
 
-	static long getCurrentTime() {
-		return currentTime;
-	}
-
-	static long getExpiryTime() {
-		return expiryTime;
-	}
-
-	static long getCurrentShard() {
-		return currentShard;
-	}
-
-	static int getCurrentHbarEquivalent() {
-		return currentHbarEquivalent;
-	}
-
-	static int getCurrentCentEquivalent() {
-		return currentCentEquivalent;
-	}
-
 	static long getInitialGenesisCoins() {
 		return initialGenesisCoins;
-	}
-
-	static long getInitialCoins() {
-		return initialCoins;
 	}
 
 	static String getDefaultFeeCollectionAccount() {
@@ -227,26 +166,6 @@ public class SyncPropertiesObject {
 
 	static long getMAXIMUM_AUTORENEW_DURATION() {
 		return maximumAutoRenewDuration;
-	}
-
-	static int getClaimHashSize() {
-		return claimHashSize;
-	}
-
-	static long getGenesisAccountNum() {
-		return genesisAccountNum;
-	}
-
-	static long getMasterAccountNum() {
-		return masterAccountNum;
-	}
-
-	static long getProtectedMaxEntityNum() {
-		return protectedMaxEntityNum;
-	}
-
-	static long getProtectedMinEntityNum() {
-		return protectedMinEntityNum;
 	}
 
 	static int getTransferListSizeLimit() {
@@ -267,14 +186,6 @@ public class SyncPropertiesObject {
 
 	static long getConfigAccountNum() {
 		return configAccountNum;
-	}
-
-	static long getConfigRealmNum() {
-		return configRealmNum;
-	}
-
-	static long getConfigShardNum() {
-		return configShardNum;
 	}
 
 	static int getLocalCallEstReturnBytes() {
@@ -304,5 +215,4 @@ public class SyncPropertiesObject {
 	static int getMaxFileSize() {
 		return maxFileSize;
 	}
-
 }

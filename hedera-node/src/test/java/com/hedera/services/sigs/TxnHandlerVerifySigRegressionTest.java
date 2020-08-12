@@ -21,9 +21,12 @@ package com.hedera.services.sigs;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.queries.validation.QueryFeeCheck;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.utils.PrecheckUtils;
@@ -36,24 +39,28 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestExchangeRates;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.swirlds.crypto.DigitalSignature;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsPlusAccountRetriesFor;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
@@ -78,9 +85,15 @@ public class TxnHandlerVerifySigRegressionTest {
 	private HederaSigningOrder retryingKeyOrder;
 	private Predicate<TransactionBody> isQueryPayment;
 	private PlatformTxnAccessor platformTxn;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private TransactionHandler subject;
 	private HederaNodeStats stats;
+
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
+	private Predicate<TransactionBody> updateAccountSigns = txn ->
+			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
+	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
+			mockSystemOpPolicies.check(txn, function) != AUTHORIZED;
 
 	@Test
 	public void rejectsInvalidTxn() throws Throwable {
@@ -89,17 +102,21 @@ public class TxnHandlerVerifySigRegressionTest {
 		// given:
 		Transaction invalidSignedTxn = Transaction.newBuilder()
 				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes())).build();
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		subject = new TransactionHandler(
 				null,
-				accounts,
+				() -> accounts,
 				DEFAULT_NODE,
 				null,
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(null, accounts),
-				new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
-				new QueryFeeCheck(accounts));
+				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts),
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(() -> accounts),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 
 		// expect:
 		assertFalse(subject.verifySignature(invalidSignedTxn));
@@ -319,21 +336,29 @@ public class TxnHandlerVerifySigRegressionTest {
 		stats = mock(HederaNodeStats.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, accounts, null));
+				defaultLookupsFor(null, () -> accounts, () -> null),
+				updateAccountSigns,
+				targetWaclSigns);
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
-						defaultLookupsPlusAccountRetriesFor( null, accounts, null, MN, MN, stats));
+						defaultLookupsPlusAccountRetriesFor( null, () -> accounts, () -> null, MN, MN, stats),
+						updateAccountSigns,
+						targetWaclSigns);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
-		syncVerifier = DigitalSignature::verifySync;
+		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		subject = new TransactionHandler(
 				null,
 				precheckVerifier,
-				accounts,
-				DEFAULT_NODE);
+				() -> accounts,
+				DEFAULT_NODE,
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies));
 	}
 }
 

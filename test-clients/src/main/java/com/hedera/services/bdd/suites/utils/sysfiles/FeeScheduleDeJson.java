@@ -1,5 +1,25 @@
 package com.hedera.services.bdd.suites.utils.sysfiles;
 
+/*-
+ * ‌
+ * Hedera Services Test Clients
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -34,10 +54,19 @@ public class FeeScheduleDeJson {
 	private static final String[] RESOURCE_KEYS =
 			{ "constant", "bpt", "vpt", "rbh", "sbh", "gas", "bpr", "sbpr", "min", "max" };
 
-	public static CurrentAndNextFeeSchedule fromJson(String jsonLoc) throws Exception {
-		CurrentAndNextFeeSchedule.Builder feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
-		List<Map<String, Object>> rawFeeSchedules = asMapList(jsonLoc);
+	public static CurrentAndNextFeeSchedule fromJsonLiteral(String stylized) throws Exception {
+		var om = new ObjectMapper();
+		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>)om.readValue(stylized, List.class);
+		return fromMapList(rawFeeSchedules);
+	}
 
+	public static CurrentAndNextFeeSchedule fromJson(String jsonLoc) throws Exception {
+		List<Map<String, Object>> rawFeeSchedules = asMapList(jsonLoc);
+		return fromMapList(rawFeeSchedules);
+	}
+
+	private static CurrentAndNextFeeSchedule fromMapList(List<Map<String, Object>> mapList) throws Exception {
+		var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 		int i = 0;
 		for (String rawFeeSchedule : FEE_SCHEDULE_KEYS) {
 			set(
@@ -45,9 +74,8 @@ public class FeeScheduleDeJson {
 					feeSchedules,
 					rawFeeSchedule,
 					FeeSchedule.class,
-					bindFeeScheduleFrom((List<Map<String, Object>>)rawFeeSchedules.get(i++).get(rawFeeSchedule)));
+					bindFeeScheduleFrom((List<Map<String, Object>>)mapList.get(i++).get(rawFeeSchedule)));
 		}
-
 		return feeSchedules.build();
 	}
 

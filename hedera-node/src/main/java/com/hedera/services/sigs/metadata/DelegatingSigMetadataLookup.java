@@ -20,7 +20,9 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
@@ -39,9 +41,11 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
+
+import java.util.function.Supplier;
 
 /**
  * Convenience class that gives unified access to Hedera signing metadata by
@@ -58,10 +62,24 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final TopicSigMetaLookup topicSigMetaLookup;
 	private final static Pause pause = SleepingPause.INSTANCE;
 
+	public static DelegatingSigMetadataLookup backedLookupsFor(
+			HederaFs hfs,
+			BackingAccounts<AccountID, MerkleAccount> backingAccounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+	) {
+		return new DelegatingSigMetadataLookup(
+				new HfsSigMetaLookup(hfs),
+				new BackedAccountLookup(backingAccounts),
+				new DefaultFCMapContractLookup(accounts),
+				new DefaultFCMapTopicLookup(topics)
+		);
+	}
+
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<MapKey, Topic> topics
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
@@ -73,8 +91,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
 			HederaFs hfs,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<MapKey, Topic> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			int maxRetries,
 			int retryWaitIncrementMs,
 			HederaNodeStats stats
@@ -91,8 +109,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			HederaFs hfs,
 			PropertySource properties,
 			HederaNodeStats stats,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<MapKey, Topic> topics
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),

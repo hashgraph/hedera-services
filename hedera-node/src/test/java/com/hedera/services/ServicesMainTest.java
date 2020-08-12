@@ -21,62 +21,67 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.context.HederaNodeContext;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.domain.trackers.IssEventStatus;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.validation.LedgerValidator;
-import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.TimerUtils;
 import com.hedera.test.utils.IdUtils;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
-import com.hedera.services.legacy.stream.RecordStream;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
-import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.io.FCDataOutputStream;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.binary.Hex;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.intThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.verifyNoInteractions;
+import static org.mockito.BDDMockito.willThrow;
 
 @RunWith(JUnitPlatform.class)
 public class ServicesMainTest {
 	final long NODE_ID = 1L;
-	final long OTHER_NODE_ID = 2L;
 	final String PATH = "/this/was/mr/bleaneys/room";
 
 	FCMap topics;
@@ -84,8 +89,8 @@ public class ServicesMainTest {
 	FCMap storage;
 	Pause pause;
 	Thread recordStreamThread;
-	Console console;
 	Logger mockLog;
+	Console console;
 	Platform platform;
 	SystemExits systemExits;
 	AddressBook addressBook;
@@ -93,8 +98,7 @@ public class ServicesMainTest {
 	RecordStream recordStream;
 	FeeCalculator fees;
 	ServicesMain subject;
-	ServicesState localSignedState;
-	HederaNodeContext ctx;
+	ServicesContext ctx;
 	PropertySource properties;
 	LedgerValidator ledgerValidator;
 	AccountsExporter accountsExporter;
@@ -102,26 +106,31 @@ public class ServicesMainTest {
 	BalancesExporter balancesExporter;
 	PropertySanitizer propertySanitizer;
 	StateMigrations stateMigrations;
+	HederaNodeStats stats;
 	GrpcServerManager grpc;
 	SystemFilesManager systemFilesManager;
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
+	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
 
 	@BeforeEach
 	private void setup() {
 		fees = mock(FeeCalculator.class);
 		grpc = mock(GrpcServerManager.class);
+		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
 		accounts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		storage = mock(FCMap.class);
+		mockLog = mock(Logger.class);
 		console = mock(Console.class);
 		consoleOut = mock(PrintStream.class);
 		platform = mock(Platform.class);
 		systemExits = mock(SystemExits.class);
 		recordStream = mock(RecordStream.class);
 		recordStreamThread = mock(Thread.class);
+		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
@@ -134,9 +143,12 @@ public class ServicesMainTest {
 		addressBook = mock(AddressBook.class);
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
+
+		ServicesMain.log = mockLog;
 
 		given(ctx.fees()).willReturn(fees);
+		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.pause()).willReturn(pause);
 		given(ctx.accounts()).willReturn(accounts);
@@ -156,12 +168,15 @@ public class ServicesMainTest {
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
 		given(ctx.propertySanitizer()).willReturn(propertySanitizer);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
+		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
 		given(ctx.systemAccountsCreator()).willReturn(systemAccountsCreator);
 		given(ctx.accountsExporter()).willReturn(accountsExporter);
 		given(ctx.balancesExporter()).willReturn(balancesExporter);
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(33L, 0));
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(true);
+		given(ledgerValidator.hasExpectedTotalBalance(any())).willReturn(true);
+		given(properties.getIntProperty("timer.stats.dump.value")).willReturn(123);
+		given(properties.getBooleanProperty("timer.stats.dump.started")).willReturn(true);
 
 		subject = new ServicesMain();
 		subject.systemExits = systemExits;
@@ -169,16 +184,9 @@ public class ServicesMainTest {
 		CONTEXTS.store(ctx);
 	}
 
-	@Test
-	public void doesntFailFastOnMissingNodeAccountIdIfSkippingExits() {
-		given(properties.getBooleanProperty("hedera.exitOnNodeStartupFailure")).willReturn(false);
-		given(ctx.nodeAccount()).willReturn(null);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verify(systemExits, never()).fail(1);
+	@AfterEach
+	public void cleanup() {
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
 	}
 
 	@Test
@@ -205,6 +213,42 @@ public class ServicesMainTest {
 	}
 
 	@Test
+	public void exitsOnApplicationPropertiesLoading() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).loadApplicationProperties();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnAddressBookCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemFilesManager).createAddressBookIfMissing();
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
+	public void exitsOnCreationFailure() {
+		willThrow(IllegalStateException.class)
+				.given(systemAccountsCreator).ensureSystemAccounts(any(), any());
+
+		// when:
+		subject.init(null, new NodeId(false, NODE_ID));
+
+		// then:
+		verify(systemExits).fail(1);
+	}
+
+	@Test
 	public void initializesSanelyGivenPreconditions() {
 		// given:
 		InOrder inOrder = inOrder(
@@ -222,16 +266,19 @@ public class ServicesMainTest {
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		inOrder.verify(platform).addSignedStateListener(any());
+		inOrder.verify(platform).addSignedStateListener(any(IssListener.class));
 		inOrder.verify(propertySources).assertSourcesArePresent();
 		inOrder.verify(platform).setSleepAfterSync(0L);
 		inOrder.verify(stateMigrations).runAllFor(ctx);
+		inOrder.verify(recordStreamThread).start();
 		inOrder.verify(ledgerValidator).assertIdsAreValid(accounts);
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
-		inOrder.verify(recordStreamThread).start();
-		inOrder.verify(recordsHistorian).reviewExistingRecords(33L);
+		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
 		inOrder.verify(propertySanitizer).sanitize(propertySources);
+
+		// cleanup:
+		TimerUtils.stopStatsDumpTimer();
 	}
 
 	@Test
@@ -329,9 +376,7 @@ public class ServicesMainTest {
 	}
 	
 	@Test
-	public void managesSystemFiles() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemFilesOnStartup")).willReturn(true);
-
+	public void managesSystemFiles() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -346,30 +391,16 @@ public class ServicesMainTest {
 
 	@Test
 	public void createsSystemAccountsIfRequested() throws Exception {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
-
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
 		// then:
-		verify(systemAccountsCreator).createSystemAccounts(accounts, addressBook);
-		verify(pause).forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
-	}
-
-	@Test
-	public void skipsSystemAccountCreationIfNotRequested() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(false);
-
-		// when:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// then:
-		verifyNoInteractions(systemAccountsCreator);
+		verify(systemAccountsCreator).ensureSystemAccounts(backingAccounts, addressBook);
+		verify(pause).forMs(ServicesMain.SUGGESTED_POST_CREATION_PAUSE_MS);
 	}
 
 	@Test
 	public void rethrowsAccountsCreationFailureAsIse() {
-		given(properties.getBooleanProperty("hedera.createSystemAccountsOnStartup")).willReturn(true);
 		given(ctx.systemAccountsCreator()).willReturn(null);
 
 		// when:
@@ -444,6 +475,40 @@ public class ServicesMainTest {
 		// then:
 		verify(platformStatus).set(newStatus);
 		verify(recordStream).setInFreeze(false);
+	}
+
+	@Test
+	public void doesNotPrintHashesIfNotInMaintenance() {
+		// setup:
+		subject.ctx = ctx;
+		var signedState = mock(ServicesState.class);
+		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.DISCONNECTED);
+		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+
+		// when:
+		subject.newSignedState(signedState, Instant.now(), 1L);
+
+		// then:
+		verify(signedState, never()).printHashes();
+	}
+
+	@Test
+	public void onlyPrintsHashesIfInMaintenance() {
+		// setup:
+		subject.ctx = ctx;
+		var signedState = mock(ServicesState.class);
+		var currentPlatformStatus = mock(CurrentPlatformStatus.class);
+
+		given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
+		given(ctx.platformStatus()).willReturn(currentPlatformStatus);
+
+		// when:
+		subject.newSignedState(signedState, Instant.now(), 1L);
+
+		// then:
+		verify(signedState).printHashes();
 	}
 
 	@Test
@@ -527,211 +592,5 @@ public class ServicesMainTest {
 	public void returnsAppState() {
 		// expect:
 		assertTrue(subject.newState() instanceof ServicesState);
-	}
-
-	@Test
-	public void doesntDumpIfOngoingIss() throws Exception {
-		// setup:
-		byte[] topicRootHash = "sdfgf".getBytes();
-		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
-		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
-		String acHashHex = Hex.encodeHexString(accountsRootHash);
-		var round = 1_234L;
-		var mockIssInfo = mock(IssEventInfo.class);
-		NodeId self = new NodeId(false, NODE_ID);
-		NodeId other = new NodeId(false, OTHER_NODE_ID);
-		byte[] hash = "xyz".getBytes();
-		String hashHex = Hex.encodeHexString(hash);
-		byte[] sig = "zyx".getBytes();
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-
-		given(mockIssInfo.status()).willReturn(IssEventStatus.NO_KNOWN_ISS);
-		given(mockIssInfo.shouldDumpThisRound()).willReturn(false);
-		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
-		// and:
-		localSignedState = mock(ServicesState.class);
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				platform,
-				addressBook,
-				localSignedState,
-				null,
-				self,
-				other,
-				round,
-				consensusTime,
-				1_234_567L,
-				sig,
-				hash);
-
-		// then:
-		verify(accounts, never()).copyTo(any());
-		verify(storage, never()).copyTo(any());
-		verify(topics, never()).copyTo(any());
-	}
-
-	@Test
-	public void logsExpectedIssInfo() throws Exception {
-		// setup:
-		var round = 1_234L;
-		byte[] topicRootHash = "sdfgf".getBytes();
-		String trHashHex = Hex.encodeHexString(topicRootHash);
-		byte[] storageRootHash = "fdsa".getBytes();
-		String srHashHex = Hex.encodeHexString(storageRootHash);
-		byte[] accountsRootHash = "asdf".getBytes();
-		String acHashHex = Hex.encodeHexString(accountsRootHash);
-		// and:
-		byte[] hash = "xyz".getBytes();
-		String hashHex = Hex.encodeHexString(hash);
-		byte[] sig = "zyx".getBytes();
-		String sigHex = Hex.encodeHexString(sig);
-		// and:
-		var mockIssInfo = mock(IssEventInfo.class);
-		given(mockIssInfo.shouldDumpThisRound()).willReturn(true);
-		given(ctx.issEventInfo()).willReturn(mockIssInfo);
-		mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
-		localSignedState = mock(ServicesState.class);
-		NodeId self = new NodeId(false, NODE_ID);
-		NodeId other = new NodeId(false, OTHER_NODE_ID);
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-		// and:
-		FCDataOutputStream foutAccounts = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutStorage = mock(FCDataOutputStream.class);
-		FCDataOutputStream foutTopics = mock(FCDataOutputStream.class);
-		Function<String, FCDataOutputStream> supplier = (Function<String, FCDataOutputStream>)mock(Function.class);
-		subject.foutSupplier = supplier;
-		// and:
-		InOrder inOrder = inOrder(accounts, storage, topics, foutAccounts, foutStorage, foutTopics, mockIssInfo);
-
-		given(accounts.getRootHash()).willReturn(accountsRootHash);
-		given(storage.getRootHash()).willReturn(storageRootHash);
-		given(topics.getRootHash()).willReturn(topicRootHash);
-		// and:
-		given(localSignedState.getAccountMap()).willReturn(accounts);
-		given(localSignedState.getStorageMap()).willReturn(storage);
-		given(localSignedState.getTopicsMap()).willReturn(topics);
-		// and:
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "accounts", round)))
-				.willReturn(foutAccounts);
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "storage", round)))
-				.willReturn(foutStorage);
-		given(supplier.apply(
-				String.format(ServicesMain.FC_DUMP_LOC_TPL,
-						subject.getClass().getName(), self.getId(), "topics", round)))
-				.willReturn(foutTopics);
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				platform,
-				addressBook,
-				localSignedState,
-				null,
-				self,
-				other,
-				round,
-				consensusTime,
-				1_234_567L,
-				sig,
-				hash);
-
-		// then:
-		String msg = String.format(
-				ServicesMain.ISS_ERROR_MSG_PATTERN,
-				round, NODE_ID, OTHER_NODE_ID, sigHex, hashHex, acHashHex, srHashHex, trHashHex);
-		verify(mockLog).error(msg);
-		// and
-		inOrder.verify(mockIssInfo).alert(consensusTime);
-		// and:
-		inOrder.verify(accounts).copyTo(foutAccounts);
-		inOrder.verify(accounts).copyToExtra(foutAccounts);
-		inOrder.verify(foutAccounts).close();
-		inOrder.verify(storage).copyTo(foutStorage);
-		inOrder.verify(storage).copyToExtra(foutStorage);
-		inOrder.verify(foutStorage).close();
-		inOrder.verify(topics).copyTo(foutTopics);
-		inOrder.verify(topics).copyToExtra(foutTopics);
-		inOrder.verify(foutTopics).close();
-	}
-
-	@Test
-	public void foutSupplierWorks() throws Exception {
-		// given:
-		var okPath = "src/test/resources/tmp.nothing";
-
-		// when:
-		var fout = subject.foutSupplier.apply(okPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
-		(new File(okPath)).delete();
-	}
-
-	@Test
-	public void foutSupplierDoesntBlowUp() throws Exception {
-		// given:
-		var badPath = "this/path/does/not/exist";
-
-		// when:
-		var fout = subject.foutSupplier.apply(badPath);
-		// and:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
-	}
-
-	@Test
-	public void logsFallbackIssInfoOnException() {
-		// setup:
-		mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
-		// and:
-		ArgumentCaptor<InvalidSignedStateListener> captor = ArgumentCaptor.forClass(InvalidSignedStateListener.class);
-		Instant consensusTime = Instant.now();
-
-		// and:
-		subject.init(null, new NodeId(false, NODE_ID));
-
-		// when:
-		verify(platform).addSignedStateListener(captor.capture());
-		// and:
-		captor.getValue().notifyError(
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				1,
-				null,
-				2,
-				null,
-				null);
-
-		// then:
-		String msg = String.format(ServicesMain.ISS_FALLBACK_ERROR_MSG_PATTERN, 1, "null", "null");
-		verify(mockLog).error((String)argThat(msg::equals), any(Exception.class));
 	}
 }

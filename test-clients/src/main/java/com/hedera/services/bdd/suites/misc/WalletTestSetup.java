@@ -20,22 +20,31 @@ package com.hedera.services.bdd.suites.misc;
  * ‍
  */
 
+import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.SplittableRandom;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class WalletTestSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(WalletTestSetup.class);
@@ -55,10 +64,22 @@ public class WalletTestSetup extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createDeterministicWalletForRecovery(),
+//						createDeterministicWalletForRecovery(),
 //						reviewDeterministicWallet(),
 //						fundDeterministicWallet(),
+						mnemonicToPem(),
 				}
+		);
+	}
+
+	private HapiApiSpec mnemonicToPem() {
+		return defaultHapiSpec("MnemonicToPem").given(
+				keyFromMnemonic("fm", mnemonic)
+		).when( ).then(
+				withOpContext((spec, opLog) -> {
+					KeyFactory.PEM_PASSPHRASE = "guessAgain";
+					spec.keys().exportSimpleKey(String.format("pretend-genesis.pem"), "fm");
+				})
 		);
 	}
 

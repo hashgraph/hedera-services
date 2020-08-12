@@ -20,10 +20,10 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -51,21 +51,21 @@ class QueryFeeCheckTest {
 	AccountID aNode = asAccount("0.0.3");
 	AccountID aBroke = asAccount("0.0.13257");
 	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L;
-	HederaAccount broke, rich;
-	MapKey missingKey = MapKey.getMapKey(aMissing);
-	MapKey richKey = MapKey.getMapKey(aRich);
-	MapKey brokeKey = MapKey.getMapKey(aBroke);
-	MapKey nodeKey = MapKey.getMapKey(aNode);
+	MerkleAccount broke, rich;
+	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
+	MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
+	MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
+	MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
 
-	FCMap<MapKey, HederaAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	QueryFeeCheck subject;
 
 	@BeforeEach
 	private void setup() {
-		broke = mock(HederaAccount.class);
+		broke = mock(MerkleAccount.class);
 		given(broke.getBalance()).willReturn(aLittle);
-		rich = mock(HederaAccount.class);
+		rich = mock(MerkleAccount.class);
 		given(rich.getBalance()).willReturn(aLot);
 
 		accounts = mock(FCMap.class);
@@ -77,7 +77,7 @@ class QueryFeeCheckTest {
 		given(accounts.containsKey(argThat(brokeKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(nodeKey::equals))).willReturn(true);
 
-		subject = new QueryFeeCheck(accounts);
+		subject = new QueryFeeCheck(() -> accounts);
 	}
 
 	@Test

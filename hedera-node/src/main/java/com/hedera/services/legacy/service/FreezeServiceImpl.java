@@ -9,9 +9,9 @@ package com.hedera.services.legacy.service;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Freeze Service Implementation
+ *
  * @author Qian
  */
 
@@ -74,8 +75,6 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 
 	@Override
 	public void freeze(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-		log.debug("In freeze: request = " + request.toString());
-
 		// Check if fee payer is 0.0.55 is included in validateApiPermission() in this step
 		TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
 
@@ -99,20 +98,12 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 				logErrorAndResponse(errorMsg, precheckResult, log, responseObserver);
 				return;
 			}
-
-			com.swirlds.common.Transaction transaction = new com.swirlds.common.Transaction(request.toByteArray());
-			boolean created = platform.createTransaction(transaction);
-			if (!created) {
+			if (!txHandler.submitTransaction(platform, request, transactionBody.getTransactionID())) {
 				TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
 				return;
 			}
-
-			txHandler.addReceiptEntry(transactionBody.getTransactionID());
 			transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
 		} catch (InvalidProtocolBufferException ex) {
-			String errorMsg = "Invalid transaction body: " + ResponseCodeEnum.INVALID_TRANSACTION_BODY.name();
-		      if (log.isDebugEnabled())
-		        log.debug(errorMsg);
 			transactionResponse(responseObserver,
 					new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY));
 			return;
@@ -121,8 +112,9 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 
 	public void logErrorAndResponse(String errorMsg, TxnValidityAndFeeReq precheckResult,
 			Logger log, StreamObserver<TransactionResponse> responseObserver) {
-      if (log.isDebugEnabled())
-        log.debug(errorMsg);
+		if (log.isDebugEnabled()) {
+			log.debug(errorMsg);
+		}
 		transactionResponse(responseObserver, precheckResult);
 	}
 

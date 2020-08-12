@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,11 @@ package com.hedera.services.legacy.handler;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -54,17 +58,14 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
-import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.logic.ProtectedEntities;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
@@ -77,14 +78,13 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -95,7 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 /**
  * @author Akshay
@@ -107,24 +106,25 @@ public class TransactionHandler {
   public static final Predicate<AccountID> IS_THROTTLE_EXEMPT =
           id -> id.getAccountNum() >= 1 && id.getAccountNum() <= 100L;
 
-  private Set<Long> SUPERUSER_ACCOUNTS = Set.of(
-          PropertiesLoader.getGenesisAccountNum(),
-          PropertiesLoader.getMasterAccountNum());
   private EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES = EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
 
   private static final Logger log = LogManager.getLogger(TransactionHandler.class);
   private RecordCache recordCache;
   private PrecheckVerifier precheckVerifier;
-  private FCMap<MapKey, HederaAccount> accounts;
+  private Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
   private FunctionalityThrottling throttling;
   private AccountID nodeAccount;
   private TransactionThrottling txnThrottling;
   private UsagePricesProvider usagePrices;
   private HbarCentExchange exchange;
   private FeeCalculator fees;
+  private FeeExemptions exemptions;
   private Supplier<StateView> stateView;
   private BasicPrecheck basicPrecheck;
   private QueryFeeCheck queryFeeCheck;
+  private AccountNumbers accountNums;
+  private HederaNodeStats stats;
+  private SystemOpPolicies systemOpPolicies;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -137,7 +137,7 @@ public class TransactionHandler {
 
   public TransactionHandler(
           RecordCache recordCache,
-          FCMap<MapKey, HederaAccount> accounts,
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           PrecheckVerifier precheckVerifier,
           UsagePricesProvider usagePrices,
@@ -145,7 +145,10 @@ public class TransactionHandler {
           FeeCalculator fees,
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
-          QueryFeeCheck queryFeeCheck
+          QueryFeeCheck queryFeeCheck,
+          AccountNumbers accountNums,
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -157,6 +160,9 @@ public class TransactionHandler {
     this.precheckVerifier = precheckVerifier;
     this.basicPrecheck = basicPrecheck;
     this.queryFeeCheck = queryFeeCheck;
+    this.accountNums = accountNums;
+    this.systemOpPolicies = systemOpPolicies;
+    this.exemptions = exemptions;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -164,18 +170,22 @@ public class TransactionHandler {
   public TransactionHandler(
           RecordCache recordCache,
           PrecheckVerifier verifier,
-          FCMap<MapKey, HederaAccount> accounts,
-          AccountID nodeAccount
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+          AccountID nodeAccount,
+          AccountNumbers accountNums,
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
-            null, null, null, null);
+            null, null, null, null,
+            accountNums, null, systemOpPolicies, exemptions);
   }
 
   public TransactionHandler(
           RecordCache recordCache,
           PrecheckVerifier precheckVerifier,
-          FCMap<MapKey, HederaAccount> accounts,
+          Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
           AccountID nodeAccount,
           TransactionThrottling txnThrottling,
           UsagePricesProvider usagePrices,
@@ -184,7 +194,11 @@ public class TransactionHandler {
           Supplier<StateView> stateView,
           BasicPrecheck basicPrecheck,
           QueryFeeCheck queryFeeCheck,
-          FunctionalityThrottling throttling
+          FunctionalityThrottling throttling,
+          AccountNumbers accountNums,
+          HederaNodeStats stats,
+          SystemOpPolicies systemOpPolicies,
+          FeeExemptions exemptions
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -198,6 +212,10 @@ public class TransactionHandler {
     this.usagePrices = usagePrices;
     this.queryFeeCheck = queryFeeCheck;
     this.throttling = throttling;
+    this.accountNums = accountNums;
+    this.stats = stats;
+    this.systemOpPolicies = systemOpPolicies;
+    this.exemptions = exemptions;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -240,12 +258,8 @@ public class TransactionHandler {
   }
 
   public boolean isAccountExist(AccountID acctId) {
-    MapKey mapKey = new MapKey(acctId.getShardNum(), acctId.getRealmNum(), acctId.getAccountNum());
-    return accounts.get(mapKey) != null;
-  }
-
-  public void addReceiptEntry(TransactionID txnId) {
-    recordCache.addPreConsensus(txnId);
+    MerkleEntityId merkleEntityId = new MerkleEntityId(acctId.getShardNum(), acctId.getRealmNum(), acctId.getAccountNum());
+    return accounts.get().get(merkleEntityId) != null;
   }
 
   /**
@@ -326,7 +340,7 @@ public class TransactionHandler {
     var permissionKey = permissionFileKeyForTxn(txn);
     if (!StringUtils.isEmpty(permissionKey)) {
       var payer = txn.getTransactionID().getAccountID();
-      if (SUPERUSER_ACCOUNTS.contains(payer.getAccountNum())) {
+      if (accountNums.isSuperuser(payer.getAccountNum())) {
         return OK;
       } else {
         PermissionedAccountsRange accountRange =  PropertiesLoader.getApiPermission().get(permissionKey);
@@ -338,23 +352,26 @@ public class TransactionHandler {
     return NOT_SUPPORTED;
   }
 
-  private TxnValidityAndFeeReq validateTransactionFeeCoverage(Transaction transaction, TransactionBody trBody) {
+  private TxnValidityAndFeeReq validateTransactionFeeCoverage(
+          TransactionBody txn,
+          SignedTxnAccessor accessor
+  ) {
     ResponseCodeEnum returnCode = OK;
-    if (ProtectedEntities.isFree(trBody)) {
+    if (exemptions.hasExemptPayer(accessor)) {
       return new TxnValidityAndFeeReq(returnCode);
     }
 
     long fee = 0L;
     long feeRequired = 0L;
-    if (trBody.getTransactionID().hasAccountID()) {
-      AccountID payerAccount = trBody.getTransactionID().getAccountID();
+    if (txn.getTransactionID().hasAccountID()) {
+      AccountID payerAccount = txn.getTransactionID().getAccountID();
       if (isAccountExist(payerAccount)) {
-        Long payerAccountBalance = Optional.ofNullable(accounts.get(getMapKey(payerAccount)))
-                .map(HederaAccount::getBalance)
+        Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
+                .map(MerkleAccount::getBalance)
                 .orElse(null);
-        long suppliedFee = trBody.getTransactionFee();
-        long payerChangeDuringTxn = !trBody.hasCryptoTransfer() ? 0L :
-            trBody.getCryptoTransfer().getTransfers().getAccountAmountsList()
+        long suppliedFee = txn.getTransactionFee();
+        long payerChangeDuringTxn = !txn.hasCryptoTransfer() ? 0L :
+            txn.getCryptoTransfer().getTransfers().getAccountAmountsList()
                     .stream()
                     .filter(aa -> aa.getAccountID().equals(payerAccount))
                     .mapToLong(AccountAmount::getAmount)
@@ -365,9 +382,8 @@ public class TransactionHandler {
 
         if (returnCode == OK) {
           try {
-            SignedTxnAccessor accessor = new SignedTxnAccessor(transaction);
-            JKey payerKey = accounts.get(getMapKey(payerAccount)).getAccountKeys();
-            Timestamp at = trBody.getTransactionID().getTransactionValidStart();
+            JKey payerKey = accounts.get().get(fromAccountId(payerAccount)).getKey();
+            Timestamp at = txn.getTransactionID().getTransactionValidStart();
             FeeObject txnFee = fees.estimateFee(accessor, payerKey, stateView.get(), at);
             fee = txnFee.getNetworkFee() + txnFee.getNodeFee() + txnFee.getServiceFee();
           } catch (Exception e) {
@@ -381,16 +397,16 @@ public class TransactionHandler {
             feeRequired = fee;
           } else if (payerAccountBalance < fee) {
             returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-          } else if (trBody.hasContractCreateInstance()) {
-            ContractCreateTransactionBody createBody = trBody.getContractCreateInstance();
+          } else if (txn.hasContractCreateInstance()) {
+            ContractCreateTransactionBody createBody = txn.getContractCreateInstance();
             long gasInTransacton = createBody.getGas();
             long gasCost = gasInTransacton * getGasPrice(HederaFunctionality.ContractCreate);
             long balance = createBody.getInitialBalance();
             if (payerAccountBalance < (fee + gasCost + balance)) {
               returnCode = ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
             }
-          } else if (trBody.hasContractCall()) {
-            ContractCallTransactionBody callBody = trBody.getContractCall();
+          } else if (txn.hasContractCall()) {
+            ContractCallTransactionBody callBody = txn.getContractCall();
             long gasCost = callBody.getGas() * getGasPrice(HederaFunctionality.ContractCall);
             long amount = callBody.getAmount();
             if (payerAccountBalance < (fee + gasCost + amount)) {
@@ -438,10 +454,12 @@ public class TransactionHandler {
 
     ResponseCodeEnum returnCode = OK;
     long feeRequired = 0L;
+    SignedTxnAccessor accessor = null;
     TransactionBody txn = TransactionBody.getDefaultInstance();
     try {
-      txn = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
-    } catch (Exception e1) {
+      accessor = new SignedTxnAccessor(transaction);
+      txn = accessor.getTxn();
+    } catch (InvalidProtocolBufferException e1) {
       returnCode = INVALID_TRANSACTION_BODY;
     }
 
@@ -458,7 +476,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-        var rationalStatus = PureValidation.queryableAccountStatus(txn.getTransactionID().getAccountID(), accounts);
+        var rationalStatus = PureValidation.queryableAccountStatus(txn.getTransactionID().getAccountID(), accounts.get());
         returnCode = (rationalStatus == INVALID_ACCOUNT_ID) ? PAYER_ACCOUNT_NOT_FOUND : OK;
     }
 
@@ -495,13 +513,13 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      returnCode = ProtectedEntities.validateProtectedEntities(txn);
+      returnCode = systemOpPolicies.check(accessor).asStatus();
     }
 
     if (returnCode == OK) {
-      TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(transaction, txn);
+      TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(txn, accessor);
       returnCode = localResp.getValidity();
-      feeRequired = localResp.getFeeRequired();
+      feeRequired = localResp.getRequiredFee();
     }
 
     if (!(isQueryPayment && txn.hasCryptoTransfer()) && returnCode == OK) {
@@ -558,7 +576,7 @@ public class TransactionHandler {
     var queryName = permissionFileKeyForQuery(query);
     if (!StringUtils.isEmpty(queryName)) {
       AccountID payer = body.getTransactionID().getAccountID();
-      if (SUPERUSER_ACCOUNTS.contains(payer.getAccountNum())) {
+      if (accountNums.isSuperuser(payer.getAccountNum())) {
         permissionStatus = OK;
       } else {
         PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(queryName);
@@ -582,9 +600,9 @@ public class TransactionHandler {
   }
 
   @SuppressWarnings("unchecked")
-  public List<JTransactionRecord> getAllTransactionRecordFCM(MapKey mapKey) {
+  public List<ExpirableTxnRecord> getAllTransactionRecordFCM(MerkleEntityId merkleEntityId) {
     try {
-      HederaAccount account = accounts.get(mapKey);
+      MerkleAccount account = accounts.get().get(merkleEntityId);
       if (account != null) {
         return account.recordList();
       } else {
@@ -598,75 +616,21 @@ public class TransactionHandler {
 
   /**
    * Submits transaction to platform.
+   * Returns whether a platform transaction was created successfully.
+   * Update stat when a platform transaction was NOT created.
    *
    * @param request       tx to be submitted
    * @param txnId request tx id
-   * @throws PlatformTransactionCreationException thrown when transaction not created by platform
-   *                                              due to either large backlog or message size
-   *                                              exceeded transactionMaxBytes
+   *
    */
-  public void submitTransaction(Platform platform, Transaction request, TransactionID txnId)
-      throws PlatformTransactionCreationException, InvalidProtocolBufferException {
+  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
     byte[] transaction = request.toByteArray();
-    boolean status = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (status) {
+    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
+    if (created) {
       recordCache.addPreConsensus(txnId);
     } else {
-      throw new PlatformTransactionCreationException(
-          "platform tx not created: tx serialized size = " + transaction.length + ", txShortInfo = "
-              + com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShort(request));
+      stats.platformTxnNotCreated();
     }
-  }
-
-  /**
-   * Validates Account IDs and Total Balance in Account Map on Start Up .
-   * If it finds any invalid Account ID  it stops checking further and returns Invalid Account ID response code.
-   * If all the Account IDs are valid, it checks the total balance. If its not equal to expected balance, it
-   * returns Invalid Balance response code.
-   * If all is well, it returns OK response code.
-   *
-   * @param accountMap
-   * @return
-   */
-  public static ResponseCodeEnum validateAccountIDAndTotalBalInMap(FCMap<MapKey, HederaAccount> accountMap) {
-    boolean result = true;
-    MapKey mapKey = null;
-    long totalBalance =  0;
-    ResponseCodeEnum response = OK;
-    for (Map.Entry<MapKey, HederaAccount> account : accountMap.entrySet()) {
-      mapKey = account.getKey();
-      result = validateAccountID(mapKey);
-      HederaAccount currMv = account.getValue();
-      totalBalance += currMv.getBalance();
-      if (!result) {
-    	response = ResponseCodeEnum.INVALID_ACCOUNT_ID;
-        break;
-      }
-    }
-    if(response == OK) {
-    	if(totalBalance != PropertiesLoader.getInitialGenesisCoins()) {
-    		response = ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID;
-    	}
-    }
-    return response;
-  }
-
-  public static boolean validateAccountID(MapKey mapKey) {
-    return validateAccountID(mapKey.getAccountNum(), mapKey.getRealmNum(), mapKey.getShardNum());
-  }
-
-  public static boolean validateAccountID(long accountNum, long realmNum, long shardNum) {
-    if (accountNum >= PropertiesLoader.getConfigAccountNum()
-        || accountNum <= ApplicationConstants.ZERO
-        || realmNum != PropertiesLoader.getConfigRealmNum()
-        || shardNum != PropertiesLoader.getConfigShardNum()) {
-      log.error("Account Map contains Invalid AccountID .. please check !"
-          + " AccountNum " + accountNum
-          + " Realm Num " + realmNum
-          + " Shard Num " + shardNum);
-      return false;
-    } else {
-      return true;
-    }
+    return created;
   }
 }

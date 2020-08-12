@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.CryptoHandlerTestHelper;
 import com.hedera.services.legacy.util.ComplexKeyManager;
@@ -59,8 +58,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -78,7 +77,7 @@ public class CryptoTxRecordTransferListTest {
 	private AccountID transferAccountID;
 	FCStorageWrapper storageWrapper;
 	TransactionHandler transactionHandler = null;
-	FCMap<MapKey, HederaAccount> fcMap = null;
+	FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
 	private long LARGE_BALANCE = 1000000000000000l;
 	AccountID feeAccount;
 	List<AccountAmount> accountAmountsList;
@@ -92,7 +91,7 @@ public class CryptoTxRecordTransferListTest {
 		nodeAccount = 3l;
 		payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
-		fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+		fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
 		feeAccount = RequestBuilder.getAccountIdBuild(98l, 0l, 0l);
 		accountAmountsList = new LinkedList<>();
 		hederaFunc = HederaFunctionality.CryptoTransfer;
@@ -235,25 +234,14 @@ public class CryptoTxRecordTransferListTest {
 		
 
 	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {
-		MapKey mk = new MapKey();
-		mk.setAccountNum(payerAccount.getAccountNum());
-		mk.setRealmNum(0);
-		HederaAccount mv = new HederaAccount();
+		MerkleEntityId mk = new MerkleEntityId();
+		mk.setNum(payerAccount.getAccountNum());
+		mk.setRealm(0);
+		MerkleAccount mv = new MerkleAccount();
 		mv.setBalance(balance);
 		JKey jkey = JKey.mapKey(key);
-		mv.setAccountKeys(jkey);
+		mv.setKey(jkey);
 		fcMap.put(mk, mv);
 		ComplexKeyManager.setAccountKey(payerAccount, key);
 	}
-
-	private ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-		int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
-		return RequestBuilder.getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
-				currentHbarEquivalent, 15, expiryTime);
-	}
-
-
-
 }

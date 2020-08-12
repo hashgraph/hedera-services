@@ -23,27 +23,27 @@ package com.hedera.services.ledger.accounts;
 import java.util.Map;
 
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 
 public class HederaAccountCustomizer extends
-		AccountCustomizer<AccountID, HederaAccount, MapValueProperty, HederaAccountCustomizer> {
-	private static final Map<Option, MapValueProperty> OPTION_PROPERTIES = Map.of(
-			Option.KEY, MapValueProperty.KEY,
-			Option.MEMO, MapValueProperty.MEMO,
-			Option.PROXY, MapValueProperty.PROXY,
-			Option.EXPIRY, MapValueProperty.EXPIRY,
-			Option.IS_DELETED, MapValueProperty.IS_DELETED,
-			Option.AUTO_RENEW_PERIOD, MapValueProperty.AUTO_RENEW_PERIOD,
-			Option.IS_SMART_CONTRACT, MapValueProperty.IS_SMART_CONTRACT,
-			Option.IS_RECEIVER_SIG_REQUIRED, MapValueProperty.IS_RECEIVER_SIG_REQUIRED,
-			Option.FUNDS_SENT_RECORD_THRESHOLD, MapValueProperty.FUNDS_SENT_RECORD_THRESHOLD,
-			Option.FUNDS_RECEIVED_RECORD_THRESHOLD, MapValueProperty.FUNDS_RECEIVED_RECORD_THRESHOLD
+		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {
+	private static final Map<Option, AccountProperty> OPTION_PROPERTIES = Map.of(
+			Option.KEY, AccountProperty.KEY,
+			Option.MEMO, AccountProperty.MEMO,
+			Option.PROXY, AccountProperty.PROXY,
+			Option.EXPIRY, AccountProperty.EXPIRY,
+			Option.IS_DELETED, AccountProperty.IS_DELETED,
+			Option.AUTO_RENEW_PERIOD, AccountProperty.AUTO_RENEW_PERIOD,
+			Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT,
+			Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED,
+			Option.FUNDS_SENT_RECORD_THRESHOLD, AccountProperty.FUNDS_SENT_RECORD_THRESHOLD,
+			Option.FUNDS_RECEIVED_RECORD_THRESHOLD, AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD
 	);
 
 	public HederaAccountCustomizer() {
-		super(MapValueProperty.class, OPTION_PROPERTIES, new ChangeSummaryManager<>());
+		super(AccountProperty.class, OPTION_PROPERTIES, new ChangeSummaryManager<>());
 	}
 
 	@Override

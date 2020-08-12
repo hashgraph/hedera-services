@@ -21,8 +21,8 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -42,7 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -61,6 +61,7 @@ import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,6 +84,7 @@ public class AwareTransactionContextTest {
 	private ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
 	private AccountID node = asAccount("0.0.3");
+	private AccountID anotherNodeAccount = asAccount("0.0.4");
 	private AccountID funding = asAccount("0.0.98");
 	private AccountID created = asAccount("1.0.2");
 	private AccountID another = asAccount("1.0.300");
@@ -95,9 +97,10 @@ public class AwareTransactionContextTest {
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private AccountID nodeAccount = asAccount("0.0.3");
 	private Address address;
+	private Address anotherAddress;
 	private AddressBook book;
 	private HbarCentExchange exchange;
-	private HederaNodeContext ctx;
+	private ServicesContext ctx;
 	private PlatformTxnAccessor accessor;
 	private AwareTransactionContext subject;
 	private Transaction signedTxn;
@@ -116,8 +119,11 @@ public class AwareTransactionContextTest {
 	private void setup() {
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn(asAccountString(nodeAccount));
+		anotherAddress = mock(Address.class);
+		given(anotherAddress.getMemo()).willReturn(asAccountString(anotherNodeAccount));
 		book = mock(AddressBook.class);
 		given(book.getAddress(memberId)).willReturn(address);
+		given(book.getAddress(anotherMemberId)).willReturn(anotherAddress);
 
 		ledger = mock(HederaLedger.class);
 		given(ledger.netTransfersInTxn()).willReturn(transfers);
@@ -128,12 +134,12 @@ public class AwareTransactionContextTest {
 		itemizableFeeCharging = mock(ItemizableFeeCharging.class);
 
 		payerKey = mock(JKey.class);
-		HederaAccount payerAccount = mock(HederaAccount.class);
-		given(payerAccount.getAccountKeys()).willReturn(payerKey);
-		FCMap<MapKey, HederaAccount> accounts = mock(FCMap.class);
-		given(accounts.get(MapKey.getMapKey(payer))).willReturn(payerAccount);
+		MerkleAccount payerAccount = mock(MerkleAccount.class);
+		given(payerAccount.getKey()).willReturn(payerKey);
+		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
+		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
 
-		ctx = mock(HederaNodeContext.class);
+		ctx = mock(ServicesContext.class);
 		given(ctx.exchange()).willReturn(exchange);
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.accounts()).willReturn(accounts);
@@ -153,6 +159,39 @@ public class AwareTransactionContextTest {
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
+	}
+
+	@Test
+	public void throwsOnUpdateIfNoRecordSoFar() {
+		// expect:
+		assertThrows(
+				IllegalStateException.class,
+				() -> subject.updatedRecordGiven(withAdjustments(payer, -100, funding, 50, another, 50)));
+	}
+
+	@Test
+	public void updatesAsExpectedIfRecordSoFar() {
+		// setup:
+		subject.recordSoFar = mock(TransactionRecord.Builder.class);
+		subject.hasComputedRecordSoFar = true;
+		// and:
+		var expected = mock(TransactionRecord.class);
+
+		// given:
+		given(itemizableFeeCharging.totalNonThresholdFeesChargedToPayer()).willReturn(123L);
+		var xfers = withAdjustments(payer, -100, funding, 50, another, 50);
+		// and:
+		given(subject.recordSoFar.build()).willReturn(expected);
+		given(subject.recordSoFar.setTransferList(xfers)).willReturn(subject.recordSoFar);
+
+		// when:
+		var actual = subject.updatedRecordGiven(xfers);
+
+		// then:
+		verify(subject.recordSoFar).setTransferList(xfers);
+		verify(subject.recordSoFar).setTransactionFee(123L);
+		// and:
+		assertSame(expected, actual);
 	}
 
 	@Test
@@ -192,25 +231,42 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsDefaultAccountForUnknownMember() {
+	public void failsHardForMissingMemberAccount() {
 		given(book.getAddress(memberId)).willReturn(null);
 
 		// expect:
-		assertEquals(AccountID.getDefaultInstance(), subject.submittingNodeAccount());
+		assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
 	}
 
 	@Test
-	public void resetsEverything() {
+	public void resetsRecordSoFar() {
+		// given:
+		subject.recordSoFar = mock(TransactionRecord.Builder.class);
+
 		// when:
+		subject.resetFor(accessor, now, anotherMemberId);
+
+		// then:
+		verify(subject.recordSoFar).clear();
+	}
+
+	@Test
+	public void resetsEverythingElse() {
+		// given:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(ResponseCodeEnum.SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
+		subject.hasComputedRecordSoFar = true;
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
+
+		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
+		assertFalse(subject.hasComputedRecordSoFar);
+		// and:
 		record = subject.recordSoFar();
 
 		// then:
@@ -219,10 +275,26 @@ public class AwareTransactionContextTest {
 		assertEquals(0, record.getTransactionFee());
 		assertFalse(record.hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
-		assertEquals(AccountID.getDefaultInstance(), subject.submittingNodeAccount());
+		assertTrue(subject.hasComputedRecordSoFar);
+		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:
-		verify(itemizableFeeCharging, times(2)).resetFor(accessor);
+		verify(itemizableFeeCharging).resetFor(accessor, anotherNodeAccount);
+	}
+
+	@Test
+	public void effectivePayerIsSubmittingNodeIfNotVerified() {
+		// expect:
+		assertEquals(nodeAccount, subject.effectivePayer());
+	}
+
+	@Test
+	public void effectivePayerIsActiveIfVerified() {
+		// given:
+		subject.payerSigIsKnownActive();
+
+		// expect:
+		assertEquals(payer, subject.effectivePayer());
 	}
 
 	@Test
@@ -385,7 +457,7 @@ public class AwareTransactionContextTest {
 		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
 		assertArrayEquals(runningHash, record.getReceipt().getTopicRunningHash().toByteArray());
 		assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
-		assertEquals(Topic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
+		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
 	}
 
 	@Test

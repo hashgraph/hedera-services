@@ -24,9 +24,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 
@@ -54,13 +57,23 @@ public class PropertyLoaderTest {
 	private final String API_CONFIG_FILE_PATH = "./configuration/dev/testApi.properties";
 
 	public static void initialize(String applicationPropsFilePath, String apiPropertiesFilePath) {
-			PropertiesLoader.applicationProps = new CustomProperties(applicationPropsFilePath, 1);
-			PropertiesLoader.apiProperties = new CustomProperties(apiPropertiesFilePath, 1);
+			PropertiesLoader.applicationProps = propertiesFrom(applicationPropsFilePath);
+			PropertiesLoader.apiProperties = propertiesFrom(apiPropertiesFilePath);
 			SyncPropertiesObject.loadSynchProperties(PropertiesLoader.applicationProps);
 			AsyncPropertiesObject.loadAsynchProperties(PropertiesLoader.applicationProps);
 			AsyncPropertiesObject.loadApiProperties(PropertiesLoader.apiProperties);
 			PropertiesLoader.log.info("Application Properties Populated with these values :: "+ PropertiesLoader.applicationProps.getCustomProperties());
 			PropertiesLoader.log.info("API Properties Populated with these values :: "+ PropertiesLoader.apiProperties.getCustomProperties());
+	}
+
+	private static CustomProperties propertiesFrom(String loc) {
+		var delegate = new Properties();
+		try {
+			delegate.load(Files.newInputStream(Paths.get(loc)));
+		} catch (IOException impossible) {
+			System.out.println("Sample properties file wasn't created?!");
+		}
+		return new CustomProperties(delegate);
 	}
 
 	public static void populatePropertiesWithConfigFilesPath(String applicationPropsFilePath, String apiPropertiesFilePath) {

@@ -20,8 +20,12 @@ package com.hedera.services.legacy.services.stats;
  * ‍
  */
 
+import com.hedera.services.grpc.controllers.ConsensusController;
+import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.NetworkController;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
@@ -29,6 +33,7 @@ import com.swirlds.platform.StatsSpeedometer;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,13 +45,6 @@ import org.apache.logging.log4j.Logger;
  * HederaNodeStats serves as a placeholder for all statistics in HGCApp
  */
 public class HederaNodeStats {
-	/* ---- HCS Metric Names ---- */
-	public static final String GET_TOPIC_INFO_COUNT = "getTopicInfo";
-	public static final String CREATE_TOPIC_COUNT = "createTopic";
-	public static final String UPDATE_TOPIC_COUNT = "updateTopic";
-	public static final String DELETE_TOPIC_COUNT = "deleteTopic";
-	public static final String SUBMIT_MESSAGE_COUNT = "submitMessage";
-
 	public static final String RECEIVED_SUFFIX = "Rcv";
 	public static final String SUBMITTED_SUFFIX = "Sub";
 	public static final String HANDLED_SUFFIX = "Hdl";
@@ -58,36 +56,36 @@ public class HederaNodeStats {
 	private final Logger log;
 
 	private static final List<String> consensusQueryList = List.of(
-			GET_TOPIC_INFO_COUNT
+			ConsensusController.GET_TOPIC_INFO_METRIC
 	);
 
 	private static final List<String> consensusTransactionList = List.of(
-			CREATE_TOPIC_COUNT,
-			UPDATE_TOPIC_COUNT,
-			DELETE_TOPIC_COUNT,
-			SUBMIT_MESSAGE_COUNT
+			ConsensusController.CREATE_TOPIC_METRIC,
+			ConsensusController.UPDATE_TOPIC_METRIC,
+			ConsensusController.DELETE_TOPIC_METRIC,
+			ConsensusController.SUBMIT_MESSAGE_METRIC
 	);
 
 	private static final List<String> cryptoTransactionsList = Arrays.asList(
-			"createAccount",
-			"updateAccount",
-			"cryptoTransfer",
-			"cryptoDelete",
-			"addClaim",
-			"deleteClaim"
+			CryptoController.CRYPTO_CREATE_METRIC,
+			CryptoController.CRYPTO_UPDATE_METRIC,
+			CryptoController.CRYPTO_TRANSFER_METRIC,
+			CryptoController.CRYPTO_DELETE_METRIC,
+			CryptoController.ADD_LIVE_HASH_METRIC,
+			CryptoController.DELETE_LIVE_HASH_METRIC
 	);
 	private static final List<String> networkQueriesList = Arrays.asList(
 			NetworkController.GET_VERSION_INFO_METRIC
 	);
 	private static final List<String> cryptoQueriesList = Arrays.asList(
-			"getClaim",
-			"getAccountRecords",
-			"cryptoGetBalance",
-			"getAccountInfo",
-			"getTransactionReceipts",
-			"getFastTransactionRecord",
-			"getTxRecordByTxID",
-			"getStakersByAccountID"
+			CryptoController.GET_CLAIM_METRIC,
+			CryptoController.GET_ACCOUNT_RECORDS_METRIC,
+			CryptoController.GET_ACCOUNT_BALANCE_METRIC,
+			CryptoController.GET_ACCOUNT_INFO_METRIC,
+			CryptoController.GET_RECEIPT_METRIC,
+			CryptoController.GET_FAST_RECORD_METRIC,
+			CryptoController.GET_RECORD_METRIC,
+			CryptoController.GET_STAKERS_METRIC
 	);
 	private static final List<String> fileTransactionsList = Arrays.asList(
 			FileController.CREATE_FILE_METRIC,
@@ -126,7 +124,9 @@ public class HederaNodeStats {
 
 	private StatsRunningAverage avgAcctLookupRetryAttempts;
 	private StatsRunningAverage avgAcctRetryWaitMs;
+	private StatsRunningAverage avgHdlSubMsgSize;
 	private StatsSpeedometer acctLookupRetriesPerSecond;
+	private StatsSpeedometer platformTxnNotCreatedPerSecond;
 
 	/** size of the queue from which we take records and write to RecordStream file */
 	private int recordStreamQueueSize = 0;
@@ -268,6 +268,21 @@ public class HederaNodeStats {
 				() -> avgAcctRetryWaitMs.getWeightedMean())
 		);
 
+		avgHdlSubMsgSize = new StatsRunningAverage(DEFAULT_HALF_LIFE);
+		platform.addAppStatEntry(new StatEntry(//
+				"app",//
+				"avgHdlSubMsgSize",//
+				"average size of the handled HCS submit message transaction",
+				"%,13.6f",//
+				avgHdlSubMsgSize,//
+				(h) -> {
+					avgHdlSubMsgSize.reset(h);
+					return avgHdlSubMsgSize;
+				},//
+				avgHdlSubMsgSize::reset,//
+				() -> getAvgHdlSubMsgSize())
+		);
+
 		platform.addAppStatEntry(new StatEntry(//
 				"app",//
 				"recordStreamQueueSize",//
@@ -276,7 +291,22 @@ public class HederaNodeStats {
 				null,//
 				null,//
 				null,//
-				() -> recordStreamQueueSize)
+				() -> getRecordStreamQueueSize())
+		);
+
+		platformTxnNotCreatedPerSecond = new StatsSpeedometer(DEFAULT_HALF_LIFE);
+		platform.addAppStatEntry(new StatEntry(//
+				"app",//
+				"platformTxnNotCreated/sec",//
+				"number of platform transactions not created per second",
+				"%,13.6f",//
+				platformTxnNotCreatedPerSecond,//
+				(h) -> {
+					platformTxnNotCreatedPerSecond.reset(h);
+					return platformTxnNotCreatedPerSecond;
+				},//
+				platformTxnNotCreatedPerSecond::reset,//
+				() -> getPlatformTxnNotCreatedPerSecond())
 		);
 
 		platform.appStatInit();
@@ -419,6 +449,14 @@ public class HederaNodeStats {
 		updateCountStat(transactionType, HANDLED_SUFFIX);
 	}
 
+	public void transactionHandled(TransactionBody transaction) {
+		String transactionType = MiscUtils.getTxnStat(transaction);
+		transactionHandled(transactionType);
+		if (transactionType.equals(ConsensusController.SUBMIT_MESSAGE_METRIC)) {
+			avgHdlSubMsgSize.recordValue(transaction.getSerializedSize());
+		}
+	}
+
 	public void signatureVerified(final boolean async) {
 		if (async) {
 			sigVerifyAsyncPerSecond.update(1);
@@ -435,6 +473,22 @@ public class HederaNodeStats {
 
 	public void updateRecordStreamQueueSize(int size) {
 		recordStreamQueueSize = size;
+	}
+
+	public int getRecordStreamQueueSize() {
+		return recordStreamQueueSize;
+	}
+
+	public double getAvgHdlSubMsgSize() {
+		return avgHdlSubMsgSize.getWeightedMean();
+	}
+
+	public void platformTxnNotCreated() {
+		platformTxnNotCreatedPerSecond.update(1);
+	}
+
+	public double getPlatformTxnNotCreatedPerSecond() {
+		return platformTxnNotCreatedPerSecond.getCyclesPerSecond();
 	}
 
 	/**
@@ -461,5 +515,17 @@ public class HederaNodeStats {
 		} else {
 			return stat.getCyclesPerSecond();
 		}
+	}
+
+	public String dumpHederaNodeStats() {
+		StringBuffer statsSB = new StringBuffer();
+		Iterator iterator = countStats.entrySet().iterator();
+		while(iterator.hasNext()) {
+			Map.Entry statElement = (Map.Entry)iterator.next();
+			String thisStat = String.format("%s -> %s\n", statElement.getKey(), statElement.getValue().toString());
+			statsSB.append(thisStat);
+		}
+		log.info(String.format("Current services stats: \n %s", statsSB.toString()) );
+		return statsSB.toString();
 	}
 }

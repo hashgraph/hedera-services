@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 
@@ -93,7 +92,7 @@ class GetTxnReceiptAnswerTest {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId);
 
-		given(recordCache.isReceiptPresent(validTxnId)).willReturn(false);
+		given(recordCache.getReceipt(validTxnId)).willReturn(null);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -108,7 +107,6 @@ class GetTxnReceiptAnswerTest {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
 
-		given(recordCache.isReceiptPresent(validTxnId)).willReturn(true);
 		given(recordCache.getReceipt(validTxnId)).willReturn(receipt);
 
 		// when:

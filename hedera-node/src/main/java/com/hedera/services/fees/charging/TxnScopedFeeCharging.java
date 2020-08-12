@@ -33,11 +33,11 @@ import java.util.EnumSet;
  */
 public interface TxnScopedFeeCharging extends TxnScopedFeeScreening {
 	/**
-	 * Charges the node of the in-scope txn up to suggested fees.
+	 * Charges the submitting node of the in-scope txn up to suggested fees.
 	 *
 	 * @param fees the suggested fees
 	 */
-	void chargeNodeUpTo(EnumSet<TxnFeeType> fees);
+	void chargeSubmittingNodeUpTo(EnumSet<TxnFeeType> fees);
 
 	/**
 	 * Unconditionally charges the payer of the in-scope txn the given fees.

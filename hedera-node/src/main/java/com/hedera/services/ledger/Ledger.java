@@ -76,16 +76,6 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	Object get(K id, P property);
 
 	/**
-	 * Gets the property of an account as it was last persisted to a durable
-	 * backing store.
-	 *
-	 * @param id the id of the relevant account.
-	 * @param property which property to fetch.
-	 * @return the (persisted) value of the property.
-	 */
-	Object getSaved(K id, P property);
-
-	/**
 	 * Indicates whether an account is present (in either a saved or transient
 	 * state---either is considered extant).
 	 *

@@ -48,15 +48,15 @@ public class MigrationVerification {
 	private static final Logger log = LogManager.getLogger(MigrationVerification.class);
 
 	// The file is needed for loading default key to validate account's key which are created during migration; and for signing transactions for testing after migration
-	private static final String startUpAccountFilePath = "../HapiApp2.0/data/onboard/StartUpAccount.txt";
+	private static final String startUpAccountFilePath = "../hedera-node/data/onboard/StartUpAccount.txt";
 
 	public static void main(String[] args) {
 		File updatedCsv = null;
 		File createdCsv = null;
 
 		if (args.length == 0) {
-			updatedCsv = new File("../HapiApp2.0/data/onboard/afterMigration_updated.csv");
-			createdCsv = new File("../HapiApp2.0/data/onboard/afterMigration_created.csv");
+			updatedCsv = new File("../hedera-node/data/onboard/afterMigration_updated.csv");
+			createdCsv = new File("../hedera-node/data/onboard/afterMigration_created.csv");
 		} else if (args.length == 2) {
 			updatedCsv = new File(args[0]);
 			createdCsv = new File(args[1]);

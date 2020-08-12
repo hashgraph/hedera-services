@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
@@ -33,14 +33,12 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 import java.util.Optional;
 
@@ -69,7 +67,7 @@ class GetTxnRecordResourceUsageTest {
 	RecordCache recordCache;
 	CryptoFeeBuilder usageEstimator;
 	TransactionRecord desiredRecord;
-	FCMap<MapKey, HederaAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	GetTxnRecordResourceUsage subject;
 	AnswerFunctions answerFunctions;
 
@@ -80,7 +78,7 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))

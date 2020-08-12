@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.keys.SigStyle;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -69,8 +70,8 @@ import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
 import io.grpc.StatusRuntimeException;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import static java.lang.Thread.sleep;
@@ -99,16 +100,22 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	/** if response code in the set then allow to resubmit transaction */
 	protected Optional<EnumSet<ResponseCodeEnum>> retryPrechecks = Optional.empty();
 
-	public long getSubmitTime() { return submitTime; }
+	public long getSubmitTime() {
+		return submitTime;
+	}
+
 	protected ResponseCodeEnum getExpectedStatus() {
 		return expectedStatus.orElse(SUCCESS);
 	}
+
 	protected ResponseCodeEnum getExpectedPrecheck() {
 		return expectedPrecheck.orElse(OK);
 	}
 
 	abstract protected T self();
+
 	abstract protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable;
+
 	abstract protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec);
 
 	@Override
@@ -133,10 +140,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					// do nothing just reissue rpc request
 					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
 					continue;
-				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
+				} else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("submitOp Received unexpected EOS on DATA frame from server, retry");
 					continue;
-				}else if (e.toString().contains("REFUSED_STREAM")) {
+				} else if (e.toString().contains("REFUSED_STREAM")) {
 					log.info("submitOp Received REFUSED_STREAM from server, retry");
 					continue;
 				} else {
@@ -155,11 +162,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 				break;
 			}
 		}
+		spec.updatePrecheckCounts(actualPrecheck);
 		stats.setAccepted(actualPrecheck == OK);
 		if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
 			if (payerIsRechargingFor(spec)) {
 				addIpbToPermissiblePrechecks();
-				if (!payerRecentRecharged(spec)) {
+				if (payerNotRecentlyRecharged(spec)) {
 					rechargePayerFor(spec);
 				}
 			}
@@ -183,6 +191,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			considerRecording(spec, stats);
 			return false;
 		}
+		spec.adhocIncrement();
 
 		if (!deferStatusResolution) {
 			resolveStatus(spec);
@@ -207,10 +216,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	private void resolveStatus(HapiApiSpec spec) throws Throwable {
 		actualStatus = resolvedStatusOfSubmission(spec);
+		spec.updateResolvedCounts(actualStatus);
 		if (actualStatus == INSUFFICIENT_PAYER_BALANCE) {
 			if (payerIsRechargingFor(spec)) {
 				addIpbToPermissibleStatuses();
-				if(!payerRecentRecharged(spec)){
+				if (payerNotRecentlyRecharged(spec)) {
 					rechargePayerFor(spec);
 				}
 			}
@@ -246,15 +256,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return payer.map(spec.registry()::isRecharging).orElse(Boolean.FALSE);
 	}
 
-	synchronized private boolean payerRecentRecharged(HapiApiSpec spec) {
+	synchronized private boolean payerNotRecentlyRecharged(HapiApiSpec spec) {
 		Instant lastInstant = payer.map(spec.registry()::getRechargingTime).orElse(Instant.MIN);
 		Integer rechargeWindow = payer.map(spec.registry()::getRechargingWindow).orElse(0);
-		return (lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now()));
+		return !lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now());
 	}
 
 	private void addIpbToPermissiblePrechecks() {
 		if (permissiblePrechecks.isEmpty()) {
-			permissiblePrechecks = Optional.of(EnumSet.copyOf(List.of(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_TX_FEE)));
+			permissiblePrechecks = Optional.of(
+					EnumSet.copyOf(List.of(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_TX_FEE)));
 		} else if (!permissiblePrechecks.get().contains(INSUFFICIENT_PAYER_BALANCE) ||
 				!permissiblePrechecks.get().contains(INSUFFICIENT_TX_FEE)) {
 			permissiblePrechecks = Optional.of(addIpbToleranceTo(permissiblePrechecks.get()));
@@ -287,6 +298,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	public boolean requiresFinalization(HapiApiSpec spec) {
 		return (actualPrecheck == OK) && (deferStatusResolution || hasStatsToCollectDuringFinalization(spec));
 	}
+
 	private boolean hasStatsToCollectDuringFinalization(HapiApiSpec spec) {
 		return (!suppressStats && spec.setup().measureConsensusLatency());
 	}
@@ -316,6 +328,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			spec.registry().record(stats);
 		}
 	}
+
 	private void measureConsensusLatency(HapiApiSpec spec) throws Throwable {
 		if (acceptAnyStatus) {
 			acceptAnyStatus = false;
@@ -369,10 +382,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					// do nothing just reissue rpc request
 					log.info("GRPC ERROR: <{}>， no need to reconnect, retry ", e);
 					continue;
-				}else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
+				} else if (e.toString().contains("Received unexpected EOS on DATA frame from server")) {
 					log.info("statusResponse Received unexpected EOS on DATA frame from server, retry");
 					continue;
-				}else if (e.toString().contains("REFUSED_STREAM")) {
+				} else if (e.toString().contains("REFUSED_STREAM")) {
 					log.info("statusResponse Received REFUSED_STREAM from server, retry");
 					continue;
 				}
@@ -397,7 +410,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	private void pause(long forMs) {
-		if (forMs > 0L) { try { sleep(forMs); } catch (InterruptedException ignore) {} }
+		if (forMs > 0L) {
+			try {
+				sleep(forMs);
+			} catch (InterruptedException ignore) {
+			}
+		}
 	}
 
 	protected KeyGenerator effectiveKeyGen() {
@@ -410,21 +428,25 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		memo = Optional.of(text);
 		return self();
 	}
+
 	public T logged() {
 		verboseLoggingOn = true;
 		return self();
 	}
+
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxnId = true;
 		return self();
 	}
+
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);
 		}
 		return self();
 	}
+
 	public T signedBy(String... keys) {
 		signers = Optional.of(
 				Stream.of(keys)
@@ -432,102 +454,127 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 						.collect(toList()));
 		return self();
 	}
+
 	public T payingWith(String name) {
 		payer = Optional.of(name);
 		return self();
 	}
+
 	public T record(Boolean isGenerated) {
 		genRecord = Optional.of(isGenerated);
 		return self();
 	}
+
 	public T hasPrecheck(ResponseCodeEnum status) {
 		expectedPrecheck = Optional.of(status);
 		return self();
 	}
+
 	public T hasPrecheckFrom(ResponseCodeEnum... statuses) {
 		permissiblePrechecks = Optional.of(EnumSet.copyOf(List.of(statuses)));
 		return self();
 	}
+
 	public T hasRetryPrecheckFrom(ResponseCodeEnum... statuses) {
 		retryPrechecks = Optional.of(EnumSet.copyOf(List.of(statuses)));
 		return self();
 	}
+
 	public T hasKnownStatus(ResponseCodeEnum status) {
 		this.expectedStatus = Optional.of(status);
 		return self();
 	}
+
 	public T hasKnownStatusFrom(ResponseCodeEnum... statuses) {
 		permissibleStatuses = Optional.of(EnumSet.copyOf(List.of(statuses)));
 		return self();
 	}
+
 	public T numPayerSigs(int hardcoded) {
 		this.hardcodedNumPayerKeys = Optional.of(hardcoded);
 		return self();
 	}
+
 	public T ed25519Keys(KeyGenerator.Nature nature) {
 		keyGen = Optional.of(nature);
 		return self();
 	}
+
 	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
 		sigMapGen = Optional.of(nature);
 		return self();
 	}
+
 	public T sigStyle(SigStyle style) {
 		useLegacySignature = (style == SigStyle.LIST);
 		return self();
 	}
+
 	public T hasAnyKnownStatus() {
 		acceptAnyKnownStatus = true;
 		return self();
 	}
+
 	public T hasAnyStatusAtAll() {
 		acceptAnyStatus = true;
 		return self();
 	}
+
 	public T hasAnyPrecheck() {
 		acceptAnyPrecheck = true;
 		return self();
 	}
+
 	public T sigControl(ControlForKey... overrides) {
 		controlOverrides = Optional.of(overrides);
 		return self();
 	}
+
 	public T deferStatusResolution() {
 		deferStatusResolution = true;
 		return self();
 	}
+
 	public T delayBy(long pauseMs) {
 		submitDelay = Optional.of(pauseMs);
 		return self();
 	}
+
 	public T suppressStats(boolean flag) {
 		suppressStats = flag;
 		return self();
 	}
+
 	public T noLogging() {
 		loggingOff = true;
 		return self();
 	}
+
 	public T validDurationSecs(long secs) {
 		validDurationSecs = Optional.of(secs);
 		return self();
 	}
+
 	public T txnId(String name) {
 		customTxnId = Optional.of(name);
 		return self();
 	}
+
 	public T randomNode() {
 		useRandomNode = true;
 		return self();
 	}
+
 	public T setNode(String account) {
 		node = Optional.of(HapiPropertySource.asAccount(account));
 		return self();
 	}
+
 	public T setNodeFrom(Supplier<String> accountSupplier) {
 		nodeSupplier = Optional.of(() -> HapiPropertySource.asAccount(accountSupplier.get()));
 		return self();
 	}
+
 	public T usePresetTimestamp() {
 		usePresetTimestamp = true;
 		return self();

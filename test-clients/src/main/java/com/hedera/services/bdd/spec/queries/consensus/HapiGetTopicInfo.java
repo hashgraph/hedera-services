@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -56,6 +56,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<String> submitKey = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private boolean saveRunningHash = false;
 
 	public HapiGetTopicInfo(String topic) {
 		this.topic = topic;
@@ -105,6 +106,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		autoRenewAccount = Optional.of(exp);
 		return this;
 	}
+	public HapiGetTopicInfo saveRunningHash() {
+		saveRunningHash = true;
+		return this;
+	}
 
 	@Override
 	public HederaFunctionality type() {
@@ -117,6 +122,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
 		if (verboseLoggingOn) {
 			log.info("Info: " + response.getConsensusGetTopicInfo().getTopicInfo());
+		}
+		if (saveRunningHash) {
+			spec.registry().saveBytes(topic, response.getConsensusGetTopicInfo().getTopicInfo().getRunningHash());
 		}
 	}
 

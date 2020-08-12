@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,8 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.security.ops.SystemOpAuthorization;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -32,22 +34,25 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.crypto.DigitalSignature;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
@@ -61,6 +66,7 @@ import static com.swirlds.common.crypto.VerificationStatus.*;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.*;
@@ -85,7 +91,13 @@ public class SigOpsRegressionTest {
 	private SignatureStatus sigCreationFailureStatus;
 	private PlatformTxnAccessor platformTxn;
 	private HederaSigningOrder signingOrder;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(new MockEntityNumbers());
+	private Predicate<TransactionBody> updateAccountSigns = txn ->
+			mockSystemOpPolicies.check(txn, HederaFunctionality.CryptoUpdate) != AUTHORIZED;
+	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
+			mockSystemOpPolicies.check(txn, function) != AUTHORIZED;
 
 	@Test
 	public void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
@@ -356,43 +368,52 @@ public class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new Signature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, accounts, null));
+				defaultLookupsFor(null, () -> accounts, () -> null),
+				updateAccountSigns,
+				targetWaclSigns);
 
 		return payerSigIsActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
 	}
 
-	 private boolean invokeOtherPartySigActivationScenario(List<Signature> knownSigs) {
-		 platformTxn.getPlatformTxn().clear();
-		 platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new Signature[0]));
-		 HederaSigningOrder keysOrder = new HederaSigningOrder(
-		 		new MockEntityNumbers(),
-		 		defaultLookupsFor(hfs, accounts, null));
+	private boolean invokeOtherPartySigActivationScenario(List<Signature> knownSigs) {
+		platformTxn.getPlatformTxn().clear();
+		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new Signature[0]));
+		HederaSigningOrder keysOrder = new HederaSigningOrder(
+				new MockEntityNumbers(),
+				defaultLookupsFor(hfs, () -> accounts, null),
+				updateAccountSigns,
+				targetWaclSigns);
 
-		 return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
-	 }
+		return otherPartySigsAreActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
+	}
 
 	private SignatureStatus invokeExpansionScenario() {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
-				defaultLookupsPlusAccountRetriesFor(hfs, accounts, null, MAGIC_NUMBER, MAGIC_NUMBER, stats);
+				defaultLookupsPlusAccountRetriesFor(
+						hfs, () -> accounts, () -> null, MAGIC_NUMBER, MAGIC_NUMBER, stats);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookups);
+				sigMetaLookups,
+				updateAccountSigns,
+				targetWaclSigns);
 
 		return expandIn(platformTxn, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 	}
 
 	private SignatureStatus invokeRationalizationScenario() throws Exception {
-		SyncVerifier syncVerifier = DigitalSignature::verifySync;
-		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, accounts, null);
+		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
+		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookups);
+				sigMetaLookups,
+				updateAccountSigns,
+				targetWaclSigns);
 
 		return rationalizeIn(platformTxn, syncVerifier, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 	}
 
-	private void setupFor(TxnHandlingScenario scenario)	throws Throwable {
+	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		hfs = scenario.hfs();
 		stats = mock(HederaNodeStats.class);
 		accounts = scenario.accounts();
@@ -402,7 +423,9 @@ public class SigOpsRegressionTest {
 
 		signingOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, accounts, null));
+				defaultLookupsFor(hfs, () -> accounts, () -> null),
+				updateAccountSigns,
+				targetWaclSigns);
 		SigningOrderResult<SignatureStatus> payerKeys =
 				signingOrder.keysForPayer(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY);
 		expectedSigs = new ArrayList<>();

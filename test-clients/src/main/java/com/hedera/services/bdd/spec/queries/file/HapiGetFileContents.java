@@ -37,8 +37,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.io.File;
@@ -47,7 +47,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -66,7 +68,9 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	Optional<String> readablePath = Optional.empty();
 	Optional<String> snapshotPath = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
+	Optional<Consumer<byte[]>> contentsCb = Optional.empty();
 	Optional<Function<HapiApiSpec, ByteString>> expContentFn = Optional.empty();
+	Optional<UnaryOperator<byte[]>> afterBytesTransform = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -84,6 +88,11 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
 	public HapiGetFileContents saveTo(String path) {
 		snapshotPath = Optional.of(path);
+		return this;
+	}
+
+	public HapiGetFileContents consumedBy(Consumer<byte[]> cb) {
+		contentsCb = Optional.of(cb);
 		return this;
 	}
 
@@ -118,6 +127,11 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		return hasByteStringContents(specToBtFn);
 	}
 
+	public HapiGetFileContents afterBytesTransform(UnaryOperator<byte[]> transform) {
+		afterBytesTransform = Optional.of(transform);
+		return this;
+	}
+
 	public HapiGetFileContents hasContents(String registryEntry) {
 		return hasContents(spec -> spec.registry().getBytes(registryEntry));
 	}
@@ -139,28 +153,30 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 				throw new IllegalStateException(impossible);
 			}
 		}
-		if (snapshotPath.isPresent()) {
+		if (snapshotPath.isPresent() || readablePath.isPresent()) {
 			try {
 				byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
-				if (saveIn4kChunks) {
-					int i = 0;
-					int MAX_LEN = 4 * 1024;
-					int suffix = 0;
-					while (i < bytes.length) {
-						File snapshotFile = new File(String.format("part%d-%s", suffix++, snapshotPath.get()));
+				if (snapshotPath.isPresent()) {
+					if (saveIn4kChunks) {
+						int i = 0;
+						int MAX_LEN = 4 * 1024;
+						int suffix = 0;
+						while (i < bytes.length) {
+							File snapshotFile = new File(String.format("part%d-%s", suffix++, snapshotPath.get()));
+							ByteSink byteSink = Files.asByteSink(snapshotFile);
+							int numToWrite = Math.min(bytes.length - i, MAX_LEN);
+							byteSink.write(Arrays.copyOfRange(bytes, i, i + numToWrite));
+							i += numToWrite;
+							log.info("Saved next " + numToWrite + " bytes of '"
+									+ fileName + "' to " + snapshotFile.getAbsolutePath());
+						}
+					} else {
+						File snapshotFile = new File(snapshotPath.get());
 						ByteSink byteSink = Files.asByteSink(snapshotFile);
-						int numToWrite = Math.min(bytes.length - i, MAX_LEN);
-						byteSink.write(Arrays.copyOfRange(bytes, i, i + numToWrite));
-						i += numToWrite;
-						log.info("Saved next " + numToWrite + " bytes of '"
+						byteSink.write(bytes);
+						log.info("Saved " + bytes.length + " bytes of '"
 								+ fileName + "' to " + snapshotFile.getAbsolutePath());
 					}
-				} else {
-					File snapshotFile = new File(snapshotPath.get());
-					ByteSink byteSink = Files.asByteSink(snapshotFile);
-					byteSink.write(bytes);
-					log.info("Saved " + bytes.length + " bytes of '"
-							+ fileName + "' to " + snapshotFile.getAbsolutePath());
 				}
 				if (readablePath.isPresent()) {
 					String contents = parser.apply(bytes);
@@ -179,6 +195,8 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 					response.getFileGetContents().getFileContents().getContents()
 			);
 		}
+		contentsCb.ifPresent(cb ->
+				cb.accept(response.getFileGetContents().getFileContents().getContents().toByteArray()));
 	}
 
 	@Override
@@ -193,7 +211,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		if (expContentFn.isPresent()) {
 			ByteString expected = expContentFn.get().apply(spec);
 			ByteString actual = response.getFileGetContents().getFileContents().getContents();
-			Assert.assertEquals("Wrong file contents!", expected, actual);
+			if (afterBytesTransform.isPresent()) {
+				actual = ByteString.copyFrom(afterBytesTransform.get().apply(actual.toByteArray()));
+			}
+			Assert.assertEquals(
+					"Wrong file contents!",
+					expected.toString(Charset.defaultCharset()),
+					actual.toString(Charset.defaultCharset()));
 		}
 	}
 

@@ -20,8 +20,9 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -45,7 +46,6 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
@@ -74,13 +74,13 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				HederaAccount account = view.accounts().get(getMapKey(id));
+				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
 				String solidityAddress = asSolidityAddressHex(id);
 				CryptoGetInfoResponse.AccountInfo.Builder info = CryptoGetInfoResponse.AccountInfo.newBuilder()
-						.setKey(asKeyUnchecked(account.getAccountKeys()))
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpirationTime()))
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewPeriod()))
-						.setProxyAccountID(asAccount(account.getProxyAccount()))
+						.setKey(asKeyUnchecked(account.getKey()))
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
+						.setProxyAccountID(asAccount(account.getProxy()))
 						.setAccountID(op.getAccountID())
 						.setBalance(account.getBalance())
 						.setContractAccountID(solidityAddress)

@@ -27,8 +27,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
@@ -37,8 +37,8 @@ import java.util.List;
 public class VersionInfoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
 
-	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.5.0");
-	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.5.0");
+	private static final SemanticVersion EXPECTED_HAPI_PROTO = HapiPropertySource.asSemVer("0.7.0");
+	private static final SemanticVersion EXPECTED_HEDERA_SERVICES = HapiPropertySource.asSemVer("0.7.0");
 
 	public static void main(String... args) {
 		new VersionInfoSpec().runSuiteSync();

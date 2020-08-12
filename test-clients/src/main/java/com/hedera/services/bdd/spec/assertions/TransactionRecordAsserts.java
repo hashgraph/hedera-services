@@ -32,11 +32,12 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Function;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldBe;
+import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldNotBe;
 import static java.util.Collections.EMPTY_LIST;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
@@ -73,6 +74,20 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
+		this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+			try {
+				Assert.assertEquals("Bad TopicRunningHashVerions!",
+						versionNumber,
+						receipt.getTopicRunningHashVersion());
+			} catch (Throwable t) {
+				return List.of(t);
+			}
+			return EMPTY_LIST;
+		});
+		return this;
+	}
+
 	public TransactionRecordAsserts contractCallResult(ContractFnResultAsserts provider) {
 		registerTypedProvider("contractCallResult", provider);
 		return this;
@@ -93,6 +108,10 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 		return this;
 	}
 
+	public TransactionRecordAsserts feeDifferentThan(Long amount) {
+		registerTypedProvider("transactionFee", shouldNotBe(amount));
+		return this;
+	}
 
 	public TransactionRecordAsserts memo(String text) {
 		registerTypedProvider("memo", shouldBe(text));

@@ -20,7 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 public class PureValidation {
 	public static ResponseCodeEnum queryableFileStatus(FileID id, StateView view) {
@@ -54,8 +54,8 @@ public class PureValidation {
 		}
 	}
 
-	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MapKey, HederaAccount> accounts) {
-		HederaAccount account = accounts.get(getMapKey(id));
+	public static ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
+		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
 
 		return Optional.ofNullable(account)
 				.map(v -> v.isDeleted()
@@ -64,8 +64,8 @@ public class PureValidation {
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
-	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MapKey, HederaAccount> contracts) {
-		HederaAccount contract = contracts.get(getMapKey(cid));
+	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
+		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
 				.map(v -> v.isDeleted()

@@ -33,8 +33,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.security.spec.InvalidKeySpecException;
@@ -104,8 +104,15 @@ public class SpecKeyFromPem extends UtilOp {
 		var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), passphrase);
 		var key = populatedFrom(ocKeystore);
 		var real = actualName();
-		linkedId.ifPresent(s -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s)));
-		linkSupplier.ifPresent(fn -> spec.registry().saveAccountId(real, HapiPropertySource.asAccount(fn.get())));
+		linkedId.ifPresent(s -> {
+			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveKey(s, key);
+		});
+		linkSupplier.ifPresent(fn -> {
+			var s = fn.get();
+			spec.registry().saveAccountId(real, HapiPropertySource.asAccount(s));
+			spec.registry().saveKey(s, key);
+		});
 		spec.registry().saveKey(real, key);
 		spec.keys().incorporate(real, ocKeystore, control);
 		return false;

@@ -21,18 +21,19 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -41,12 +42,15 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 
 	private static final Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
 
-	private final FCMap<MapKey, Topic> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicDeleteTransitionLogic(FCMap<MapKey, Topic> topics, OptionValidator validator,
-									  TransactionContext transactionContext) {
+	public TopicDeleteTransitionLogic(
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			OptionValidator validator,
+			TransactionContext transactionContext
+	) {
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
@@ -57,24 +61,24 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 		var op = transactionContext.accessor().getTxn().getConsensusDeleteTopic();
 		var topicId = op.getTopicID();
 
-		var topicStatus = validator.queryableTopicStatus(topicId, topics);
+		var topicStatus = validator.queryableTopicStatus(topicId, topics.get());
 		if (OK != topicStatus) {
 			// Should not get here as the adminKey lookup should have failed.
 			transactionContext.setStatus(topicStatus);
 			return;
 		}
 
-		var topicMapKey = MapKey.getMapKey(topicId);
-		var topic = topics.get(topicMapKey);
+		var topicMapKey = MerkleEntityId.fromTopicId(topicId);
+		var topic = topics.get().get(topicMapKey);
 		if (!topic.hasAdminKey()) {
 			// Topics without adminKeys can't be deleted.
 			transactionContext.setStatus(UNAUTHORIZED);
 			return;
 		}
 
-		var updatedTopic = new Topic(topic);
-		updatedTopic.setDeleted(true);
-		topics.put(topicMapKey, updatedTopic);
+		var mutableTopic = topics.get().getForModify(topicMapKey);
+		mutableTopic.setDeleted(true);
+		topics.get().put(topicMapKey, mutableTopic);
 
 		transactionContext.setStatus(SUCCESS);
 	}

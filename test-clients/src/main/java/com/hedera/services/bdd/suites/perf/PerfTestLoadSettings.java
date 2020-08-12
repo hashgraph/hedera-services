@@ -29,7 +29,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_MINS = 5;
 	public static final int DEFAULT_ALLOWED_SECS_BELOW = 60;
 	public static final int DEFAULT_BURST_SIZE = 5;
-	public static final int DEFAULT_THREADS = 1;
+	public static final int DEFAULT_THREADS = 50;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -43,7 +43,6 @@ public class PerfTestLoadSettings {
 	public int getTps() {
 		return tps;
 	}
-
 	public int getTolerancePercentage() {
 		return tolerancePercentage;
 	}

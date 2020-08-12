@@ -25,14 +25,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.hedera.services.ledger.properties.MapValueProperty.*;
 import static org.mockito.BDDMockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 

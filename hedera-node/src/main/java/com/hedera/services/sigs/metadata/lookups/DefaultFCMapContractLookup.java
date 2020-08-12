@@ -22,12 +22,16 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.swirlds.fcmap.FCMap;
+
+import java.util.function.Supplier;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 /**
  * Contract signing metadata lookup backed by a {@code FCMap<MapKey, MapValue}.
@@ -38,9 +42,9 @@ import com.swirlds.fcmap.FCMap;
  * @author Michael Tinker
  */
 public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public DefaultFCMapContractLookup(FCMap<MapKey, HederaAccount> accounts) {
+	public DefaultFCMapContractLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -56,15 +60,15 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 	 */
 	@Override
 	public ContractSigningMetadata lookup(ContractID id) throws Exception {
-		HederaAccount contract = accounts.get(MapKey.getMapKey(id));
+		MerkleAccount contract = accounts.get().get(fromContractId(id));
 		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			throw new InvalidContractIDException("Invalid contract!", id);
-		} else if (contract.getAccountKeys() == null) {
+		} else if (contract.getKey() == null) {
 			throw new AdminKeyNotExistException("Contract should never be referenced by a txn (missing key)!", id);
-		} else if (contract.getAccountKeys() instanceof JContractIDKey) {
+		} else if (contract.getKey() instanceof JContractIDKey) {
 			throw new AdminKeyNotExistException("Contract should never be referenced by a txn (no admin key)!", id);
 		} else {
-			return new ContractSigningMetadata(contract.getAccountKeys());
+			return new ContractSigningMetadata(contract.getKey());
 		}
 	}
 }

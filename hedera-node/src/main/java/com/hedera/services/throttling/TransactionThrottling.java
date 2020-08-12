@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.Optional;
 
-import static com.hedera.services.utils.MiscUtils.functionalityOfTxn;
+import static com.hedera.services.utils.MiscUtils.functionOf;
 
 public class TransactionThrottling {
 	private final FunctionalityThrottling throttles;
@@ -43,7 +43,7 @@ public class TransactionThrottling {
 
 	private Optional<HederaFunctionality> functionToThrottle(TransactionBody txn) {
 		try {
-			return Optional.of(functionalityOfTxn(txn));
+			return Optional.of(functionOf(txn));
 		} catch (UnknownHederaFunctionality ignore) {}
 		return Optional.empty();
 	}

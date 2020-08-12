@@ -28,13 +28,13 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -61,16 +61,16 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.unit.PropertyLoaderTest;
 
@@ -94,15 +94,13 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
@@ -116,10 +114,8 @@ import static org.mockito.Mockito.mock;
  * @version Junit5 Tests the SmartContractRequestHandler class features
  */
 
+@Disabled
 @RunWith(JUnitPlatform.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@DisplayName("SmartContractRequestHandler Miscellaneous Test Suite")
 public class SmartContractRequestHandlerMiscTest {
 
   public static final String MAPPING_STORAGE_BIN = "/testfiles/MapStorage.bin";
@@ -139,13 +135,13 @@ public class SmartContractRequestHandlerMiscTest {
   private static final long secondContractSequenceNumber = 668L;
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MapKey, HederaAccount> fcMap = null;
-  private FCMap<StorageKey, StorageValue> storageMap;
+  FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
   LedgerAccountsSource ledgerSource;
   HederaLedger ledger;
 
-  MapKey payerMapKey; // fcMap key for payer account
+  MerkleEntityId payerMerkleEntityId; // fcMap key for payer account
   byte[] payerKeyBytes = null; // Repository key for payer account
   AccountID payerAccountId;
   AccountID nodeAccountId;
@@ -168,15 +164,15 @@ public class SmartContractRequestHandlerMiscTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    TransactionalLedger<AccountID, MapValueProperty, HederaAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
-            () -> new HederaAccount(),
-            new FCMapBackingAccounts(fcMap),
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
+            () -> new MerkleAccount(),
+            new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     Source<byte[], AccountState> repDatabase = ledgerSource;
@@ -193,23 +189,20 @@ public class SmartContractRequestHandlerMiscTest {
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
     //Init FCMap
-    fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    storageMap = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+    fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     // Create accounts
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);
     createAccount(feeCollAccountId, 10_000L);
 
-    //Init SolidityAddress Map
-    SolidityAddress solAddress = new SolidityAddress("abcdefghijklmnop");
-    MapKey solMapKey = new MapKey(0l, 0l, 5l);
     //Init Repository
     repository = getLocalRepositoryInstance();
 
     gasPrice = new BigInteger("1");
 
     HbarCentExchange exchange = mock(HbarCentExchange.class);
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     rates = RequestBuilder
             .getExchangeRateSetBuilder(
                     1, 12,
@@ -222,8 +215,8 @@ public class SmartContractRequestHandlerMiscTest {
             repository,
             feeCollAccountId,
             ledger,
-            fcMap,
-            storageMap,
+            () -> fcMap,
+            () -> storageMap,
             ledgerSource,
             null,
             exchange,
@@ -231,20 +224,21 @@ public class SmartContractRequestHandlerMiscTest {
             TestProperties.TEST_PROPERTIES,
             () -> repository,
             SolidityLifecycleFactory.newTestInstance(),
-            ignore -> true);
+            ignore -> true,
+            null);
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
-    fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRateSetWrapper());
+    fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
     String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = MiscUtils.commonsHexToBytes(key);
     } catch (DecoderException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
-    payerMapKey = new MapKey();
-    payerMapKey.setAccountNum(payerAccount);
-    payerMapKey.setRealmNum(0);
-    payerMapKey.setShardNum(0);
+    payerMerkleEntityId = new MerkleEntityId();
+    payerMerkleEntityId.setNum(payerAccount);
+    payerMerkleEntityId.setRealm(0);
+    payerMerkleEntityId.setShard(0);
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
         "../../../configuration/dev/application.properties",
         "../../../configuration/dev/api-permission.properties");
@@ -252,10 +246,10 @@ public class SmartContractRequestHandlerMiscTest {
 
   private void createAccount(AccountID payerAccount, long balance)
       throws NegativeAccountBalanceException {
-    MapKey mk = new MapKey();
-    mk.setAccountNum(payerAccount.getAccountNum());
-    mk.setRealmNum(0);
-    HederaAccount mv = new HederaAccount();
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(payerAccount.getAccountNum());
+    mk.setRealm(0);
+    MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
     fcMap.put(mk, mv);
   }
@@ -333,14 +327,14 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   private void checkContractArtifactsExist(ContractID contractId) {
-    MapKey mk = new MapKey();
-    mk.setAccountNum(contractId.getContractNum());
-    mk.setRealmNum(contractId.getRealmNum());
-    mk.setShardNum(contractId.getShardNum());
-    HederaAccount mv = fcMap.get(mk);
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(contractId.getContractNum());
+    mk.setRealm(contractId.getRealmNum());
+    mk.setShard(contractId.getShardNum());
+    MerkleAccount mv = fcMap.get(mk);
     Assert.assertNotNull(mv);
-    Assert.assertNotNull(mv.getAccountKeys());
-    Assert.assertTrue(mv.getAccountKeys() instanceof JContractIDKey);
+    Assert.assertNotNull(mv.getKey());
+    Assert.assertTrue(mv.getKey() instanceof JContractIDKey);
     String bytesPath = String.format("/%d/s%d", contractId.getRealmNum(), contractId.getContractNum());
     Assert.assertTrue(storageWrapper.fileExists(bytesPath));
   }
@@ -414,7 +408,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -455,7 +449,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -464,7 +458,7 @@ public class SmartContractRequestHandlerMiscTest {
     dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(2, 200));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -473,7 +467,7 @@ public class SmartContractRequestHandlerMiscTest {
     dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(3, 300));
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -533,7 +527,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -562,7 +556,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -600,7 +594,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -647,7 +641,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -680,7 +674,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -706,7 +700,6 @@ public class SmartContractRequestHandlerMiscTest {
     ledger.begin();
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-
     long payerAfter = getBalance(payerAccountId);
     long totalAfter = getTotalBalance();
 
@@ -921,7 +914,7 @@ public class SmartContractRequestHandlerMiscTest {
     ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
     body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
     consensusTime = new Date().toInstant();
-    seqNumber.getNextSequenceNum();
+    seqNumber.getAndIncrement();
     ledger.begin();
     record = smartHandler.contractCall(body, consensusTime, seqNumber);
     ledger.commit();
@@ -1075,12 +1068,12 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   private long getBalance(AccountID accountId) {
-    MapKey mk = new MapKey();
-    mk.setAccountNum(accountId.getAccountNum());
-    mk.setRealmNum(0);
-    mk.setShardNum(0);
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(accountId.getAccountNum());
+    mk.setRealm(0);
+    mk.setShard(0);
 
-    HederaAccount mv = fcMap.get(mk);
+    MerkleAccount mv = fcMap.get(mk);
     if (mv == null) {
       return 0;
     } else {
@@ -1090,7 +1083,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   private long getTotalBalance() {
     long total = 0L;
-    for (HederaAccount val : fcMap.values()) {
+    for (MerkleAccount val : fcMap.values()) {
       total += val.getBalance();
     }
     return total;

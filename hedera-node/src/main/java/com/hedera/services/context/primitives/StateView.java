@@ -20,17 +20,17 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
@@ -51,35 +52,44 @@ public class StateView {
 	private static final byte[] EMPTY_CONTENTS = new byte[0];
 	public static final JKey EMPTY_WACL = new JKeyList();
 
-	public static final FCMap<MapKey, Topic> EMPTY_TOPICS =
-			new FCMap<>(MapKey::deserialize, Topic::deserialize);
-	public static final FCMap<MapKey, HederaAccount> EMPTY_ACCOUNTS =
-			new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-	public static final FCMap<StorageKey, StorageValue> EMPTY_STORAGE =
-			new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
-	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS, EMPTY_ACCOUNTS);
+	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
+			new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+	public static final Supplier<FCMap<MerkleEntityId, MerkleTopic>> EMPTY_TOPICS_SUPPLIER =
+			() -> EMPTY_TOPICS;
+
+	public static final FCMap<MerkleEntityId, MerkleAccount> EMPTY_ACCOUNTS =
+			new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+	public static final Supplier<FCMap<MerkleEntityId, MerkleAccount>> EMPTY_ACCOUNTS_SUPPLIER =
+			() -> EMPTY_ACCOUNTS;
+
+	public static final FCMap<MerkleBlobMeta, MerkleOptionalBlob> EMPTY_STORAGE =
+			new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
+	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
+			() -> EMPTY_STORAGE;
+
+	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
 
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
-	private final FCMap<MapKey, Topic> topics;
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public StateView(
-			FCMap<MapKey, Topic> topics,
-			FCMap<MapKey, HederaAccount> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
-		this(topics, accounts, EMPTY_STORAGE);
+		this(topics, accounts, EMPTY_STORAGE_SUPPLIER);
 	}
 
 	public StateView(
-			FCMap<MapKey, Topic> topics,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<StorageKey, StorageValue> storage
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
 
-		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(StorageValue::new, storage));
+		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
 	}
@@ -114,11 +124,11 @@ public class StateView {
 		}
 	}
 
-	public FCMap<MapKey, Topic> topics() {
-		return topics;
+	public FCMap<MerkleEntityId, MerkleTopic> topics() {
+		return topics.get();
 	}
 
-	public FCMap<MapKey, HederaAccount> accounts() {
-		return accounts;
+	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+		return accounts.get();
 	}
 }

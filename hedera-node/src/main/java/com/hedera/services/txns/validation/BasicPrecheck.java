@@ -20,6 +20,7 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -37,14 +38,13 @@ import static com.hedera.services.legacy.logic.ApplicationConstants.TXN_MIN_VALI
 
 public class BasicPrecheck {
 	private int minValidityBufferSecs = TXN_MIN_VALIDITY_BUFFER_SECS;
+
+	private final PropertySource properties;
 	private final OptionValidator validator;
 
-	public BasicPrecheck(OptionValidator validator) {
+	public BasicPrecheck(PropertySource properties, OptionValidator validator) {
+		this.properties = properties;
 		this.validator = validator;
-	}
-
-	public void setMinValidityBufferSecs(int minValidityBufferSecs) {
-		this.minValidityBufferSecs = minValidityBufferSecs;
 	}
 
 	public ResponseCodeEnum validate(TransactionBody txn) {
@@ -71,7 +71,7 @@ public class BasicPrecheck {
 
 		return validator.chronologyStatusForTxn(
 				asCoercedInstant(txn.getTransactionID().getTransactionValidStart()),
-				validForSecs - minValidityBufferSecs,
+				validForSecs - properties.getIntProperty("hedera.transaction.minValidityBufferSecs"),
 				Instant.now(Clock.systemUTC()));
 	}
 }

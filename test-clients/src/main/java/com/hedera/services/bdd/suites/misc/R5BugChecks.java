@@ -53,8 +53,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
@@ -120,7 +120,6 @@ public class R5BugChecks extends HapiApiSuite {
 		);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1792 */
 	private HapiApiSpec cannotUseThresholdWithM0() {
 		KeyShape invalid = listOf(SIMPLE, SIMPLE, threshOf(0, 3));
 
@@ -132,7 +131,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1582 */
 	private HapiApiSpec cannotTransferEntirePayerBalance() {
 		var balance = 1_234_567L;
 		return defaultHapiSpec("CannotTransferEntirePayerBalance")
@@ -146,7 +144,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1166 */
 	private HapiApiSpec canGetDeletedFileInfo() {
 		return defaultHapiSpec("CanGetDeletedFileInfo")
 				.given(
@@ -160,7 +157,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1786 */
 	private HapiApiSpec costAnswerGetAccountInfoRejectsInvalidId() {
 		return defaultHapiSpec("CostAnswerGetAccountInfoRejectsInvalidId")
 				.given().when().then(
@@ -168,7 +164,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1964 */
 	private HapiApiSpec contractCannotTransferToReceiverSigRequired() {
 		var bytecodeLoc = "src/main/resource/validation-scenarios/Multipurpose.bin";
 
@@ -193,7 +188,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/1964 */
 	private HapiApiSpec enforcesSigRequirements() {
 		var bytecodeLoc = "src/main/resource/testfiles/LastTrackingSender.bin";
 		KeyShape complexSrShape = listOf(SIMPLE, threshOf(1, 3));
@@ -291,7 +285,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/2164 */
 	private HapiApiSpec genesisUpdatesFeesForFree() {
 		AtomicReference<ByteString> schedulePart1 = new AtomicReference<>();
 		AtomicReference<ByteString> schedulePart2 = new AtomicReference<>();
@@ -334,7 +327,6 @@ public class R5BugChecks extends HapiApiSuite {
 				);
 	}
 
-	/* https://github.com/swirlds/services-hedera/issues/2201 */
 	private HapiApiSpec runningHashComputedWithMessageHash() {
 		var eros = "Though like waves breaking it may be, /" +
 				"Or like a changed familiar tree, /" +

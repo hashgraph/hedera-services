@@ -21,7 +21,7 @@ package com.hedera.services.queries.consensus;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -37,8 +37,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGe
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 public class GetTopicInfoAnswer implements AnswerService {
 	private static final Logger log = LogManager.getLogger(GetTopicInfoAnswer.class);
@@ -65,14 +63,14 @@ public class GetTopicInfoAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		FCMap<MapKey, Topic> topics = view.topics();
+		FCMap<MerkleEntityId, MerkleTopic> topics = view.topics();
 		ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
 		return validityOf(op, topics);
 	}
 
 	private ResponseCodeEnum validityOf(
 			ConsensusGetTopicInfoQuery op,
-			FCMap<MapKey, Topic> topics
+			FCMap<MerkleEntityId, MerkleTopic> topics
 	) {
 		if (op.hasTopicID()) {
 			return optionValidator.queryableTopicStatus(op.getTopicID(), topics);
@@ -122,24 +120,24 @@ public class GetTopicInfoAnswer implements AnswerService {
 	private static ConsensusTopicInfo.Builder infoBuilder(ConsensusGetTopicInfoQuery op, StateView view) {
 
 		TopicID id = op.getTopicID();
-		Topic topic = view.topics().get(getMapKey(id));
+		MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(id));
 		ConsensusTopicInfo.Builder info = ConsensusTopicInfo.newBuilder();
-		if (topic.hasMemo()) {
-			info.setMemo(topic.getMemo());
+		if (merkleTopic.hasMemo()) {
+			info.setMemo(merkleTopic.getMemo());
 		}
-		if (topic.hasAdminKey()) {
-			info.setAdminKey(asKeyUnchecked(topic.getAdminKey()));
+		if (merkleTopic.hasAdminKey()) {
+			info.setAdminKey(asKeyUnchecked(merkleTopic.getAdminKey()));
 		}
-		if (topic.hasSubmitKey()) {
-			info.setSubmitKey(asKeyUnchecked(topic.getSubmitKey()));
+		if (merkleTopic.hasSubmitKey()) {
+			info.setSubmitKey(asKeyUnchecked(merkleTopic.getSubmitKey()));
 		}
-		info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(topic.getAutoRenewDurationSeconds()));
-		if (topic.hasAutoRenewAccountId()) {
-			info.setAutoRenewAccount(asAccount(topic.getAutoRenewAccountId()));
+		info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
+		if (merkleTopic.hasAutoRenewAccountId()) {
+			info.setAutoRenewAccount(asAccount(merkleTopic.getAutoRenewAccountId()));
 		}
-		info.setExpirationTime(JTimestamp.convert(topic.getExpirationTimestamp()));
-		info.setSequenceNumber(topic.getSequenceNumber());
-		info.setRunningHash(ByteString.copyFrom(topic.getRunningHash()));
+		info.setExpirationTime(merkleTopic.getExpirationTimestamp().toGrpc());
+		info.setSequenceNumber(merkleTopic.getSequenceNumber());
+		info.setRunningHash(ByteString.copyFrom(merkleTopic.getRunningHash()));
 
 		return info;
 	}

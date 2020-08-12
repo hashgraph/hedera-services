@@ -20,27 +20,31 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.swirlds.fcmap.FCMap;
 
-public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
-	private final FCMap<MapKey, Topic> topics;
+import java.util.function.Supplier;
 
-	public DefaultFCMapTopicLookup(FCMap<MapKey, Topic> topics) {
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
+
+public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+
+	public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
 		this.topics = topics;
 	}
 
 	@Override
 	public TopicSigningMetadata lookup(TopicID id) throws Exception {
-		Topic topic = topics.get(MapKey.getMapKey(id));
-		if ((topic == null) || topic.isDeleted()) {
+		MerkleTopic merkleTopic = topics.get().get(fromTopicId(id));
+		if ((merkleTopic == null) || merkleTopic.isDeleted()) {
 			throw new InvalidTopicIDException("Invalid topic!", id);
 		}
-		return new TopicSigningMetadata(topic.hasAdminKey() ? topic.getAdminKey() : null,
-				topic.hasSubmitKey() ? topic.getSubmitKey() : null);
+		return new TopicSigningMetadata(merkleTopic.hasAdminKey() ? merkleTopic.getAdminKey() : null,
+				merkleTopic.hasSubmitKey() ? merkleTopic.getSubmitKey() : null);
 	}
 }

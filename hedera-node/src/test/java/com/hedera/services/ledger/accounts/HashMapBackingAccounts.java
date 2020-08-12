@@ -22,19 +22,20 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-public class HashMapBackingAccounts implements BackingAccounts<AccountID, HederaAccount> {
+public class HashMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount> {
 	final AccountID GENESIS = IdUtils.asAccount("0.0.2");
 	final long GENESIS_BALANCE = 50_000_000_000L;
 
-	private Map<AccountID, HederaAccount> accounts = new HashMap<>();
+	private Map<AccountID, MerkleAccount> accounts = new HashMap<>();
 
 	{
-		HederaAccount genesisAccount = new HederaAccount();
+		MerkleAccount genesisAccount = new MerkleAccount();
 		try {
 			genesisAccount.setBalance(GENESIS_BALANCE);
 		} catch (Exception ignore) {}
@@ -42,17 +43,15 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Hedera
 	}
 
 	@Override
-	public HederaAccount getRef(AccountID id) {
+	public void flushMutableRefs() { }
+
+	@Override
+	public MerkleAccount getRef(AccountID id) {
 		return accounts.get(id);
 	}
 
 	@Override
-	public HederaAccount getCopy(AccountID id) {
-		return new HederaAccount(accounts.get(id));
-	}
-
-	@Override
-	public void replace(AccountID id, HederaAccount account) {
+	public void put(AccountID id, MerkleAccount account) {
 		accounts.put(id, account);
 	}
 
@@ -64,5 +63,15 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Hedera
 	@Override
 	public void remove(AccountID id) {
 		accounts.remove(id);
+	}
+
+	@Override
+	public Set<AccountID> idSet() {
+		return accounts.keySet();
+	}
+
+	@Override
+	public MerkleAccount getUnsafeRef(AccountID id) {
+		return accounts.get(id);
 	}
 }

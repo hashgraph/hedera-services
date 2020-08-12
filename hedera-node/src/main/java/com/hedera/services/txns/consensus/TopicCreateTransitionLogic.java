@@ -21,18 +21,18 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JAccountID;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JTimestamp;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -53,15 +54,19 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SYNTAX_CHECK =
 			this::validatePreSignatureValidation;
 
-	private final FCMap<MapKey, HederaAccount> accounts;
-	private final FCMap<MapKey, Topic> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final EntityIdSource entityIdSource;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
 
-	public TopicCreateTransitionLogic(FCMap<MapKey, HederaAccount> accounts, FCMap<MapKey, Topic> topics,
-									  EntityIdSource entityIdSource, OptionValidator validator,
-									  TransactionContext transactionContext) {
+	public TopicCreateTransitionLogic(
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			EntityIdSource entityIdSource,
+			OptionValidator validator,
+			TransactionContext transactionContext
+	) {
 		this.accounts = accounts;
 		this.topics = topics;
 		this.entityIdSource = entityIdSource;
@@ -86,12 +91,12 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			// autoRenewPeriod->seconds.
 			var expirationTime = transactionContext.consensusTime().plusSeconds(op.getAutoRenewPeriod().getSeconds());
 
-			var topic = new Topic(op.getMemo(),
+			var topic = new MerkleTopic(op.getMemo(),
 					op.hasAdminKey() ? JKey.mapKey(op.getAdminKey()) : null,
 					op.hasSubmitKey() ? JKey.mapKey(op.getSubmitKey()) : null,
 					op.getAutoRenewPeriod().getSeconds(),
-					op.hasAutoRenewAccount() ? JAccountID.convert(op.getAutoRenewAccount()) : null,
-					new JTimestamp(expirationTime.getEpochSecond(), expirationTime.getNano()));
+					op.hasAutoRenewAccount() ? EntityId.ofNullableAccountId(op.getAutoRenewAccount()) : null,
+					new RichInstant(expirationTime.getEpochSecond(), expirationTime.getNano()));
 
 			var newEntityId = entityIdSource.newAccountId(payerAccountId);
 			var newTopicId = TopicID.newBuilder()
@@ -100,7 +105,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 					.setTopicNum(newEntityId.getAccountNum())
 					.build();
 
-			topics.put(MapKey.getMapKey(newTopicId), topic);
+			topics.get().put(MerkleEntityId.fromTopicId(newTopicId), topic);
 			transactionContext.setCreated(newTopicId);
 			transactionContext.setStatus(SUCCESS);
 		} catch (DecoderException e) {
@@ -124,7 +129,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	 * Pre-consensus (and post-consensus-pre-doStateTransition) validation validates the encoding of the optional
 	 * adminKey; this check occurs before signature validation which occurs before doStateTransition.
 	 * @param transactionBody
-	 * @return
+	 * @return the validity
 	 */
 	private ResponseCodeEnum validatePreSignatureValidation(TransactionBody transactionBody) {
 		var op = transactionBody.getConsensusCreateTopic();
@@ -138,7 +143,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	/**
 	 * Validation of the post-consensus transaction just prior to state transition.
-	 * @return
+	 * @return the validity
 	 */
 	private ResponseCodeEnum validatePreStateTransition() {
 		var op = transactionContext.accessor().getTxn().getConsensusCreateTopic();
@@ -153,7 +158,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 		} else if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			validationResult = AUTORENEW_DURATION_NOT_IN_RANGE;
 		} else if (op.hasAutoRenewAccount() &&
-				(OK != validator.queryableAccountStatus(op.getAutoRenewAccount(), accounts))) {
+				(OK != validator.queryableAccountStatus(op.getAutoRenewAccount(), accounts.get()))) {
 			validationResult = INVALID_AUTORENEW_ACCOUNT;
 		} else if (op.hasAutoRenewAccount() && !op.hasAdminKey()) {
 			// If present, the autoRenewAccount's key must have signed transaction (see HederaSigningOrder).

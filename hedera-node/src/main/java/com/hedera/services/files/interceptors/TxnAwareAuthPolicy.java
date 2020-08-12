@@ -57,8 +57,8 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 			new AbstractMap.SimpleImmutableEntry<>(SUCCESS, true);
 
 	private boolean initialized = false;
-	private long firstApplicable, lastApplicable;
-	private Set<Long> masterScope;
+	private long numReservedSystemEntities;
+	private Set<Long> systemAdminScope;
 	private Set<Long> addressBookAdminScope;
 	private Set<Long> feeSchedulesAdminScope;
 	private Set<Long> exchangeRatesAdminScope;
@@ -84,7 +84,7 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 		lazyInitIfNecessary();
 
 		var num = id.getFileNum();
-		if (firstApplicable <= num && num <= lastApplicable) {
+		if (num <= numReservedSystemEntities) {
 			return OptionalInt.of(APPLICABLE_PRIORITY);
 		} else {
 			return OptionalInt.empty();
@@ -137,7 +137,7 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 
 			accountDecisions = new HashMap<>();
 			setTreasuryDecision();
-			setMasterDecision();
+			setSystemAdminDecision();
 			setAdminDecisions();
 
 			initialized = true;
@@ -156,7 +156,7 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 				fileNums.exchangeRates(),
 				fileNums.applicationProperties(),
 				fileNums.apiPermissions());
-		masterScope = Set.of(
+		systemAdminScope = Set.of(
 				fileNums.addressBook(),
 				fileNums.nodeDetails(),
 				fileNums.applicationProperties(),
@@ -166,18 +166,17 @@ public class TxnAwareAuthPolicy implements FileUpdateInterceptor {
 	}
 
 	private void setDistinguishedNumbers() {
-		firstApplicable = properties.getLongProperty("hedera.firstProtectedEntity.num");
-		lastApplicable = properties.getLongProperty("hedera.lastProtectedEntity.num");
+		numReservedSystemEntities = properties.getLongProperty("hedera.numReservedSystemEntities");
 	}
 
 	private void setTreasuryDecision() {
 		accountDecisions.put(accountWith(accountNums.treasury()), ignore -> YES_VERDICT);
 	}
 
-	private void setMasterDecision() {
+	private void setSystemAdminDecision() {
 		accountDecisions.put(
-				accountWith(accountNums.master()),
-				id -> masterScope.contains(id.getFileNum()) ? YES_VERDICT : UNAUTHORIZED_VERDICT);
+				accountWith(accountNums.systemAdmin()),
+				id -> systemAdminScope.contains(id.getFileNum()) ? YES_VERDICT : UNAUTHORIZED_VERDICT);
 	}
 
 	private void setAdminDecisions() {

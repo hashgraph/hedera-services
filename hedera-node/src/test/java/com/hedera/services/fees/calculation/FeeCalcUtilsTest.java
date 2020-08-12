@@ -23,13 +23,13 @@ package com.hedera.services.fees.calculation;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.text.MessageFormat;
+import java.util.MissingResourceException;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.*;
@@ -44,17 +46,47 @@ import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
 import static com.hedera.services.legacy.logic.ApplicationConstants.*;
 
 @RunWith(JUnitPlatform.class)
-class FeeCalcUtilsTest {
-	private final MapKey key = new MapKey(0, 0, 1234);
+public class FeeCalcUtilsTest {
+	public static String ARTIFACTS_PREFIX_FILE_CONTENT = "f";
+	/**
+	 * Default value for the prefix for the virtual metadata file
+	 */
+	public static String ARTIFACTS_PREFIX_FILE_INFO = "k";
+	private final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
+
+	public static String pathOf(FileID fid) {
+		return path(ARTIFACTS_PREFIX_FILE_CONTENT, fid);
+	}
+
+	public static String pathOfMeta(FileID fid) {
+		return path(ARTIFACTS_PREFIX_FILE_INFO, fid);
+	}
+
+	private static String path(String buildMarker, FileID fid) {
+		return String.format(
+				"%s%s%d",
+				buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
+				buildMarker,
+				fid.getFileNum());
+	}
+
+	public static String buildPath(String path, Object... params) {
+		try {
+			return MessageFormat.format(path, params);
+		} catch (final MissingResourceException e) {
+			e.printStackTrace();
+		}
+		return path;
+	}
 
 	@Test
 	public void returnsAccountExpiryIfAvail() {
 		// setup:
-		HederaAccount account = mock(HederaAccount.class);
-		FCMap<MapKey, HederaAccount> accounts = mock(FCMap.class);
+		MerkleAccount account = mock(MerkleAccount.class);
+		FCMap<MerkleEntityId, MerkleAccount> accounts = mock(FCMap.class);
 		Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 
-		given(account.getExpirationTime()).willReturn(Long.MAX_VALUE);
+		given(account.getExpiry()).willReturn(Long.MAX_VALUE);
 		given(accounts.get(key)).willReturn(account);
 
 		// when:

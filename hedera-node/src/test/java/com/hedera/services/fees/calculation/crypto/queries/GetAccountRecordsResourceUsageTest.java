@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,8 +32,8 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,36 +42,33 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.*;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
-import static com.hedera.services.context.domain.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.context.domain.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 
 @RunWith(JUnitPlatform.class)
 class GetAccountRecordsResourceUsageTest {
 	StateView view;
 	CryptoFeeBuilder usageEstimator;
-	FCMap<MapKey, HederaAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	GetAccountRecordsResourceUsage subject;
 	String a = "0.0.1234";
-	HederaAccount aValue;
-	List<TransactionRecord> someRecords = convert(List.of(recordOne(), recordTwo()));
+	MerkleAccount aValue;
+	List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		aValue = MapValueFactory.newAccount().get();
-		aValue.getRecords().offer(recordOne());
-		aValue.getRecords().offer(recordTwo());
+		aValue.records().offer(recordOne());
+		aValue.records().offer(recordTwo());
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(), usageEstimator);
 	}
@@ -89,7 +87,7 @@ class GetAccountRecordsResourceUsageTest {
 		// setup:
 		FeeData costAnswerUsage = mock(FeeData.class);
 		FeeData answerOnlyUsage = mock(FeeData.class);
-		MapKey key = getMapKey(asAccount(a));
+		MerkleEntityId key = MerkleEntityId.fromAccountId(asAccount(a));
 
 		// given:
 		Query answerOnlyQuery = accountRecordsQuery(a, ANSWER_ONLY);

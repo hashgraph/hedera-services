@@ -9,9 +9,9 @@ package com.hedera.services;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,80 +20,48 @@ package com.hedera.services;
  * ‍
  */
 
-import com.hedera.services.context.HederaNodeContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
+import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
+import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
-import com.hedera.services.legacy.services.state.initialization.DefaultSystemAccountsCreator;
+import com.hedera.services.utils.TimerUtils;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.SwirldMain;
 import com.swirlds.common.SwirldState;
-import com.swirlds.common.io.FCDataOutputStream;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
-import static com.hedera.services.context.properties.Profile.*;
-import static com.swirlds.common.PlatformStatus.*;
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
+import static com.hedera.services.context.properties.Profile.DEV;
+import static com.hedera.services.context.properties.Profile.PROD;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
+import static com.swirlds.common.PlatformStatus.MAINTENANCE;
 
 /**
- * Drives the major state transitions for a Hedera Node via its {@link HederaNodeContext}.
+ * Drives the major state transitions for a Hedera Node via its {@link ServicesContext}.
  *
  * @author Michael Tinker
  */
 public class ServicesMain implements SwirldMain {
+	private static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
+
+	static final long SUGGESTED_POST_CREATION_PAUSE_MS = 0L;
 	public static Logger log = LogManager.getLogger(ServicesMain.class);
-
-	static final String FC_DUMP_LOC_TPL = "data/saved/%s/%d/%s-round%d.fcm";
-
-	public static Function<String, FCDataOutputStream> foutSupplier = dumpLoc -> {
-		try {
-			return new FCDataOutputStream(Files.newOutputStream(Path.of(dumpLoc)));
-		} catch (Exception e) {
-			log.warn("Unable to use suggested dump location {}, falling back to STDOUT!", dumpLoc, e);
-			return new FCDataOutputStream(System.out);
-		}
-	};
-
-	static final String ISS_ERROR_MSG_PATTERN =
-			"In round %d, node %d received a signed state from node %d with " +
-					"a signature different than %s on %s [accounts :: %s | storage :: %s | topics :: %s]!";
-	static final String ISS_FALLBACK_ERROR_MSG_PATTERN =
-			"In round %d, node %s received a signed state from node %s differing from its local "
-					+ "signed state; could not provide all details!";
-	private static Function<LoggedIssMeta, String> ISS_ERROR_MSG_FN = meta -> String.format(
-			ISS_ERROR_MSG_PATTERN,
-			meta.round, meta.self, meta.other,
-			encodeHexString(meta.sig), encodeHexString(meta.hash),
-			encodeHexString(meta.accountsHash), encodeHexString(meta.storageHash), encodeHexString(meta.topicsHash));
-
-	public static final String START_INIT_MSG_PATTERN = "Using context to initialize HederaNode#%d...";
 
 	SystemExits systemExits = new JvmSystemExits();
 	Supplier<Charset> defaultCharset = Charset::defaultCharset;
-	HederaNodeContext ctx;
+	ServicesContext ctx;
 
 	/**
 	 * Convenience launcher for dev env.
@@ -143,7 +111,10 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	@Override
-	public void newSignedState(SwirldState signedState, Instant when, long ignored) {
+	public void newSignedState(SwirldState signedState, Instant when, long round) {
+		if (ctx.platformStatus().get() == MAINTENANCE) {
+			((ServicesState)signedState).printHashes();
+		}
 		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
 				ctx.balancesExporter().isTimeToExport(when)) {
 			try {
@@ -173,8 +144,6 @@ public class ServicesMain implements SwirldMain {
 		log.info("Platform is configured.");
 		migrateStateIfNeeded();
 		log.info("Migrations complete.");
-		validateLedgerState();
-		log.info("Ledger state ok.");
 		loadPropertiesAndPermissions();
 		log.info("Initialized properties and permissions.");
 		startRecordStreamThread();
@@ -183,6 +152,8 @@ public class ServicesMain implements SwirldMain {
 		log.info("Netty started.");
 		createSystemAccountsIfNeeded();
 		log.info("System accounts rationalized.");
+		validateLedgerState();
+		log.info("Ledger state ok.");
 		createSystemFilesIfNeeded();
 		log.info("System files rationalized.");
 		exportAccountsIfDesired();
@@ -192,18 +163,12 @@ public class ServicesMain implements SwirldMain {
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
 		sanitizeProperties();
+
+		startTimerTasksIfNeeded();
 	}
 
 	private void startRecordStreamThread() {
 		ctx.recordStreamThread().start();
-	}
-
-	private void throwIseOrLogError(IllegalStateException ise) {
-		if (ctx.properties().getBooleanProperty("hedera.exitOnNodeStartupFailure")) {
-			throw ise;
-		} else {
-			log.error("Not exiting despite severe error!", ise);
-		}
 	}
 
 	private void exportAccountsIfDesired() {
@@ -211,7 +176,7 @@ public class ServicesMain implements SwirldMain {
 			String path = ctx.properties().getStringProperty("hedera.accountsExportPath");
 			ctx.accountsExporter().toFile(ctx.accounts(), path);
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not export accounts!", e));
+			throw new IllegalStateException("Could not export accounts!", e);
 		}
 	}
 
@@ -222,7 +187,7 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().loadFeeSchedules();
 			ctx.systemFilesManager().loadExchangeRates();
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not create system files!", e));
+			throw new IllegalStateException("Could not create system files!", e);
 		}
 	}
 
@@ -231,18 +196,16 @@ public class ServicesMain implements SwirldMain {
 			ctx.systemFilesManager().loadApplicationProperties();
 			ctx.systemFilesManager().loadApiPermissions();
 		} catch (Exception e) {
-			throwIseOrLogError(new IllegalStateException("Could not create Config Properties system files!", e));
+			throw new IllegalStateException("Could not create Config Properties system files!", e);
 		}
 	}
 
 	private void createSystemAccountsIfNeeded() {
-		if (ctx.properties().getBooleanProperty("hedera.createSystemAccountsOnStartup")) {
-			try {
-				ctx.systemAccountsCreator().createSystemAccounts(ctx.accounts(), ctx.addressBook());
-				ctx.pause().forMs(DefaultSystemAccountsCreator.SUGGESTED_POST_CREATION_PAUSE_MS);
-			} catch (Exception e) {
-				throwIseOrLogError(new IllegalStateException("Could not create system accounts!", e));
-			}
+		try {
+			ctx.systemAccountsCreator().ensureSystemAccounts(ctx.backingAccounts(), ctx.addressBook());
+			ctx.pause().forMs(SUGGESTED_POST_CREATION_PAUSE_MS);
+		} catch (Exception e) {
+			throw new IllegalStateException("Could not create system accounts!", e);
 		}
 	}
 
@@ -304,17 +267,16 @@ public class ServicesMain implements SwirldMain {
 	private void validateLedgerState() {
 		ctx.ledgerValidator().assertIdsAreValid(ctx.accounts());
 		if (!ctx.ledgerValidator().hasExpectedTotalBalance(ctx.accounts())) {
-			log.warn("Unexpected total balance in ledger, nodeId={}!", ctx.id());
+			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
+			throw new IllegalStateException("Invalid total tinyBar float!");
 		}
 		if (ctx.nodeAccount() == null) {
-			throwIseOrLogError(new IllegalStateException("Unknown ledger account!"));
+			throw new IllegalStateException("Unknown ledger account!");
 		}
 	}
 
 	private void reviewRecordExpirations() {
-		long consensusTimeOfLastHandledTxn =
-				Optional.ofNullable(ctx.consensusTimeOfLastHandledTxn()).map(Instant::getEpochSecond).orElse(0L);
-		ctx.recordsHistorian().reviewExistingRecords(consensusTimeOfLastHandledTxn);
+		ctx.recordsHistorian().reviewExistingRecords();
 	}
 
 	void logInfoWithConsoleEcho(String s) {
@@ -325,78 +287,14 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	void registerIssListener() {
-		ctx.platform().addSignedStateListener(
-				(platform, book, swirldState, events, self, other, round, consensusTime, numConsEvents, sig, hash) -> {
-					try {
-						ServicesState state = (ServicesState) swirldState;
-						LoggedIssMeta meta = new LoggedIssMeta(
-								round, self.getId(), other.getId(),
-								sig, hash,
-								state.getAccountMap().getRootHash(),
-								state.getStorageMap().getRootHash(),
-								state.getTopicsMap().getRootHash());
-
-						ctx.issEventInfo().alert(consensusTime);
-						if (ctx.issEventInfo().shouldDumpThisRound()) {
-							log.error(ISS_ERROR_MSG_FN.apply(meta));
-							dumpFcms(
-									self.getId(), round, state.getAccountMap(),
-									state.getStorageMap(), state.getTopicsMap()
-							);
-						}
-					} catch (Exception e) {
-						String fallbackMsg = String.format(
-								ISS_FALLBACK_ERROR_MSG_PATTERN, 1, String.valueOf(self), String.valueOf(other));
-						log.error(fallbackMsg, e);
-					}
-				});
+		ctx.platform().addSignedStateListener(new IssListener(ctx.issEventInfo()));
 	}
 
-	public static void dumpFcms(
-			long nodeId,
-			long round,
-			FCMap<MapKey, HederaAccount> accounts,
-			FCMap<StorageKey, StorageValue> storage,
-			FCMap<MapKey, Topic> topics
-	) throws IOException {
-		var accountsFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "accounts", round));
-		accounts.copyTo(accountsFout);
-		accounts.copyToExtra(accountsFout);
-		accountsFout.close();
-
-		var storageFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "storage", round));
-		storage.copyTo(storageFout);
-		storage.copyToExtra(storageFout);
-		storageFout.close();
-
-		var topicsFout = foutSupplier.apply(
-				String.format(FC_DUMP_LOC_TPL,
-						ServicesMain.class.getName(), nodeId, "topics", round));
-		topics.copyTo(topicsFout);
-		topics.copyToExtra(topicsFout);
-		topicsFout.close();
-	}
-
-	public static class LoggedIssMeta {
-		final long round, self, other;
-		final byte[] sig, hash, accountsHash, storageHash, topicsHash;
-
-		public LoggedIssMeta(
-				long round, long self, long other,
-				byte[] sig, byte[] hash, byte[] accountsHash, byte[] storageHash, byte[] topicsHash
-		) {
-			this.self = self;
-			this.other = other;
-			this.round = round;
-			this.sig = sig;
-			this.hash = hash;
-			this.storageHash = storageHash;
-			this.accountsHash = accountsHash;
-			this.topicsHash = topicsHash;
+	private void startTimerTasksIfNeeded() {
+		if (ctx.properties().getBooleanProperty("timer.stats.dump.started")) {
+			TimerUtils.initStatsDumpTimers(ctx.stats());
+			TimerUtils.startStatsDumpTimer(ctx.properties().getIntProperty("timer.stats.dump.value"));
+			log.info("Stats Dump Timer Task started.");
 		}
 	}
 }

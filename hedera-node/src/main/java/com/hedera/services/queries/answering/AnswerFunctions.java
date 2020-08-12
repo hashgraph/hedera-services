@@ -20,52 +20,48 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JTransactionID;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.legacy.core.jproto.TxnId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
-
 public class AnswerFunctions {
 	public static final Logger log = LogManager.getLogger(AnswerFunctions.class);
 
 	public List<TransactionRecord> accountRecords(StateView view, Query query) {
 		CryptoGetAccountRecordsQuery op = query.getCryptoGetAccountRecords();
-		MapKey key = getMapKey(op.getAccountID());
-		HederaAccount account = view.accounts().get(key);
-		return convert(account.recordList());
+		MerkleEntityId key = MerkleEntityId.fromAccountId(op.getAccountID());
+		MerkleAccount account = view.accounts().get(key);
+		return ExpirableTxnRecord.allToGrpc(account.recordList());
 	}
 
 	public Optional<TransactionRecord> txnRecord(RecordCache recordCache, StateView view, Query query) {
-		TransactionID txnId = query.getTransactionGetRecord().getTransactionID();
-		if (recordCache.isRecordPresent(txnId)) {
-			return Optional.of(recordCache.getRecord(txnId));
+		var txnId = query.getTransactionGetRecord().getTransactionID();
+		var record = recordCache.getRecord(txnId);
+		if (record != null) {
+			return Optional.of(record);
 		} else {
 			try {
 				AccountID id = txnId.getAccountID();
-				HederaAccount account = view.accounts().get(getMapKey(id));
-				JTransactionID searchableId = JTransactionID.convert(txnId);
+				MerkleAccount account = view.accounts().get(MerkleEntityId.fromAccountId(id));
+				TxnId searchableId = TxnId.fromGrpc(txnId);
 				return account.recordList()
 						.stream()
-						.filter(r -> r.getTransactionID().equals(searchableId))
+						.filter(r -> r.getTxnId().equals(searchableId))
 						.findAny()
-						.map(JTransactionRecord::convert);
+						.map(ExpirableTxnRecord::asGrpc);
 			} catch (Exception ignore) {
-				log.warn(ignore.getMessage());
 				return Optional.empty();
 			}
 		}

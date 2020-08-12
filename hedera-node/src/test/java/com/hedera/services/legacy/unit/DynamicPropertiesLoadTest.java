@@ -20,7 +20,6 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -29,12 +28,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
 import com.swirlds.fcmap.FCMap;
@@ -56,27 +53,31 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.legacy.TestHelper;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidFileWACLException;
 import com.hedera.services.legacy.exception.SerializationException;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 
 public class DynamicPropertiesLoadTest {
+	// currentTime(// 08/21/2018 10.00am) and expiryTime(// 100 years from
+	// 08/21/2018)
+	public static long CURRENT_TIME = 1534861917l;
+	public static long EXPIRY_TIME = 4688462211l;
 	long payerAccount;
 	long nodeAccount;
 	private AccountID nodeAccountId;
 	private AccountID payerAccountId;
 	FCStorageWrapper storageWrapper;
 	TransactionHandler transactionHandler = null;
-	FCMap<MapKey, HederaAccount> fcMap = null;
-	private FCMap<StorageKey, StorageValue> storageMap;
+	FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
 	private FileServiceHandler fileServiceHandler;
 	FileCreateTransactionBody fileCreateTransactionBody;
 
@@ -86,14 +87,14 @@ public class DynamicPropertiesLoadTest {
 		nodeAccount = 3l;
 		payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
-		fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-		storageMap = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+		fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
 		storageWrapper = new FCStorageWrapper(storageMap);
 		FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
 		fileServiceHandler = new FileServiceHandler(
 				storageWrapper,
 				feeScheduleInterceptor,
-				new ExchangeRateSetWrapper());
+				new ExchangeRates());
 	}
 		
 	@Test
@@ -176,17 +177,17 @@ public class DynamicPropertiesLoadTest {
 	  
 	  private void createFile(FileID fid, byte[] fileData)
 		      throws SerializationException, InvalidFileWACLException {
-		    long startTime = ApplicationConstants.CURRENT_TIME;
-		    long expiryTime = ApplicationConstants.EXPIRY_TIME;
+		    long startTime = CURRENT_TIME;
+		    long expiryTime = EXPIRY_TIME;
 		    // get the System Startup Account
 		    List<Key> keyList = genWacl();
 		    Key key = keyList.get(0);
 		    JKey jkey = JFileInfo.convertWacl(KeyList.newBuilder().addKeys(key).build());
-		    String fileDataPath = FeeCalcUtils.pathOf(fid);
+		    String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
 		    storageWrapper.fileCreate(fileDataPath, fileData, startTime, 0, expiryTime, null);
 		    JFileInfo jFileInfo = new JFileInfo(false, jkey, expiryTime);
 		    byte[] bytes = jFileInfo.serialize();
-		    String fileMetaDataPath = FeeCalcUtils.pathOfMeta(fid);
+		    String fileMetaDataPath = FeeCalcUtilsTest.pathOfMeta(fid);
 		    storageWrapper.fileCreate(fileMetaDataPath, bytes, startTime, 0, expiryTime, null);
 		  }
 	  

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,11 @@ package com.hedera.services.bdd.suites.utils.validation;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -36,20 +38,30 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.ContractScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.CryptoScenario;
 
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.FEE_SNAPSHOTS;
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYS_FILES_UP;
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.TRANSFERS_ONLY;
 import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYS_FILES_DOWN;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYSTEM_KEYS;
 import static com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario.NOVEL_TOPIC_NAME;
 import static com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario.PERSISTENT_TOPIC_NAME;
@@ -61,22 +73,29 @@ import static com.hedera.services.bdd.suites.utils.validation.domain.ContractSce
 import static com.hedera.services.bdd.suites.utils.validation.domain.CryptoScenario.*;
 import static com.hedera.services.bdd.suites.utils.validation.domain.FileScenario.*;
 
+import com.hedera.services.bdd.suites.utils.validation.domain.FeeSnapshotsScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.FileScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.Network;
 import com.hedera.services.bdd.suites.utils.validation.domain.Node;
 import com.hedera.services.bdd.suites.utils.validation.domain.PersistentContract;
 import com.hedera.services.bdd.suites.utils.validation.domain.PersistentFile;
 import com.hedera.services.bdd.suites.utils.validation.domain.Scenarios;
+import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesDownScenario;
+import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesUpScenario;
+import com.hedera.services.bdd.suites.utils.validation.domain.UpdateAction;
 import com.hedera.services.bdd.suites.utils.validation.domain.ValidationConfig;
+import com.hedera.services.bdd.suites.utils.validation.domain.VersionInfoScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -85,6 +104,7 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -97,6 +117,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -105,9 +126,12 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
@@ -118,7 +142,11 @@ import static com.hedera.services.bdd.suites.utils.validation.ValidationScenario
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.CRYPTO;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.FILE;
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.VERSIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.nio.file.Files.readString;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
@@ -135,6 +163,13 @@ public class ValidationScenarios extends HapiApiSuite {
 			"\"name\":\"toNum\",\"type\":\"uint32\"},{\"internalType\":\"string\",\"name\":\"saying\"," +
 			"\"type\":\"string\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	enum Scenario {
+		CRYPTO, FILE, CONTRACT, CONSENSUS,
+		SYSTEM_KEYS, TRANSFERS_ONLY, VERSIONS,
+		SYS_FILES_UP, SYS_FILES_DOWN,
+		FEE_SNAPSHOTS
+	}
 
 	private static Scenarios scenarios;
 	private static ValidationConfig validationConfig;
@@ -167,16 +202,454 @@ public class ValidationScenarios extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.of(
-					Optional.of(recordPayerBalance(startingBalance::set)),
-					Optional.ofNullable(params.getScenarios().isEmpty() ? null : ensureScenarioPayer()),
-					Optional.ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
-					Optional.ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
-					Optional.ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
-					Optional.ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
-					Optional.ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
-					Optional.ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
+				Optional.of(recordPayerBalance(startingBalance::set)),
+				Optional.ofNullable(params.getScenarios().isEmpty() ? null : ensureScenarioPayer()),
+				Optional.ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
+				Optional.ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
+				Optional.ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
+				Optional.ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
+				Optional.ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
+				Optional.ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
+				Optional.ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
+				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
+				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
+				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
+				Optional.ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
 				.flatMap(Optional::stream)
-				.collect(Collectors.toList());
+				.collect(toList());
+	}
+
+	private static HapiApiSpec ensureBytecode() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+
+		try {
+			return customHapiSpec("EnsureBytecodeForFeeSnapshots")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given().when().then(
+							withOpContext((spec, opLog) -> {
+								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
+									var bytecodeCreate = fileCreate("unusedName")
+											.fromResource("Multipurpose.bin");
+									allRunFor(spec, bytecodeCreate);
+									feeSnapshots.getOpsConfig().setBytecode(bytecodeCreate.numOfCreatedFile());
+								}
+							})
+					);
+		} catch (Exception e) {
+			log.warn("Unable to ensure fee snapshots bytecode, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec feeSnapshots() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+		var tinyBarsToOffer = feeSnapshots.getTinyBarsToOffer();
+
+		/* Crypto signing */
+		var complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
+		/* File signing */
+		var complexWacl = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
+		var secondComplexWacl = KeyShape.listOf(3);
+		var normalDeleteSigs = secondComplexWacl.signedWith(KeyShape.sigs(ON, ON, ON));
+		var revocationDeleteSigs = secondComplexWacl.signedWith(KeyShape.sigs(ON, OFF, OFF));
+		/* Topic signing */
+		var complexAdmin = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
+		/* Contract signing */
+		var complexContract = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
+		try {
+			return customHapiSpec("FeeSnapshots")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.fee", "" + tinyBarsToOffer,
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"cost.snapshot.dir", "fees",
+							"cost.snapshot.mode", "TAKE",
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer())),
+							/* Crypto keys */
+							newKeyNamed("firstKey").shape(complex),
+							newKeyNamed("secondKey"),
+							/* File keys */
+							newKeyNamed("fileFirstKey").shape(complexWacl),
+							newKeyNamed("fileSecondKey").shape(secondComplexWacl),
+							/* Topic keys */
+							newKeyNamed("topicKey").shape(complexAdmin),
+							/* Contract keys */
+							newKeyNamed("contractFirstKey").shape(complexContract),
+							newKeyNamed("contractSecondKey")
+					).when(
+							/* Crypto ops */
+							cryptoCreate("tbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.receiveThreshold(1_000L)
+									.balance(1_234L)
+									.key("firstKey"),
+							getAccountBalance("tbd").logged(),
+							cryptoUpdate("tbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.key("secondKey"),
+							cryptoTransfer(tinyBarsFromTo(SCENARIO_PAYER_NAME, "tbd", 1_234L))
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							getAccountRecords("tbd").logged(),
+							getAccountInfo("tbd").logged(),
+							cryptoDelete("tbd")
+									.fee(tinyBarsToOffer)
+									.via("deleteTxn")
+									.payingWith(SCENARIO_PAYER_NAME)
+									.transfer(SCENARIO_PAYER_NAME),
+							getTxnRecord("deleteTxn").logged(),
+							/* File ops */
+							fileCreate("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.key("fileFirstKey")
+									.contents("abcdefghijklm"),
+							fileAppend("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.content("nopqrstuvwxyz"),
+							getFileContents("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.hasContents(ignore -> "abcdefghijklmnopqrstuvwxyz".getBytes()),
+							fileUpdate("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.wacl("fileSecondKey"),
+							getFileInfo("fileTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							fileDelete("fileTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.sigControl(ControlForKey.forKey(
+											"fileTbd",
+											params.isRevocationService() ? revocationDeleteSigs : normalDeleteSigs)),
+							/* Consensus ops */
+							createTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.adminKeyName("topicKey")
+									.submitKeyShape(KeyShape.SIMPLE),
+							submitMessageTo("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							updateTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.signedBy(SCENARIO_PAYER_NAME, "topicKey")
+									.submitKey(EMPTY_KEY),
+							submitMessageTo("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.signedBy(SCENARIO_PAYER_NAME),
+							getTopicInfo("topicTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							deleteTopic("topicTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME),
+							/* Contract ops */
+							contractCreate("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.bytecode(() -> String.format("0.0.%d", feeSnapshots.getOpsConfig().getBytecode()))
+									.adminKey("contractFirstKey")
+									.balance(1),
+							contractCall("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.sending(1L),
+							contractCallLocal("contractTbd", LUCKY_NO_LOOKUP_ABI),
+							contractUpdate("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.newKey("contractSecondKey"),
+							getContractInfo("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							getContractRecords("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							getContractBytecode("contractTbd")
+									.payingWith(SCENARIO_PAYER_NAME),
+							contractDelete("contractTbd")
+									.fee(tinyBarsToOffer)
+									.payingWith(SCENARIO_PAYER_NAME)
+									.transferAccount(SCENARIO_PAYER_NAME)
+					).then( );
+		} catch (Exception e) {
+			log.warn("Unable to initialize system file scenarios, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec updatePaymentCsv() {
+		ensureScenarios();
+		if (scenarios.getFeeSnapshots() == null) {
+			scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
+		}
+		var feeSnapshots = scenarios.getFeeSnapshots();
+
+		try {
+			return customHapiSpec("UpdatePaymentCsv")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given().when().then(
+							withOpContext((spec, opLog) -> {
+								var payments = HapiApiSpec.costSnapshotFrom(
+										"cost-snapshots/fees/ValidationScenarios-FeeSnapshots-costs.properties");
+								var network = params.getTargetNetwork();
+								var feesCsvLoc = String.format("fees/%s-fees.csv", network);
+								var csvFile = new File(feesCsvLoc);
+								if (!feeSnapshots.getAppendToSnapshotCsv() || !csvFile.exists()) {
+									createInitialFeesCsv(feesCsvLoc, payments, feeSnapshots);
+								} else {
+									appendToFeesCsv(feesCsvLoc, payments, feeSnapshots);
+								}
+							})
+					);
+		} catch (Exception e) {
+			log.warn("Unable to ensure fee snapshots bytecode, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static void appendToFeesCsv(String loc, List<Payment> payments, FeeSnapshotsScenario scenario) {
+		List<String> lines = null;
+		int numExistingPayments = -1;
+
+		try {
+			lines = Files.readAllLines(Paths.get(loc));
+			numExistingPayments = lines.size() - 1;
+		} catch (IOException e) {
+			log.warn("Unable to read fees CSV, skipping it!", e);
+			return;
+		}
+
+		if (scenario.getIgnoreCostAnswer()) {
+			payments = payments
+					.stream()
+					.filter(p -> p.reason != Payment.Reason.COST_ANSWER_QUERY_COST)
+					.collect(toList());
+		}
+		if (numExistingPayments != payments.size())	 {
+			log.error(String.format("Existing CSV has %d payments, scenario resulted in %d payments, skipping!",
+					numExistingPayments, payments.size()));
+		}
+
+		int i = 1;
+		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(loc))) {
+			fout.write(lines.get(0) + "," + asColumnHeader(scenario.getScheduleDesc()) + "\n");
+			for (Payment p : payments) {
+				fout.write(String.format("%s,%s\n", lines.get(i++), p.tinyBars));
+			}
+		} catch (IOException e) {
+			log.warn("Unable to create fees CSV, skipping it!", e);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static String asColumnHeader(String desc) {
+		return "Cost (tB) with " + desc + " Schedule";
+	}
+
+	private static void createInitialFeesCsv(String loc, List<Payment> payments, FeeSnapshotsScenario scenario) {
+		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(loc))) {
+			fout.write("Operation," + asColumnHeader(scenario.getScheduleDesc()) + "\n");
+			for (Payment p : payments) {
+				if (scenario.getIgnoreCostAnswer() && (p.reason == Payment.Reason.COST_ANSWER_QUERY_COST)) {
+					continue;
+				}
+				fout.write(String.format("%s,%s\n", p.opName, p.tinyBars));
+			}
+		} catch (IOException e) {
+			log.warn("Unable to create fees CSV, skipping it!", e);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static HapiApiSpec doJustTransfers() {
+		try {
+			int numNodes = targetNetwork().getNodes().size();
+			return customHapiSpec("DoJustTransfers")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer()))
+					).when().then(
+							IntStream.range(0, numNodes).mapToObj(i ->
+									cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+											.hasAnyStatusAtAll()
+											.payingWith(SCENARIO_PAYER_NAME)
+											.setNode(String.format("0.0.%d",
+													targetNetwork().getNodes().get(i).getAccount()))
+											.via("transferTxn" + i)).toArray(HapiSpecOperation[]::new)
+					);
+		} catch (Exception e) {
+			log.warn("Unable to initialize transfers scenario, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec sysFilesUp() {
+		ensureScenarios();
+		if (scenarios.getSysFilesUp() == null) {
+			scenarios.setSysFilesUp(new SysFilesUpScenario());
+		}
+		var sys = scenarios.getSysFilesUp();
+		long[] payers = sys.getUpdates().stream().mapToLong(UpdateAction::getPayer).toArray();
+
+		try {
+			return customHapiSpec("SysFilesUp")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							LongStream.of(payers).mapToObj(payer ->
+									keyFromPem(() -> pemForAccount(payer))
+											.name(String.format("payer%d", payer))
+											.linkedTo(() -> String.format("0.0.%d", payer)))
+									.toArray(HapiSpecOperation[]::new)
+					).when().then(
+							sys.getUpdates().stream().map(action ->
+									updateLargeFile(
+											String.format("payer%d", action.getPayer()),
+											String.format("0.0.%d", action.getNum()),
+											appropriateContents(action.getNum()),
+											true,
+											OptionalLong.of(10_000_000_000L)))
+									.toArray(HapiSpecOperation[]::new)
+					);
+		} catch (Exception e) {
+			log.warn("Unable to initialize system file update scenario, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec sysFilesDown() {
+		ensureScenarios();
+		if (scenarios.getSysFilesDown() == null) {
+			scenarios.setSysFilesDown(new SysFilesDownScenario());
+		}
+		var sys = scenarios.getSysFilesDown();
+		final long[] targets = sys.getNumsToFetch().stream().mapToLong(Integer::longValue).toArray();
+
+		try {
+			return customHapiSpec("SysFilesDown")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer()))
+					).when().then(
+							Arrays.stream(targets)
+									.mapToObj(fileNum -> appropriateQuery(sys, fileNum))
+									.toArray(HapiSpecOperation[]::new)
+					);
+		} catch (Exception e) {
+			log.warn("Unable to initialize system file scenarios, skipping it!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static ByteString appropriateContents(long fileNum) {
+		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+		String name = serde.preferredFileName();
+		String loc = "files/" + params.getTargetNetwork() + "-" + name;
+		try {
+			var stylized = Files.readString(Paths.get(loc));
+			return ByteString.copyFrom(serde.toRawFile(stylized));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
+		}
+	}
+
+	private static HapiSpecOperation appropriateQuery(SysFilesDownScenario sys, long fileNum) {
+		String fid = String.format("0.0.%d", fileNum);
+		SysFileSerde<String> serde = SYS_FILE_SERDES.get(fileNum);
+		String fqn = params.getTargetNetwork() + "-" + serde.preferredFileName();
+		String loc = "files/" + fqn;
+		UnaryOperator<byte[]> preCompare = (fileNum == 121 || fileNum == 122)
+				? ValidationScenarios::asOrdered
+				: bytes -> bytes;
+
+		if (SysFilesDownScenario.COMPARE_EVAL_MODE.equals(sys.getEvalMode())) {
+			String actualLoc = "files/actual-" + fqn;
+			try {
+				byte[] expected = serde.toRawFile(readString(Paths.get(loc)));
+				return getFileContents(fid)
+						.payingWith(SCENARIO_PAYER_NAME)
+						.saveReadableTo(serde::fromRawFile, actualLoc)
+						.hasContents(spec -> expected)
+						.afterBytesTransform(preCompare);
+			} catch (IOException e) {
+				throw new IllegalStateException("Cannot read comparison file @ '" + loc + "'!", e);
+			}
+		} else if (SysFilesDownScenario.SNAPSHOT_EVAL_MODE.equals(sys.getEvalMode())) {
+			return getFileContents(fid)
+					.payingWith(SCENARIO_PAYER_NAME)
+					.saveReadableTo(serde::fromRawFile, loc);
+		} else {
+			throw new IllegalArgumentException("No such sys files eval mode '" + sys.getEvalMode() + "'!");
+		}
+	}
+
+	private static byte[] asOrdered(byte[] svcCfgList) {
+		try {
+			var pre = ServicesConfigurationList.parseFrom(svcCfgList);
+			var post = ServicesConfigurationList.newBuilder();
+			Map<String, String> lookup = pre.getNameValueList()
+					.stream()
+					.collect(toMap(Setting::getName, Setting::getValue));
+			pre.getNameValueList()
+					.stream()
+					.map(Setting::getName)
+					.sorted(LEGACY_THROTTLES_FIRST_ORDER)
+					.forEach(prop -> post.addNameValue(Setting.newBuilder()
+							.setName(prop)
+							.setValue(lookup.get(prop))));
+			return post.build().toByteArray();
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalArgumentException("Not a services configuration list!", e);
+		}
 	}
 
 	private static HapiApiSpec getSystemKeys() {
@@ -187,8 +660,9 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
-					)).given( ).when( ).then(flattened(
+					)).given().when().then(flattened(
 							Arrays.stream(accounts)
 									.mapToObj(num -> getAccountInfo(String.format("0.0.%d", num))
 											.setNodeFrom(ValidationScenarios::nextNode)
@@ -201,7 +675,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.toArray(n -> new HapiSpecOperation[n])
 					));
 		} catch (Exception e) {
-			log.warn("Unable to record inital payer balance, skipping it!", e);
+			log.warn("Unable to initialize fetch for system keys, skipping it!", e);
 			errorsOccurred.set(true);
 			return null;
 		}
@@ -213,12 +687,13 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
-					)).given( ).when( ).then(
+					)).given().when().then(
 							withOpContext((spec, opLog) -> {
-									var lookup = getAccountBalance(() -> idLiteral(targetNetwork().getBootstrap()));
-									allRunFor(spec, lookup);
-									learner.accept(lookup.getResponse().getCryptogetAccountBalance().getBalance());
+								var lookup = getAccountBalance(() -> idLiteral(targetNetwork().getBootstrap()));
+								allRunFor(spec, lookup);
+								learner.accept(lookup.getResponse().getCryptogetAccountBalance().getBalance());
 							})
 					);
 		} catch (Exception e) {
@@ -236,9 +711,10 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
-					).when( ).then(
+					).when().then(
 							ensureValidatedAccountExistence(
 									SCENARIO_PAYER_NAME,
 									minStartingBalance,
@@ -248,6 +724,43 @@ public class ValidationScenarios extends HapiApiSuite {
 					);
 		} catch (Exception e) {
 			log.warn("Unable to ensure scenario payer, failing!", e);
+			errorsOccurred.set(true);
+			return null;
+		}
+	}
+
+	private static HapiApiSpec versionsScenario() {
+		try {
+			ensureScenarios();
+			if (scenarios.getVersions() == null) {
+				scenarios.setVersions(new VersionInfoScenario());
+			}
+			var versions = scenarios.getVersions();
+			int[] hapiProto = Arrays.stream(versions.getHapiProtoSemVer().split("[.]"))
+					.mapToInt(Integer::parseInt)
+					.toArray();
+			int[] services = Arrays.stream(versions.getServicesSemVer().split("[.]"))
+					.mapToInt(Integer::parseInt)
+					.toArray();
+			return customHapiSpec("VersionsScenario")
+					.withProperties(Map.of(
+							"nodes", nodes(),
+							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
+							"startupAccounts.literal", payerKeystoreLiteral()
+					)).given(
+							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+									.name(SCENARIO_PAYER_NAME)
+									.linkedTo(() -> String.format("0.0.%d", targetNetwork().getScenarioPayer()))
+					).when().then(
+							getVersionInfo()
+									.hasProtoSemVer(hapiProto[0], hapiProto[1], hapiProto[2])
+									.hasServicesSemVer(services[0], services[1], services[2])
+									.payingWith(SCENARIO_PAYER_NAME)
+									.setNodeFrom(ValidationScenarios::nextNode)
+					);
+		} catch (Exception e) {
+			log.warn("Unable to initialize versions scenario, skipping it!", e);
 			errorsOccurred.set(true);
 			return null;
 		}
@@ -267,6 +780,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -415,6 +929,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -427,7 +942,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									persistentOrNegativeOne(file),
 									num -> file.getPersistent().setNum(num),
 									loc -> file.getPersistent().setContents(loc))
-					).when( ).then(
+					).when().then(
 							novelFileIfDesired()
 					);
 		} catch (Exception e) {
@@ -525,7 +1040,8 @@ public class ValidationScenarios extends HapiApiSuite {
 			} else {
 				var contents = (contentsLoc != null)
 						? Files.readAllBytes(Paths.get(pathTo(contentsLoc)))
-						: ValidationScenarios.class.getClassLoader().getResourceAsStream(DEFAULT_CONTENTS_RESOURCE).readAllBytes();
+						: ValidationScenarios.class.getClassLoader().getResourceAsStream(
+						DEFAULT_CONTENTS_RESOURCE).readAllBytes();
 				var filesDir = new File("files/");
 				if (!filesDir.exists()) {
 					filesDir.mkdir();
@@ -560,12 +1076,13 @@ public class ValidationScenarios extends HapiApiSuite {
 			}
 			var contract = scenarios.getContract();
 
-			Object[] donationArgs = new Object[] { Integer.valueOf((int)targetNetwork().getBootstrap()), "Hey, Ma!" };
+			Object[] donationArgs = new Object[] { Integer.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!" };
 
 			return customHapiSpec("ContractScenario")
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -686,7 +1203,8 @@ public class ValidationScenarios extends HapiApiSuite {
 				var baseName = (bytecodeLoc != null) ? bytecodeLoc : DEFAULT_BYTECODE_RESOURCE;
 				var bytecode = (bytecodeLoc != null)
 						? Files.readAllBytes(Paths.get(pathToContract(bytecodeLoc)))
-						: ValidationScenarios.class.getClassLoader().getResourceAsStream(DEFAULT_BYTECODE_RESOURCE).readAllBytes();
+						: ValidationScenarios.class.getClassLoader().getResourceAsStream(
+						DEFAULT_BYTECODE_RESOURCE).readAllBytes();
 				var contractsDir = new File("contracts/");
 				if (!contractsDir.exists()) {
 					contractsDir.mkdir();
@@ -753,6 +1271,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.withProperties(Map.of(
 							"nodes", nodes(),
 							"default.payer", primaryPayer(),
+							"default.node", defaultNode(),
 							"startupAccounts.literal", payerKeystoreLiteral()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -874,7 +1393,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static void parse(String[] args) {
 		var KEY_VALUE_PATTERN = Pattern.compile("([\\w\\d]+)=([\\w\\d,]+)");
 
-		for (String arg : args)	{
+		for (String arg : args) {
 			var matcher = KEY_VALUE_PATTERN.matcher(arg);
 			if (!matcher.matches()) {
 				log.warn(String.format("Ignoring command-line argument '%s'", arg));
@@ -883,8 +1402,10 @@ public class ValidationScenarios extends HapiApiSuite {
 					params.setTargetNetwork(valueOf(matcher));
 				} else if ("defaultNodePayment".equals(keyOf(matcher))) {
 					try {
+
 						params.setDefaultNodePayment(Long.parseLong(valueOf(matcher)));
-					} catch (NumberFormatException ignore) {}
+					} catch (NumberFormatException ignore) {
+					}
 				} else if ("novel".equals(keyOf(matcher))) {
 					params.setNovelContent(valueOf(matcher).toLowerCase().equals("true"));
 				} else if ("revocation".equals(keyOf(matcher))) {
@@ -894,9 +1415,13 @@ public class ValidationScenarios extends HapiApiSuite {
 							.map(Object::toString)
 							.collect(Collectors.toSet());
 					List<String> listed = Arrays.stream(valueOf(matcher).split(","))
+							.map(name -> name.equals("fees") ? "FEE_SNAPSHOTS" : name)
 							.map(name -> name.equals("syskeys") ? "SYSTEM_KEYS" : name)
+							.map(name -> name.equals("xfers") ? "TRANSFERS_ONLY" : name)
+							.map(name -> name.equals("sysFilesDown") ? "SYS_FILES_DOWN" : name)
+							.map(name -> name.equals("sysFilesUp") ? "SYS_FILES_UP" : name)
 							.filter(v -> legal.contains(v.toUpperCase()))
-							.collect(Collectors.toList());
+							.collect(toList());
 					if (listed.size() == 1) {
 						params.setScenarios(EnumSet.of(Scenario.valueOf(listed.get(0).toUpperCase())));
 					} else if (listed.size() > 1) {
@@ -922,8 +1447,6 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static String valueOf(Matcher m) {
 		return m.group(2);
 	}
-
-	enum Scenario { CRYPTO, FILE, CONTRACT, CONSENSUS, SYSTEM_KEYS }
 
 	private static class ScenarioParams {
 		static long DEFAULT_NODE_PAYMENT_TINYBARS = 25;
@@ -1016,6 +1539,10 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static String nextNode() {
 		var account = nodeAccounts.get(nextAccount++);
 		nextAccount %= nodeAccounts.size();
+		try {
+			Thread.sleep(validationConfig.getSleepMsBeforeNextNode());
+		} catch (InterruptedException ignore) {
+		}
 		return account;
 	}
 
@@ -1024,6 +1551,10 @@ public class ValidationScenarios extends HapiApiSuite {
 				.stream()
 				.map(node -> String.format("%s:0.0.%d", node.getIpv4Addr(), node.getAccount()))
 				.collect(Collectors.joining(","));
+	}
+
+	private static String defaultNode() {
+		return String.format("0.0.%d", targetNetwork().getDefaultNode());
 	}
 
 	private static String primaryPayer() {
@@ -1041,7 +1572,8 @@ public class ValidationScenarios extends HapiApiSuite {
 			log.error(String.format("Missing bootstrap PEM @ '%s', exiting.", loc));
 		}
 
-		return SpecUtils.asSerializedOcKeystore(f, params.getRawPassphrase(), accountId(targetNetwork().getBootstrap()));
+		return SpecUtils.asSerializedOcKeystore(f, params.getRawPassphrase(),
+				accountId(targetNetwork().getBootstrap()));
 	}
 
 	private static AccountID accountId(long num) {
@@ -1065,19 +1597,28 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static String pemForAccount(long num) {
-		return String.format("keys/%s-account%d.pem", params.getTargetNetwork(), num);
+		return pemForEntity(num, "account");
 	}
 
 	private static String pemForTopic(long num) {
-		return String.format("keys/%s-topic%d.pem", params.getTargetNetwork(), num);
+		return pemForEntity(num, "topic");
 	}
 
 	private static String pemForFile(long num) {
-		return String.format("keys/%s-file%d.pem", params.getTargetNetwork(), num);
+		return pemForEntity(num, "file");
 	}
 
 	private static String pemForContract(long num) {
-		return String.format("keys/%s-contract%d.pem", params.getTargetNetwork(), num);
+		return pemForEntity(num, "contract");
+	}
+
+	private static String pemForEntity(long num, String entity) {
+		var preferredLoc = String.format("keys/%s/%s%d.pem", params.getTargetNetwork(), entity, num);
+		if (new File(preferredLoc).exists()) {
+			return preferredLoc;
+		} else {
+			return String.format("keys/%s-%s%d.pem", params.getTargetNetwork(), entity, num);
+		}
 	}
 
 	private static String pathTo(String contents) {
@@ -1132,13 +1673,13 @@ public class ValidationScenarios extends HapiApiSuite {
 					"0.0.%d balance change was %d tinyBars (%.2f \u0127)",
 					targetNetwork().getBootstrap(),
 					payerChange,
-					(double)payerChange / 100_000_000));
+					(double) payerChange / 100_000_000));
 		} else if (startingBalance.get() >= 0) {
 			log.info(String.format(
 					"0.0.%d balance is now %d tinyBars (%.2f \u0127)",
 					targetNetwork().getBootstrap(),
 					startingBalance.get(),
-					(double)startingBalance.get() / 100_000_000));
+					(double) startingBalance.get() / 100_000_000));
 		}
 	}
 

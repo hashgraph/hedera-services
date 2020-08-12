@@ -22,16 +22,19 @@ package com.hedera.services.legacy.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.service.GlobalFlag;
-import com.hedera.services.legacy.unit.handler.FeeScheduleInterceptor;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -44,11 +47,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
-import com.hedera.services.legacy.initialization.NodeAccountsCreation;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -75,9 +77,8 @@ class QueryValidationTest {
 
   long payerAccountInitialBalance = 100000;
   private RecordCache recordCache;
-  private FCMap<MapKey, HederaAccount> map = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-  private FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize,
-      StorageValue::deserialize);
+  private FCMap<MerkleEntityId, MerkleAccount> map = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
   ;
   private AccountID nodeAccount =
       AccountID.newBuilder().setAccountNum(3).setRealmNum(0).setShardNum(0).build();
@@ -109,21 +110,22 @@ class QueryValidationTest {
 
   @BeforeAll
   void initializeState() throws Exception {
-    FCStorageWrapper storageWrapper = new FCStorageWrapper(
-        storageMap);
-
-    FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
         "./configuration/dev/application.properties",
         "./configuration/dev/api-permission.properties");
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+    var policies = new SystemOpPolicies(new MockEntityNumbers());
     transactionHandler = new TransactionHandler(
             mock(RecordCache.class),
             precheckVerifier,
-            map,
-            nodeAccount);
-    transactionHandler.setBasicPrecheck(new BasicPrecheck(TestContextValidator.TEST_VALIDATOR));
+            () -> map,
+            nodeAccount,
+            new MockAccountNumbers(),
+            policies,
+            new StandardExemptions(new MockAccountNumbers(), policies));
+    transactionHandler.setBasicPrecheck(
+            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR));
     byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();
     onboardAccount(payerAccount, pubKey, payerAccountInitialBalance);
     onboardAccount(lowBalanceAccount, pubKey, 100L);
@@ -132,13 +134,13 @@ class QueryValidationTest {
   }
 
   private static ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
     return RequestBuilder.getExchangeRateSetBuilder(1, 1, expiryTime, 1, 1, expiryTime);
   }
 
   private void onboardAccount(AccountID account, byte[] publicKey, long initialBalance)
       throws Exception {
-    NodeAccountsCreation.createAccounts(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
+    NodeAccountsCreation.insertAccount(initialBalance, MiscUtils.commonsBytesToHex(publicKey), account, map
     );
   }
 

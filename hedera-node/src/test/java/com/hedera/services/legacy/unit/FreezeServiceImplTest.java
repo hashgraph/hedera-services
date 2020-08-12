@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,17 +22,21 @@ package com.hedera.services.legacy.unit;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.security.ops.SystemOpPolicies;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.queries.validation.QueryFeeCheck;
@@ -42,10 +46,11 @@ import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
@@ -76,9 +81,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.BDDMockito.*;
 
 /**
- * Working directory should be HapiApp2.0/
+ * Working directory should be hedera-node/
  */
-//@RunWith(JUnitPlatform.class)
 
 @RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -90,8 +94,8 @@ public class FreezeServiceImplTest {
     SettingsCommon.transactionMaxBytes = 1_234_567;
   }
 
-  FCMap<MapKey, HederaAccount> accountFCMap = null;
-  FCMap<MapKey, Topic> topicFCMap = null;
+  FCMap<MerkleEntityId, MerkleAccount> accountFCMap = null;
+  FCMap<MerkleEntityId, MerkleTopic> topicFCMap = null;
   Transaction tx;
   Transaction signTransaction;
   Platform platform;
@@ -102,8 +106,7 @@ public class FreezeServiceImplTest {
   private AccountID nodeAccountId;
   private Key key;
   private Map<String, PrivateKey> pubKey2privKeyMap;
-  private FCMap<StorageKey, StorageValue> storageMap = null;
-  private FCStorageWrapper fcStorageWrapper;
+  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
 
   @BeforeAll
   public void setUp() throws Exception {
@@ -114,37 +117,42 @@ public class FreezeServiceImplTest {
             .thenReturn(true);
 
     //Init FCMap; Add account 58
-    accountFCMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    MapKey mk = new MapKey();
-    mk.setAccountNum(payerAccount);
-    mk.setRealmNum(0);
+    accountFCMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    MerkleEntityId mk = new MerkleEntityId();
+    mk.setNum(payerAccount);
+    mk.setRealm(0);
 
-    HederaAccount mv = new HederaAccount();
+    MerkleAccount mv = new MerkleAccount();
     mv.setBalance(10000000000000000l);
 
     pubKey2privKeyMap = new HashMap<>();
     key = genSingleEd25519Key(pubKey2privKeyMap);
-    mv.setAccountKeys(JKey.mapKey(key));
+    mv.setKey(JKey.mapKey(key));
     accountFCMap.put(mk, mv);
 
-    receiptCache = new RecordCache(CacheBuilder.newBuilder().build());
-
-    fcStorageWrapper = new FCStorageWrapper(storageMap);
+    receiptCache = new RecordCache(
+            null,
+            CacheBuilder.newBuilder().build(),
+            new HashMap<>());
 
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     HbarCentExchange exchange = new OneToOneRates();
+    var policies = new SystemOpPolicies(new MockEntityNumbers());
     transactionHandler = new TransactionHandler(
             receiptCache,
-            accountFCMap,
+            () -> accountFCMap,
             nodeAccountId,
             precheckVerifier,
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(topicFCMap, accountFCMap),
-            new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
-            new QueryFeeCheck(accountFCMap));
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap),
+            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+            new QueryFeeCheck(() -> accountFCMap),
+            new MockAccountNumbers(),
+            policies,
+            new StandardExemptions(new MockAccountNumbers(), policies));
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");
@@ -154,12 +162,14 @@ public class FreezeServiceImplTest {
   }
 
   private static ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = PropertiesLoader.getExpiryTime();
-    return RequestBuilder.getExchangeRateSetBuilder(1, 1, expiryTime, 1, 1, expiryTime);
+    long expiryTime = Long.MAX_VALUE;
+    return RequestBuilder.getExchangeRateSetBuilder(
+            1, 1, expiryTime,
+            1, 1, expiryTime);
   }
 
   private static class OneToOneRates implements HbarCentExchange {
-    long expiryTime = PropertiesLoader.getExpiryTime();
+    long expiryTime = Long.MAX_VALUE;
   	ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
   	        1, 1, expiryTime,
             1, 1, expiryTime);
@@ -192,7 +202,7 @@ public class FreezeServiceImplTest {
 
   @Test
   public void freezeTest() throws Exception {
-    tx = FreezeTestHelper.createFreezeTransaction(true, true);
+    tx = FreezeTestHelper.createFreezeTransaction(true, true, null);
     signTransaction = sign(tx);
 
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
@@ -218,7 +228,10 @@ public class FreezeServiceImplTest {
     TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
             TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.OK))
             .build();
-    receiptCache.setPostConsensus(txID, JTransactionRecord.convert(record));
+    receiptCache.setPostConsensus(
+            txID,
+            record.getReceipt().getStatus(),
+            ExpirableTxnRecord.fromGprc(record));
   }
 
   /**
@@ -227,7 +240,7 @@ public class FreezeServiceImplTest {
    */
   @Test
   public void freeze_NotPaidBy58_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true);
+    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true, null);
     Transaction signed = sign(freezeTx);
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
       @Override
@@ -257,7 +270,7 @@ public class FreezeServiceImplTest {
    */
   @Test
   public void freeze_NotValidFreezeTxBody_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false);
+    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false, null);
     Transaction signed = sign(freezeTx);
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
       @Override

@@ -21,7 +21,7 @@ package com.hedera.services.queries.meta;
  */
 
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -39,8 +39,8 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,8 +71,8 @@ class GetTxnRecordAnswerTest {
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
-	private JTransactionRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = JTransactionRecord.convert(targetRecord);
+	private ExpirableTxnRecord targetRecord = constructTargetRecord();
+	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
 
 	private StateView view;
 	private RecordCache recordCache;
@@ -81,7 +81,7 @@ class GetTxnRecordAnswerTest {
 	private String node = "0.0.3";
 	private long fee = 1_234L;
 	private Transaction paymentTxn;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
 
@@ -89,7 +89,7 @@ class GetTxnRecordAnswerTest {
 	private void setup() {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 
@@ -150,6 +150,22 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
+	public void recognizesUnavailableRecordFromMiss() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+				.willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
+	}
+
+	@Test
 	public void respectsMetaValidity() throws Throwable {
 		// given:
 		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
@@ -177,28 +193,11 @@ class GetTxnRecordAnswerTest {
 	}
 
 	@Test
-	public void syntaxCheckOkForCachedRecord() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
-
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(true);
-
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
-
-		// then:
-		assertEquals(OK, validity);
-		verify(answerFunctions, never()).txnRecord(recordCache, view, query);
-	}
-
-	@Test
 	public void syntaxCheckPrioritizesAccountStatus() throws Throwable {
 		// setup:
 		Query query = getRecordQuery(targetTxnId, ANSWER_ONLY, 123L);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(false);
 		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(ACCOUNT_DELETED);
-		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.empty());
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -211,21 +210,6 @@ class GetTxnRecordAnswerTest {
 	public void syntaxCheckShortCircuitsOnDefaultAccountID() {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.checkValidity(Query.getDefaultInstance(), view));
-	}
-
-	@Test
-	public void syntaxCheckNotFoundForUnfindableRecord() throws Throwable {
-		// setup:
-		Query query = getRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
-
-		given(answerFunctions.txnRecord(recordCache, view, query)).willReturn(Optional.empty());
-		given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts)).willReturn(OK);
-
-		// when:
-		ResponseCodeEnum validity = subject.checkValidity(query, view);
-
-		// then:
-		assertEquals(RECORD_NOT_FOUND, validity);
 	}
 
 	@Test
@@ -260,7 +244,7 @@ class GetTxnRecordAnswerTest {
 				.build();
 	}
 
-	 JTransactionRecord constructTargetRecord() {
+	 ExpirableTxnRecord constructTargetRecord() {
 		TransactionRecord record = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
 				.setTransactionID(targetTxnId)
@@ -273,6 +257,6 @@ class GetTxnRecordAnswerTest {
 						asAccount("0.0.1001"), 2L,
 						asAccount("0.0.1002"), 2L))
 				.build();
-		return JTransactionRecord.convert(record);
+		return ExpirableTxnRecord.fromGprc(record);
 	}
 }

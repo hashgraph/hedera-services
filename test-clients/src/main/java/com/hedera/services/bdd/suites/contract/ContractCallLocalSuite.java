@@ -25,8 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -95,9 +95,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				);
 	}
 
-	/*
-	C.f. https://github.com/swirlds/services-hedera/issues/1543
-	 */
 	private HapiApiSpec impureCallFails() {
 		return defaultHapiSpec("ImpureCallFails")
 				.given(
@@ -148,9 +145,6 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				);
 	}
 
-	/*
-	https://github.com/swirlds/services-hedera/issues/1543
-	 */
 	private HapiApiSpec undersizedMaxResultFails() {
 		return defaultHapiSpec("UndersizedMaxResult")
 				.given(

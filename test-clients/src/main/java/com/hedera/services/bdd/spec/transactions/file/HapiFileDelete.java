@@ -31,21 +31,30 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
 	static final Logger log = LogManager.getLogger(HapiFileDelete.class);
 
-	private final String file;
+	private static final String DEFAULT_FILE_NAME = "f";
+
+	private String file = DEFAULT_FILE_NAME;
+	private Optional<Supplier<String>> fileSupplier = Optional.empty();
 	private boolean shouldPurge = false;
 
 	public HapiFileDelete(String file) {
 		this.file = file;
+	}
+
+	public HapiFileDelete(Supplier<String> supplier) {
+		this.fileSupplier = Optional.of(supplier);
 	}
 
 	public HapiFileDelete purging() {
@@ -60,6 +69,7 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+		file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
 		var fid = TxnUtils.asFileId(file, spec);
 		FileDeleteTransactionBody opBody = spec
 				.txns()
@@ -86,6 +96,9 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (verboseLoggingOn) {
+			log.info("Actual status was " + actualStatus);
+		}
 		if (actualStatus != ResponseCodeEnum.SUCCESS) {
 			return;
 		}

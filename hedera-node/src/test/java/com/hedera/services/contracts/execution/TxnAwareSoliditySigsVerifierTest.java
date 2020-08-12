@@ -21,14 +21,14 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
@@ -53,11 +53,11 @@ class TxnAwareSoliditySigsVerifierTest {
 	PlatformTxnAccessor accessor;
 	JKey expectedKey;
 
-	HederaAccount sigReqAccount, noSigReqAccount, contract;
+	MerkleAccount sigReqAccount, noSigReqAccount, contract;
 
 	TransactionContext txnCtx;
 	SyncActivationCheck areActive;
-	FCMap<MapKey, HederaAccount> accounts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	TxnAwareSoliditySigsVerifier subject;
 
@@ -66,13 +66,13 @@ class TxnAwareSoliditySigsVerifierTest {
 		syncVerifier = mock(SyncVerifier.class);
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		contract = mock(HederaAccount.class);
+		contract = mock(MerkleAccount.class);
 		given(contract.isSmartContract()).willReturn(true);
 		given(contract.isReceiverSigRequired()).willReturn(true);
-		sigReqAccount = mock(HederaAccount.class);
+		sigReqAccount = mock(MerkleAccount.class);
 		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
-		given(sigReqAccount.getAccountKeys()).willReturn(expectedKey);
-		noSigReqAccount = mock(HederaAccount.class);
+		given(sigReqAccount.getKey()).willReturn(expectedKey);
+		noSigReqAccount = mock(MerkleAccount.class);
 		given(noSigReqAccount.isReceiverSigRequired()).willReturn(false);
 
 		accessor = mock(PlatformTxnAccessor.class);
@@ -81,14 +81,14 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(txnCtx.activePayer()).willReturn(payer);
 
 		accounts = mock(FCMap.class);
-		given(accounts.get(MapKey.getMapKey(payer))).willReturn(sigReqAccount);
-		given(accounts.get(MapKey.getMapKey(sigRequired))).willReturn(sigReqAccount);
-		given(accounts.get(MapKey.getMapKey(noSigRequired))).willReturn(noSigReqAccount);
-		given(accounts.get(MapKey.getMapKey(smartContract))).willReturn(contract);
+		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(sigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(accounts.get(MerkleEntityId.fromAccountId(smartContract))).willReturn(contract);
 
 		areActive = mock(SyncActivationCheck.class);
 
-		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, accounts);
+		subject = new TxnAwareSoliditySigsVerifier(syncVerifier, txnCtx, areActive, () -> accounts);
 	}
 
 	@Test

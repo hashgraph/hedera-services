@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.services.context.primitives.ExchangeRateSetWrapper;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -76,10 +76,10 @@ class TxnAwareRatesManagerTest {
 	FileNumbers fileNums;
 	PropertySource properties;
 	TransactionContext txnCtx;
-	ExchangeRateSetWrapper midnightRates;
+	ExchangeRates midnightRates;
 	Consumer<ExchangeRateSet> postUpdateCb;
-	IntFunction<BiPredicate<ExchangeRateSetWrapper, ExchangeRateSet>> intradayLimitFactory;
-	BiPredicate<ExchangeRateSetWrapper, ExchangeRateSet> intradayLimit;
+	IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory;
+	BiPredicate<ExchangeRates, ExchangeRateSet> intradayLimit;
 
 	TxnAwareRatesManager subject;
 
@@ -94,7 +94,7 @@ class TxnAwareRatesManagerTest {
 		given(accessor.getSignedTxn4Log()).willReturn(Transaction.getDefaultInstance());
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.accessor()).willReturn(accessor);
-		midnightRates = mock(ExchangeRateSetWrapper.class);
+		midnightRates = mock(ExchangeRates.class);
 		postUpdateCb = mock(Consumer.class);
 
 		intradayLimit = mock(BiPredicate.class);
@@ -109,7 +109,7 @@ class TxnAwareRatesManagerTest {
 				new MockAccountNumbers(),
 				properties,
 				txnCtx,
-				midnightRates,
+				() -> midnightRates,
 				postUpdateCb,
 				intradayLimitFactory);
 	}
@@ -161,7 +161,7 @@ class TxnAwareRatesManagerTest {
 
 		// then:
 		verify(postUpdateCb).accept(validRatesObj);
-		verify(midnightRates, never()).update(any());
+		verify(midnightRates, never()).replaceWith(any());
 	}
 
 	@Test
@@ -173,7 +173,7 @@ class TxnAwareRatesManagerTest {
 
 		// then:
 		verify(postUpdateCb).accept(validRatesObj);
-		verify(midnightRates).update(validRatesObj);
+		verify(midnightRates).replaceWith(validRatesObj);
 	}
 
 	@Test

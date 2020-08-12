@@ -61,9 +61,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final Class<P> propertyType;
 	private final Supplier<A> newAccount;
 	private final BackingAccounts<K, A> accounts;
-	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
+
+	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
 	private Optional<Comparator<K>> keyComparator = Optional.empty();
@@ -98,6 +99,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 		changes.clear();
 		deadAccounts.clear();
+		accounts.flushMutableRefs();
 		isInTransaction = false;
 	}
 
@@ -106,15 +108,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
 
-		log.debug("Changes to be commited: {}", this::changeSetSoFar);
+		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 
 		try {
 			Stream<K> changedKeys = keyComparator.isPresent()
 					? changes.keySet().stream().sorted(keyComparator.get())
 					: changes.keySet().stream();
+			/* Only explicitly update new accounts. */
 			changedKeys
 					.filter(id -> !deadAccounts.contains(id))
-					.forEach(id -> accounts.replace(id, get(id)));
+					.forEach(id -> accounts.put(id, get(id)));
 			changes.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
@@ -122,6 +125,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					: deadAccounts.stream();
 			deadKeys.forEach(accounts::remove);
 			deadAccounts.clear();
+
+			accounts.flushMutableRefs();
 
 			isInTransaction = false;
 		} catch (Exception e) {
@@ -144,9 +149,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 				desc.append(", ");
 			}
 			K id = change.getKey();
-			String accountInDeadAccounts = deadAccounts.contains(id) ? "*DEAD* " : "";
-			String accountNotInDeadAccounts = deadAccounts.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			String prefix = accounts.contains(id)
+			var accountInDeadAccounts = deadAccounts.contains(id) ? "*DEAD* " : "";
+			var accountNotInDeadAccounts = deadAccounts.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			var prefix = accounts.contains(id)
 					? accountInDeadAccounts
 					: accountNotInDeadAccounts;
 			desc.append(prefix)
@@ -190,9 +195,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public A get(K id) {
 		throwIfMissing(id);
-		A account = accounts.contains(id) ? accounts.getCopy(id) : newAccount.get();
+
 		EnumMap<P, Object> changeSet = changes.get(id);
-		if (changeSet != null) {
+		boolean hasPendingChanges = changeSet != null;
+		A account = accounts.contains(id) ? accounts.getRef(id) : newAccount.get();
+		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
 		return account;
@@ -201,19 +208,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public Object get(K id, P property) {
 		throwIfMissing(id);
+
 		if (hasPendingChange(id, property)) {
 			EnumMap<P, Object> changeSet = changes.get(id);
 			if (changeSet != null) {
 				return changeSet.get(property);
 			}
 		}
-		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
-	}
 
-	@Override
-	public Object getSaved(K id, P property) {
-		throwIfUnsaved(id);
-		return property.getter().apply(accounts.getRef(id));
+		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
 	}
 
 	@Override
@@ -258,12 +261,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	void throwIfNotInTxn() {
 		if (!isInTransaction) {
 			throw new IllegalStateException("No active transaction!");
-		}
-	}
-
-	private void throwIfUnsaved(K id) {
-		if (isZombie(id) || !accounts.contains(id)) {
-			throw new MissingAccountException(id);
 		}
 	}
 

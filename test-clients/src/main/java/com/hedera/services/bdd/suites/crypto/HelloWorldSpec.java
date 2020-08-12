@@ -34,8 +34,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractCallDetails;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -59,43 +59,8 @@ public class HelloWorldSpec extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[]{
 						balancesChangeOnTransfer(),
-//						freezeWorks(),
-//						createThenTransferThenUpdateDeleteThenUpdate()
 				}
 		);
-	}
-
-	private HapiApiSpec freezeWorks() {
-		return defaultHapiSpec("FreezeWorks")
-				.given( ).when(
-				).then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
-				);
-	}
-
-	private HapiApiSpec createThenTransferThenUpdateDeleteThenUpdate() {
-		return defaultHapiSpec("createThenTransferThenUpdateDeleteThenUpdate")
-				.given(
-						newKeyNamed("bombKey"),
-						cryptoCreate("sponsor").sendThreshold(1L),
-						cryptoCreate("beneficiary"),
-						cryptoCreate("tbd"),
-						fileCreate("bytecode").path(SupportedContract.inPath("simpleStorage")),
-						contractCreate("simpleStorage").bytecode("bytecode")
-				).when(
-						contractCall("simpleStorage",
-								ContractCallDetails.SIMPLE_STORAGE_SETTER_ABI,
-								BigInteger.valueOf(1)),
-						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1_234L))
-								.payingWith("sponsor")
-								.memo("Hello World!")
-				).then(
-						cryptoUpdate("beneficiary").key("bombKey"),
-						sleepFor(2_000),
-						cryptoDelete("tbd"),
-						sleepFor(2_000),
-						cryptoUpdate("beneficiary").key("bombKey")
-				);
 	}
 
 	private HapiApiSpec balancesChangeOnTransfer() {

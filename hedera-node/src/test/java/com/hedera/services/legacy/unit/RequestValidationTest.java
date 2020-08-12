@@ -21,13 +21,18 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestExchangeRates;
 import com.hedera.test.mocks.TestFeesFactory;
+import com.hedera.test.mocks.TestProperties;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -72,6 +77,7 @@ public class RequestValidationTest {
     AccountID nodeAcc = AccountID.newBuilder().setShardNum(nodeAccShard).setRealmNum(nodeAccRealm)
         .setAccountNum(nodeAccnNum).build();
 
+    var policies = new SystemOpPolicies(new MockEntityNumbers());
     TransactionHandler trHandler =
         new TransactionHandler(
                 null,
@@ -83,9 +89,13 @@ public class RequestValidationTest {
                 TestExchangeRates.TEST_EXCHANGE,
                 TestFeesFactory.FEES_FACTORY.get(),
                 () -> StateView.EMPTY_VIEW,
-                new BasicPrecheck(TestContextValidator.TEST_VALIDATOR),
+                new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
                 null,
-                null);
+                null,
+                new MockAccountNumbers(),
+                null,
+                policies,
+                new StandardExemptions(new MockAccountNumbers(), policies));
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 

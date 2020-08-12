@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.fcmap.FCMap;
@@ -49,13 +49,15 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class CrptDelAcctValtionAndStartupBalCheckTest {
 
@@ -71,7 +73,7 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 	private AccountID account3ID;
 	FCStorageWrapper storageWrapper;
 	TransactionHandler transactionHandler = null;
-	FCMap<MapKey, HederaAccount> fcMap = null;
+	FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
 	private long LARGE_BALANCE = 1000000000000000l;
 	AccountID feeAccount;
 	List<AccountAmount> accountAmountsList;
@@ -85,7 +87,7 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		nodeAccount = 3l;
 		payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
-		fcMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
+		fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
 		feeAccount = RequestBuilder.getAccountIdBuild(98l, 0l, 0l);
 		accountAmountsList = new LinkedList<>();
 		hederaFunc = HederaFunctionality.CryptoTransfer;
@@ -102,28 +104,6 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyListp).build()).build();
 	}
 
-	    @Test
-		public void testAccountMapBalanceForStartup() throws Exception {
-			long account1Balance = 100000l;
-			long account2Balance = 200000l;
-			// Total Balance is less than 50B
-			account1ID = RequestBuilder.getAccountIdBuild(1022l, 0l, 0l);
-			account2ID = RequestBuilder.getAccountIdBuild(1023l, 0l, 0l);
-			createAccount(account1ID, account1Balance, keys);
-			createAccount(account2ID, account2Balance, keys);
-			ResponseCodeEnum response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID, response);
-
-			// Total balance is 50B
-			account3ID = RequestBuilder.getAccountIdBuild(1024l, 0l, 0l);
-			long account3Balance = 5000000000000000000l - (account2Balance + account1Balance);
-			createAccount(account3ID, account3Balance, keys);
-			response = TransactionHandler.validateAccountIDAndTotalBalInMap(fcMap);
-			Assert.assertEquals(ResponseCodeEnum.OK, response);
-
-
-		}
-
 	private static Key PrivateKeyToKey(PrivateKey privateKey) {
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -135,28 +115,4 @@ public class CrptDelAcctValtionAndStartupBalCheckTest {
 		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 	}	
-
-
-	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {
-		MapKey mk = new MapKey();
-		mk.setAccountNum(payerAccount.getAccountNum());
-		mk.setRealmNum(0);
-		HederaAccount mv = new HederaAccount();
-		mv.setBalance(balance);
-		JKey jkey = JKey.mapKey(key);
-		mv.setAccountKeys(jkey);
-		fcMap.put(mk, mv);
-		ComplexKeyManager.setAccountKey(payerAccount, key);
-	}
-
-	private ExchangeRateSet getDefaultExchangeRateSet() {
-		long expiryTime = PropertiesLoader.getExpiryTime();
-		int currentHbarEquivalent = PropertiesLoader.getCurrentHbarEquivalent();
-		int currentCentEquivalent = PropertiesLoader.getCurrentCentEquivalent();
-		return RequestBuilder.getExchangeRateSetBuilder(currentHbarEquivalent, currentCentEquivalent, expiryTime,
-				currentHbarEquivalent, 15, expiryTime);
-	}
-
-
-
 }

@@ -22,12 +22,14 @@ package com.hedera.services.ledger.ids;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.services.context.primitives.SequenceNumber;
+import com.hedera.services.state.submerkle.SequenceNumber;
+
+import java.util.function.Supplier;
 
 public class SeqNoEntityIdSource implements EntityIdSource {
-	private final SequenceNumber seqNo;
+	private final Supplier<SequenceNumber> seqNo;
 
-	public SeqNoEntityIdSource(SequenceNumber seqNo) {
+	public SeqNoEntityIdSource(Supplier<SequenceNumber> seqNo) {
 		this.seqNo = seqNo;
 	}
 
@@ -36,7 +38,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 		return AccountID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())
-				.setAccountNum(seqNo.getNextSequenceNum())
+				.setAccountNum(seqNo.get().getAndIncrement())
 				.build();
 	}
 
@@ -45,7 +47,7 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 		return FileID.newBuilder()
 				.setRealmNum(sponsor.getRealmNum())
 				.setShardNum(sponsor.getShardNum())
-				.setFileNum(seqNo.getNextSequenceNum())
+				.setFileNum(seqNo.get().getAndIncrement())
 				.build();
 	}
 }

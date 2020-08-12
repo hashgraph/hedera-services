@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Random;
@@ -224,6 +224,7 @@ public class HapiSpecSetup {
 	}
 	public long defaultThroughputObsExpiryMs() { return props.getLong("default.throughputObs.expiry.ms"); }
 	public long defaultThroughputObsSleepMs() { return props.getLong("default.throughputObs.sleep.ms"); }
+	public int defaultTopicRunningHashVersion() { return props.getInteger("default.topic.runningHash.version"); }
 	public AccountID defaultTransfer() {
 		return props.getAccount("default.transfer");
 	}
@@ -348,4 +349,8 @@ public class HapiSpecSetup {
 	}
 	public AccountID strongControlAccount() { return props.getAccount("strong.control.account"); }
 	public String strongControlName() { return props.get("strong.control.name"); }
+	public AccountID systemDeleteAdmin() { return props.getAccount("systemDeleteAdmin.account"); }
+	public String systemDeleteAdminName() { return props.get("systemDeleteAdmin.name"); }
+	public AccountID systemUndeleteAdmin() { return props.getAccount("systemUndeleteAdmin.account"); }
+	public String systemUndeleteAdminName() { return props.get("systemUndeleteAdmin.name"); }
 }

@@ -22,10 +22,9 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static com.hedera.services.legacy.logic.ApplicationConstants.FEE_FILE_ACCOUNT_NUM;
 
 public class FeeScheduleInterceptor implements GenericInterceptor {
   private static final Logger log = LogManager.getLogger(FeeScheduleInterceptor.class);
@@ -38,7 +37,7 @@ public class FeeScheduleInterceptor implements GenericInterceptor {
 
   @Override
   public void update(FCStorageWrapper fcfs, FileID fid) {
-    if (fid.getFileNum() == FEE_FILE_ACCOUNT_NUM) {
+    if (fid.getFileNum() == 111) {
       try {
         fees.init();
       } catch (Exception e) {

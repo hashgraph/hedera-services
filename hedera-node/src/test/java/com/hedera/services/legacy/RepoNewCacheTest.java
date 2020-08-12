@@ -28,20 +28,20 @@ import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.MapValueProperty;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.AccountRecordsHistorian;
-import com.hedera.services.txns.diligence.ScopedDuplicateClassifier;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestProperties;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
-import com.hedera.services.legacy.core.StorageKey;
-import com.hedera.services.legacy.core.StorageValue;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBlobMeta;
+import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 
 import java.math.BigInteger;
@@ -64,20 +64,20 @@ public class RepoNewCacheTest {
 
   @Ignore
   public void test() {
-    FCMap<MapKey, HederaAccount> accountMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize,
-        StorageValue::deserialize);
+    FCMap<MerkleEntityId, MerkleAccount> accountMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    TransactionalLedger<AccountID, MapValueProperty, HederaAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
-            () -> new HederaAccount(),
-            new FCMapBackingAccounts(accountMap),
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
+            () -> new MerkleAccount(),
+            new FCMapBackingAccounts(() -> accountMap),
             new ChangeSummaryManager<>());
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
@@ -165,18 +165,19 @@ public class RepoNewCacheTest {
 
   @Test
   public void rollbackTest() {
-    FCMap<MapKey, HederaAccount> accountMap = new FCMap<>(MapKey::deserialize, HederaAccount::deserialize);
-    FCMap<StorageKey, StorageValue> storageMap = new FCMap<>(StorageKey::deserialize, StorageValue::deserialize);
+    FCMap<MerkleEntityId, MerkleAccount> accountMap =
+            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(accountMap);
-    TransactionalLedger<AccountID, MapValueProperty, HederaAccount> delegate = new TransactionalLedger<>(
-            MapValueProperty.class,
-            () -> new HederaAccount(),
+    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
+    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+            AccountProperty.class,
+            () -> new MerkleAccount(),
             backingAccounts,
             new ChangeSummaryManager<>());
-    HederaAccount someAccount = new HederaAccount();
-    HederaAccount someOtherAccount = new HederaAccount();
+    MerkleAccount someAccount = new MerkleAccount();
+    MerkleAccount someOtherAccount = new MerkleAccount();
     try {
       someAccount.setBalance(100_000_000L);
       someOtherAccount.setBalance(0L);
@@ -187,12 +188,12 @@ public class RepoNewCacheTest {
               .key(new JContractIDKey(0, 0, 2))
               .customizing(someOtherAccount);
     } catch (Exception impossible) {}
-    backingAccounts.replace(IdUtils.asAccount("0.0.1"), someAccount);
-    backingAccounts.replace(IdUtils.asAccount("0.0.2"), someOtherAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.1"), someAccount);
+    backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
     HederaLedger ledger = new HederaLedger(
             mock(EntityIdSource.class),
+            mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
-            mock(ScopedDuplicateClassifier.class),
             delegate);
     Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
@@ -205,9 +206,8 @@ public class RepoNewCacheTest {
       e.printStackTrace();
     }
 
-    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
-
     ledger.begin();
+    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
     repository.increaseNonce(someKeyBytes);
     ServicesRepositoryImpl track1 = repository.startTracking();
     track1.addBalance(someKeyBytes, BigInteger.TEN.negate());

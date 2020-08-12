@@ -22,10 +22,14 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
+
+import java.util.function.Supplier;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 /**
  * Trivial account signing metadata lookup backed by a {@code FCMap<MapKey, MapValue>}.
@@ -33,9 +37,9 @@ import com.swirlds.fcmap.FCMap;
  * @author Michael Tinker
  */
 public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public DefaultFCMapAccountLookup(FCMap<MapKey, HederaAccount> accounts) {
+	public DefaultFCMapAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -49,10 +53,10 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 	 */
 	@Override
 	public AccountSigningMetadata lookup(AccountID id) throws Exception {
-		HederaAccount account = accounts.get(MapKey.getMapKey(id));
+		MerkleAccount account = accounts.get().get(fromAccountId(id));
 		if (account == null) {
 			throw new InvalidAccountIDException("Invalid account!", id);
 		}
-		return new AccountSigningMetadata(account.getAccountKeys(), account.isReceiverSigRequired());
+		return new AccountSigningMetadata(account.getKey(), account.isReceiverSigRequired());
 	}
 }

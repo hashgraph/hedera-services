@@ -20,7 +20,7 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
-import com.hedera.services.context.domain.topic.Topic;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,10 +51,10 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType responseType) {
 	    try {
-			Topic topic = view.topics().get(MapKey.getMapKey(query.getConsensusGetTopicInfo().getTopicID()));
+			MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 			int bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) +
 					BASIC_ACCTID_SIZE +  // topicID
-					getTopicInfoSize(topic);
+					getTopicInfoSize(merkleTopic);
 			FeeComponents feeMatrices = FeeComponents.newBuilder()
 					.setBpt(BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE)
 					.setVpt(0)
@@ -72,9 +72,9 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 		}
 	}
 
-	private static int getTopicInfoSize(Topic topic) throws Exception {
+	private static int getTopicInfoSize(MerkleTopic merkleTopic) throws Exception {
 		return TX_HASH_SIZE + 3 * LONG_SIZE + // runningHash, sequenceNumber, expirationTime, autoRenewPeriod
-				ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(JKey.mapJKey(topic.getAdminKey()),
-						JKey.mapJKey(topic.getSubmitKey()), topic.getMemo(), topic.hasAutoRenewAccountId());
+				ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(JKey.mapJKey(merkleTopic.getAdminKey()),
+						JKey.mapJKey(merkleTopic.getSubmitKey()), merkleTopic.getMemo(), merkleTopic.hasAutoRenewAccountId());
 	}
 }

@@ -20,9 +20,9 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
-import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.handler.FCStorageWrapper;
+import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hedera.services.legacy.logic.ApplicationConstants;
@@ -40,10 +40,10 @@ public class ApplicationPropertiesInterceptor implements GenericInterceptor {
 
   @Override
   public void update(FCStorageWrapper storageWrapper, FileID fid) {
-    if(fid.getFileNum()!= ApplicationConstants.APPLICATION_PROPERTIES_FILE_NUM) {
+    if(fid.getFileNum()!= 121) {
       return; // Don't update if FileID is not a Application Properties File
     }
-    String fileDataPath = FeeCalcUtils.pathOf(fid);
+    String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
     ServicesConfigurationList configValues = null;
     if (storageWrapper.fileExists(fileDataPath)) {
       try {

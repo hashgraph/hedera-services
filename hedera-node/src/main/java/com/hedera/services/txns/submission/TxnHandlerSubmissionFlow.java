@@ -29,8 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.legacy.core.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.exception.PlatformTransactionCreationException;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.swirlds.common.Platform;
 import org.apache.logging.log4j.LogManager;
@@ -71,10 +70,10 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 
 			TxnValidityAndFeeReq metaValidity = metaValidityOf(accessor);
 			if (metaValidity.getValidity() != OK) {
-				return responseWith(metaValidity.getValidity(), metaValidity.getFeeRequired());
+				return responseWith(metaValidity.getValidity(), metaValidity.getRequiredFee());
 			}
 
-			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getTxn());
+			Optional<TransitionLogic> logic = transitionLogic.lookupFor(accessor.getFunction(), accessor.getTxn());
 			Function<TransactionBody, ResponseCodeEnum> syntaxCheck = logic
 					.map(TransitionLogic::syntaxCheck)
 					.orElse(FALLBACK_SYNTAX_CHECK);
@@ -92,12 +91,10 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 	}
 
 	private TransactionResponse submitTransaction(SignedTxnAccessor accessor) {
-		try {
-			legacyTxnHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId());
-			return responseWith(OK);
-		} catch (PlatformTransactionCreationException | InvalidProtocolBufferException ptce) {
+		if (!legacyTxnHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId())) {
 			return responseWith(PLATFORM_TRANSACTION_NOT_CREATED);
 		}
+		return responseWith(OK);
 	}
 
 	private TxnValidityAndFeeReq metaValidityOf(SignedTxnAccessor accessor) {

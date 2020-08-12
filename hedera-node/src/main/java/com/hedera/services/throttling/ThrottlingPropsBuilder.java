@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
@@ -44,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static java.util.Comparator.*;
 import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collectors.joining;
 
 public class ThrottlingPropsBuilder {
 	private static final Logger log = LogManager.getLogger(ThrottlingPropsBuilder.class);
@@ -79,13 +81,13 @@ public class ThrottlingPropsBuilder {
 		addFromLegacyBouncer(fallback, properties, networkSize);
 		addFromLegacyHcs(fallback, properties, networkSize);
 		var throttleProps = new DeferringPropertySource(properties, fallback);
-		displayFn.accept(String.format("--- Resolved network-wide throttling properties (%d nodes) ---", networkSize));
-		throttleProps.allPropertyNames()
-				.stream()
-				.filter(name -> name.startsWith(API_THROTTLING_PREFIX))
-				.sorted(THROTTLE_PROPERTY_ORDER)
-				.forEach(name -> displayFn.accept(String.format("%s=%s", name, throttleProps.getProperty(name))));
-		displayFn.accept("--------------------------------------------------------------");
+		var msg = String.format("Resolved network-wide throttling properties (%d nodes):\n  ", networkSize) +
+				throttleProps.allPropertyNames()
+						.stream().filter(name -> name.startsWith(API_THROTTLING_PREFIX))
+						.sorted(THROTTLE_PROPERTY_ORDER)
+						.map(name -> String.format("%s=%s", name, throttleProps.getProperty(name)))
+						.collect(joining("\n  "));
+		displayFn.accept(msg);
 		return throttleProps;
 	}
 

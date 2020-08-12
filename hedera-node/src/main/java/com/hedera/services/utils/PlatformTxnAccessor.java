@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 /**
- * Encapsulates access to several commonly referenced parts of a Swirlds {@link com.swirlds.common.Transaction}
+ * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.Transaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
- * class immediately tries to parse the {@code byte[]} contents of the Swirlds txn, and propagates any protobuf
+ * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)
  *
  * @author Michael Tinker
@@ -42,10 +42,10 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 	}
 
 	/**
-	 * Convenience static factory for a Swirlds txn whose {@code byte[]} contents are <i>certain</i>
+	 * Convenience static factory for a txn whose {@code byte[]} contents are <i>certain</i>
 	 * to be a valid serialized gRPC txn.
 	 *
-	 * @param platformTxn the Swirlds txn to provide accessors for.
+	 * @param platformTxn the txn to provide accessors for.
 	 * @return an initialized accessor.
 	 */
 	public static PlatformTxnAccessor uncheckedAccessorFor(com.swirlds.common.Transaction platformTxn) {

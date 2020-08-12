@@ -35,20 +35,28 @@ import static org.mockito.BDDMockito.*;
 @RunWith(JUnitPlatform.class)
 class FileNumbersTest {
 	PropertySource properties;
+	HederaNumbers hederaNumbers;
+
 	FileNumbers subject;
 
 	@BeforeEach
 	private void setup() {
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("files.addressBook.num")).willReturn(101L);
-		given(properties.getLongProperty("files.nodeDetails.num")).willReturn(102L);
-		given(properties.getLongProperty("files.applicationProperties.num")).willReturn(121L);
-		given(properties.getLongProperty("files.apiPermissions.num")).willReturn(122L);
-		given(properties.getLongProperty("files.feeSchedules.num")).willReturn(111L);
-		given(properties.getLongProperty("files.exchangeRates.num")).willReturn(112L);
-		given(properties.getLongProperty("hedera.lastProtectedEntity.num")).willReturn(1_000L);
+		hederaNumbers = mock(HederaNumbers.class);
 
-		subject = new FileNumbers(properties);
+		given(hederaNumbers.realm()).willReturn(24L);
+		given(hederaNumbers.shard()).willReturn(42L);
+
+		given(properties.getLongProperty("files.addressBook")).willReturn(101L);
+		given(properties.getLongProperty("files.nodeDetails")).willReturn(102L);
+		given(properties.getLongProperty("files.networkProperties")).willReturn(121L);
+		given(properties.getLongProperty("files.hapiPermissions")).willReturn(122L);
+		given(properties.getLongProperty("files.feeSchedules")).willReturn(111L);
+		given(properties.getLongProperty("files.exchangeRates")).willReturn(112L);
+
+		given(properties.getLongProperty("hedera.numReservedSystemEntities")).willReturn(1_000L);
+
+		subject = new FileNumbers(hederaNumbers, properties);
 	}
 
 	@Test
@@ -60,19 +68,14 @@ class FileNumbersTest {
 		assertEquals(112, subject.exchangeRates());
 		assertEquals(121, subject.applicationProperties());
 		assertEquals(122, subject.apiPermissions());
-		assertTrue(subject.isSystem(1_000));
-		assertFalse(subject.isSystem(1_001));
 	}
 
 	@Test
 	public void getsExpectedFid() {
-		given(properties.getLongProperty("hedera.shard")).willReturn(1L);
-		given(properties.getLongProperty("hedera.realm")).willReturn(2L);
-
 		// when:
 		var fid = subject.toFid(3L);
 
 		// then:
-		assertEquals(IdUtils.asFile("1.2.3"), fid);
+		assertEquals(IdUtils.asFile("42.24.3"), fid);
 	}
 }

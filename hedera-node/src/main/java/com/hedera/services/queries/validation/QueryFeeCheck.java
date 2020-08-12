@@ -20,23 +20,23 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.MapKey;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class QueryFeeCheck {
-	private final FCMap<MapKey, HederaAccount> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public QueryFeeCheck(FCMap<MapKey, HederaAccount> accounts) {
+	public QueryFeeCheck(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
 	}
 
@@ -94,7 +94,7 @@ public class QueryFeeCheck {
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
 		var id = adjustment.getAccountID();
-		var key = getMapKey(id);
+		var key = MerkleEntityId.fromAccountId(id);
 		long amount = adjustment.getAmount();
 
 		if (amount == Long.MIN_VALUE) {
@@ -102,7 +102,7 @@ public class QueryFeeCheck {
 		}
 
 		if (amount < 0) {
-			var balanceStatus = Optional.ofNullable(accounts.get(key))
+			var balanceStatus = Optional.ofNullable(accounts.get().get(key))
 					.filter(account -> account.getBalance() >= Math.abs(amount))
 					.map(ignore -> OK)
 					.orElse(INSUFFICIENT_PAYER_BALANCE);
@@ -110,7 +110,7 @@ public class QueryFeeCheck {
 				return balanceStatus;
 			}
 		} else {
-			if (!accounts.containsKey(key)) {
+			if (!accounts.get().containsKey(key)) {
 				return ACCOUNT_ID_DOES_NOT_EXIST;
 			}
 		}

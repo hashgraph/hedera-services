@@ -20,7 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.context.domain.haccount.HederaAccount;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
 import com.hedera.test.factories.accounts.MapValueFactory;
@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.core.MapKey;
-import com.hedera.services.legacy.core.jproto.JTransactionRecord;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,6 @@ import java.util.Optional;
 
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hedera.services.legacy.core.MapKey.getMapKey;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,8 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
-import static com.hedera.services.legacy.core.jproto.JTransactionRecord.convert;
-import static com.hedera.services.context.domain.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 
 @RunWith(JUnitPlatform.class)
 class AnswerFunctionsTest {
@@ -69,26 +67,26 @@ class AnswerFunctionsTest {
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
 
-	private JTransactionRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = JTransactionRecord.convert(targetRecord);
-	private HederaAccount payerAccount;
+	private ExpirableTxnRecord targetRecord = constructTargetRecord();
+	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
+	private MerkleAccount payerAccount;
 	private String target = payer;
 	private long fee = 1_234L;
 	private StateView view;
 	private RecordCache recordCache;
-	private FCMap<MapKey, HederaAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private AnswerFunctions subject;
 
 	@BeforeEach
 	private void setup() {
 		payerAccount = MapValueFactory.newAccount().get();
-		payerAccount.getRecords().offer(recordOne());
-		payerAccount.getRecords().offer(targetRecord);
+		payerAccount.records().offer(recordOne());
+		payerAccount.records().offer(targetRecord);
 
 		accounts = mock(FCMap.class);
-		given(accounts.get(getMapKey(asAccount(target)))).willReturn(payerAccount);
-		view = new StateView(StateView.EMPTY_TOPICS, accounts);
+		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
 
 		recordCache = mock(RecordCache.class);
 
@@ -100,21 +98,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(absentTxnId);
 
-		given(recordCache.isRecordPresent(absentTxnId)).willReturn(false);
-
-		// when:
-		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
-
-		// then:
-		assertFalse(record.isPresent());
-	}
-
-	@Test
-	public void returnsEmptyOptionalWhenMissing() {
-		// setup:
-		Query validQuery = getRecordQuery(missingTxnId);
-
-		given(recordCache.isRecordPresent(missingTxnId)).willReturn(false);
+		given(recordCache.getRecord(absentTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -128,7 +112,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(false);
+		given(recordCache.getRecord(targetTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -142,7 +126,6 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.isRecordPresent(targetTxnId)).willReturn(true);
 		given(recordCache.getRecord(targetTxnId)).willReturn(cachedTargetRecord);
 
 		// when:
@@ -151,9 +134,10 @@ class AnswerFunctionsTest {
 		// then:
 		assertEquals(cachedTargetRecord, record.get());
 		verify(accounts, never()).get(any());
+		verify(recordCache, never()).isReceiptPresent(any());
 	}
 
-	JTransactionRecord constructTargetRecord() {
+	ExpirableTxnRecord constructTargetRecord() {
 		TransactionRecord record = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
 				.setTransactionID(targetTxnId)
@@ -166,7 +150,7 @@ class AnswerFunctionsTest {
 						asAccount("0.0.1001"), 2L,
 						asAccount("0.0.1002"), 2L))
 				.build();
-		return JTransactionRecord.convert(record);
+		return ExpirableTxnRecord.fromGprc(record);
 	}
 
 	Query getRecordQuery(TransactionID txnId) {

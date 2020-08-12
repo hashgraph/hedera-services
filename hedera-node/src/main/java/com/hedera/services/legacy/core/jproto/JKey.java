@@ -78,10 +78,6 @@ public abstract class JKey implements Serializable, Cloneable {
 
 		if (!(key.hasThresholdKey() || key.hasKeyList())) {
 			JKey result = convertBasic(key);
-			if (log.isDebugEnabled()) {
-				log.debug("convertKey: depth=" + depth + "; basic: result=" + result + "; key=" + TextFormat
-						.shortDebugString(key));
-			}
 			return result;
 		} else if (key.hasThresholdKey()) {
 			List<Key> tKeys = key.getThresholdKey().getKeys().getKeysList();
@@ -93,8 +89,6 @@ public abstract class JKey implements Serializable, Cloneable {
 			JKeyList keys = new JKeyList(jkeys);
 			int thd = key.getThresholdKey().getThreshold();
 			JKey result = new JThresholdKey(keys, thd);
-			log.debug("convertKey: depth=" + depth + "; hasThresholdKey: result=" + result
-					+ "; threshold=" + thd + "; threshold=" + thd);
 			return (result);
 		} else {
 			List<Key> tKeys = key.getKeyList().getKeysList();
@@ -105,7 +99,6 @@ public abstract class JKey implements Serializable, Cloneable {
 			}
 			int thd = tKeys.size();
 			JKey result = new JKeyList(jkeys);
-			log.debug("convertKey: depth=" + depth + "; hasKeyList: result=" + result + "; size=" + thd);
 			return (result);
 		}
 	}
@@ -146,7 +139,7 @@ public abstract class JKey implements Serializable, Cloneable {
 			ContractID cid = key.getContractID();
 			rv = new JContractIDKey(cid);
 		} else {
-			throw new IllegalArgumentException("Key type not implemented: key=" + key);
+			throw new DecoderException("Key type not implemented: key=" + key);
 		}
 
 		return rv;
@@ -192,7 +185,6 @@ public abstract class JKey implements Serializable, Cloneable {
 
 		if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
 			Key result = convertJKeyBasic(jkey);
-			log.debug("convertJKey: depth=" + depth + "; basic: result=" + result + "; key=" + jkey);
 			return result;
 		} else if (jkey.hasThresholdKey()) {
 			List<JKey> jKeys = jkey.getThresholdKey().getKeys().getKeysList();
@@ -205,8 +197,6 @@ public abstract class JKey implements Serializable, Cloneable {
 			int thd = jkey.getThresholdKey().getThreshold();
 			Key result = Key.newBuilder()
 					.setThresholdKey(ThresholdKey.newBuilder().setKeys(keys).setThreshold(thd)).build();
-			log.debug("convertJKey: depth=" + depth + "; hasThresholdKey: result=" + result
-					+ "; threshold=" + thd + "; threshold=" + thd);
 			return (result);
 		} else {
 			List<JKey> jKeys = jkey.getKeyList().getKeysList();
@@ -218,8 +208,6 @@ public abstract class JKey implements Serializable, Cloneable {
 			KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
 			int thd = jKeys.size();
 			Key result = Key.newBuilder().setKeyList(keys).build();
-			log.debug("convertJKey: depth=" + depth + "; hasKeyList: result=" + result + "; size=" + thd
-					+ "; size=" + thd);
 			return (result);
 		}
 	}
