@@ -2,7 +2,7 @@ checkSignedStateFromDisk, 1
 crypto.cpuDigestThreadRatio, 0.1
 crypto.cpuVerifierThreadRatio, 1
 csvAppend, 0
-csvFileName, MainNetStats
+csvFileName, PlatformStats
 doUpnp, 0
 freezeSettings.active, 0
 maxOutgoingSyncs, 2
