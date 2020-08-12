@@ -596,7 +596,6 @@ default_stat_names = [
     "getTxRecordByTxIDRcv/sec",
     "getTxRecordByTxIDSub",
     "getTxRecordByTxIDSub/sec",
-    "avgHdlTxSize",
     "recordStreamQueueSize",
     "sigVerifyAsync/sec",
     "sigVerifySync/sec",
