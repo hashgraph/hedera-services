@@ -36,7 +36,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -91,7 +90,6 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
-import com.hedera.services.files.interceptors.TxnAwareAuthPolicy;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -171,7 +169,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.FeeChargingRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
-import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
@@ -327,7 +324,6 @@ public class ServicesContext {
 	private TxnResponseHelper txnResponseHelper;
 	private TransactionContext txnCtx;
 	private BlobStorageSource bytecodeDb;
-	private TxnAwareAuthPolicy authPolicy;
 	private TransactionHandler txns;
 	private HederaSigningOrder keyOrder;
 	private HederaSigningOrder backedKeyOrder;
@@ -732,7 +728,6 @@ public class ServicesContext {
 					txnCtx()::consensusTime,
 					DataMapFactory.dataMapFrom(blobStore()),
 					MetadataMapFactory.metaMapFrom(blobStore()));
-			hfs.register(authPolicy());
 			hfs.register(feeSchedulesManager());
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
@@ -996,13 +991,6 @@ public class ServicesContext {
 			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
 		}
 		return feeSchedulesManager;
-	}
-
-	public FileUpdateInterceptor authPolicy() {
-		if (authPolicy == null) {
-			authPolicy = new TxnAwareAuthPolicy(fileNums(), accountNums(), properties(), txnCtx());
-		}
-		return authPolicy;
 	}
 
 	public FreezeServiceImpl freezeGrpc() {

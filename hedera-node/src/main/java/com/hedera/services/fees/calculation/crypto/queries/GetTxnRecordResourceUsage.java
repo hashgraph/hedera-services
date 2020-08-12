@@ -36,6 +36,8 @@ import java.util.Optional;
 public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetTxnRecordResourceUsage.class);
 
+	private static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();
+
 	private final RecordCache recordCache;
 	private final AnswerFunctions answerFunctions;
 	private final CryptoFeeBuilder usageEstimator;
@@ -63,8 +65,8 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
 		try {
-			Optional<TransactionRecord> record = answerFunctions.txnRecord(recordCache, view, query);
-			return usageEstimator.getTransactionRecordQueryFeeMatrices(record.get(), type);
+			var record = answerFunctions.txnRecord(recordCache, view, query).orElse(MISSING_RECORD_STANDIN);
+			return usageEstimator.getTransactionRecordQueryFeeMatrices(record, type);
 		} catch (Exception illegal) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, illegal);
 			throw new IllegalArgumentException();
