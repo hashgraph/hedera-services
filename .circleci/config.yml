@@ -1594,7 +1594,8 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
+            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
           name: Install necessary tools
