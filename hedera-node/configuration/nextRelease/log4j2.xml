@@ -48,7 +48,7 @@
     <MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+    <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
   </Filters>
 
   <Appenders>
@@ -67,13 +67,25 @@
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
+    <RollingFile name="QueriesRollingFile" fileName="output/queries.log"
+      filePattern="output/queries.log-%d{yyyy-MM-dd}-%i.log">
+      <BurstFilter level="INFO" rate="50" maxBurst="500"/>
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
     <RollingFile name="fileLog" fileName="output/swirlds.log"
       filePattern="output/swirlds.log-%d{yyyy-MM-dd}-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="50 MB"/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
@@ -127,7 +139,7 @@
         <MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
       </Filters>
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="fileLog"/>
@@ -137,11 +149,20 @@
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFile"/>
     </Logger>
+    <Logger name="com.hedera.services.sigs" level="error" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.queries.answering" level="warn" additivity="false">
+      <AppenderRef ref="QueriesRollingFile"/>
+    </Logger>
+
     <Logger name="com.hedera.services.legacy" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.HGCAppMain" level="info" additivity="false">
+    <Logger name="com.hedera.services.legacy.netty" level="info" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="com.hedera.services.legacy.service" level="warn" additivity="false">
@@ -153,6 +174,14 @@
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="com.hedera.services.legacy.handler" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.legacy.handler.FreezeHandler" level="info" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.utils.UnzipUtility" level="info" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
@@ -171,6 +200,10 @@
     <Logger name="com.hedera.services.legacy.initialization" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
+    </Logger>
+	<Logger name="com.hedera.services.legacy.config" level="info" additivity="false">
+      <AppenderRef ref="RollingFile"/>
+      <AppenderRef ref="Console"/>
     </Logger>
 
 
