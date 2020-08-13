@@ -21,9 +21,7 @@ package com.hedera.services.bdd.suites.compose;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -45,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.suites.utils.validation.domain.Network.SCENARIO_PAYER_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 
@@ -65,13 +63,92 @@ public class LocalNetworkCheck extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 //						balancesChangeOnTransfer(),
-						zeroStakeBehavesAsExpected(),
+//						zeroStakeBehavesAsExpectedLocal(),
+						zeroStakeBehavesAsExpectedJRS()
 				}
 		);
 	}
 
+	/* Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network. */
+	private HapiApiSpec zeroStakeBehavesAsExpectedJRS() {
+		return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
+				.given(
+						cryptoCreate("sponsor"),
+						cryptoCreate("beneficiary"),
+						fileCreate("bytecode").fromResource("Multipurpose.bin"),
+						contractCreate("multi").bytecode("bytecode"),
+						contractCreate("impossible")
+								.setNode("0.0.7")
+								.bytecode("bytecode")
+								.hasPrecheck(INVALID_NODE_ACCOUNT),
+						contractUpdate("multi")
+								.setNode("0.0.8")
+								.newMemo("Oops!")
+								.hasPrecheck(INVALID_NODE_ACCOUNT),
+						contractDelete("multi")
+								.setNode("0.0.7")
+								.hasPrecheck(INVALID_NODE_ACCOUNT),
+						contractCall("multi")
+								.setNode("0.0.8")
+								.sending(1L)
+								.hasPrecheck(INVALID_NODE_ACCOUNT)
+				).when(
+						balanceSnapshot("sponsorBefore", "sponsor"),
+						balanceSnapshot("beneficiaryBefore", "beneficiary"),
+						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+								.payingWith(GENESIS)
+								.memo("Hello World!")
+								.setNode("0.0.5"),
+						getContractInfo("multi")
+								.setNode("0.0.5")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
+				).then(
+						contractCallLocal("multi", LUCKY_NO_LOOKUP_ABI)
+								.setNode("0.0.7")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.has(resultWith()
+										.resultThruAbi(
+												LUCKY_NO_LOOKUP_ABI,
+												isLiteralResult(new Object[] { BigInteger.valueOf(42) }))),
+						getContractInfo("multi")
+								.setNode("0.0.7")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getContractBytecode("multi")
+								.setNode("0.0.8")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getContractRecords("multi")
+								.setNode("0.0.8")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getAccountInfo("beneficiary")
+								.setNode("0.0.7")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getFileInfo("bytecode")
+								.setNode("0.0.8")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getAccountBalance("sponsor")
+								.setNode("0.0.7")
+								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+						getAccountBalance("beneficiary")
+								.setNode("0.0.8")
+								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
+				);
+	}
+
 	/* Assumes that node 0.0.4 has been started with zero stake. */
-	private HapiApiSpec zeroStakeBehavesAsExpected() {
+	private HapiApiSpec zeroStakeBehavesAsExpectedLocal() {
 		return customHapiSpec("zeroStakeBehavesAsExpected")
 				.withProperties(Map.of(
 						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"

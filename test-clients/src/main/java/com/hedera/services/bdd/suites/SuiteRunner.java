@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.suites.compose.LocalNetworkCheck;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -181,6 +182,8 @@ public class SuiteRunner {
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
+		/* Zero Stake behaviour */
+		put("ZeroStakeTest", aof(new LocalNetworkCheck()));
 	}};
 
 	static boolean runAsync;
