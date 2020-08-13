@@ -77,6 +77,7 @@ if [[ "$unamestr" == 'Linux' ]]; then
 
         # call DevOps script here ?
         shell_echo $LINENO $0 "Restart HGCAPP service"
+        sleep 15 # wait platform save database properly
         sudo service hgcapp restart >> $OUTPUT 2>&1
 
     else
