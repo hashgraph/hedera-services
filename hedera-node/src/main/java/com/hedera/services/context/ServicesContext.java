@@ -1055,7 +1055,8 @@ public class ServicesContext {
 					contracts(),
 					stats(),
 					usagePrices(),
-					exchange());
+					exchange(),
+					nodeType());
 		}
 		return contractsGrpc;
 	}
