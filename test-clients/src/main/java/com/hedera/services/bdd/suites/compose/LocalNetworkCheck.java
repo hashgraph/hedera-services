@@ -35,11 +35,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
@@ -131,6 +127,16 @@ public class LocalNetworkCheck extends HapiApiSuite {
 								.nodePayment(0L)
 								.logged(),
 						getContractRecords("multi")
+								.setNode("0.0.4")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getAccountInfo("beneficiary")
+								.setNode("0.0.4")
+								.payingWith("sponsor")
+								.nodePayment(0L)
+								.logged(),
+						getFileInfo("bytecode")
 								.setNode("0.0.4")
 								.payingWith("sponsor")
 								.nodePayment(0L)
