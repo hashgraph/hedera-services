@@ -100,6 +100,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
+			if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
+				log.warn("Ignoring a transaction submitted by zero-stake node {}: {}",
+						() -> submittingMember,
+						accessor::getSignedTxn4Log);
+				return;
+			}
 			processInLedgerTxn(accessor, consensusTime, submittingMember);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
