@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "33 20 * * *"
+          cron: "18 21 * * *"
           filters:
             branches:
               only:
@@ -1655,7 +1655,7 @@ jobs:
           name: Run Migration test
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo $KEY_50 > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            echo $KEY_50 | base64 --decode > /repo/test-clients/src/main/resource/StartUpAccount.txt;
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
             ./regression_services_circleci.sh AwsServicesMigrationCfg.json /repo
