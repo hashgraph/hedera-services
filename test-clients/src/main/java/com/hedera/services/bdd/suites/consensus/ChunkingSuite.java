@@ -31,10 +31,12 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ChunkingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ChunkingSuite.class);
+	private static final int CHUNK_SIZE = 5800;
 
 	public static void main(String... args) {
 		new ChunkingSuite().runSuiteSync();
@@ -44,7 +46,8 @@ public class ChunkingSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				chunkNumberIsValidated(),
-				chunkTransactionIDIsValidated()
+				chunkTransactionIDIsValidated(),
+				longMessageIsFragmentedIntoChunks()
 		);
 	}
 
@@ -106,6 +109,20 @@ public class ChunkingSuite extends HapiApiSuite {
 								.payingWith("initialTransactionPayer")
 								.usePresetTimestamp()
 								.hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec longMessageIsFragmentedIntoChunks() {
+		String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
+		return defaultHapiSpec("longMessageIsFragmentedIntoChunks")
+				.given(
+						cryptoCreate("payer"),
+						createTopic("testTopic")
+				)
+				.when(
+				)
+				.then(
+						chunkAFile(fileForLongMessage, CHUNK_SIZE, "payer", "testTopic")
 				);
 	}
 

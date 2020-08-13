@@ -110,19 +110,9 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
-		byte[] payload = randomUtf8Bytes(messageSize-8);
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				submitMessageTo(topicID != null ? topicID : "topic")
-						.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(), payload))
-						.noLogging()
-						.payingWith("sender")
-						.signedBy("sender", "submitKey")
-						.suppressStats(true)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
-						.hasKnownStatusFrom(SUCCESS, OK)
-						.deferStatusResolution()
-
+				opSupplier(settings).get()
 		};
 
 		return defaultHapiSpec("RunSubmitMessages")
@@ -142,7 +132,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 				).when(
 						cryptoCreate("sender").balance(initialBalance.getAsLong())
 								.withRecharging()
-								.rechargeWindow(3)
+								.rechargeWindow(30)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
 								.submitKeyName("submitKey")
@@ -152,6 +142,23 @@ public class SubmitMessageLoadTest extends LoadTest {
 				).then(
 						defaultLoadTest(submitBurst, settings)
 				);
+	}
+
+	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
+		byte[] payload = randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize) - 8);
+		var op = submitMessageTo(topicID != null ? topicID : "topic")
+				.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(), payload))
+				.noLogging()
+				.payingWith("sender")
+				.signedBy("sender", "submitKey")
+				.suppressStats(true)
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+				.hasKnownStatusFrom(SUCCESS, OK)
+				.deferStatusResolution();
+		if (settings.getBooleanProperty("isChunk", false)) {
+			return () -> op.chunkInfo(1, 1).usePresetTimestamp();
+		}
+		return () -> op;
 	}
 
 	@Override

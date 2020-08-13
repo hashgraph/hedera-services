@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "0 21 * * *"
+          cron: "0 4,8,12 * * *"
           filters:
             branches:
               only:
@@ -1593,7 +1593,8 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
+            cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
           name: Install necessary tools
@@ -1617,7 +1618,7 @@ jobs:
       - run:
           name: Run various suites in SuiteRunner
           command: |
-            cd /swirlds-platform/regression; ./regression_services.sh AwsNightlyServicesRegressionCfg.json /repo
+            cd /swirlds-platform/regression; ./regression_services_circleci.sh AwsNightlyServicesRegressionCfg.json /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
@@ -1629,7 +1630,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services.sh AwsServicesLoadTestRegressionCfg.json /repo
+            ./regression_services_circleci.sh AwsServicesLoadTestRegressionCfg.json /repo
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1641,7 +1642,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services.sh AwsSerivceRegressionNetworkError.json /repo
+            ./regression_services_circleci.sh AwsSerivceRegressionNetworkError.json /repo
 
       - run:
           name: Sync results of network error regression to AWS
