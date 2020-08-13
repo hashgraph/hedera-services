@@ -1652,11 +1652,19 @@ jobs:
 #            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
       - run:
-          name: Run Migration test
+          name: Prep For Migration test
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
             echo "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Cat StartUpAccount
+          command: |
             cat /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Run Migration test
+          command: |
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
