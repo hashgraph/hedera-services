@@ -991,13 +991,13 @@ workflows:
             - attach_workspace:
                 at: /
   feature-update-regression:
-    # triggers:
-    #     - schedule:
-    #         cron: "0 8 * * *"
-    #         filters:
-    #           branches:
-    #             only:
-    #               - master
+    triggers:
+        - schedule:
+            cron: "0 8 * * *"
+            filters:
+              branches:
+                only:
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1014,18 +1014,18 @@ workflows:
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
-      # - run-accessory-tests:
-      #     context: Slack
-      #     requires:
-      #       - start-singlejob-testnet
-      #     post-steps:
-      #       - save-this-job-client-logs:
-      #           workflow-name: "feature-update-regression"
-      #       - cleanup-rerun-testnet-if-present
-      - run-update-feature:
+      - run-accessory-tests:
           context: Slack
           requires:
             - start-singlejob-testnet
+          post-steps:
+            - save-this-job-client-logs:
+                workflow-name: "feature-update-regression"
+            - cleanup-rerun-testnet-if-present
+      - run-update-feature:
+          context: Slack
+          requires:
+            - run-accessory-tests
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "feature-update-regression"
@@ -2762,9 +2762,9 @@ jobs:
           dsl-args: "UpdateServerFiles"
       - run:
           name: wait HGCApp restarted
-          no_output_timeout: 11m
+          no_output_timeout: 4m
           command: |
-            sleep 600
+            sleep 300
       - run:
           name: Show java process
           command: |
