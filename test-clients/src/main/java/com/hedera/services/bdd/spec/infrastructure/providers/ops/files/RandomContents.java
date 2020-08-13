@@ -33,16 +33,19 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 
 public class RandomContents implements OpProvider {
 	private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardQueryPrechecksAnd(
 			FILE_DELETED,
-			INSUFFICIENT_TX_FEE
+			INSUFFICIENT_TX_FEE,
+			INVALID_FILE_ID
 	);
 
 	private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardQueryPrechecksAnd(
 			FILE_DELETED,
-			INSUFFICIENT_TX_FEE
+			INSUFFICIENT_TX_FEE,
+			INVALID_FILE_ID
 	);
 
 	private final EntityNameProvider<FileID> files;
