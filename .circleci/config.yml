@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "58 19 * * *"
+          cron: "33 20 * * *"
           filters:
             branches:
               only:
@@ -1654,7 +1654,6 @@ jobs:
       - run:
           name: Run Migration test
           command: |
-            sudo mkdir /opt/hgcapp; sudo chown -R $USER:$USER /opt/hgcapp/;
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
             echo $KEY_50 > /repo/test-clients/src/main/resource/StartUpAccount.txt;
             cd /swirlds-platform/regression;
