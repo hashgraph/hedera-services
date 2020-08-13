@@ -1651,6 +1651,19 @@ jobs:
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
       - run:
+          name: Run Migration test
+          command: |
+            sudo  mkdir /opt/hgcapp; sudo chown ubuntu.ubuntu /opt/hgcapp/;
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services_circleci.sh AwsServicesMigrationCfg.json /repo
+
+      - run:
+          name: Sync results of migration test to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
           name: Run Zero stake regression tests
           command: |
             cd /swirlds-platform/regression;
