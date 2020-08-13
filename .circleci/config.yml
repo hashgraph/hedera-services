@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "21 22 * * *"
+          cron: "38 22 * * *"
           filters:
             branches:
               only:
@@ -1655,7 +1655,7 @@ jobs:
           name: Prep For Migration test
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
 
       - run:
           name: Cat StartUpAccount
