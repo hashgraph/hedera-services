@@ -1656,6 +1656,7 @@ jobs:
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
             echo $KEY_50 | base64 --decode > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
             ./regression_services_circleci.sh AwsServicesMigrationCfg.json /repo
