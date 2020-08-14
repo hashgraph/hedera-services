@@ -35,6 +35,7 @@ import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
+import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -107,7 +108,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.queries.answering.ServiceAnswerFlow;
+import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.consensus.GetTopicInfoAnswer;
 import com.hedera.services.queries.consensus.HcsAnswers;
 import com.hedera.services.queries.file.FileAnswers;
@@ -123,6 +124,8 @@ import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hedera.services.throttling.TransactionThrottling;
 
+import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
+import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
@@ -310,6 +313,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
+	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
 	private BucketThrottling bucketThrottling;
@@ -489,7 +493,7 @@ public class ServicesContext {
 
 	public SubmissionFlow submissionFlow() {
 		if (submissionFlow == null) {
-			submissionFlow = new TxnHandlerSubmissionFlow(platform(), txns(), transitionLogic());
+			submissionFlow = new TxnHandlerSubmissionFlow(platform(), nodeType(), txns(), transitionLogic());
 		}
 		return submissionFlow;
 	}
@@ -631,13 +635,17 @@ public class ServicesContext {
 
 	public AnswerFlow answerFlow() {
 		if (answerFlow == null) {
-			answerFlow = new ServiceAnswerFlow(
-					platform(),
-					fees(),
-					txns(),
-					stateViews(),
-					usagePrices(),
-					bucketThrottling());
+			if (nodeType() == STAKED_NODE) {
+				answerFlow = new StakedAnswerFlow(
+						platform(),
+						fees(),
+						txns(),
+						stateViews(),
+						usagePrices(),
+						bucketThrottling());
+			} else {
+				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), bucketThrottling());
+			}
 		}
 		return answerFlow;
 	}
@@ -664,6 +672,13 @@ public class ServicesContext {
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
+	}
+
+	public ServicesNodeType nodeType() {
+		if (nodeType == null) {
+			nodeType = (address().getStake() > 0) ? STAKED_NODE : ZERO_STAKE_NODE;
+		}
+		return nodeType;
 	}
 
 	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
@@ -1040,7 +1055,8 @@ public class ServicesContext {
 					contracts(),
 					stats(),
 					usagePrices(),
-					exchange());
+					exchange(),
+					nodeType());
 		}
 		return contractsGrpc;
 	}
