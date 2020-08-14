@@ -2766,7 +2766,7 @@ jobs:
           name: wait HGCApp restarted
           no_output_timeout: 4m
           command: |
-            sleep 300
+            sleep 200
       - run:
           name: Show java process
           command: |
