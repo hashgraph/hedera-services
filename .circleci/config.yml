@@ -891,11 +891,11 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "4 23 * * *"
+          cron: "0 4,8,12 * * *"
           filters:
             branches:
               only:
-                - Add-Migration-Test-JRS
+                - master
     jobs:
       - build-platform-and-services:
           context: Slack
@@ -1369,7 +1369,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - Add-Migration-Test-JRS
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1595,7 +1594,7 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 388-D-Add-Migration-Test;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
@@ -1617,54 +1616,54 @@ jobs:
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
 
-#      - run:
-#          name: Run various suites in SuiteRunner
-#          command: |
-#            cd /swirlds-platform/regression; ./regression_services_circleci.sh AwsNightlyServicesRegressionCfg.json /repo
-#
-#      - run:
-#          name: Sync results of SuiteRunner suites to AWS
-#          command: |
-#            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-#
-#      - run:
-#          name: Performance regression
-#          command: |
-#            cd /swirlds-platform/regression;
-#            rm -rf /swirlds-platform/regression/results/;
-#            ./regression_services_circleci.sh AwsServicesPerformanceRegressionCfg.json /repo
-#
-#      - run:
-#          name: Sync results of performance regression to AWS
-#          command: |
-#            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-#
-#      - run:
-#          name: Run network error regression tests
-#          command: |
-#            cd /swirlds-platform/regression;
-#            rm -rf /swirlds-platform/regression/results/;
-#            ./regression_services_circleci.sh AwsSerivceRegressionNetworkError.json /repo
-#
-#      - run:
-#          name: Sync results of network error regression to AWS
-#          command: |
-#            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-#      - run:
-#          name: Run Zero stake regression tests
-#          command: |
-#            cd /swirlds-platform/regression;
-#            rm -rf /swirlds-platform/regression/results/;
-#            ./regression_services_circleci.sh AWSNightlyServicesZeroStakeRegressionCfg.json /repo
-#
-#      - run:
-#          name: Sync results of zero stake regression to AWS
-#          command: |
-#            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+      - run:
+          name: Run various suites in SuiteRunner
+          command: |
+            cd /swirlds-platform/regression; ./regression_services_circleci.sh AwsNightlyServicesRegressionCfg.json /repo
 
       - run:
-          name: Prep For Migration test
+          name: Sync results of SuiteRunner suites to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Performance regression
+          command: |
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services_circleci.sh AwsServicesPerformanceRegressionCfg.json /repo
+
+      - run:
+          name: Sync results of performance regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Run network error regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services_circleci.sh AwsSerivceRegressionNetworkError.json /repo
+
+      - run:
+          name: Sync results of network error regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Run Zero stake regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services_circleci.sh AWSNightlyServicesZeroStakeRegressionCfg.json /repo
+
+      - run:
+          name: Sync results of zero stake regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Modify Payer account for Migration test
           # MigrationTest should be the last one in nightly services regression
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
@@ -1682,8 +1681,6 @@ jobs:
           name: Sync results of migration test to AWS
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-
 
   aws-summary:
     executor: ci-test-executor
