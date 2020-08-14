@@ -110,7 +110,7 @@ public class RecordStream implements Runnable {
 		try {
 			Files.createDirectories(Paths.get(recordStreamsDirectory));
 		} catch (IOException e) {
-			log.error(EXCEPTION, "Record stream dir {} doesn't exist and cannot be created!", recordStreamsDirectory, e);
+			log.error("Record stream dir {} doesn't exist and cannot be created!", recordStreamsDirectory, e);
 			throw new IllegalStateException(e);
 		}
 
@@ -198,7 +198,7 @@ public class RecordStream implements Runnable {
 				}
 
 			} catch (IOException e) {
-				log.error(EXCEPTION, "createFile - Exception {} - {}", ExceptionUtils.getStackTrace(e), e.getMessage());
+				log.error("createFile - Exception {} - {}", ExceptionUtils.getStackTrace(e), e.getMessage());
 			}
 		}
 	}
