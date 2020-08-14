@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -47,6 +48,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 	private static final String LARGE_FILE = "src/main/resource/testfiles/EmitEvent.bin";
 	private static final String PAYER = "payer";
 	private static final String TOPIC = "topic";
+	private static AtomicLong totalMsgSubmitted = new AtomicLong(0);
 
 	public static void main(String... args) {
 		HCSChunkingRealisticPerfSuite suite = new HCSChunkingRealisticPerfSuite();
@@ -68,7 +70,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				chunkAFile(LARGE_FILE, CHUNK_SIZE, PAYER, TOPIC)
+				chunkAFile(LARGE_FILE, CHUNK_SIZE, PAYER, TOPIC, totalMsgSubmitted)
 		};
 
 		return defaultHapiSpec("fragmentLongMessageIntoChunks")
