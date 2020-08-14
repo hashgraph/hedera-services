@@ -48,7 +48,6 @@ import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
-import com.hedera.services.files.interceptors.TxnAwareAuthPolicy;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -353,7 +352,6 @@ public class ServicesContextTest {
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
 		assertThat(ctx.networkGrpc(), instanceOf(NetworkController.class));
 		assertThat(ctx.entityNums(), instanceOf(EntityNumbers.class));
-		assertThat(ctx.authPolicy(), instanceOf(TxnAwareAuthPolicy.class));
 		assertThat(ctx.feeSchedulesManager(), instanceOf(FeeSchedulesManager.class));
 		assertThat(ctx.submissionFlow(), instanceOf(TxnHandlerSubmissionFlow.class));
 		assertThat(ctx.answerFunctions(), instanceOf(AnswerFunctions.class));

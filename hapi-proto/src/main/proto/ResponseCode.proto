@@ -52,7 +52,7 @@ enum ResponseCodeEnum {
   INVALID_SOLIDITY_ID = 20; //The solidity id is invalid or entity with this solidity id does not exist
 
 
-  UNKNOWN = 21; // Transaction hasn't yet reached consensus, or has already expired
+  UNKNOWN = 21; // The responding node has submitted the transaction to the network. Its final status is still unknown.
   SUCCESS = 22; // The transaction succeeded
   FAIL_INVALID = 23; // There was a system error and the transaction failed because of invalid request parameters.
   FAIL_FEE = 24; // There was a system error while performing fee calculation, reserved for future.

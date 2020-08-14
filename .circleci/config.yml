@@ -2534,7 +2534,7 @@ jobs:
       - run-eet-suites:
           dsl-args: "ConsensusThrottlesSpecs"
       - run-eet-suites:
-          dsl-args: "BucketAndLegacyThrottlingSpec"
+          dsl-args: "BucketThrottlingSpec"
       - run-eet-suites:
           dsl-args: "ControlAccountsExemptForUpdates"
       - run-scenario-test:
@@ -2799,8 +2799,9 @@ jobs:
           dsl-args: "UpdateServerFiles"
       - run:
           name: wait HGCApp restarted
+          no_output_timeout: 4m
           command: |
-            sleep 300
+            sleep 200
       - run:
           name: Show java process
           command: |

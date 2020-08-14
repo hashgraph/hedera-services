@@ -10,7 +10,7 @@
     <MarkerFilter marker="EXCEPTION" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="TESTING_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="SOCKET_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY" onMismatch="NEUTRAL"/>
     <!-- Errors -->
     <MarkerFilter marker="INVALID_EVENT_ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <!-- Other -->
@@ -45,13 +45,11 @@
     <MarkerFilter marker="EVENT_STREAM" onMatch="DENY" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="EVENT_RESTART" onMatch="DENY" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="DEMO_INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="DEMO_STAT" onMatch="DENY" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="DEMO_MAP" onMatch="DENY" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="STALE_EVENTS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+    <MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
   </Filters>
 
   <Appenders>
@@ -67,7 +65,19 @@
       <Policies>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10"/>
+      <DefaultRolloverStrategy max="1000"/>
+    </RollingFile>
+
+    <RollingFile name="QueriesRollingFile" fileName="output/queries.log"
+      filePattern="output/queries.log-%d{yyyy-MM-dd}-%i.log">
+      <BurstFilter level="INFO" rate="50" maxBurst="500"/>
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="1000"/>
     </RollingFile>
 
     <RollingFile name="fileLog" fileName="output/swirlds.log"
@@ -76,14 +86,14 @@
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
       </PatternLayout>
       <Policies>
-        <SizeBasedTriggeringPolicy size="50 MB"/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10"/>
+      <DefaultRolloverStrategy max="1000"/>
     </RollingFile>
 
   </Appenders>
   <Loggers>
-    <Root level="INFO">
+    <Root level="WARN">
       <Filters>
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
         <!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
@@ -92,7 +102,7 @@
         <MarkerFilter marker="EXCEPTION" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TESTING_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SOCKET_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY" onMismatch="NEUTRAL"/>
         <!-- Errors -->
         <MarkerFilter marker="INVALID_EVENT_ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <!-- Other -->
@@ -127,13 +137,10 @@
         <MarkerFilter marker="EVENT_STREAM" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="EVENT_RESTART" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="DEMO_INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="DEMO_STAT" onMatch="DENY" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="DEMO_MAP" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STALE_EVENTS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
+        <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
       </Filters>
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="fileLog"/>
@@ -143,130 +150,150 @@
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.core.jproto" level="info" additivity="false">
+    <Logger name="com.hedera.services.sigs" level="error" additivity="false">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy" level="debug" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.queries.answering" level="debug" additivity="false">
+      <AppenderRef ref="QueriesRollingFile"/>
+    </Logger>
+
+    <Logger name="com.hedera.services.legacy" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.service" level="debug" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.netty" level="info" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.services" level="info" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.service" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.handler" level="debug" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.services" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.utils" level="info" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.handler" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.hgcca.core" level="debug" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.handler.FreezeHandler" level="info" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.evm" level="info" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.utils.UnzipUtility" level="info" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="com.hedera.services.legacy.initialization" level="info" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="com.hedera.services.legacy.utils" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.legacy.hgcca.core" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.legacy.evm" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="com.hedera.services.legacy.initialization" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+	<Logger name="com.hedera.services.legacy.config" level="info" additivity="false">
+      <AppenderRef ref="RollingFile"/>
+      <AppenderRef ref="Console"/>
     </Logger>
 
 
     <Logger name="org.springframework" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="state" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="state" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="trie" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="trie" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="net" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="net" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="execute" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="VM" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="pending" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="pending" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="sync" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="sync" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="wire" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="db" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="db" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="general" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="general" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="TCK-Test" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="org.hibernate" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="repository" level="INFO" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="repository" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="blockchain" level="INFO" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="blockchain" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="mine" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="mine" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="blockqueue" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="blockqueue" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="rlp" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="java.nio" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="io.netty" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="discover" level="DEBUG" additivity="false">
-      <AppenderRef ref="Console"/>
+    <Logger name="discover" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
     <Logger name="hsqldb.db" level="ERROR" additivity="false">
-      <AppenderRef ref="Console"/>
+      <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
   </Loggers>

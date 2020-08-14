@@ -43,7 +43,7 @@ public class ApplicationConstants {
 	public static char A = 'a';
 
 	//Default Values for Configuration Properties
-	public static int RECORD_LOG_PERIOD = 60;
+	public static int RECORD_LOG_PERIOD = 2;
 	public static String RECORD_LOG_DIR = "data/recordstreams/";
 	public static int RECORD_STREAM_QU_CAP = 500;
 	public static String ACCT_BAL_EXP_DIR = "data/accountBalances/";
