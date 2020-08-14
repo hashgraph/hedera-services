@@ -221,6 +221,8 @@ public class SubmitMessageSuite extends HapiApiSuite {
 		String topic = "testTopic";
 		String message1 = "Hello world!";
 		String message2 = "Hello world again!";
+		String nonsense = "Nonsense";
+		String message3 = "Goodbye!";
 
 		return defaultHapiSpec("messageSubmissionCorrectlyUpdatesRunningHash")
 				.given(
@@ -242,7 +244,19 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.message(message2)
 								.via("submitMessage2"),
 						getTxnRecord("submitMessage2")
-								.hasCorrectRunningHash(topic, message2)
+								.hasCorrectRunningHash(topic, message2),
+						submitMessageTo(topic)
+								.message(nonsense)
+								.via("nonsense")
+								.chunkInfo(3, 4)
+								.hasKnownStatus(INVALID_CHUNK_NUMBER),
+						getTxnRecord("nonsense")
+								.hasCorrectRunningHash(topic, message2).logged(),
+						submitMessageTo(topic)
+								.message(message3)
+								.via("submitMessage3"),
+						getTxnRecord("submitMessage3")
+								.hasCorrectRunningHash(topic, message3)
 				);
 	}
 
