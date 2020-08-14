@@ -49,13 +49,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 
 public class LocalNetworkCheck extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(LocalNetworkCheck.class);
+	public static String nodes;
 
 	private static String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
+	public LocalNetworkCheck(String nodes){
+		this.nodes = nodes;
+	}
 	public static void main(String... args) {
-		new LocalNetworkCheck().runSuiteSync();
+		new LocalNetworkCheck("").runSuiteSync();
 	}
 
 	@Override
@@ -71,16 +75,18 @@ public class LocalNetworkCheck extends HapiApiSuite {
 
 	/* Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network. */
 	private HapiApiSpec zeroStakeBehavesAsExpectedJRS() {
-		return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
-				.given(
+		return customHapiSpec("zeroStakeBehavesAsExpectedJRS")
+				.withProperties(Map.of(
+						"nodes", nodes)
+				).given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						fileCreate("bytecode").fromResource("Multipurpose.bin"),
 						contractCreate("multi").bytecode("bytecode"),
-						contractCreate("impossible")
-								.setNode("0.0.7")
-								.bytecode("bytecode")
-								.hasPrecheck(INVALID_NODE_ACCOUNT),
+//						contractCreate("impossible")
+//								.setNode("0.0.7")
+//								.bytecode("bytecode")
+//								.hasPrecheck(INVALID_NODE_ACCOUNT),
 						contractUpdate("multi")
 								.setNode("0.0.8")
 								.newMemo("Oops!")

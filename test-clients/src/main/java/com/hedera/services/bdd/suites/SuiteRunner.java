@@ -183,7 +183,7 @@ public class SuiteRunner {
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
 		/* Zero Stake behaviour */
-		put("ZeroStakeTest", aof(new LocalNetworkCheck()));
+		put("ZeroStakeTest", aof(new LocalNetworkCheck(System.getenv("NODES"))));
 	}};
 
 	static boolean runAsync;
