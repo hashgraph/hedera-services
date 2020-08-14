@@ -24,6 +24,8 @@
 import sys
 import shutil
 import os
+import re
+import time
 import zipfile
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -48,42 +50,44 @@ START_DIR=os.getcwd()
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
 
+os.system("rm -rf sav* output")
+
 def validateInputs():
 
-	NO_OF_NODES=0
-	
-	if NETWORKUSED == "mainnet":
-                NO_OF_NODES=13
-        elif NETWORKUSED == "publictestnet":
-                NO_OF_NODES=4
-        else:
-                print("please enter the correct network name has to one of :")
-                print("mainnet")
-                print("publictestnet")
-	
-        try:
-                f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
-        except IOError:
-                print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
-                print("Invetory file not found")
-        finally:
-                f.close()
-	
-	try:
-                f = open("{}".format(PEM_FILE))
-        except IOError:
-                print("PEM file not found")
-        finally:
-                f.close()
+    NO_OF_NODES=0
 
-	try:
-		f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
-	except IOError:
-		print("seervices repo not present")
-	finally:
-		f.close()
-	
-	return NO_OF_NODES
+    if NETWORKUSED == "mainnet":
+        NO_OF_NODES=13
+    elif NETWORKUSED == "publictestnet":
+        NO_OF_NODES=4
+    else:
+        print("please enter the correct network name has to one of :")
+        print("mainnet")
+        print("publictestnet")
+
+    try:
+        f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
+    except IOError:
+        print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
+        print("Invetory file not found")
+    finally:
+        f.close()
+
+    try:
+        f = open("{}".format(PEM_FILE))
+    except IOError:
+        print("PEM file not found")
+    finally:
+        f.close()
+
+    try:
+        f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
+    except IOError:
+        print("seervices repo not present")
+    finally:
+        f.close()
+
+    return NO_OF_NODES
 
 NO_OF_NODES=validateInputs()
 
@@ -93,16 +97,16 @@ print("No of nodes required : {}".format(NO_OF_NODES))
 #---------------------------------------------------------------------- BUILD SAVED.ZIP -------------------------------------------------------------------#
 
 def buildSavedZip():
-	
-	path = "saved/saved/com.hedera.services.legacy.HGCAppMain/{}/123"
-	
+
+	path = "saved/saved/com.hedera.services.ServicesMain/{}/123"
+
 	for x in range(0, NO_OF_NODES):
 		shutil.copytree("{}".format(SIGNEDSTATE), "{}/{}".format(path.format(x), SIGNEDSTATE))
 
 	try:
-		shutil.make_archive('saved', 'zip', 'saved') 
+		shutil.make_archive('saved', 'zip', 'saved')
 	except Exception as e:
-		print e
+		print (e)
 
 buildSavedZip()
 
@@ -136,20 +140,27 @@ runMigration()
 def copyLogs():
 	os.chdir(START_DIR)
 
-	node_address = ""
 	inventory_f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY), 'r')
-	for i in range(0, 8):
-		node_address = inventory_f.readline()
+	data = inventory_f.read()
+	inventory_f.close()
+	ip_line_pattern = re.compile(r'\s*(ansible_host:)\s+(\d+[.]\d+[.]\d+[.]\d+)')
 
+	ips = []
+	for matches in re.findall(ip_line_pattern, data):
+		ips.append(matches[1])
 
 	copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
 	os.mkdir("output")
 
-	for n in range(0, NO_OF_NODES):
-		node_address = inventory_f.readline().rstrip()
-		os.mkdir("output/{}".format(n))
-		os.system(copy_swirld_log.format(PEM_FILE, node_address, n))
+	for i, ip in enumerate(ips):
+		print("node[{}] => ip: {}".format(i, ip))
+		node_address = ip
+		os.mkdir("output/{}".format(i))
+		os.system(copy_swirld_log.format(PEM_FILE, node_address, i))
+
+print("Wait for 120 seconds before getting the log files...")
+time.sleep(120)
 
 copyLogs()
 
@@ -173,6 +184,7 @@ def validateLogs():
 
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "Platform {} has loaded a saved state for round {}".format(n, SIGNEDSTATE)
+#		print("Expecting : {} for node {}".format(loaded_log, n))
 		with open( "output/{}/swirlds.log".format(n)) as swirldsLog_f:
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))
