@@ -23,8 +23,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.logging.log4j.LogManager;
@@ -35,15 +36,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
-import java.util.concurrent.SynchronousQueue;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -61,6 +60,7 @@ public class RandomMessageSubmit implements OpProvider {
         private final SplittableRandom r = new SplittableRandom();
         private final EntityNameProvider<TopicID> topics;
         private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
+        private int count = 0;
         private static byte[] messageBytes = new byte[1024];
         static {
                 Arrays.fill(messageBytes, (byte) 0b1);
@@ -97,16 +97,28 @@ public class RandomMessageSubmit implements OpProvider {
                 if (target.isEmpty()) {
                         return Optional.empty();
                 }
+                count++;
+                String txnName = "submitMessage" + count;
 
-                HapiMessageSubmit op = submitMessageTo(target.get())
-                        .message(new String(messageBytes))
-//                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+                var op = withOpContext((spec, ctxLog) -> {
+                        HapiMessageSubmit op1 = submitMessageTo(target.get())
+                                .message(new String(messageBytes))
+//                                .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
+                                .hasKnownStatusFrom(permissibleOutcomes)
+                                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                                .via(txnName)
+                                .payingWith(UNIQUE_PAYER_ACCOUNT)
+                                .fee(TRANSACTION_FEE)
+//                                .deferStatusResolution()
+                                .noLogging();
 
-                if (r.nextBoolean()) {
-                        op = op.usePresetTimestamp();
-                }
+                        HapiGetTxnRecord op2 = getTxnRecord(txnName)
+                                .hasCorrectRunningHash(target.get(), new String(messageBytes))
+                                .payingWith(UNIQUE_PAYER_ACCOUNT)
+                                .noLogging();
+
+                        CustomSpecAssert.allRunFor(spec, op1, op2);
+                });
 
                 return Optional.of(op);
         }
