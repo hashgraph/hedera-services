@@ -47,6 +47,7 @@ import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
+import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
@@ -183,7 +184,7 @@ public class SuiteRunner {
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
 		/* Zero Stake behaviour */
-		put("ZeroStakeTest", aof(new LocalNetworkCheck(System.getenv("FULLIPLIST"))));
+		put("ZeroStakeTest", aof(new ZeroStakeNodeTest(System.getenv("FULLIPLIST"))));
 	}};
 
 	static boolean runAsync;
