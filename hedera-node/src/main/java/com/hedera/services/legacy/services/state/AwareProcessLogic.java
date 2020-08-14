@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,7 +77,8 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class AwareProcessLogic implements ProcessLogic {
-	private static final Logger log = LogManager.getLogger(AwareProcessLogic.class);
+	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
+
 	private static final EnumSet<ResponseCodeEnum> SIG_RATIONALIZATION_ERRORS = EnumSet.of(
 			INVALID_FILE_ID,
 			INVALID_ACCOUNT_ID,
@@ -100,16 +102,37 @@ public class AwareProcessLogic implements ProcessLogic {
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
-			if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
-				log.warn("Ignoring a transaction submitted by zero-stake node {}: {}",
-						() -> submittingMember,
-						accessor::getSignedTxn4Log);
+			if (!txnSanityChecks(accessor, consensusTime, submittingMember)) {
 				return;
 			}
 			processInLedgerTxn(accessor, consensusTime, submittingMember);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
+	}
+
+	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
+		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
+		if (!consensusTime.isAfter(lastHandled)) {
+			var msg = String.format("Catastrophic invariant failure! " +
+					"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
+					consensusTime.getEpochSecond(),
+					consensusTime.getNano(),
+					lastHandled.getEpochSecond(),
+					lastHandled.getNano(),
+					submittingMember,
+					accessor.getSignedTxn4Log());
+			log.error(msg);
+			return false;
+		}
+		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
+			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
+					submittingMember,
+					accessor.getSignedTxn4Log());
+			log.warn(msg);
+			return false;
+		}
+		return true;
 	}
 
 	private void processInLedgerTxn(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {

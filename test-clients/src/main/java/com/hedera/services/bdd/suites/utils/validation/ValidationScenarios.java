@@ -151,6 +151,8 @@ import static java.util.stream.Collectors.toMap;
 public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
 
+	private static final String DEFAULT_CONFIG_LOC = "config.yml";
+
 	private static long TINYBARS_PER_HBAR = 100_000_000L;
 
 	private static String LUCKY_NO_LOOKUP_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"pick\"," +
@@ -185,8 +187,8 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static AtomicReference<String> novelTopicUsed = new AtomicReference<>(null);
 
 	public static void main(String... args) {
-		readConfig();
 		parse(args);
+		readConfig();
 
 		assertValidParams();
 		log.info("Using nodes " + nodes());
@@ -203,7 +205,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.of(
 				Optional.of(recordPayerBalance(startingBalance::set)),
-				Optional.ofNullable(params.getScenarios().isEmpty() ? null : ensureScenarioPayer()),
+				Optional.ofNullable(useScenarioPayer() ? null : ensureScenarioPayer()),
 				Optional.ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
 				Optional.ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
 				Optional.ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
@@ -219,6 +221,16 @@ public class ValidationScenarios extends HapiApiSuite {
 				Optional.ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
 				.flatMap(Optional::stream)
 				.collect(toList());
+	}
+
+	private boolean useScenarioPayer() {
+		EnumSet<Scenario> needScenarioPayer = EnumSet.of(
+				CRYPTO, FILE, CONTRACT, VERSIONS, CONSENSUS, TRANSFERS_ONLY, FEE_SNAPSHOTS
+		);
+		System.out.println("---");
+		System.out.println(params.getScenarios());
+		System.out.println("---");
+		return needScenarioPayer.stream().anyMatch(params.getScenarios()::contains);
 	}
 
 	private static HapiApiSpec ensureBytecode() {
@@ -1391,7 +1403,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static void parse(String[] args) {
-		var KEY_VALUE_PATTERN = Pattern.compile("([\\w\\d]+)=([\\w\\d,]+)");
+		var KEY_VALUE_PATTERN = Pattern.compile("([\\w\\d]+)=([\\w\\d,.-]+)");
 
 		for (String arg : args) {
 			var matcher = KEY_VALUE_PATTERN.matcher(arg);
@@ -1402,7 +1414,6 @@ public class ValidationScenarios extends HapiApiSuite {
 					params.setTargetNetwork(valueOf(matcher));
 				} else if ("defaultNodePayment".equals(keyOf(matcher))) {
 					try {
-
 						params.setDefaultNodePayment(Long.parseLong(valueOf(matcher)));
 					} catch (NumberFormatException ignore) {
 					}
@@ -1433,6 +1444,8 @@ public class ValidationScenarios extends HapiApiSuite {
 										.map(Scenario::valueOf)
 										.toArray(n -> new Scenario[n])));
 					}
+				} else if ("config".equals(keyOf(matcher))) {
+					params.setConfigLoc(valueOf(matcher));
 				} else {
 					log.warn(String.format("Ignoring unknown parameter key '%s'", keyOf(matcher)));
 				}
@@ -1453,6 +1466,7 @@ public class ValidationScenarios extends HapiApiSuite {
 		final static String PASSPHRASE_ENV_VAR = "BOOTSTRAP_PASSPHRASE";
 		final static String DEFAULT_PASSPHRASE = "swirlds";
 
+		private String configLoc = DEFAULT_CONFIG_LOC;
 		private long defaultNodePayment = DEFAULT_NODE_PAYMENT_TINYBARS;
 		private String targetNetwork;
 		private boolean revocationService = false;
@@ -1473,6 +1487,14 @@ public class ValidationScenarios extends HapiApiSuite {
 			} else {
 				return DEFAULT_PASSPHRASE;
 			}
+		}
+
+		public String getConfigLoc() {
+			return configLoc;
+		}
+
+		public void setConfigLoc(String configLoc) {
+			this.configLoc = configLoc;
 		}
 
 		public long getDefaultNodePayment() {
@@ -1529,9 +1551,10 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static void readConfig() {
 		var yamlIn = new Yaml(new Constructor(ValidationConfig.class));
 		try {
-			validationConfig = yamlIn.load(Files.newInputStream(Paths.get("config.yml")));
+			System.out.println("Config loc: " + params.getConfigLoc());
+			validationConfig = yamlIn.load(Files.newInputStream(Paths.get(params.getConfigLoc())));
 		} catch (IOException e) {
-			log.error("Could not find valid 'config.yml' in working directory, exiting.", e);
+			log.error("Could not locate '{}' exiting!", params.getConfigLoc(), e);
 			System.exit(1);
 		}
 	}
@@ -1633,11 +1656,11 @@ public class ValidationScenarios extends HapiApiSuite {
 		var yamlOut = new Yaml(new SkipNullRepresenter());
 		var doc = yamlOut.dumpAs(validationConfig, Tag.MAP, null);
 		try {
-			var writer = Files.newBufferedWriter(Paths.get("config.yml"));
+			var writer = Files.newBufferedWriter(Paths.get(params.getConfigLoc()));
 			writer.write(doc);
 			writer.close();
 		} catch (IOException e) {
-			log.warn("Could not update config.yml with scenario results, skipping!", e);
+			log.warn("Could not update {} with scenario results, skipping!", params.getConfigLoc(), e);
 		}
 	}
 
