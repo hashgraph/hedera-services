@@ -79,7 +79,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	public void shortCircuitsWithErrorOnNonIncreasingConsensusTime() {
+	public void shortCircuitsWithWarningOnZeroStakeSubmission() {
 		// setup:
 		var now = Instant.now();
 		var then = now.minusMillis(1L);
@@ -94,7 +94,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	public void shortCircuitsWithWarningOnZeroStakeSubmission() {
+	public void shortCircuitsWithErrorOnNonIncreasingConsensusTime() {
 		// setup:
 		var now = Instant.now();
 
