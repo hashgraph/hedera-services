@@ -65,6 +65,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -244,6 +245,11 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic) {
+		return chunkAFile(filePath, chunkSize, payer, topic, new AtomicLong(-1));
+	}
+
+	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
+			AtomicLong num) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 
@@ -259,19 +265,29 @@ public class UtilVerbs {
 			while (position < size) {
 				++currentChunk;
 				int newPosition = Math.min(size, position + chunkSize);
+				ByteString subMsg = msg.substring(position, newPosition);
 				HapiMessageSubmit subOp = submitMessageTo(topic)
-						.message(msg.substring(position, newPosition))
+						.message(subMsg)
 						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
 						.payingWith(payer)
 						.hasKnownStatus(SUCCESS)
 						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
 						.noLogging()
-						.suppressStats(true)
-						.deferStatusResolution();
+						.suppressStats(true);
 				if (1 == currentChunk) {
 					subOp = subOp.usePresetTimestamp();
 				}
-				opsList.add(subOp);
+				if (num.get() >= 0) {
+					String txnName = "submitMessage" + num.incrementAndGet();
+					HapiGetTxnRecord validateOp = getTxnRecord(txnName)
+							.hasCorrectRunningHash(topic, subMsg.toByteArray())
+							.payingWith(payer)
+							.noLogging();
+					opsList.add(subOp.via(txnName));
+					opsList.add(validateOp);
+				} else {
+					opsList.add(subOp.deferStatusResolution());
+				}
 				position = newPosition;
 			}
 
