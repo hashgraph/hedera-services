@@ -70,7 +70,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				chunkAFile(LARGE_FILE, CHUNK_SIZE, PAYER, TOPIC, totalMsgSubmitted)
+				chunkAFile(LARGE_FILE, CHUNK_SIZE, PAYER, TOPIC, totalMsgSubmitted, true)
 		};
 
 		return defaultHapiSpec("fragmentLongMessageIntoChunks")

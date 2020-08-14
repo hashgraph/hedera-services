@@ -245,26 +245,43 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic) {
-		return chunkAFile(filePath, chunkSize, payer, topic, new AtomicLong(-1));
+		return chunkAFile(filePath, chunkSize, payer, topic, new AtomicLong(-1), false);
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-			AtomicLong num) {
+			AtomicLong num, boolean useCiProperties) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+			String overriddenFile = new String(filePath);
+			int overriddenChunkSize = chunkSize;
+			boolean validateRunningHash = false;
 
+			if (useCiProperties) {
+				var ciProperties = spec.setup().ciPropertiesMap();
+				if (null != ciProperties) {
+					if (ciProperties.has("file")) {
+						overriddenFile = ciProperties.get("file");
+					}
+					if (ciProperties.has("chunkSize")) {
+						overriddenChunkSize = ciProperties.getInteger("chunkSize");
+					}
+					if (ciProperties.has("validateRunningHash")) {
+						validateRunningHash = ciProperties.getBoolean("validateRunningHash");
+					}
+				}
+			}
 			ByteString msg = ByteString.copyFrom(
-					Files.readAllBytes(Paths.get(filePath))
+					Files.readAllBytes(Paths.get(overriddenFile))
 			);
 			int size = msg.size();
-			int totalChunks = (size + chunkSize - 1) / chunkSize;
+			int totalChunks = (size + overriddenChunkSize - 1) / overriddenChunkSize;
 			int position = 0;
 			int currentChunk = 0;
 			var initialTransactionID = asTransactionID(spec, Optional.of(payer));
 
 			while (position < size) {
 				++currentChunk;
-				int newPosition = Math.min(size, position + chunkSize);
+				int newPosition = Math.min(size, position + overriddenChunkSize);
 				ByteString subMsg = msg.substring(position, newPosition);
 				HapiMessageSubmit subOp = submitMessageTo(topic)
 						.message(subMsg)
@@ -277,7 +294,7 @@ public class UtilVerbs {
 				if (1 == currentChunk) {
 					subOp = subOp.usePresetTimestamp();
 				}
-				if (num.get() >= 0) {
+				if (validateRunningHash && (num.get() >= 0)) {
 					String txnName = "submitMessage" + num.incrementAndGet();
 					HapiGetTxnRecord validateOp = getTxnRecord(txnName)
 							.hasCorrectRunningHash(topic, subMsg.toByteArray())
