@@ -1,6 +1,6 @@
 checkSignedStateFromDisk, 1
 csvAppend, 0
-csvFileName, MainNetStats
+csvFileName, PlatformStats
 doUpnp, 0
 enableEventStreaming, true
 eventsLogDir, /opt/hgcapp/eventsStreams
