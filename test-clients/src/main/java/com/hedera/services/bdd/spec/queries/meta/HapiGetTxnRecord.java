@@ -61,7 +61,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
-	Optional<String> lastMessagedSubmitted = Optional.empty();
+	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -95,9 +95,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasCorrectRunningHash(String topic, String lastMessage) {
+	public HapiGetTxnRecord hasCorrectRunningHash(String topic, byte[] lastMessage) {
 		topicToValidate = Optional.of(topic);
 		lastMessagedSubmitted = Optional.of(lastMessage);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasCorrectRunningHash(String topic, String lastMessage) {
+		hasCorrectRunningHash(topic, lastMessage.getBytes());
 		return this;
 	}
 
@@ -137,7 +142,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					out.writeLong(actualRecord.getConsensusTimestamp().getSeconds());
 					out.writeInt(actualRecord.getConsensusTimestamp().getNanos());
 					out.writeLong(actualRecord.getReceipt().getTopicSequenceNumber());
-					out.writeObject(MessageDigest.getInstance("SHA-384").digest(lastMessagedSubmitted.get().getBytes()));
+					out.writeObject(MessageDigest.getInstance("SHA-384").digest(lastMessagedSubmitted.get()));
 					out.flush();
 					var expectedRunningHash = MessageDigest.getInstance("SHA-384").digest(boas.toByteArray());
 					var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
