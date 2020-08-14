@@ -26,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,6 +64,12 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 
 	public ZeroStakeNodeTest(String nodes) {
 		this.nodes = nodes;
+		HapiApiSpec.runInCiMode(
+				nodes,
+				"3",
+				"OFF",
+				"FIXED",
+				new HashMap<String, String>());
 	}
 
 	public static void main(String... args) throws Exception {
