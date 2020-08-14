@@ -223,7 +223,7 @@ public class UtilVerbs {
 			var newConfig = ServicesConfigurationList.newBuilder();
 			oldConfig.getNameValueList()
 					.stream()
-					.filter(UtilVerbs::isNotLegacyThrottleProp)
+					.filter(UtilVerbs::isNotThrottleProp)
 					.forEach(newConfig::addNameValue);
 			var in = Files.newInputStream(Paths.get(throttlePropsLoc));
 			var jutilProps = new Properties();
@@ -530,13 +530,8 @@ public class UtilVerbs {
 				.collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
 	}
 
-	public static boolean isNotLegacyThrottleProp(Setting setting) {
+	public static boolean isNotThrottleProp(Setting setting) {
 		var name = setting.getName();
-		Set<String> legacyBouncerProps = Set.of("throttlingTps", "simpletransferTps", "getReceiptTps", "queriesTps");
-		if (legacyBouncerProps.contains(name)) {
-			return false;
-		} else {
-			return !name.startsWith("throttling.hcs");
-		}
+		return !name.startsWith("hapi.throttling");
 	}
 }
