@@ -113,7 +113,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
-		if (!consensusTime.isAfter(lastHandled)) {
+		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
 			var msg = String.format("Catastrophic invariant failure! " +
 					"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
 					consensusTime.getEpochSecond(),
