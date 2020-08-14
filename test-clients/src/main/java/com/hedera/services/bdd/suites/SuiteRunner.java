@@ -208,7 +208,7 @@ public class SuiteRunner {
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
 			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					"-NETWORKSIZE="+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
