@@ -48,8 +48,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hedera.services.legacy.handler.TransactionHandler.IS_THROTTLE_EXEMPT;
 
-public class ServiceAnswerFlow implements AnswerFlow {
-	private static final Logger log = LogManager.getLogger(ServiceAnswerFlow.class);
+public class StakedAnswerFlow implements AnswerFlow {
+	private static final Logger log = LogManager.getLogger(StakedAnswerFlow.class);
 
 	SignedTxnAccessor defaultAccessor = null;
 
@@ -60,7 +60,7 @@ public class ServiceAnswerFlow implements AnswerFlow {
 	private final UsagePricesProvider resourceCosts;
 	private final FunctionalityThrottling throttles;
 
-	public ServiceAnswerFlow(
+	public StakedAnswerFlow(
 			Platform platform,
 			FeeCalculator fees,
 			TransactionHandler legacyHandler,

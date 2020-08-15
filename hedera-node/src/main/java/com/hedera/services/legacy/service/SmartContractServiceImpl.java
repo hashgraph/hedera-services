@@ -23,6 +23,7 @@ package com.hedera.services.legacy.service;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -71,6 +72,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
+import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
@@ -92,6 +95,7 @@ public class SmartContractServiceImpl
   private HederaNodeStats hederaNodeStats;
   private UsagePricesProvider usagePrices;
   private HbarCentExchange exchange;
+  private ServicesNodeType nodeType;
 
   public SmartContractServiceImpl(
           Platform platform,
@@ -99,7 +103,8 @@ public class SmartContractServiceImpl
           SmartContractRequestHandler smartContractHandler,
           HederaNodeStats hederaNodeStats,
           UsagePricesProvider usagePrices,
-          HbarCentExchange exchange
+          HbarCentExchange exchange,
+          ServicesNodeType nodeType
   ) {
     this.platform = platform;
     this.txHandler = txHandler;
@@ -107,6 +112,7 @@ public class SmartContractServiceImpl
     this.hederaNodeStats = hederaNodeStats;
     this.usagePrices = usagePrices;
     this.exchange = exchange;
+    this.nodeType = nodeType;
   }
 
   public long getContractCallLocalGasPriceInTinyBars(Timestamp at) {
@@ -131,7 +137,8 @@ public class SmartContractServiceImpl
     if (log.isDebugEnabled()) {
       log.debug("In contractCallLocalMethod :: request : " + TextFormat.shortDebugString(request));
     }
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, true);
+    boolean isStaked = (nodeType == STAKED_NODE);
+    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
     if (ResponseCodeEnum.OK != validationCode) {
       String errorMsg = "contractCallLocalMethod query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
@@ -219,11 +226,12 @@ public class SmartContractServiceImpl
                     feeMatrices,
                     exchange.rate(body.getTransactionID().getTransactionValidStart())) + gasCost;
 
-    if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-      scheduledFee = 0;
-    } else if (transactionContractCallLocal.getHeader()
-        .getResponseType() == ResponseType.ANSWER_ONLY) {
-      scheduledFee = queryFee;
+    if (isStaked) {
+      if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
+        scheduledFee = 0;
+      } else if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
+        scheduledFee = queryFee;
+      }
     }
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractCallLocal, feePayment, scheduledFee);
@@ -283,8 +291,7 @@ public class SmartContractServiceImpl
    * @param responseObserver Observer to be informed of results
    */
   @Override
-  public void createContract(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver) {
+  public void createContract(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
     smartContractTransactionExecution(request, responseObserver, "createContract");
   }
 
@@ -332,11 +339,12 @@ public class SmartContractServiceImpl
   public void getContractInfo(Query request, StreamObserver<Response> responseObserver) {
     hederaNodeStats.smartContractQueryReceived("getContractInfo");
 
+    boolean isStaked = (nodeType == STAKED_NODE);
     if (log.isDebugEnabled()) {
       log.debug("In getContractInfo :: request : " + TextFormat.shortDebugString(request));
     }
 
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, true);
+    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
     if (ResponseCodeEnum.OK != validationCode) {
       String errorMsg = "query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
@@ -393,10 +401,12 @@ public class SmartContractServiceImpl
     long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
-    if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-      scheduledFee = 0;
-    } else if (contractGetInfo.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-      scheduledFee = queryFee;
+    if (isStaked) {
+      if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
+        scheduledFee = 0;
+      } else if (contractGetInfo.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
+        scheduledFee = queryFee;
+      }
     }
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetInfo, feePayment, scheduledFee);
@@ -468,10 +478,12 @@ public class SmartContractServiceImpl
   public void contractGetBytecode(Query request, StreamObserver<Response> responseObserver) {
     hederaNodeStats.smartContractQueryReceived("ContractGetBytecode");
 
+    boolean isStaked = (nodeType == STAKED_NODE);
+
     if (log.isDebugEnabled()) {
       log.debug("In BC:getBytecode :: request : " + TextFormat.shortDebugString(request));
     }
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, true);
+    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
     if (ResponseCodeEnum.OK != validationCode) {
       String errorMsg = "query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
@@ -528,10 +540,12 @@ public class SmartContractServiceImpl
     long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
-    if (contractGetByteCode.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-      scheduledFee = 0;
-    } else if (contractGetByteCode.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-      scheduledFee = queryFee;
+    if (isStaked) {
+      if (contractGetByteCode.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
+        scheduledFee = 0;
+      } else if (contractGetByteCode.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
+        scheduledFee = queryFee;
+      }
     }
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetBytecode, feePayment, scheduledFee);
@@ -612,10 +626,12 @@ public class SmartContractServiceImpl
   public void getTxRecordByContractID(Query request, StreamObserver<Response> responseObserver) {
     hederaNodeStats.smartContractQueryReceived("getTxRecordByContractID");
 
+    boolean isStaked = (nodeType == STAKED_NODE);
+
     if (log.isDebugEnabled()) {
       log.debug("In getTxRecordByContractID :: request : " + TextFormat.shortDebugString(request));
     }
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, true);
+    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
     if (ResponseCodeEnum.OK != validationCode) {
       String errorMsg = "query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
@@ -660,10 +676,12 @@ public class SmartContractServiceImpl
     long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
-    if (query.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-      scheduledFee = 0;
-    } else if (query.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-      scheduledFee = queryFee;
+    if (isStaked) {
+      if (query.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
+        scheduledFee = 0;
+      } else if (query.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
+        scheduledFee = queryFee;
+      }
     }
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetRecords, feePayment, scheduledFee);
@@ -732,8 +750,14 @@ public class SmartContractServiceImpl
    * @param responseObserver Observer to be informed of results
    * @param transactionRequest Name of the transaction type
    */
-  private void smartContractTransactionExecution(Transaction request,
-      StreamObserver<TransactionResponse> responseObserver, String transactionRequest) {
+  private void smartContractTransactionExecution(
+          Transaction request,
+          StreamObserver<TransactionResponse> responseObserver, String transactionRequest
+  ) {
+    if (nodeType == ZERO_STAKE_NODE) {
+      transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_NODE_ACCOUNT));
+      return;
+    }
     hederaNodeStats.smartContractTransactionReceived(transactionRequest);
 
     TransactionBody transactionBody;

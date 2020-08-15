@@ -55,7 +55,7 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
 @RunWith(JUnitPlatform.class)
-class ServiceAnswerFlowTest {
+class StakedAnswerFlowTest {
 	Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 	HederaFunctionality function = HederaFunctionality.ConsensusGetTopicInfo;
 
@@ -93,7 +93,7 @@ class ServiceAnswerFlowTest {
 	Response response;
 	AnswerService service;
 
-	ServiceAnswerFlow subject;
+	StakedAnswerFlow subject;
 
 	@BeforeEach
 	private void setup() {
@@ -109,7 +109,7 @@ class ServiceAnswerFlowTest {
 		service = mock(AnswerService.class);
 		response = mock(Response.class);
 
-		subject = new ServiceAnswerFlow(platform, fees, legacyHandler, stateViews, resourceCosts, throttles);
+		subject = new StakedAnswerFlow(platform, fees, legacyHandler, stateViews, resourceCosts, throttles);
 	}
 
 	@Test
