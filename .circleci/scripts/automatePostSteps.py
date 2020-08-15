@@ -47,6 +47,7 @@ SERVICES_REPO=sys.argv[7]
 
 START_DIR=os.getcwd()
 
+MIGRATION_CONF_PROP_FILE=""
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
 
@@ -55,11 +56,13 @@ os.system("rm -rf sav* output")
 def validateInputs():
 
     NO_OF_NODES=0
-
+    global MIGRATION_CONF_PROP_FILE
     if NETWORKUSED == "mainnet":
         NO_OF_NODES=13
+        MIGRATION_CONF_PROP_FILE = "migration_config_mainnet.properties"
     elif NETWORKUSED == "publictestnet":
         NO_OF_NODES=4
+        MIGRATION_CONF_PROP_FILE = "migration_config_testnet.properties"
     else:
         print("please enter the correct network name has to one of :")
         print("mainnet")
@@ -171,7 +174,7 @@ test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
 
 mvn_install_cmd = "mvn clean install"
-mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args="migration_config_testnet.properties" > migrationPostStepsTest.log'
+mvn_test_cmd = "mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args={} > migrationPostStepsTest.log".format(MIGRATION_CONF_PROP_FILE)
 
 os.system(mvn_install_cmd)
 os.system(mvn_test_cmd)
