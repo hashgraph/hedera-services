@@ -38,6 +38,7 @@ import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -94,6 +95,7 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.unit.handler.StoragePersistenceImpl;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.swirlds.common.Platform;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
 import io.grpc.stub.StreamObserver;
 
@@ -266,6 +268,8 @@ public class SmartContractServiceImplTest {
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -279,7 +283,8 @@ public class SmartContractServiceImplTest {
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 		HbarCentExchange exchange = mock(HbarCentExchange.class);
 		long expiryTime = Long.MAX_VALUE;
 		ExchangeRateSet rates = RequestBuilder

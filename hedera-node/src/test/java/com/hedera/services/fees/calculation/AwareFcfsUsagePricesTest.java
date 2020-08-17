@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -132,6 +133,8 @@ class AwareFcfsUsagePricesTest {
 
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		given(accessor.getTxnId()).willReturn(cryptoTransferTxn.getTransactionID());
+		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.accessor()).willReturn(accessor);
 
@@ -156,6 +159,7 @@ class AwareFcfsUsagePricesTest {
 		subject.loadPriceSchedules();
 		// and:
 		given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(accessor.getFunction()).willReturn(UNRECOGNIZED);
 
 		// when:
 		FeeData actual = subject.activePrices();

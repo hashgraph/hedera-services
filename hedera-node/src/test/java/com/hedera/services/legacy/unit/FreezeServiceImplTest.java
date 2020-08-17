@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,6 +55,7 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.swirlds.common.Platform;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
 import io.grpc.stub.StreamObserver;
@@ -142,6 +144,8 @@ public class FreezeServiceImplTest {
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     HbarCentExchange exchange = new OneToOneRates();
     var policies = new SystemOpPolicies(new MockEntityNumbers());
+    var platformStatus = new ContextPlatformStatus();
+    platformStatus.set(PlatformStatus.ACTIVE);
     transactionHandler = new TransactionHandler(
             receiptCache,
             () -> accountFCMap,
@@ -155,7 +159,8 @@ public class FreezeServiceImplTest {
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),
             policies,
-            new StandardExemptions(new MockAccountNumbers(), policies));
+            new StandardExemptions(new MockAccountNumbers(), policies),
+            platformStatus);
     PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");

@@ -93,6 +93,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class SmartContractServiceImpl
     extends SmartContractServiceGrpc.SmartContractServiceImplBase {
 
+  private SmartContractFeeBuilder feeBuilder = new SmartContractFeeBuilder();
   private static final Logger log = LogManager.getLogger(SmartContractServiceImpl.class);
   private TransactionHandler txHandler;
   private SmartContractRequestHandler smartContractHandler;
@@ -198,7 +199,6 @@ public class SmartContractServiceImpl
         .setContractID(transactionContractCallLocal.getContractID())
         .setContractCallResult(callResult).build();
 
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -220,13 +220,14 @@ public class SmartContractServiceImpl
       functionParamSize = transactionContractCallLocal.getFunctionParameters().size();
     }
 
-    FeeData feeMatrices =
-        smBuilder.getContractCallLocalFeeMatrices(functionParamSize, callResultResponse,transactionContractCallLocal.getHeader().getResponseType());
+    FeeData feeMatrices = feeBuilder.getContractCallLocalFeeMatrices(
+            functionParamSize,
+            callResultResponse,
+            transactionContractCallLocal.getHeader().getResponseType());
     long scheduledFee = 0;
     long gasOffered = transactionContractCallLocal.getGas();
     long gasCost = gasPrice * gasOffered;
-    long queryFee =
-            smBuilder.getTotalFeeforRequest(
+    long queryFee = feeBuilder.getTotalFeeforRequest(
                     feeData,
                     feeMatrices,
                     exchange.rate(body.getTransactionID().getTransactionValidStart())) + gasCost;
@@ -383,7 +384,6 @@ public class SmartContractServiceImpl
       storageSize = contractInfo.getStorage();
     }
 
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body = null;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -399,10 +399,10 @@ public class SmartContractServiceImpl
 
     Timestamp at = body.getTransactionID().getTransactionValidStart();
     FeeData prices = usagePrices.pricesGiven(ContractGetInfo, at);
-    FeeData feeMatrices = smBuilder
+    FeeData feeMatrices = feeBuilder
         .getContractInfoQueryFeeMatrices(key, contractGetInfo.getHeader().getResponseType());
     long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
+    long queryFee = feeBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
     if (isStaked) {
@@ -515,7 +515,6 @@ public class SmartContractServiceImpl
       return;
     }
 
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body = null;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -537,10 +536,10 @@ public class SmartContractServiceImpl
       byteCodeSize = byteCodeToReturn.size();
     }
 
-    FeeData feeMatrices = smBuilder.getContractByteCodeQueryFeeMatrices(byteCodeSize,
+    FeeData feeMatrices = feeBuilder.getContractByteCodeQueryFeeMatrices(byteCodeSize,
         contractGetByteCode.getHeader().getResponseType());
     long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
+    long queryFee = feeBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
     if (isStaked) {
@@ -655,7 +654,6 @@ public class SmartContractServiceImpl
       TransactionValidationUtils.constructGetAccountRecordsErrorResponse(responseObserver,
           ResponseCodeEnum.RECORD_NOT_FOUND,0);
     }
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -672,10 +670,9 @@ public class SmartContractServiceImpl
     Timestamp at = body.getTransactionID().getTransactionValidStart();
     FeeData prices = usagePrices.pricesGiven(ContractGetRecords, at);
 
-    FeeData feeMatrices = smBuilder
-        .getContractRecordsQueryFeeMatrices(txRecord, query.getHeader().getResponseType());
+    FeeData feeMatrices = feeBuilder.getContractRecordsQueryFeeMatrices(txRecord, query.getHeader().getResponseType());
     long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
+    long queryFee = feeBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
     if (isStaked) {

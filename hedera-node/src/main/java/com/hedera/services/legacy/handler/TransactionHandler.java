@@ -22,7 +22,9 @@ package com.hedera.services.legacy.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
+import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -54,7 +56,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.legacy.config.PropertiesLoader;
@@ -95,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
 
 /**
  * @author Akshay
@@ -125,6 +127,7 @@ public class TransactionHandler {
   private AccountNumbers accountNums;
   private HederaNodeStats stats;
   private SystemOpPolicies systemOpPolicies;
+  private CurrentPlatformStatus platformStatus;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -148,7 +151,8 @@ public class TransactionHandler {
           QueryFeeCheck queryFeeCheck,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -163,6 +167,7 @@ public class TransactionHandler {
     this.accountNums = accountNums;
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
+    this.platformStatus = platformStatus;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -174,12 +179,13 @@ public class TransactionHandler {
           AccountID nodeAccount,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
             null, null, null, null,
-            accountNums, null, systemOpPolicies, exemptions);
+            accountNums, null, systemOpPolicies, exemptions, platformStatus);
   }
 
   public TransactionHandler(
@@ -198,7 +204,8 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           HederaNodeStats stats,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -216,6 +223,7 @@ public class TransactionHandler {
     this.stats = stats;
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
+    this.platformStatus = platformStatus;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -435,7 +443,7 @@ public class TransactionHandler {
   }
 
   public TxnValidityAndFeeReq validateTransactionPreConsensus(Transaction transaction, boolean isQueryPayment) {
-    if (checkPlatformStatus()) {
+    if (platformStatus.get() != ACTIVE) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
@@ -537,22 +545,13 @@ public class TransactionHandler {
     return new TxnValidityAndFeeReq(returnCode, feeRequired);
   }
 
-  private boolean checkPlatformStatus() {
-    PlatformStatus platformStatus = GlobalFlag.getInstance().getPlatformStatus();
-    if (platformStatus != null && !platformStatus.equals(PlatformStatus.ACTIVE)) {
-      log.warn("Platform Status is :: " + platformStatus);
-      return true;
-    }
-    return false;
-  }
-
   /**
    * Method to check query validations based on QueryCase from request
    *
    * @return validationCode
    */
   public ResponseCodeEnum validateQuery(Query query, boolean hasPayment) {
-    if (hasPayment && checkPlatformStatus()) {
+    if (hasPayment && platformStatus.get() != ACTIVE) {
       return ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
     }
 

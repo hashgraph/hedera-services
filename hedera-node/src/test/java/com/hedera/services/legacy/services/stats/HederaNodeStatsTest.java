@@ -59,7 +59,7 @@ public class HederaNodeStatsTest {
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
 		stats = new HederaNodeStats(platform, 0, log);
-		verify(platform, times(209)).addAppStatEntry(any(StatEntry.class));
+		verify(platform, times(213)).addAppStatEntry(any(StatEntry.class));
 		verify(platform, times(1)).appStatInit();
 	}
 

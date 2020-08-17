@@ -28,6 +28,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.service.GlobalFlag;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -58,6 +59,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -116,6 +118,8 @@ class QueryValidationTest {
     PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
     given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
     var policies = new SystemOpPolicies(new MockEntityNumbers());
+    var platformStatus = new ContextPlatformStatus();
+    platformStatus.set(PlatformStatus.ACTIVE);
     transactionHandler = new TransactionHandler(
             mock(RecordCache.class),
             precheckVerifier,
@@ -123,7 +127,8 @@ class QueryValidationTest {
             nodeAccount,
             new MockAccountNumbers(),
             policies,
-            new StandardExemptions(new MockAccountNumbers(), policies));
+            new StandardExemptions(new MockAccountNumbers(), policies),
+            platformStatus);
     transactionHandler.setBasicPrecheck(
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR));
     byte[] pubKey = ((EdDSAPublicKey) payerKeyGenerated.getPublic()).getAbyte();

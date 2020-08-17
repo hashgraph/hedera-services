@@ -21,17 +21,19 @@ package com.hedera.services.legacy.services.context;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.swirlds.common.PlatformStatus;
+import static com.swirlds.common.PlatformStatus.*;
 
-public class DefaultCurrentPlatformStatus implements CurrentPlatformStatus {
+public class ContextPlatformStatus implements CurrentPlatformStatus {
+	private PlatformStatus current = STARTING_UP;
+
 	@Override
 	public synchronized void set(PlatformStatus status) {
-		GlobalFlag.getInstance().setPlatformStatus(status);
+		current = status;
 	}
 
 	@Override
 	public synchronized PlatformStatus get() {
-		return GlobalFlag.getInstance().getPlatformStatus();
+		return current;
 	}
 }

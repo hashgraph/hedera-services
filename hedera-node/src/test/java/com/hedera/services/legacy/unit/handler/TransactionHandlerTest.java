@@ -28,6 +28,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Platform;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +102,8 @@ public class TransactionHandlerTest {
 		stats = mock(HederaNodeStats.class);
 
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		subject = new TransactionHandler(
 				recordCache,
 				precheckVerifier,
@@ -116,6 +120,7 @@ public class TransactionHandlerTest {
 				new MockAccountNumbers(),
 				stats,
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 	}
 }

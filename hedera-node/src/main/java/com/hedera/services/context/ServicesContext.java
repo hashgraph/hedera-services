@@ -204,14 +204,13 @@ import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.netty.CryptoServiceInterceptor;
 import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
-import com.hedera.services.legacy.services.context.DefaultCurrentPlatformStatus;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
@@ -244,6 +243,7 @@ import com.hedera.services.context.properties.PropertySource;
 
 import java.io.PrintStream;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -349,6 +349,7 @@ public class ServicesContext {
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
 	private HfsSystemFilesManager systemFilesManager;
+	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
@@ -370,13 +371,11 @@ public class ServicesContext {
 	private static StateMigrations stateMigrations;
 	private static AccountsExporter accountsExporter;
 	private static PropertySanitizer propertySanitizer;
-	private static CurrentPlatformStatus platformStatus;
 	private static LegacyEd25519KeyReader b64KeyReader;
 
 	static {
 		pause = SleepingPause.INSTANCE;
 		b64KeyReader = new LegacyEd25519KeyReader();
-		platformStatus = new DefaultCurrentPlatformStatus();
 		stateMigrations = new DefaultStateMigrations(SleepingPause.INSTANCE);
 		accountsExporter = new DefaultAccountsExporter();
 		propertySanitizer = new DefaultPropertySanitizer();
@@ -400,6 +399,13 @@ public class ServicesContext {
 		queryableAccounts().set(accounts());
 		queryableTopics().set(topics());
 		queryableStorage().set(storage());
+	}
+
+	public CurrentPlatformStatus platformStatus() {
+		if (platformStatus == null) {
+			platformStatus = new ContextPlatformStatus();
+		}
+		return platformStatus;
 	}
 
 	public LedgerValidator ledgerValidator() {
@@ -723,10 +729,6 @@ public class ServicesContext {
 		return Optional.ofNullable(console()).map(c -> c.out).orElse(null);
 	}
 
-	public CurrentPlatformStatus platformStatus() {
-		return platformStatus;
-	}
-
 	public BalancesExporter balancesExporter() {
 		if (balancesExporter == null) {
 			balancesExporter = new DefaultBalancesExporter(platform, addressBook());
@@ -1023,7 +1025,7 @@ public class ServicesContext {
 
 	public NetworkController networkGrpc() {
 		if (networkGrpc == null) {
-			networkGrpc = new NetworkController(metaAnswers(), queryResponseHelper());
+			networkGrpc = new NetworkController(metaAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return networkGrpc;
 	}
@@ -1086,8 +1088,8 @@ public class ServicesContext {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
 					new NettyServerManager(),
-					List.of(filesGrpc(), freezeGrpc(), contractsGrpc(), consensusGrpc(), networkGrpc()),
-					List.of(intercept(cryptoGrpc(), new CryptoServiceInterceptor())));
+					List.of(cryptoGrpc(), filesGrpc(), freezeGrpc(), contractsGrpc(), consensusGrpc(), networkGrpc()),
+					Collections.emptyList());
 		}
 		return grpc;
 	}
@@ -1228,7 +1230,8 @@ public class ServicesContext {
 					accountNums(),
 					stats(),
 					systemOpPolicies(),
-					exemptions());
+					exemptions(),
+					platformStatus());
 		}
 		return txns;
 	}
