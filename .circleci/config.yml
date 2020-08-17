@@ -1063,16 +1063,20 @@ workflows:
                 at: /
 
   nightly-regression:
-    triggers:
-      - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - master
+#    triggers:
+#      - schedule:
+#            cron: "0 5,9,13 * * *"
+#            filters:
+#              branches:
+#                only:
+#                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
+          filters:
+            branches:
+              only:
+                - 00419-D-fix-migration-test-scripts
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1369,6 +1373,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 00419-D-fix-migration-test-scripts
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

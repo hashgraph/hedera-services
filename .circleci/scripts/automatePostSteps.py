@@ -137,7 +137,7 @@ def runMigration():
 
 	os.system(playbook_command)
 
-# runMigration()
+runMigration()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------ Copy Swirlds.log ----------------------------------------------------------------------#
@@ -165,7 +165,7 @@ def copyLogs():
 		os.system(copy_swirld_log.format(PEM_FILE, node_address, i))
 
 print("Wait for 120 seconds before getting the log files...")
-# time.sleep(120)
+time.sleep(120)
 
 copyLogs()
 
