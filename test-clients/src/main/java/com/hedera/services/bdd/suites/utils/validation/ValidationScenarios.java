@@ -553,6 +553,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							LongStream.of(payers).mapToObj(payer ->
 									keyFromPem(() -> pemForAccount(payer))
 											.name(String.format("payer%d", payer))
+											.passphrase(passphraseFor(payer))
 											.linkedTo(() -> String.format("0.0.%d", payer)))
 									.toArray(HapiSpecOperation[]::new)
 					).when().then(
@@ -570,6 +571,15 @@ public class ValidationScenarios extends HapiApiSuite {
 			errorsOccurred.set(true);
 			return null;
 		}
+	}
+
+	private static String passphraseFor(long accountNum) {
+		return Optional.ofNullable(System.getenv(passphraseEnvVarFor(accountNum)))
+				.orElse(params.getRawPassphrase());
+	}
+
+	private static String passphraseEnvVarFor(long accountNum) {
+		return String.format("%s_ACCOUNT%d_PASSPHRASE", params.getTargetNetwork().toUpperCase(), accountNum);
 	}
 
 	private static HapiApiSpec sysFilesDown() {
