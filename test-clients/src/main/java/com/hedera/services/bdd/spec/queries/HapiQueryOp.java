@@ -307,6 +307,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		this.hardcodedNumPayerKeys = Optional.of(hardcoded);
 		return self();
 	}
+	public T delayBy(long pauseMs) {
+		submitDelay = Optional.of(pauseMs);
+		return self();
+	}
 	public T suppressStats(boolean flag) {
 		suppressStats = flag;
 		return self();

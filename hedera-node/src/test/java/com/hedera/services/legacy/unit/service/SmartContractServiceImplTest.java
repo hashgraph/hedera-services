@@ -20,6 +20,7 @@ package com.hedera.services.legacy.unit.service;
  * ‍
  */
 
+import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +35,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -467,7 +469,7 @@ public class SmartContractServiceImplTest {
 				.thenReturn(true);
 
 		smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
-				smartContractHandler, hederaNodeStats, TEST_USAGE_PRICES, TEST_EXCHANGE);
+				smartContractHandler, hederaNodeStats, TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
 
 		smartContractImpl.createContract(trx, responseObserver);
 
@@ -501,7 +503,7 @@ public class SmartContractServiceImplTest {
 
 			smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
 					smartContractHandler, hederaNodeStats,
-					TEST_USAGE_PRICES, TEST_EXCHANGE);
+					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 
