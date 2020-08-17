@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -49,8 +50,8 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 
 	private final String nodes;
 
-	public ZeroStakeNodeTest(String nodes) {
-		this.nodes = nodes;
+//	public ZeroStakeNodeTest(String nodes) {
+//		this.nodes = nodes;
 //		HapiApiSpec.runInCiMode(
 //				nodes,
 //				"3",
@@ -58,26 +59,22 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 //				"fixed",
 //				new HashMap<String, String>());
 //		runSuiteSync();
-	}
+//	}
 
-	public static void main(String... args) throws Exception {
-		new ZeroStakeNodeTest("<FIXME>").runSuiteSync();
-	}
+	public static void main(String... args) { new ZeroStakeNodeTest().runSuiteSync(); }
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						zeroStakeBehavesAsExpectedJRS(nodes),
+						zeroStakeBehavesAsExpectedJRS(),
 				}
 		);
 	}
 
 	/* Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network. */
-	private HapiApiSpec zeroStakeBehavesAsExpectedJRS(String nodes) {
-		return customHapiSpec("zeroStakeBehavesAsExpectedJRS")
-				.withProperties(Map.of(
-						"nodes", nodes)
-				).given(
+	private HapiApiSpec zeroStakeBehavesAsExpectedJRS() {
+		return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
+				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						fileCreate("bytecode").fromResource("Multipurpose.bin"),
