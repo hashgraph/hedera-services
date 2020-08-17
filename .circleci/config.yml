@@ -1349,13 +1349,6 @@ workflows:
                 at: /
 
   daily-aws-summary:
-    triggers:
-      - schedule:
-          cron: "15 14 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - aws-summary:
           context: Slack
@@ -1369,6 +1362,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - fix-aws-summary
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
