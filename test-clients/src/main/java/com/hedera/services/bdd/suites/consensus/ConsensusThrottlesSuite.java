@@ -40,6 +40,8 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 	private static final String DELETE_TOPIC_TOPIC_NAME = "deleteTopic throttling";
 	private static final String GET_TOPIC_INFO_TOPIC_NAME = "getTopicInfo throttling";
 
+	private static final String UNACHIEVABLE_CAPACITY = "2000000000";
+
 	public static void main(String... args) {
 		new ConsensusThrottlesSuite().runSuiteSync();
 	}
@@ -72,7 +74,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of(
 										"hapi.throttling.buckets.createTopicBucket.capacity",
-										"13.0"))
+										"1300.0"))
 				).then(
 						createTopic("unthrottled topic")
 								.payingWith("civilian")
@@ -88,7 +90,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-										"10000.0"))
+										UNACHIEVABLE_CAPACITY))
 				).when(
 						submitMessageTo(SUBMIT_MESSAGE_TOPIC_NAME)
 								.payingWith("civilian")
@@ -114,7 +116,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
-										"10000.0"))
+										UNACHIEVABLE_CAPACITY))
 				).when(
 						updateTopic(UPDATE_TOPIC_TOPIC_NAME)
 								.payingWith("civilian")
@@ -140,7 +142,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusDeleteTopic.capacityRequired",
-										"10000.0"))
+										UNACHIEVABLE_CAPACITY))
 				).when(
 						deleteTopic(DELETE_TOPIC_TOPIC_NAME)
 								.payingWith("civilian")
@@ -165,7 +167,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
-										"10000.0"))
+										UNACHIEVABLE_CAPACITY))
 				).when(
 						getTopicInfo(GET_TOPIC_INFO_TOPIC_NAME)
 								.nodePayment(1_000)
