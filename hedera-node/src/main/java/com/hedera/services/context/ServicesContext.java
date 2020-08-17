@@ -150,6 +150,7 @@ import com.hedera.services.txns.file.FileDeleteTransitionLogic;
 import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.services.txns.file.FileUpdateTransitionLogic;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -353,6 +354,7 @@ public class ServicesContext {
 	private ServicesRepositoryRoot repository;
 	private AccountRecordsHistorian recordsHistorian;
 	private SmartContractServiceImpl contractsGrpc;
+	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
@@ -493,7 +495,11 @@ public class ServicesContext {
 
 	public SubmissionFlow submissionFlow() {
 		if (submissionFlow == null) {
-			submissionFlow = new TxnHandlerSubmissionFlow(platform(), nodeType(), txns(), transitionLogic());
+			submissionFlow = new TxnHandlerSubmissionFlow(
+					nodeType(),
+					txns(),
+					transitionLogic(),
+					submissionManager());
 		}
 		return submissionFlow;
 	}
@@ -637,12 +643,12 @@ public class ServicesContext {
 		if (answerFlow == null) {
 			if (nodeType() == STAKED_NODE) {
 				answerFlow = new StakedAnswerFlow(
-						platform(),
 						fees(),
 						txns(),
 						stateViews(),
 						usagePrices(),
-						bucketThrottling());
+						bucketThrottling(),
+						submissionManager());
 			} else {
 				answerFlow = new ZeroStakeAnswerFlow(txns(), stateViews(), bucketThrottling());
 			}
@@ -1010,7 +1016,7 @@ public class ServicesContext {
 
 	public FreezeServiceImpl freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(platform, txns());
+			freezeGrpc = new FreezeServiceImpl(txns(), submissionManager());
 		}
 		return freezeGrpc;
 	}
@@ -1050,15 +1056,22 @@ public class ServicesContext {
 	public SmartContractServiceImpl contractsGrpc() {
 		if (contractsGrpc == null) {
 			contractsGrpc = new SmartContractServiceImpl(
-					platform,
 					txns(),
 					contracts(),
 					stats(),
 					usagePrices(),
 					exchange(),
-					nodeType());
+					nodeType(),
+					submissionManager());
 		}
 		return contractsGrpc;
+	}
+
+	public PlatformSubmissionManager submissionManager() {
+		if (submissionManager == null) {
+			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), stats());
+		}
+		return submissionManager;
 	}
 
 	public ConsensusController consensusGrpc() {

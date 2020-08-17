@@ -152,7 +152,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private FeeData uncheckedPricesGiven(SignedTxnAccessor accessor, Timestamp at) {
 		try {
-			return usagePrices.pricesGiven(functionOf(accessor.getTxn()), at);
+			return usagePrices.pricesGiven(accessor.getFunction(), at);
 		} catch (Exception e) {
 			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxn4Log(), e);
 		}

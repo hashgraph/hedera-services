@@ -20,6 +20,7 @@ package com.hedera.services.security.ops;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -41,6 +42,7 @@ import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -129,6 +131,39 @@ class SystemOpPoliciesTest {
 		assertTrue(subject.canUpdate(57, 121));
 		assertTrue(subject.canUpdate(57, 122));
 		assertFalse(subject.canUpdate(57, 111));
+	}
+
+	@Test
+	public void uncheckedSubmitRejectsUnauthorized() throws InvalidProtocolBufferException {
+		// given:
+		var txn = civilianTxn()
+				.setUncheckedSubmit(UncheckedSubmitBody
+						.newBuilder()
+						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+		// expect:
+		assertEquals(UNAUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void sysAdminCanSubmitUnchecked() throws InvalidProtocolBufferException {
+		// given:
+		var txn = sysAdminTxn()
+				.setUncheckedSubmit(UncheckedSubmitBody
+						.newBuilder()
+						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
+	}
+
+	@Test
+	public void treasuryCanSubmitUnchecked() throws InvalidProtocolBufferException {
+		// given:
+		var txn = treasuryTxn()
+				.setUncheckedSubmit(UncheckedSubmitBody
+						.newBuilder()
+						.setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+		// expect:
+		assertEquals(AUTHORIZED, subject.check(accessor(txn)));
 	}
 
 	@Test

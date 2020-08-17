@@ -118,28 +118,4 @@ public class TransactionHandlerTest {
 				policies,
 				new StandardExemptions(new MockAccountNumbers(), policies));
 	}
-
-	@Test
-	public void shouldCreatePlatformTransaction() {
-		byte[] bytes = new byte[1];
-		given(request.toByteArray()).willReturn(bytes);
-		given(platform.createTransaction(any())).willReturn(true);
-
-		Assert.assertTrue(subject.submitTransaction(platform, request, txnId));
-
-		verify(recordCache).addPreConsensus(txnId);
-		verify(stats, times(0)).platformTxnNotCreated();
-	}
-
-	@Test
-	public void shouldChangeStatWhenPlatformTransactionIsNotCreated() {
-		byte[] bytes = new byte[1];
-		given(request.toByteArray()).willReturn(bytes);
-		given(platform.createTransaction(any())).willReturn(false);
-
-		Assert.assertFalse(subject.submitTransaction(platform, request, txnId));
-
-		verify(recordCache, times(0)).addPreConsensus(any());
-		verify(stats).platformTxnNotCreated();
-	}
 }

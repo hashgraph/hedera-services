@@ -22,15 +22,12 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.service.proto.java";
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
 
-import "Query.proto";
-import "Response.proto";
-import "TransactionResponse.proto";
-import "Transaction.proto";
-
-/* The requests and responses for different network services. */
-service NetworkService {
-    rpc getVersionInfo (Query) returns (Response); // Retrieves the active versions of Hedera Services and HAPI proto
-    rpc uncheckedSubmit (Transaction) returns (TransactionResponse);
+/*
+Submit an arbitrary (serialized) Transaction to the network without prechecks. Requires superuser privileges.
+*/
+message UncheckedSubmitBody {
+    bytes transactionBytes = 1; // The serialized bytes of the Transaction to be submitted without prechecks
 }

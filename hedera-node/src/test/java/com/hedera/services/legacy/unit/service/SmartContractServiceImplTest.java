@@ -23,6 +23,7 @@ package com.hedera.services.legacy.unit.service;
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.RETURNS_SMART_NULLS;
@@ -55,6 +56,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -234,7 +236,7 @@ public class SmartContractServiceImplTest {
 			public void onNext(TransactionResponse response) {
 				tResponse = response;
 
-				if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.OK) {
+				if (response.getNodeTransactionPrecheckCode() == OK) {
 					System.out.println("System OK");
 				} else if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.BUSY) {
 					System.out.println("System BUSY");
@@ -467,9 +469,13 @@ public class SmartContractServiceImplTest {
 		Platform platform = Mockito.mock(Platform.class);
 		when(platform.createTransaction(new com.swirlds.common.Transaction(trx.toByteArray())))
 				.thenReturn(true);
+		PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
 
-		smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
-				smartContractHandler, hederaNodeStats, TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
+		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
+				smartContractHandler, hederaNodeStats,
+				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
+				submissionManager);
 
 		smartContractImpl.createContract(trx, responseObserver);
 
@@ -499,11 +505,13 @@ public class SmartContractServiceImplTest {
 			Query getBySolidityIdQuery = getDummyQuery("SolidityIDQuery", trx, solidityId);
 			MockSettings mockSettings = new MockSettingsImpl<>().defaultAnswer(RETURNS_SMART_NULLS).stubOnly();
 
-			Platform platform = Mockito.mock(Platform.class);
+			PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
+			given(submissionManager.trySubmission(any())).willReturn(OK);
 
-			smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
+			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
 					smartContractHandler, hederaNodeStats,
-					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
+					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
+					submissionManager);
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 

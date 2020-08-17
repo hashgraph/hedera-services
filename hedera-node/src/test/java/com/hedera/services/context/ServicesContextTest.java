@@ -73,6 +73,7 @@ import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -406,6 +407,7 @@ public class ServicesContextTest {
 		assertThat(ctx.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
 		assertThat(ctx.systemOpPolicies(), instanceOf(SystemOpPolicies.class));
 		assertThat(ctx.exemptions(), instanceOf(StandardExemptions.class));
+		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));

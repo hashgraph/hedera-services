@@ -27,6 +27,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -80,13 +81,13 @@ class StakedAnswerFlowTest {
 	FeeObject costs = new FeeObject(1L, 2L, 3L);
 	FeeObject zeroCosts = new FeeObject(0L, 0L, 0L);
 
-	Platform platform;
 	FeeCalculator fees;
 	TransactionHandler legacyHandler;
 	StateView view;
 	Supplier<StateView> stateViews;
 	UsagePricesProvider resourceCosts;
 	FunctionalityThrottling throttles;
+	PlatformSubmissionManager submissionManager;
 
 	Query query = Query.getDefaultInstance();
 	FeeData usagePrices;
@@ -99,17 +100,17 @@ class StakedAnswerFlowTest {
 	private void setup() {
 		fees = mock(FeeCalculator.class);
 		view = mock(StateView.class);
-		platform = mock(Platform.class);
 		throttles = mock(FunctionalityThrottling.class);
 		legacyHandler = mock(TransactionHandler.class);
 		stateViews = () -> view;
 		resourceCosts = mock(UsagePricesProvider.class);
 		usagePrices = mock(FeeData.class);
+		submissionManager = mock(PlatformSubmissionManager.class);
 
 		service = mock(AnswerService.class);
 		response = mock(Response.class);
 
-		subject = new StakedAnswerFlow(platform, fees, legacyHandler, stateViews, resourceCosts, throttles);
+		subject = new StakedAnswerFlow(fees, legacyHandler, stateViews, resourceCosts, throttles, submissionManager);
 	}
 
 	@Test
@@ -241,7 +242,7 @@ class StakedAnswerFlowTest {
 		// then:
 		assertEquals(response, actual);
 		verify(service, times(2)).requiresNodePayment(query);
-		verify(legacyHandler, never()).submitTransaction(platform, userTxn, userTxnId);
+		verify(submissionManager, never()).trySubmission(any());
 	}
 
 	@Test
@@ -287,7 +288,7 @@ class StakedAnswerFlowTest {
 		// then:
 		assertEquals(response, actual);
 		verify(service, times(2)).requiresNodePayment(query);
-		verify(legacyHandler, never()).submitTransaction(platform, userTxn, userTxnId);
+		verify(submissionManager, never()).trySubmission(any());
 	}
 
 	@Test
@@ -304,7 +305,7 @@ class StakedAnswerFlowTest {
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);
 		given(service.responseGiven(query, view, OK, 6)).willReturn(response);
-		given(legacyHandler.submitTransaction(platform, userTxn, userTxnId)).willReturn(true);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -327,7 +328,7 @@ class StakedAnswerFlowTest {
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);
-		given(legacyHandler.submitTransaction(platform, userTxn, userTxnId)).willReturn(false);
+		given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 		given(service.responseGiven(query, view, PLATFORM_TRANSACTION_NOT_CREATED, 6)).willReturn(response);
 
 		// when:
@@ -336,6 +337,6 @@ class StakedAnswerFlowTest {
 		// then:
 		assertEquals(response, actual);
 		verify(service, times(2)).requiresNodePayment(query);
-		verify(legacyHandler).submitTransaction(platform, userTxn, userTxnId);
+		verify(submissionManager).trySubmission(any());
 	}
 }

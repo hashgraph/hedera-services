@@ -37,8 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 import static com.hedera.services.legacy.logic.ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS;
 
 public class BasicPrecheck {
-	private int minValidityBufferSecs = TXN_MIN_VALIDITY_BUFFER_SECS;
-
 	private final PropertySource properties;
 	private final OptionValidator validator;
 

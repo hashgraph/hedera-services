@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -31,18 +32,15 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Objects;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FEE;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -103,10 +101,8 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	@Override
 	public FeeData activePrices() {
 		try {
-			TransactionBody txn = txnCtx.accessor().getTxn();
-			HederaFunctionality function = functionOf(txn);
-			Timestamp at = txn.getTransactionID().getTransactionValidStart();
-			return pricesGiven(function, at);
+			var accessor = txnCtx.accessor();
+			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
 			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 		}

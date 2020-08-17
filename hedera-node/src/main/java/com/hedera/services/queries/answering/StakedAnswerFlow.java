@@ -26,6 +26,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -53,27 +54,27 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 	SignedTxnAccessor defaultAccessor = null;
 
-	private final Platform platform;
 	private final FeeCalculator fees;
 	private final TransactionHandler legacyHandler;
 	private final Supplier<StateView> stateViews;
 	private final UsagePricesProvider resourceCosts;
 	private final FunctionalityThrottling throttles;
+	private final PlatformSubmissionManager submissionManager;
 
 	public StakedAnswerFlow(
-			Platform platform,
 			FeeCalculator fees,
 			TransactionHandler legacyHandler,
 			Supplier<StateView> stateViews,
 			UsagePricesProvider resourceCosts,
-			FunctionalityThrottling throttles
+			FunctionalityThrottling throttles,
+			PlatformSubmissionManager submissionManager
 	) {
 		this.fees = fees;
-		this.platform = platform;
 		this.throttles = throttles;
 		this.stateViews = stateViews;
 		this.legacyHandler = legacyHandler;
 		this.resourceCosts = resourceCosts;
+		this.submissionManager = submissionManager;
 
 		try {
 			defaultAccessor = new SignedTxnAccessor(Transaction.getDefaultInstance());
@@ -109,8 +110,9 @@ public class StakedAnswerFlow implements AnswerFlow {
 			if (validity != OK) {
 				return service.responseGiven(query, view, validity, cost);
 			}
-			if (!legacyHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId())) {
-				return service.responseGiven(query, view, PLATFORM_TRANSACTION_NOT_CREATED, cost);
+			validity = submissionManager.trySubmission(accessor);
+			if (validity != OK) {
+				return service.responseGiven(query, view, validity, cost);
 			}
 		}
 

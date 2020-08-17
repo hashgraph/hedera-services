@@ -613,24 +613,4 @@ public class TransactionHandler {
       throw cme;
     }
   }
-
-  /**
-   * Submits transaction to platform.
-   * Returns whether a platform transaction was created successfully.
-   * Update stat when a platform transaction was NOT created.
-   *
-   * @param request       tx to be submitted
-   * @param txnId request tx id
-   *
-   */
-  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
-    byte[] transaction = request.toByteArray();
-    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (created) {
-      recordCache.addPreConsensus(txnId);
-    } else {
-      stats.platformTxnNotCreated();
-    }
-    return created;
-  }
 }

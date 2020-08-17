@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.BDDMockito.*;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -64,6 +65,20 @@ public class PlatformTxnAccessorTest {
 	public void extractorReturnsNoneWhenExpected() {
 		// expect:
 		assertEquals(HederaFunctionality.NONE, SignedTxnAccessor.functionExtractor.apply(someTxn));
+	}
+
+	@Test
+	public void hasExpectedSignedBytes() throws InvalidProtocolBufferException {
+		// given:
+		Transaction signedTxnWithBody = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.build();
+
+		// when:
+		SignedTxnAccessor subject = new SignedTxnAccessor(signedTxnWithBody);
+
+		// then:
+		assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getSignedTxnBytes());
 	}
 
 	@Test
