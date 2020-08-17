@@ -120,7 +120,6 @@ public class AwareProcessLogic implements ProcessLogic {
 					consensusTime.getNano(),
 					lastHandled.getEpochSecond(),
 					lastHandled.getNano(),
-					submittingMember,
 					accessor.getSignedTxn4Log());
 			log.error(msg);
 			return false;
