@@ -47,7 +47,9 @@ SERVICES_REPO=sys.argv[7]
 
 START_DIR=os.getcwd()
 
-MIGRATION_CONF_PROP_FILE=""
+MIGRATION_CONF_PROP_FILE = ""
+DEFAULT_START_UP_ACCT = "StartUpAccount"
+
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
 
@@ -60,13 +62,13 @@ def validateInputs():
     if NETWORKUSED == "mainnet":
         NO_OF_NODES=13
         MIGRATION_CONF_PROP_FILE = "migration_config_mainnet.properties"
-    elif NETWORKUSED == "publictestnet":
+    elif NETWORKUSED == "testnet":
         NO_OF_NODES=4
         MIGRATION_CONF_PROP_FILE = "migration_config_testnet.properties"
     else:
         print("please enter the correct network name has to one of :")
         print("mainnet")
-        print("publictestnet")
+        print("testnet")
 
     try:
         f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
@@ -135,7 +137,7 @@ def runMigration():
 
 	os.system(playbook_command)
 
-runMigration()
+# runMigration()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------ Copy Swirlds.log ----------------------------------------------------------------------#
@@ -163,21 +165,44 @@ def copyLogs():
 		os.system(copy_swirld_log.format(PEM_FILE, node_address, i))
 
 print("Wait for 120 seconds before getting the log files...")
-time.sleep(120)
+# time.sleep(120)
 
 copyLogs()
+
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
 
+def replace_startup_acct_with(client_parent_path, current_network):
+	startup_acct_path = "{}/src/main/resource/{}.txt".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	backup_startup_acct_path = "{}/src/main/resource/{}.txt.backup".format(client_parent_path, DEFAULT_START_UP_ACCT)
+
+	save_default_startup_acct_cmd = "mv {} {}".format(startup_acct_path, backup_startup_acct_path)
+	os.system(save_default_startup_acct_cmd)
+
+	new_startup_acct_path = "{}/src/main/resource/{}_{}.txt".format(client_parent_path, DEFAULT_START_UP_ACCT, current_network)
+	replace_default_startup_acct_cmd = "cp {} {}".format(new_startup_acct_path, startup_acct_path)
+	os.system(replace_default_startup_acct_cmd)
+
+def restore_startup_acct(client_parent_path):
+	startup_acct_path = "{}/src/main/resource/{}.txt".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	backup_startup_acct_path = "{}/src/main/resource/{}.txt.backup".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	restore_start_up_acct_cmd = "mv {} {}".format(backup_startup_acct_path, startup_acct_path)
+	os.system(restore_start_up_acct_cmd)
+
+
 test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 os.chdir(test_clients_path)
+
+replace_startup_acct_with(test_clients_path, NETWORKUSED)
 
 mvn_install_cmd = "mvn clean install"
 mvn_test_cmd = "mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args={} > migrationPostStepsTest.log".format(MIGRATION_CONF_PROP_FILE)
 
 os.system(mvn_install_cmd)
 os.system(mvn_test_cmd)
+
+restore_startup_acct(test_clients_path)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
