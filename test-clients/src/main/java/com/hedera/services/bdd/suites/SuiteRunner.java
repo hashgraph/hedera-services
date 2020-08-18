@@ -211,11 +211,11 @@ public class SuiteRunner {
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 			HapiApiSpec.runInCiMode(
-					System.getenv("NODES"),
-					args[1],
-					tlsOverride.substring(TLS_ARG.length() + 1),
-					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
-					otherOverrides);
+						System.getenv("NODES"),
+						args[1],
+						tlsOverride.substring(TLS_ARG.length() + 1),
+						nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
+						otherOverrides);
 		}
 		boolean prohibitAsync = !Stream.of(effArgs).anyMatch("-A"::equals);
 		Map<Boolean, List<String>> statefulCategories = Stream

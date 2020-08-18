@@ -48,20 +48,10 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
-	private final String nodes;
 
-//	public ZeroStakeNodeTest(String nodes) {
-//		this.nodes = nodes;
-//		HapiApiSpec.runInCiMode(
-//				nodes,
-//				"3",
-//				"off",
-//				"fixed",
-//				new HashMap<String, String>());
-//		runSuiteSync();
-//	}
-
-	public static void main(String... args) { new ZeroStakeNodeTest().runSuiteSync(); }
+	public static void main(String... args) throws Exception {
+		new ZeroStakeNodeTest().runSuiteSync();
+	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
