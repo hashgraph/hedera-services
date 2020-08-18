@@ -97,7 +97,6 @@ public class StandardizedPropertySources implements PropertySources {
 			if (!name.startsWith(API_THROTTLING_PREFIX)) {
 				continue;
 			}
-			log.info(" -> Using {}={}", name, setting.getValue());
 			if (name.equals(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
 				putBoolean(RESPECT_LEGACY_THROTTLING_PROPERTY, setting.getValue());
 			} else if (isDoubleProp(name)) {

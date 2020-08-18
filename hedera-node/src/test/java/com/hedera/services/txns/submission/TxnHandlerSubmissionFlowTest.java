@@ -23,10 +23,12 @@ package com.hedera.services.txns.submission;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.services.context.ServicesNodeType.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.txns.TransitionLogic;
@@ -83,7 +85,19 @@ class TxnHandlerSubmissionFlowTest {
 		logicLookup = mock(TransitionLogicLookup.class);
 		given(logicLookup.lookupFor(CryptoTransfer, signedTxn.getBody())).willReturn(Optional.of(logic));
 
-		subject = new TxnHandlerSubmissionFlow(platform, txnHandler, logicLookup);
+		subject = new TxnHandlerSubmissionFlow(platform, STAKED_NODE, txnHandler, logicLookup);
+	}
+
+	@Test
+	public void rejectsAllTxnsOnZeroStakeNode() {
+		// given:
+		subject = new TxnHandlerSubmissionFlow(platform, ZERO_STAKE_NODE, txnHandler, logicLookup);
+
+		// when:
+		TransactionResponse response = subject.submit(Transaction.getDefaultInstance());
+
+		// then:
+		assertEquals(INVALID_NODE_ACCOUNT, response.getNodeTransactionPrecheckCode());
 	}
 
 	@Test

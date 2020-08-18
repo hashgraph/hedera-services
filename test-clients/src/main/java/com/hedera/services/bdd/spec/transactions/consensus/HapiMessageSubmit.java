@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 
@@ -48,11 +49,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	private Optional<String> topic = Optional.empty();
 	private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
-	private Optional<String> message = Optional.empty();
-	private Optional<byte[]> messageBytes = Optional.empty();
+	private Optional<ByteString> message = Optional.empty();
 	private OptionalInt totalChunks = OptionalInt.empty();
 	private OptionalInt chunkNumber = OptionalInt.empty();
 	private Optional<String> initialTransactionPayer = Optional.empty();
+	private Optional<TransactionID> initialTransactionID = Optional.empty();
 	private boolean clearMessage = false;
 
 	public HapiMessageSubmit(String topic) {
@@ -73,13 +74,18 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return this;
 	}
 
-	public HapiMessageSubmit message(String s) {
+	public HapiMessageSubmit message(ByteString s) {
 		message = Optional.of(s);
 		return this;
 	}
 
-	public HapiMessageSubmit message(byte [] s) {
-		messageBytes = Optional.of(s);
+	public HapiMessageSubmit message(byte[] s) {
+		message(ByteString.copyFrom(s));
+		return this;
+	}
+
+	public HapiMessageSubmit message(String s) {
+		message(s.getBytes());
 		return this;
 	}
 
@@ -99,6 +105,11 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		return chunkInfo(totalChunks, chunkNumber);
 	}
 
+	public HapiMessageSubmit chunkInfo(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+		this.initialTransactionID = Optional.of(initialTransactionID);
+		return chunkInfo(totalChunks, chunkNumber);
+	}
+
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		TopicID id = resolveTopicId(spec);
@@ -107,16 +118,15 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 				.<ConsensusSubmitMessageTransactionBody, ConsensusSubmitMessageTransactionBody.Builder>body(
 					ConsensusSubmitMessageTransactionBody.class, b -> {
 							b.setTopicID(id);
-							messageBytes.ifPresent(m -> b.setMessage(ByteString.copyFrom(m)));
-							message.ifPresent(m -> b.setMessage(ByteString.copyFrom(m.getBytes())));
+							message.ifPresent(m -> b.setMessage(m));
 							if (clearMessage) {
 								b.clearMessage();
 							}
 							if (totalChunks.isPresent() && chunkNumber.isPresent()) {
 								ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo
 										.newBuilder()
-										.setInitialTransactionID(asTransactionID(spec,
-												initialTransactionPayer.isPresent() ? initialTransactionPayer : payer))
+										.setInitialTransactionID(initialTransactionID.orElse(asTransactionID(spec,
+												initialTransactionPayer.isPresent() ? initialTransactionPayer : payer)))
 										.setTotal(totalChunks.getAsInt())
 										.setNumber(chunkNumber.getAsInt())
 										.build();

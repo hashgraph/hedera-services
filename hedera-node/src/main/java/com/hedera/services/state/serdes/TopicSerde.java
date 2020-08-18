@@ -23,7 +23,6 @@ package com.hedera.services.state.serdes;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.StringUtils;
 
 import java.io.IOException;
 
@@ -35,10 +34,7 @@ public class TopicSerde {
 	public void deserializeV1(SerializableDataInputStream in, MerkleTopic to) throws IOException {
 		to.setMemo(null);
 		if (in.readBoolean()) {
-			var bytes = in.readByteArray(MAX_MEMO_BYTES);
-			if (null != bytes) {
-				to.setMemo(StringUtils.newStringUtf8(bytes));
-			}
+			to.setMemo(in.readNormalisedString(MAX_MEMO_BYTES));
 		}
 
 		to.setAdminKey(in.readBoolean() ? serdes.deserializeKey(in) : null);
@@ -54,7 +50,7 @@ public class TopicSerde {
 	public void serialize(MerkleTopic merkleTopic, SerializableDataOutputStream out) throws IOException {
 		if (merkleTopic.hasMemo()) {
 			out.writeBoolean(true);
-			out.writeBytes(merkleTopic.getMemo());
+			out.writeNormalisedString(merkleTopic.getMemo());
 		} else {
 			out.writeBoolean(false);
 		}

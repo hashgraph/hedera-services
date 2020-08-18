@@ -163,6 +163,7 @@ public class ServicesMain implements SwirldMain {
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
 		sanitizeProperties();
+		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 
 		startTimerTasksIfNeeded();
 	}

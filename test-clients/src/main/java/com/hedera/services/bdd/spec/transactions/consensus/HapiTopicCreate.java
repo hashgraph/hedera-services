@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.consensus;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -163,6 +164,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 		spec.registry().saveKey(topic, adminKey);
 		submitKey.ifPresent(key -> spec.registry().saveKey(topic + "Submit", key));
 		spec.registry().saveTopicId(topic, lastReceipt.getTopicID());
+		spec.registry().saveBytes(topic, ByteString.copyFrom(new byte[48]));
 		try {
 			TransactionBody txn = TransactionBody.parseFrom(txnSubmitted.getBodyBytes());
 			long approxConsensusTime = txn.getTransactionID().getTransactionValidStart().getSeconds() + 1;

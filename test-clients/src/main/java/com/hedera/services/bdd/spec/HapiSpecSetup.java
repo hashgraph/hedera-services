@@ -49,6 +49,7 @@ public class HapiSpecSetup {
 
 	private Random r = new Random();
 
+	private HapiPropertySource ciPropertiesMap = null;
 	private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
 	private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
 	public static final HapiPropertySource getDefaultPropertySource() {
@@ -127,10 +128,13 @@ public class HapiSpecSetup {
 	public String costSnapshotDir() { return props.get("cost.snapshot.dir"); }
 	public CostSnapshotMode costSnapshotMode() { return props.getCostSnapshotMode("cost.snapshot.mode"); }
 	public HapiPropertySource ciPropertiesMap() {
-		return new MapPropertySource(Stream.of(props.get("ci.properties.map").split(","))
-				.map(s -> List.of(s.split("=")))
-				.filter(l -> l.size() > 1)
-				.collect(toMap(l -> l.get(0), l -> l.get(1))));
+		if (null == ciPropertiesMap) {
+			ciPropertiesMap = new MapPropertySource(Stream.of(props.get("ci.properties.map").split(","))
+					.map(s -> List.of(s.split("=")))
+					.filter(l -> l.size() > 1)
+					.collect(toMap(l -> l.get(0), l -> l.get(1))));
+		}
+		return ciPropertiesMap;
 	}
 	public Duration defaultAutoRenewPeriod() {
 		return props.getDurationFromSecs("default.autorenew.secs");

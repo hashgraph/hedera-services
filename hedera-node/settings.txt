@@ -4,11 +4,7 @@ crypto.cpuVerifierThreadRatio, 1
 csvAppend, 0
 csvFileName, MainNetStats
 doUpnp, 0
-freezeSettings.active, 1
-freezeSettings.endHour, 6
-freezeSettings.endMin, 10
-freezeSettings.startHour, 6
-freezeSettings.startMin, 0
+freezeSettings.active, 0
 maxOutgoingSyncs, 2
 reconnect.active, 0
 showInternalStats, 1
