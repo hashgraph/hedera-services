@@ -53,7 +53,6 @@ DEFAULT_START_UP_ACCT = "StartUpAccount"
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
 
-os.system("rm -rf sav* output")
 
 def validateInputs():
 
@@ -94,10 +93,6 @@ def validateInputs():
 
     return NO_OF_NODES
 
-NO_OF_NODES=validateInputs()
-
-print("No of nodes required : {}".format(NO_OF_NODES))
-
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- BUILD SAVED.ZIP -------------------------------------------------------------------#
 
@@ -113,12 +108,6 @@ def buildSavedZip():
 	except Exception as e:
 		print (e)
 
-buildSavedZip()
-
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------- COPY SAVED.ZIP TO INFRASTRUCTURE -----------------------------------------------------------#
-
-shutil.copy("saved.zip", "{}/terraform/deployments/ansible/roles/hgc-deploy-psql-mig/files/".format(INFRASTRUCTURE_REPO))
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------- RUN ANSIBLE MIGRATION SCRIPT ------------------------------------------------------------#
@@ -137,7 +126,6 @@ def runMigration():
 
 	os.system(playbook_command)
 
-runMigration()
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------ Copy Swirlds.log ----------------------------------------------------------------------#
@@ -164,12 +152,6 @@ def copyLogs():
 		os.mkdir("output/{}".format(i))
 		os.system(copy_swirld_log.format(PEM_FILE, node_address, i))
 
-print("Wait for 120 seconds before getting the log files...")
-time.sleep(120)
-
-copyLogs()
-
-
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
 
@@ -191,24 +173,43 @@ def restore_startup_acct(client_parent_path):
 	os.system(restore_start_up_acct_cmd)
 
 
-test_clients_path = "{}/test-clients".format(SERVICES_REPO)
-os.chdir(test_clients_path)
+def runMigrationPostValidationTests():
+	test_clients_path = "{}/test-clients".format(SERVICES_REPO)
+	os.chdir(test_clients_path)
 
-replace_startup_acct_with(test_clients_path, NETWORKUSED)
+	replace_startup_acct_with(test_clients_path, NETWORKUSED)
 
-mvn_install_cmd = "mvn clean install"
-mvn_test_cmd = "mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args={} > migrationPostStepsTest.log".format(MIGRATION_CONF_PROP_FILE)
+	mvn_install_cmd = "mvn clean install"
+	mvn_test_cmd = "mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args={} > migrationPostStepsTest.log".format(MIGRATION_CONF_PROP_FILE)
 
-os.system(mvn_install_cmd)
-os.system(mvn_test_cmd)
+	os.system(mvn_install_cmd)
+	os.system(mvn_test_cmd)
 
-restore_startup_acct(test_clients_path)
+	restore_startup_acct(test_clients_path)
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------- RUN ANSIBLE stop and restart SCRIPT ------------------------------------------------------------#
+
+def stopAndRestart():
+	print("Now stop and restart the testnet")
+
+	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
+
+	playbook_command = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu  -e enable_newrelic=false play-reboot.yml".format(INVENTORY, PEM_FILE)
+
+	os.chdir(ansible_path)
+
+	os.system(playbook_command)
+
+
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
 
 def validateLogs():
 	os.chdir(START_DIR)
+	test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "Platform {} has loaded a saved state for round {}".format(n, SIGNEDSTATE)
@@ -230,4 +231,28 @@ def validateLogs():
 			print ("Migration test failed.. please go through the eet logs")
 			print ("{}/migrationPostStepsTest.log".format(test_clients_path))
 
-validateLogs()
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------#
+#-------------------------------------------------------------- Main Migration Workflow -------------------------------------------------------------------#
+
+# The main steps to validate the migration
+if __name__ == '__main__':
+	os.system("rm -rf sav* output")
+	NO_OF_NODES=validateInputs()
+	print("No of nodes required : {}".format(NO_OF_NODES))
+
+	buildSavedZip()
+	shutil.copy("saved.zip", "{}/terraform/deployments/ansible/roles/hgc-deploy-psql-mig/files/".format(INFRASTRUCTURE_REPO))
+	runMigration()
+
+	print("Wait for 120 seconds before getting the log files...")
+	time.sleep(120)
+	copyLogs()
+
+	runMigrationPostValidationTests()
+
+	validateLogs()
+
+	stopAndRestart()
+
+	runMigrationPostValidationTests()
