@@ -1361,7 +1361,7 @@ workflows:
           context: Slack
 
   continuous-integration:
-    jobs: 
+    jobs:
       - build-artifact:
           context: SonarCloud
           filters:
@@ -1659,6 +1659,26 @@ jobs:
 
       - run:
           name: Sync results of zero stake regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+      - run:
+          name: Modify Payer account for Migration test
+          # MigrationTest should be the last one in nightly services regression
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Run Migration test
+          command: |
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
+            cd /swirlds-platform/regression;
+            rm -rf /swirlds-platform/regression/results/;
+            ./regression_services_circleci.sh AwsServicesMigrationCfg.json /repo
+
+      - run:
+          name: Sync results of migration test to AWS
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
