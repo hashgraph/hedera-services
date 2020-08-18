@@ -2664,6 +2664,8 @@ jobs:
           name: Set log level to WARN
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test
+      - run-eet-suites:
+          dsl-args: "OneOfEveryTxn"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestBefore
       - start-freeze:
