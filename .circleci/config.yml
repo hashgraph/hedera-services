@@ -1601,12 +1601,12 @@ jobs:
           name: Install necessary tools
           command: |
             sudo apt update -y;
-            sudo apt install net-tools;
+            sudo apt install -y net-tools;
             sudo apt install -y curl;
             sudo apt install -y python3.7;
             sudo rm /usr/bin/python3;
             sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install python3-pip;
+            sudo apt install -y python3-pip;
             pip3 -q install matplotlib;
             sudo apt-get install -y python3-setuptools;
             pip3 install awscli;
