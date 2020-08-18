@@ -393,7 +393,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			break;
 		}
 		long after = System.currentTimeMillis();
-		//ResponseCodeEnum queryResult = reflectForPrecheck(response);
+		ResponseCodeEnum queryResult = reflectForPrecheck(response);
 		// no need to check here, since response will be checked in resolvedStatusOfSubmission
 //		Assert.assertEquals(OK, queryResult);
 		considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
