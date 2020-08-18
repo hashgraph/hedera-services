@@ -891,7 +891,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "0 4,8,12 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
