@@ -150,6 +150,7 @@ import com.hedera.services.txns.file.FileDeleteTransitionLogic;
 import com.hedera.services.txns.file.FileSysDelTransitionLogic;
 import com.hedera.services.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.services.txns.file.FileUpdateTransitionLogic;
+import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
@@ -844,7 +845,10 @@ public class ServicesContext {
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
 				entry(SystemUndelete,
-						List.of(new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx())))
+						List.of(new FileSysUndelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
+				/* Network */
+				entry(UncheckedSubmit,
+						List.of(new UncheckedSubmitTransitionLogic()))
 		);
 		return transitionsMap::get;
 	}

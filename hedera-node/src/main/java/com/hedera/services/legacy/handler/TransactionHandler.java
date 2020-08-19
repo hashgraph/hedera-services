@@ -346,12 +346,14 @@ public class TransactionHandler {
    */
   private ResponseCodeEnum validateApiPermission(TransactionBody txn) {
     var permissionKey = permissionFileKeyForTxn(txn);
+    System.out.println("  -->> " + permissionKey);
     if (!StringUtils.isEmpty(permissionKey)) {
       var payer = txn.getTransactionID().getAccountID();
+      System.out.println("    ==|| " + payer.getAccountNum());
       if (accountNums.isSuperuser(payer.getAccountNum())) {
         return OK;
       } else {
-        PermissionedAccountsRange accountRange =  PropertiesLoader.getApiPermission().get(permissionKey);
+        PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(permissionKey);
         if (accountRange != null) {
         	return accountRange.contains(payer.getAccountNum()) ? OK : NOT_SUPPORTED;
         }
@@ -477,6 +479,7 @@ public class TransactionHandler {
 
     if (returnCode == OK && !(isQueryPayment && txn.hasCryptoTransfer())) {
       returnCode = validateApiPermission(txn);
+      System.out.println("!!! " + returnCode);
     }
 
     if (returnCode == OK) {
