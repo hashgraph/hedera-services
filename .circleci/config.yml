@@ -1624,7 +1624,11 @@ jobs:
       - run:
           name: Sync results of SuiteRunner suites to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
       - run:
           name: Performance regression
@@ -1680,7 +1684,11 @@ jobs:
       - run:
           name: Sync results of migration test to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
   aws-summary:
     executor: ci-test-executor
