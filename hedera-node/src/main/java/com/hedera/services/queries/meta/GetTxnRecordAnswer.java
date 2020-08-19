@@ -94,6 +94,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 				} else {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setTransactionRecord(record.get());
+					if (op.getIncludeDuplicates()) {
+						response.addAllDuplicateTransactionRecords(
+								recordCache.getDuplicateRecords(op.getTransactionID()));
+					}
 				}
 			}
 		}

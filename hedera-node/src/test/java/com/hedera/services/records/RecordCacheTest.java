@@ -42,6 +42,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
@@ -119,17 +120,55 @@ class RecordCacheTest {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.legacyQueryableRecord()).willReturn(record);
+		given(history.priorityRecord()).willReturn(record);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertEquals(knownReceipt, subject.getReceipt(txnIdA));
+		assertEquals(knownReceipt, subject.getPriorityReceipt(txnIdA));
+	}
+
+	@Test
+	public void getsDuplicateRecordsAsExpected() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+		var duplicateRecords = List.of(ExpirableTxnRecord.fromGprc(aRecord));
+
+		given(history.duplicateRecords()).willReturn(duplicateRecords);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// when:
+		var actual = subject.getDuplicateRecords(txnIdA);
+
+		// expect:
+		assertEquals(List.of(aRecord), actual);
+	}
+
+	@Test
+	public void getsEmptyDuplicateListForMissing() {
+		// expect:
+		assertTrue(subject.getDuplicateReceipts(txnIdA).isEmpty());
+	}
+
+	@Test
+	public void getsDuplicateReceiptsAsExpected() {
+		// setup:
+		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
+		var duplicateRecords = List.of(ExpirableTxnRecord.fromGprc(aRecord));
+
+		given(history.duplicateRecords()).willReturn(duplicateRecords);
+		given(histories.get(txnIdA)).willReturn(history);
+
+		// when:
+		var duplicateReceipts = subject.getDuplicateReceipts(txnIdA);
+
+		// expect:
+		assertEquals(List.of(duplicateRecords.get(0).getReceipt().toGrpc()), duplicateReceipts);
 	}
 
 	@Test
 	public void getsNullReceiptWhenMissing() {
 		// expect:
-		assertNull(subject.getReceipt(txnIdA));
+		assertNull(subject.getPriorityReceipt(txnIdA));
 	}
 
 	@Test
@@ -138,25 +177,25 @@ class RecordCacheTest {
 		given(receiptCache.getIfPresent(txnIdA)).willReturn(Boolean.TRUE);
 
 		// expect:
-		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
+		assertEquals(unknownReceipt, subject.getPriorityReceipt(txnIdA));
 	}
 
 	@Test
-	public void getsReceiptWithUnknownStatusWhenNotLegacyQueryable() {
+	public void getsReceiptWithUnknownStatusWhenNoPriorityRecordExists() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.legacyQueryableRecord()).willReturn(null);
+		given(history.priorityRecord()).willReturn(null);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertEquals(unknownReceipt, subject.getReceipt(txnIdA));
+		assertEquals(unknownReceipt, subject.getPriorityReceipt(txnIdA));
 	}
 
 	@Test
 	public void getsNullRecordWhenMissing() {
 		// expect:
-		assertNull(subject.getRecord(txnIdA));
+		assertNull(subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test
@@ -164,19 +203,19 @@ class RecordCacheTest {
 		given(histories.get(txnIdA)).willReturn(null);
 
 		// expect:
-		assertNull(subject.getRecord(txnIdA));
+		assertNull(subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test
-	public void getsNullRecordWhenNotLegacyQueryable() {
+	public void getsNullRecordWhenNoPriorityExists() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.legacyQueryableRecord()).willReturn(null);
+		given(history.priorityRecord()).willReturn(null);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertNull(subject.getRecord(txnIdA));
+		assertNull(subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test
@@ -184,11 +223,11 @@ class RecordCacheTest {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.legacyQueryableRecord()).willReturn(record);
+		given(history.priorityRecord()).willReturn(record);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertEquals(aRecord, subject.getRecord(txnIdA));
+		assertEquals(aRecord, subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test

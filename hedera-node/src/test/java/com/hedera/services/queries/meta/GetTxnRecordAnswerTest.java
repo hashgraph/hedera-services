@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -147,6 +148,27 @@ class GetTxnRecordAnswerTest {
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		// and:
+		verify(recordCache, never()).getDuplicateRecords(any());
+	}
+
+	@Test
+	public void getsDuplicateRecordsWhenRequested() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
+		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+				.willReturn(Optional.of(cachedTargetRecord));
+		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		assertEquals(List.of(cachedTargetRecord), opResponse.getDuplicateTransactionRecordsList());
 	}
 
 	@Test
@@ -232,16 +254,21 @@ class GetTxnRecordAnswerTest {
 		assertEquals(HederaFunctionality.TransactionGetRecord, subject.canonicalFunction());
 	}
 
-	 Query getRecordQuery(TransactionID txnId, ResponseType type, long payment) throws Throwable {
+	Query getRecordQuery(TransactionID txnId, ResponseType type, long payment, boolean duplicates) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder()
 						.setResponseType(type)
 						.setPayment(paymentTxn))
-				.setTransactionID(txnId);
+				.setTransactionID(txnId)
+				.setIncludeDuplicates(duplicates);
 		return Query.newBuilder()
 				.setTransactionGetRecord(op)
 				.build();
+	}
+
+	 Query getRecordQuery(TransactionID txnId, ResponseType type, long payment) throws Throwable {
+		return getRecordQuery(txnId, type, payment, false);
 	}
 
 	 ExpirableTxnRecord constructTargetRecord() {

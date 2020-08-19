@@ -79,23 +79,6 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void returnsExpectedLegacyQueryableRecord() {
-		// setup:
-		var classifiable = mock(ExpirableTxnRecord.class);
-		var unclassifiable = mock(ExpirableTxnRecord.class);
-
-		// expect:
-		assertNull(subject.legacyQueryableRecord());
-		// and given:
-		subject.unclassifiableRecords = List.of(unclassifiable);
-		// expect:
-		assertNull(subject.legacyQueryableRecord());
-		// and given:
-		subject.classifiableRecords = List.of(classifiable);
-		Assertions.assertSame(classifiable, subject.legacyQueryableRecord());
-	}
-
-	@Test
 	public void classifiesAsExpected() {
 		// given:
 		subject.observe(
@@ -149,8 +132,101 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpected() {
+	public void prioritizesClassifiableRecords() {
+		givenSomeWellKnownHistory();
+
+		// when:
+		var priority = subject.priorityRecord();
+
+		// then:
+		assertEquals(
+				memoIdentifying(1, 1, SUCCESS),
+				priority.getMemo());
+	}
+
+	@Test
+	public void returnsEmptyIfForgotten() {
+		// expect:
+		assertNull(subject.priorityRecord());
+	}
+
+	@Test
+	public void returnsUnclassifiableIfOnlyAvailable() {
 		// given:
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+
+		// when:
+		var priority = subject.priorityRecord();
+
+		// then:
+		assertEquals(
+				memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
+				priority.getMemo());
+	}
+
+	@Test
+	public void forgetsAsExpected() {
+		givenSomeWellKnownHistory();
+
+		// when:
+		subject.forgetExpiredAt(expiryAtOffset(4));
+
+		// then:
+		assertEquals(
+				List.of(
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+		// and:
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
+				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+	}
+
+	@Test
+	public void omitsPriorityWhenUnclassifiable() {
+		// given:
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(2, 1, INVALID_NODE_ACCOUNT),
+				INVALID_NODE_ACCOUNT);
+
+		// when:
+		var duplicates = subject.duplicateRecords();
+
+		// then:
+		assertEquals(
+				List.of(
+					memoIdentifying(2, 1, INVALID_NODE_ACCOUNT)
+				), duplicates.stream().map(sr -> sr.getMemo()).collect(toList()));
+	}
+
+	@Test
+	public void returnsOrderedDuplicates() {
+		givenSomeWellKnownHistory();
+
+		// when:
+		var records = subject.duplicateRecords();
+
+		// then:
+		assertEquals(
+				List.of(
+						memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(1, 2, DUPLICATE_TRANSACTION),
+						memoIdentifying(2, 3, DUPLICATE_TRANSACTION),
+						memoIdentifying(2, 4, DUPLICATE_TRANSACTION),
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
+						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
+						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
+				), records.stream().map(sr -> sr.getMemo()).collect(toList()));
+	}
+
+	private void givenSomeWellKnownHistory() {
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
 				INVALID_PAYER_SIGNATURE);
@@ -175,21 +251,6 @@ class TxnIdRecentHistoryTest {
 		subject.observe(
 				recordOf(2, 7, INVALID_NODE_ACCOUNT),
 				INVALID_NODE_ACCOUNT);
-
-		// when:
-		subject.forgetExpiredAt(expiryAtOffset(4));
-
-		// then:
-		assertEquals(
-				List.of(
-						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
-				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
-		// and:
-		assertEquals(
-				List.of(
-						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
-						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
 	}
 
 	private ExpirableTxnRecord recordOf(
