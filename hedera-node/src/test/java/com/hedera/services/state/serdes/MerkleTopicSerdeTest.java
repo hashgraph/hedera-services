@@ -93,7 +93,7 @@ class MerkleTopicSerdeTest {
 
 		// then:
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(out).writeBytes(memo);
+		inOrder.verify(out).writeNormalisedString(memo);
 		// and:
 		inOrder.verify(out).writeBoolean(true);
 		inOrder.verify(serdes).serializeKey(adminKey, out);
@@ -204,9 +204,8 @@ class MerkleTopicSerdeTest {
 	private void configureFull(SerializableDataInputStream in, DomainSerdes serdes) throws IOException {
 		given(in.readBoolean())
 				.willReturn(true);
-		given(in.readByteArray(TopicSerde.MAX_MEMO_BYTES))
-				.willReturn(memo.getBytes())
-				.willReturn(null);
+		given(in.readNormalisedString(TopicSerde.MAX_MEMO_BYTES))
+				.willReturn(memo);
 		given(in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE))
 				.willReturn(hash);
 		given(serdes.deserializeKey(in))
