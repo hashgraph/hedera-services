@@ -117,7 +117,7 @@ enum ResponseCodeEnum {
 
   PLATFORM_NOT_ACTIVE = 67; // the platform node is either disconnected or lagging behind.
   KEY_PREFIX_MISMATCH = 68; // one public key matches more than one prefixes on the signature map
-  PLATFORM_TRANSACTION_NOT_CREATED = 69; // transaction not created by platform due to either large backlog or message size exceeded transactionMaxBytes
+  PLATFORM_TRANSACTION_NOT_CREATED = 69; // transaction not created by platform due to large backlog
   INVALID_RENEWAL_PERIOD = 70; // auto renewal period is not a positive number of seconds
   INVALID_PAYER_ACCOUNT_ID = 71; // the response code when a smart contract id is passed for a crypto API request
   ACCOUNT_DELETED = 72; // the account has been marked as deleted
