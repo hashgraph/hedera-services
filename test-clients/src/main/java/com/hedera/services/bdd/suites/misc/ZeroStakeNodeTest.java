@@ -26,28 +26,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -60,20 +46,9 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 			"\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
-	private final String nodes;
-
-	public ZeroStakeNodeTest(String nodes) {
-		this.nodes = nodes;
-		HapiApiSpec.runInCiMode(
-				nodes,
-				"3",
-				"OFF",
-				"FIXED",
-				new HashMap<String, String>());
-	}
 
 	public static void main(String... args) throws Exception {
-		new ZeroStakeNodeTest("<FIXME>").runSuiteSync();
+		new ZeroStakeNodeTest().runSuiteSync();
 	}
 
 	@Override
@@ -84,20 +59,20 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 		);
 	}
 
-	/* Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network. */
+	/** This test has to be run with nodes in spec-defaults set as the full list of ipAddresses and node ids of the network
+	  * with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network.
+	 **/
 	private HapiApiSpec zeroStakeBehavesAsExpectedJRS() {
-		return customHapiSpec("zeroStakeBehavesAsExpectedJRS")
-				.withProperties(Map.of(
-						"nodes", nodes)
-				).given(
+		return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")
+				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						fileCreate("bytecode").fromResource("Multipurpose.bin"),
 						contractCreate("multi").bytecode("bytecode"),
-//						contractCreate("impossible")
-//								.setNode("0.0.7")
-//								.bytecode("bytecode")
-//								.hasPrecheck(INVALID_NODE_ACCOUNT),
+						contractCreate("impossible")
+								.setNode("0.0.7")
+								.bytecode("bytecode")
+								.hasPrecheck(INVALID_NODE_ACCOUNT),
 						contractUpdate("multi")
 								.setNode("0.0.8")
 								.newMemo("Oops!")
