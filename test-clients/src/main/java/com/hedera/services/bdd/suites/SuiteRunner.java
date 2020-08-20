@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.suites.compose.LocalNetworkCheck;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -46,6 +47,7 @@ import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
+import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.FileUpdateLoadTest;
@@ -59,13 +61,12 @@ import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
-import com.hedera.services.bdd.suites.throttling.LegacyToBucketTransitionSpec;
+import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -111,7 +112,7 @@ public class SuiteRunner {
 				new ChunkingSuite(),
 				new TopicGetInfoSuite(),
 				new ConsensusThrottlesSuite(),
-				new LegacyToBucketTransitionSpec(),
+				new BucketThrottlingSpec(),
 				new SpecialAccountsAreExempted(),
 				new CryptoCreateSuite(),
 				new CryptoTransferSuite(),
@@ -173,7 +174,7 @@ public class SuiteRunner {
 		/* System files. */
 		put("FetchSystemFiles", aof(new FetchSystemFiles()));
 		/* Throttling */
-		put("BucketAndLegacyThrottlingSpec", aof(new LegacyToBucketTransitionSpec()));
+		put("BucketThrottlingSpec", aof(new BucketThrottlingSpec()));
 		/* Network metadata. */
 		put("VersionInfoSpec", aof(new VersionInfoSpec()));
 		put("FreezeSuite", aof(new FreezeSuite()));
@@ -182,6 +183,8 @@ public class SuiteRunner {
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
+		/* Zero Stake behaviour */
+		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 	}};
 
 	static boolean runAsync;
@@ -191,6 +194,8 @@ public class SuiteRunner {
 
 	private static final String TLS_ARG = "-TLS";
 	private static final String NODE_SELECTOR_ARG = "-NODE";
+	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
+	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -199,9 +204,11 @@ public class SuiteRunner {
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
-			expectedNetworkSize = EXPECTED_CI_NETWORK_SIZE;
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
+			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
+					NETWORK_SIZE_ARG,
+					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),

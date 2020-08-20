@@ -145,11 +145,14 @@ import static com.hedera.services.bdd.suites.utils.validation.ValidationScenario
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.VERSIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.nio.file.Files.readString;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class ValidationScenarios extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
+
+	private static final String DEFAULT_CONFIG_LOC = "config.yml";
 
 	private static long TINYBARS_PER_HBAR = 100_000_000L;
 
@@ -185,8 +188,8 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static AtomicReference<String> novelTopicUsed = new AtomicReference<>(null);
 
 	public static void main(String... args) {
-		readConfig();
 		parse(args);
+		readConfig();
 
 		assertValidParams();
 		log.info("Using nodes " + nodes());
@@ -194,31 +197,41 @@ public class ValidationScenarios extends HapiApiSuite {
 
 		printNovelUsage();
 		printBalanceChange();
-		persistUpdatedConfig();
+		if (!skipScenarioPayer()) {
+			persistUpdatedConfig();
+		}
 
 		System.exit((outcome == SUITE_PASSED && !errorsOccurred.get()) ? 0 : 1);
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return Stream.of(
+		var specs = Stream.of(
 				Optional.of(recordPayerBalance(startingBalance::set)),
-				Optional.ofNullable(params.getScenarios().isEmpty() ? null : ensureScenarioPayer()),
-				Optional.ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
-				Optional.ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
-				Optional.ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
-				Optional.ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
-				Optional.ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
-				Optional.ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
-				Optional.ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
-				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
-				Optional.ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
-				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
-				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
-				Optional.ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
-				Optional.ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
+				ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
+				ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
+				ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
+				ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
+				ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
+				ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
+				ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
+				ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
+				ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
+				ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
+				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
+				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
+				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
+				ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
 				.flatMap(Optional::stream)
 				.collect(toList());
+		System.out.println(specs.stream().map(HapiApiSpec::getName).collect(toList()));
+		return specs;
+	}
+
+	private static boolean skipScenarioPayer() {
+		EnumSet<Scenario> needScenarioPayer = EnumSet.of(
+				CRYPTO, FILE, CONTRACT, VERSIONS, CONSENSUS, TRANSFERS_ONLY, FEE_SNAPSHOTS);
+		return needScenarioPayer.stream().noneMatch(params.getScenarios()::contains);
 	}
 
 	private static HapiApiSpec ensureBytecode() {
@@ -395,7 +408,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.fee(tinyBarsToOffer)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.transferAccount(SCENARIO_PAYER_NAME)
-					).then( );
+					).then();
 		} catch (Exception e) {
 			log.warn("Unable to initialize system file scenarios, skipping it!", e);
 			errorsOccurred.set(true);
@@ -456,7 +469,7 @@ public class ValidationScenarios extends HapiApiSuite {
 					.filter(p -> p.reason != Payment.Reason.COST_ANSWER_QUERY_COST)
 					.collect(toList());
 		}
-		if (numExistingPayments != payments.size())	 {
+		if (numExistingPayments != payments.size()) {
 			log.error(String.format("Existing CSV has %d payments, scenario resulted in %d payments, skipping!",
 					numExistingPayments, payments.size()));
 		}
@@ -859,15 +872,15 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static LongSupplier payerOrNegativeOne(Network network) {
-		return () -> Optional.ofNullable(network.getScenarioPayer()).orElse(-1L);
+		return () -> ofNullable(network.getScenarioPayer()).orElse(-1L);
 	}
 
 	private static LongSupplier senderOrNegativeOne(CryptoScenario crypto) {
-		return () -> Optional.ofNullable(crypto.getSender()).orElse(-1L);
+		return () -> ofNullable(crypto.getSender()).orElse(-1L);
 	}
 
 	private static LongSupplier receiverOrNegativeOne(CryptoScenario crypto) {
-		return () -> Optional.ofNullable(crypto.getReceiver()).orElse(-1L);
+		return () -> ofNullable(crypto.getReceiver()).orElse(-1L);
 	}
 
 	private static HapiSpecOperation ensureValidatedAccountExistence(
@@ -994,8 +1007,8 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static LongSupplier persistentOrNegativeOne(FileScenario file) {
-		return () -> Optional.ofNullable(file.getPersistent())
-				.flatMap(s -> Optional.ofNullable(s.getNum()))
+		return () -> ofNullable(file.getPersistent())
+				.flatMap(s -> ofNullable(s.getNum()))
 				.orElse(-1L);
 	}
 
@@ -1066,7 +1079,7 @@ public class ValidationScenarios extends HapiApiSuite {
 		});
 	}
 
-	private HapiApiSpec contractScenario() {
+	private static HapiApiSpec contractScenario() {
 		try {
 			ensureScenarios();
 			if (scenarios.getContract() == null) {
@@ -1253,12 +1266,12 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static LongSupplier persistentContractOrNegativeOne(ContractScenario contract) {
-		return () -> Optional.ofNullable(contract.getPersistent())
-				.flatMap(s -> Optional.ofNullable(s.getNum()))
+		return () -> ofNullable(contract.getPersistent())
+				.flatMap(s -> ofNullable(s.getNum()))
 				.orElse(-1L);
 	}
 
-	private HapiApiSpec consensusScenario() {
+	private static HapiApiSpec consensusScenario() {
 		try {
 			ensureScenarios();
 			if (scenarios.getConsensus() == null) {
@@ -1381,7 +1394,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static LongSupplier persistentTopicOrNegativeOne(ConsensusScenario consensus) {
-		return () -> Optional.ofNullable(consensus.getPersistent()).orElse(-1L);
+		return () -> ofNullable(consensus.getPersistent()).orElse(-1L);
 	}
 
 
@@ -1391,7 +1404,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static void parse(String[] args) {
-		var KEY_VALUE_PATTERN = Pattern.compile("([\\w\\d]+)=([\\w\\d,]+)");
+		var KEY_VALUE_PATTERN = Pattern.compile("([\\w\\d]+)=([\\w\\d,.-]+)");
 
 		for (String arg : args) {
 			var matcher = KEY_VALUE_PATTERN.matcher(arg);
@@ -1402,7 +1415,6 @@ public class ValidationScenarios extends HapiApiSuite {
 					params.setTargetNetwork(valueOf(matcher));
 				} else if ("defaultNodePayment".equals(keyOf(matcher))) {
 					try {
-
 						params.setDefaultNodePayment(Long.parseLong(valueOf(matcher)));
 					} catch (NumberFormatException ignore) {
 					}
@@ -1433,6 +1445,8 @@ public class ValidationScenarios extends HapiApiSuite {
 										.map(Scenario::valueOf)
 										.toArray(n -> new Scenario[n])));
 					}
+				} else if ("config".equals(keyOf(matcher))) {
+					params.setConfigLoc(valueOf(matcher));
 				} else {
 					log.warn(String.format("Ignoring unknown parameter key '%s'", keyOf(matcher)));
 				}
@@ -1453,6 +1467,7 @@ public class ValidationScenarios extends HapiApiSuite {
 		final static String PASSPHRASE_ENV_VAR = "BOOTSTRAP_PASSPHRASE";
 		final static String DEFAULT_PASSPHRASE = "swirlds";
 
+		private String configLoc = DEFAULT_CONFIG_LOC;
 		private long defaultNodePayment = DEFAULT_NODE_PAYMENT_TINYBARS;
 		private String targetNetwork;
 		private boolean revocationService = false;
@@ -1464,7 +1479,7 @@ public class ValidationScenarios extends HapiApiSuite {
 		}
 
 		String getRawPassphrase() {
-			return Optional.ofNullable(System.getenv(PASSPHRASE_ENV_VAR)).orElse(DEFAULT_PASSPHRASE);
+			return ofNullable(System.getenv(PASSPHRASE_ENV_VAR)).orElse(DEFAULT_PASSPHRASE);
 		}
 
 		public String getPrintablePassphrase() {
@@ -1473,6 +1488,14 @@ public class ValidationScenarios extends HapiApiSuite {
 			} else {
 				return DEFAULT_PASSPHRASE;
 			}
+		}
+
+		public String getConfigLoc() {
+			return configLoc;
+		}
+
+		public void setConfigLoc(String configLoc) {
+			this.configLoc = configLoc;
 		}
 
 		public long getDefaultNodePayment() {
@@ -1529,9 +1552,10 @@ public class ValidationScenarios extends HapiApiSuite {
 	private static void readConfig() {
 		var yamlIn = new Yaml(new Constructor(ValidationConfig.class));
 		try {
-			validationConfig = yamlIn.load(Files.newInputStream(Paths.get("config.yml")));
+			System.out.println("Config loc: " + params.getConfigLoc());
+			validationConfig = yamlIn.load(Files.newInputStream(Paths.get(params.getConfigLoc())));
 		} catch (IOException e) {
-			log.error("Could not find valid 'config.yml' in working directory, exiting.", e);
+			log.error("Could not locate '{}' exiting!", params.getConfigLoc(), e);
 			System.exit(1);
 		}
 	}
@@ -1633,11 +1657,11 @@ public class ValidationScenarios extends HapiApiSuite {
 		var yamlOut = new Yaml(new SkipNullRepresenter());
 		var doc = yamlOut.dumpAs(validationConfig, Tag.MAP, null);
 		try {
-			var writer = Files.newBufferedWriter(Paths.get("config.yml"));
+			var writer = Files.newBufferedWriter(Paths.get(params.getConfigLoc()));
 			writer.write(doc);
 			writer.close();
 		} catch (IOException e) {
-			log.warn("Could not update config.yml with scenario results, skipping!", e);
+			log.warn("Could not update {} with scenario results, skipping!", params.getConfigLoc(), e);
 		}
 	}
 
@@ -1685,13 +1709,13 @@ public class ValidationScenarios extends HapiApiSuite {
 
 	private static void printNovelUsage() {
 		log.info("------------------------------------------------------------------");
-		Optional.ofNullable(novelAccountUsed.get()).ifPresent(s ->
+		ofNullable(novelAccountUsed.get()).ifPresent(s ->
 				log.info("Novel account used (should now be deleted) was " + s));
-		Optional.ofNullable(novelFileUsed.get()).ifPresent(s ->
+		ofNullable(novelFileUsed.get()).ifPresent(s ->
 				log.info("Novel file used (should now be deleted) was " + s));
-		Optional.ofNullable(novelContractUsed.get()).ifPresent(s ->
+		ofNullable(novelContractUsed.get()).ifPresent(s ->
 				log.info("Novel contract used (should now be deleted) was " + s));
-		Optional.ofNullable(novelTopicUsed.get()).ifPresent(s ->
+		ofNullable(novelTopicUsed.get()).ifPresent(s ->
 				log.info("Novel topic used (should now be deleted) was " + s));
 	}
 }

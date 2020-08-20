@@ -552,7 +552,7 @@ public class TransactionHandler {
    * @return validationCode
    */
   public ResponseCodeEnum validateQuery(Query query, boolean hasPayment) {
-    if (checkPlatformStatus()) {
+    if (hasPayment && checkPlatformStatus()) {
       return ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
     }
 

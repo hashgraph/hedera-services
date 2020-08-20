@@ -27,6 +27,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -48,7 +49,6 @@ import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;
-import com.hedera.services.files.interceptors.TxnAwareAuthPolicy;
 import com.hedera.services.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.services.files.store.FcBlobsBytesStore;
@@ -62,7 +62,7 @@ import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.queries.answering.ServiceAnswerFlow;
+import com.hedera.services.queries.answering.StakedAnswerFlow;
 import com.hedera.services.queries.consensus.HcsAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
@@ -298,11 +298,31 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	public void hasExpectedInfrastructure() {
+	public void hasExpectedZeroStakeInfrastructure() {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
 		given(address.getMemo()).willReturn("0.0.3");
+		given(address.getStake()).willReturn(0L);
+		given(book.getAddress(1L)).willReturn(address);
+		given(state.addressBook()).willReturn(book);
+
+		// given:
+		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+
+		// expect:
+		assertEquals(ServicesNodeType.ZERO_STAKE_NODE, ctx.nodeType());
+		// and:
+		assertThat(ctx.answerFlow(), instanceOf(ZeroStakeAnswerFlow.class));
+	}
+
+	@Test
+	public void hasExpectedStakedInfrastructure() {
+		// setup:
+		Address address = mock(Address.class);
+		AddressBook book = mock(AddressBook.class);
+		given(address.getMemo()).willReturn("0.0.3");
+		given(address.getStake()).willReturn(1_234_567L);
 		given(book.getAddress(1L)).willReturn(address);
 		given(state.addressBook()).willReturn(book);
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
@@ -330,7 +350,7 @@ public class ServicesContextTest {
 		assertThat(ctx.hcsAnswers(), instanceOf(HcsAnswers.class));
 		assertThat(ctx.issEventInfo(), instanceOf(IssEventInfo.class));
 		assertThat(ctx.cryptoGrpc(), instanceOf(CryptoController.class));
-		assertThat(ctx.answerFlow(), instanceOf(ServiceAnswerFlow.class));
+		assertThat(ctx.answerFlow(), instanceOf(StakedAnswerFlow.class));
 		assertThat(ctx.recordCache(), instanceOf(RecordCache.class));
 		assertThat(ctx.topics(), instanceOf(FCMap.class));
 		assertThat(ctx.storage(), instanceOf(FCMap.class));
@@ -353,7 +373,6 @@ public class ServicesContextTest {
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
 		assertThat(ctx.networkGrpc(), instanceOf(NetworkController.class));
 		assertThat(ctx.entityNums(), instanceOf(EntityNumbers.class));
-		assertThat(ctx.authPolicy(), instanceOf(TxnAwareAuthPolicy.class));
 		assertThat(ctx.feeSchedulesManager(), instanceOf(FeeSchedulesManager.class));
 		assertThat(ctx.submissionFlow(), instanceOf(TxnHandlerSubmissionFlow.class));
 		assertThat(ctx.answerFunctions(), instanceOf(AnswerFunctions.class));
@@ -387,6 +406,7 @@ public class ServicesContextTest {
 		assertThat(ctx.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
 		assertThat(ctx.systemOpPolicies(), instanceOf(SystemOpPolicies.class));
 		assertThat(ctx.exemptions(), instanceOf(StandardExemptions.class));
+		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
 		assertThat(ctx.txns(), instanceOf(TransactionHandler.class));

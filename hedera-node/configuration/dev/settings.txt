@@ -1,23 +1,16 @@
 checkSignedStateFromDisk, 1
-crypto.cpuDigestThreadRatio, 0.5
-crypto.cpuVerifierThreadRatio, 0.5
-crypto.forceCpu, 1
-csvAppend, 1
-csvFileName, MainNetStats
+csvAppend, 0
+csvFileName, PlatformStats
 doUpnp, 0
 enableEventStreaming, true
 eventsLogPeriod, 5
 lockLogTimeout, 4000
-maxEventQueueForCons,1000
+maxEventQueueForCons, 1000
 maxOutgoingSyncs, 4
 numConnections, 1000
 showInternalStats, 1
-state.roundsExpired, 500
-state.roundsStale, 25
 state.saveStatePeriod, 900
 state.signedStateDisk, 5
-state.signedStateKeep, 10
+state.signedStateKeep, 100
 throttle7extra, 0.5
-throttleTransactionQueueSize, 100000
 useLoopbackIp, 0
-useTLS, 1

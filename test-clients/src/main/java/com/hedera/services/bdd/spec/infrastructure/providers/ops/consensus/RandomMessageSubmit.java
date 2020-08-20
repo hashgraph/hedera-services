@@ -23,7 +23,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -35,15 +34,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
-import java.util.concurrent.SynchronousQueue;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
