@@ -904,7 +904,7 @@ workflows:
   custom-migration:
     triggers:
       - schedule:
-          cron: "0 20 * * *"
+          cron: "0 4 * * *"
           filters:
             branches:
               only:
@@ -1186,91 +1186,92 @@ workflows:
 #           requires:
 #             - regression-validate-freeze
 
-      - short-contract_txns6-0:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-0:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-1:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-2:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-3:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-4:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-5:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-6:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-7:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-8:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-9:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-crypto_txns300-10:
-          context: Slack
-          requires:
-            - regression-validate-freeze
+#      - short-contract_txns6-0:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-0:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-1:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-2:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-3:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-4:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-5:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-6:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-7:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-8:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-9:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-crypto_txns300-10:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
       # - short-crypto_txns300-11:
       #     requires:
       #       - regression-validate-freeze
       # - short-crypto_txns300-12:
       #     requires:
       #       - regression-validate-freeze
-      - short-file_ops-0:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-consensus_ops-0:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - short-umbrella:
-          context: Slack
-          requires:
-            - regression-validate-freeze
-      - regression-run-accessory-tests:
-          context: Slack
-          requires:
-            - short-contract_txns6-0
-            - short-crypto_txns300-0
-            - short-crypto_txns300-1
-            - short-crypto_txns300-2
-            - short-crypto_txns300-3
-            - short-crypto_txns300-4
-            - short-crypto_txns300-5
-            - short-crypto_txns300-6
-            - short-crypto_txns300-7
-            - short-crypto_txns300-8
-            - short-crypto_txns300-9
-            - short-crypto_txns300-10
+#      - short-file_ops-0:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-consensus_ops-0:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - short-umbrella:
+#          context: Slack
+#          requires:
+#            - regression-validate-freeze
+#      - regression-run-accessory-tests:
+#          context: Slack
+#          requires:
+#            - short-contract_txns6-0
+#            - short-crypto_txns300-0
+#            - short-crypto_txns300-1
+#            - short-crypto_txns300-2
+#            - short-crypto_txns300-3
+#            - short-crypto_txns300-4
+#            - short-crypto_txns300-5
+#            - short-crypto_txns300-6
+#            - short-crypto_txns300-7
+#            - short-crypto_txns300-8
+#            - short-crypto_txns300-9
+#            - short-crypto_txns300-10
             # - short-crypto_txns300-11
             # - short-crypto_txns300-12
-            - short-file_ops-0
-            - short-consensus_ops-0
+#            - short-file_ops-0
+#            - short-consensus_ops-0
+
 #
 #      - validate-server-stat-2:
 #          requires:
