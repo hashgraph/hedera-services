@@ -23,20 +23,28 @@ package com.hedera.services.legacy.handler;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.fees.FeeExemptions;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.legacy.service.GlobalFlag;
+import com.hedera.services.legacy.config.PropertiesLoader;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
+import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -58,18 +66,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
-import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -346,10 +343,8 @@ public class TransactionHandler {
    */
   private ResponseCodeEnum validateApiPermission(TransactionBody txn) {
     var permissionKey = permissionFileKeyForTxn(txn);
-    System.out.println("  -->> " + permissionKey);
     if (!StringUtils.isEmpty(permissionKey)) {
       var payer = txn.getTransactionID().getAccountID();
-      System.out.println("    ==|| " + payer.getAccountNum());
       if (accountNums.isSuperuser(payer.getAccountNum())) {
         return OK;
       } else {
@@ -479,7 +474,6 @@ public class TransactionHandler {
 
     if (returnCode == OK && !(isQueryPayment && txn.hasCryptoTransfer())) {
       returnCode = validateApiPermission(txn);
-      System.out.println("!!! " + returnCode);
     }
 
     if (returnCode == OK) {

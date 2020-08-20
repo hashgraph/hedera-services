@@ -37,15 +37,15 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.swirlds.common.Platform;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hedera.services.legacy.handler.TransactionHandler.IS_THROTTLE_EXEMPT;
 
@@ -104,8 +104,9 @@ public class StakedAnswerFlow implements AnswerFlow {
 		FeeData usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), at);
 
 		long cost = 0L;
+		Map<String, Object> queryCtx = new HashMap<>();
 		if (service.requiresNodePayment(query)) {
-			cost = computeTotalCost(query, usagePrices, view, at, null);
+			cost = totalOf(fees.computePayment(query, usagePrices, view, at, queryCtx));
 			validity = validatePayment(cost, accessor);
 			if (validity != OK) {
 				return service.responseGiven(query, view, validity, cost);
@@ -117,10 +118,10 @@ public class StakedAnswerFlow implements AnswerFlow {
 		}
 
 		if (service.needsAnswerOnlyCost(query)) {
-			cost = computeTotalCost(query, usagePrices, view, at, ANSWER_ONLY);
+			cost = totalOf(fees.estimatePayment(query, usagePrices, view, at, ANSWER_ONLY));
 		}
 
-		return service.responseGiven(query, view, OK, cost);
+		return service.responseGiven(query, view, OK, cost, queryCtx);
 	}
 
 	private boolean shouldThrottle(AnswerService service, SignedTxnAccessor paymentAccessor) {
@@ -131,16 +132,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		}
 	}
 
-	private long computeTotalCost(
-			Query query,
-			FeeData usagePrices,
-			StateView view,
-			Timestamp at,
-			ResponseType type
-	) {
-		FeeObject costs = type != null
-				? fees.estimatePayment(query, usagePrices, view, at, type)
-				: fees.computePayment(query, usagePrices, view, at);
+	private long totalOf(FeeObject costs) {
 		return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
 	}
 

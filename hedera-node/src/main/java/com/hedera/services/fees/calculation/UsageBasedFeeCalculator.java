@@ -43,11 +43,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
-import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hederahashgraph.fee.FeeBuilder.getTransactionRecordFeeInTinyCents;
 
@@ -107,8 +107,14 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	@Override
-	public FeeObject computePayment(Query query, FeeData usagePrices, StateView view, Timestamp at) {
-		return compute(query, usagePrices, at, estimator -> estimator.usageGiven(query, view));
+	public FeeObject computePayment(
+			Query query,
+			FeeData usagePrices,
+			StateView view,
+			Timestamp at,
+			Map<String, Object> queryCtx
+	) {
+		return compute(query, usagePrices, at, estimator -> estimator.usageGiven(query, view, queryCtx));
 	}
 
 	@Override

@@ -34,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.services.legacy.logic.ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS;
 
 public class BasicPrecheck {
 	private final PropertySource properties;

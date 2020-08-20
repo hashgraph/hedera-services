@@ -41,6 +41,7 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
 
 	public HapiUncheckedSubmit(HapiTxnOp<T> subOp) {
 		this.subOp = subOp;
+		this.hasAnyStatusAtAll();
 	}
 
 	@Override

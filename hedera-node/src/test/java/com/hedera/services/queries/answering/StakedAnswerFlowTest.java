@@ -128,7 +128,12 @@ class StakedAnswerFlowTest {
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
 		// and:
 		given(service.responseGiven(query, view, BUSY)).willReturn(wrongResponse);
-		given(service.responseGiven(query, view, OK, 0)).willReturn(response);
+		given(service.responseGiven(
+				argThat(query::equals),
+				argThat(view::equals),
+				argThat(OK::equals),
+				longThat(l -> l == 0),
+				anyMap())).willReturn(response);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -189,7 +194,12 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(false);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(service.responseGiven(query, view, OK, 0)).willReturn(response);
+		given(service.responseGiven(
+				argThat(query::equals),
+				argThat(view::equals),
+				argThat(OK::equals),
+				longThat(l -> l == 0),
+				anyMap())).willReturn(response);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -211,7 +221,12 @@ class StakedAnswerFlowTest {
 		given(service.requiresNodePayment(query)).willReturn(false);
 		given(service.needsAnswerOnlyCost(query)).willReturn(true);
 		given(fees.estimatePayment(query, usagePrices, view, at, ANSWER_ONLY)).willReturn(costs);
-		given(service.responseGiven(query, view, OK, 6)).willReturn(response);
+		given(service.responseGiven(
+				argThat(query::equals),
+				argThat(view::equals),
+				argThat(OK::equals),
+				longThat(l -> l == 6),
+				any())).willReturn(response);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -231,7 +246,12 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(true);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(fees.computePayment(query, usagePrices, view, at)).willReturn(costs);
+		given(fees.computePayment(
+				argThat(query::equals),
+				argThat(usagePrices::equals),
+				argThat(view::equals),
+				argThat(at::equals),
+				any())).willReturn(costs);
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(INVALID_ACCOUNT_ID));
 		given(service.responseGiven(query, view, INVALID_ACCOUNT_ID, 6)).willReturn(response);
@@ -254,7 +274,12 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(true);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(fees.computePayment(query, usagePrices, view, at)).willReturn(zeroCosts);
+		given(fees.computePayment(
+				argThat(query::equals),
+				argThat(usagePrices::equals),
+				argThat(view::equals),
+				argThat(at::equals),
+				any())).willReturn(zeroCosts);
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(INVALID_ACCOUNT_ID));
 		given(service.responseGiven(query, view, INVALID_ACCOUNT_ID, 6)).willReturn(response);
@@ -276,7 +301,12 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(true);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(fees.computePayment(query, usagePrices, view, at)).willReturn(costs);
+		given(fees.computePayment(
+				argThat(query::equals),
+				argThat(usagePrices::equals),
+				argThat(view::equals),
+				argThat(at::equals),
+				any())).willReturn(costs);
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(INSUFFICIENT_PAYER_BALANCE);
@@ -300,11 +330,21 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(true);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(fees.computePayment(query, usagePrices, view, at)).willReturn(costs);
+		given(fees.computePayment(
+				argThat(query::equals),
+				argThat(usagePrices::equals),
+				argThat(view::equals),
+				argThat(at::equals),
+				any())).willReturn(costs);
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);
-		given(service.responseGiven(query, view, OK, 6)).willReturn(response);
+		given(service.responseGiven(
+				argThat(query::equals),
+				argThat(view::equals),
+				argThat(OK::equals),
+				longThat(l -> l == 6),
+				any())).willReturn(response);
 		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		// when:
@@ -324,7 +364,12 @@ class StakedAnswerFlowTest {
 		given(resourceCosts.pricesGiven(CryptoGetStakers, at)).willReturn(usagePrices);
 		given(service.requiresNodePayment(query)).willReturn(true);
 		given(service.needsAnswerOnlyCost(query)).willReturn(false);
-		given(fees.computePayment(query, usagePrices, view, at)).willReturn(costs);
+		given(fees.computePayment(
+				argThat(query::equals),
+				argThat(usagePrices::equals),
+				argThat(view::equals),
+				argThat(at::equals),
+				any())).willReturn(costs);
 		given(legacyHandler.validateTransactionPreConsensus(userTxn, true))
 				.willReturn(new TxnValidityAndFeeReq(OK));
 		given(legacyHandler.nodePaymentValidity(userTxn, 6)).willReturn(OK);

@@ -38,7 +38,6 @@ public class PermissionFileUtils {
 
 	public static String permissionFileKeyForTxn(TransactionBody txn) {
 		try {
-			System.out.println(functionOf(txn));
 			return permissionKeys.get(functionOf(txn));
 		} catch (UnknownHederaFunctionality ignore) {
 			return "";

@@ -26,6 +26,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -174,5 +176,46 @@ public class FeeCalcUtilsTest {
 
 		// then:
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void sumsAsExpected() {
+		// given:
+		FeeComponents aComp = FeeComponents.newBuilder()
+				.setConstant(1).setBpt(2).setVpt(3).setRbh(4).setSbh(5).setGas(6).setTv(7).setBpr(8).setSbpr(9)
+				.build();
+		FeeComponents bComp = FeeComponents.newBuilder()
+				.setConstant(9).setBpt(8).setVpt(7).setRbh(6).setSbh(5).setGas(4).setTv(3).setBpr(2).setSbpr(1)
+				.build();
+		FeeData a = FeeData.newBuilder()
+				.setNetworkdata(aComp)
+				.setNodedata(aComp)
+				.setServicedata(aComp)
+				.build();
+		FeeData b = FeeData.newBuilder()
+				.setNetworkdata(bComp)
+				.setNodedata(bComp)
+				.setServicedata(bComp)
+				.build();
+
+		// when:
+		var c = sumOfUsages(a, b);
+		// and:
+		var scopedUsages = new FeeComponents[] {
+			c.getNodedata(), c.getNetworkdata(), c.getServicedata()
+		};
+
+		// then:
+		for (FeeComponents scopedUsage : scopedUsages) {
+			assertEquals(10, scopedUsage.getConstant());
+			assertEquals(10, scopedUsage.getBpt());
+			assertEquals(10, scopedUsage.getVpt());
+			assertEquals(10, scopedUsage.getRbh());
+			assertEquals(10, scopedUsage.getSbh());
+			assertEquals(10, scopedUsage.getGas());
+			assertEquals(10, scopedUsage.getTv());
+			assertEquals(10, scopedUsage.getBpr());
+			assertEquals(10, scopedUsage.getSbpr());
+		}
 	}
 }

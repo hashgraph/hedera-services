@@ -38,7 +38,9 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class DuplicateManagementTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DuplicateManagementTest.class);
@@ -51,9 +53,48 @@ public class DuplicateManagementTest extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						usesUnclassifiableIfNoClassifiableAvailable(),
+//						usesUnclassifiableIfNoClassifiableAvailable(),
+						hasExpectedDuplicates(),
 				}
 		);
+	}
+
+	private HapiApiSpec hasExpectedDuplicates() {
+		return defaultHapiSpec("HasExpectedDuplicates")
+				.given(
+						cryptoCreate("civilian"),
+						usableTxnIdNamed("txnId").payerId("civilian"),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", 100 * 100_000_000L))
+				).when(
+						uncheckedSubmit(
+								cryptoCreate("repeated")
+										.txnId("txnId")
+										.setNode("0.0.3")),
+						uncheckedSubmit(
+								cryptoCreate("repeated")
+										.txnId("txnId")
+										.setNode("0.0.3")),
+						uncheckedSubmit(
+								cryptoCreate("repeated")
+										.txnId("txnId")
+										.setNode("0.0.3")),
+						sleepFor(1_000L)
+				).then(
+						getReceipt("txnId").andAnyDuplicates()
+								.hasPriorityStatus(SUCCESS)
+								.hasDuplicateStatuses(
+										DUPLICATE_TRANSACTION,
+										DUPLICATE_TRANSACTION),
+						getTxnRecord("txnId")
+								.via("cheapTxn")
+								.hasPriority(recordWith().status(SUCCESS)),
+						getTxnRecord("txnId").andAnyDuplicates()
+								.via("costlyTxn")
+								.hasPriority(recordWith().status(SUCCESS)),
+						sleepFor(1_000L),
+						getTxnRecord("cheapTxn").logged(),
+						getTxnRecord("costlyTxn").logged()
+				);
 	}
 
 	private HapiApiSpec usesUnclassifiableIfNoClassifiableAvailable() {
@@ -72,8 +113,8 @@ public class DuplicateManagementTest extends HapiApiSuite {
 								.hasAnyStatusAtAll(),
 						sleepFor(1_000L)
 				).then(
-						getReceipt("txnId").hasReceiptStatus(INVALID_PAYER_SIGNATURE),
-						getTxnRecord("txnId").has(recordWith().status(INVALID_PAYER_SIGNATURE))
+						getReceipt("txnId").hasPriorityStatus(INVALID_PAYER_SIGNATURE),
+						getTxnRecord("txnId").hasPriority(recordWith().status(INVALID_PAYER_SIGNATURE))
 				);
 	}
 

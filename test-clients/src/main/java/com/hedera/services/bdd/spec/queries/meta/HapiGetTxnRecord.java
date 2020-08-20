@@ -56,8 +56,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	String txn;
 	boolean useDefaultTxnId = false;
+	boolean requestDuplicates = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
-	Optional<TransactionRecordAsserts> expectations = Optional.empty();
+	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
@@ -80,6 +81,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord andAnyDuplicates() {
+		requestDuplicates = true;
+		return this;
+	}
+
 	public HapiGetTxnRecord saveCreatedContractListToRegistry(String registryEntry) {
 		this.registryEntry = Optional.of(registryEntry);
 		return this;
@@ -90,8 +96,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord has(TransactionRecordAsserts provider) {
-		expectations = Optional.of(provider);
+	public HapiGetTxnRecord hasPriority(TransactionRecordAsserts provider) {
+		priorityExpectations = Optional.of(provider);
 		return this;
 	}
 
@@ -119,8 +125,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
-		if (expectations.isPresent()) {
-			ErroringAsserts<TransactionRecord> asserts = expectations.get().assertsFor(spec);
+		if (priorityExpectations.isPresent()) {
+			ErroringAsserts<TransactionRecord> asserts = priorityExpectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualRecord);
 			rethrowSummaryError(log, "Bad transaction record!", errors);
 		}
@@ -194,6 +200,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setTransactionID(txnId)
+				.setIncludeDuplicates(requestDuplicates)
 				.build();
 		return Query.newBuilder().setTransactionGetRecord(getRecordQuery).build();
 	}

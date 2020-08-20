@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -39,6 +40,15 @@ public interface AnswerService {
 	boolean needsAnswerOnlyCost(Query query);
 	boolean requiresNodePayment(Query query);
 	Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost);
+	default Response responseGiven(
+			Query query,
+			StateView view,
+			ResponseCodeEnum validity,
+			long cost,
+			Map<String, Object> queryCtx
+	) {
+		return responseGiven(query, view, validity, cost);
+	}
 	ResponseCodeEnum checkValidity(Query query, StateView view);
 	HederaFunctionality canonicalFunction();
 	ResponseCodeEnum extractValidityFrom(Response response);

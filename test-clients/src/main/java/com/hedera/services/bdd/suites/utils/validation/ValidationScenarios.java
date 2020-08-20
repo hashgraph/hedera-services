@@ -1134,7 +1134,7 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.logged()
-									.has(recordWith().transfers(
+									.hasPriority(recordWith().transfers(
 											includingDeduction(contract.getPersistent()::getNum, 1))),
 							novelContractIfDesired(contract)
 					)).then();

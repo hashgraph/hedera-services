@@ -20,6 +20,8 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
+import com.hedera.services.fees.calculation.FeeCalcUtils;
+import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.answering.AnswerFunctions;
@@ -40,8 +42,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.BinaryOperator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,6 +66,7 @@ class GetTxnRecordResourceUsageTest {
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
 	Query satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
+	Query satisfiableAnswerOnlyWithDups = txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
 	Query satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
 	Query unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
 
@@ -83,10 +90,13 @@ class GetTxnRecordResourceUsageTest {
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
 				.willReturn(Optional.of(desiredRecord));
+		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnlyWithDups))
+				.willReturn(Optional.of(desiredRecord));
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableCostAnswer))
 				.willReturn(Optional.of(desiredRecord));
 		given(answerFunctions.txnRecord(recordCache, view, unsatisfiable))
 				.willReturn(Optional.empty());
+		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(desiredRecord));
 
 		subject = new GetTxnRecordResourceUsage(recordCache, answerFunctions, usageEstimator);
 	}
@@ -110,6 +120,88 @@ class GetTxnRecordResourceUsageTest {
 		// then:
 		assertTrue(costAnswerEstimate == costAnswerUsage);
 		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+	}
+
+	@Test
+	public void returnsSummedUsagesIfDuplicatesPresent() {
+		// setup:
+		FeeData answerOnlyUsage = mock(FeeData.class);
+		FeeData summedUsage = mock(FeeData.class);
+		var queryCtx = new HashMap<String, Object>();
+		var sumFn = mock(BinaryOperator.class);
+		GetTxnRecordResourceUsage.sumFn = sumFn;
+
+		// given:
+		given(sumFn.apply(answerOnlyUsage, answerOnlyUsage)).willReturn(summedUsage);
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+
+		// when:
+		var usage = subject.usageGiven(satisfiableAnswerOnlyWithDups, view, queryCtx);
+
+		// then:
+		assertEquals(summedUsage, usage);
+
+		// cleanup:
+		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
+	}
+
+	@Test
+	public void setsDuplicateRecordsInQueryCtxIfAppropos() {
+		// setup:
+		FeeData answerOnlyUsage = mock(FeeData.class);
+		var queryCtx = new HashMap<String, Object>();
+		var sumFn = mock(BinaryOperator.class);
+		GetTxnRecordResourceUsage.sumFn = sumFn;
+
+		// given:
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+
+		// when:
+		subject.usageGiven(satisfiableAnswerOnlyWithDups, view, queryCtx);
+
+		// then:
+		assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
+
+		// cleanup:
+		GetTxnRecordResourceUsage.sumFn = FeeCalcUtils::sumOfUsages;
+	}
+
+	@Test
+	public void setsPriorityRecordInQueryCxtIfPresent() {
+		// setup:
+		FeeData answerOnlyUsage = mock(FeeData.class);
+		var queryCtx = new HashMap<String, Object>();
+
+		// given:
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+
+		// when:
+		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+
+		// then:
+		assertEquals(desiredRecord, queryCtx.get(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
+	}
+
+	@Test
+	public void setsOnlyFoundPriorityRecordInQueryCxtIfPresent() {
+		// setup:
+		FeeData answerOnlyUsage = mock(FeeData.class);
+		var queryCtx = new HashMap<String, Object>();
+
+		// given:
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+				.willReturn(answerOnlyUsage);
+		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
+				.willReturn(Optional.empty());
+
+		// when:
+		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+
+		// then:
+		assertFalse(queryCtx.containsKey(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
 	}
 
 	@Test
@@ -138,12 +230,18 @@ class GetTxnRecordResourceUsageTest {
 		return Query.getDefaultInstance();
 	}
 
+
 	Query txnRecordQuery(TransactionID txnId, ResponseType type) {
-			TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
-					.setHeader(QueryHeader.newBuilder().setResponseType(type))
-					.setTransactionID(txnId);
-			return Query.newBuilder()
-					.setTransactionGetRecord(op)
-					.build();
+		return txnRecordQuery(txnId, type, false);
+	}
+
+	Query txnRecordQuery(TransactionID txnId, ResponseType type, boolean duplicates) {
+		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(type))
+				.setTransactionID(txnId)
+				.setIncludeDuplicates(duplicates);
+		return Query.newBuilder()
+				.setTransactionGetRecord(op)
+				.build();
 	}
 }

@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpecWithRegistry;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 /**
@@ -122,7 +121,7 @@ public class MigrationValidationPostSteps extends HapiApiSuite {
                 sleepFor(2_000L),
                 TxnVerbs.contractCall(MIGRATION_SMART_CONTRACT, SC_GET_ABI).via(SC_getValue).gas(20000),
                 sleepFor(2_000L),
-                QueryVerbs.getTxnRecord(SC_getValue).has(TransactionRecordAsserts.recordWith().contractCallResult(
+                QueryVerbs.getTxnRecord(SC_getValue).hasPriority(TransactionRecordAsserts.recordWith().contractCallResult(
                         ContractFnResultAsserts.resultWith().resultThruAbi(SC_GET_ABI, ContractFnResultAsserts.isLiteralResult(
                                 new Object[]{
                                         BigInteger.valueOf(VALUE_TO_SET+1)
