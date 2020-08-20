@@ -184,7 +184,7 @@ public class SuiteRunner {
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
 		/* Zero Stake behaviour */
-		put("ZeroStakeTest", aof(new ZeroStakeNodeTest(System.getenv("FULLIPLIST"))));
+		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 	}};
 
 	static boolean runAsync;
