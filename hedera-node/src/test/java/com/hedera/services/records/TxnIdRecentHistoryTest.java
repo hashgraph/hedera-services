@@ -151,6 +151,12 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
+	public void recognizesEmptyDuplicates() {
+		// expect:
+		assertTrue(subject.duplicateRecords().isEmpty());
+	}
+
+	@Test
 	public void returnsUnclassifiableIfOnlyAvailable() {
 		// given:
 		subject.observe(

@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZE
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.io.Files;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
@@ -231,10 +232,30 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void throwsNfseOnBadScheduleInFcfs() {
+	public void throwsNfseOnMissingScheduleInFcfs() {
 		given(hfs.exists(schedules)).willReturn(false);
 
 		// expect:
 		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+	}
+
+	@Test
+	public void throwsNfseOnBadScheduleInFcfs() {
+		given(hfs.exists(schedules)).willReturn(true);
+		given(hfs.cat(any())).willReturn("NONSENSE".getBytes());
+
+		// expect:
+		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+	}
+
+	@Test
+	public void usesDefaultPricesForUnexpectedFailure() {
+		given(accessor.getFunction()).willThrow(IllegalStateException.class);
+
+		// when:
+		var prices = subject.activePrices();
+
+		// then:
+		assertEquals(DEFAULT_USAGE_PRICES, prices);
 	}
 }

@@ -120,6 +120,14 @@ class GetTxnRecordResourceUsageTest {
 		// then:
 		assertTrue(costAnswerEstimate == costAnswerUsage);
 		assertTrue(answerOnlyEstimate == answerOnlyUsage);
+
+		// and when:
+		costAnswerEstimate = subject.usageGivenType(satisfiableCostAnswer, view, COST_ANSWER);
+		answerOnlyEstimate = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+
+		// then:
+		assertTrue(costAnswerEstimate == costAnswerUsage);
+		assertTrue(answerOnlyEstimate == answerOnlyUsage);
 	}
 
 	@Test
