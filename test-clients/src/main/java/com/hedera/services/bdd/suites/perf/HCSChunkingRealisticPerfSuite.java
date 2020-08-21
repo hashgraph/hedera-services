@@ -23,10 +23,12 @@ package com.hedera.services.bdd.suites.perf;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -83,9 +85,17 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 								.withRecharging()
 								.rechargeWindow(30)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
-						createTopic(TOPIC)
-								.submitKeyName("submitKey")
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+						withOpContext((spec, ignore) -> {
+							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+							for (int i = 0; i < settings.getThreads(); i++) {
+								var op = createTopic(TOPIC + i)
+										.submitKeyName("submitKey")
+										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+												PLATFORM_TRANSACTION_NOT_CREATED);
+								opsList.add(op);
+							}
+							CustomSpecAssert.allRunFor(spec, opsList);
+						}),
 						sleepFor(5000) //wait all other thread ready
 				).then(
 						defaultLoadTest(submitBurst, settings)
