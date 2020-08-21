@@ -904,7 +904,7 @@ workflows:
   custom-migration:
     triggers:
       - schedule:
-          cron: "0 20 * * *"
+          cron: "0 4 * * *"
           filters:
             branches:
               only:
@@ -1073,6 +1073,7 @@ workflows:
     jobs:
       - fast-build-artifact:
           context: Slack
+          workflow-name: "nightly-regression"
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1150,9 +1151,9 @@ workflows:
           context: Slack
           requires:
             - regression-target-testnet
-      - long-umbrella: 
+      - long-umbrella:
           context: Slack
-          requires: 
+          requires:
             - regression-target-testnet
       - regression-validate-freeze:
           context: Slack
@@ -1262,10 +1263,11 @@ workflows:
             - short-crypto_txns300-8
             - short-crypto_txns300-9
             - short-crypto_txns300-10
-#            - short-crypto_txns300-11
-#            - short-crypto_txns300-12
+            # - short-crypto_txns300-11
+            # - short-crypto_txns300-12
             - short-file_ops-0
             - short-consensus_ops-0
+
 #
 #      - validate-server-stat-2:
 #          requires:
