@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -63,6 +64,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
+	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -101,6 +103,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasDuplicates(ErroringAssertsProvider<List<TransactionRecord>> provider) {
+		duplicateExpectations = Optional.of(provider);
+		return this;
+	}
+
 	public HapiGetTxnRecord hasCorrectRunningHash(String topic, byte[] lastMessage) {
 		topicToValidate = Optional.of(topic);
 		lastMessagedSubmitted = Optional.of(lastMessage);
@@ -128,7 +135,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (priorityExpectations.isPresent()) {
 			ErroringAsserts<TransactionRecord> asserts = priorityExpectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualRecord);
-			rethrowSummaryError(log, "Bad transaction record!", errors);
+			rethrowSummaryError(log, "Bad priority record!", errors);
+		}
+		if (duplicateExpectations.isPresent()) {
+			var asserts = duplicateExpectations.get().assertsFor(spec);
+			var errors = asserts.errorsIn(response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
+			rethrowSummaryError(log, "Bad duplicate records!", errors);
 		}
 		if (topicToValidate.isPresent()) {
 			if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {

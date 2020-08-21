@@ -57,6 +57,7 @@ import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
+import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
@@ -105,6 +106,7 @@ public class SuiteRunner {
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
 		put("CiConsensusAndCryptoJob", aof(
+				new DuplicateManagementTest(),
 				new TopicCreateSuite(),
 				new TopicUpdateSuite(),
 				new TopicDeleteSuite(),
@@ -114,7 +116,6 @@ public class SuiteRunner {
 				new ConsensusThrottlesSuite(),
 				new BucketThrottlingSpec(),
 				new SpecialAccountsAreExempted(),
-				new CryptoCreateSuite(),
 				new CryptoTransferSuite(),
 				new CryptoRecordsSanityCheckSuite(),
 				new Issue2144Spec()));
@@ -167,6 +168,7 @@ public class SuiteRunner {
 		put("ContractRecordSanityChecks", aof(new ContractRecordsSanityCheckSuite()));
 		put("ContractCallSuite", aof(new ContractCallSuite()));
 		put("ProtectedFilesUpdateSuite", aof(new ProtectedFilesUpdateSuite()));
+		put("DuplicateManagementTest", aof(new DuplicateManagementTest()));
 		/* Record validation. */
 		put("RecordStreamValidation", aof(new RecordStreamValidation()));
 		/* Fee characterization. */

@@ -37,6 +37,9 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getDeduction;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.readableTransferList;
 import static java.util.stream.Collectors.toSet;
 
 public class TransferListAsserts extends BaseErroringAssertsProvider<TransferList> {
@@ -45,6 +48,9 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
 	}
 	public static TransferListAsserts includingDeduction(LongSupplier from, long amount) {
 		return new DeductionAsserts(from, amount);
+	}
+	public static TransferListAsserts includingDeduction(String desc, String payer) {
+		return new QualifyingDeductionAssert(desc, payer);
 	}
 	public static TransferListAsserts atLeastOneTransfer() {
 		return new NonEmptyTransferAsserts();
@@ -101,6 +107,18 @@ class ExplicitTransferAsserts extends TransferListAsserts {
 				TransferList expected = provider.apply(spec);
 				assertInclusion(expected, (TransferList)o);
 			});
+		});
+	}
+}
+
+class QualifyingDeductionAssert extends TransferListAsserts {
+	public QualifyingDeductionAssert(String desc, String payer) {
+		registerProvider((spec, o) -> {
+			var transfers = (TransferList)o;
+			var hasQualifying = getDeduction(transfers, asId(payer, spec)).isPresent();
+			if (!hasQualifying) {
+				Assert.fail("No qualifying " + desc + " from " + payer + " in " + readableTransferList(transfers));
+			}
 		});
 	}
 }

@@ -51,12 +51,12 @@ public class UsableTxnId extends UtilOp {
 	protected boolean submitOp(HapiApiSpec spec) {
 		TransactionBody.Builder usable = TransactionBody.newBuilder();
 		spec.txns().defaultBodySpec().accept(usable);
-		spec.registry().saveTxnId(name, usable.build().getTransactionID());
 		if (payerId.isPresent()) {
 			String s = payerId.get();
 			AccountID id = TxnUtils.isIdLiteral(s) ? HapiPropertySource.asAccount(s) : spec.registry().getAccountID(s);
 			usable.setTransactionID(usable.getTransactionIDBuilder().setAccountID(id));
 		}
+		spec.registry().saveTxnId(name, usable.build().getTransactionID());
 		return false;
 	}
 

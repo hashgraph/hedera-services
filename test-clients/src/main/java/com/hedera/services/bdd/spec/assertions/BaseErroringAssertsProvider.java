@@ -44,6 +44,7 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
 	}
 
 	/* Helper for asserting something about a ContractID, FileID, AccountID, etc. */
+	@SuppressWarnings("unchecked")
 	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
 		registerProvider((spec, o) -> {
 			R expected = spec.registry().getId(key, cls);
@@ -54,7 +55,7 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
 
 	@Override
 	public ErroringAsserts<T> assertsFor(HapiApiSpec spec) {
-		return new BaseErroringAsserts<T>(testProviders.stream()
+		return new BaseErroringAsserts<>(testProviders.stream()
 				.map(p -> p.apply(spec))
 				.collect(Collectors.toList()));
 	}

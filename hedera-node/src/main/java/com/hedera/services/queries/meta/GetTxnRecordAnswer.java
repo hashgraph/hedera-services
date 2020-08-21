@@ -136,7 +136,6 @@ public class GetTxnRecordAnswer implements AnswerService {
 			Optional<Map<String, Object>> queryCtx
 	) {
 		if (queryCtx.isPresent()) {
-			System.out.println("Using query context to answer with records...");
 			var ctx = queryCtx.get();
 			if (!ctx.containsKey(PRIORITY_RECORD_CTX_KEY)) {
 				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));

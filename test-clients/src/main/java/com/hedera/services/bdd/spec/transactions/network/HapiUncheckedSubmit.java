@@ -23,6 +23,8 @@ package com.hedera.services.bdd.spec.transactions.network;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -30,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,6 +41,8 @@ import java.util.function.Function;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiUncheckedSubmit<T>> {
+	private static final Logger log = LogManager.getLogger(HapiUncheckedSubmit.class);
+
 	private final HapiTxnOp<T> subOp;
 
 	public HapiUncheckedSubmit(HapiTxnOp<T> subOp) {
@@ -57,6 +63,10 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var subOpBytes = subOp.serializeSignedTxnFor(spec);
+		if (verboseLoggingOn) {
+			log.info("Submitting unchecked: " +
+					TransactionBody.parseFrom(Transaction.parseFrom(subOpBytes).getBodyBytes()));
+		}
 		UncheckedSubmitBody opBody = spec
 				.txns()
 				.<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
