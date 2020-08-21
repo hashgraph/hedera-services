@@ -39,6 +39,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -254,6 +255,7 @@ public class UtilVerbs {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
 			int overriddenChunkSize = chunkSize;
+			String overriddenTopic = new String(topic);
 			boolean validateRunningHash = false;
 
 			if (useCiProperties) {
@@ -268,6 +270,11 @@ public class UtilVerbs {
 					if (ciProperties.has("validateRunningHash")) {
 						validateRunningHash = ciProperties.getBoolean("validateRunningHash");
 					}
+					int threads = PerfTestLoadSettings.DEFAULT_THREADS;
+					if (ciProperties.has("threads")) {
+						threads = ciProperties.getInteger("threads");
+					}
+					overriddenTopic += num.getAndIncrement() % threads;
 				}
 			}
 			ByteString msg = ByteString.copyFrom(
@@ -283,7 +290,7 @@ public class UtilVerbs {
 				++currentChunk;
 				int newPosition = Math.min(size, position + overriddenChunkSize);
 				ByteString subMsg = msg.substring(position, newPosition);
-				HapiMessageSubmit subOp = submitMessageTo(topic)
+				HapiMessageSubmit subOp = submitMessageTo(overriddenTopic)
 						.message(subMsg)
 						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
 						.payingWith(payer)
@@ -295,9 +302,9 @@ public class UtilVerbs {
 					subOp = subOp.usePresetTimestamp();
 				}
 				if (validateRunningHash && (num.get() >= 0)) {
-					String txnName = "submitMessage" + num.incrementAndGet();
+					String txnName = "submitMessage-" + overriddenTopic + "-" + currentChunk;
 					HapiGetTxnRecord validateOp = getTxnRecord(txnName)
-							.hasCorrectRunningHash(topic, subMsg.toByteArray())
+							.hasCorrectRunningHash(overriddenTopic, subMsg.toByteArray())
 							.payingWith(payer)
 							.noLogging();
 					opsList.add(subOp.via(txnName));
