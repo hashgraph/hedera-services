@@ -22,8 +22,6 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.SigStyle;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -38,7 +36,6 @@ import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -245,19 +242,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			if (spec.setup().costSnapshotMode() != HapiApiSpec.CostSnapshotMode.OFF) {
 				publishFeeChargedTo(spec);
 			}
-		}
-		if (this instanceof HapiMessageSubmit) {
-			HapiMessageSubmit subOp = (HapiMessageSubmit) this;
-			var optionalTopic = subOp.getTopic();
-			var optionalMsg = subOp.getMessage();
-			if (optionalTopic.isEmpty() || optionalMsg.isEmpty()) {
-				return;
-			}
-			HapiGetTxnRecord validateOp = getTxnRecord(txnName)
-					.hasCorrectRunningHash(optionalTopic.get(), optionalMsg.get().toByteArray())
-					.payingWith(payer.get())
-					.noLogging();
-			validateOp.execFor(spec);
 		}
 	}
 
