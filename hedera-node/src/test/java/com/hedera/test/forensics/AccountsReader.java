@@ -1,25 +1,5 @@
 package com.hedera.test.forensics;
 
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
 import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,44 +9,21 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.HbarAdjustments;
 import com.hedera.services.state.submerkle.SolidityFnResult;
-import com.hedera.test.forensics.domain.PojoFs;
-import com.hedera.test.forensics.domain.PojoLedger;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMInternalNode;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import com.swirlds.fcmap.internal.FCMTree;
 import com.swirlds.fcqueue.FCQueue;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
 
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-@Disabled
-@RunWith(JUnitPlatform.class)
-public class FcmToJsonUtil {
-	final List<String> accountsLocs = List.of(new String[] {
-			"/Users/tinkerm/Dev/iss/stable/node00-logs/data/saved/com.hedera.services" + ".ServicesMain/0/accounts-round38056100.fcm",
-//			"/Users/tinkerm/Dev/iss/stable/node00-logs/data/saved/com.hedera.services" +
-//					".ServicesMain/0/accounts-round38056101.fcm"
-	});
-	final List<String> storageLocs = List.of(
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/0/storage-round12.fcm",
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/1/storage-round12.fcm",
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/2/storage-round12.fcm"
-	);
-	final List<String> topicsLocs = List.of(
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/0/topics-round12.fcm",
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/1/topics-round12.fcm",
-			"/Users/tinkerm/Dev/hgn2/services-hedera/hedera-node/forensics/iss-demo/2/topics-round12.fcm"
-	);
-
-	@Test
-	public void convertAccountsToJson() throws Exception {
+public class AccountsReader {
+	public static FCMap<MerkleEntityId, MerkleAccount> from(String loc) throws Exception {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCMInternalNode.class, FCMInternalNode::new));
 		ConstructableRegistry.registerConstructable(
@@ -98,20 +55,9 @@ public class FcmToJsonUtil {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 
-		for (String dumpLoc : accountsLocs) {
-			PojoLedger.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
+		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)), false)) {
+			FCMap<MerkleEntityId, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			return fcm;
 		}
-	}
-
-	@Test
-	public void convertStorageToJson() throws Exception {
-		for (String dumpLoc : storageLocs) {
-			PojoFs.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));
-		}
-	}
-
-	public static String jsonSuffixed(String path) {
-		int n = path.length();
-		return path.substring(0, n - 4) + ".json";
 	}
 }

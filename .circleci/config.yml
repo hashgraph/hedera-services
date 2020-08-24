@@ -1369,6 +1369,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - stable-iss-forensics
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
