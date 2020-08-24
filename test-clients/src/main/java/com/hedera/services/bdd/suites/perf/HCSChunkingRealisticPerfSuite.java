@@ -51,6 +51,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 	private static final String LARGE_FILE = "src/main/resource/testfiles/EmitEvent.bin";
 	private static final String PAYER = "payer";
 	private static final String TOPIC = "topic";
+	public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 	private static AtomicLong totalMsgSubmitted = new AtomicLong(0);
 
 	public static void main(String... args) {
@@ -87,8 +88,10 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 								.rechargeWindow(30)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						withOpContext((spec, ignore) -> {
+							int factor = settings.getIntProperty("collisionAvoidanceFactor",
+									DEFAULT_COLLISION_AVOIDANCE_FACTOR);
 							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-							for (int i = 0; i < settings.getThreads() * 2; i++) {
+							for (int i = 0; i < settings.getThreads() * factor; i++) {
 								var op = createTopic(TOPIC + i)
 										.submitKeyName("submitKey")
 										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,

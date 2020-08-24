@@ -39,6 +39,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -275,7 +276,11 @@ public class UtilVerbs {
 					if (ciProperties.has("threads")) {
 						threads = ciProperties.getInteger("threads");
 					}
-					overriddenTopic += currentCount % (threads * 2);
+					int factor = HCSChunkingRealisticPerfSuite.DEFAULT_COLLISION_AVOIDANCE_FACTOR;
+					if (ciProperties.has("collisionAvoidanceFactor")) {
+						factor = ciProperties.getInteger("collisionAvoidanceFactor");
+					}
+					overriddenTopic += currentCount % (threads * factor);
 				}
 			}
 			ByteString msg = ByteString.copyFrom(
