@@ -246,11 +246,11 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic) {
-		return chunkAFile(filePath, chunkSize, payer, topic, new AtomicLong(-1), false);
+		return chunkAFile(filePath, chunkSize, payer, topic, new AtomicLong(-1));
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-			AtomicLong num, boolean useCiProperties) {
+			AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -258,7 +258,8 @@ public class UtilVerbs {
 			String overriddenTopic = new String(topic);
 			boolean validateRunningHash = false;
 
-			if (useCiProperties) {
+			long currentCount = count.getAndIncrement();
+			if (currentCount >= 0) {
 				var ciProperties = spec.setup().ciPropertiesMap();
 				if (null != ciProperties) {
 					if (ciProperties.has("file")) {
@@ -274,7 +275,7 @@ public class UtilVerbs {
 					if (ciProperties.has("threads")) {
 						threads = ciProperties.getInteger("threads");
 					}
-					overriddenTopic += num.getAndIncrement() % (threads * 2);
+					overriddenTopic += currentCount % (threads * 2);
 				}
 			}
 			ByteString msg = ByteString.copyFrom(
@@ -301,7 +302,7 @@ public class UtilVerbs {
 				if (1 == currentChunk) {
 					subOp = subOp.usePresetTimestamp();
 				}
-				if (validateRunningHash && (num.get() >= 0)) {
+				if (validateRunningHash) {
 					String txnName = "submitMessage-" + overriddenTopic + "-" + currentChunk;
 					HapiGetTxnRecord validateOp = getTxnRecord(txnName)
 							.hasCorrectRunningHash(overriddenTopic, subMsg.toByteArray())
