@@ -23,17 +23,23 @@ package com.hedera.test.forensics;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.PureValidation;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.forensics.domain.PojoRecord;
 import com.hedera.test.forensics.records.RecordParser;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -50,10 +56,12 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.SplittableRandom;
 import java.util.stream.Stream;
 
 import static com.hedera.test.forensics.records.RecordParser.TxnHistory;
@@ -86,6 +94,67 @@ public class RecordStreamCmp {
 
 	AccountID suspect = IdUtils.asAccount("0.0.6237");
 	String BASE_LOC_TPL = "/Users/tinkerm/Dev/iss/stable/records/record0.0.%s";
+
+	@Test
+	public void accountsMakingLargishQueryPaymentsToNode0() throws Exception {
+		var node = "5";
+		var cutoff = 100_000L;
+		var allFromStream = allRecordsFrom(node);
+		var accountOfInterest = IdUtils.asAccount(String.format("0.0.%d", SUSPECT));
+
+		var largestQueryPayments = allFromStream
+				.stream()
+				.filter(pair -> isLargishQueryPaymentToNode(pair, 3L, cutoff))
+				.collect(toList());
+
+		System.out.println(largestQueryPayments.size() + " large-ish query payments to 0.0.3 in stream.");
+		hashMapInfo("Suspect", accountOfInterest);
+		hashMapInfo("Funding", IdUtils.asAccount("0.0.98"));
+		hashMapInfo("Node", IdUtils.asAccount("0.0.3"));
+
+		var possiblePayers = largestQueryPayments
+				.stream()
+				.map(pair -> pair.uncheckedAccessor().getPayer())
+				.distinct()
+				.collect(toList());
+		System.out.println("There are " + possiblePayers.size() + " possible payers.");
+		for (AccountID payer : possiblePayers) {
+			hashMapInfo(EntityIdUtils.readableId(payer), payer);
+		}
+	}
+
+	private void hashMapInfo(String desc, AccountID id) {
+		System.out.println(desc + " hash: " + hashMapHash(id) + " (bin " + hashMapBinOf(id, 16) + ")");
+	}
+
+	private int hashMapBinOf(Object o, int n) {
+		return (n - 1) & hashMapHash(o);
+	}
+
+	private int hashMapHash(Object o) {
+		int h;
+		return (o == null) ? 0 : (h = o.hashCode()) ^ (h >>> 16);
+	}
+
+	private boolean isLargishQueryPaymentToNode(StreamEntry pair, long accountNum, long cutoff) {
+		var accessor = pair.uncheckedAccessor();
+		if (accessor.getFunction() != CryptoTransfer) {
+			return false;
+		}
+		var txn = accessor.getTxn();
+		if (txn.getNodeAccountID().getAccountNum() != accountNum) {
+			return false;
+		}
+		var adjusts = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
+		if (adjusts.size() > 2) {
+			return false;
+		}
+		return bigEnoughPlus(adjusts.get(0), accountNum, cutoff) || bigEnoughPlus(adjusts.get(1), accountNum, cutoff);
+	}
+
+	private boolean bigEnoughPlus(AccountAmount adjust, long to, long cutoff) {
+		return adjust.getAccountID().getAccountNum() == to && adjust.getAmount() >= cutoff;
+	}
 
 	@Test
 	public void dumpStreamRecordsBetweenLastTouchingSuspectAndDivergence() throws Exception {
@@ -557,6 +626,63 @@ public class RecordStreamCmp {
 			}
 			return n;
 		}
+	}
+
+	@Test
+	public void seeWhatHappens() throws InterruptedException {
+		final FCMap<MerkleEntityId, MerkleAccount> accounts =
+				new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		final FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accounts);
+
+		final AccountID txnPayer = suspect;
+		final AccountID queryPayerOne = IdUtils.asAccount("0.0.23538");
+		final AccountID queryPayerTwo = IdUtils.asAccount("0.0.9473");
+		final SplittableRandom r = new SplittableRandom();
+
+		backingAccounts.put(txnPayer, new MerkleAccount());
+		backingAccounts.put(queryPayerOne, new MerkleAccount());
+		backingAccounts.put(queryPayerTwo, new MerkleAccount());
+
+		AccountID[] candidates = new AccountID[] { queryPayerOne, queryPayerTwo, txnPayer };
+		Runnable contractCallLocal = () -> {
+			while (true) {
+				try {
+//					var queryPayer = candidates[r.nextInt(3)];
+					var queryPayer = candidates[2];
+					backingAccounts.getRef(queryPayer);
+				} catch (ConcurrentModificationException cme) {
+					System.out.println("CME in query thread");
+				}
+			}
+		};
+
+		Runnable handleTxn = () -> {
+			while (true) {
+				try {
+					var account = backingAccounts.getRef(txnPayer);
+					var payerRecords = account.payerRecords();
+					if (!payerRecords.isEmpty()) {
+						payerRecords.poll();
+					}
+
+					var accountAgain = backingAccounts.getRef(txnPayer);
+					accountAgain.payerRecords().offer(new ExpirableTxnRecord());
+
+					backingAccounts.flushMutableRefs();
+				} catch (ConcurrentModificationException cme) {
+					System.out.println("CME in handle thread");
+				}
+			}
+		};
+
+		var handleThread = new Thread(handleTxn);
+		handleThread.setName("handleTxnSimulator");
+		var queryThread = new Thread(contractCallLocal);
+		queryThread.setName("contractCallLocalSimulator");
+		handleThread.start();
+		queryThread.start();
+
+		handleThread.join();
 	}
 
 }
