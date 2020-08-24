@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -94,7 +95,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 												PLATFORM_TRANSACTION_NOT_CREATED);
 								opsList.add(op);
 							}
-							CustomSpecAssert.allRunFor(spec, opsList);
+							CustomSpecAssert.allRunFor(spec, inParallel(flattened(opsList)));
 						}),
 						sleepFor(5000) //wait all other thread ready
 				).then(
