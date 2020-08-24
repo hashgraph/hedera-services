@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.compose.LocalNetworkCheck;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -47,6 +46,10 @@ import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
 import com.hedera.services.bdd.suites.issues.Issue2144Spec;
 import com.hedera.services.bdd.suites.issues.IssueXXXXSpec;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
+import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
+import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
+import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
+import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
@@ -150,15 +153,19 @@ public class SuiteRunner {
 		put("HCSTopicFragmentationSuite", aof(new ChunkingSuite()));
 		put("TopicGetInfoSpecs", aof(new TopicGetInfoSuite()));
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
+		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
+		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
 		/* Functional tests - CRYPTO */
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
+		put("CryptoQueriesStressTests", aof(new CryptoQueriesStressTests()));
 		/* Functional tests - CONTRACTS */
 		put("NewOpInConstructorSpecs", aof(new NewOpInConstructorSuite()));
 		put("DeprecatedContractKeySpecs", aof(new DeprecatedContractKeySuite()));
 		put("MultipleSelfDestructsAreSafe", aof(new IssueXXXXSpec()));
+		put("ContractQueriesStressTests", aof(new ContractQueriesStressTests()));
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));

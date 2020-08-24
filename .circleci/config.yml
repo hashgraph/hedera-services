@@ -837,6 +837,16 @@ commands:
           fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run-eet-suites:
+          dsl-args: "CryptoQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "FileQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "ConsensusQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "ContractQueriesStressTests"
       - run:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
@@ -1369,7 +1379,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - stable-iss-forensics
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
