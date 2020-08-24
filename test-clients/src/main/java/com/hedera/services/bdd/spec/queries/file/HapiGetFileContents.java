@@ -72,6 +72,8 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	Optional<Function<HapiApiSpec, ByteString>> expContentFn = Optional.empty();
 	Optional<UnaryOperator<byte[]>> afterBytesTransform = Optional.empty();
 
+	private FileID fileId;
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.FileGetContents;
@@ -222,6 +224,8 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	}
 
 	private Query getFileContentQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+		fileId = TxnUtils.asFileId(fileName, spec);
+
 		FileGetContentsQuery query = FileGetContentsQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setFileID(TxnUtils.asFileId(fileName, spec))
@@ -237,7 +241,10 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("file", fileName);
+				.add("file", fileName)
+//				.add( "fileNum" , fileId.getFileNum() )
+				.add(  "fileId", fileId);
+
 		if (sizeLookup != -1) {
 			helper.add("size", sizeLookup);
 		}

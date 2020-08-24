@@ -550,6 +550,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
+	public T logging() {
+		loggingOff = false;
+		return self();
+	}
+
 	public T validDurationSecs(long secs) {
 		validDurationSecs = Optional.of(secs);
 		return self();

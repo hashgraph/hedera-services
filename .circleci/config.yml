@@ -1073,7 +1073,7 @@ workflows:
     jobs:
       - fast-build-artifact:
           context: Slack
-          workflow-name: "nightly-regression"
+          workflow-name: "test-nightly-regression"
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1824,7 +1824,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=50"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1840,7 +1840,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true

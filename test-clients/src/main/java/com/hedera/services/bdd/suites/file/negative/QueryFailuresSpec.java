@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.file.negative;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,16 +59,16 @@ public class QueryFailuresSpec extends HapiApiSuite {
 						fileCreate("tbd"),
 						fileDelete("tbd")
 				).when( ).then(
-						getFileInfo("1.2.3")
-								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-						getFileContents("1.2.3")
-								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-						getFileContents("tbd")
-								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(FILE_DELETED),
-						getFileInfo("tbd")
+//						getFileInfo("1.2.3")
+//								.nodePayment(1_234L)
+//								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+//						getFileContents("1.2.3")
+//								.nodePayment(1_234L)
+//								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+//						getFileContents("tbd")
+//								.nodePayment(1_234L)
+//								.hasAnswerOnlyPrecheck(FILE_DELETED),
+						getFileInfo("0.0.100000")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(FILE_DELETED)
 				);

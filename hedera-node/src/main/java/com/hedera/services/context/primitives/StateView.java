@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -103,24 +104,37 @@ public class StateView {
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoFor(FileID id) {
-		try {
-			var attr = fileAttrs.get(id);
-			if (attr == null) {
+		int retries = 5;
+		while (true) {
+			try {
+				var attr = fileAttrs.get(id);
+				if (attr == null) {
+					return Optional.empty();
+				}
+				var info = FileGetInfoResponse.FileInfo.newBuilder()
+						.setFileID(id)
+						.setDeleted(attr.isDeleted())
+						.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
+						.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_CONTENTS).length);
+				if (!attr.getWacl().isEmpty()) {
+					info.setKeys(mapJKey(attr.getWacl()).getKeyList());
+				}
+				return Optional.of(info.build());
+			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
+				log.info("May run into a temp issue getting info for {}, retrying...", readableId(id));
+				try {
+					TimeUnit.MILLISECONDS.sleep(100);
+				} catch (InterruptedException ie) {	}
+				retries--;
+				if(retries <= 0) {
+					log.warn("Can't get info info for {} at this moment. Try again later", readableId(id));
+					return Optional.empty();
+				}
+				continue;
+			} catch (Exception unknown) {
+				log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
 				return Optional.empty();
 			}
-
-			var info = FileGetInfoResponse.FileInfo.newBuilder()
-					.setFileID(id)
-					.setDeleted(attr.isDeleted())
-					.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
-					.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_CONTENTS).length);
-			if (!attr.getWacl().isEmpty()) {
-				info.setKeys(mapJKey(attr.getWacl()).getKeyList());
-			}
-			return Optional.of(info.build());
-		} catch (Exception unknown) {
-			log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
-			return Optional.empty();
 		}
 	}
 

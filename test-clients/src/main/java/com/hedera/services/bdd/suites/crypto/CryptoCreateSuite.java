@@ -65,15 +65,15 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveTests(),
-				negativeTests()
+				positiveTests()
+//				negativeTests()
 		);
 	}
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-				invalidPayerSigNotQueryable()
-//				vanillaCreateSucceeds()
+//				invalidPayerSigNotQueryable()
+				vanillaCreateSucceeds()
 //				requiresNewKeyToSign()
 		);
 	}
@@ -150,7 +150,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaCreateSucceeds() {
 		return defaultHapiSpec("VanillaCreateSucceeds")
 				.given(
-						cryptoCreate("testAccount").via("txn")
+						cryptoCreate("testAccount").via("txn"),
+						UtilVerbs.sleepFor(2000)
 				).when().then(
 						getTxnRecord("txn").logged()
 				);
