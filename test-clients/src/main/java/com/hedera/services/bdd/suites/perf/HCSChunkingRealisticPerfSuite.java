@@ -87,7 +87,7 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						withOpContext((spec, ignore) -> {
 							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-							for (int i = 0; i < settings.getThreads(); i++) {
+							for (int i = 0; i < settings.getThreads() * 2; i++) {
 								var op = createTopic(TOPIC + i)
 										.submitKeyName("submitKey")
 										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,

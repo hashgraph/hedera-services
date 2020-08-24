@@ -274,7 +274,7 @@ public class UtilVerbs {
 					if (ciProperties.has("threads")) {
 						threads = ciProperties.getInteger("threads");
 					}
-					overriddenTopic += num.getAndIncrement() % threads;
+					overriddenTopic += num.getAndIncrement() % (threads * 2);
 				}
 			}
 			ByteString msg = ByteString.copyFrom(
