@@ -1,6 +1,7 @@
 networks:
   integration:
     bootstrap: 2
+    defaultNode: 3
     ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 35.196.146.2}
@@ -23,6 +24,7 @@ networks:
         numsToFetch: [121]
   testnet:
     bootstrap: 50
+    defaultNode: 3
     ensureScenarioPayerHbars: 300
     nodes:
     - {account: 3, ipv4Addr: 34.94.254.82}
@@ -43,6 +45,7 @@ networks:
       versions: {hapiProtoSemVer: 0.5.1, servicesSemVer: 0.5.0}
   mainnet:
     bootstrap: 950
+    defaultNode: 3
     ensureScenarioPayerHbars: 100
     nodes:
     - {account: 5, ipv4Addr: 35.192.2.25}
@@ -67,11 +70,21 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
   localhost:
     bootstrap: 2
+    defaultNode: 3
     ensureScenarioPayerHbars: 100000
     nodes:
     - {account: 3, ipv4Addr: '127.0.0.1:50211'}
+    scenarioPayer: 1001
+    scenarios:
+      consensus: {persistent: 1010}
+      contract:
+        persistent: {bytecode: 1007, luckyNo: 42, num: 1008, source: Multipurpose.sol}
+      crypto: {receiver: 1003, sender: 1002}
+      file:
+        persistent: {contents: MrBleaney.txt, num: 1005}
   staging:
     bootstrap: 2
+    defaultNode: 3
     ensureScenarioPayerHbars: 25
     nodes:
     - {account: 3, ipv4Addr: 35.237.182.66}
@@ -93,6 +106,7 @@ networks:
         numsToFetch: []
   stagingsm:
     bootstrap: 50
+    defaultNode: 3
     ensureScenarioPayerHbars: 300
     nodes:
     - {account: 3, ipv4Addr: 104.196.48.231}
@@ -109,6 +123,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39040}
   staginglg:
     bootstrap: 950
+    defaultNode: 3
     ensureScenarioPayerHbars: 200
     nodes:
     - {account: 3, ipv4Addr: 35.237.182.66}

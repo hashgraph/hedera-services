@@ -33,6 +33,9 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+
 import java.util.Optional;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -42,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+@RunWith(JUnitPlatform.class)
 class GetFileContentsResourceUsageTest {
 	FileID target = asFile("0.0.123");
 	StateView view;

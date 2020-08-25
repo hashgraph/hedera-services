@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -223,15 +222,6 @@ public class TransactionValidationUtils {
 		responseObserver.onCompleted();
 	}
 
-	public static void constructContractGetBytecodeInfoErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setContractGetBytecodeResponse(
-				ContractGetBytecodeResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
 	public static void constructGetAccountRecordsErrorResponse(
 			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
 		ResponseHeader responseHeader = RequestBuilder
@@ -272,18 +262,12 @@ public class TransactionValidationUtils {
 		} else if (methodMsg.startsWith("getContractInfo")) {
 			TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
 					responseCode, 0);
-		} else if (methodMsg.startsWith("getContractBytecode")) {
-			TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-					responseCode, 0);
 		} else if (methodMsg.startsWith("contractCallLocalMethod")) {
 			TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,
 					responseCode, 0);
 		} else if (methodMsg.startsWith("getTxRecordByContractID")) {
 			TransactionValidationUtils.constructContractGetRecordsErrorResponse(responseObserver,
 					responseCode, 0);
-		} else if (methodMsg.startsWith("contractGetBytecode")) {
-			TransactionValidationUtils
-					.constructContractGetBytecodeInfoErrorResponse(responseObserver, responseCode, 0);
 		}
 	}
 
