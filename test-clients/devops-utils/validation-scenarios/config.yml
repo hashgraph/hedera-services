@@ -76,12 +76,8 @@ networks:
     - {account: 3, ipv4Addr: '127.0.0.1:50211'}
     scenarioPayer: 1001
     scenarios:
-      consensus: {persistent: 1010}
       contract:
-        persistent: {bytecode: 1007, luckyNo: 42, num: 1008, source: Multipurpose.sol}
-      crypto: {receiver: 1003, sender: 1002}
-      file:
-        persistent: {contents: MrBleaney.txt, num: 1005}
+        persistent: {bytecode: 1002, luckyNo: 42, num: 1003, source: Multipurpose.sol}
   staging:
     bootstrap: 2
     defaultNode: 3
