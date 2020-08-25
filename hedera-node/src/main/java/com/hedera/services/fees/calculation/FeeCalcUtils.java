@@ -77,6 +77,8 @@ public class FeeCalcUtils {
 
 	private static FeeComponents sumOfScopedUsages(FeeComponents a, FeeComponents b) {
 		return FeeComponents.newBuilder()
+				.setMin(Math.min(a.getMin(), b.getMin()))
+				.setMax(Math.max(a.getMax(), b.getMax()))
 				.setConstant(a.getConstant() + b.getConstant())
 				.setBpt(a.getBpt() + b.getBpt())
 				.setVpt(a.getVpt() + b.getVpt())

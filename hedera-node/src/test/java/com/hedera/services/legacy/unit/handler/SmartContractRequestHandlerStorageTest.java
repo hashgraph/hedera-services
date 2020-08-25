@@ -741,32 +741,6 @@ public class SmartContractRequestHandlerStorageTest {
   }
 
   @Test
-  @DisplayName("getContractBytecode")
-  public void getContractBytecode() {
-    byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    ByteString result = null;
-    try {
-      result = smartHandler.getContractBytecode(newContractId);
-    } catch (Exception e) {
-      Assert.fail("Error in getContractBytecode");
-    }
-
-    String resultString = MiscUtils.commonsBytesToHex(result.toByteArray());
-    Assert.assertNotEquals(0, resultString.length());
-    String inputString = new String(contractBytes);
-    Assert.assertTrue("bytecode should match end of input string", inputString.endsWith(resultString));
-  }
-
-  @Test
   @DisplayName("ChildStorage call")
   public void childStorageCall() throws Exception {
     byte[] contractBytes = createFile(CHILD_STORAGE_BIN, contractFileId);

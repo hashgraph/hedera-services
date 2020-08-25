@@ -182,9 +182,11 @@ public class FeeCalcUtilsTest {
 	public void sumsAsExpected() {
 		// given:
 		FeeComponents aComp = FeeComponents.newBuilder()
+				.setMin(2).setMax(1_234_567)
 				.setConstant(1).setBpt(2).setVpt(3).setRbh(4).setSbh(5).setGas(6).setTv(7).setBpr(8).setSbpr(9)
 				.build();
 		FeeComponents bComp = FeeComponents.newBuilder()
+				.setMin(1).setMax(1_234_566)
 				.setConstant(9).setBpt(8).setVpt(7).setRbh(6).setSbh(5).setGas(4).setTv(3).setBpr(2).setSbpr(1)
 				.build();
 		FeeData a = FeeData.newBuilder()
@@ -207,6 +209,8 @@ public class FeeCalcUtilsTest {
 
 		// then:
 		for (FeeComponents scopedUsage : scopedUsages) {
+			assertEquals(1, scopedUsage.getMin());
+			assertEquals(1_234_567, scopedUsage.getMax());
 			assertEquals(10, scopedUsage.getConstant());
 			assertEquals(10, scopedUsage.getBpt());
 			assertEquals(10, scopedUsage.getVpt());

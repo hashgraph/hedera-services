@@ -714,23 +714,6 @@ public class SmartContractRequestHandler {
 	}
 
 	/**
-	 * Return the stored bytecode for this contract
-	 *
-	 * @param cid
-	 * @return Contract bytecode as a Bytestring
-	 */
-	public ByteString getContractBytecode(ContractID cid) {
-		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
-		if (contract != null && contract.isSmartContract()) {
-			String contractEthAddress = asSolidityAddressHex(id);
-			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);
-			return ByteString.copyFrom(repository.getCode(contractEthAddressBytes));
-		}
-		return ByteString.EMPTY;
-	}
-
-	/**
 	 * check if a contract with given contractId exists
 	 *
 	 * @param cid
