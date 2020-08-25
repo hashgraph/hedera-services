@@ -468,8 +468,15 @@ public class SmartContractServiceImplTest {
 		when(platform.createTransaction(new com.swirlds.common.Transaction(trx.toByteArray())))
 				.thenReturn(true);
 
-		smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
-				smartContractHandler, hederaNodeStats, TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
+		smartContractImpl = new SmartContractServiceImpl(
+				platform, transactionHandler,
+				smartContractHandler,
+				hederaNodeStats,
+				TEST_USAGE_PRICES,
+				TEST_EXCHANGE,
+				STAKED_NODE,
+				null,
+				null);
 
 		smartContractImpl.createContract(trx, responseObserver);
 
@@ -503,7 +510,7 @@ public class SmartContractServiceImplTest {
 
 			smartContractImpl = new SmartContractServiceImpl(platform, transactionHandler,
 					smartContractHandler, hederaNodeStats,
-					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE);
+					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE, null, null);
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 

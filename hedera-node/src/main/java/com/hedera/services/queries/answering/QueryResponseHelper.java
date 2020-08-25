@@ -103,6 +103,20 @@ public class QueryResponseHelper {
 				() -> stats.fileQuerySubmitted(metric));
 	}
 
+	public void respondToContract(
+			Query query,
+			StreamObserver<Response> observer,
+			AnswerService answer,
+			String metric
+	) {
+		respondWithMetrics(
+				query,
+				observer,
+				answer,
+				() -> stats.smartContractQueryReceived(metric),
+				() -> stats.smartContractQuerySubmitted(metric));
+	}
+
 	private void respondWithMetrics(
 			Query query,
 			StreamObserver<Response> observer,

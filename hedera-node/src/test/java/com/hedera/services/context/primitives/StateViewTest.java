@@ -20,10 +20,13 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -46,12 +49,14 @@ class StateViewTest {
 	JFileInfo metadata;
 	JFileInfo immutableMetadata;
 	FileID target = asFile("0.0.123");
+	ContractID cid = asContract("3.2.1");
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
 
-	Map<FileID, byte[]> contents = mock(Map.class);
-	Map<FileID, JFileInfo> attrs = mock(Map.class);
+	Map<byte[], byte[]> bytecode;
+	Map<FileID, byte[]> contents;
+	Map<FileID, JFileInfo> attrs;
 
 	StateView subject;
 
@@ -78,10 +83,12 @@ class StateViewTest {
 
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
+		bytecode = mock(Map.class);
 
 		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, StateView.EMPTY_ACCOUNTS_SUPPLIER);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
+		subject.bytecode = bytecode;
 	}
 
 	@Test
@@ -93,6 +100,21 @@ class StateViewTest {
 
 		// then:
 		assertEquals(metadata.toString(), stuff.get().toString());
+	}
+
+	@Test
+	public void getsBytecode() {
+		// setup:
+		byte[] address = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+		var expected = "A Supermarket in California".getBytes();
+
+		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(address, bytes)))).willReturn(expected);
+
+		// when:
+		var actual = subject.bytecodeOf(cid);
+
+		// then:
+		assertArrayEquals(expected, actual.get());
 	}
 
 	@Test

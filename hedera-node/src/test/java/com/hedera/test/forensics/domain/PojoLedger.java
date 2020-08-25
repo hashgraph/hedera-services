@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.merkle.io.MerkleDataInputStream;
 import com.swirlds.fcmap.FCMap;
 
 import java.io.File;
@@ -39,12 +40,10 @@ public class PojoLedger {
 	private List<PojoAccount> accounts;
 
 	public static PojoLedger fromDisk(String dumpLoc) throws Exception {
-		try (SerializableDataInputStream fin = new SerializableDataInputStream(Files.newInputStream(Path.of(dumpLoc)))) {
-			FCMap<MerkleEntityId, MerkleAccount> fcm =
-					new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-			fcm.copyFrom(fin);
-			fcm.copyFromExtra(fin);
-			return from(fcm);
+		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(dumpLoc)), false)) {
+			FCMap<MerkleEntityId, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);
+			var pojo = from(fcm);
+			return pojo;
 		}
 	}
 

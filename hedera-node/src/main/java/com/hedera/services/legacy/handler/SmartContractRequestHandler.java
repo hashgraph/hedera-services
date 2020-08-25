@@ -456,7 +456,6 @@ public class SmartContractRequestHandler {
 		String receiverAccountEthAddress = asSolidityAddressHex(receiverAccount);
 		ResponseCodeEnum callResponseStatus = validateContractExistence(contractCall.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
-			byte[] senderAccAddressBytes = ByteUtil.hexStringToBytes(senderAccountEthAddress);
 			BigInteger gas;
 			if (contractCall.getGas() <= PropertiesLoader.getMaxGasLimit()) {
 				gas = BigInteger.valueOf(contractCall.getGas());
@@ -465,8 +464,6 @@ public class SmartContractRequestHandler {
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in call", () -> contractCall.getGas(),
 						() -> PropertiesLoader.getMaxGasLimit());
 			}
-
-			BigInteger senderNonce = repository.getNonce(senderAccAddressBytes);
 
 			String data = "";
 			if (contractCall.getFunctionParameters() != null
@@ -493,7 +490,7 @@ public class SmartContractRequestHandler {
 				return getFailureTransactionRecord(transaction, consensusTime,
 						ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 			}
-			tx = new Transaction(senderNonce, biGasPrice, gas, senderAccountEthAddress,
+			tx = new Transaction(BigInteger.ZERO, biGasPrice, gas, senderAccountEthAddress,
 					receiverAccountEthAddress, value, data);
 
 			try {
@@ -566,7 +563,6 @@ public class SmartContractRequestHandler {
 		ResponseCodeEnum callResponseStatus =
 				validateContractExistence(transactionContractCallLocal.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
-			byte[] senderAccAddressBytes = ByteUtil.hexStringToBytes(senderAccountEthAddress);
 			BigInteger gas;
 			if (transactionContractCallLocal.getGas() <= PropertiesLoader.getMaxGasLimit()) {
 				gas = BigInteger.valueOf(transactionContractCallLocal.getGas());
@@ -575,8 +571,6 @@ public class SmartContractRequestHandler {
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in local call",
 						() -> transactionContractCallLocal.getGas(), () -> PropertiesLoader.getMaxGasLimit());
 			}
-			BigInteger senderNonce = repository.getNonce(senderAccAddressBytes);
-
 			String data = "";
 			if (transactionContractCallLocal.getFunctionParameters() != null
 					&& !transactionContractCallLocal.getFunctionParameters().isEmpty()) {
@@ -585,7 +579,7 @@ public class SmartContractRequestHandler {
 			}
 			BigInteger value = BigInteger.ZERO;
 
-			tx = new Transaction(senderNonce, BigInteger.ONE, gas, senderAccountEthAddress,
+			tx = new Transaction(BigInteger.ZERO, BigInteger.ONE, gas, senderAccountEthAddress,
 					receiverAccountEthAddress, value, data);
 			responseToReturn = runPure(
 					tx,
