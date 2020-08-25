@@ -87,6 +87,25 @@ class QueryResponseHelperTest {
 	}
 
 	@Test
+	public void helpsWithContractHappyPath() {
+		// setup:
+		InOrder inOrder = inOrder(answerFlow, stats, observer);
+
+		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
+		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
+
+		// when:
+		subject.respondToContract(query, observer, answer, metric);
+
+		// then:
+		inOrder.verify(stats).smartContractQueryReceived(metric);
+		inOrder.verify(answerFlow).satisfyUsing(answer, query);
+		inOrder.verify(observer).onNext(okResponse);
+		inOrder.verify(observer).onCompleted();
+		inOrder.verify(stats).smartContractQuerySubmitted(metric);
+	}
+
+	@Test
 	public void helpsWithCryptoHappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(answerFlow, stats, observer);

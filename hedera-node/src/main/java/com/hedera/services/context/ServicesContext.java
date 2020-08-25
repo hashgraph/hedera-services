@@ -31,11 +31,14 @@ import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
+import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.contract.GetBytecodeAnswer;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -312,6 +315,7 @@ public class ServicesContext {
 	private EntityIdSource ids;
 	private FileController fileGrpc;
 	private AnswerFunctions answerFunctions;
+	private ContractAnswers contractAnswers;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
@@ -528,6 +532,15 @@ public class ServicesContext {
 		return fileAnswers;
 	}
 
+	public ContractAnswers contractAnswers() {
+		if (contractAnswers == null) {
+			contractAnswers = new ContractAnswers(
+					new GetBytecodeAnswer(validator())
+			);
+		}
+		return contractAnswers;
+	}
+
 	public HcsAnswers hcsAnswers() {
 		if (hcsAnswers == null) {
 			hcsAnswers = new HcsAnswers(
@@ -604,7 +617,9 @@ public class ServicesContext {
 							new GetFileInfoResourceUsage(fileFees),
 							new GetFileContentsResourceUsage(fileFees),
 							/* Consensus */
-							new GetTopicInfoResourceUsage()
+							new GetTopicInfoResourceUsage(),
+							/* Smart Contract */
+							new GetBytecodeResourceUsage(contractFees)
 					),
 					txnUsageEstimators(fileFees, cryptoFees, contractFees)
 			);
@@ -1068,7 +1083,9 @@ public class ServicesContext {
 					usagePrices(),
 					exchange(),
 					nodeType(),
-					submissionManager());
+					submissionManager(),
+					contractAnswers(),
+					queryResponseHelper());
 		}
 		return contractsGrpc;
 	}

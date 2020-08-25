@@ -1,33 +1,45 @@
 #!/usr/bin/env python3
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------------#
 #
 # ReadMe:
-# this script needs 7 arguments in the following order:
-#	SIGNEDSTATE		- Path to signed state folder named as the roundnumber and contains statefile and postgres backup
-#	NETWORKUSED		- Kind of network we are testing migration on - mainnet / testnet
+# this script needs 7 or 8 arguments in the following order:
+#	SIGNEDSTATE		    - Path to signed state folder named as the roundnumber and contains statefile & postgres backup
+#	NETWORKUSED		    - Kind of network we are testing migration on - mainnet / testnet
 #	INFRASTRUCTURE_REPO	- Path to infrastructure repository to use ansible playbooks
-#	INVENTORY		- Intervory file which contains IPs to the instances we are going to test migration on
-#	PEM_FILE		- Permissions file that allows us to access the instances that are mentioned in the inventory file
-#	BRANCH_NAME		- Newer branch of service-hedera repo we want to deploy the nodes with
+#	INVENTORY		    - Intervory file which contains IPs to the instances we are going to test migration on
+#	PEM_FILE		    - Permissions file that allows us to access the instances mentioned in the inventory file
+#	BRANCH_NAME		    - Newer branch of service-hedera repo we want to deploy the nodes with
 #	SERVICES_REPO		- Path to services-hedera repository
-#
+#   True/False          - [Optional] to decide whether also do stop-restart steps after migration
 #
 #
 #	Example:
-#	python automatePostSteps.py 53940670 mainnet ~/IdeaProjects/infrastructure main-mig-perf ~/Downloads/serviceregression.pem dev ~/IdeaProjects/services-hedera
+#	python automatePostSteps.py 53940670 mainnet ~/IdeaProjects/infrastructure main-mig-perf \
+#                	~/Downloads/serviceregression.pem dev ~/IdeaProjects/services-hedera [False]
 #
+#   Note: Because of the sensibility of the keys, you need to get the keys for the testing accounts from separate
+#         channels. Once you get those keys, here is what you need to do for the migration test:
 #
+#        1. If running for public testnet, create a new StartUpAccount_testnet.txt file at the same location as
+#           StartUpAccount.txt. This file shall contains key of the test account for public test net;
+#        2. If it's for the mainnet migration, do the same as for public testnet, but key file name should be
+#           StartUpAccount_mainnet.txt;
 #
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
+#        3. In addition, if you need to run stop and restart steps, you need to do the following as well:
+#        3.1. In spec-default.properties, change the 'default.payer' to the account number you are using to do the test;
+#        3.2. In spec-default.properties, change the 'nodes' to point to the IPs of the testing network;
+#
+#----------------------------------------------------------------------------------------------------------------------#
 
 import sys
 import shutil
 import os
-import zipfile
+import re
+import time
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------- INPUTS -------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------ INPUTS --------------------------------------------------------------#
 
 SIGNEDSTATE=sys.argv[1]
 
@@ -43,136 +55,195 @@ BRANCH_NAME=sys.argv[6]
 
 SERVICES_REPO=sys.argv[7]
 
+TEST_RESTART = False
+if len(sys.argv) > 8 and sys.argv[8].lower() == 'true':
+	TEST_RESTART=True
+
 START_DIR=os.getcwd()
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#--------------------------------------------------------------------- VALIDATE INPUTS --------------------------------------------------------------------#
+MIGRATION_CONF_PROP_FILE = ""
+DEFAULT_START_UP_ACCT = "StartUpAccount"
+
+NODE0 = "0.0.0.0"
+ACCOUNT0 = "0.0.3"
+
+WAIT_SECONDS_1 = 0
+WAIT_SECONDS_2 = 0
+#----------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------ VALIDATE INPUTS -----------------------------------------------------#
+
 
 def validateInputs():
 
-	NO_OF_NODES=0
-	
-	if NETWORKUSED == "mainnet":
-                NO_OF_NODES=13
-        elif NETWORKUSED == "publictestnet":
-                NO_OF_NODES=4
-        else:
-                print("please enter the correct network name has to one of :")
-                print("mainnet")
-                print("publictestnet")
-	
-        try:
-                f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
-        except IOError:
-                print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
-                print("Invetory file not found")
-        finally:
-                f.close()
-	
-	try:
-                f = open("{}".format(PEM_FILE))
-        except IOError:
-                print("PEM file not found")
-        finally:
-                f.close()
+    NO_OF_NODES=0
+    global MIGRATION_CONF_PROP_FILE
+    global WAIT_SECONDS_1
+    global WAIT_SECONDS_2
+    if NETWORKUSED == "mainnet":
+        NO_OF_NODES=13
+        WAIT_SECONDS_1 = 90
+        WAIT_SECONDS_2 = 60
+        MIGRATION_CONF_PROP_FILE = "migration_config_mainnet.properties"
+    elif NETWORKUSED == "testnet":
+        NO_OF_NODES=4
+        WAIT_SECONDS_1 = 60
+        WAIT_SECONDS_2 = 30
+        MIGRATION_CONF_PROP_FILE = "migration_config_testnet.properties"
+    else:
+        print("please enter the correct network name has to one of :")
+        print("mainnet")
+        print("testnet")
+        sys.exit(1)
 
-	try:
-		f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/MigrationValidationPostSteps.java".format(SERVICES_REPO))
-	except IOError:
-		print("seervices repo not present")
-	finally:
-		f.close()
-	
-	return NO_OF_NODES
+    try:
+        f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
+    except IOError:
+        print("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY))
+        sys.exit("Invetory file not found")
+    finally:
+        f.close()
 
-NO_OF_NODES=validateInputs()
+    try:
+        f = open("{}".format(PEM_FILE))
+    except IOError:
+        sys.exit("PEM file not found")
+    finally:
+        f.close()
 
-print("No of nodes required : {}".format(NO_OF_NODES))
+    try:
+        f = open("{}/test-clients/src/main/java/com/hedera/services/bdd/suites/records/"\
+				     "MigrationValidationPostSteps.java".format(SERVICES_REPO))
+    except IOError:
+        sys.exit("services repo not present")
+    finally:
+        f.close()
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#---------------------------------------------------------------------- BUILD SAVED.ZIP -------------------------------------------------------------------#
+    return NO_OF_NODES
+
+#----------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------- BUILD SAVED.ZIP ----------------------------------------------------#
 
 def buildSavedZip():
-	
-	path = "saved/saved/com.hedera.services.legacy.HGCAppMain/{}/123"
-	
+
+	path = "saved/saved/com.hedera.services.ServicesMain/{}/123"
+
 	for x in range(0, NO_OF_NODES):
 		shutil.copytree("{}".format(SIGNEDSTATE), "{}/{}".format(path.format(x), SIGNEDSTATE))
 
 	try:
-		shutil.make_archive('saved', 'zip', 'saved') 
+		shutil.make_archive('saved', 'zip', 'saved')
 	except Exception as e:
-		print e
+		print (e)
+		sys.exit("Failed to build saved.zip file")
 
-buildSavedZip()
-
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------- COPY SAVED.ZIP TO INFRASTRUCTURE -----------------------------------------------------------#
-
-shutil.copy("saved.zip", "{}/terraform/deployments/ansible/roles/hgc-deploy-psql-mig/files/".format(INFRASTRUCTURE_REPO))
-
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#---------------------------------------------------------------- RUN ANSIBLE MIGRATION SCRIPT ------------------------------------------------------------#
-
-def runMigration():
-	print("Network infrastructure used is : {}".format(INVENTORY))
-
-	with open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY), 'r') as fin:
-		print(fin.read())
-
-	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
-
-	playbook_command = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu -e branch={} -e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR -e saved_round_number={} play-deploy-migration.yml".format(INVENTORY, PEM_FILE, BRANCH_NAME, SIGNEDSTATE)
-
-	os.chdir(ansible_path)
-
-	os.system(playbook_command)
-
-runMigration()
-
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------ Copy Swirlds.log ----------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------------#
+#-------------------------------------------------- Copy Swirlds.log --------------------------------------------------#
 
 def copyLogs():
 	os.chdir(START_DIR)
 
-	node_address = ""
 	inventory_f = open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY), 'r')
-	for i in range(0, 8):
-		node_address = inventory_f.readline()
+	data = inventory_f.read()
+	inventory_f.close()
+	ip_line_pattern = re.compile(r'\s*(ansible_host:)\s+(\d+[.]\d+[.]\d+[.]\d+)')
 
+	ips = []
+	for matches in re.findall(ip_line_pattern, data):
+		ips.append(matches[1])
 
 	copy_swirld_log = "scp -i {} ubuntu@{}:/opt/hgcapp/services-hedera/HapiApp2.0/output/swirlds.log output/{}/"
 
+	os.system("rm -rf output")
 	os.mkdir("output")
 
-	for n in range(0, NO_OF_NODES):
-		node_address = inventory_f.readline().rstrip()
-		os.mkdir("output/{}".format(n))
-		os.system(copy_swirld_log.format(PEM_FILE, node_address, n))
+	global NODE0
+	NODE0 = ips[0]
 
-copyLogs()
+	for i, ip in enumerate(ips):
+		print("node[{}] => ip: {}".format(i, ip))
+		node_address = ip
+		os.mkdir("output/{}".format(i))
+		os.system(copy_swirld_log.format(PEM_FILE, node_address, i))
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#---------------------------------------------------------------------- Run EET suite ---------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------------#
+#---------------------------------------------------- Run EET suite ---------------------------------------------------#
 
-test_clients_path = "{}/test-clients".format(SERVICES_REPO)
-os.chdir(test_clients_path)
+def replaceStartupAcctWith(client_parent_path, current_network):
+	startup_acct_path = "{}/src/main/resource/{}.txt".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	backup_startup_acct_path = "{}/src/main/resource/{}.txt.backup".format(client_parent_path, DEFAULT_START_UP_ACCT)
 
-mvn_install_cmd = "mvn clean install"
-mvn_test_cmd = 'mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.records.MigrationValidationPostSteps -Dexec.args="migration_config_testnet.properties" > migrationPostStepsTest.log'
+	save_default_startup_acct_cmd = "mv {} {}".format(startup_acct_path, backup_startup_acct_path)
+	os.system(save_default_startup_acct_cmd)
 
-os.system(mvn_install_cmd)
-os.system(mvn_test_cmd)
+	new_startup_acct_path = "{}/src/main/resource/{}_{}.txt".format(client_parent_path,
+																	DEFAULT_START_UP_ACCT, current_network)
+	replace_default_startup_acct_cmd = "cp {} {}".format(new_startup_acct_path, startup_acct_path)
+	os.system(replace_default_startup_acct_cmd)
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------------#
-#---------------------------------------------------------------------- validate logs ---------------------------------------------------------------------#
+def restoreStartupAcct(client_parent_path):
+	startup_acct_path = "{}/src/main/resource/{}.txt".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	backup_startup_acct_path = "{}/src/main/resource/{}.txt.backup".format(client_parent_path, DEFAULT_START_UP_ACCT)
+	restore_start_up_acct_cmd = "mv {} {}".format(backup_startup_acct_path, startup_acct_path)
+	os.system(restore_start_up_acct_cmd)
+
+#----------------------------------------------------------------------------------------------------------------------#
+#-------------------------------------------------- RUN mvn commands  SCRIPT ------------------------------------------#
+
+
+def buildTestClient():
+	test_clients_path = "{}/test-clients".format(SERVICES_REPO)
+	os.chdir(test_clients_path)
+
+	ret_code = os.system("mvn clean install")
+	if ret_code != 0:
+		sys.exit("mvn build test-client failed")
+
+def runMvnCmd(mvnCmd):
+	test_clients_path = "{}/test-clients".format(SERVICES_REPO)
+	os.chdir(test_clients_path)
+
+	replaceStartupAcctWith(test_clients_path, NETWORKUSED)
+
+	ret_code = os.system(mvnCmd)
+
+	restoreStartupAcct(test_clients_path)
+	if ret_code != 0:
+		sys.exit("Running {} failed".format(mvnCmd))
+
+
+#----------------------------------------------------------------------------------------------------------------------#
+#----------------------------------------------- RUN ANSIBLE PLAY BOOK SCRIPT -----------------------------------------#
+
+def runAnisbleCmd(ansibleCmd):
+
+	ansible_path = "{}/terraform/deployments/ansible/".format(INFRASTRUCTURE_REPO)
+
+	os.chdir(ansible_path)
+
+	if os.system(ansibleCmd) != 0:
+		sys.exit("Running ansible playbook {} failed".format(ansibleCmd))
+	else:
+		print("Running ansible playbook {} succeeded".format(ansibleCmd))
+
+#----------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------ clear logs ----------------------------------------------------------#
+
+def cleanLogs():
+	testLog = "{}/migrationPostStepsTest.log".format(SERVICES_REPO)
+	os.system("rm -f {}".format(testLog))
+	os.system("rm -rf sav* output")
+
+
+#----------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------ validate logs -------------------------------------------------------#
 
 def validateLogs():
 	os.chdir(START_DIR)
+	test_clients_path = "{}/test-clients".format(SERVICES_REPO)
 
 	for n in range(0, NO_OF_NODES):
 		loaded_log = "Platform {} has loaded a saved state for round {}".format(n, SIGNEDSTATE)
+#		print("Expecting : {} for node {}".format(loaded_log, n))
 		with open( "output/{}/swirlds.log".format(n)) as swirldsLog_f:
 			if loaded_log in swirldsLog_f.read():
 				print ("Saved state is loaded on platform {}".format(n))
@@ -183,11 +254,90 @@ def validateLogs():
 				print ("Error Found in the swirlds log on platform{}".format(n))
 
 	passed_eet = "MigrationValidationPostSteps - Spec{name=migrationPreservesEntitiesPostStep, status=PASSED}"
-	with open ("{}/migrationPostStepsTest.log".format(test_clients_path)) as eetLog_f:
+
+	with open ("{}/migrationPostStepsTest.log".format(SERVICES_REPO)) as eetLog_f:
 		if passed_eet in eetLog_f.read():
 			print ("Migration test passed successfully")
 		else:
 			print ("Migration test failed.. please go through the eet logs")
-			print ("{}/migrationPostStepsTest.log".format(test_clients_path))
+			print ("{}/migrationPostStepsTest.log".format(SERVICES_REPO))
 
-validateLogs()
+
+#----------------------------------------------------------------------------------------------------------------------#
+#----------------------------------------------- Main Migration Workflow ----------------------------------------------#
+
+# The main steps to validate the migration
+if __name__ == '__main__':
+	msg = ""
+	if TEST_RESTART:
+		msg = "Will do migration test for {} with restart steps".format(NETWORKUSED)
+	else:
+		msg = "Will do migration test for {}".format(NETWORKUSED)
+	print(msg)
+	print("\n\nBefore proceed, please make sure that you read the comment at the beginning of this script "\
+		  "and made the necessary changes already.\n\n")
+	time.sleep(5)
+
+	cleanLogs()
+	NO_OF_NODES=validateInputs()
+	print("No of nodes required : {}".format(NO_OF_NODES))
+
+	with open("{}/terraform/deployments/ansible/inventory/{}".format(INFRASTRUCTURE_REPO , INVENTORY), 'r') as fin:
+		print(fin.read())
+
+	buildSavedZip()
+	shutil.copy("saved.zip",
+				"{}/terraform/deployments/ansible/roles/hgc-deploy-psql-mig/files/".format(INFRASTRUCTURE_REPO))
+
+	migrationCmd = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu -e branch={} -e app_dir={} " \
+				   "-e enable_newrelic=false -e hgcapp_service_file=hgcappm410NR -e saved_round_number={} " \
+				   "play-deploy-migration.yml".format(INVENTORY, PEM_FILE, BRANCH_NAME, SERVICES_REPO, SIGNEDSTATE)
+	runAnisbleCmd(migrationCmd)
+
+	print("\n\nWait for {} seconds before getting the log files. The wait is important. Otherwise we may get log file "\
+		  "without the info we need".format(WAIT_SECONDS_1))
+	time.sleep(WAIT_SECONDS_1)
+	copyLogs()
+
+	buildTestClient()
+	print("\nRun MigrationPostValidationTests ...")
+	migrationPostValidationCmd = "mvn exec:java -Dexec.mainClass="\
+								 "com.hedera.services.bdd.suites.records.MigrationValidationPostSteps "\
+								 "-Dexec.args={} > {}/migrationPostStepsTest.log".format(MIGRATION_CONF_PROP_FILE,
+																						 SERVICES_REPO)
+	runMvnCmd(migrationPostValidationCmd)
+
+	validateLogs()
+
+	# Below are optional stop and restart workflow steps
+	if TEST_RESTART:
+		print("\n\nNow do a stop and restart validate reload of saved state.")
+
+		print("\nPrepare to freeze network.  NODE0: {}".format(NODE0))
+		freeze_cmd = "mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.freeze.FreezeIntellijNetwork"
+		runMvnCmd(freeze_cmd)
+
+		print("\nWait for {} seconds before killing the services process...".format(WAIT_SECONDS_1))
+		time.sleep(WAIT_SECONDS_1)
+
+		print("\nStop hedera services ...")
+		stop_services_cmd = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu "\
+							" -e enable_newrelic=false play-stop.yml".format(INVENTORY, PEM_FILE)
+		runAnisbleCmd(stop_services_cmd)
+
+		print("\nWait for {} seconds before restarting hedera services process...".format(WAIT_SECONDS_2))
+		time.sleep(WAIT_SECONDS_2)
+		print("\nRe-start hedera services ...")
+		start_services_cmd = "ansible-playbook -i ./inventory/{} --private-key {} -u ubuntu  "\
+							 "-e enable_newrelic=false play-start.yml".format(INVENTORY, PEM_FILE)
+		runAnisbleCmd(start_services_cmd)
+
+		print("\nRe-run MigrationPostValidationTests after restart...")
+		cleanLogs()
+		time.sleep(WAIT_SECONDS_2)
+		# Can run other tests here
+		runMvnCmd(migrationPostValidationCmd)
+		time.sleep(WAIT_SECONDS_2)
+		copyLogs()
+		validateLogs()
+

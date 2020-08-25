@@ -29,6 +29,7 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
+import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -411,6 +412,7 @@ public class ServicesContextTest {
 		assertThat(ctx.exemptions(), instanceOf(StandardExemptions.class));
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
+		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));

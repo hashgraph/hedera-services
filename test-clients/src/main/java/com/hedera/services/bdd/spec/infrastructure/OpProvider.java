@@ -52,6 +52,7 @@ public interface OpProvider {
 			LIVE_HASH_NOT_FOUND,
 			INVALID_SIGNATURE,
 			INSUFFICIENT_PAYER_BALANCE,
+			UNKNOWN,
 	};
 
 	List<HapiSpecOperation> suggestedInitializers();

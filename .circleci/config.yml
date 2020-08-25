@@ -837,6 +837,16 @@ commands:
           fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
+      - run-eet-suites:
+          dsl-args: "CryptoQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "FileQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "ConsensusQueriesStressTests"
+      - run-eet-suites:
+          dsl-args: "ContractQueriesStressTests"
       - run:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
@@ -891,7 +901,7 @@ workflows:
   nightly-services-regression:
     triggers:
       - schedule:
-          cron: "0 4,8,12 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
@@ -904,7 +914,7 @@ workflows:
   custom-migration:
     triggers:
       - schedule:
-          cron: "0 20 * * *"
+          cron: "0 4 * * *"
           filters:
             branches:
               only:
@@ -1073,6 +1083,7 @@ workflows:
     jobs:
       - fast-build-artifact:
           context: Slack
+          workflow-name: "nightly-regression"
           post-steps:
             - save-this-job-client-logs:
                 workflow-name: "nightly-regression"
@@ -1150,9 +1161,9 @@ workflows:
           context: Slack
           requires:
             - regression-target-testnet
-      - long-umbrella: 
+      - long-umbrella:
           context: Slack
-          requires: 
+          requires:
             - regression-target-testnet
       - regression-validate-freeze:
           context: Slack
@@ -1262,10 +1273,11 @@ workflows:
             - short-crypto_txns300-8
             - short-crypto_txns300-9
             - short-crypto_txns300-10
-#            - short-crypto_txns300-11
-#            - short-crypto_txns300-12
+            # - short-crypto_txns300-11
+            # - short-crypto_txns300-12
             - short-file_ops-0
             - short-consensus_ops-0
+
 #
 #      - validate-server-stat-2:
 #          requires:
@@ -1619,7 +1631,7 @@ jobs:
       - run:
           name: Run various suites in SuiteRunner
           command: |
-            cd /swirlds-platform/regression; ./regression_services_circleci.sh AwsNightlyServicesRegressionCfg.json /repo
+            cd /swirlds-platform/regression; ./regression_services_circleci.sh AWS-Services-Daily-Comp-4N-1C.json /repo
 
       - run:
           name: Sync results of SuiteRunner suites to AWS
@@ -1631,7 +1643,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AwsServicesPerformanceRegressionCfg.json /repo
+            ./regression_services_circleci.sh AWS-Services-Daily-Perf-4N-4C.json /repo
 
       - run:
           name: Sync results of performance regression to AWS
@@ -1643,7 +1655,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AwsSerivceRegressionNetworkError.json /repo
+            ./regression_services_circleci.sh AWS-Services-Daily-NetError-4N-1C.json /repo
 
       - run:
           name: Sync results of network error regression to AWS
@@ -1655,7 +1667,7 @@ jobs:
           command: |
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWSNightlyServicesZeroStakeRegressionCfg.json /repo
+            ./regression_services_circleci.sh AWS-Services-Daily-Comp-6_2N-1C.json /repo
 
       - run:
           name: Sync results of zero stake regression to AWS
@@ -1675,7 +1687,7 @@ jobs:
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
             rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AwsServicesMigrationCfg.json /repo
+            ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
 
       - run:
           name: Sync results of migration test to AWS
@@ -2662,6 +2674,8 @@ jobs:
           name: Set log level to WARN
           command: /repo/.circleci/scripts/config-log4j-4reg.sh
       - run-umbrella-test
+      - run-eet-suites:
+          dsl-args: "OneOfEveryTxn"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.regression.DynamicRestartTestBefore
       - start-freeze:

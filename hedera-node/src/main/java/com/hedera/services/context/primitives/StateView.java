@@ -20,10 +20,13 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static java.util.Collections.unmodifiableMap;
@@ -69,6 +73,7 @@ public class StateView {
 
 	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
 
+	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
@@ -92,6 +97,7 @@ public class StateView {
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
+		bytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -100,6 +106,10 @@ public class StateView {
 
 	public Optional<byte[]> contentsOf(FileID id) {
 		return Optional.ofNullable(fileContents.get(id));
+	}
+
+	public Optional<byte[]> bytecodeOf(ContractID id) {
+		return Optional.ofNullable(bytecode.get(asSolidityAddress(id)));
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoFor(FileID id) {
@@ -129,6 +139,10 @@ public class StateView {
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
+		return accounts.get();
+	}
+
+	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
 		return accounts.get();
 	}
 }

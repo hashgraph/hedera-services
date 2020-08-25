@@ -480,8 +480,7 @@ public class SmartContractServiceImplTest {
 		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
 				smartContractHandler, hederaNodeStats,
 				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-				submissionManager);
-
+				submissionManager, null, null);
 		smartContractImpl.createContract(trx, responseObserver);
 
 		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
@@ -516,7 +515,7 @@ public class SmartContractServiceImplTest {
 			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
 					smartContractHandler, hederaNodeStats,
 					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-					submissionManager);
+					submissionManager, null, null);
 
 			StreamObserver<Response> respOb = new StreamObserver<Response>() {
 
