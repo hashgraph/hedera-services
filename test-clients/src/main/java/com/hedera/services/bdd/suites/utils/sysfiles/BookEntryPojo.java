@@ -64,13 +64,6 @@ public class BookEntryPojo {
 		} else {
 			pojo.certHash = new String(address.getNodeCertHash().toByteArray());
 		}
-		if (!address.hasNodeAccountId()) {
-			if (TxnUtils.isIdLiteral(pojo.memo)) {
-				pojo.nodeAccount = pojo.memo;
-			} else {
-				pojo.nodeAccount = "<N/A>";
-			}
-		}
 		return pojo;
 	}
 
@@ -146,6 +139,8 @@ public class BookEntryPojo {
 		entry.nodeId = address.getNodeId();
 		if (address.hasNodeAccountId()) {
 			entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
+		} else {
+			entry.nodeAccount = "<N/A>";
 		}
 		return entry;
 	}

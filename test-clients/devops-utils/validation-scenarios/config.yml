@@ -41,7 +41,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39040}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [111]
+        numsToFetch: [101, 102]
       versions: {hapiProtoSemVer: 0.5.1, servicesSemVer: 0.5.0}
   mainnet:
     bootstrap: 950
@@ -68,6 +68,9 @@ networks:
       crypto: {receiver: 45397, sender: 45396}
       file:
         persistent: {contents: MrBleaney.txt, num: 39283}
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [101, 102]
   localhost:
     bootstrap: 2
     defaultNode: 3

@@ -50,6 +50,7 @@ import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
 import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
+import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
 import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.ContractCallLoadTest;
 import com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest;
@@ -190,8 +191,9 @@ public class SuiteRunner {
 		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
 		/* Freeze and update */
 		put("UpdateServerFiles", aof(new UpdateServerFiles()));
+		put("OneOfEveryTxn", aof(new OneOfEveryTransaction()));
 		/* Zero Stake behaviour */
-		put("ZeroStakeTest", aof(new ZeroStakeNodeTest(System.getenv("FULLIPLIST"))));
+		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
 	}};
 
 	static boolean runAsync;

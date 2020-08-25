@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
+	private static long totalMsgSubmitted = 0;
 	private Optional<String> topic = Optional.empty();
 	private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
 	private Optional<ByteString> message = Optional.empty();
@@ -71,6 +72,20 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 
 	@Override
 	protected HapiMessageSubmit self() {
+		return this;
+	}
+
+	public Optional<String> getTopic() {
+		return topic;
+	}
+
+	public Optional<ByteString> getMessage() {
+		return message;
+	}
+
+	public HapiMessageSubmit defaultName() {
+		totalMsgSubmitted++;
+		super.via("submitMessage" + totalMsgSubmitted);
 		return this;
 	}
 
