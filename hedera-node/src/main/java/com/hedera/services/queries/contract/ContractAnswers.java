@@ -21,13 +21,22 @@ package com.hedera.services.queries.contract;
  */
 
 public class ContractAnswers {
-	private final GetBytecodeAnswer getBytecodeAnswer;
+	private final GetBytecodeAnswer getBytecode;
+	private final GetContractInfoAnswer getContractInfo;
 
-	public ContractAnswers(GetBytecodeAnswer getBytecodeAnswer) {
-		this.getBytecodeAnswer = getBytecodeAnswer;
+	public ContractAnswers(
+			GetBytecodeAnswer getBytecode,
+			GetContractInfoAnswer getContractInfo
+	) {
+		this.getBytecode = getBytecode;
+		this.getContractInfo = getContractInfo;
 	}
 
-	public GetBytecodeAnswer bytecodeAnswer() {
-		return getBytecodeAnswer;
+	public GetContractInfoAnswer getContractInfo() {
+		return getContractInfo;
+	}
+
+	public GetBytecodeAnswer getBytecode() {
+		return getBytecode;
 	}
 }

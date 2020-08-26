@@ -1,4 +1,4 @@
-package com.hedera.services.queries.file;
+package com.hedera.services.queries.contract;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.queries.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,80 +24,61 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Transaction;
 
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
-public class GetFileInfoAnswer implements AnswerService {
+public class GetContractInfoAnswer implements AnswerService {
+	public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
+
 	private final OptionValidator validator;
 
-	public GetFileInfoAnswer(OptionValidator validator) {
+	public GetContractInfoAnswer(OptionValidator validator) {
 		this.validator = validator;
 	}
 
 	@Override
 	public boolean needsAnswerOnlyCost(Query query) {
-		return COST_ANSWER == query.getFileGetInfo().getHeader().getResponseType();
+		return COST_ANSWER == query.getContractGetInfo().getHeader().getResponseType();
 	}
 
 	@Override
 	public boolean requiresNodePayment(Query query) {
-		return typicallyRequiresNodePayment(query.getFileGetInfo().getHeader().getResponseType());
+		return typicallyRequiresNodePayment(query.getContractGetInfo().getHeader().getResponseType());
 	}
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-		var op = query.getFileGetInfo();
-		FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
-
-		ResponseType type = op.getHeader().getResponseType();
-		if (validity != OK) {
-			response.setHeader(header(validity, type, cost));
-		} else {
-			if (type == COST_ANSWER) {
-				response.setHeader(costAnswerHeader(OK, cost));
-			} else {
-				var info = view.infoForFile(op.getFileID());
-				/* Include cost here to satisfy legacy regression tests. */
-				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setFileInfo(info.get());
-			}
-		}
-		return Response.newBuilder()
-				.setFileGetInfo(response)
-				.build();
+		throw new AssertionError("Not implemented");
 	}
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var id = query.getFileGetInfo().getFileID();
+		var id = query.getContractGetInfo().getContractID();
 
-		return validator.queryableFileStatus(id, view);
+		return validator.queryableContractStatus(id, view.contracts());
 	}
 
 	@Override
 	public HederaFunctionality canonicalFunction() {
-		return FileGetInfo;
+		return ContractGetInfo;
 	}
 
 	@Override
 	public ResponseCodeEnum extractValidityFrom(Response response) {
-		return response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode();
+		return response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode();
 	}
 
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		Transaction paymentTxn = query.getFileGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		var paymentTxn = query.getContractGetInfo().getHeader().getPayment();
+		return Optional.ofNullable(uncheckedFrom(paymentTxn));
 	}
 }

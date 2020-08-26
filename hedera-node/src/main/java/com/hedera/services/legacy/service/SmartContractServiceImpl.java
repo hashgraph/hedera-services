@@ -28,14 +28,11 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
@@ -81,7 +78,6 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -482,7 +478,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
 
   @Override
   public void contractGetBytecode(Query query, StreamObserver<Response> observer) {
-      queryHelper.respondToContract(query, observer, contractAnswers.bytecodeAnswer(), GET_BYTECODE_METRIC);
+      queryHelper.respondToContract(query, observer, contractAnswers.getBytecode(), GET_BYTECODE_METRIC);
   }
 
   /**

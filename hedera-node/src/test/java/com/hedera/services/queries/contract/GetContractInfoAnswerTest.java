@@ -24,8 +24,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
+import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -59,42 +63,64 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
-class GetBytecodeAnswerTest {
+class GetContractInfoAnswerTest {
 	private Transaction paymentTxn;
 	private String node = "0.0.3";
 	private String payer = "0.0.12345";
 	private String target = "0.0.123";
 	private long fee = 1_234L;
-	private byte[] bytecode = "A Supermarket in California".getBytes();
 
 	OptionValidator optionValidator;
 	StateView view;
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 
-	GetBytecodeAnswer subject;
+	ContractGetInfoResponse.ContractInfo info;
+
+	GetContractInfoAnswer subject;
 
 	@BeforeEach
 	public void setup() {
+		info = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setContractID(IdUtils.asContract(target))
+				.setContractAccountID(EntityIdUtils.asSolidityAddressHex(IdUtils.asAccount(target)))
+				.setMemo("Stay cold...")
+				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+				.build();
+
 		contracts = mock(FCMap.class);
 
 		view = mock(StateView.class);
 		given(view.contracts()).willReturn(contracts);
 		optionValidator = mock(OptionValidator.class);
 
-		subject = new GetBytecodeAnswer(optionValidator);
+		subject = new GetContractInfoAnswer(optionValidator);
+	}
+
+	@Test
+	public void getsTheInfo() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+
+		given(view.infoForContract(asContract(target))).willReturn(Optional.of(info));
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasContractGetInfo());
+		assertTrue(response.getContractGetInfo().hasHeader(), "Missing response header!");
+		assertEquals(OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getContractGetInfo().getHeader().getResponseType());
+		assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
+		// and:
+		var actual = response.getContractGetInfo().getContractInfo();
+		assertEquals(info, actual);
 	}
 
 	@Test
 	public void recognizesFunction() {
 		// expect:
-		assertEquals(HederaFunctionality.ContractGetBytecode, subject.canonicalFunction());
-	}
-
-	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
-		// expect:
-		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
-		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
+		assertEquals(HederaFunctionality.ContractGetInfo, subject.canonicalFunction());
 	}
 
 	@Test
@@ -105,76 +131,21 @@ class GetBytecodeAnswerTest {
 	}
 
 	@Test
+	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+		// expect:
+		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
+		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
+	}
+
+	@Test
 	public void getsValidity() {
 		// given:
-		Response response = Response.newBuilder().setContractGetBytecodeResponse(
-				ContractGetBytecodeResponse.newBuilder()
+		Response response = Response.newBuilder().setContractGetInfo(
+				ContractGetInfoResponse.newBuilder()
 						.setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
 
 		// expect:
 		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
-	}
-
-	@Test
-	public void getsExpectedPayment() throws Throwable {
-		// given:
-		Query query = validQuery(COST_ANSWER, fee, target);
-
-		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
-	}
-
-	@Test
-	public void getsTheBytecode() throws Throwable {
-		// setup:
-		Query query = validQuery(ANSWER_ONLY, fee, target);
-
-		given(view.bytecodeOf(asContract(target))).willReturn(Optional.of(bytecode));
-
-		// when:
-		Response response = subject.responseGiven(query, view, OK, fee);
-
-		// then:
-		assertTrue(response.hasContractGetBytecodeResponse());
-		assertTrue(response.getContractGetBytecodeResponse().hasHeader(), "Missing response header!");
-		assertEquals(OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, response.getContractGetBytecodeResponse().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetBytecodeResponse().getHeader().getCost());
-		// and:
-		var actual = response.getContractGetBytecodeResponse().getBytecode().toByteArray();
-		assertTrue(Arrays.equals(bytecode, actual));
-	}
-
-	@Test
-	public void getsCostAnswerResponse() throws Throwable {
-		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
-
-		// when:
-		Response response = subject.responseGiven(query, view, OK, fee);
-
-		// then:
-		assertTrue(response.hasContractGetBytecodeResponse());
-		assertEquals(OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getContractGetBytecodeResponse().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetBytecodeResponse().getHeader().getCost());
-	}
-
-	@Test
-	public void getsInvalidResponse() throws Throwable {
-		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
-
-		// when:
-		Response response = subject.responseGiven(query, view, CONTRACT_DELETED, fee);
-
-		// then:
-		assertTrue(response.hasContractGetBytecodeResponse());
-		assertEquals(
-				CONTRACT_DELETED,
-				response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getContractGetBytecodeResponse().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetBytecodeResponse().getHeader().getCost());
 	}
 
 	@Test
@@ -194,14 +165,23 @@ class GetBytecodeAnswerTest {
 		verify(optionValidator).queryableContractStatus(any(), any());
 	}
 
+	@Test
+	public void getsExpectedPayment() throws Throwable {
+		// given:
+		Query query = validQuery(COST_ANSWER, fee, target);
+
+		// expect:
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
+	}
+
 	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
 				.setResponseType(type);
-		ContractGetBytecodeQuery.Builder op = ContractGetBytecodeQuery.newBuilder()
+		ContractGetInfoQuery.Builder op = ContractGetInfoQuery.newBuilder()
 				.setHeader(header)
 				.setContractID(asContract(idLit));
-		return Query.newBuilder().setContractGetBytecode(op).build();
+		return Query.newBuilder().setContractGetInfo(op).build();
 	}
 }

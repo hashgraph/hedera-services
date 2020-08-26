@@ -23,6 +23,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -37,13 +38,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
 
+import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 
 public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetTxnRecordResourceUsage.class);
-
-	private static final Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
 
 	public static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();
 

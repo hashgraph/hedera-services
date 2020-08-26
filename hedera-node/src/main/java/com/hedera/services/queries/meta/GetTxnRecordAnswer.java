@@ -53,7 +53,6 @@ public class GetTxnRecordAnswer implements AnswerService {
 	private final AnswerFunctions answerFunctions;
 	private final OptionValidator optionValidator;
 
-	private static final Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
 
 	public static final String PRIORITY_RECORD_CTX_KEY =
 			GetTxnRecordAnswer.class.getSimpleName() + "_priorityRecord";

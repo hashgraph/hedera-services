@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.file.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.fees.calculation.crypto.queries.GetAccountInfoResourceUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -53,7 +52,7 @@ public class GetFileInfoResourceUsage implements QueryResourceUsageEstimator {
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
 		try {
 			var op = query.getFileGetInfo();
-			var info = view.infoFor(op.getFileID());
+			var info = view.infoForFile(op.getFileID());
 			return usageEstimator.getFileInfoQueryFeeMatrices(info.get().getKeys(), type);
 		} catch (Exception illegal) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, illegal);

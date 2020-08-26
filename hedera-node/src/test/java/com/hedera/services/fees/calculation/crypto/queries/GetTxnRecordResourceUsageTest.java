@@ -47,8 +47,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
 
+import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
@@ -194,22 +196,23 @@ class GetTxnRecordResourceUsageTest {
 	}
 
 	@Test
-	public void setsOnlyFoundPriorityRecordInQueryCxtIfPresent() {
+	public void onlySetsPriorityRecordInQueryCxtIfFound() {
 		// setup:
 		FeeData answerOnlyUsage = mock(FeeData.class);
 		var queryCtx = new HashMap<String, Object>();
 
 		// given:
-		given(usageEstimator.getTransactionRecordQueryFeeMatrices(desiredRecord, ANSWER_ONLY))
+		given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))
 				.willReturn(Optional.empty());
 
 		// when:
-		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
 		assertFalse(queryCtx.containsKey(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY));
+		assertSame(answerOnlyUsage, actual);
 	}
 
 	@Test

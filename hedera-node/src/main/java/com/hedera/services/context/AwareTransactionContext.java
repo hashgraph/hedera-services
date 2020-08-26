@@ -22,7 +22,6 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
@@ -55,12 +54,12 @@ import java.util.function.Consumer;
 public class AwareTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
 
-	static final JKey EMPTY_HEDERA_KEY;
+	public static final JKey EMPTY_KEY;
 	static {
 		try {
-			EMPTY_HEDERA_KEY = mapKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+			EMPTY_KEY = mapKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
 		} catch (Exception impossible) {
-			throw new IllegalStateException("Empty Hedera key could not be initialized! " + impossible.getMessage());
+			throw new IllegalStateException("Empty Hedera key could not be initialized!", impossible);
 		}
 	}
 
@@ -110,7 +109,7 @@ public class AwareTransactionContext implements TransactionContext {
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
 				? ctx.accounts().get(fromAccountId(accessor.getPayer())).getKey()
-				: EMPTY_HEDERA_KEY;
+				: EMPTY_KEY;
 	}
 
 	@Override

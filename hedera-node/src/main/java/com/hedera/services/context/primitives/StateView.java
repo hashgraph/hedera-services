@@ -25,8 +25,9 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -45,7 +46,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static java.util.Collections.unmodifiableMap;
@@ -53,7 +57,8 @@ import static java.util.Collections.unmodifiableMap;
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
-	private static final byte[] EMPTY_CONTENTS = new byte[0];
+	private static final byte[] EMPTY_BYTES = new byte[0];
+
 	public static final JKey EMPTY_WACL = new JKeyList();
 
 	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
@@ -73,7 +78,8 @@ public class StateView {
 
 	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
 
-	Map<byte[], byte[]> bytecode;
+	Map<byte[], byte[]> contractStorage;
+	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
@@ -95,9 +101,11 @@ public class StateView {
 		this.accounts = accounts;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
+
 		fileContents = DataMapFactory.dataMapFrom(blobStore);
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
-		bytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
+		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
+		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -109,10 +117,14 @@ public class StateView {
 	}
 
 	public Optional<byte[]> bytecodeOf(ContractID id) {
-		return Optional.ofNullable(bytecode.get(asSolidityAddress(id)));
+		return Optional.ofNullable(contractBytecode.get(asSolidityAddress(id)));
 	}
 
-	public Optional<FileGetInfoResponse.FileInfo> infoFor(FileID id) {
+	public Optional<byte[]> storageOf(ContractID id) {
+		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
+	}
+
+	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
 		try {
 			var attr = fileAttrs.get(id);
 			if (attr == null) {
@@ -123,7 +135,7 @@ public class StateView {
 					.setFileID(id)
 					.setDeleted(attr.isDeleted())
 					.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
-					.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_CONTENTS).length);
+					.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
 			if (!attr.getWacl().isEmpty()) {
 				info.setKeys(mapJKey(attr.getWacl()).getKeyList());
 			}
@@ -132,6 +144,36 @@ public class StateView {
 			log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
 			return Optional.empty();
 		}
+	}
+
+	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {
+		var contract = contracts().get(fromContractId(id));
+		if (contract == null) {
+			return Optional.empty();
+		}
+
+		var mirrorId = asAccount(id);
+
+		var	storageSize = storageOf(id).orElse(EMPTY_BYTES).length;
+		var bytecodeSize = bytecodeOf(id).orElse(EMPTY_BYTES).length;
+		var totalBytesUsed = storageSize + bytecodeSize;
+		var info = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setAccountID(mirrorId)
+				.setContractID(id)
+				.setMemo(contract.getMemo())
+				.setStorage(totalBytesUsed)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
+				.setBalance(contract.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(mirrorId));
+
+
+		try {
+			var adminKey = JKey.mapJKey(contract.getKey());
+			info.setAdminKey(adminKey);
+		} catch (Exception ignore) { }
+
+		return Optional.of(info.build());
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {

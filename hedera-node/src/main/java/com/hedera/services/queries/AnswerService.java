@@ -37,6 +37,8 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public interface AnswerService {
+	Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
+
 	boolean needsAnswerOnlyCost(Query query);
 	boolean requiresNodePayment(Query query);
 	Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost);
