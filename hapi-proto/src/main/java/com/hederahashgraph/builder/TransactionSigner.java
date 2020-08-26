@@ -189,9 +189,9 @@ public class TransactionSigner {
    */
   public static Transaction signTransactionComplex(Transaction transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
-    if(SIGNATURE_FORMAT_ENUM.SignatureMap.name().equals(SIGNATURE_FORMAT))
+    if(SIGNATURE_FORMAT_ENUM.SignatureMap.toString().equals(SIGNATURE_FORMAT))
       return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
-    else if(SIGNATURE_FORMAT_ENUM.Random.name().equals(SIGNATURE_FORMAT)) {
+    else if(SIGNATURE_FORMAT_ENUM.Random.toString().equals(SIGNATURE_FORMAT)) {
       int coin = rand.nextInt(2);
       if(coin == 0) {
         return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
@@ -214,9 +214,9 @@ public class TransactionSigner {
     SignatureList sigsList = SignatureList.newBuilder().addAllSigs(sigs).build();
     
     if(transaction.hasBody()) {
-      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
+      if(TX_BODY_FORMAT_ENUM.Body.toString().equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
-      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
+      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.toString().equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
       } else {//random
         int coin = rand.nextInt(2);
@@ -227,10 +227,10 @@ public class TransactionSigner {
         }
       }
     } else {// tx has bodybytes
-      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
+      if(TX_BODY_FORMAT_ENUM.Body.toString().equals(TX_BODY_FORMAT)) {
         TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
         rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
-      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
+      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.toString().equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
       } else {//random
         int coin = rand.nextInt(2);

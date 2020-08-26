@@ -82,7 +82,7 @@ public class Rationalization {
 
         var payerStatus = expandIn(
                 realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-        if (!SUCCESS.name().equals( payerStatus.getStatusCode().name())) {
+        if (!SUCCESS.equals( payerStatus.getStatusCode())) {
             if (log.isDebugEnabled()) {
                 log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
             }
@@ -90,7 +90,7 @@ public class Rationalization {
         }
         var otherPartiesStatus = expandIn(
                 realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-        if (!SUCCESS.name().equals(otherPartiesStatus.getStatusCode().name())) {
+        if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
             if (log.isDebugEnabled()) {
                 log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
             }
