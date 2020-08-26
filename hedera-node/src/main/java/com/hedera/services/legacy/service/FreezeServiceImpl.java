@@ -25,6 +25,8 @@ import static com.hedera.services.legacy.utils.TransactionValidationUtils.transa
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -51,10 +53,14 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 
 	private Platform platform;
 	private TransactionHandler txHandler;
+	private PlatformSubmissionManager submissionManager;
 
-	public FreezeServiceImpl(Platform platform, TransactionHandler transactionHandler) {
-		this.platform = platform;
+	public FreezeServiceImpl(
+			TransactionHandler transactionHandler,
+			PlatformSubmissionManager submissionManager
+	) {
 		this.txHandler = transactionHandler;
+		this.submissionManager = submissionManager;
 	}
 
 	/**
@@ -77,32 +83,28 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 	public void freeze(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
 		// Check if fee payer is 0.0.55 is included in validateApiPermission() in this step
 		TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-
 		if (precheckResult.getValidity() != ResponseCodeEnum.OK) {
 			String errorMsg = "Pre-check validation failed. " + precheckResult;
 			logErrorAndResponse(errorMsg, precheckResult, log, responseObserver);
 			return;
 		}
-
 		try {
-			TransactionBody transactionBody = CommonUtils.extractTransactionBody(request);
-			if (!transactionBody.hasFreeze()) {
+			var accessor = new SignedTxnAccessor(request);
+			if (!accessor.getTxn().hasFreeze()) {
 				logErrorAndResponse("FreezeTransactionBody is missing. ",
 						new TxnValidityAndFeeReq(ResponseCodeEnum.FREEZE_TRANSACTION_BODY_NOT_FOUND),
 						log, responseObserver);
 				return;
 			}
-			precheckResult = validateFreezeTxBody(transactionBody.getFreeze());
+			precheckResult = validateFreezeTxBody(accessor.getTxn().getFreeze());
 			if (precheckResult.getValidity() != ResponseCodeEnum.OK) {
 				String errorMsg = "FreezeTransactionBody is invalid. " + precheckResult.getValidity().name();
 				logErrorAndResponse(errorMsg, precheckResult, log, responseObserver);
 				return;
 			}
-			if (!txHandler.submitTransaction(platform, request, transactionBody.getTransactionID())) {
-				TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
-				return;
-			}
-			transactionResponse(responseObserver, new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
+			transactionResponse(
+					responseObserver,
+					new TxnValidityAndFeeReq(submissionManager.trySubmission(accessor)));
 		} catch (InvalidProtocolBufferException ex) {
 			transactionResponse(responseObserver,
 					new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY));

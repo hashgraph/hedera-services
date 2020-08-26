@@ -67,7 +67,7 @@ public class GetFileInfoAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				var info = view.infoFor(op.getFileID());
+				var info = view.infoForFile(op.getFileID());
 				/* Include cost here to satisfy legacy regression tests. */
 				response.setHeader(answerOnlyHeader(OK, cost));
 				response.setFileInfo(info.get());

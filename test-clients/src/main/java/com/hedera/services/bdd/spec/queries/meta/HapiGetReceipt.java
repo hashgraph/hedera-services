@@ -28,9 +28,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.vm.trace.Op;
 import org.junit.Assert;
 
 import java.util.Optional;
@@ -42,10 +42,12 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
 	String txn;
 	boolean forgetOp = false;
+	boolean requestDuplicates = false;
 	boolean useDefaultTxnId = false;
 	TransactionID defaultTxnId = TransactionID.getDefaultInstance();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
-	Optional<ResponseCodeEnum> expectedReceiptStatus = Optional.empty();
+	Optional<ResponseCodeEnum> expectedPriorityStatus = Optional.empty();
+	Optional<ResponseCodeEnum[]> expectedDuplicateStatuses = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -69,13 +71,23 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 		return this;
 	}
 
+	public HapiGetReceipt andAnyDuplicates() {
+		requestDuplicates = true;
+		return this;
+	}
+
 	public HapiGetReceipt useDefaultTxnId() {
 		useDefaultTxnId = true;
 		return this;
 	}
 
-	public HapiGetReceipt hasReceiptStatus(ResponseCodeEnum status) {
-		expectedReceiptStatus = Optional.of(status);
+	public HapiGetReceipt hasPriorityStatus(ResponseCodeEnum status) {
+		expectedPriorityStatus = Optional.of(status);
+		return this;
+	}
+
+	public HapiGetReceipt hasDuplicateStatuses(ResponseCodeEnum... statuses) {
+		expectedDuplicateStatuses = Optional.of(statuses);
 		return this;
 	}
 
@@ -85,7 +97,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 				useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
 		Query query = forgetOp
 				? Query.newBuilder().build()
-				: txnReceiptQueryFor(txnId);
+				: txnReceiptQueryFor(txnId, requestDuplicates);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
 		if (verboseLoggingOn) {
 			log.info("Receipt: " + response.getTransactionGetReceipt().getReceipt());
@@ -94,9 +106,17 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) {
-		if (expectedReceiptStatus.isPresent()) {
-			ResponseCodeEnum actualStatus = response.getTransactionGetReceipt().getReceipt().getStatus();
-			Assert.assertEquals(expectedReceiptStatus.get(), actualStatus);
+		if (expectedPriorityStatus.isPresent()) {
+			var receipt = response.getTransactionGetReceipt().getReceipt();
+			ResponseCodeEnum actualStatus = receipt.getStatus();
+			Assert.assertEquals(expectedPriorityStatus.get(), actualStatus);
+		}
+		if (expectedDuplicateStatuses.isPresent()) {
+			var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList()
+					.stream()
+					.map(TransactionReceipt::getStatus)
+					.toArray(n -> new ResponseCodeEnum[n]);
+			Assert.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
 		}
 	}
 

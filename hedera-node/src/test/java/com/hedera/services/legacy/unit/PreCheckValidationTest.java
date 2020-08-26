@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -70,6 +71,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -84,6 +86,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import javax.naming.Context;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -167,6 +171,8 @@ class PreCheckValidationTest {
 
 		precheckVerifier = mock(PrecheckVerifier.class);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -179,7 +185,8 @@ class PreCheckValidationTest {
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -401,6 +408,8 @@ class PreCheckValidationTest {
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -414,7 +423,8 @@ class PreCheckValidationTest {
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -445,6 +455,8 @@ class PreCheckValidationTest {
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				localRecordCache,
 				() -> accountFCMap,
@@ -458,7 +470,8 @@ class PreCheckValidationTest {
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

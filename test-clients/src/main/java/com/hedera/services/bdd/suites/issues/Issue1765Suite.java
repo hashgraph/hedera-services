@@ -118,7 +118,7 @@ public class Issue1765Suite extends HapiApiSuite {
 								.hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID)
 				).then(
 						validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
-						getTxnRecord("invalidUpdateTxn").has(recordWith().memo(THE_MEMO_IS))
+						getTxnRecord("invalidUpdateTxn").hasPriority(recordWith().memo(THE_MEMO_IS))
 				);
 	}
 
@@ -142,7 +142,7 @@ public class Issue1765Suite extends HapiApiSuite {
 								.hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID)
 				).then(
 						validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
-						getTxnRecord("invalidUpdateTxn").has(recordWith().memo(THE_MEMO_IS))
+						getTxnRecord("invalidUpdateTxn").hasPriority(recordWith().memo(THE_MEMO_IS))
 				);
 	}
 
@@ -167,7 +167,7 @@ public class Issue1765Suite extends HapiApiSuite {
 								.hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID)
 				).then(
 						validateTransferListForBalances("invalidAppendTxn", List.of(FUNDING, GENESIS, NODE)),
-						getTxnRecord("invalidAppendTxn").has(recordWith().memo(THE_MEMO_IS))
+						getTxnRecord("invalidAppendTxn").hasPriority(recordWith().memo(THE_MEMO_IS))
 				);
 	}
 

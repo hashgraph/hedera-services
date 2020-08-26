@@ -167,7 +167,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 								.payingWith("payer")
 								.via("transferTxn")
 								.signedBy("origKey", "receiver")
-								.hasKnownStatus(UNKNOWN)
+								.hasKnownStatus(INVALID_PAYER_SIGNATURE)
 				);
 	}
 

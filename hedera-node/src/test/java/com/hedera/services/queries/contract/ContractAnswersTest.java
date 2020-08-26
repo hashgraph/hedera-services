@@ -22,8 +22,6 @@ package com.hedera.services.queries.contract;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.queries.consensus.GetTopicInfoAnswer;
-import com.hedera.services.queries.consensus.HcsAnswers;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -32,15 +30,17 @@ import static org.mockito.BDDMockito.*;
 @RunWith(JUnitPlatform.class)
 class ContractAnswersTest {
 	GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
+	GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);
 
 	ContractAnswers subject;
 
 	@Test
 	public void hasExpectedAnswers() {
 		// given:
-		subject = new ContractAnswers(getBytecodeAnswer);
+		subject = new ContractAnswers(getBytecodeAnswer, getContractInfoAnswer);
 
 		// then:
-		assertEquals(getBytecodeAnswer, subject.bytecodeAnswer());
+		assertSame(getBytecodeAnswer, subject.getBytecode());
+		assertSame(getContractInfoAnswer, subject.getContractInfo());
 	}
 }

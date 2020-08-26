@@ -26,6 +26,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
@@ -51,6 +52,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swirlds.common.PlatformStatus;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.Test;
@@ -78,6 +81,8 @@ public class RequestValidationTest {
         .setAccountNum(nodeAccnNum).build();
 
     var policies = new SystemOpPolicies(new MockEntityNumbers());
+    var platformStatus = new ContextPlatformStatus();
+    platformStatus.set(PlatformStatus.ACTIVE);
     TransactionHandler trHandler =
         new TransactionHandler(
                 null,
@@ -95,7 +100,8 @@ public class RequestValidationTest {
                 new MockAccountNumbers(),
                 null,
                 policies,
-                new StandardExemptions(new MockAccountNumbers(), policies));
+                new StandardExemptions(new MockAccountNumbers(), policies),
+                platformStatus);
     Timestamp timestamp =
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
 

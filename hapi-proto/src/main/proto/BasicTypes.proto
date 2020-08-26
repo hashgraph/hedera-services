@@ -212,6 +212,7 @@ enum HederaFunctionality {
     ConsensusDeleteTopic = 52;
     ConsensusGetTopicInfo = 53;
     ConsensusSubmitMessage = 54;
+    UncheckedSubmit = 55;
 }
 
 /*

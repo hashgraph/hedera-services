@@ -97,7 +97,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
 								.via("invalidKeyUpdateTxn").deferStatusResolution().hasAnyKnownStatus(),
 						sleepFor(1_000L)
 				).then(
-						getTxnRecord("invalidKeyUpdateTxn").has(recordWith().status(INVALID_SIGNATURE))
+						getTxnRecord("invalidKeyUpdateTxn").hasPriority(recordWith().status(INVALID_SIGNATURE))
 				);
 	}
 

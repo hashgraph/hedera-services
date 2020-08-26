@@ -300,6 +300,8 @@ public class MiscUtils {
 			return ConsensusDeleteTopic;
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return ConsensusSubmitMessage;
+		} else if (txn.hasUncheckedSubmit()) {
+			return UncheckedSubmit;
 		} else {
 			throw new UnknownHederaFunctionality();
 		}

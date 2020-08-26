@@ -2555,9 +2555,7 @@ jobs:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
       - run-eet-suites:
-          dsl-args: "CryptoCreateSuite -TLS=on"
-      - run-eet-suites:
-          dsl-args: "CryptoUpdateSuite"
+          dsl-args: "CryptoUpdateSuite -TLS=on"
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:

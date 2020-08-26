@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -50,6 +52,12 @@ public class GetTxnRecordAnswer implements AnswerService {
 	private final RecordCache recordCache;
 	private final AnswerFunctions answerFunctions;
 	private final OptionValidator optionValidator;
+
+
+	public static final String PRIORITY_RECORD_CTX_KEY =
+			GetTxnRecordAnswer.class.getSimpleName() + "_priorityRecord";
+	public static final String DUPLICATE_RECORDS_CTX_KEY =
+			GetTxnRecordAnswer.class.getSimpleName() + "_duplicateRecords";
 
 	public GetTxnRecordAnswer(
 			RecordCache recordCache,
@@ -78,6 +86,27 @@ public class GetTxnRecordAnswer implements AnswerService {
 
 	@Override
 	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+		return responseFor(query, view, validity, cost, NO_QUERY_CTX);
+	}
+
+	@Override
+	public Response responseGiven(
+			Query query,
+			StateView view,
+			ResponseCodeEnum validity,
+			long cost,
+			Map<String, Object> queryCtx
+	) {
+		return responseFor(query, view, validity, cost, Optional.of(queryCtx));
+	}
+
+	private Response responseFor(
+			Query query,
+			StateView view,
+			ResponseCodeEnum validity,
+			long cost,
+			Optional<Map<String, Object>> queryCtx
+	) {
 		TransactionGetRecordQuery op = query.getTransactionGetRecord();
 		TransactionGetRecordResponse.Builder response = TransactionGetRecordResponse.newBuilder();
 
@@ -88,19 +117,48 @@ public class GetTxnRecordAnswer implements AnswerService {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				var record = answerFunctions.txnRecord(recordCache, view, query);
-				if (record.isEmpty()) {
-					response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
-				} else {
-					response.setHeader(answerOnlyHeader(OK));
-					response.setTransactionRecord(record.get());
-				}
+				setAnswerOnly(query, response, view, op, queryCtx);
 			}
 		}
 
 		return Response.newBuilder()
 				.setTransactionGetRecord(response)
 				.build();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void setAnswerOnly(
+			Query query,
+			TransactionGetRecordResponse.Builder response,
+			StateView view,
+			TransactionGetRecordQuery op,
+			Optional<Map<String, Object>> queryCtx
+	) {
+		if (queryCtx.isPresent()) {
+			var ctx = queryCtx.get();
+			if (!ctx.containsKey(PRIORITY_RECORD_CTX_KEY)) {
+				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
+			} else {
+				response.setHeader(answerOnlyHeader(OK));
+				response.setTransactionRecord((TransactionRecord)ctx.get(PRIORITY_RECORD_CTX_KEY));
+				if (op.getIncludeDuplicates()) {
+					response.addAllDuplicateTransactionRecords(
+							(List<TransactionRecord>)ctx.get(DUPLICATE_RECORDS_CTX_KEY));
+				}
+			}
+		} else {
+			var record = answerFunctions.txnRecord(recordCache, view, query);
+			if (record.isEmpty()) {
+				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
+			} else {
+				response.setHeader(answerOnlyHeader(OK));
+				response.setTransactionRecord(record.get());
+				if (op.getIncludeDuplicates()) {
+					response.addAllDuplicateTransactionRecords(
+							recordCache.getDuplicateRecords(op.getTransactionID()));
+				}
+			}
+		}
 	}
 
 	@Override

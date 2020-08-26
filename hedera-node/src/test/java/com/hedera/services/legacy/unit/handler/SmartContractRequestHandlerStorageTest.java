@@ -72,7 +72,7 @@ import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.legacy.config.PropertiesLoader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -131,7 +131,7 @@ public class SmartContractRequestHandlerStorageTest {
 	public static String ADDRESS_PATH = "/{0}/s{1}";
 	SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
-  FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
+  FCMap<MerkleEntityId, MerkleAccount> contracts = null;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -152,7 +152,7 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(() -> fcMap),
+            new FCMapBackingAccounts(() -> contracts),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(EntityIdSource.class),
@@ -173,7 +173,7 @@ public class SmartContractRequestHandlerStorageTest {
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
     contractFileId = RequestBuilder.getFileIdBuild(contractFileNumber, 0L, 0L);
 
-    fcMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+    contracts = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
     storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
     createAccount(payerAccountId, 1_000_000_000L);
     createAccount(nodeAccountId, 10_000L);
@@ -195,7 +195,7 @@ public class SmartContractRequestHandlerStorageTest {
             repository,
             feeCollAccountId,
             ledger,
-            () -> fcMap,
+            () -> contracts,
             () -> storageMap,
             ledgerSource,
             null,
@@ -228,7 +228,7 @@ public class SmartContractRequestHandlerStorageTest {
     mk.setRealm(0);
     MerkleAccount mv = new MerkleAccount();
     mv.setBalance(balance);
-    fcMap.put(mk, mv);
+    contracts.put(mk, mv);
   }
 
   private byte[] createFile(String filePath, FileID fileId) {
@@ -307,7 +307,7 @@ public class SmartContractRequestHandlerStorageTest {
     mk.setNum(contractId.getContractNum());
     mk.setRealm(contractId.getRealmNum());
     mk.setShard(contractId.getShardNum());
-    MerkleAccount mv = fcMap.get(mk);
+    MerkleAccount mv = contracts.get(mk);
     Assert.assertNotNull(mv);
     Assert.assertNotNull(mv.getKey());
     Assert.assertNotNull(mv.getKey());
@@ -337,7 +337,7 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionBody body = getCreateTransactionBody(0L, 250000L, adminPubKey);
 
     System.out.println("Fetched balance BEFORE is " + repository.getBalance(payerKeyBytes));
-    System.out.println("Map value BEFORE is " + fcMap.get(payerMerkleEntityId).getBalance());
+    System.out.println("Map value BEFORE is " + contracts.get(payerMerkleEntityId).getBalance());
 
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
@@ -346,7 +346,7 @@ public class SmartContractRequestHandlerStorageTest {
     ledger.commit();
 
     System.out.println("Fetched balance AFTER is " + repository.getBalance(payerKeyBytes));
-    System.out.println("Map value AFTER is " + fcMap.get(payerMerkleEntityId).getBalance());
+    System.out.println("Map value AFTER is " + contracts.get(payerMerkleEntityId).getBalance());
 
     Assert.assertNotNull(record);
     Assert.assertNotNull(record.getTransactionID());
@@ -635,24 +635,6 @@ public class SmartContractRequestHandlerStorageTest {
     Assert.assertEquals(SIMPLE_STORAGE_VALUE, retVal);
   }
 
-  @Test
-  @DisplayName("getContractInfo: Success")
-  public void getContractInfo() throws Exception {
-    byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    ContractInfo info = smartHandler.getContractInfo(newContractId);
-    Assert.assertNotNull(info);
-    System.out.println(info);
-  }
-
   private TransactionBody getUpdateTransactionBody(ContractID contractId, String contractMemo,
       Duration renewalDuration, Timestamp expirationTime) {
     Timestamp startTime = RequestBuilder
@@ -706,10 +688,10 @@ public class SmartContractRequestHandlerStorageTest {
     Assert.assertNotNull(record);
     Assert.assertNotNull(record.getTransactionID());
     Assert.assertNotNull(record.getReceipt());
-    ContractInfo info = smartHandler.getContractInfo(newContractId);
-    Assert.assertEquals(newMemo, info.getMemo());
-    Assert.assertEquals(renewalDuration.getSeconds(), info.getAutoRenewPeriod().getSeconds());
-    Assert.assertEquals(expirationTime.getSeconds(), info.getExpirationTime().getSeconds());
+    var contract = contracts.get(MerkleEntityId.fromContractId(newContractId));
+    Assert.assertEquals(newMemo, contract.getMemo());
+    Assert.assertEquals(renewalDuration.getSeconds(), contract.getAutoRenewSecs());
+    Assert.assertEquals(expirationTime.getSeconds(), contract.getExpiry());
   }
 
   @Test
@@ -738,32 +720,6 @@ public class SmartContractRequestHandlerStorageTest {
     Assert.assertNotNull(record.getTransactionID());
     Assert.assertNotNull(record.getReceipt());
     Assert.assertEquals(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT, record.getReceipt().getStatus());
-  }
-
-  @Test
-  @DisplayName("getContractBytecode")
-  public void getContractBytecode() {
-    byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
-    TransactionBody body = getCreateTransactionBody();
-
-    Instant consensusTime = new Date().toInstant();
-    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-    ledger.begin();
-    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-    ledger.commit();
-    ContractID newContractId = record.getReceipt().getContractID();
-
-    ByteString result = null;
-    try {
-      result = smartHandler.getContractBytecode(newContractId);
-    } catch (Exception e) {
-      Assert.fail("Error in getContractBytecode");
-    }
-
-    String resultString = MiscUtils.commonsBytesToHex(result.toByteArray());
-    Assert.assertNotEquals(0, resultString.length());
-    String inputString = new String(contractBytes);
-    Assert.assertTrue("bytecode should match end of input string", inputString.endsWith(resultString));
   }
 
   @Test

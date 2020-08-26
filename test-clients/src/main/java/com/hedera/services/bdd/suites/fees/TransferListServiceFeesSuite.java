@@ -178,7 +178,7 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
 							}
 							assertLog.info("Should(?!) be missing fee of " + serviceFee + "...");
 							HapiGetTxnRecord subOp = QueryVerbs.getTxnRecord("subjectTransfer").noLogging()
-									.has(recordWith().transfers(missingPayments(from("payer", serviceFee))));
+									.hasPriority(recordWith().transfers(missingPayments(from("payer", serviceFee))));
 							allRunFor(spec, subOp);
 						})
 				);

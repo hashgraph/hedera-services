@@ -47,21 +47,21 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 
 	static final Function<TransactionBody, ResponseCodeEnum> FALLBACK_SYNTAX_CHECK = ignore -> NOT_SUPPORTED;
 
-	private final Platform platform;
 	private final ServicesNodeType nodeType;
 	private final TransactionHandler legacyTxnHandler;
 	private final TransitionLogicLookup transitionLogic;
+	private final PlatformSubmissionManager submissionManager;
 
 	public TxnHandlerSubmissionFlow(
-			Platform platform,
 			ServicesNodeType nodeType,
 			TransactionHandler legacyTxnHandler,
-			TransitionLogicLookup transitionLogic
+			TransitionLogicLookup transitionLogic,
+			PlatformSubmissionManager submissionManager
 	) {
-		this.platform = platform;
 		this.nodeType = nodeType;
 		this.legacyTxnHandler = legacyTxnHandler;
 		this.transitionLogic = transitionLogic;
+		this.submissionManager = submissionManager;
 	}
 
 	@Override
@@ -91,19 +91,10 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 				return responseWith(validity);
 			}
 
-			return submitTransaction(accessor);
-
-		} catch (InvalidProtocolBufferException ignore) {
-			log.warn(ignore.getMessage());
+			return responseWith(submissionManager.trySubmission(accessor));
+		} catch (InvalidProtocolBufferException impossible) {
 			return responseWith(INVALID_TRANSACTION_BODY);
 		}
-	}
-
-	private TransactionResponse submitTransaction(SignedTxnAccessor accessor) {
-		if (!legacyTxnHandler.submitTransaction(platform, accessor.getSignedTxn(), accessor.getTxnId())) {
-			return responseWith(PLATFORM_TRANSACTION_NOT_CREATED);
-		}
-		return responseWith(OK);
 	}
 
 	private TxnValidityAndFeeReq metaValidityOf(SignedTxnAccessor accessor) {

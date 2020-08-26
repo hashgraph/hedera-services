@@ -81,7 +81,7 @@ public class TxnRecordRegression extends HapiApiSuite {
 						sleepFor(5_000L)
 				).then(
 						getReceipt("recordTxn").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND),
-						getTxnRecord("recordTxn").has(recordWith().status(SUCCESS))
+						getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS))
 				);
 	}
 

@@ -34,11 +34,13 @@ import "ResponseHeader.proto";
 message TransactionGetRecordQuery {
     QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
     TransactionID transactionID = 2; // The ID of the transaction for which the record is requested.
+    bool includeDuplicates = 3; // Whether records of processing duplicate transactions should be returned along with the record of processing the first consensus transaction with the given id whose status was neither <tt>INVALID_NODE_ACCOUNT</tt> nor <tt>INVALID_PAYER_SIGNATURE</tt>; <b>or</b>, if no such record exists, the record of processing the first transaction to reach consensus with the given transaction id..
 }
 
 /* Response when the client sends the node TransactionGetRecordQuery */
 message TransactionGetRecordResponse {
-    ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither.
-    TransactionRecord transactionRecord = 3; // The requested record
+    ResponseHeader header = 1; // Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither.
+    TransactionRecord transactionRecord = 3; // Either the record of processing the first consensus transaction with the given id whose status was neither <tt>INVALID_NODE_ACCOUNT</tt> nor <tt>INVALID_PAYER_SIGNATURE</tt>; <b>or</b>, if no such record exists, the record of processing the first transaction to reach consensus with the given transaction id.
+    repeated TransactionRecord duplicateTransactionRecords = 4; // The records of processing all consensus transaction with the same id as the distinguished record above, in chronological order.
 }
 

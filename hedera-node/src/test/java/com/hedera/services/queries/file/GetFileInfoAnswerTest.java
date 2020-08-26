@@ -144,7 +144,7 @@ class GetFileInfoAnswerTest {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.infoFor(asFile(target))).willReturn(Optional.of(expected));
+		given(view.infoForFile(asFile(target))).willReturn(Optional.of(expected));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
