@@ -33,15 +33,11 @@ import com.hedera.services.queries.contract.ContractAnswers;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -78,7 +74,6 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -93,6 +88,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   private static final Logger log = LogManager.getLogger(SmartContractServiceImpl.class);
 
   public static final String GET_BYTECODE_METRIC = "ContractGetBytecode";
+  public static final String GET_CONTRACT_INFO_METRIC = "getContractInfo";
 
   private Platform platform;
   private TransactionHandler txHandler;
@@ -340,132 +336,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
   }
 
   /**
-   * Process a query for information about a smart contract. This goes to the platform for the
-   * fee transfer.
-   *
-   * @param request API request for contract information
-   * @param responseObserver Observer to be informed of the results
-   */
-  @Override
-  public void getContractInfo(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("getContractInfo");
-
-    boolean isStaked = (nodeType == STAKED_NODE);
-    if (log.isDebugEnabled()) {
-      log.debug("In getContractInfo :: request : " + TextFormat.shortDebugString(request));
-    }
-
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
-    if (OK != validationCode) {
-      String errorMsg = "query validation failed: " + validationCode.name();
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-    ContractGetInfoQuery contractGetInfo = request.getContractGetInfo();
-
-    Transaction feePayment = contractGetInfo.getHeader().getPayment();
-
-    ContractInfo contractInfo;
-    try {
-      contractInfo = smartContractHandler.getContractInfo(contractGetInfo.getContractID());
-    } catch (Exception e) {
-      // if any exception contractInfo will be null, wrapped with error code at end
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-      if (log.isDebugEnabled()) {
-        log.debug("getContractInfo-failed", e);
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    Key key = null;
-    long storageSize = 0;
-    if (contractInfo != null) {
-      key = contractInfo.getAdminKey();
-      storageSize = contractInfo.getStorage();
-    }
-
-    TransactionBody body = null;
-    try {
-      body = CommonUtils.extractTransactionBody(feePayment);
-    } catch (InvalidProtocolBufferException e) {
-      if (log.isDebugEnabled()) {
-        log.debug("Transaction body parsing exception: ", e);
-      }
-      validationCode = ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    Timestamp at = body.getTransactionID().getTransactionValidStart();
-    FeeData prices = usagePrices.pricesGiven(ContractGetInfo, at);
-    FeeData feeMatrices = feeBuilder
-        .getContractInfoQueryFeeMatrices(key, contractGetInfo.getHeader().getResponseType());
-    long scheduledFee = 0;
-    long queryFee = feeBuilder.getTotalFeeforRequest(prices, feeMatrices,
-        exchange.rate(body.getTransactionID().getTransactionValidStart()));
-
-    if (isStaked) {
-      if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        scheduledFee = 0;
-      } else if (contractGetInfo.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-        scheduledFee = queryFee;
-      }
-    }
-
-    validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetInfo, feePayment, scheduledFee);
-    if (OK == validationCode && scheduledFee > 0) {
-      if (submissionManager.trySubmission(uncheckedFrom(feePayment)) != OK) {
-        logAndConstructResponseWhenCreateTxFailed(log, responseObserver, "getContractInfo", null);
-        return;
-      }
-      log.debug("fee has been processed successfully..!");
-    } else if (scheduledFee <= 0) {
-      log.debug("Schedule fee is 0, hence transaction is not created");
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("query validation failed: " + validationCode.name());
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-      return;
-    }
-    // validationCode = txHandler.postFeeValidation(request, contractInfo.getAccountID());
-    if (request.getContractGetInfo().hasContractID()) {
-      validationCode = smartContractHandler
-          .validateContractExistence(request.getContractGetInfo().getContractID());
-    } else {
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-    }
-
-    // even if contractInfo is null , fee has to be processed that is why below condition is after
-    // processing fee transaction
-    if (validationCode == OK) {
-      ResponseHeader responseHeader = RequestBuilder.getResponseHeader(validationCode, queryFee,
-          contractGetInfo.getHeader().getResponseType(), ByteString.EMPTY);
-      if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        responseObserver.onNext(Response.newBuilder()
-            .setContractGetInfo(ContractGetInfoResponse.newBuilder().setHeader(responseHeader))
-            .build());
-      } else {
-        responseObserver.onNext(Response.newBuilder().setContractGetInfo(ContractGetInfoResponse
-            .newBuilder().setHeader(responseHeader).setContractInfo(contractInfo)).build());
-      }
-      responseObserver.onCompleted();
-    } else {
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-    }
-    hederaNodeStats.smartContractQuerySubmitted("getContractInfo");
-  }
-
-  /**
    * Not implemented
    */
   @Override
@@ -474,6 +344,11 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
     TransactionValidationUtils.constructGetBySolidityIDErrorResponse(
             responseObserver, ResponseCodeEnum.NOT_SUPPORTED,0);
     log.debug("getBySolidityID not supported");
+  }
+
+  @Override
+  public void getContractInfo(Query query, StreamObserver<Response> observer) {
+    queryHelper.respondToContract(query, observer, contractAnswers.getContractInfo(), GET_CONTRACT_INFO_METRIC);
   }
 
   @Override
