@@ -149,7 +149,7 @@ public class StateView {
 			}
 			retries--;
 			if (retries < 0) {
-				log.warn("Can't get info info for {} at this moment. Try again later", readableId(id));
+				log.warn("Can't get info for {} at this moment. Try again later", readableId(id));
 				return Optional.empty();
 			}
 		}
