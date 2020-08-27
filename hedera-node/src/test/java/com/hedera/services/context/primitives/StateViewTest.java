@@ -265,6 +265,7 @@ class StateViewTest {
 	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
 		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
+		given(propertySource.getIntProperty("binary.object.query.retry.times")).willReturn(3);
 
 		// when:
 		var info = subject.infoForFile(target);

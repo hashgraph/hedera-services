@@ -133,21 +133,9 @@ public class StateView {
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
 		int retries = properties.getIntProperty("binary.object.query.retry.times");
-		while (true) {
+		while (retries >= 0) {
 			try {
-				var attr = fileAttrs.get(id);
-				if (attr == null) {
-					return Optional.empty();
-				}
-				var info = FileGetInfoResponse.FileInfo.newBuilder()
-						.setFileID(id)
-						.setDeleted(attr.isDeleted())
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
-						.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
-				if (!attr.getWacl().isEmpty()) {
-					info.setKeys(mapJKey(attr.getWacl()).getKeyList());
-				}
-				return Optional.of(info.build());
+				return getFileInfo(id);
 			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
 				log.info("May run into a temp issue getting info for {}, will retry {} times", readableId(id), retries);
 				try {
@@ -155,17 +143,33 @@ public class StateView {
 				} catch (InterruptedException ie) {
 					// Sleep interrupted, no need to do anything and just try fetch again.
 				}
-				retries--;
-				if (retries <= 0) {
-					log.warn("Can't get info info for {} at this moment. Try again later", readableId(id));
-					return Optional.empty();
-				}
-				continue;
 			} catch (Exception unknown) {
 				log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
 				return Optional.empty();
 			}
+			retries--;
+			if (retries < 0) {
+				log.warn("Can't get info info for {} at this moment. Try again later", readableId(id));
+				return Optional.empty();
+			}
 		}
+		return Optional.empty();
+	}
+
+	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) throws com.swirlds.blob.BinaryObjectNotFoundException, Exception {
+		var attr = fileAttrs.get(id);
+		if (attr == null) {
+			return Optional.empty();
+		}
+		var info = FileGetInfoResponse.FileInfo.newBuilder()
+				.setFileID(id)
+				.setDeleted(attr.isDeleted())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
+				.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
+		if (!attr.getWacl().isEmpty()) {
+			info.setKeys(mapJKey(attr.getWacl()).getKeyList());
+		}
+		return Optional.of(info.build());
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {
