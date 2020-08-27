@@ -305,60 +305,6 @@ public class FeeChargingRecordsHistorianTest {
 	}
 
 	@Test
-	public void addsRecordToQualifyingThresholdAccounts() {
-		setupForAdd();
-
-		// when:
-		subject.addNewRecords();
-
-		// then:
-		verify(exemptions).hasExemptPayer(txnCtx.accessor());
-		verify(fees).computeCachingFee(record);
-		verify(recordCache).setPostConsensus(
-				txnIdA,
-				finalRecord.getReceipt().getStatus(),
-				payerRecord);
-		verify(ledger).doTransfer(a, funding, aBalance);
-		// and:
-		verify(ledger, times(2)).netTransfersInTxn();
-		verify(txnCtx).recordSoFar();
-		verify(txnCtx).updatedRecordGiven(any());
-		verify(fees).computeStorageFee(record);
-		// and:
-		verify(ledger, times(2)).getBalance(a);
-		verify(ledger).getBalance(b);
-		verify(ledger).fundsReceivedRecordThreshold(b);
-		verify(ledger).getBalance(c);
-		verify(ledger).getBalance(d);
-		verify(ledger).fundsSentRecordThreshold(d);
-		// and:
-		verify(properties, times(1)).getAccountProperty("ledger.funding.account");
-		verify(ledger).doTransfer(b, funding, recordFee);
-		verify(ledger, never()).doTransfer(c, funding, recordFee);
-		verify(ledger).doTransfer(d, funding, recordFee);
-		// and:
-		verify(properties, never()).getIntProperty("ledger.records.ttl");
-		verify(txnCtx, times(1)).consensusTime();
-		// and:
-		verify(creator).createExpiringHistoricalRecord(b, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator).createExpiringHistoricalRecord(c, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator).createExpiringHistoricalRecord(d, finalRecord, now.getEpochSecond(), submittingMember);
-		verify(creator, never()).createExpiringHistoricalRecord(
-				asAccount(contract), finalRecord, now.getEpochSecond(), submittingMember);
-		verify(ledger, never()).addRecord(b, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, b));
-		verify(ledger, never()).addRecord(c, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, c));
-		verify(ledger, never()).addRecord(d, jFinalRecord);
-		verify(expirations, never()).offer(new EarliestRecordExpiry(expiry, d));
-		verify(ledger, never()).addRecord(asAccount(contract), jFinalRecord);
-		// and:
-		assertEquals(finalRecord, subject.lastCreatedRecord().get());
-		// and:
-		verify(creator).createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember);
-	}
-
-	@Test
 	public void managesReviewCorrectly() {
 		setupForReview();
 
