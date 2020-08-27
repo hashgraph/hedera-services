@@ -154,7 +154,6 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper()
 				.add("file", file)
-//				.add( "fileNum" , fileId.getFileNum() )
-				.add(  "fileId", fileId);
+				.add("fileId", fileId);
 	}
 }

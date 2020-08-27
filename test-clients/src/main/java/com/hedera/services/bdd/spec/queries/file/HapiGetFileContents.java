@@ -242,8 +242,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("file", fileName)
-//				.add( "fileNum" , fileId.getFileNum() )
-				.add(  "fileId", fileId);
+				.add("fileId", fileId);
 
 		if (sizeLookup != -1) {
 			helper.add("size", sizeLookup);

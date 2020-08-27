@@ -206,7 +206,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		}
 
 		if (verboseLoggingOn) {
-			log.info("Updated file  " + file + " with Id: " + lastReceipt.getFileID() + " successfully");
+			log.info("Updated file  {} with ID {}.", file, lastReceipt.getFileID());
 		}
 
 	}

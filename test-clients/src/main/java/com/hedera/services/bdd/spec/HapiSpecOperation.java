@@ -178,8 +178,6 @@ public abstract class HapiSpecOperation {
 		} catch (Throwable t) {
 			if (!loggingOff) {
 				log.warn(spec.logPrefix() + this.toString() + " failed!", t);
-				// log.warn(spec.logPrefix() + );
-
 			}
 			return Optional.of(t);
 		}

@@ -59,18 +59,20 @@ public class QueryFailuresSpec extends HapiApiSuite {
 						fileCreate("tbd"),
 						fileDelete("tbd")
 				).when( ).then(
-//						getFileInfo("1.2.3")
-//								.nodePayment(1_234L)
-//								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-//						getFileContents("1.2.3")
-//								.nodePayment(1_234L)
-//								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-//						getFileContents("tbd")
-//								.nodePayment(1_234L)
-//								.hasAnswerOnlyPrecheck(FILE_DELETED),
-						getFileInfo("0.0.100000")
+						getFileInfo("1.2.3")
+								.nodePayment(1_234L)
+								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+						getFileContents("1.2.3")
+								.nodePayment(1_234L)
+								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+						getFileContents("tbd")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(FILE_DELETED)
+						        .logged(),
+						getFileInfo("tbd")
+								.nodePayment(1_234L)
+								.hasAnswerOnlyPrecheck(FILE_DELETED)
+						        .logged()
 				);
 	}
 
