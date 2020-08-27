@@ -103,13 +103,19 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	@Override
 	public MerkleAccount copy() {
-		var records = records();
-		var payerRecords = payerRecords();
+		if (isImmutable()) {
+			var msg = String.format("Copy called on an immutable MerkleAccount by thread '%s'! " +
+							"(Records mutable? %s. Payer records mutable? %s.)",
+					Thread.currentThread().getName(),
+					records().isImmutable() ? "NO" : "YES",
+					payerRecords().isImmutable() ? "NO" : "YES");
+			log.warn(msg);
+			/* Ensure we get this stack trace in case a caller incorrectly suppresses the exception. */
+			Thread.dumpStack();
+			throw new IllegalStateException("Tried to make a copy of an immutable MerkleAccount!");
+		}
 
-		return new MerkleAccount(List.of(
-				state().copy(),
-				records.isImmutable() ? records : records.copy(),
-				payerRecords.isImmutable() ? payerRecords : payerRecords.copy()));
+		return new MerkleAccount(List.of(state().copy(), records().copy(), payerRecords().copy()));
 	}
 
 	@Override

@@ -25,6 +25,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 
+import java.util.Map;
+
 /**
  * Defines a type able to estimate the resource usage of one (or more)
  * query operations, relative to a particular state of the world.
@@ -50,6 +52,22 @@ public interface QueryResourceUsageEstimator {
 	 * @throws NullPointerException or analogous if the estimator does not apply to the query
 	 */
 	FeeData usageGiven(Query query, StateView view);
+
+	/**
+	 * Returns the estimated resource usage for the given query relative
+	 * to the given state of the world, with a context for storing any
+	 * information that may be useful for by later stages of the query
+	 * answer flow.
+	 *
+	 * @param query the query in question
+	 * @param view the state of the world
+	 * @param queryCtx the context of the query being answered
+	 * @return the estimated resource usage
+	 * @throws NullPointerException or analogous if the estimator does not apply to the query
+	 */
+	default FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+		return usageGiven(query, view);
+	}
 
 	/**
 	 * Returns the estimated resource usage for the given query relative

@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
+import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -37,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -87,7 +87,10 @@ public class AwareProcessLogic implements ProcessLogic {
 			INVALID_SIGNATURE_COUNT_MISMATCHING_KEY,
 			MODIFYING_IMMUTABLE_CONTRACT,
 			INVALID_CONTRACT_ID);
-
+	private final ServicesTxnManager txnManager = new ServicesTxnManager(
+			this::processTxnInCtx,
+			this::addRecordToStream,
+			this::warnOf);
 	private final ServicesContext ctx;
 
 	public AwareProcessLogic(ServicesContext ctx) {
@@ -105,7 +108,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			if (!txnSanityChecks(accessor, consensusTime, submittingMember)) {
 				return;
 			}
-			processInLedgerTxn(accessor, consensusTime, submittingMember);
+			txnManager.process(accessor, consensusTime, submittingMember, ctx);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
@@ -132,40 +135,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			return false;
 		}
 		return true;
-	}
-
-	private void processInLedgerTxn(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
-		boolean wasCommitted = false;
-
-		try {
-			ctx.ledger().begin();
-			ctx.txnCtx().resetFor(accessor, consensusTime, submittingMember);
-			processTxnInCtx();
-		} catch (Exception unhandled) {
-			warnOf(unhandled, "txn processing");
-			ctx.txnCtx().setStatus(FAIL_INVALID);
-		} finally {
-			try {
-				ctx.ledger().commit();
-				wasCommitted = true;
-			} catch (Exception unrecoverable) {
-				warnOf(unrecoverable, "txn commit");
-				ctx.recordCache().setFailInvalid(
-						ctx.txnCtx().effectivePayer(),
-						accessor,
-						consensusTime,
-						submittingMember);
-				ctx.ledger().rollback();
-			} finally {
-				if (wasCommitted) {
-					try {
-						addRecordToStream();
-					} catch (Exception unknown) {
-						warnOf(unknown, "record streaming");
-					}
-				}
-			}
-		}
 	}
 
 	private void processTxnInCtx() {

@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,6 +41,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.sha384HashOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+import static java.util.stream.Collectors.toList;
 
 public class RecordCache {
 	static final TransactionReceipt UNKNOWN_RECEIPT = TransactionReceipt.newBuilder()
@@ -98,27 +101,47 @@ public class RecordCache {
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
-		return histories.containsKey(txnId) ? true : timedReceiptCache.getIfPresent(txnId) == MARKER;
+		return histories.containsKey(txnId) || timedReceiptCache.getIfPresent(txnId) == MARKER;
 	}
 
-	public TransactionReceipt getReceipt(TransactionID txnId) {
+	public TransactionReceipt getPriorityReceipt(TransactionID txnId) {
 		var recentHistory = histories.get(txnId);
 		return recentHistory != null
 				? receiptFrom(recentHistory)
 				: (timedReceiptCache.getIfPresent(txnId) == MARKER ? UNKNOWN_RECEIPT : null);
 	}
 
+	public List<TransactionRecord> getDuplicateRecords(TransactionID txnId) {
+		return duplicatesOf(txnId);
+	}
+
+	public List<TransactionReceipt> getDuplicateReceipts(TransactionID txnId) {
+		return duplicatesOf(txnId).stream().map(TransactionRecord::getReceipt).collect(toList());
+	}
+
+	private List<TransactionRecord> duplicatesOf(TransactionID txnId) {
+		var recentHistory = histories.get(txnId);
+		if (recentHistory == null) {
+			return Collections.emptyList();
+		} else {
+			return recentHistory.duplicateRecords()
+					.stream()
+					.map(ExpirableTxnRecord::asGrpc)
+					.collect(toList());
+		}
+	}
+
 	private TransactionReceipt receiptFrom(TxnIdRecentHistory recentHistory) {
-		return Optional.ofNullable(recentHistory.legacyQueryableRecord())
+		return Optional.ofNullable(recentHistory.priorityRecord())
 				.map(ExpirableTxnRecord::getReceipt)
 				.map(TxnReceipt::toGrpc)
 				.orElse(UNKNOWN_RECEIPT);
 	}
 
-	public TransactionRecord getRecord(TransactionID txnId) {
+	public TransactionRecord getPriorityRecord(TransactionID txnId) {
 		var history = histories.get(txnId);
 		if (history != null) {
-			return Optional.ofNullable(history.legacyQueryableRecord())
+			return Optional.ofNullable(history.priorityRecord())
 					.map(ExpirableTxnRecord::asGrpc)
 					.orElse(null);
 		}

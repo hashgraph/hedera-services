@@ -28,6 +28,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Platform;
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +102,8 @@ public class TransactionHandlerTest {
 		stats = mock(HederaNodeStats.class);
 
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 		subject = new TransactionHandler(
 				recordCache,
 				precheckVerifier,
@@ -116,30 +120,7 @@ public class TransactionHandlerTest {
 				new MockAccountNumbers(),
 				stats,
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
-	}
-
-	@Test
-	public void shouldCreatePlatformTransaction() {
-		byte[] bytes = new byte[1];
-		given(request.toByteArray()).willReturn(bytes);
-		given(platform.createTransaction(any())).willReturn(true);
-
-		Assert.assertTrue(subject.submitTransaction(platform, request, txnId));
-
-		verify(recordCache).addPreConsensus(txnId);
-		verify(stats, times(0)).platformTxnNotCreated();
-	}
-
-	@Test
-	public void shouldChangeStatWhenPlatformTransactionIsNotCreated() {
-		byte[] bytes = new byte[1];
-		given(request.toByteArray()).willReturn(bytes);
-		given(platform.createTransaction(any())).willReturn(false);
-
-		Assert.assertFalse(subject.submitTransaction(platform, request, txnId));
-
-		verify(recordCache, times(0)).addPreConsensus(any());
-		verify(stats).platformTxnNotCreated();
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 	}
 }

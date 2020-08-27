@@ -27,20 +27,17 @@ import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
+import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.queries.contract.ContractAnswers;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
-import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -74,10 +71,11 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
+import static com.hedera.services.legacy.utils.TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed;
+import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * This implements execution logic of smart contract api calls.
@@ -85,10 +83,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
  * Created by Akshay Pitale on 2018-29-06.
  */
 
-public class SmartContractServiceImpl
-    extends SmartContractServiceGrpc.SmartContractServiceImplBase {
-
+public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartContractServiceImplBase {
+  private SmartContractFeeBuilder feeBuilder = new SmartContractFeeBuilder();
   private static final Logger log = LogManager.getLogger(SmartContractServiceImpl.class);
+
+  public static final String GET_BYTECODE_METRIC = "ContractGetBytecode";
+  public static final String GET_CONTRACT_INFO_METRIC = "getContractInfo";
+
   private Platform platform;
   private TransactionHandler txHandler;
   private SmartContractRequestHandler smartContractHandler;
@@ -96,23 +97,30 @@ public class SmartContractServiceImpl
   private UsagePricesProvider usagePrices;
   private HbarCentExchange exchange;
   private ServicesNodeType nodeType;
+  private PlatformSubmissionManager submissionManager;
+  private ContractAnswers contractAnswers;
+  private QueryResponseHelper queryHelper;
 
   public SmartContractServiceImpl(
-          Platform platform,
           TransactionHandler txHandler,
           SmartContractRequestHandler smartContractHandler,
           HederaNodeStats hederaNodeStats,
           UsagePricesProvider usagePrices,
           HbarCentExchange exchange,
-          ServicesNodeType nodeType
+          ServicesNodeType nodeType,
+          PlatformSubmissionManager submissionManager,
+          ContractAnswers contractAnswers,
+          QueryResponseHelper queryHelper
   ) {
-    this.platform = platform;
     this.txHandler = txHandler;
     this.smartContractHandler = smartContractHandler;
     this.hederaNodeStats = hederaNodeStats;
     this.usagePrices = usagePrices;
     this.exchange = exchange;
     this.nodeType = nodeType;
+    this.submissionManager = submissionManager;
+    this.contractAnswers = contractAnswers;
+    this.queryHelper = queryHelper;
   }
 
   public long getContractCallLocalGasPriceInTinyBars(Timestamp at) {
@@ -139,7 +147,7 @@ public class SmartContractServiceImpl
     }
     boolean isStaked = (nodeType == STAKED_NODE);
     ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
-    if (ResponseCodeEnum.OK != validationCode) {
+    if (OK != validationCode) {
       String errorMsg = "contractCallLocalMethod query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
         log.debug(errorMsg);
@@ -153,7 +161,7 @@ public class SmartContractServiceImpl
     Transaction feePayment = transactionContractCallLocal.getHeader().getPayment();
     long currentTimeMs = Instant.now().getEpochSecond();
     ByteString callResult = ByteString.EMPTY;
-    ResponseCodeEnum returnResponseCode = ResponseCodeEnum.OK;
+    ResponseCodeEnum returnResponseCode = OK;
 
     ContractCallLocalResponse callResponse;
     if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
@@ -164,7 +172,7 @@ public class SmartContractServiceImpl
           .setContractCallResult(ByteString.copyFrom(new byte[estimatedReturnBytes]))
           .build();
       ResponseHeader dummyHeader = ResponseHeader.newBuilder()
-          .setNodeTransactionPrecheckCode(ResponseCodeEnum.OK).build();
+          .setNodeTransactionPrecheckCode(OK).build();
       callResponse = ContractCallLocalResponse.newBuilder().setHeader(dummyHeader)
           .setFunctionResult(dummyResult).build();
     } else {
@@ -185,7 +193,7 @@ public class SmartContractServiceImpl
     if (callResponse.hasHeader()
         && callResponse.getHeader().getNodeTransactionPrecheckCode() != null) {
       returnResponseCode = callResponse.getHeader().getNodeTransactionPrecheckCode();
-      if (returnResponseCode == ResponseCodeEnum.OK && callResponse.hasFunctionResult()) {
+      if (returnResponseCode == OK && callResponse.hasFunctionResult()) {
         callResult = callResponse.getFunctionResult().getContractCallResult();
       }
     }
@@ -193,7 +201,6 @@ public class SmartContractServiceImpl
         .setContractID(transactionContractCallLocal.getContractID())
         .setContractCallResult(callResult).build();
 
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -215,13 +222,14 @@ public class SmartContractServiceImpl
       functionParamSize = transactionContractCallLocal.getFunctionParameters().size();
     }
 
-    FeeData feeMatrices =
-        smBuilder.getContractCallLocalFeeMatrices(functionParamSize, callResultResponse,transactionContractCallLocal.getHeader().getResponseType());
+    FeeData feeMatrices = feeBuilder.getContractCallLocalFeeMatrices(
+            functionParamSize,
+            callResultResponse,
+            transactionContractCallLocal.getHeader().getResponseType());
     long scheduledFee = 0;
     long gasOffered = transactionContractCallLocal.getGas();
     long gasCost = gasPrice * gasOffered;
-    long queryFee =
-            smBuilder.getTotalFeeforRequest(
+    long queryFee = feeBuilder.getTotalFeeforRequest(
                     feeData,
                     feeMatrices,
                     exchange.rate(body.getTransactionID().getTransactionValidStart())) + gasCost;
@@ -236,7 +244,7 @@ public class SmartContractServiceImpl
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractCallLocal, feePayment, scheduledFee);
 
-    if (validationCode == ResponseCodeEnum.OK) {
+    if (validationCode == OK) {
       if (transactionContractCallLocal.hasContractID()) {
         validationCode =
             smartContractHandler
@@ -246,10 +254,9 @@ public class SmartContractServiceImpl
       }
     }
 
-    if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
-            "contractCallLocalMethod", null);
+    if (OK == validationCode && scheduledFee > 0) {
+      if (submissionManager.trySubmission(uncheckedFrom(feePayment)) != OK) {
+        logAndConstructResponseWhenCreateTxFailed(log, responseObserver, "contractCallLocalMethod", null);
         return;
       }
       log.debug("fee has been processed successfully..!");
@@ -266,7 +273,7 @@ public class SmartContractServiceImpl
     }
     if (callResultResponse != null) {
       ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-          (ResponseCodeEnum.OK.equals(returnResponseCode)) ? validationCode : returnResponseCode,
+          (OK.equals(returnResponseCode)) ? validationCode : returnResponseCode,
           queryFee, transactionContractCallLocal.getHeader().getResponseType(), ByteString.EMPTY);
       if (transactionContractCallLocal.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
         responseObserver.onNext(Response.newBuilder()
@@ -329,134 +336,6 @@ public class SmartContractServiceImpl
   }
 
   /**
-   * Process a query for information about a smart contract. This goes to the platform for the
-   * fee transfer.
-   *
-   * @param request API request for contract information
-   * @param responseObserver Observer to be informed of the results
-   */
-  @Override
-  public void getContractInfo(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("getContractInfo");
-
-    boolean isStaked = (nodeType == STAKED_NODE);
-    if (log.isDebugEnabled()) {
-      log.debug("In getContractInfo :: request : " + TextFormat.shortDebugString(request));
-    }
-
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
-    if (ResponseCodeEnum.OK != validationCode) {
-      String errorMsg = "query validation failed: " + validationCode.name();
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-    ContractGetInfoQuery contractGetInfo = request.getContractGetInfo();
-
-    Transaction feePayment = contractGetInfo.getHeader().getPayment();
-
-    ContractInfo contractInfo;
-    try {
-      contractInfo = smartContractHandler.getContractInfo(contractGetInfo.getContractID());
-    } catch (Exception e) {
-      // if any exception contractInfo will be null, wrapped with error code at end
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-      if (log.isDebugEnabled()) {
-        log.debug("getContractInfo-failed", e);
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    Key key = null;
-    long storageSize = 0;
-    if (contractInfo != null) {
-      key = contractInfo.getAdminKey();
-      storageSize = contractInfo.getStorage();
-    }
-
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
-    TransactionBody body = null;
-    try {
-      body = CommonUtils.extractTransactionBody(feePayment);
-    } catch (InvalidProtocolBufferException e) {
-      if (log.isDebugEnabled()) {
-        log.debug("Transaction body parsing exception: ", e);
-      }
-      validationCode = ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    Timestamp at = body.getTransactionID().getTransactionValidStart();
-    FeeData prices = usagePrices.pricesGiven(ContractGetInfo, at);
-    FeeData feeMatrices = smBuilder
-        .getContractInfoQueryFeeMatrices(key, contractGetInfo.getHeader().getResponseType());
-    long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
-        exchange.rate(body.getTransactionID().getTransactionValidStart()));
-
-    if (isStaked) {
-      if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        scheduledFee = 0;
-      } else if (contractGetInfo.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-        scheduledFee = queryFee;
-      }
-    }
-
-    validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetInfo, feePayment, scheduledFee);
-    if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
-            "getContractInfo", null);
-        return;
-      }
-      log.debug("fee has been processed successfully..!");
-    } else if (scheduledFee <= 0) {
-      log.debug("Schedule fee is 0, hence transaction is not created");
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("query validation failed: " + validationCode.name());
-      }
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-      return;
-    }
-    // validationCode = txHandler.postFeeValidation(request, contractInfo.getAccountID());
-    if (request.getContractGetInfo().hasContractID()) {
-      validationCode = smartContractHandler
-          .validateContractExistence(request.getContractGetInfo().getContractID());
-    } else {
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-    }
-
-    // even if contractInfo is null , fee has to be processed that is why below condition is after
-    // processing fee transaction
-    if (validationCode == ResponseCodeEnum.OK) {
-      ResponseHeader responseHeader = RequestBuilder.getResponseHeader(validationCode, queryFee,
-          contractGetInfo.getHeader().getResponseType(), ByteString.EMPTY);
-      if (contractGetInfo.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        responseObserver.onNext(Response.newBuilder()
-            .setContractGetInfo(ContractGetInfoResponse.newBuilder().setHeader(responseHeader))
-            .build());
-      } else {
-        responseObserver.onNext(Response.newBuilder().setContractGetInfo(ContractGetInfoResponse
-            .newBuilder().setHeader(responseHeader).setContractInfo(contractInfo)).build());
-      }
-      responseObserver.onCompleted();
-    } else {
-      TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-    }
-    hederaNodeStats.smartContractQuerySubmitted("getContractInfo");
-  }
-
-  /**
    * Not implemented
    */
   @Override
@@ -467,153 +346,14 @@ public class SmartContractServiceImpl
     log.debug("getBySolidityID not supported");
   }
 
-  /**
-   * Process a query for the bytecode of a smart contract. This goes to the platform for the
-   * fee transfer.
-   *
-   * @param request API request for contract bytecode
-   * @param responseObserver Observer to be informed of the results
-   */
   @Override
-  public void contractGetBytecode(Query request, StreamObserver<Response> responseObserver) {
-    hederaNodeStats.smartContractQueryReceived("ContractGetBytecode");
+  public void getContractInfo(Query query, StreamObserver<Response> observer) {
+    queryHelper.respondToContract(query, observer, contractAnswers.getContractInfo(), GET_CONTRACT_INFO_METRIC);
+  }
 
-    boolean isStaked = (nodeType == STAKED_NODE);
-
-    if (log.isDebugEnabled()) {
-      log.debug("In BC:getBytecode :: request : " + TextFormat.shortDebugString(request));
-    }
-    ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
-    if (ResponseCodeEnum.OK != validationCode) {
-      String errorMsg = "query validation failed: " + validationCode.name();
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    ContractGetBytecodeQuery contractGetByteCode = request.getContractGetBytecode();
-    Transaction feePayment = contractGetByteCode.getHeader().getPayment();
-
-    ByteString byteCodeToReturn;
-    try {
-      byteCodeToReturn =
-          smartContractHandler.getContractBytecode(contractGetByteCode.getContractID());
-    } catch (Exception e) {
-      // if any exception byteCodeToReturn will be null, wrapped with error code at end
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-      if (log.isDebugEnabled()) {
-        log.debug("getContractBytecode-failed", e);
-      }
-      TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
-    TransactionBody body = null;
-    try {
-      body = CommonUtils.extractTransactionBody(feePayment);
-    } catch (InvalidProtocolBufferException e) {
-      String errorMsg = "Transaction body parsing exception: " + e;
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      validationCode = ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-      TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-          validationCode,0);
-      return;
-    }
-    Timestamp at = body.getTransactionID().getTransactionValidStart();
-    FeeData prices = usagePrices.pricesGiven(ContractGetBytecode, at);
-
-    int byteCodeSize = 0;
-    if (!(byteCodeToReturn == null || byteCodeToReturn.isEmpty())) {
-      byteCodeSize = byteCodeToReturn.size();
-    }
-
-    FeeData feeMatrices = smBuilder.getContractByteCodeQueryFeeMatrices(byteCodeSize,
-        contractGetByteCode.getHeader().getResponseType());
-    long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
-        exchange.rate(body.getTransactionID().getTransactionValidStart()));
-
-    if (isStaked) {
-      if (contractGetByteCode.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-        scheduledFee = 0;
-      } else if (contractGetByteCode.getHeader().getResponseType() == ResponseType.ANSWER_ONLY) {
-        scheduledFee = queryFee;
-      }
-    }
-
-    validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetBytecode, feePayment, scheduledFee);
-    if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
-            "contractGetBytecode", null);
-        return;
-      }
-      log.debug("fee has been processed successfully..!");
-    } else if (scheduledFee <= 0) {
-      log.debug("Schedule fee is 0, hence transaction is not created");
-    } else {
-      String errorMsg = "fee validation failed: " + validationCode.name();
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-      return;
-    }
-    if (contractGetByteCode.hasContractID()) {
-      validationCode =
-          smartContractHandler.validateContractExistence(contractGetByteCode.getContractID());
-    } else {
-      validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
-    }
-
-    if (validationCode == ResponseCodeEnum.OK) {
-      // even if response of byteCodeToReturn is null , fee has to be processed that is why below
-      // condition is after processing fee transaction
-      if (byteCodeToReturn == null || byteCodeToReturn.isEmpty()) {
-        String errorMsg = "bytecode is empty";
-        if (log.isDebugEnabled()) {
-          log.debug(errorMsg);
-        }
-        TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-            ResponseCodeEnum.INVALID_CONTRACT_ID,scheduledFee);
-      } else {
-        ResponseHeader responseHeader = RequestBuilder.getResponseHeader(validationCode, queryFee,
-            contractGetByteCode.getHeader().getResponseType(), ByteString.EMPTY);
-
-        if (contractGetByteCode.getHeader().getResponseType() == ResponseType.COST_ANSWER) {
-          responseObserver
-              .onNext(
-                  Response.newBuilder()
-                      .setContractGetBytecodeResponse(
-                          ContractGetBytecodeResponse.newBuilder().setHeader(responseHeader))
-                      .build());
-        } else {
-          responseObserver
-              .onNext(Response
-                  .newBuilder().setContractGetBytecodeResponse(ContractGetBytecodeResponse
-                      .newBuilder().setHeader(responseHeader).setBytecode(byteCodeToReturn))
-                  .build());
-        }
-        responseObserver.onCompleted();
-      }
-    } else {
-      String errorMsg = "Failed to retrieve contract";
-      if (log.isDebugEnabled()) {
-        log.debug(errorMsg);
-      }
-      TransactionValidationUtils.constructContractGetBytecodeInfoErrorResponse(responseObserver,
-          validationCode,scheduledFee);
-    }
-
-    hederaNodeStats.smartContractQuerySubmitted("ContractGetBytecode");
+  @Override
+  public void contractGetBytecode(Query query, StreamObserver<Response> observer) {
+      queryHelper.respondToContract(query, observer, contractAnswers.getBytecode(), GET_BYTECODE_METRIC);
   }
 
   /**
@@ -632,7 +372,7 @@ public class SmartContractServiceImpl
       log.debug("In getTxRecordByContractID :: request : " + TextFormat.shortDebugString(request));
     }
     ResponseCodeEnum validationCode = txHandler.validateQuery(request, isStaked);
-    if (ResponseCodeEnum.OK != validationCode) {
+    if (OK != validationCode) {
       String errorMsg = "query validation failed: " + validationCode.name();
       if (log.isDebugEnabled()) {
         log.debug(errorMsg);
@@ -653,7 +393,6 @@ public class SmartContractServiceImpl
       TransactionValidationUtils.constructGetAccountRecordsErrorResponse(responseObserver,
           ResponseCodeEnum.RECORD_NOT_FOUND,0);
     }
-    SmartContractFeeBuilder smBuilder = GlobalFlag.getInstance().getSmFeeBuilder();
     TransactionBody body;
     try {
       body = CommonUtils.extractTransactionBody(feePayment);
@@ -670,10 +409,9 @@ public class SmartContractServiceImpl
     Timestamp at = body.getTransactionID().getTransactionValidStart();
     FeeData prices = usagePrices.pricesGiven(ContractGetRecords, at);
 
-    FeeData feeMatrices = smBuilder
-        .getContractRecordsQueryFeeMatrices(txRecord, query.getHeader().getResponseType());
+    FeeData feeMatrices = feeBuilder.getContractRecordsQueryFeeMatrices(txRecord, query.getHeader().getResponseType());
     long scheduledFee = 0;
-    long queryFee = smBuilder.getTotalFeeforRequest(prices, feeMatrices,
+    long queryFee = feeBuilder.getTotalFeeforRequest(prices, feeMatrices,
         exchange.rate(body.getTransactionID().getTransactionValidStart()));
 
     if (isStaked) {
@@ -685,10 +423,9 @@ public class SmartContractServiceImpl
     }
 
     validationCode = txHandler.validateScheduledFee(HederaFunctionality.ContractGetRecords, feePayment, scheduledFee);
-    if (ResponseCodeEnum.OK == validationCode && scheduledFee > 0) {
-      if (!txHandler.submitTransaction(platform, feePayment, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver,
-            "getTxRecordByContractID", null);
+    if (OK == validationCode && scheduledFee > 0) {
+      if (submissionManager.trySubmission(uncheckedFrom(feePayment)) != OK) {
+        logAndConstructResponseWhenCreateTxFailed(log, responseObserver, "getTxRecordByContractID", null);
         return;
       }
       log.debug("fee has been processed successfully..!");
@@ -711,7 +448,7 @@ public class SmartContractServiceImpl
     }
 
     // validationCode = txHandler.postFeeValidation(query.getAccountID());
-    if (ResponseCodeEnum.OK != validationCode) {
+    if (OK != validationCode) {
       String errorMsg = "Fail to get contract records: " + validationCode.name();
       if (log.isDebugEnabled()) {
         log.debug(errorMsg);
@@ -779,7 +516,7 @@ public class SmartContractServiceImpl
     }
     precheckResult = txHandler.validateTransactionPreConsensus(request, false);
 
-    if (precheckResult.getValidity() == ResponseCodeEnum.OK) {
+    if (precheckResult.getValidity() == OK) {
       /* should check if ContractID is invalid, if so return INVALID_CONTRACT_ID */
       if (transactionBody.hasContractUpdateInstance()) {
         if (transactionBody.getContractUpdateInstance().hasContractID()) {
@@ -807,7 +544,7 @@ public class SmartContractServiceImpl
       }
     }
 
-    if (precheckResult.getValidity() != ResponseCodeEnum.OK) {
+    if (precheckResult.getValidity() != OK) {
       transactionResponse(responseObserver, precheckResult);
       return;
     }
@@ -837,12 +574,11 @@ public class SmartContractServiceImpl
 
     }
 
-    if (!txHandler.submitTransaction(platform, request, transactionBody.getTransactionID())) {
-      TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+    if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
+      logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
       return;
     }
-    TransactionValidationUtils.transactionResponse(responseObserver,
-            new TxnValidityAndFeeReq(ResponseCodeEnum.OK));
+    TransactionValidationUtils.transactionResponse(responseObserver, new TxnValidityAndFeeReq(OK));
     hederaNodeStats.smartContractTransactionSubmitted(transactionRequest);
   }
 
@@ -880,7 +616,7 @@ public class SmartContractServiceImpl
       StreamObserver<TransactionResponse> responseObserver) {
     hederaNodeStats.smartContractTransactionReceived("smartContractSystemDelete");
     TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-    if (precheckResult.getValidity() != ResponseCodeEnum.OK) {
+    if (precheckResult.getValidity() != OK) {
       String errorMsg = "Pre-check validation failed. " + precheckResult;
       if (log.isDebugEnabled()) {
         log.debug(errorMsg);
@@ -894,8 +630,8 @@ public class SmartContractServiceImpl
       if (log.isDebugEnabled()) {
         log.debug("In systemDelete :: request : " + TextFormat.shortDebugString(body));
       }
-      if (!txHandler.submitTransaction(platform, request, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+      if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
+        logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
         return;
       }
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);
@@ -917,7 +653,7 @@ public class SmartContractServiceImpl
       StreamObserver<TransactionResponse> responseObserver) {
     hederaNodeStats.smartContractTransactionReceived("smartContractSystemUndelete");
     TxnValidityAndFeeReq precheckResult = txHandler.validateTransactionPreConsensus(request, false);
-    if (precheckResult.getValidity() != ResponseCodeEnum.OK) {
+    if (precheckResult.getValidity() != OK) {
       String errorMsg = "Pre-check validation failed. " + precheckResult;
       if (log.isDebugEnabled()) {
         log.debug(errorMsg);
@@ -931,8 +667,8 @@ public class SmartContractServiceImpl
       if (log.isDebugEnabled()) {
         log.debug("In systemUnDelete :: request : " + TextFormat.shortDebugString(body));
       }
-      if (!txHandler.submitTransaction(platform, request, body.getTransactionID())) {
-        TransactionValidationUtils.logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
+      if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
+        logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
         return;
       }
       TransactionValidationUtils.transactionResponse(responseObserver, precheckResult);

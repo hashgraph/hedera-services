@@ -33,6 +33,9 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+
 import java.util.Optional;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -42,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+@RunWith(JUnitPlatform.class)
 class GetFileInfoResourceUsageTest {
 	FileID target = asFile("0.0.123");
 	StateView view;
@@ -64,7 +68,7 @@ class GetFileInfoResourceUsageTest {
 	public void throwsIaeOnMissingInfo() {
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 
-		given(view.infoFor(any())).willReturn(Optional.empty());
+		given(view.infoForFile(any())).willReturn(Optional.empty());
 
 		// then:
 		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(answerOnlyQuery, view));
@@ -80,7 +84,7 @@ class GetFileInfoResourceUsageTest {
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 		Query costAnswerQuery = fileInfoQuery(target, COST_ANSWER);
 		// and:
-		given(view.infoFor(target)).willReturn(Optional.ofNullable(targetInfo));
+		given(view.infoForFile(target)).willReturn(Optional.ofNullable(targetInfo));
 		// and:
 		given(usageEstimator.getFileInfoQueryFeeMatrices(wacl.getKeyList(), COST_ANSWER))
 				.willReturn(costAnswerUsage);

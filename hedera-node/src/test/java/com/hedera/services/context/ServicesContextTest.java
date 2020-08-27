@@ -27,7 +27,9 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
+import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -73,6 +75,7 @@ import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -326,10 +329,11 @@ public class ServicesContextTest {
 		given(book.getAddress(1L)).willReturn(address);
 		given(state.addressBook()).willReturn(book);
 		given(properties.getStringProperty("hedera.recordStream.logDir")).willReturn("src/main/resources");
-		GlobalFlag.getInstance().setPlatformStatus(PlatformStatus.DISCONNECTED);
 
 		// given:
 		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
+		// and:
+		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
 
 		// expect:
 		assertEquals(SleepingPause.INSTANCE, ctx.pause());
@@ -406,6 +410,9 @@ public class ServicesContextTest {
 		assertThat(ctx.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
 		assertThat(ctx.systemOpPolicies(), instanceOf(SystemOpPolicies.class));
 		assertThat(ctx.exemptions(), instanceOf(StandardExemptions.class));
+		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
+		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
+		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));
@@ -421,8 +428,5 @@ public class ServicesContextTest {
 		assertThat(ctx.balancesExporter(), instanceOf(DefaultBalancesExporter.class));
 		assertThat(ctx.freeze(), instanceOf(FreezeHandler.class));
 		assertThat(ctx.logic(), instanceOf(AwareProcessLogic.class));
-
-		// cleanup:
-		GlobalFlag.getInstance().setPlatformStatus(null);
 	}
 }

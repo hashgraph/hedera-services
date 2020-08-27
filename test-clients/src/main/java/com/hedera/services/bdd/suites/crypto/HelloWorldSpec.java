@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -39,6 +40,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -58,9 +61,35 @@ public class HelloWorldSpec extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
-						balancesChangeOnTransfer(),
+//						balancesChangeOnTransfer(),
+						balancesChangeOnTransferWithOverrides(),
 				}
 		);
+	}
+
+	private HapiApiSpec balancesChangeOnTransferWithOverrides() {
+		return customHapiSpec("BalancesChangeOnTransfer")
+				.withProperties(
+						Map.of(
+								"nodes", "35.182.80.176",
+								"default.payer", "0.0.50",
+								"startupAccounts.path", "src/main/resource/TestnetStartupAccount.txt"
+						)
+				).given(
+						cryptoCreate("sponsor"),
+						cryptoCreate("beneficiary"),
+						balanceSnapshot("sponsorBefore", "sponsor"),
+						balanceSnapshot("beneficiaryBefore", "beneficiary")
+				).when(
+						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+								.payingWith(GENESIS)
+								.memo("Hello World!")
+				).then(
+						getAccountBalance("sponsor")
+								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+						getAccountBalance("beneficiary")
+								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
+				);
 	}
 
 	private HapiApiSpec balancesChangeOnTransfer() {

@@ -103,7 +103,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.builder.RequestBuilder.getTimestamp;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
-import static com.hedera.services.legacy.core.jproto.JKey.convertJKey;
 import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 
 /**
@@ -456,7 +455,6 @@ public class SmartContractRequestHandler {
 		String receiverAccountEthAddress = asSolidityAddressHex(receiverAccount);
 		ResponseCodeEnum callResponseStatus = validateContractExistence(contractCall.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
-			byte[] senderAccAddressBytes = ByteUtil.hexStringToBytes(senderAccountEthAddress);
 			BigInteger gas;
 			if (contractCall.getGas() <= PropertiesLoader.getMaxGasLimit()) {
 				gas = BigInteger.valueOf(contractCall.getGas());
@@ -465,8 +463,6 @@ public class SmartContractRequestHandler {
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in call", () -> contractCall.getGas(),
 						() -> PropertiesLoader.getMaxGasLimit());
 			}
-
-			BigInteger senderNonce = repository.getNonce(senderAccAddressBytes);
 
 			String data = "";
 			if (contractCall.getFunctionParameters() != null
@@ -493,7 +489,7 @@ public class SmartContractRequestHandler {
 				return getFailureTransactionRecord(transaction, consensusTime,
 						ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
 			}
-			tx = new Transaction(senderNonce, biGasPrice, gas, senderAccountEthAddress,
+			tx = new Transaction(BigInteger.ZERO, biGasPrice, gas, senderAccountEthAddress,
 					receiverAccountEthAddress, value, data);
 
 			try {
@@ -566,7 +562,6 @@ public class SmartContractRequestHandler {
 		ResponseCodeEnum callResponseStatus =
 				validateContractExistence(transactionContractCallLocal.getContractID());
 		if (callResponseStatus == ResponseCodeEnum.OK) {
-			byte[] senderAccAddressBytes = ByteUtil.hexStringToBytes(senderAccountEthAddress);
 			BigInteger gas;
 			if (transactionContractCallLocal.getGas() <= PropertiesLoader.getMaxGasLimit()) {
 				gas = BigInteger.valueOf(transactionContractCallLocal.getGas());
@@ -575,8 +570,6 @@ public class SmartContractRequestHandler {
 				log.debug("Gas offered: {} reduced to maxGasLimit: {} in local call",
 						() -> transactionContractCallLocal.getGas(), () -> PropertiesLoader.getMaxGasLimit());
 			}
-			BigInteger senderNonce = repository.getNonce(senderAccAddressBytes);
-
 			String data = "";
 			if (transactionContractCallLocal.getFunctionParameters() != null
 					&& !transactionContractCallLocal.getFunctionParameters().isEmpty()) {
@@ -585,7 +578,7 @@ public class SmartContractRequestHandler {
 			}
 			BigInteger value = BigInteger.ZERO;
 
-			tx = new Transaction(senderNonce, BigInteger.ONE, gas, senderAccountEthAddress,
+			tx = new Transaction(BigInteger.ZERO, BigInteger.ONE, gas, senderAccountEthAddress,
 					receiverAccountEthAddress, value, data);
 			responseToReturn = runPure(
 					tx,
@@ -601,50 +594,6 @@ public class SmartContractRequestHandler {
 			}
 		}
 		return responseToReturn;
-	}
-
-	/**
-	 * Return available information about the contract
-	 *
-	 * @param cid
-	 * @return Contract information
-	 * @throws Exception
-	 * 		Passes through lower-level exceptions; does not generate any
-	 */
-	public ContractInfo getContractInfo(ContractID cid) {
-		ContractInfo infoToReturn = null;
-		AccountID id = asAccount(cid);
-		String contractEthAddress = asSolidityAddressHex(id);
-		if (!StringUtils.isEmpty(contractEthAddress)) {
-			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
-			if (contract != null && contract.isSmartContract()) {
-				builder.setContractID(cid)
-						.setBalance(contract.getBalance())
-						.setMemo(contract.getMemo())
-						.setAccountID(id)
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-						.setContractAccountID(contractEthAddress);
-				var address = asSolidityAddress(cid);
-				long bytesUsed = lengthIfPresent(storageView.get(address)) + lengthIfPresent(bytecodeView.get(address));
-				builder.setStorage(bytesUsed);
-
-				JKey key = contract.getKey();
-				if (key != null) {
-					try {
-						builder.setAdminKey(convertJKey(key, 1));
-					} catch (Exception ignore) {
-					}
-				}
-				infoToReturn = builder.build();
-			}
-		}
-		return infoToReturn;
-	}
-
-	private int lengthIfPresent(byte[] data) {
-		return Optional.ofNullable(data).map(bytes -> bytes.length).orElse(0);
 	}
 
 	/**
@@ -717,23 +666,6 @@ public class SmartContractRequestHandler {
 				transaction.getTransactionID(),
 				getTimestamp(consensusTime),
 				receipt).build();
-	}
-
-	/**
-	 * Return the stored bytecode for this contract
-	 *
-	 * @param cid
-	 * @return Contract bytecode as a Bytestring
-	 */
-	public ByteString getContractBytecode(ContractID cid) {
-		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
-		if (contract != null && contract.isSmartContract()) {
-			String contractEthAddress = asSolidityAddressHex(id);
-			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);
-			return ByteString.copyFrom(repository.getCode(contractEthAddressBytes));
-		}
-		return ByteString.EMPTY;
 	}
 
 	/**

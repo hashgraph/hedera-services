@@ -84,6 +84,18 @@ public class TxnResponseHelper {
 				() -> stats.cryptoTransactionSubmitted(metric));
 	}
 
+	public void respondToNetwork(
+			Transaction signedTxn,
+			StreamObserver<TransactionResponse> observer,
+			String metric
+	) {
+		respondWithMetrics(
+				signedTxn,
+				observer,
+				() -> stats.networkTxnReceived(metric),
+				() -> stats.networkTxnSubmited(metric));
+	}
+
 	private void respondWithMetrics(
 			Transaction signedTxn,
 			StreamObserver<TransactionResponse> observer,

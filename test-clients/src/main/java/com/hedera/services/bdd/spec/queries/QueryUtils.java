@@ -46,11 +46,16 @@ public class QueryUtils {
 	}
 
 	public static Query txnReceiptQueryFor(TransactionID txnId) {
+		return txnReceiptQueryFor(txnId, false);
+	}
+
+	public static Query txnReceiptQueryFor(TransactionID txnId, boolean includeDuplicates) {
 		return Query.newBuilder()
 				.setTransactionGetReceipt(
 						TransactionGetReceiptQuery.newBuilder()
 								.setHeader(answerHeader(Transaction.getDefaultInstance()))
 								.setTransactionID(txnId)
+								.setIncludeDuplicates(includeDuplicates)
 								.build()
 				).build();
 	}

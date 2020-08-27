@@ -22,6 +22,8 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
@@ -36,11 +38,15 @@ import static java.util.stream.Collectors.toList;
 
 @JsonPropertyOrder({
 		"id",
+		"numPayerRecords",
+		"hasMutablePayerRecords",
+		"payerRecords",
 		"smartContract",
 		"deleted",
 		"balance",
 		"keys",
 		"numRecords",
+		"hasMutableRecords",
 		"records",
 		"expiry",
 		"autoRenewPeriod",
@@ -53,12 +59,16 @@ import static java.util.stream.Collectors.toList;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PojoAccount {
 	private int numRecords;
+	private int numPayerRecords;
+	private boolean hasMutablePayerRecords;
+	private boolean hasMutableRecords;
 	private long balance;
 	private long expiry;
 	private long autoRenewPeriod;
 	private long sendThreshold;
 	private long receiveThreshold;
 	private List<PojoRecord> records = Collections.EMPTY_LIST;
+	private List<PojoRecord> payerRecords = Collections.EMPTY_LIST;
 	private String id;
 	private String proxyId = "0.0.0";
 	private String memo;
@@ -73,13 +83,22 @@ public class PojoAccount {
 
 	public static PojoAccount from(MerkleEntityId mk, MerkleAccount value) {
 		var pojo = new PojoAccount();
+		if (mk.getNum() == 6237) {
+			System.out.println(value);
+		}
 		pojo.setId(asAccountString(fromKey(mk)));
 		pojo.setBalance(value.getBalance());
 		pojo.setSmartContract(value.isSmartContract());
 		pojo.setKeys(value.getKey().toString());
 		pojo.setNumRecords(value.records().size());
+		pojo.setHasMutableRecords(!value.records().isImmutable());
 		if (pojo.getNumRecords() > 0) {
 			pojo.setRecords(value.records().stream().map(PojoRecord::from).collect(toList()));
+		}
+		pojo.setNumPayerRecords(value.payerRecords().size());
+		pojo.setHasMutablePayerRecords(!value.payerRecords().isImmutable());
+		if (pojo.getNumPayerRecords() > 0) {
+			pojo.setPayerRecords(value.payerRecords().stream().map(PojoRecord::from).collect(toList()));
 		}
 		pojo.setExpiry(value.getExpiry());
 		pojo.setAutoRenewPeriod(value.getAutoRenewSecs());
@@ -204,5 +223,37 @@ public class PojoAccount {
 
 	public void setSmartContract(boolean smartContract) {
 		this.smartContract = smartContract;
+	}
+
+	public int getNumPayerRecords() {
+		return numPayerRecords;
+	}
+
+	public void setNumPayerRecords(int numPayerRecords) {
+		this.numPayerRecords = numPayerRecords;
+	}
+
+	public List<PojoRecord> getPayerRecords() {
+		return payerRecords;
+	}
+
+	public void setPayerRecords(List<PojoRecord> payerRecords) {
+		this.payerRecords = payerRecords;
+	}
+
+	public boolean isHasMutablePayerRecords() {
+		return hasMutablePayerRecords;
+	}
+
+	public void setHasMutablePayerRecords(boolean hasMutablePayerRecords) {
+		this.hasMutablePayerRecords = hasMutablePayerRecords;
+	}
+
+	public boolean isHasMutableRecords() {
+		return hasMutableRecords;
+	}
+
+	public void setHasMutableRecords(boolean hasMutableRecords) {
+		this.hasMutableRecords = hasMutableRecords;
 	}
 }

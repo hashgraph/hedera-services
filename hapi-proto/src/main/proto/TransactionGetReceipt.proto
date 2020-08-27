@@ -34,9 +34,11 @@ import "ResponseHeader.proto";
 message TransactionGetReceiptQuery {
     QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
     TransactionID transactionID = 2; // The ID of the transaction for which the receipt is requested.
+    bool includeDuplicates = 3; // Whether receipts of processing duplicate transactions should be returned along with the receipt of processing the first consensus transaction with the given id whose status was neither <tt>INVALID_NODE_ACCOUNT</tt> nor <tt>INVALID_PAYER_SIGNATURE</tt>; <b>or</b>, if no such receipt exists, the receipt of processing the first transaction to reach consensus with the given transaction id..
 }
 /* Response when the client sends the node TransactionGetReceiptQuery. If it created a new entity (account, file, or smart contract instance) then one of the three ID fields will be filled in with the ID of the new entity. Sometimes a single transaction will create more than one new entity, such as when a new contract instance is created, and this also creates the new account that it owned by that instance. No State proof is available for this response */
 message TransactionGetReceiptResponse {
     ResponseHeader header = 1; //Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
-    TransactionReceipt receipt = 2; // The receipt, indicating it reached consensus (and whether it succeeded or failed) or is currently unknown (because it hasn't reached consensus yet, or the transaction has expired already), and including the ID of any new account/file/instance created by that transaction.
+    TransactionReceipt receipt = 2; // Either the receipt of processing the first consensus transaction with the given id whose status was neither <tt>INVALID_NODE_ACCOUNT</tt> nor <tt>INVALID_PAYER_SIGNATURE</tt>; <b>or</b>, if no such receipt exists, the receipt of processing the first transaction to reach consensus with the given transaction id.
+    repeated TransactionReceipt duplicateTransactionReceipts = 4; // The receipts of processing all consensus transaction with the same id as the distinguished receipt above, in chronological order.
 }

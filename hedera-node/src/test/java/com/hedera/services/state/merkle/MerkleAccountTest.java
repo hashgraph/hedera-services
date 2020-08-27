@@ -130,16 +130,15 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void fastCopyUsesImmutableFcqs() {
+	public void immutableAccountThrowsIse() {
+		// given:
+		var original = new MerkleAccount();
+
 		// when:
-		var copy = subject.copy();
+		original.copy();
 
 		// then:
-		verify(records).isImmutable();
-		verify(records).copy();
-		// and:
-		verify(payerRecords).isImmutable();
-		verify(payerRecords).copy();
+		assertThrows(IllegalStateException.class, () -> original.copy());
 	}
 
 	@Test
@@ -237,22 +236,6 @@ public class MerkleAccountTest {
 		// then:
 		verify(records).copy();
 		verify(payerRecords).copy();
-		// and:
-		assertEquals(records, copy.records());
-		assertEquals(payerRecords, copy.payerRecords());
-	}
-
-	@Test
-	public void copyConstructorReusesImmutableFcqs() {
-		given(records.isImmutable()).willReturn(true);
-		given(payerRecords.isImmutable()).willReturn(true);
-
-		// when:
-		var copy = subject.copy();
-
-		// then:
-		verify(records, never()).copy();
-		verify(payerRecords, never()).copy();
 		// and:
 		assertEquals(records, copy.records());
 		assertEquals(payerRecords, copy.payerRecords());

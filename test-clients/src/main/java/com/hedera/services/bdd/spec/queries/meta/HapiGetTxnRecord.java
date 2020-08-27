@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -56,12 +57,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	String txn;
 	boolean useDefaultTxnId = false;
+	boolean requestDuplicates = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
-	Optional<TransactionRecordAsserts> expectations = Optional.empty();
+	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
+	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -80,6 +83,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord andAnyDuplicates() {
+		requestDuplicates = true;
+		return this;
+	}
+
 	public HapiGetTxnRecord saveCreatedContractListToRegistry(String registryEntry) {
 		this.registryEntry = Optional.of(registryEntry);
 		return this;
@@ -90,8 +98,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord has(TransactionRecordAsserts provider) {
-		expectations = Optional.of(provider);
+	public HapiGetTxnRecord hasPriority(TransactionRecordAsserts provider) {
+		priorityExpectations = Optional.of(provider);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasDuplicates(ErroringAssertsProvider<List<TransactionRecord>> provider) {
+		duplicateExpectations = Optional.of(provider);
 		return this;
 	}
 
@@ -119,10 +132,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
-		if (expectations.isPresent()) {
-			ErroringAsserts<TransactionRecord> asserts = expectations.get().assertsFor(spec);
+		if (priorityExpectations.isPresent()) {
+			ErroringAsserts<TransactionRecord> asserts = priorityExpectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualRecord);
-			rethrowSummaryError(log, "Bad transaction record!", errors);
+			rethrowSummaryError(log, "Bad priority record!", errors);
+		}
+		if (duplicateExpectations.isPresent()) {
+			var asserts = duplicateExpectations.get().assertsFor(spec);
+			var errors = asserts.errorsIn(response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
+			rethrowSummaryError(log, "Bad duplicate records!", errors);
 		}
 		if (topicToValidate.isPresent()) {
 			if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
@@ -194,6 +212,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
 				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 				.setTransactionID(txnId)
+				.setIncludeDuplicates(requestDuplicates)
 				.build();
 		return Query.newBuilder().setTransactionGetRecord(getRecordQuery).build();
 	}

@@ -75,7 +75,9 @@ public class HederaNodeStats {
 			CryptoController.DELETE_LIVE_HASH_METRIC
 	);
 	private static final List<String> networkQueriesList = Arrays.asList(
-			NetworkController.GET_VERSION_INFO_METRIC
+			NetworkController.GET_VERSION_INFO_METRIC,
+			NetworkController.UNCHECKED_SUBMIT_METRIC
+
 	);
 	private static final List<String> cryptoQueriesList = Arrays.asList(
 			CryptoController.GET_CLAIM_METRIC,
@@ -366,6 +368,14 @@ public class HederaNodeStats {
 	}
 
 	public void networkQueryAnswered(String type) {
+		updateCountStat(type, SUBMITTED_SUFFIX);
+	}
+
+	public void networkTxnReceived(String type) {
+		updateCountStat(type, RECEIVED_SUFFIX);
+	}
+
+	public void networkTxnSubmited(String type) {
 		updateCountStat(type, SUBMITTED_SUFFIX);
 	}
 

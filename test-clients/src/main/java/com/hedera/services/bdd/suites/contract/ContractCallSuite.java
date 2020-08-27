@@ -232,7 +232,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								.via("payTxn").sending(1_000L)
 				).then(
 						getTxnRecord("payTxn")
-								.has(recordWith().contractCallResult(
+								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(inOrder()))));
 	}
 
@@ -245,7 +245,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall("payableContract").via("payTxn").sending(1_000L)
 				).then(
 						getTxnRecord("payTxn")
-								.has(recordWith().contractCallResult(
+								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(
 												inOrder(
 														logWith().longAtBytes(1_000L, 24))))));
@@ -266,12 +266,12 @@ public class ContractCallSuite extends HapiApiSuite {
 								.saveCreatedContractListToRegistry("createChild")
 								.logged(),
 						getTxnRecord("getChildResultTxn")
-								.has(recordWith().contractCallResult(
+								.hasPriority(recordWith().contractCallResult(
 										resultWith().resultThruAbi(
 												GET_CHILD_RESULT_ABI,
 												isLiteralResult(new Object[] { BigInteger.valueOf(7L) })))),
 						getTxnRecord("getChildAddressTxn")
-								.has(recordWith().contractCallResult(
+								.hasPriority(recordWith().contractCallResult(
 										resultWith()
 											.resultThruAbi(
 													GET_CHILD_ADDRESS_ABI,
@@ -304,7 +304,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCall("parentDelegate", CREATE_CHILD_ABI).via("callTxn").sending(1_000L)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				).then(
-						getTxnRecord("callTxn").has(
+						getTxnRecord("callTxn").hasPriority(
 								recordWith().contractCallResult(
 									resultWith().logs(inOrder())))
 				);

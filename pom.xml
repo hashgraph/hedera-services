@@ -120,8 +120,8 @@
           <version>${maven-license.version}</version>
           <configuration>
             <dryRun>false</dryRun>
-            <canUpdateDescription>true</canUpdateDescription>
-            <canUpdateCopyright>true</canUpdateCopyright>
+            <canUpdateDescription>false</canUpdateDescription>
+            <canUpdateCopyright>false</canUpdateCopyright>
             <includes>
               <include>**/*.java</include>
             </includes>

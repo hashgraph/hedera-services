@@ -22,19 +22,29 @@ package com.hedera.services.legacy.handler;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.fees.FeeExemptions;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.domain.security.PermissionedAccountsRange;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.legacy.service.GlobalFlag;
+import com.hedera.services.legacy.config.PropertiesLoader;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
+import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
+import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -54,21 +64,9 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
-import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
-import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -95,6 +93,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.swirlds.common.PlatformStatus.ACTIVE;
 
 /**
  * @author Akshay
@@ -125,6 +124,7 @@ public class TransactionHandler {
   private AccountNumbers accountNums;
   private HederaNodeStats stats;
   private SystemOpPolicies systemOpPolicies;
+  private CurrentPlatformStatus platformStatus;
 
   public void setBasicPrecheck(BasicPrecheck basicPrecheck) {
     this.basicPrecheck = basicPrecheck;
@@ -148,7 +148,8 @@ public class TransactionHandler {
           QueryFeeCheck queryFeeCheck,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
   	this.fees = fees;
   	this.stateView = stateView;
@@ -163,6 +164,7 @@ public class TransactionHandler {
     this.accountNums = accountNums;
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
+    this.platformStatus = platformStatus;
     throttling = function -> false;
     txnThrottling = new TransactionThrottling(throttling);
   }
@@ -174,12 +176,13 @@ public class TransactionHandler {
           AccountID nodeAccount,
           AccountNumbers accountNums,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
     this(recordCache, verifier, accounts, nodeAccount,
             null, null, null, null,
             null, null, null, null,
-            accountNums, null, systemOpPolicies, exemptions);
+            accountNums, null, systemOpPolicies, exemptions, platformStatus);
   }
 
   public TransactionHandler(
@@ -198,7 +201,8 @@ public class TransactionHandler {
           AccountNumbers accountNums,
           HederaNodeStats stats,
           SystemOpPolicies systemOpPolicies,
-          FeeExemptions exemptions
+          FeeExemptions exemptions,
+          CurrentPlatformStatus platformStatus
   ) {
     this.fees = fees;
     this.stateView = stateView;
@@ -216,6 +220,7 @@ public class TransactionHandler {
     this.stats = stats;
     this.systemOpPolicies = systemOpPolicies;
     this.exemptions = exemptions;
+    this.platformStatus = platformStatus;
   }
 
   public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
@@ -343,7 +348,7 @@ public class TransactionHandler {
       if (accountNums.isSuperuser(payer.getAccountNum())) {
         return OK;
       } else {
-        PermissionedAccountsRange accountRange =  PropertiesLoader.getApiPermission().get(permissionKey);
+        PermissionedAccountsRange accountRange = PropertiesLoader.getApiPermission().get(permissionKey);
         if (accountRange != null) {
         	return accountRange.contains(payer.getAccountNum()) ? OK : NOT_SUPPORTED;
         }
@@ -435,7 +440,7 @@ public class TransactionHandler {
   }
 
   public TxnValidityAndFeeReq validateTransactionPreConsensus(Transaction transaction, boolean isQueryPayment) {
-    if (checkPlatformStatus()) {
+    if (platformStatus.get() != ACTIVE) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
 
@@ -537,22 +542,13 @@ public class TransactionHandler {
     return new TxnValidityAndFeeReq(returnCode, feeRequired);
   }
 
-  private boolean checkPlatformStatus() {
-    PlatformStatus platformStatus = GlobalFlag.getInstance().getPlatformStatus();
-    if (platformStatus != null && !platformStatus.equals(PlatformStatus.ACTIVE)) {
-      log.warn("Platform Status is :: " + platformStatus);
-      return true;
-    }
-    return false;
-  }
-
   /**
    * Method to check query validations based on QueryCase from request
    *
    * @return validationCode
    */
   public ResponseCodeEnum validateQuery(Query query, boolean hasPayment) {
-    if (hasPayment && checkPlatformStatus()) {
+    if (hasPayment && platformStatus.get() != ACTIVE) {
       return ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
     }
 
@@ -612,25 +608,5 @@ public class TransactionHandler {
       log.error("Queried records are being modified by another thread!", cme);
       throw cme;
     }
-  }
-
-  /**
-   * Submits transaction to platform.
-   * Returns whether a platform transaction was created successfully.
-   * Update stat when a platform transaction was NOT created.
-   *
-   * @param request       tx to be submitted
-   * @param txnId request tx id
-   *
-   */
-  public boolean submitTransaction(Platform platform, Transaction request, TransactionID txnId) {
-    byte[] transaction = request.toByteArray();
-    boolean created = platform.createTransaction(new com.swirlds.common.Transaction(transaction));
-    if (created) {
-      recordCache.addPreConsensus(txnId);
-    } else {
-      stats.platformTxnNotCreated();
-    }
-    return created;
   }
 }

@@ -106,7 +106,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 								.via("success")
 								.balance(1_000L)
 								.deferStatusResolution(),
-						getReceipt("success").hasReceiptStatus(UNKNOWN)
+						getReceipt("success").hasPriorityStatus(UNKNOWN)
 				);
 	}
 
@@ -115,7 +115,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 				.given(
 						cryptoCreate("misc").via("success").balance(1_000L)
 				).when( ).then(
-						getReceipt("success").hasReceiptStatus(SUCCESS)
+						getReceipt("success").hasPriorityStatus(SUCCESS)
 				);
 	}
 

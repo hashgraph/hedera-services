@@ -67,10 +67,10 @@ class TxnHandlerSubmissionFlowTest {
 			.build();
 	TxnValidityAndFeeReq okMeta = new TxnValidityAndFeeReq(OK);
 
-	private Platform platform;
 	private TransitionLogic logic;
 	private TransactionHandler txnHandler;
 	private TransitionLogicLookup logicLookup;
+	private PlatformSubmissionManager submissionManager;
 	private Function<TransactionBody, ResponseCodeEnum> syntaxCheck;
 
 	private TxnHandlerSubmissionFlow subject;
@@ -78,20 +78,20 @@ class TxnHandlerSubmissionFlowTest {
 	@BeforeEach
 	private void setup() {
 		logic = mock(TransitionLogic.class);
-		platform = mock(Platform.class);
 		txnHandler = mock(TransactionHandler.class);
 		syntaxCheck = mock(Function.class);
 		given(logic.syntaxCheck()).willReturn(syntaxCheck);
 		logicLookup = mock(TransitionLogicLookup.class);
 		given(logicLookup.lookupFor(CryptoTransfer, signedTxn.getBody())).willReturn(Optional.of(logic));
+		submissionManager = mock(PlatformSubmissionManager.class);
 
-		subject = new TxnHandlerSubmissionFlow(platform, STAKED_NODE, txnHandler, logicLookup);
+		subject = new TxnHandlerSubmissionFlow(STAKED_NODE, txnHandler, logicLookup, submissionManager);
 	}
 
 	@Test
 	public void rejectsAllTxnsOnZeroStakeNode() {
 		// given:
-		subject = new TxnHandlerSubmissionFlow(platform, ZERO_STAKE_NODE, txnHandler, logicLookup);
+		subject = new TxnHandlerSubmissionFlow(ZERO_STAKE_NODE, txnHandler, logicLookup, submissionManager);
 
 		// when:
 		TransactionResponse response = subject.submit(Transaction.getDefaultInstance());
@@ -154,7 +154,7 @@ class TxnHandlerSubmissionFlowTest {
 	public void catchesPlatformCreateEx() throws Exception {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(OK);
-		given(txnHandler.submitTransaction(platform, signedTxn, txnId)).willReturn(false);
+		given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
 		// when:
 		TransactionResponse response = subject.submit(signedTxn);
@@ -167,7 +167,7 @@ class TxnHandlerSubmissionFlowTest {
 	public void followsHappyPathToOk() throws Exception {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(OK);
-		given(txnHandler.submitTransaction(platform, signedTxn, txnId)).willReturn(true);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
 
 		// when:
 		TransactionResponse response = subject.submit(signedTxn);

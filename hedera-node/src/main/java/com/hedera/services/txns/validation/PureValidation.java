@@ -46,7 +46,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
 public class PureValidation {
 	public static ResponseCodeEnum queryableFileStatus(FileID id, StateView view) {
-		Optional<FileGetInfoResponse.FileInfo> info = view.infoFor(id);
+		Optional<FileGetInfoResponse.FileInfo> info = view.infoForFile(id);
 		if (info.isEmpty()) {
 			return INVALID_FILE_ID;
 		} else {

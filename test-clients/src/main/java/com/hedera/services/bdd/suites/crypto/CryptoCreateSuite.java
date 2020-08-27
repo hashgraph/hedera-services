@@ -65,16 +65,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveTests()
-//				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-//				invalidPayerSigNotQueryable()
-				vanillaCreateSucceeds()
-//				requiresNewKeyToSign()
+				negativeTests()
 		);
 	}
 
@@ -121,29 +112,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("broken")
 								.autoRenewSecs(1L)
 								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
-				);
-	}
-
-	private HapiApiSpec invalidPayerSigNotQueryable() {
-		KeyShape origShape = listOf(3);
-		KeyShape newShape = SIMPLE;
-
-		return defaultHapiSpec("InvalidPayerSigNotQueryable")
-				.given(
-						UtilVerbs.newKeyNamed("newKey").shape(newShape),
-						UtilVerbs.newKeyNamed("origKey").shape(origShape),
-						cryptoCreate("payer").key("origKey").via("txn")
-				).when(
-						cryptoUpdate("payer")
-								.key("newKey")
-								.deferStatusResolution(),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 100L))
-								.via("impossibleTxn")
-								.fee(2_000_000L)
-								.signedBy("origKey", GENESIS)
-								.payingWith("payer")
-								.hasKnownStatus(UNKNOWN)
-				).then(
 				);
 	}
 

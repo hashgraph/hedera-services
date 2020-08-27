@@ -48,7 +48,7 @@ public class AnswerFunctions {
 
 	public Optional<TransactionRecord> txnRecord(RecordCache recordCache, StateView view, Query query) {
 		var txnId = query.getTransactionGetRecord().getTransactionID();
-		var record = recordCache.getRecord(txnId);
+		var record = recordCache.getPriorityRecord(txnId);
 		if (record != null) {
 			return Optional.of(record);
 		} else {

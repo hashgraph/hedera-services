@@ -21,29 +21,17 @@ package com.hedera.services.legacy.service;
  */
 
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hederahashgraph.fee.FileFeeBuilder;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.swirlds.common.PlatformStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class GlobalFlag {
   private static final Logger log = LogManager.getLogger(GlobalFlag.class);
 
-  private PlatformStatus platformStatus;
   private ExchangeRateSet exchangeRateSet;
   private static volatile GlobalFlag instance;
 
-  private CryptoFeeBuilder crFeeBuilder;
-  private FileFeeBuilder fileFeeBuilder;
-  private SmartContractFeeBuilder smFeeBuilder;
-
   private GlobalFlag() {
     this.exchangeRateSet = ExchangeRateSet.getDefaultInstance();
-    this.crFeeBuilder = new CryptoFeeBuilder();
-    this.fileFeeBuilder = new FileFeeBuilder();
-    this.smFeeBuilder = new SmartContractFeeBuilder();
   }
 
   public static GlobalFlag getInstance() {
@@ -57,14 +45,6 @@ public class GlobalFlag {
     return instance;
   }
 
-  public PlatformStatus getPlatformStatus() {
-    return platformStatus;
-  }
-
-  public void setPlatformStatus(PlatformStatus platformStatus) {
-    this.platformStatus = platformStatus;
-  }
-
   public ExchangeRateSet getExchangeRateSet() {
     return exchangeRateSet;
   }
@@ -72,21 +52,5 @@ public class GlobalFlag {
   public void setExchangeRateSet(ExchangeRateSet exchangeRateSet) {
     log.info("Exchange rates are now :: {}", exchangeRateSet);
     this.exchangeRateSet = exchangeRateSet;
-  }
-
-  public CryptoFeeBuilder getCrFeeBuilder() {
-    return crFeeBuilder;
-  }
-
-  public FileFeeBuilder getFileFeeBuilder() {
-    return fileFeeBuilder;
-  }
-
-  public SmartContractFeeBuilder getSmFeeBuilder() {
-    return smFeeBuilder;
-  }
-
-  public static void setInstance(GlobalFlag instance) {
-    GlobalFlag.instance = instance;
   }
 }

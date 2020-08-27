@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
+import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -46,13 +47,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class TxnVerbs {
-	/* All supported non-system, non-claim txn types as of 09/17/19:
-	* 	[CRYPTO,#=4] cryptoCreateAccount, cryptoDelete, cryptoTransfer, cryptoUpdateAccount
-	* 	[FILE,#=4] fileAppend, fileCreate, fileDelete, fileUpdate
-	* 	[SC,#=4] contractCall, contractCreateInstance, contractUpdateInstance, contractDeleteInstance
-	*   [CONS,#=4] topicCreate, topicDelete, topicUpdate, messageSubmit
-	* */
-
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
 		return new HapiCryptoCreate(account);
@@ -113,7 +107,12 @@ public class TxnVerbs {
 		return new HapiSysUndelete().file(target);
 	}
 
-	/* SC */
+	/* NETWORK */
+	public static <T extends HapiTxnOp<T>> HapiUncheckedSubmit<T> uncheckedSubmit(HapiTxnOp<T> subOp) {
+		return new HapiUncheckedSubmit<>(subOp);
+	}
+
+	/* SMART CONTRACT */
 	public static HapiContractCall contractCallFrom(String details) {
 		return HapiContractCall.fromDetails(details);
 	}

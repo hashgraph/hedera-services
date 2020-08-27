@@ -22,23 +22,14 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.files.TieredHederaFs;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
-
-import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
 import static com.hedera.services.fees.calculation.UsageEstimatorUtils.changeInSbsUsage;
 import static com.hedera.services.fees.calculation.UsageEstimatorUtils.defaultPartitioning;
 import static com.hedera.services.fees.calculation.UsageEstimatorUtils.nonDegenerateDiv;
@@ -73,7 +64,7 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 	) {
 		long newKeyBytes, newContentBytes, newSecs;
 		long oldKeyBytes = 0, oldContentBytes = 0, oldSecs = 0;
-		var info = view.infoFor(op.getFileID());
+		var info = view.infoForFile(op.getFileID());
 		if (info.isPresent()) {
 			var details = info.get();
 			oldSecs = details.getExpirationTime().getSeconds() - at;

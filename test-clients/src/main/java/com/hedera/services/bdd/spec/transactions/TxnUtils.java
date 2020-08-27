@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -291,5 +292,13 @@ public class TxnUtils {
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
 				.collect(toList())
 				.toString();
+	}
+
+	public static OptionalLong getDeduction(TransferList accountAmounts, AccountID payer) {
+		var deduction = accountAmounts.getAccountAmountsList()
+				.stream()
+				.filter(aa -> aa.getAccountID().equals(payer) && aa.getAmount() < 0)
+				.findAny();
+		return deduction.isPresent() ? OptionalLong.of(deduction.get().getAmount()) : OptionalLong.empty();
 	}
 }
