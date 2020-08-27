@@ -791,12 +791,6 @@ commands:
           fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
           args: '1'
       - run-property-driven-scenario-test:
@@ -804,12 +798,6 @@ commands:
           args: '1'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
           args: '1'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractPay

@@ -507,7 +507,7 @@ public class SmartContractInlineAssembly {
 	        log.info("Contract created successfully");
 	        FileID simpleStorageFileID = LargeFileUploadIT
 	  	          .uploadFile(crAccount, secondaryFileName, crAccountKeyPair);
-			if (codeSizeFileId != null) {
+			if (simpleStorageFileID != null) {
 				log.info("Secondary Smart Contract file uploaded successfully");
 				simpleStorageContractId = createContract(crAccount, simpleStorageFileID,
 				    contractDuration);

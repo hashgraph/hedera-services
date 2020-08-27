@@ -36,9 +36,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -92,6 +94,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
 			insufficientFee(),
+			insufficientGas(),
 			invalidContract(),
 			invalidAbi(),
 			nonPayable()
@@ -280,6 +283,19 @@ public class ContractCallSuite extends HapiApiSuite {
 															.propertiesInheritedFrom("parentInfo")))
 											.logs(inOrder()))),
 						contractListWithPropertiesInheritedFrom("createChildCallResult", 1, "parentInfo")
+				);
+	}
+
+	HapiApiSpec insufficientGas() {
+		return defaultHapiSpec("InsuffcientGas")
+				.given(
+						fileCreate("simpleStorageBytecode").path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
+						contractCreate("simpleStorage").bytecode("simpleStorageBytecode").adminKey(THRESHOLD),
+						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
+				).when().then(
+						contractCall("simpleStorage", CREATE_CHILD_ABI).via("simpleStorageTxn")
+								.gas(0L).hasKnownStatus(INSUFFICIENT_GAS),
+						getTxnRecord("simpleStorageTxn").logged()
 				);
 	}
 
