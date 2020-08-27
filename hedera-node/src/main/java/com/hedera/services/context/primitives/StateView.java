@@ -20,6 +20,7 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
@@ -59,7 +60,6 @@ public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
 	private static final byte[] EMPTY_BYTES = new byte[0];
-	private static final int RETRY_TIMES = 5;
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 
@@ -78,7 +78,7 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
 			() -> EMPTY_STORAGE;
 
-	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
+	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER, null);
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
@@ -87,17 +87,21 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	private final PropertySource properties;
+
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			PropertySource properties
 	) {
-		this(topics, accounts, EMPTY_STORAGE_SUPPLIER);
+		this(topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
 	}
 
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
+			PropertySource properties
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
@@ -108,6 +112,7 @@ public class StateView {
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
 		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
+		this.properties = properties;
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -127,7 +132,7 @@ public class StateView {
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
-		int retries = RETRY_TIMES;
+		int retries = properties.getIntProperty("binary.object.query.retry.times");
 		while (true) {
 			try {
 				var attr = fileAttrs.get(id);
@@ -144,10 +149,11 @@ public class StateView {
 				}
 				return Optional.of(info.build());
 			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
-				log.info("May run into a temp issue getting info for {}, retrying...", readableId(id));
+				log.info("May run into a temp issue getting info for {}, will retry {} times", readableId(id), retries);
 				try {
 					TimeUnit.MILLISECONDS.sleep(100);
 				} catch (InterruptedException ie) {
+					// Sleep interrupted, no need to do anything and just try fetch again.
 				}
 				retries--;
 				if (retries <= 0) {

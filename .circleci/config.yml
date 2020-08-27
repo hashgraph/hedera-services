@@ -1073,16 +1073,21 @@ workflows:
                 at: /
 
   nightly-regression:
-    triggers:
-      - schedule:
-            cron: "0 5,9,13 * * *"
-            filters:
-              branches:
-                only:
-                  - master
+#    triggers:
+#      - schedule:
+#            cron: "0 5,9,13 * * *"
+#            filters:
+#              branches:
+#                only:
+#                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
+          filters:
+            branches:
+              only:
+                - 00470-D-fail-invalid-in-regression
+
           workflow-name: "nightly-regression"
           post-steps:
             - save-this-job-client-logs:

@@ -21,6 +21,7 @@ package com.hedera.services.queries.consensus;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -79,6 +80,7 @@ class GetMerkleTopicInfoAnswerTest {
 	private Transaction paymentTxn;
 
 	GetTopicInfoAnswer subject;
+	PropertySource propertySource;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -98,7 +100,9 @@ class GetMerkleTopicInfoAnswerTest {
 		merkleTopic.setSequenceNumber(seqNo);
 		MerkleEntityId key = MerkleEntityId.fromTopicId(asTopic(target));
 		given(topics.get(key)).willReturn(merkleTopic);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER);
+
+		propertySource = mock(PropertySource.class);
+		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, propertySource);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);

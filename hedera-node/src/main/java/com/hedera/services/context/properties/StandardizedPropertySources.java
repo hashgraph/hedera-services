@@ -202,6 +202,8 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("throttling.hcs.getTopicInfo.tps", PropertiesLoader::getGetTopicInfoTps);
 		source.put("throttling.hcs.getTopicInfo.burstPeriod", PropertiesLoader::getGetTopicInfoBurstPeriod);
 
+		source.put("binary.object.query.retry.times", PropertiesLoader::getBinaryObjectQueryRetryTimes);
+
 		/* Node-local/static properties. */
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);

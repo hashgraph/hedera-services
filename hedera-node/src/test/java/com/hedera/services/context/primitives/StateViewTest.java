@@ -29,6 +29,7 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -78,6 +79,7 @@ class StateViewTest {
 
 	MerkleAccount contract;
 	MerkleAccount notContract;
+	PropertySource propertySource;
 
 	StateView subject;
 
@@ -127,8 +129,9 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		propertySource = mock(PropertySource.class);
 
-		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts);
+		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -256,6 +259,18 @@ class StateViewTest {
 		// then:
 		assertTrue(info.isPresent());
 		assertEquals(expected, info.get());
+	}
+
+	@Test
+	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
+		// setup:
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
 	}
 
 	@Test
