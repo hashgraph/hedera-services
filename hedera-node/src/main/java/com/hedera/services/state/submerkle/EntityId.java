@@ -124,6 +124,10 @@ public class EntityId implements SelfSerializable {
 				.toString();
 	}
 
+	public String toAbbrevString() {
+		return String.format("%d.%d.%d", shard, realm, num);
+	}
+
 	public EntityId copy() {
 		return new EntityId(this);
 	}

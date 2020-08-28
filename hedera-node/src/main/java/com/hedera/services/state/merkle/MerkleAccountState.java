@@ -42,6 +42,7 @@ import java.util.Optional;
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
@@ -209,7 +210,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("key", MiscUtils.describe(key))
+				.add("key", describe(key))
 				.add("expiry", expiry)
 				.add("balance", hbarBalance)
 				.add("autoRenewSecs", autoRenewSecs)
