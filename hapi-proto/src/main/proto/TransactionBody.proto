@@ -55,6 +55,8 @@ import "ConsensusDeleteTopic.proto";
 import "ConsensusSubmitMessage.proto";
 
 import "UncheckedSubmit.proto";
+import "TokenCreate.proto";
+import "TokenTransact.proto";
 
 /* A single transaction. All transaction types are possible here. */
 message TransactionBody {
@@ -91,5 +93,7 @@ message TransactionBody {
     ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27;
 
     UncheckedSubmitBody uncheckedSubmit = 28;
+    TokenCreation tokenCreation = 29;
+    TokenTransaction tokenTransaction = 30;
   }
 }

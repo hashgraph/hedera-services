@@ -21,7 +21,6 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hederahashgraph.api.proto.java.*;
@@ -37,10 +36,15 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -93,9 +97,7 @@ public class HederaSigningOrder {
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
 	 */
 	public <T> SigningOrderResult<T> keysForPayer(TransactionBody txn, SigningOrderResultFactory<T> factory) {
-		SigningOrderResult<T> payerSigningOrder = keyOrder(factory, () -> List.of(forPayer(txn, factory)));
-		log.debug("Signing order result for payer Hedera keys of txn {} was {}", txn, payerSigningOrder);
-		return payerSigningOrder;
+		return orderForPayer(txn, factory);
 	}
 
 	/**
@@ -109,6 +111,16 @@ public class HederaSigningOrder {
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
+		var cryptoOrder = forCrypto(txn, factory);
+		if (cryptoOrder.isPresent()) {
+			return cryptoOrder.get();
+		}
+
+		var consensusOrder = forConsensus(txn, factory);
+		if (consensusOrder.isPresent()) {
+			return consensusOrder.get();
+		}
+
 		SigningOrderResult<T> othersSigningOrder = keyOrder(factory, () -> forOtherInvolvedParties(txn, factory));
 		log.debug("Signing order result for non-payer Hedera keys of txn {} was {}", txn, othersSigningOrder);
 		return othersSigningOrder;
@@ -127,18 +139,20 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private JKey forPayer(
-			TransactionBody txn,
-			SigningOrderResultFactory<?> factory
-	) throws SigningOrderException {
-		AccountID payer = AccountID.getDefaultInstance();
-		try {
-			payer = txn.getTransactionID().getAccountID();
-			return sigMetaLookup.lookup(payer).getKey();
-		} catch (InvalidAccountIDException iae) {
-			throw new SigningOrderException(factory.forInvalidAccount(payer, txn.getTransactionID()));
-		} catch (Exception e) {
-			throw new SigningOrderException(factory.forGeneralPayerError(payer, txn.getTransactionID()));
+	private <T> SigningOrderResult<T> orderForPayer(
+		TransactionBody txn,
+		SigningOrderResultFactory<T> factory
+	) {
+		var payer = txn.getTransactionID().getAccountID();
+		var result = sigMetaLookup.accountSigningMetaFor(payer);
+		if (result.succeeded()) {
+			return factory.forValidOrder(List.of(result.metadata().getKey()));
+		} else {
+			if (result.failureIfAny() == MISSING_ACCOUNT) {
+				return factory.forInvalidAccount(payer, txn.getTransactionID());
+			} else {
+				return factory.forGeneralPayerError(payer, txn.getTransactionID());
+			}
 		}
 	}
 
@@ -149,9 +163,7 @@ public class HederaSigningOrder {
 		try {
 			return Stream.of(
 					forInvolvedFiles(txn),
-					forInvolvedAccounts(txn),
-					forInvolvedContracts(txn),
-					forInvolvedTopics(txn)
+					forInvolvedContracts(txn)
 			).flatMap(List::stream).collect(toList());
 		} catch (InvalidFileIDException ife) {
 			throw new SigningOrderException(factory.forMissingFile(ife.getFileId(), txn.getTransactionID()));
@@ -182,17 +194,24 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private List<JKey> forInvolvedAccounts(TransactionBody txn) throws Exception {
+	private <T> Optional<SigningOrderResult<T>> forCrypto(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
+	) {
 		if (txn.hasCryptoCreateAccount()) {
-			return forCryptoCreate(txn.getCryptoCreateAccount());
+			return Optional.of(cryptoCreate(
+					txn.getCryptoCreateAccount()));
 		} else if (txn.hasCryptoTransfer()) {
-			return forCryptoTransfer(txn.getCryptoTransfer());
+			return Optional.of(cryptoTransfer(
+					txn.getTransactionID(), txn.getCryptoTransfer(), factory));
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return forCryptoUpdate(txn.getCryptoUpdateAccount(), updateAccountSigns.test(txn));
+			return Optional.of(cryptoUpdate(
+					txn.getTransactionID(), updateAccountSigns.test(txn), txn.getCryptoUpdateAccount(), factory));
 		} else if (txn.hasCryptoDelete()) {
-			return forCryptoDelete(txn.getCryptoDelete());
-	    } else {
-			return EMPTY_LIST;
+			return Optional.of(cryptoDelete(
+					txn.getTransactionID(), txn.getCryptoDelete(), factory));
+		} else {
+			return Optional.empty();
 		}
 	}
 
@@ -220,26 +239,24 @@ public class HederaSigningOrder {
 		return txn.hasFileCreate() || txn.hasFileAppend() || txn.hasFileUpdate() || txn.hasFileDelete();
 	}
 
-	private boolean isTopicTxn(TransactionBody txn) {
-		return txn.hasConsensusCreateTopic() || txn.hasConsensusSubmitMessage() || txn.hasConsensusUpdateTopic() ||
-				txn.hasConsensusDeleteTopic();
-	}
-
-	private List<JKey> forInvolvedTopics(TransactionBody txn) throws Exception {
-		if (isTopicTxn(txn)) {
-			if (txn.hasConsensusCreateTopic()) {
-				return forConsensusCreateTopic(txn.getConsensusCreateTopic());
-			} else if (txn.hasConsensusSubmitMessage()) {
-				return forConsensusSubmitMessage(txn.getConsensusSubmitMessage());
-			} else if (txn.hasConsensusUpdateTopic()) {
-				return forConsensusUpdateTopic(txn.getConsensusUpdateTopic());
-			} else if (txn.hasConsensusDeleteTopic()) {
-				return forConsensusDeleteTopic(txn.getConsensusDeleteTopic());
-			} else {
-				return EMPTY_LIST;
-			}
+	private <T> Optional<SigningOrderResult<T>> forConsensus(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (txn.hasConsensusCreateTopic()) {
+			return Optional.of(topicCreate(
+					txn.getTransactionID(), txn.getConsensusCreateTopic(), factory));
+		} else if (txn.hasConsensusSubmitMessage()) {
+			return Optional.of(messageSubmit(
+					txn.getTransactionID(), txn.getConsensusSubmitMessage(), factory));
+		} else if (txn.hasConsensusUpdateTopic()) {
+			return Optional.of(topicUpdate(
+					txn.getTransactionID(), txn.getConsensusUpdateTopic(), factory));
+		} else if (txn.hasConsensusDeleteTopic()) {
+			return Optional.of(topicDelete(
+					txn.getTransactionID(), txn.getConsensusDeleteTopic(), factory));
 		} else {
-			return EMPTY_LIST;
+			return Optional.empty();
 		}
 	}
 
@@ -324,140 +341,239 @@ public class HederaSigningOrder {
 		return JKey.mapKey(Key.newBuilder().setKeyList(keyList).build());
 	}
 
-	private List<JKey> forCryptoDelete(CryptoDeleteTransactionBody op) throws Exception {
-		return accumulated(keys -> {
-			AccountSigningMetadata targetSigMeta = sigMetaLookup.lookup(op.getDeleteAccountID());
-			keys.add(targetSigMeta.getKey());
-			AccountSigningMetadata transferSigMeta = sigMetaLookup.lookup(op.getTransferAccountID());
-			if (transferSigMeta.isReceiverSigRequired()) {
-				keys.add(transferSigMeta.getKey());
-			}
-		});
+	private <T> SigningOrderResult<T> cryptoDelete(
+			TransactionID txnId,
+			CryptoDeleteTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		var target = op.getDeleteAccountID();
+		var targetResult = sigMetaLookup.accountSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return accountFailure(target, txnId, targetResult.failureIfAny(), factory);
+		}
+		required = mutable(required);
+		required.add(targetResult.metadata().getKey());
+
+		var beneficiary = op.getTransferAccountID();
+		var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary);
+		if (!beneficiaryResult.succeeded()) {
+			return accountFailure(beneficiary, txnId, beneficiaryResult.failureIfAny(), factory);
+		} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
+			required.add(beneficiaryResult.metadata().getKey());
+		}
+
+		return factory.forValidOrder(required);
 	}
 
-	private List<JKey> forCryptoUpdate(CryptoUpdateTransactionBody op, boolean targetMustSign) throws Exception {
-		return accumulated(keys -> {
-			AccountID target = op.getAccountIDToUpdate();
-			AccountSigningMetadata sigMeta = sigMetaLookup.lookup(target);
-			if (targetMustSign) {
-				keys.add(sigMeta.getKey());
-			}
-			if (hasNewAccountKey(op)) {
-				keys.add(JKey.mapKey(op.getKey()));
-			}
-		});
+	private <T> SigningOrderResult<T> cryptoUpdate(
+			TransactionID txnId,
+			boolean targetMustSign,
+			CryptoUpdateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		var target = op.getAccountIDToUpdate();
+		var result = sigMetaLookup.accountSigningMetaFor(target);
+		if (!result.succeeded()) {
+			return accountFailure(target, txnId, result.failureIfAny(), factory);
+		} else if (targetMustSign) {
+			required = mutable(required);
+			required.add(result.metadata().getKey());
+		}
+
+		if (hasNewAccountKey(op)) {
+			required = mutable(required);
+			required.add(asFcKeyUnchecked(op.getKey()));
+		}
+
+		return factory.forValidOrder(required);
 	}
+
 	private boolean hasNewAccountKey(CryptoUpdateTransactionBody op) {
 		return op.getKey().hasKeyList() || op.getKey().hasThresholdKey() || !op.getKey().getEd25519().isEmpty();
 	}
 
-	private List<JKey> forCryptoTransfer(CryptoTransferTransactionBody op) throws Exception {
-		return accumulated(keys -> {
-			for (AccountAmount delta : op.getTransfers().getAccountAmountsList()) {
-				AccountSigningMetadata accountMeta = sigMetaLookup.lookup(delta.getAccountID());
-				if (delta.getAmount() < 0L || accountMeta.isReceiverSigRequired()) {
-					keys.add(accountMeta.getKey());
+
+	private <T> SigningOrderResult<T> cryptoTransfer(
+			TransactionID txnId,
+			CryptoTransferTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+		for (AccountAmount adjustment : op.getTransfers().getAccountAmountsList()) {
+			var account = adjustment.getAccountID();
+			System.out.println(account);
+			var result = sigMetaLookup.accountSigningMetaFor(account);
+			System.out.println(result);
+			if (result.succeeded()) {
+				if (adjustment.getAmount() < 0L || result.metadata().isReceiverSigRequired()) {
+					required = mutable(required);
+					required.add(result.metadata().getKey());
 				}
+			} else {
+				return accountFailure(account, txnId, result.failureIfAny(), factory);
 			}
-		});
-	}
-
-	private List<JKey> forCryptoCreate(CryptoCreateTransactionBody op) throws Exception {
-		return op.getReceiverSigRequired() ? List.of(JKey.mapKey(op.getKey())) : EMPTY_LIST;
-	}
-
-	/**
-	 * Verify that:
-	 * <ul>
-	 *   <li>if the ConsensusCreateTopic transaction specifies an adminKey - that key must sign the transaction</li>
-	 *   <li>if the ConsensusCreateTopic transaction specifies an autoRenewAccount - that account's key must sign the
-	 *   transaction</li>
-	 * </ul>
-	 * @param op
-	 * @return
-	 * @throws Exception if the autorenew account does not exist
-	 */
-	private List<JKey> forConsensusCreateTopic(ConsensusCreateTopicTransactionBody op) throws Exception {
-		return accumulated(keys -> {
-			if (op.hasAdminKey()) {
-				keys.add(JKey.mapKey(op.getAdminKey()));
-			}
-			if (op.hasAutoRenewAccount()) {
-				try {
-					keys.add(sigMetaLookup.lookup(op.getAutoRenewAccount()).getKey());
-				} catch (InvalidAccountIDException e) {
-					throw new InvalidAutoRenewAccountIDException(e.getMessage(), e.getAccountId());
-				}
-
-			}
-		});
-	}
-
-	/**
-	 * Verify that topic's submitKey is used (if there is one).
-	 * @param op
-	 * @return
-	 * @throws Exception if the specified topic does not exist.
-	 */
-	private List<JKey> forConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody op) throws Exception {
-		TopicSigningMetadata sigMeta = sigMetaLookup.lookup(op.getTopicID());
-		return sigMeta.hasSubmitKey() ? List.of(sigMeta.getSubmitKey()) : EMPTY_LIST;
-	}
-
-	/**
-	 * Verify that topic's adminKey both before and after the update is validated, and the autoRenewAccount's
-	 * key is used if a new autoRenewAccount is set.
-	 * Unless the update is expirationTime only. Then no additional keys are used.
-	 * @param op
-	 * @return
-	 * @throws Exception if the specified topic does not exist or autoRenewAccount does not exist.
-	 */
-	private List<JKey> forConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody op) throws Exception {
-
-		// Updating a topic's expirationTime (only) is allowed for anyone.
-		if (op.hasExpirationTime() && !op.hasMemo() && !op.hasAdminKey() && !op.hasSubmitKey() &&
-				!op.hasAutoRenewPeriod() && !op.hasAutoRenewAccount()) {
-			return EMPTY_LIST;
 		}
-
-		return accumulateKeysforConsensusUpdateTopic(op);
+		return factory.forValidOrder(required);
 	}
 
-	private List<JKey> accumulateKeysforConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody op) throws Exception {
-		TopicSigningMetadata sigMeta = sigMetaLookup.lookup(op.getTopicID());
-		List<JKey> keys = new ArrayList<>();
-
-		if (sigMeta.hasAdminKey()) {
-			keys.add(sigMeta.getAdminKey());
+	private <T> SigningOrderResult<T> accountFailure(
+			AccountID id,
+			TransactionID txnId,
+			KeyOrderingFailure type,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (type == MISSING_ACCOUNT) {
+			return factory.forMissingAccount(id, txnId);
+		} else if (type == MISSING_AUTORENEW_ACCOUNT) {
+			return factory.forMissingAutoRenewAccount(id, txnId);
+		} else {
+			return factory.forGeneralError(txnId);
 		}
+	}
+
+	private <T> SigningOrderResult<T> topicFailure(
+			TopicID id,
+			TransactionID txnId,
+			KeyOrderingFailure type,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (type == INVALID_TOPIC) {
+			return factory.forMissingTopic(id, txnId);
+		} else {
+			return factory.forGeneralError(txnId);
+		}
+	}
+
+	private List<JKey> mutable(List<JKey> required) {
+		return (required == EMPTY_LIST)	? new ArrayList<>() : required;
+	}
+
+	private <T> SigningOrderResult<T> cryptoCreate(CryptoCreateTransactionBody op) {
+		return op.getReceiverSigRequired()
+				? new SigningOrderResult<>(List.of(asFcKeyUnchecked(op.getKey())))
+				: SigningOrderResult.noKnownKeys();
+	}
+
+	private <T> SigningOrderResult<T> topicCreate(
+			TransactionID txnId,
+			ConsensusCreateTopicTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
 		if (op.hasAdminKey()) {
-			keys.add(JKey.mapKey(op.getAdminKey()));
+			required = mutable(required);
+			required.add(asFcKeyUnchecked(op.getAdminKey()));
 		}
 		if (op.hasAutoRenewAccount()) {
-			AccountID autoRenewAccount = op.getAutoRenewAccount();
-			// If set to 0.0.0, it means autoRenewAccount should be cleared
-			if (autoRenewAccount.getShardNum() != 0 || autoRenewAccount.getRealmNum() != 0
-					|| autoRenewAccount.getAccountNum() != 0) {
-				try {
-					keys.add(sigMetaLookup.lookup(op.getAutoRenewAccount()).getKey());
-				} catch (InvalidAccountIDException e) {
-					throw new InvalidAutoRenewAccountIDException(e.getMessage(), e.getAccountId());
-				}
+			var result = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount());
+			if (result.succeeded()) {
+				required = mutable(required);
+				required.add(result.metadata().getKey());
+			} else {
+				return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 			}
 		}
 
-		return keys;
+		return factory.forValidOrder(required);
 	}
 
-	/**
-	 * Verify that topic's adminKey is used (if there is one).
-	 * @param op
-	 * @return
-	 * @throws Exception if the specified topic does not exist.
-	 */
-	private List<JKey> forConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody op) throws Exception {
-		TopicSigningMetadata sigMeta = sigMetaLookup.lookup(op.getTopicID());
-		return sigMeta.hasAdminKey() ? List.of(sigMeta.getAdminKey()) : EMPTY_LIST;
+	private <T> SigningOrderResult<T> messageSubmit(
+			TransactionID txnId,
+			ConsensusSubmitMessageTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+		var target = op.getTopicID();
+		var result = sigMetaLookup.topicSigningMetaFor(target);
+		if (!result.succeeded()) {
+			return topicFailure(target, txnId, result.failureIfAny(), factory);
+		}
+		if (result.metadata().hasSubmitKey()) {
+			required = mutable(required);
+			required.add(result.metadata().getSubmitKey());
+		}
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> topicUpdate(
+			TransactionID txnId,
+			ConsensusUpdateTopicTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		if (onlyExtendsExpiry(op)) {
+			return factory.forValidOrder(required);
+		}
+		System.out.println(op);
+
+		var target = op.getTopicID();
+		System.out.println(target);
+		var targetResult = sigMetaLookup.topicSigningMetaFor(target);
+		System.out.println(targetResult);
+		if (!targetResult.succeeded()) {
+			return topicFailure(target, txnId, targetResult.failureIfAny(), factory);
+		}
+		var meta = targetResult.metadata();
+		if (meta.hasAdminKey()) {
+			required = mutable(required);
+			required.add(meta.getAdminKey());
+		}
+
+		if (op.hasAdminKey()) {
+			required = mutable(required);
+			required.add(asFcKeyUnchecked(op.getAdminKey()));
+		}
+		if (op.hasAutoRenewAccount() && !isEliding(op.getAutoRenewAccount())) {
+			var account = op.getAutoRenewAccount();
+			System.out.println("has autorenew: " + account);
+			var autoRenewResult = sigMetaLookup.accountSigningMetaFor(account);
+			System.out.println(autoRenewResult);
+			if (autoRenewResult.succeeded()) {
+				required = mutable(required);
+				required.add(autoRenewResult.metadata().getKey());
+			} else {
+				return accountFailure(account, txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+			}
+		}
+
+		return factory.forValidOrder(required);
+	}
+
+	private boolean isEliding(AccountID id) {
+		return id.getShardNum() == 0 && id.getRealmNum() == 0 && id.getAccountNum() == 0;
+	}
+
+	private boolean onlyExtendsExpiry(ConsensusUpdateTopicTransactionBody op) {
+		return op.hasExpirationTime() &&
+				!op.hasMemo() &&
+				!op.hasAdminKey() &&
+				!op.hasSubmitKey() &&
+				!op.hasAutoRenewPeriod() &&
+				!op.hasAutoRenewAccount();
+	}
+
+	private <T> SigningOrderResult<T> topicDelete(
+			TransactionID txnId,
+			ConsensusDeleteTopicTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		var target = op.getTopicID();
+		var targetResult = sigMetaLookup.topicSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return topicFailure(target, txnId, targetResult.failureIfAny(), factory);
+		} else if (targetResult.metadata().hasAdminKey()) {
+			required = mutable(required);
+			required.add(targetResult.metadata().getAdminKey());
+		}
+		return factory.forValidOrder(required);
 	}
 
 	private List<JKey> accumulated(KeyAccumulation using) throws Exception {

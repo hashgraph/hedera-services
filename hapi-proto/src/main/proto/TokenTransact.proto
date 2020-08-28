@@ -27,15 +27,12 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-/*
-Create a new token, returning its id in the receipt.
- */
-message TokenCreation {
-    uint64 float = 1; // The total number of tokens to put into circulation
-    uint32 divisibility = 2; // The number of unit into which each token may be subdivided
-    AccountID treasury = 3; // The treasury account which should receive the initial float
-    Key adminKey = 4; // The key which must sign to modify this token's properties
-    Key freezeKey = 5; // The key which must sign to freeze or unfreeze an account for token transactions
-    bool freezeDefault = 6; // The default status (frozen or unfrozen) of Hedera accounts relative to this token
-    string symbol = 7; // The case-insensitive UTF-8 alphanumeric string identifying the token
+message TokenAdjustment {
+    AccountID account = 1;
+    sint64 amount = 2;
+    TokenRef token = 3;
+}
+
+message TokenTransaction {
+    repeated TokenAdjustment adjustments = 1;
 }

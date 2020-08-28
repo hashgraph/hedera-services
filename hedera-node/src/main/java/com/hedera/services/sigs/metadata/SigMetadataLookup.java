@@ -36,4 +36,8 @@ public interface SigMetadataLookup {
 	AccountSigningMetadata lookup(AccountID account) throws Exception;
 	ContractSigningMetadata lookup(ContractID contract) throws Exception;
 	TopicSigningMetadata lookup(TopicID topic) throws Exception;
+
+	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
+	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
+	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
 }

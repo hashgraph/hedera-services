@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
+import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
@@ -34,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 
 /**
  * Adds retry-with-backoff functionality to the {@link DefaultFCMapAccountLookup} by
@@ -87,16 +90,8 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		this.retryWaitIncrementMs = DEFAULT_RETRY_WAIT_INCREMENT_MS;
 	}
 
-	/**
-	 * Returns account signing metadata from the backing {@code FCMap} if
-	 * it becomes available within {@code (maxRetries + 1)} attempts.
-	 *
-	 * @param id the account to recover signing metadata for.
-	 * @return the metadata if available.
-	 * @throws InvalidAccountIDException if the metadata is never available.
-	 */
 	@Override
-	public AccountSigningMetadata lookup(AccountID id) throws Exception {
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
 		maxRetries = properties
 				.map(p -> p.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"))
 				.orElse(maxRetries);
@@ -107,20 +102,22 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		final long lookupStart = System.nanoTime();
 		int retriesRemaining = maxRetries;
 
-		AccountSigningMetadata meta = uncheckedLookup(id);
-		if (meta != null) { return meta; }
+		AccountSigningMetadata meta = superLookup(id);
+		if (meta != null) {
+			return new SafeLookupResult<>(meta);
+		}
 
 		do {
 			int retryNo = maxRetries - retriesRemaining + 1;
 			if (!pause.forMs(retryNo * retryWaitIncrementMs)) {
-				throw new InvalidAccountIDException("Invalid account!", id);
+				return SafeLookupResult.failure(MISSING_ACCOUNT);
 			}
-			meta = uncheckedLookup(id);
+			meta = superLookup(id);
 			if (meta != null) {
 				if (stats != null) {
 					stats.lookupRetries(retryNo, msElapsedSince(lookupStart));
 				}
-				return meta;
+				return new SafeLookupResult<>(meta);
 			}
 			retriesRemaining--;
 		} while (retriesRemaining > 0);
@@ -128,20 +125,15 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 		if (stats != null) {
 			stats.lookupRetries(maxRetries, msElapsedSince(lookupStart));
 		}
-		throw new InvalidAccountIDException("Invalid account!", id);
+		return SafeLookupResult.failure(MISSING_ACCOUNT);
 	}
 
 	private double msElapsedSince(long then) {
 		return (System.nanoTime() - (double)then) / 1_000_000L;
 	}
 
-	private AccountSigningMetadata uncheckedLookup(AccountID id) {
-		try {
-			return super.lookup(id);
-		} catch (Exception ignore) {
-			log.warn(ignore.getMessage());
-			return null;
-		}
+	private AccountSigningMetadata superLookup(AccountID id) {
+		var result = super.safeLookup(id);
+		return result.succeeded() ? result.metadata() : null;
 	}
-
 }
