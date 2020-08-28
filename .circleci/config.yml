@@ -917,7 +917,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "33 22 * * *"
+          cron: "49 22 * * *"
           filters:
             branches:
               only:
@@ -937,7 +937,7 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "49 21 * * *"
           filters:
             branches:
               only:
@@ -949,6 +949,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-performance-regression"
@@ -956,7 +957,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "49 21 * * *"
           filters:
             branches:
               only:
@@ -968,6 +969,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-network-error-regression"
@@ -975,7 +977,7 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "49 21 * * *"
           filters:
             branches:
               only:
@@ -987,6 +989,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-zero-stake-regression"
@@ -994,7 +997,7 @@ workflows:
   nightly-migration-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "49 21 * * *"
           filters:
             branches:
               only:
@@ -1006,6 +1009,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-migration-regression"
@@ -1013,7 +1017,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "49 21 * * *"
           filters:
             branches:
               only:
@@ -1025,6 +1029,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-software-update-regression"
@@ -1874,7 +1879,7 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
+            cd /swirlds-platform/regression;   git checkout test-update-freeze;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
