@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.legacy.unit.handler;
 
 /*-
  * ‌

@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.legacy.unit.handler;
 
 /*-
  * ‌
@@ -20,10 +20,8 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class PlatformTransactionCreationException extends Exception {
-	private static final long serialVersionUID = 1L;
-
-	public PlatformTransactionCreationException(String message) {
+public class InvalidTransactionException extends Exception {
+	public InvalidTransactionException(String message) {
 		super(message);
 	}
 }

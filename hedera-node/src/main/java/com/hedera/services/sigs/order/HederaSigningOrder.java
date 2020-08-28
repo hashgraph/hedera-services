@@ -22,7 +22,6 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
-import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
