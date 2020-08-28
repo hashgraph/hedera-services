@@ -1072,6 +1072,10 @@ workflows:
             - attach_workspace:
                 at: /
 
+# Now that JRS nightly regression covers all this regression workflow's coverage and is stable.
+# We'll disable the CircleCi side regression workflow. No need to keep both
+# We'll keep this workflow for now in case we need to run some tests and need this workflow.
+# Later we may clean up these obsolete workflows completely.
   nightly-regression:
     triggers:
       - schedule:
@@ -1079,7 +1083,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - disable-master
+                  - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
