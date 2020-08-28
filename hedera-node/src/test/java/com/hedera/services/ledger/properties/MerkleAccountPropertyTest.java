@@ -21,17 +21,18 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -39,11 +40,25 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
+import static com.hedera.services.ledger.HederaLedger.HBAR_TOKEN_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static com.hedera.services.ledger.properties.AccountProperty.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 public class MerkleAccountPropertyTest {
@@ -109,6 +124,10 @@ public class MerkleAccountPropertyTest {
 		account.records().offer(origRecords.get(1));
 		account.payerRecords().offer(origPayerRecords.get(0));
 		account.payerRecords().offer(origPayerRecords.get(1));
+		// and:
+		var token = IdUtils.tokenWith(123);
+		var newTokenBalance = 1_234_567L;
+		var tokenBalance = new TokenScopedPropertyValue(newTokenBalance, token);
 
 		// when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
@@ -124,6 +143,8 @@ public class MerkleAccountPropertyTest {
 		PROXY.setter().accept(account, newProxy);
 		HISTORY_RECORDS.setter().accept(account, newRecords);
 		PAYER_RECORDS.setter().accept(account, newPayerRecords);
+		// and:
+		BALANCE.setter().accept(account, tokenBalance);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -139,6 +160,8 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newProxy, PROXY.getter().apply(account));
 		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
+		// and:
+		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, token));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
@@ -147,5 +170,23 @@ public class MerkleAccountPropertyTest {
 					.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
 				.build()
 		);
+	}
+
+	@Test
+	public void delegatesToNonQueryCtxAsExpected() {
+		// setup:
+		var subject = mock(AccountProperty.class);
+		var account = mock(MerkleAccount.class);
+		var mockGetter = mock(Function.class);
+
+		given(subject.getter()).willReturn(mockGetter);
+		// given:
+		willCallRealMethod().given(subject).scopedGetter();
+
+		// when:
+		subject.scopedGetter().apply(account, HBAR_TOKEN_ID);
+
+		// then:
+		verify(mockGetter).apply(account);
 	}
 }

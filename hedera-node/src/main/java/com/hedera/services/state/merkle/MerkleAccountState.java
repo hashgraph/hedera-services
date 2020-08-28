@@ -24,7 +24,9 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -33,16 +35,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
-	static final int MERKLE_VERSION = 1;
+	public static final int MAX_NUM_TOKEN_BALANCES = 1_000;
+	public static final long[] NO_TOKEN_BALANCES = new long[0];
+
+	static final int RELEASE_070_VERSION = 1;
+	static final int RELEASE_090_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -51,7 +60,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	private JKey key;
 	private long expiry;
-	private long balance;
+	private long hbarBalance;
 	private long autoRenewSecs;
 	private long senderThreshold;
 	private long receiverThreshold;
@@ -60,13 +69,14 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private boolean smartContract;
 	private boolean receiverSigRequired;
 	private EntityId proxy;
+	long[] tokenBalances = NO_TOKEN_BALANCES;
 
 	public MerkleAccountState() { }
 
 	public MerkleAccountState(
 			JKey key,
 			long expiry,
-			long balance,
+			long hbarBalance,
 			long autoRenewSecs,
 			long senderThreshold,
 			long receiverThreshold,
@@ -74,11 +84,12 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			boolean deleted,
 			boolean smartContract,
 			boolean receiverSigRequired,
-			EntityId proxy
+			EntityId proxy,
+			long[] tokenBalances
 	) {
 		this.key = key;
 		this.expiry = expiry;
-		this.balance = balance;
+		this.hbarBalance = hbarBalance;
 		this.autoRenewSecs = autoRenewSecs;
 		this.senderThreshold = senderThreshold;
 		this.receiverThreshold = receiverThreshold;
@@ -87,6 +98,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
+		this.tokenBalances = tokenBalances;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -104,7 +116,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		key = serdes.readNullable(in, serdes::deserializeKey);
 		expiry = in.readLong();
-		balance = in.readLong();
+		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
 		senderThreshold = in.readLong();
 		receiverThreshold = in.readLong();
@@ -113,13 +125,16 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
+		if (version >= RELEASE_090_VERSION) {
+			tokenBalances = in.readLongArray(MAX_NUM_TOKEN_BALANCES * 4);
+		}
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		serdes.writeNullable(key, out, serdes::serializeKey);
 		out.writeLong(expiry);
-		out.writeLong(balance);
+		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);
 		out.writeLong(senderThreshold);
 		out.writeLong(receiverThreshold);
@@ -128,6 +143,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
+		out.writeLongArray(tokenBalances);
 	}
 
 	/* --- Copyable --- */
@@ -135,7 +151,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return new MerkleAccountState(
 				key,
 				expiry,
-				balance,
+				hbarBalance,
 				autoRenewSecs,
 				senderThreshold,
 				receiverThreshold,
@@ -143,7 +159,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				deleted,
 				smartContract,
 				receiverSigRequired,
-				proxy);
+				proxy,
+				Arrays.copyOf(tokenBalances, tokenBalances.length));
 	}
 
 	@Override
@@ -158,7 +175,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		var that = (MerkleAccountState) o;
 
 		return this.expiry == that.expiry &&
-				this.balance == that.balance &&
+				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
 				this.senderThreshold == that.senderThreshold &&
 				this.receiverThreshold == that.receiverThreshold &&
@@ -167,7 +184,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				this.smartContract == that.smartContract &&
 				this.receiverSigRequired == that.receiverSigRequired &&
 				Objects.equals(this.proxy, that.proxy) &&
-				equalUpToDecodability(this.key, that.key);
+				equalUpToDecodability(this.key, that.key) &&
+				Arrays.equals(this.tokenBalances, that.tokenBalances);
 	}
 
 	@Override
@@ -175,7 +193,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return Objects.hash(
 				key,
 				expiry,
-				balance,
+				hbarBalance,
 				autoRenewSecs,
 				senderThreshold,
 				receiverThreshold,
@@ -183,7 +201,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				deleted,
 				smartContract,
 				receiverSigRequired,
-				proxy);
+				proxy,
+				Arrays.hashCode(tokenBalances));
 	}
 
 	/* --- Bean --- */
@@ -192,7 +211,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return MoreObjects.toStringHelper(this)
 				.add("key", MiscUtils.describe(key))
 				.add("expiry", expiry)
-				.add("balance", balance)
+				.add("balance", hbarBalance)
 				.add("autoRenewSecs", autoRenewSecs)
 				.add("senderThreshold", senderThreshold)
 				.add("receiverThreshold", receiverThreshold)
@@ -201,6 +220,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.add("smartContract", smartContract)
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
+				.add("tokenBalances", Arrays.toString(tokenBalances))
 				.toString();
 	}
 
@@ -213,7 +233,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	}
 
 	public long balance() {
-		return balance;
+		return hbarBalance;
 	}
 
 	public long autoRenewSecs() {
@@ -256,8 +276,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.expiry = expiry;
 	}
 
-	public void setBalance(long balance) {
-		this.balance = balance;
+	public void setHbarBalance(long hbarBalance) {
+		this.hbarBalance = hbarBalance;
 	}
 
 	public void setAutoRenewSecs(long autoRenewSecs) {
@@ -290,5 +310,63 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	public void setProxy(EntityId proxy) {
 		this.proxy = proxy;
+	}
+
+	public long getTokenBalance(TokenID token) {
+		int i = logicalIndexOf(token);
+		if (i < 0) {
+			throw new IllegalArgumentException(String.format("Token %s is missing!", readableId(token)));
+		}
+		return tokenBalances[i * 2 + 1];
+	}
+
+	public void setTokenBalance(TokenID token, long balance) {
+		if (balance < 0) {
+			throw new IllegalArgumentException(String.format(
+					"Token %s cannot have balance %d!",
+					readableId(token),
+					balance));
+		}
+		int i = logicalIndexOf(token);
+		if (i < 0) {
+			int newNumTokens = tokenBalances.length / 2 + 1;
+
+			long[] newTokenBalances = new long[newNumTokens * 2];
+			i = -i - 1;
+			if (i != 0) {
+				System.arraycopy(tokenBalances, 0, newTokenBalances, 0, i * 2);
+			}
+
+			newTokenBalances[i * 2] = token.getTokenNum();
+			newTokenBalances[i * 2 + 1] = balance;
+
+			if (i != newNumTokens) {
+				System.arraycopy(
+						tokenBalances,
+						i * 2,
+						newTokenBalances,
+						(i + 1) * 2,
+						(newNumTokens - i - 1) * 2);
+			}
+			tokenBalances = newTokenBalances;
+		}
+		tokenBalances[i * 2 + 1] = balance;
+	}
+
+	int logicalIndexOf(TokenID token) {
+		int lo = 0, hi = tokenBalances.length / 2 - 1;
+		long num = token.getTokenNum();
+		while (lo <= hi) {
+			int mid = (lo + (hi - lo) / 2), i = mid * 2;
+			long midNum = tokenBalances[i];
+			if (midNum == num) {
+				return mid;
+			} else if (midNum < num) {
+				lo = mid + 1;
+			} else {
+				hi = mid - 1;
+			}
+		}
+		return -(lo + 1);
 	}
 }

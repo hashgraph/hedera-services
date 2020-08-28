@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.test.utils.IdUtils;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -66,6 +68,15 @@ public class MerkleAccountTest {
 	boolean smartContract = true;
 	boolean receiverSigRequired = true;
 	EntityId proxy = new EntityId(1L, 2L, 3L);
+	long firstToken = 555, secondToken = 666, thirdToken = 777;
+	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
+	long[] tokenBalances = new long[] {
+			firstToken, firstBalance, secondToken, secondBalance, thirdToken, thirdBalance
+	};
+	long otherFirstBalance = 321, otherSecondBalance = 432, otherThirdBalance = 543;
+	long[] otherTokenBalances = new long[] {
+			firstToken, otherFirstBalance, secondToken, otherSecondBalance, thirdToken, otherThirdBalance
+	};
 
 	JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	long otherExpiry = 7_234_567L;
@@ -113,13 +124,15 @@ public class MerkleAccountTest {
 				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy);
+				proxy,
+				tokenBalances);
 		otherState = new MerkleAccountState(
 				otherKey,
 				otherExpiry, otherBalance, otherAutoRenewSecs, otherSenderThreshold, otherReceiverThreshold,
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
-				otherProxy);
+				otherProxy,
+				otherTokenBalances);
 
 		subject = new MerkleAccount(List.of(state, records, payerRecords));
 	}
@@ -180,6 +193,27 @@ public class MerkleAccountTest {
 	}
 
 	@Test
+	public void tokenGettersDelegate() {
+		// given:
+		var token = IdUtils.tokenWith(secondToken);
+
+		// expect:
+		assertEquals(secondBalance, subject.getTokenBalance(token));
+	}
+
+	@Test
+	public void tokenSettersDelegate() {
+		// given:
+		var token = IdUtils.tokenWith(secondToken);
+
+		// when:
+		subject.setTokenBalance(token, secondBalance + 1);
+
+		// expect:
+		assertEquals(secondBalance + 1, subject.getTokenBalance(token));
+	}
+
+	@Test
 	public void settersDelegate() throws NegativeAccountBalanceException {
 		// when:
 		subject.setExpiry(otherExpiry);
@@ -193,6 +227,9 @@ public class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
+		subject.setTokenBalance(IdUtils.tokenWith(firstToken), otherFirstBalance);
+		subject.setTokenBalance(IdUtils.tokenWith(secondToken), otherSecondBalance);
+		subject.setTokenBalance(IdUtils.tokenWith(thirdToken), otherThirdBalance);
 
 		// then:
 		assertEquals(otherState, subject.state());
@@ -277,7 +314,8 @@ public class MerkleAccountTest {
 				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy);
+				proxy,
+				NO_TOKEN_BALANCES);
 		// and:
 		var in = mock(DataInputStream.class);
 

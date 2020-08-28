@@ -20,6 +20,8 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenID;
+
 /**
  * Defines a ledger type with minimal semantics for manipulating
  * accounts and a given family of their properties. It is presumed
@@ -74,6 +76,17 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * @return the value of the property.
 	 */
 	Object get(K id, P property);
+
+	/**
+	 * Gets the current property value of the specified account relative to
+	 * the scoping token. This value need not be persisted to a durable backing
+	 * store.
+	 *
+	 * @param id the id of the relevant account.
+	 * @param property which property to fetch.
+	 * @return the value of the property.
+	 */
+	Object get(K id, P property, TokenID scope);
 
 	/**
 	 * Indicates whether an account is present (in either a saved or transient

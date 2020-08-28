@@ -39,6 +39,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -217,6 +218,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 
 		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
+	}
+
+	@Override
+	public Object get(K id, P property, TokenID scope) {
+		throw new AssertionError("Not implemented");
 	}
 
 	@Override

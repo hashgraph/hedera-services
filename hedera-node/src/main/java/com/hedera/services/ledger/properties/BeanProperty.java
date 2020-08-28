@@ -20,7 +20,10 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenID;
+
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -46,4 +49,13 @@ public interface BeanProperty<A> {
 	 * @return the getter on the target type.
 	 */
 	Function<A, Object> getter();
+
+	/**
+	 * Provides the matching token-scoped getter for the property at hand.
+	 *
+	 * @return the getter on the target type.
+	 */
+	default BiFunction<A, TokenID, Object> scopedGetter() {
+		return (account, ignoredScope) -> getter().apply(account);
+	}
 }

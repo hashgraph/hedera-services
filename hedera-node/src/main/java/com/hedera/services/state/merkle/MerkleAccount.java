@@ -26,11 +26,10 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.swirlds.common.FCMElement;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -47,6 +46,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.P;
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
 
 public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -189,7 +189,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	/* ----  Bean  ---- */
-
 	public String getMemo() {
 		return state().memo();
 	}
@@ -214,7 +213,15 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		if (balance < 0) {
 			throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
 		}
-		state().setBalance(balance);
+		state().setHbarBalance(balance);
+	}
+
+	public long getTokenBalance(TokenID token) {
+		return state().getTokenBalance(token);
+	}
+
+	public void setTokenBalance(TokenID token, long balance) {
+		state().setTokenBalance(token, balance);
 	}
 
 	public long getReceiverThreshold() {
@@ -324,7 +331,8 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 					expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 					memo,
 					deleted, smartContract, receiverSigRequired,
-					proxy);
+					proxy,
+					NO_TOKEN_BALANCES);
 
 			var records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 			serdes.deserializeIntoRecords(in, records);
