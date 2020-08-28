@@ -917,11 +917,11 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-basic-suiterunner-tests:
@@ -937,11 +937,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -957,11 +957,11 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -977,11 +977,11 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-zero-stake-regression:
@@ -997,11 +997,11 @@ workflows:
   nightly-migration-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-migration-regression:
@@ -1017,11 +1017,11 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "19 23 * * *"
+          cron: "0 23,8 * * *"
           filters:
             branches:
               only:
-                - 490-M-parallelize-services-regression
+                - master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1504,7 +1504,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 490-M-parallelize-services-regression
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
