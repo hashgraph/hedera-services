@@ -1,6 +1,22 @@
 version: 2.1
 
 commands:
+  install-tools:
+    description: Install tools for JRS regression
+    steps:
+      - run:
+          name: Install necessary tools
+          command: |
+            sudo apt update -y;
+            sudo apt install -y net-tools;
+            sudo apt install -y curl;
+            sudo apt install -y python3.7;
+            sudo rm /usr/bin/python3;
+            sudo ln -s python3.7 /usr/bin/python3;
+            sudo apt install -y python3-pip;
+            pip3 -q install matplotlib;
+            sudo apt-get install -y python3-setuptools;
+            pip3 install awscli;
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -901,7 +917,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "16 22 * * *"
+          cron: "33 22 * * *"
           filters:
             branches:
               only:
@@ -913,6 +929,7 @@ workflows:
           requires:
             - build-platform-and-services
           pre-steps:
+            - install-tools
             - attach_workspace:
                 at: /
           workflow-name: "nightly-basic-suiterunner-regression"
@@ -1859,20 +1876,6 @@ jobs:
             cd /swirlds-platform; git submodule update --init --recursive --checkout
             cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
-
-      - run:
-          name: Install necessary tools
-          command: |
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt install -y curl;
-            sudo apt install -y python3.7;
-            sudo rm /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install -y python3-pip;
-            pip3 -q install matplotlib;
-            sudo apt-get install -y python3-setuptools;
-            pip3 install awscli;
 
       - run:
           name: Save PEM file to keys folder
