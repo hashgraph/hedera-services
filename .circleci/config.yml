@@ -901,12 +901,13 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "43 21 * * *"
           filters:
             branches:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-basic-suiterunner-tests:
           context: Slack
           requires:
@@ -922,6 +923,7 @@ workflows:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-performance-regression:
           context: Slack
           requires:
@@ -937,6 +939,7 @@ workflows:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-network-error-regression:
           context: Slack
           requires:
@@ -952,6 +955,7 @@ workflows:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-zero-stake-regression:
           context: Slack
           requires:
@@ -967,6 +971,7 @@ workflows:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-migration-regression:
           context: Slack
           requires:
@@ -982,6 +987,7 @@ workflows:
               only:
                 - 490-M-parallelize-services-regression
     jobs:
+      - build-platform-and-services
       - run-software-update-regression:
           context: Slack
           requires:
