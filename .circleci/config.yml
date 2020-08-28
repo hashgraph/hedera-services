@@ -898,18 +898,95 @@ executors:
     working_directory: /repo
 
 workflows:
-  nightly-services-regression:
+  nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "28 21 * * *"
           filters:
             branches:
               only:
                 - master
     jobs:
-      - build-platform-and-services:
+      - run-basic-suiterunner-tests:
           context: Slack
-          workflow-name: "nightly-services-regression"
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-basic-suiterunner-regression"
+
+  nightly-performance-regression:
+    triggers:
+      - schedule:
+          cron: "28 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-performance-regression"
+
+  nightly-network-error-regression:
+    triggers:
+      - schedule:
+          cron: "28 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - run-network-error-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-network-error-regression"
+
+  nightly-zero-stake-regression:
+    triggers:
+      - schedule:
+          cron: "28 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - run-zero-stake-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-zero-stake-regression"
+
+  nightly-migration-regression:
+    triggers:
+      - schedule:
+          cron: "28 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - run-migration-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-migration-regression"
+
+  nightly-software-update-regression:
+    triggers:
+      - schedule:
+          cron: "28 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - run-software-update-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          workflow-name: "nightly-software-update-regression"
 
   custom-migration:
     triggers:
@@ -1579,7 +1656,30 @@ jobs:
             - root/.m2
             - repo/hedera-node
 
-  build-platform-and-services:
+  run-basic-suiterunner-tests:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+          workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run various suites in SuiteRunner
+          command: |
+              cd /swirlds-platform/regression; ./regression_services_circleci.sh AWS-Services-Daily-Comp-4N-1C.json /repo
+
+      - run:
+          name: Sync results of SuiteRunner suites to AWS
+          command: |
+              aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+              tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-performance-regression:
     parameters:
       workflow-name:
         type: string
@@ -1587,6 +1687,116 @@ jobs:
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Performance regression
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Perf-4N-4C.json /repo
+
+      - run:
+          name: Sync results of performance regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-network-error-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run network error regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-NetError-4N-1C.json /repo
+
+      - run:
+          name: Sync results of network error regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+  run-zero-stake-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run Zero stake regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Comp-6_2N-1C.json /repo
+
+      - run:
+          name: Sync results of zero stake regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+  run-migration-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Migration test
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Run Migration test
+          command: |
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
+
+      - run:
+          name: Sync results of migration test to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+  run-software-update-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run Zero stake regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo
+
+      - run:
+          name: Sync results of zero stake regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+
+  build-platform-and-services:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
     steps:
       - attach_workspace:
           at: /
@@ -1627,72 +1837,6 @@ jobs:
           name: Save PEM file to keys folder
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
-
-      - run:
-          name: Run various suites in SuiteRunner
-          command: |
-            cd /swirlds-platform/regression; ./regression_services_circleci.sh AWS-Services-Daily-Comp-4N-1C.json /repo
-
-      - run:
-          name: Sync results of SuiteRunner suites to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Performance regression
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Perf-4N-4C.json /repo
-
-      - run:
-          name: Sync results of performance regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Run network error regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-NetError-4N-1C.json /repo
-
-      - run:
-          name: Sync results of network error regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Run Zero stake regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Comp-6_2N-1C.json /repo
-
-      - run:
-          name: Sync results of zero stake regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Modify Payer account for Migration test
-          # MigrationTest should be the last one in nightly services regression
-          command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-
-      - run:
-          name: Run Migration test
-          command: |
-            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
-
-      - run:
-          name: Sync results of migration test to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
 
   aws-summary:
     executor: ci-test-executor
