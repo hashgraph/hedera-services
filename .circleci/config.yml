@@ -901,7 +901,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -916,7 +916,7 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -931,7 +931,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -946,7 +946,7 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -961,7 +961,7 @@ workflows:
   nightly-migration-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -976,7 +976,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "28 21 * * *"
+          cron: "35 21 * * *"
           filters:
             branches:
               only:
@@ -1674,7 +1674,7 @@ jobs:
       - run:
           name: Sync results of SuiteRunner suites to AWS
           command: |
-              aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+              aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
               tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
 
       - store_artifacts:
@@ -1698,7 +1698,7 @@ jobs:
       - run:
           name: Sync results of performance regression to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
 
       - store_artifacts:
@@ -1722,7 +1722,11 @@ jobs:
       - run:
           name: Sync results of network error regression to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
   run-zero-stake-regression:
     parameters:
@@ -1742,7 +1746,11 @@ jobs:
       - run:
           name: Sync results of zero stake regression to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
   run-migration-regression:
     parameters:
@@ -1769,7 +1777,11 @@ jobs:
       - run:
           name: Sync results of migration test to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
   run-software-update-regression:
     parameters:
@@ -1789,7 +1801,11 @@ jobs:
       - run:
           name: Sync results of zero stake regression to AWS
           command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
 
   build-platform-and-services:
     parameters:
