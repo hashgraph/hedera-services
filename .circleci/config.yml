@@ -905,7 +905,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-basic-suiterunner-tests:
           context: Slack
@@ -920,7 +920,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-performance-regression:
           context: Slack
@@ -935,7 +935,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-network-error-regression:
           context: Slack
@@ -950,7 +950,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-zero-stake-regression:
           context: Slack
@@ -965,7 +965,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-migration-regression:
           context: Slack
@@ -980,7 +980,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - 490-M-parallelize-services-regression
     jobs:
       - run-software-update-regression:
           context: Slack
@@ -1458,6 +1458,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 490-M-parallelize-services-regression
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1663,7 +1664,7 @@ jobs:
         default: ""
     executor:
       name: build-executor
-          workflow-name:  << parameters.workflow-name >>
+      workflow-name:  << parameters.workflow-name >>
     steps:
       - run:
           name: Run various suites in SuiteRunner
