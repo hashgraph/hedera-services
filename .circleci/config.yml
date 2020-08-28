@@ -901,7 +901,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "43 21 * * *"
+          cron: "16 22 * * *"
           filters:
             branches:
               only:
@@ -912,6 +912,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-basic-suiterunner-regression"
 
   nightly-performance-regression:
@@ -928,6 +931,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-performance-regression"
 
   nightly-network-error-regression:
@@ -944,6 +950,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-network-error-regression"
 
   nightly-zero-stake-regression:
@@ -960,6 +969,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-zero-stake-regression"
 
   nightly-migration-regression:
@@ -976,6 +988,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-migration-regression"
 
   nightly-software-update-regression:
@@ -992,6 +1007,9 @@ workflows:
           context: Slack
           requires:
             - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
           workflow-name: "nightly-software-update-regression"
 
   custom-migration:
@@ -1861,6 +1879,11 @@ jobs:
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
 
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/
+            - swirlds-platform/
   aws-summary:
     executor: ci-test-executor
     steps:
