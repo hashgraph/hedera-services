@@ -1079,7 +1079,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2548,12 +2548,12 @@ jobs:
           dsl-args: "ControlAccountsExemptForUpdates"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.TxRecordTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
       - run-eet-suites:
           dsl-args: "CryptoUpdateSuite -TLS=on"
       - run-eet-suites:
