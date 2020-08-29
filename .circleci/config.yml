@@ -995,16 +995,29 @@ workflows:
           workflow-name: "nightly-zero-stake-regression"
 
   nightly-migration-regression:
-    triggers:
-      - schedule:
-          cron: "0 23,8 * * *"
-          filters:
-            branches:
-              only:
-                - master
+#    triggers:
+#      - schedule:
+#          cron: "0 23,8 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
     jobs:
-      - build-platform-and-services
-      - run-migration-regression:
+      - build-platform-and-services:
+         filters:
+           branches:
+             only:
+              - 00438-D-mainnet-JRS-migration
+      - run-testnet-migration-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-migration-regression"
+      - run-mainnet-migration-regression:
           context: Slack
           requires:
             - build-platform-and-services
@@ -1801,7 +1814,7 @@ jobs:
       - store_artifacts:
           path: /results.tar.gz
 
-  run-migration-regression:
+  run-testnet-migration-regression:
     parameters:
       workflow-name:
         type: string
@@ -1811,20 +1824,51 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run:
-          name: Modify Payer account for Migration test
+          name: Modify Payer account for Public testnet Migration test
           command: |
             sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
             echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
 
       - run:
-          name: Run Migration test
+          name: Run Public testnet Migration test
           command: |
             cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
 
       - run:
-          name: Sync results of migration test to AWS
+          name: Sync results of public testnet migration test to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-mainnet-migration-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Mainnet Migration test
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.950/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_950" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Run Mainnet Migration test
+          command: |
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-MainnetMigration-13N-1C.json /repo
+
+      - run:
+          name: Sync results of mainnet migration test to AWS
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
@@ -1882,7 +1926,7 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
+            cd /swirlds-platform/regression;   git checkout 00438-D-migration-test-for-mainnet;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
