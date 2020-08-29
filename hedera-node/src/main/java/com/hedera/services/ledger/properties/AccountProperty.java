@@ -80,7 +80,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return (a, v) -> {
 				if (v instanceof TokenScopedPropertyValue) {
 					var scopedV = (TokenScopedPropertyValue)v;
-					a.setTokenBalance(scopedV.token(), (long)scopedV.value());
+					a.setTokenBalance(scopedV.id(), scopedV.token(), (long)scopedV.value());
 				} else {
 					try {
 						a.setBalance((long)v);

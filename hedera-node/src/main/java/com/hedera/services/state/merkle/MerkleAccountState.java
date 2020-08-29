@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -39,14 +40,21 @@ import java.util.Optional;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
-	public static final int MAX_NUM_TOKEN_BALANCES = 1_000;
-	public static final long[] NO_TOKEN_BALANCES = new long[0];
+	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
+	static final long[] NO_TOKEN_BALANCES = new long[0];
+	static final int NUM_TOKEN_PROPS = 3;
+	static final int BALANCE_OFFSET = 1;
+	static final int FLAGS_OFFSET = 2;
+
+	public static long FREEZE_MASK = 1L;
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
@@ -68,7 +76,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private boolean smartContract;
 	private boolean receiverSigRequired;
 	private EntityId proxy;
-	long[] tokenBalances = NO_TOKEN_BALANCES;
+
+	long[] tokenRels = NO_TOKEN_BALANCES;
 
 	public MerkleAccountState() { }
 
@@ -84,8 +93,12 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			boolean smartContract,
 			boolean receiverSigRequired,
 			EntityId proxy,
-			long[] tokenBalances
+			long[] tokenRels
 	) {
+		if (tokenRels.length % NUM_TOKEN_PROPS != 0) {
+			throw new IllegalArgumentException(
+					"The token relationships array length must be divisible by " + NUM_TOKEN_PROPS + "!");
+		}
 		this.key = key;
 		this.expiry = expiry;
 		this.hbarBalance = hbarBalance;
@@ -97,7 +110,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
-		this.tokenBalances = tokenBalances;
+		this.tokenRels = tokenRels;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -125,7 +138,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
 		if (version >= RELEASE_080_VERSION) {
-			tokenBalances = in.readLongArray(MAX_NUM_TOKEN_BALANCES * 4);
+			tokenRels = in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		}
 	}
 
@@ -142,7 +155,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
-		out.writeLongArray(tokenBalances);
+		out.writeLongArray(tokenRels);
 	}
 
 	/* --- Copyable --- */
@@ -159,7 +172,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				smartContract,
 				receiverSigRequired,
 				proxy,
-				Arrays.copyOf(tokenBalances, tokenBalances.length));
+				Arrays.copyOf(tokenRels, tokenRels.length));
 	}
 
 	@Override
@@ -184,7 +197,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				this.receiverSigRequired == that.receiverSigRequired &&
 				Objects.equals(this.proxy, that.proxy) &&
 				equalUpToDecodability(this.key, that.key) &&
-				Arrays.equals(this.tokenBalances, that.tokenBalances);
+				Arrays.equals(this.tokenRels, that.tokenRels);
 	}
 
 	@Override
@@ -201,7 +214,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				smartContract,
 				receiverSigRequired,
 				proxy,
-				Arrays.hashCode(tokenBalances));
+				Arrays.hashCode(tokenRels));
 	}
 
 	/* --- Bean --- */
@@ -219,7 +232,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.add("smartContract", smartContract)
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
-				.add("tokenBalances", Arrays.toString(tokenBalances))
+				.add("tokenRels", Arrays.toString(tokenRels))
 				.toString();
 	}
 
@@ -311,53 +324,125 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.proxy = proxy;
 	}
 
-	public long getTokenBalance(TokenID token) {
-		int i = logicalIndexOf(token);
-		if (i < 0) {
-			throw new IllegalArgumentException(String.format("Token %s is missing!", readableId(token)));
-		}
-		return tokenBalances[i * 2 + 1];
+	public long getTokenBalance(TokenID id) {
+		int i = logicalIndexOf(id);
+		return (i < 0) ? 0 : tokenRels[balance(i)];
 	}
 
-	public void setTokenBalance(TokenID token, long balance) {
-		if (balance < 0) {
-			throw new IllegalArgumentException(String.format(
-					"Token %s cannot have balance %d!",
-					readableId(token),
-					balance));
+	public int numTokenRelationships() {
+		return tokenRels.length / NUM_TOKEN_PROPS;
+	}
+
+	public boolean isFrozen(TokenID id, MerkleToken token) {
+		if (token.freezeKey().isEmpty()) {
+			return false;
 		}
-		int i = logicalIndexOf(token);
+		int i = logicalIndexOf(id);
+		return (i < 0) ? token.accountsAreFrozenByDefault() : isFrozen(i);
+	}
+
+	public void freeze(TokenID id, MerkleToken token) {
+		if (token.freezeKey().isEmpty()) {
+			return;
+		}
+		int i = logicalIndexOf(id), at = i;
 		if (i < 0) {
-			int newNumTokens = tokenBalances.length / 2 + 1;
-
-			long[] newTokenBalances = new long[newNumTokens * 2];
-			i = -i - 1;
-			if (i != 0) {
-				System.arraycopy(tokenBalances, 0, newTokenBalances, 0, i * 2);
+			if (token.accountsAreFrozenByDefault()) {
+				return;
 			}
-
-			newTokenBalances[i * 2] = token.getTokenNum();
-			newTokenBalances[i * 2 + 1] = balance;
-
-			if (i != newNumTokens) {
-				System.arraycopy(
-						tokenBalances,
-						i * 2,
-						newTokenBalances,
-						(i + 1) * 2,
-						(newNumTokens - i - 1) * 2);
-			}
-			tokenBalances = newTokenBalances;
+			at = -i - 1;
+			insertNewRelationship(id, at);
 		}
-		tokenBalances[i * 2 + 1] = balance;
+		set(FREEZE_MASK, at);
+	}
+
+	public void unfreeze(TokenID id, MerkleToken token) {
+		if (token.freezeKey().isEmpty()) {
+			return;
+		}
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (!token.accountsAreFrozenByDefault()) {
+				return;
+			}
+			at = -i - 1;
+			insertNewRelationship(id, at);
+		}
+		unset(FREEZE_MASK, at);
+	}
+
+	public ResponseCodeEnum setTokenBalance(TokenID id, MerkleToken token, long balance) {
+		if (balance < 0) {
+			return SETTING_NEGATIVE_ACCOUNT_BALANCE;
+		}
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (token.accountsAreFrozenByDefault()) {
+				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+			at = -i - 1;
+			insertNewRelationship(id, at);
+		} else {
+			if (isFrozen(at)) {
+				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+		}
+		tokenRels[balance(at)] = balance;
+		return OK;
+	}
+
+	/* --- Helpers --- */
+	private void insertNewRelationship(TokenID id, int at) {
+		int newNumTokens = tokenRels.length / NUM_TOKEN_PROPS + 1;
+
+		long[] newTokenRels = new long[newNumTokens * NUM_TOKEN_PROPS];
+		if (at != 0) {
+			System.arraycopy(tokenRels, 0, newTokenRels, 0, at * NUM_TOKEN_PROPS);
+		}
+
+		newTokenRels[num(at)] = id.getTokenNum();
+
+		if (at != newNumTokens) {
+			System.arraycopy(
+					tokenRels,
+					at * NUM_TOKEN_PROPS,
+					newTokenRels,
+					(at + 1) * NUM_TOKEN_PROPS,
+					(newNumTokens - at - 1) * NUM_TOKEN_PROPS);
+		}
+		tokenRels = newTokenRels;
+	}
+
+	private void set(long mask, int i) {
+		tokenRels[flags(i)] |= mask;
+	}
+
+	private void unset(long mask, int i) {
+		tokenRels[flags(i)] &= ~mask;
+	}
+
+	private boolean isFrozen(int i) {
+		return (tokenRels[flags(i)] & FREEZE_MASK) == FREEZE_MASK;
+	}
+
+	private int num(int i) {
+		return i * NUM_TOKEN_PROPS;
+	}
+
+	private int balance(int i) {
+		return i * NUM_TOKEN_PROPS + BALANCE_OFFSET;
+	}
+
+	private int flags(int i) {
+		return i * NUM_TOKEN_PROPS + FLAGS_OFFSET;
 	}
 
 	int logicalIndexOf(TokenID token) {
-		int lo = 0, hi = tokenBalances.length / 2 - 1;
+		int lo = 0, hi = tokenRels.length / NUM_TOKEN_PROPS - 1;
 		long num = token.getTokenNum();
 		while (lo <= hi) {
-			int mid = (lo + (hi - lo) / 2), i = mid * 2;
-			long midNum = tokenBalances[i];
+			int mid = (lo + (hi - lo) / NUM_TOKEN_PROPS), i = mid * NUM_TOKEN_PROPS;
+			long midNum = tokenRels[i];
 			if (midNum == num) {
 				return mid;
 			} else if (midNum < num) {

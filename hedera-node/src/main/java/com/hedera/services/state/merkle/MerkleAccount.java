@@ -220,8 +220,8 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		return state().getTokenBalance(token);
 	}
 
-	public void setTokenBalance(TokenID token, long balance) {
-		state().setTokenBalance(token, balance);
+	public void setTokenBalance(TokenID id, MerkleToken token, long balance) {
+		state().setTokenBalance(id, token, balance);
 	}
 
 	public long getReceiverThreshold() {

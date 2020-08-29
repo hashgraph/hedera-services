@@ -45,6 +45,8 @@ import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALAN
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,12 +72,18 @@ public class MerkleAccountTest {
 	EntityId proxy = new EntityId(1L, 2L, 3L);
 	long firstToken = 555, secondToken = 666, thirdToken = 777;
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
+	long firstFlags = 0, secondFlags = 0, thirdFlags = 0;
 	long[] tokenBalances = new long[] {
-			firstToken, firstBalance, secondToken, secondBalance, thirdToken, thirdBalance
+			firstToken, firstBalance, firstFlags,
+			secondToken, secondBalance, secondFlags,
+			thirdToken, thirdBalance, thirdFlags
 	};
 	long otherFirstBalance = 321, otherSecondBalance = 432, otherThirdBalance = 543;
+	long otherFirstFlags = 0, otherSecondFlags = 0, otherThirdFlags = 0;
 	long[] otherTokenBalances = new long[] {
-			firstToken, otherFirstBalance, secondToken, otherSecondBalance, thirdToken, otherThirdBalance
+			firstToken, otherFirstBalance, otherFirstFlags,
+			secondToken, otherSecondBalance, otherSecondFlags,
+			thirdToken, otherThirdBalance, otherThirdFlags
 	};
 
 	JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
@@ -89,6 +97,12 @@ public class MerkleAccountTest {
 	boolean otherSmartContract = false;
 	boolean otherReceiverSigRequired = false;
 	EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	JKey adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+	MerkleToken unfrozenToken = new MerkleToken(
+			100, 1,
+			adminKey,
+			"UnfrozenToken", false,
+			new EntityId(1, 2, 3));
 
 	MerkleAccountState state;
 	MerkleAccountState otherState;
@@ -203,14 +217,17 @@ public class MerkleAccountTest {
 
 	@Test
 	public void tokenSettersDelegate() {
-		// given:
-		var token = IdUtils.tokenWith(secondToken);
+		// setup:
+		var id = IdUtils.tokenWith(secondToken);
+		var token = mock(MerkleToken.class);
+
+		given(token.accountsAreFrozenByDefault()).willReturn(false);
 
 		// when:
-		subject.setTokenBalance(token, secondBalance + 1);
+		subject.setTokenBalance(id, token, secondBalance + 1);
 
 		// expect:
-		assertEquals(secondBalance + 1, subject.getTokenBalance(token));
+		assertEquals(secondBalance + 1, subject.getTokenBalance(id));
 	}
 
 	@Test
@@ -227,9 +244,9 @@ public class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
-		subject.setTokenBalance(IdUtils.tokenWith(firstToken), otherFirstBalance);
-		subject.setTokenBalance(IdUtils.tokenWith(secondToken), otherSecondBalance);
-		subject.setTokenBalance(IdUtils.tokenWith(thirdToken), otherThirdBalance);
+		subject.setTokenBalance(IdUtils.tokenWith(firstToken), unfrozenToken, otherFirstBalance);
+		subject.setTokenBalance(IdUtils.tokenWith(secondToken), unfrozenToken, otherSecondBalance);
+		subject.setTokenBalance(IdUtils.tokenWith(thirdToken), unfrozenToken, otherThirdBalance);
 
 		// then:
 		assertEquals(otherState, subject.state());

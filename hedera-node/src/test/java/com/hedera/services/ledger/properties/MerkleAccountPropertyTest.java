@@ -24,6 +24,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -56,6 +57,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.*;
@@ -125,9 +127,15 @@ public class MerkleAccountPropertyTest {
 		account.payerRecords().offer(origPayerRecords.get(0));
 		account.payerRecords().offer(origPayerRecords.get(1));
 		// and:
-		var token = IdUtils.tokenWith(123);
+		var tokenId = IdUtils.tokenWith(123);
 		var newTokenBalance = 1_234_567L;
-		var tokenBalance = new TokenScopedPropertyValue(newTokenBalance, token);
+		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var unfrozenToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"UnfrozenToken", false,
+				new EntityId(1, 2, 3));
+		var tokenBalance = new TokenScopedPropertyValue(tokenId, unfrozenToken, newTokenBalance);
 
 		// when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
@@ -161,7 +169,7 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 		// and:
-		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, token));
+		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, tokenId));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
