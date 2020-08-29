@@ -1838,13 +1838,13 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run:
-          name: Run Zero stake regression tests
+          name: Run Software Update regression tests
           command: |
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo
 
       - run:
-          name: Sync results of zero stake regression to AWS
+          name: Sync results of software update regression to AWS
           command: |
             aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
             tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
