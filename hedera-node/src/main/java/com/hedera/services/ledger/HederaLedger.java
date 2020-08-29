@@ -29,13 +29,12 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,13 +43,18 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.ledger.properties.AccountProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
+import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.lang.Long.MAX_VALUE;
-import static java.lang.Math.min;
-import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 
 /**
  * Provides a ledger for Hedera Services crypto and smart contract

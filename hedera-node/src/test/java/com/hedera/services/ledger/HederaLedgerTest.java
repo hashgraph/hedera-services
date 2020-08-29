@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -110,6 +111,11 @@ public class HederaLedgerTest {
 			@Override
 			public FileID newFileId(AccountID newFileSponsor) {
 				return FileID.newBuilder().setFileNum(nextId++).build();
+			}
+
+			@Override
+			public TokenID newTokenId(AccountID sponsor) {
+				return TokenID.newBuilder().setTokenNum(nextId++).build();
 			}
 		};
 		ledger = mock(TransactionalLedger.class);

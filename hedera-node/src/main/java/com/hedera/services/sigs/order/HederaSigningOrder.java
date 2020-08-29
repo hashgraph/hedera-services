@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -383,18 +383,14 @@ public class HederaSigningOrder {
 			required.add(result.metadata().getKey());
 		}
 
-		if (hasNewAccountKey(op)) {
+		if (op.hasKey()) {
 			required = mutable(required);
-			required.add(asFcKeyUnchecked(op.getKey()));
+			var candidate = asUsableFcKey(op.getKey());
+			candidate.ifPresent(required::add);
 		}
 
 		return factory.forValidOrder(required);
 	}
-
-	private boolean hasNewAccountKey(CryptoUpdateTransactionBody op) {
-		return op.getKey().hasKeyList() || op.getKey().hasThresholdKey() || !op.getKey().getEd25519().isEmpty();
-	}
-
 
 	private <T> SigningOrderResult<T> cryptoTransfer(
 			TransactionID txnId,
@@ -404,9 +400,7 @@ public class HederaSigningOrder {
 		List<JKey> required = EMPTY_LIST;
 		for (AccountAmount adjustment : op.getTransfers().getAccountAmountsList()) {
 			var account = adjustment.getAccountID();
-			System.out.println(account);
 			var result = sigMetaLookup.accountSigningMetaFor(account);
-			System.out.println(result);
 			if (result.succeeded()) {
 				if (adjustment.getAmount() < 0L || result.metadata().isReceiverSigRequired()) {
 					required = mutable(required);
@@ -452,9 +446,13 @@ public class HederaSigningOrder {
 	}
 
 	private <T> SigningOrderResult<T> cryptoCreate(CryptoCreateTransactionBody op) {
-		return op.getReceiverSigRequired()
-				? new SigningOrderResult<>(List.of(asFcKeyUnchecked(op.getKey())))
-				: SigningOrderResult.noKnownKeys();
+		if (!op.getReceiverSigRequired()) {
+			return SigningOrderResult.noKnownKeys();
+		} else {
+			var candidate = asUsableFcKey(op.getKey());
+			return candidate.<SigningOrderResult<T>>map(key -> new SigningOrderResult<>(List.of(key)))
+					.orElseGet(SigningOrderResult::noKnownKeys);
+		}
 	}
 
 	private <T> SigningOrderResult<T> topicCreate(
@@ -466,7 +464,8 @@ public class HederaSigningOrder {
 
 		if (op.hasAdminKey()) {
 			required = mutable(required);
-			required.add(asFcKeyUnchecked(op.getAdminKey()));
+			var candidate = asUsableFcKey(op.getAdminKey());
+			candidate.ifPresent(required::add);
 		}
 		if (op.hasAutoRenewAccount()) {
 			var result = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount());
@@ -505,16 +504,12 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = EMPTY_LIST;
-
 		if (onlyExtendsExpiry(op)) {
 			return factory.forValidOrder(required);
 		}
-		System.out.println(op);
 
 		var target = op.getTopicID();
-		System.out.println(target);
 		var targetResult = sigMetaLookup.topicSigningMetaFor(target);
-		System.out.println(targetResult);
 		if (!targetResult.succeeded()) {
 			return topicFailure(target, txnId, targetResult.failureIfAny(), factory);
 		}
@@ -526,13 +521,12 @@ public class HederaSigningOrder {
 
 		if (op.hasAdminKey()) {
 			required = mutable(required);
-			required.add(asFcKeyUnchecked(op.getAdminKey()));
+			var candidate = asUsableFcKey(op.getAdminKey());
+			candidate.ifPresent(required::add);
 		}
 		if (op.hasAutoRenewAccount() && !isEliding(op.getAutoRenewAccount())) {
 			var account = op.getAutoRenewAccount();
-			System.out.println("has autorenew: " + account);
 			var autoRenewResult = sigMetaLookup.accountSigningMetaFor(account);
-			System.out.println(autoRenewResult);
 			if (autoRenewResult.succeeded()) {
 				required = mutable(required);
 				required.add(autoRenewResult.metadata().getKey());

@@ -149,6 +149,18 @@ public class MiscUtils {
 		}
 	}
 
+	public static Optional<JKey> asUsableFcKey(Key key) {
+		try {
+			var fcKey = JKey.mapKey(key);
+			if (!fcKey.isValid()) {
+				return Optional.empty();
+			}
+			return Optional.of(fcKey);
+		} catch (Exception ignore) {
+			return Optional.empty();
+		}
+	}
+
 	public static Key asKeyUnchecked(JKey fcKey) {
 		try {
 			return mapJKey(fcKey);

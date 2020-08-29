@@ -276,7 +276,7 @@ class MerkleAccountStateTest {
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 
 		// when:
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_VERSION);
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_080_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
@@ -507,7 +507,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccountState.RELEASE_090_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_080_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}

@@ -24,8 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -51,8 +49,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	public static final long[] NO_TOKEN_BALANCES = new long[0];
 
 	static final int RELEASE_070_VERSION = 1;
-	static final int RELEASE_090_VERSION = 2;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	static final int RELEASE_080_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_080_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -126,7 +124,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
-		if (version >= RELEASE_090_VERSION) {
+		if (version >= RELEASE_080_VERSION) {
 			tokenBalances = in.readLongArray(MAX_NUM_TOKEN_BALANCES * 4);
 		}
 	}

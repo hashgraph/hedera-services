@@ -78,6 +78,15 @@ public class IdUtils {
 				.build();
 	}
 
+	public static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
+	}
+
 	static long[] asDotDelimitedLongArray(String s) {
 		String[] parts = s.split("[.]");
 		return Stream.of(parts).mapToLong(Long::valueOf).toArray();

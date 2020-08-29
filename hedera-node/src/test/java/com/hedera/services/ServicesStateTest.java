@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.txns.ProcessLogic;
@@ -76,6 +76,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
@@ -99,6 +100,8 @@ class ServicesStateTest {
 	FCMap<MerkleEntityId, MerkleTopic> topicsCopy;
 	FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
+	FCMap<MerkleEntityId, MerkleToken> tokens;
+	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -133,6 +136,8 @@ class ServicesStateTest {
 		given(ctx.logic()).willReturn(logic);
 
 		topics = mock(FCMap.class);
+		tokens = mock(FCMap.class);
+		tokensCopy = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		topicsCopy = mock(FCMap.class);
@@ -141,6 +146,7 @@ class ServicesStateTest {
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
+		given(tokens.copy()).willReturn(tokensCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -161,6 +167,16 @@ class ServicesStateTest {
 		systemExits = mock(SystemExits.class);
 
 		subject = new ServicesState();
+	}
+
+	@Test
+	public void hasExpectedMinChildCounts() {
+		// given:
+		subject = new ServicesState(ctx, self, Collections.emptyList());
+
+		// expect:
+		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(1));
+		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(2));
 	}
 
 	@Test
@@ -197,6 +213,7 @@ class ServicesStateTest {
 		assertNotNull(subject.topics());
 		assertNotNull(subject.storage());
 		assertNotNull(subject.accounts());
+		assertNotNull(subject.tokens());
 		assertEquals(book, subject.addressBook());
 		assertEquals(self, actualCtx.id());
 		assertEquals(platform, actualCtx.platform());
@@ -228,6 +245,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 
 		// when:
 		subject.init(platform, book);
@@ -243,6 +261,30 @@ class ServicesStateTest {
 	}
 
 	@Test
+	public void createsMissingTokensFcmapIfSavedStateWasRelease070() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		ServicesMain.log = mockLog;
+
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+
+		// when:
+		subject.init(platform, book);
+
+		// then:
+		assertNotNull(subject.tokens());
+
+		// cleanup:
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
+		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
+	}
+
+	@Test
 	public void hashesPrintedAsExpected() {
 		// setup:
 		var mockLog = mock(Logger.class);
@@ -250,6 +292,7 @@ class ServicesStateTest {
 		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
 		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
 		Hash topicRootHash = new Hash("sdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfgsdfg".getBytes());
+		Hash tokensRootHash = new Hash("szfgszfgszfgszfgszfgszfgszfgszfgszfgszfgszfgszfg".getBytes());
 		Hash storageRootHash = new Hash("fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes());
 		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
 		// and:
@@ -258,6 +301,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
 		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		// and:
@@ -266,12 +310,14 @@ class ServicesStateTest {
 				"  Accounts       :: %s\n" +
 				"  Storage        :: %s\n" +
 				"  Topics         :: %s\n" +
+				"  Tokens         :: %s\n" +
 				"  NetworkContext :: %s\n" +
 				"  AddressBook    :: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
 				topicRootHash,
+				tokensRootHash,
 				ctxHash,
 				bookHash);
 		subject.setHash(overallHash);
@@ -279,6 +325,7 @@ class ServicesStateTest {
 		given(topics.getHash()).willReturn(topicRootHash);
 		given(accounts.getHash()).willReturn(accountsRootHash);
 		given(storage.getHash()).willReturn(storageRootHash);
+		given(tokens.getHash()).willReturn(tokensRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(book.getHash()).willReturn(bookHash);
 
@@ -300,6 +347,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -314,6 +362,7 @@ class ServicesStateTest {
 		assertEquals(topicsCopy, copy.topics());
 		assertEquals(storageCopy, copy.storage());
 		assertEquals(accountsCopy, copy.accounts());
+		assertSame(tokensCopy, copy.tokens());
 	}
 
 	@Test
@@ -334,6 +383,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 
 		// when:
 		subject.delete();
@@ -342,6 +392,7 @@ class ServicesStateTest {
 		verify(storage).delete();
 		verify(accounts).delete();
 		verify(topics).delete();
+		verify(tokens).delete();
 	}
 
 	@Test

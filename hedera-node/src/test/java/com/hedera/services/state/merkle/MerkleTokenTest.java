@@ -229,4 +229,11 @@ class MerkleTokenTest {
 		assertEquals(MerkleToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
+
+	@Test
+	public void tmpProviderThrowsAlways() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class,
+				() -> MerkleToken.LEGACY_PROVIDER.deserialize(null));
+	}
 }

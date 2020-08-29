@@ -21,16 +21,9 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.TopicSerde;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.FCMElement;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -38,27 +31,13 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleNode;
-import com.swirlds.fcmap.internal.FCMLeaf;
-import org.apache.commons.codec.binary.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.spongycastle.util.encoders.Hex;
 
-import javax.annotation.Nullable;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleLeaf  {
@@ -69,6 +48,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	static DomainSerdes serdes = new DomainSerdes();
 
+	@Deprecated
+	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
+
 	private long tokenFloat;
 	private long divisibility;
 	private JKey adminKey;
@@ -77,7 +59,15 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private boolean accountsFrozenByDefault;
 	private EntityId treasury;
 
-	public MerkleToken() {}
+	@Deprecated
+	public static class Provider implements SerializedObjectProvider {
+		@Override
+		public FastCopyable deserialize(DataInputStream _in) throws IOException {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public MerkleToken() { }
 
 	public MerkleToken(
 			long tokenFloat,
@@ -179,36 +169,35 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	}
 
 	/* --- Bean --- */
-
-	public long getTokenFloat() {
+	public long tokenFloat() {
 		return tokenFloat;
 	}
 
-	public long getDivisibility() {
+	public long divisibility() {
 		return divisibility;
 	}
 
-	public JKey getAdminKey() {
+	public JKey adminKey() {
 		return adminKey;
 	}
 
-	public JKey getFreezeKey() {
-		return freezeKey;
+	public Optional<JKey> freezeKey() {
+		return Optional.ofNullable(freezeKey);
 	}
 
 	public void setFreezeKey(JKey freezeKey) {
 		this.freezeKey = freezeKey;
 	}
 
-	public String getSymbol() {
+	public String symbol() {
 		return symbol;
 	}
 
-	public boolean areAccountsFrozenByDefault() {
+	public boolean accountsAreFrozenByDefault() {
 		return accountsFrozenByDefault;
 	}
 
-	public EntityId getTreasury() {
+	public EntityId treasury() {
 		return treasury;
 	}
 }
