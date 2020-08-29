@@ -21,9 +21,10 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -42,11 +43,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
-import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.swirlds.fcmap.FCMap;
-import org.ethereum.net.shh.Topic;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -88,6 +86,7 @@ import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -175,7 +174,8 @@ public class HederaSigningOrderTest {
 				id -> { throw new Exception(); },
 				AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 				contractSigMetaLookup,
-				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)));
+				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+				id -> null);
 	private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			id -> { throw new Exception(); }
 	);
@@ -193,6 +193,7 @@ public class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
@@ -301,9 +302,8 @@ public class HederaSigningOrderTest {
 						id -> { throw new Exception(); },
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 						id -> { throw new Exception(); },
-						TopicAdapter.with(id -> { throw new Exception(); })
-				)
-		);
+						TopicAdapter.with(id -> { throw new Exception(); }),
+						id -> null ));
 		aMockSummaryFactory();
 		// and:
 		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
@@ -912,13 +912,13 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusSubmitMessageWithSubmitKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KEY.asJKey()));
+		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KT.asKey()));
 	}
 
 	@Test
@@ -955,13 +955,13 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -998,20 +998,20 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusUpdateTopicWithExistingAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
 	public void getsConsensusUpdateTopicExpiryOnly() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO,
-				hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1060,28 +1060,68 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey(),
-				UPDATE_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
+				UPDATE_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
 	public void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccount() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO,
-				hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey(),
-				UPDATE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
+				UPDATE_TOPIC_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateAdminKeyOnly() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateAdminAndFreeze() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateMissingAdmin() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_MISSING_ADMIN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
@@ -1123,10 +1163,11 @@ public class HederaSigningOrderTest {
 		hfs = scenario.hfs();
 		accounts = scenario.accounts();
 		topics = scenario.topics();
+		tokens = scenario.tokens();
 
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics)),
+				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics, () -> tokens)),
 				updateAccountSigns,
 				waclSigns);
 	}
@@ -1158,7 +1199,8 @@ public class HederaSigningOrderTest {
 					} else {
 						return SafeLookupResult.failure(KeyOrderingFailure.INVALID_TOPIC);
 					}
-				})
+				}),
+				id -> null
 		);
 	}
 

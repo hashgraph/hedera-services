@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.order;
+package com.hedera.services.sigs.metadata;
 
 /*-
  * ‌
@@ -20,12 +20,34 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleToken;
 
-import java.util.List;
 import java.util.Optional;
 
-public enum KeyOrderingFailure {
-	NONE, MISSING_FILE, MISSING_ACCOUNT, MISSING_AUTORENEW_ACCOUNT, MISSING_TOKEN, INVALID_TOPIC
+/**
+ * Represents metadata about the signing attributes of a Hedera token.
+ *
+ * @author Michael Tinker
+ */
+public class TokenSigningMetadata {
+	private final JKey adminKey;
+	private final Optional<JKey> freezeKey;
+
+	private TokenSigningMetadata(JKey adminKey, Optional<JKey> freezeKey) {
+		this.adminKey = adminKey;
+		this.freezeKey = freezeKey;
+	}
+
+	public static TokenSigningMetadata from(MerkleToken token) {
+		return new TokenSigningMetadata(token.adminKey(), token.freezeKey());
+	}
+
+	public JKey adminKey() {
+		return adminKey;
+	}
+
+	public Optional<JKey> optionalFreezeKey() {
+		return freezeKey;
+	}
 }

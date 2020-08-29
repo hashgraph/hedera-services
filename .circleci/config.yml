@@ -1381,7 +1381,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - basic-token-service
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

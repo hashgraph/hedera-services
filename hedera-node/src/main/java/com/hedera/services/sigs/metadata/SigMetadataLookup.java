@@ -20,14 +20,16 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 /**
  * Defines a type able to look up metadata associated to the signing activities
- * of any Hedera entity (account, smart contract, or file).
+ * of any Hedera entity (account, smart contract, file, topic, or token).
  *
  * @author Michael Tinker
  */
@@ -38,6 +40,8 @@ public interface SigMetadataLookup {
 	TopicSigningMetadata lookup(TopicID topic) throws Exception;
 
 	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
+
 	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
+	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id);
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
 }

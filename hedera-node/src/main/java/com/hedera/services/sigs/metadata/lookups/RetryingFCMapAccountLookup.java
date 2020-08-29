@@ -22,13 +22,11 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

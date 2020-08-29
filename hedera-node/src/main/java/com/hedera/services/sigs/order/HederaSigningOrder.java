@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -120,6 +121,11 @@ public class HederaSigningOrder {
 			return consensusOrder.get();
 		}
 
+		var tokenOrder = forToken(txn, factory);
+		if (tokenOrder.isPresent()) {
+			return tokenOrder.get();
+		}
+
 		SigningOrderResult<T> othersSigningOrder = keyOrder(factory, () -> forOtherInvolvedParties(txn, factory));
 		log.debug("Signing order result for non-payer Hedera keys of txn {} was {}", txn, othersSigningOrder);
 		return othersSigningOrder;
@@ -199,7 +205,7 @@ public class HederaSigningOrder {
 	) {
 		if (txn.hasCryptoCreateAccount()) {
 			return Optional.of(cryptoCreate(
-					txn.getCryptoCreateAccount()));
+					txn.getCryptoCreateAccount(), factory));
 		} else if (txn.hasCryptoTransfer()) {
 			return Optional.of(cryptoTransfer(
 					txn.getTransactionID(), txn.getCryptoTransfer(), factory));
@@ -209,6 +215,17 @@ public class HederaSigningOrder {
 		} else if (txn.hasCryptoDelete()) {
 			return Optional.of(cryptoDelete(
 					txn.getTransactionID(), txn.getCryptoDelete(), factory));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	private <T> Optional<SigningOrderResult<T>> forToken(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (txn.hasTokenCreation()) {
+			return Optional.of(tokenCreate(txn.getTokenCreation(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -445,13 +462,17 @@ public class HederaSigningOrder {
 		return (required == EMPTY_LIST)	? new ArrayList<>() : required;
 	}
 
-	private <T> SigningOrderResult<T> cryptoCreate(CryptoCreateTransactionBody op) {
+	private <T> SigningOrderResult<T> cryptoCreate(
+			CryptoCreateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
 		if (!op.getReceiverSigRequired()) {
 			return SigningOrderResult.noKnownKeys();
 		} else {
 			var candidate = asUsableFcKey(op.getKey());
-			return candidate.<SigningOrderResult<T>>map(key -> new SigningOrderResult<>(List.of(key)))
-					.orElseGet(SigningOrderResult::noKnownKeys);
+			return candidate.isPresent()
+					? factory.forValidOrder(List.of(candidate.get()))
+					: SigningOrderResult.noKnownKeys();
 		}
 	}
 
@@ -460,13 +481,14 @@ public class HederaSigningOrder {
 			ConsensusCreateTopicTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<JKey> required = EMPTY_LIST;
+		List<JKey> required = new ArrayList<>();
 
-		if (op.hasAdminKey()) {
-			required = mutable(required);
-			var candidate = asUsableFcKey(op.getAdminKey());
-			candidate.ifPresent(required::add);
-		}
+		addToMutableReqIfPresent(
+				op,
+				ConsensusCreateTopicTransactionBody::hasAdminKey,
+				ConsensusCreateTopicTransactionBody::getAdminKey,
+				required);
+
 		if (op.hasAutoRenewAccount()) {
 			var result = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount());
 			if (result.succeeded()) {
@@ -478,6 +500,30 @@ public class HederaSigningOrder {
 		}
 
 		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> tokenCreate(
+			TokenCreation op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		addToMutableReqIfPresent(op, TokenCreation::hasAdminKey, TokenCreation::getAdminKey, required);
+		addToMutableReqIfPresent(op, TokenCreation::hasFreezeKey, TokenCreation::getFreezeKey, required);
+
+		return factory.forValidOrder(required);
+	}
+
+	private <T> void addToMutableReqIfPresent(
+			T op,
+			Predicate<T> checker,
+			Function<T, Key> getter,
+			List<JKey> required
+	) {
+		if (checker.test(op)) {
+			var candidate = asUsableFcKey(getter.apply(op));
+			candidate.ifPresent(required::add);
+		}
 	}
 
 	private <T> SigningOrderResult<T> messageSubmit(

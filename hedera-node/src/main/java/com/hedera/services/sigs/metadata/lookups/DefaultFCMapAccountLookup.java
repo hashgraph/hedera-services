@@ -21,8 +21,6 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
-import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;

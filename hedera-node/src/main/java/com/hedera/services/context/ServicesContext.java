@@ -47,6 +47,7 @@ import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySanitizer;
@@ -370,6 +371,7 @@ public class ServicesContext {
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 
@@ -406,6 +408,7 @@ public class ServicesContext {
 		queryableAccounts().set(accounts());
 		queryableTopics().set(topics());
 		queryableStorage().set(storage());
+		queryableTokens().set(tokens());
 	}
 
 	public CurrentPlatformStatus platformStatus() {
@@ -684,7 +687,7 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics);
+			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, this::tokens);
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -692,7 +695,7 @@ public class ServicesContext {
 
 	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
-			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts);
+			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts, this::tokens);
 			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
@@ -700,7 +703,8 @@ public class ServicesContext {
 
 	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
-			var lookups = defaultAccountRetryingLookupsFor(hfs(), properties(), stats(), this::accounts, this::topics);
+			var lookups = defaultAccountRetryingLookupsFor(
+					hfs(), properties(), stats(), this::accounts, this::topics, this::tokens);
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -1322,6 +1326,13 @@ public class ServicesContext {
 		return queryableTopics;
 	}
 
+	public AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens() {
+		if (queryableTokens == null) {
+			queryableTokens = new AtomicReference<>(tokens());
+		}
+		return queryableTokens;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -1411,5 +1422,9 @@ public class ServicesContext {
 
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		return state.storage();
+	}
+
+	public FCMap<MerkleEntityId, MerkleToken> tokens() {
+		return state.tokens();
 	}
 }

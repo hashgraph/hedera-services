@@ -36,6 +36,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -147,6 +148,7 @@ public class ServicesContextTest {
 	PropertySource properties;
 	PropertySources propertySources;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
+	FCMap<MerkleEntityId, MerkleToken> tokens;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 
@@ -163,6 +165,7 @@ public class ServicesContextTest {
 		given(state.accounts()).willReturn(accounts);
 		given(state.storage()).willReturn(storage);
 		given(state.topics()).willReturn(topics);
+		given(state.tokens()).willReturn(tokens);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getCryptography()).willReturn(crypto);
@@ -178,9 +181,11 @@ public class ServicesContextTest {
 		var newAccounts = mock(FCMap.class);
 		var newTopics = mock(FCMap.class);
 		var newStorage = mock(FCMap.class);
+		var newTokens = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
+		given(newState.tokens()).willReturn(newTokens);
 		given(newState.storage()).willReturn(newStorage);
 		// given:
 		var subject = new ServicesContext(id, platform, state, propertySources);
@@ -188,6 +193,7 @@ public class ServicesContextTest {
 		var accountsRef = subject.queryableAccounts();
 		var topicsRef = subject.queryableTopics();
 		var storageRef = subject.queryableStorage();
+		var tokensRef = subject.queryableTokens();
 
 		// when:
 		subject.update(newState);
@@ -197,10 +203,12 @@ public class ServicesContextTest {
 		assertSame(accountsRef, subject.queryableAccounts());
 		assertSame(topicsRef, subject.queryableTopics());
 		assertSame(storageRef, subject.queryableStorage());
+		assertSame(tokensRef, subject.queryableTokens());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
 		assertSame(newStorage, subject.queryableStorage().get());
+		assertSame(newTokens, subject.queryableTokens().get());
 	}
 
 	@Test

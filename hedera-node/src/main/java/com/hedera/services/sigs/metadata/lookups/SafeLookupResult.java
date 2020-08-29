@@ -1,4 +1,4 @@
-package com.hedera.services.sigs.metadata;
+package com.hedera.services.sigs.metadata.lookups;
 
 /*-
  * ‌
@@ -30,6 +30,7 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 
 /**
@@ -46,6 +47,7 @@ public class SafeLookupResult<T> {
 			new EnumMap<>(KeyOrderingFailure.class);
 	static {
 		KNOWN_FAILURES.put(MISSING_FILE, new SafeLookupResult<>(MISSING_FILE));
+		KNOWN_FAILURES.put(MISSING_TOKEN, new SafeLookupResult<>(MISSING_TOKEN));
 		KNOWN_FAILURES.put(MISSING_ACCOUNT, new SafeLookupResult<>(MISSING_ACCOUNT));
 		KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
 		KNOWN_FAILURES.put(MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
