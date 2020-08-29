@@ -1195,6 +1195,10 @@ workflows:
             - attach_workspace:
                 at: /
 
+# Now that JRS nightly regression covers all this regression workflow's coverage and is stable.
+# We'll disable the CircleCi side regression workflow. No need to keep both
+# We'll keep this workflow for now in case we need to run some tests and need this workflow.
+# Later we may clean up these obsolete workflows completely.
   nightly-regression:
     triggers:
       - schedule:
@@ -1202,7 +1206,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -2745,12 +2749,12 @@ jobs:
           dsl-args: "ControlAccountsExemptForUpdates"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.TxRecordTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
       - run-eet-suites:
           dsl-args: "CryptoUpdateSuite -TLS=on"
       - run-eet-suites:
