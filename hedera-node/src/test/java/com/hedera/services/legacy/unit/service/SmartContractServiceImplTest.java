@@ -57,6 +57,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.tokens.TokenLedger;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
@@ -224,6 +225,7 @@ public class SmartContractServiceImplTest {
 				new FCMapBackingAccounts(() -> accountFCMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
+				mock(TokenLedger.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),

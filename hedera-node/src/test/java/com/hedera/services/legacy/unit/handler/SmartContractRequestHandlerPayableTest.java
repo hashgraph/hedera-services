@@ -33,6 +33,7 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.tokens.TokenLedger;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -148,6 +149,7 @@ public class SmartContractRequestHandlerPayableTest {
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
+            mock(TokenLedger.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),

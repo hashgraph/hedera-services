@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
@@ -228,6 +230,55 @@ public class MerkleAccountTest {
 
 		// expect:
 		assertEquals(secondBalance + 1, subject.getTokenBalance(id));
+	}
+
+	@Test
+	public void tokenFreezingDelegates() {
+		// setup:
+		var id = IdUtils.tokenWith(secondToken);
+		var token = mock(MerkleToken.class);
+
+		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
+
+		// when:
+		subject.freeze(id, token);
+
+		// expect:
+		assertTrue(state.isFrozen(id, token));
+	}
+
+	@Test
+	public void tokenUnfreezingDelegates() {
+		// setup:
+		var id = IdUtils.tokenWith(secondToken);
+		var token = mock(MerkleToken.class);
+
+		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
+		// and:
+		state.freeze(id, token);
+
+		// when:
+		subject.unfreeze(id, token);
+
+		// expect:
+		assertFalse(state.isFrozen(id, token));
+	}
+
+	@Test
+	public void validityDelegates() {
+		// setup:
+		var id = IdUtils.tokenWith(secondToken);
+		var token = mock(MerkleToken.class);
+
+		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
+		// and:
+		state.freeze(id, token);
+
+		// when:
+		var validity = subject.validityOfSettingTokenBalance(id, token, 123);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, validity);
 	}
 
 	@Test

@@ -26,6 +26,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
@@ -222,6 +223,18 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	public void setTokenBalance(TokenID id, MerkleToken token, long balance) {
 		state().setTokenBalance(id, token, balance);
+	}
+
+	public ResponseCodeEnum validityOfSettingTokenBalance(TokenID id, MerkleToken token, long balance) {
+		return state().validityOfSettingTokenBalance(id, token, balance);
+	}
+
+	public void freeze(TokenID id, MerkleToken token) {
+		state().freeze(id, token);
+	}
+
+	public void unfreeze(TokenID id, MerkleToken token) {
+		state().unfreeze(id, token);
 	}
 
 	public long getReceiverThreshold() {

@@ -94,6 +94,6 @@ message TransactionBody {
 
     UncheckedSubmitBody uncheckedSubmit = 28;
     TokenCreation tokenCreation = 29;
-    TokenTransaction tokenTransaction = 30;
+    TokenTransfers tokenTransfers = 30;
   }
 }

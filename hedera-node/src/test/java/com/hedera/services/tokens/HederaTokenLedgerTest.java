@@ -20,6 +20,7 @@ package com.hedera.services.tokens;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -47,9 +48,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
-class TokenLedgerTest {
+class HederaTokenLedgerTest {
 	EntityIdSource ids;
-	PropertySource properties;
+	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 
 	Key adminKey, freezeKey;
@@ -61,7 +62,7 @@ class TokenLedgerTest {
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
 
-	TokenLedger subject;
+	HederaTokenLedger subject;
 
 	@BeforeEach
 	public void setup() {
@@ -71,9 +72,9 @@ class TokenLedgerTest {
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 		tokens = (FCMap<MerkleEntityId, MerkleToken>)mock(FCMap.class);
-		properties = mock(PropertySource.class);
+		properties = mock(GlobalDynamicProperties.class);
 
-		subject = new TokenLedger(ids, properties, () -> tokens);
+		subject = new HederaTokenLedger(ids, properties, () -> tokens);
 	}
 
 	@Test

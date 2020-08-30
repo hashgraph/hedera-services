@@ -24,6 +24,9 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.tokens.TokenScope;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -40,6 +43,7 @@ import java.util.Optional;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -371,7 +375,37 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		unset(FREEZE_MASK, at);
 	}
 
-	public ResponseCodeEnum setTokenBalance(TokenID id, MerkleToken token, long balance) {
+
+	public void setTokenBalance(TokenID id, MerkleToken token, long balance) {
+		if (balance < 0) {
+			throwBalanceIse(id, balance);
+		}
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (token.accountsAreFrozenByDefault()) {
+				throwFrozenIse(id);
+			}
+			at = -i - 1;
+			insertNewRelationship(id, at);
+		} else {
+			if (isFrozen(at)) {
+				throwFrozenIse(id);
+			}
+		}
+		tokenRels[balance(at)] = balance;
+	}
+
+	private void throwFrozenIse(TokenID id) {
+		throw new IllegalStateException(String.format(
+				"Account frozen for token '%s'!", readableId(id)));
+	}
+
+	private void throwBalanceIse(TokenID id, long balance) {
+		throw new IllegalArgumentException(String.format(
+				"Account cannot have balance %d for token '%s'!", balance, readableId(id)));
+	}
+
+	public ResponseCodeEnum validityOfSettingTokenBalance(TokenID id, MerkleToken token, long balance) {
 		if (balance < 0) {
 			return SETTING_NEGATIVE_ACCOUNT_BALANCE;
 		}
@@ -380,14 +414,11 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			if (token.accountsAreFrozenByDefault()) {
 				return ACCOUNT_FROZEN_FOR_TOKEN;
 			}
-			at = -i - 1;
-			insertNewRelationship(id, at);
 		} else {
 			if (isFrozen(at)) {
 				return ACCOUNT_FROZEN_FOR_TOKEN;
 			}
 		}
-		tokenRels[balance(at)] = balance;
 		return OK;
 	}
 

@@ -1,10 +1,8 @@
-syntax = "proto3";
-
-package proto;
+package com.hedera.services.tokens;
 
 /*-
  * ‌
- * Hedera Network Services Protobuf
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -22,17 +20,27 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.api.proto.java";
-option java_multiple_files = true;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-import "BasicTypes.proto";
+public class TokenScope {
+	private final TokenID id;
+	private final MerkleToken token;
 
-message TokenTransfer {
-    AccountID account = 1;
-    sint64 amount = 2;
-    TokenRef token = 3;
-}
+	private TokenScope(TokenID id, MerkleToken token) {
+		this.id = id;
+		this.token = token;
+	}
 
-message TokenTransfers {
-    repeated TokenTransfer transfers = 1;
+	public static TokenScope scopeOf(TokenID id, MerkleToken token) {
+		return new TokenScope(id, token);
+	}
+
+	public TokenID id() {
+		return id;
+	}
+
+	public MerkleToken token() {
+		return token;
+	}
 }

@@ -32,6 +32,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.tokens.HederaTokenLedger;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -93,6 +94,8 @@ public class HederaLedgerTest {
 	FCMap<MerkleEntityId, MerkleAccount> backingMap;
 
 	HederaLedger subject;
+
+	HederaTokenLedger tokenLedger;
 	EntityIdSource ids;
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
@@ -125,7 +128,8 @@ public class HederaLedgerTest {
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
-		subject = new HederaLedger(ids, creator, historian, ledger);
+		tokenLedger = mock(HederaTokenLedger.class);
+		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
 	}
 
 	private void setupWithLiveLedger() {
@@ -134,7 +138,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, creator, historian, ledger);
+		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
 	}
 
 	private void setupWithLiveFcBackedLedger() {
@@ -153,7 +157,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(ids, creator, historian, ledger);
+		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
 	}
 
 	@Test

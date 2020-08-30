@@ -25,6 +25,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.tokens.TokenScope;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
 
@@ -97,8 +98,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		}
 
 		@Override
-		public BiFunction<MerkleAccount, TokenID, Object> scopedGetter() {
-			return MerkleAccount::getTokenBalance;
+		public BiFunction<MerkleAccount, TokenScope, Object> scopedGetter() {
+			return (a, s) -> a.getTokenBalance(s.id());
 		}
 	},
 	FUNDS_RECEIVED_RECORD_THRESHOLD {

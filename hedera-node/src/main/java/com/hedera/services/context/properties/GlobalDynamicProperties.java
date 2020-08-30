@@ -1,10 +1,8 @@
-syntax = "proto3";
-
-package proto;
+package com.hedera.services.context.properties;
 
 /*-
  * ‌
- * Hedera Network Services Protobuf
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -22,17 +20,14 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.api.proto.java";
-option java_multiple_files = true;
+public class GlobalDynamicProperties {
+	private final PropertySource properties;
 
-import "BasicTypes.proto";
+	public GlobalDynamicProperties(PropertySource properties) {
+		this.properties = properties;
+	}
 
-message TokenTransfer {
-    AccountID account = 1;
-    sint64 amount = 2;
-    TokenRef token = 3;
-}
-
-message TokenTransfers {
-    repeated TokenTransfer transfers = 1;
+	public int maxTokensPerAccount() {
+		return 1_000;
+	}
 }

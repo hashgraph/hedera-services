@@ -31,9 +31,12 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.tokens.HederaTokenLedger;
+import com.hedera.services.tokens.TokenLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +57,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static java.lang.Long.MAX_VALUE;
 
 /**
  * Provides a ledger for Hedera Services crypto and smart contract
@@ -89,6 +91,7 @@ public class HederaLedger {
 			.thenComparingLong(AccountID::getShardNum)
 			.thenComparingLong(AccountID::getRealmNum);
 
+	private final TokenLedger tokenLedger;
 	private final EntityIdSource ids;
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
@@ -97,13 +100,8 @@ public class HederaLedger {
 
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 
-	public static final TokenID HBAR_TOKEN_ID = TokenID.newBuilder()
-			.setShardNum(MAX_VALUE)
-			.setRealmNum(MAX_VALUE)
-			.setTokenNum(MAX_VALUE)
-			.build();
-
 	public HederaLedger(
+			TokenLedger tokenLedger,
 			EntityIdSource ids,
 			EntityCreator creator,
 			AccountRecordsHistorian historian,
@@ -112,6 +110,7 @@ public class HederaLedger {
 		this.ids = ids;
 		this.ledger = ledger;
 		this.historian = historian;
+		this.tokenLedger = tokenLedger;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
@@ -191,6 +190,19 @@ public class HederaLedger {
 		for (AccountAmount aa : accountAmounts.getAccountAmountsList()) {
 			updateXfers(aa.getAccountID(), aa.getAmount());
 		}
+	}
+
+	/* --- TOKEN MANIPULATION --- */
+	public long getTokenBalance(AccountID aId, TokenID tId) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public void adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public void doTokenTransfers(TokenTransfers transfers) {
+		throw new AssertionError("Not implemented");
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

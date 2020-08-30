@@ -24,6 +24,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -75,6 +76,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.tokens.HederaTokenLedger;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -421,6 +423,9 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
+		assertThat(ctx.tokenLedger(), instanceOf(HederaTokenLedger.class));
+		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
+		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));

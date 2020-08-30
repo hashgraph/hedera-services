@@ -47,6 +47,7 @@ import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALAN
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.IdUtils.tokenWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -191,13 +192,19 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void willNotNewBalanceSetIfTokenFreezesByDefault() {
+	public void willNotSetNewBalanceIfTokenFreezesByDefault() {
 		// given:
-		var result = subject.setTokenBalance(tokenWith(firstToken - 1), frozenToken, firstBalance + 1);
+		var result = subject.validityOfSettingTokenBalance(
+				tokenWith(firstToken - 1), frozenToken, firstBalance + 1);
 
 		// expect:
-		assertEquals(0, subject.getTokenBalance(tokenWith(firstToken - 1)));
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, result);
+
+		// and:
+		assertThrows(
+				IllegalStateException.class,
+				() -> subject.setTokenBalance(tokenWith(firstToken - 1), frozenToken, firstBalance + 1));
+		assertEquals(0, subject.getTokenBalance(tokenWith(firstToken - 1)));
 	}
 
 	@Test
@@ -296,16 +303,26 @@ class MerkleAccountStateTest {
 	@Test
 	public void willNotSetBalanceIfTokenFrozen() {
 		// given:
-		var result = subject.setTokenBalance(tokenWith(thirdToken), frozenToken, 0);
+		var result = subject.validityOfSettingTokenBalance(
+				tokenWith(thirdToken), frozenToken, 0);
 
 		// expect:
 		assertEquals(thirdBalance, subject.getTokenBalance(tokenWith(thirdToken)));
+		// and:
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, result);
+		// and:
+		assertThrows(
+				IllegalStateException.class,
+				() -> subject.setTokenBalance(tokenWith(thirdToken), frozenToken, 0));
 	}
 
 	@Test
 	public void updatesUnfrozenTokenBalanceIfPresent()	 {
 		// given:
+		assertEquals(OK, subject.validityOfSettingTokenBalance(
+				tokenWith(firstToken), unfrozenToken, firstBalance + 1));
+
+		// when:
 		subject.setTokenBalance(tokenWith(firstToken), unfrozenToken, firstBalance + 1);
 
 		// expect:
@@ -359,7 +376,11 @@ class MerkleAccountStateTest {
 		// expect:
 		assertEquals(
 				SETTING_NEGATIVE_ACCOUNT_BALANCE,
-				subject.setTokenBalance(tokenWith(firstToken), unfrozenToken, -1));
+				subject.validityOfSettingTokenBalance(tokenWith(firstToken), unfrozenToken, -1));
+		// and:
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> subject.setTokenBalance(tokenWith(firstToken), unfrozenToken, -1));
 	}
 
 	@Test

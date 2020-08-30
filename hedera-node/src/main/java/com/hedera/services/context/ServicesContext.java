@@ -29,6 +29,7 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
@@ -132,12 +133,16 @@ import com.hedera.services.throttling.TransactionThrottling;
 
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 
+import com.hedera.services.tokens.ExceptionalTokenLedger;
+import com.hedera.services.tokens.HederaTokenLedger;
+import com.hedera.services.tokens.TokenLedger;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -195,6 +200,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
+import static com.hedera.services.tokens.ExceptionalTokenLedger.NOOP_TOKEN_LEDGER;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 import com.hedera.services.utils.Pause;
@@ -299,6 +305,7 @@ public class ServicesContext {
 	private FileAnswers fileAnswers;
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
+	private TokenLedger tokenLedger;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -362,6 +369,7 @@ public class ServicesContext {
 	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
 	private AccountRecordsHistorian recordsHistorian;
+	private GlobalDynamicProperties globalDynamicProperties;
 	private SmartContractServiceImpl contractsGrpc;
 	private PlatformSubmissionManager submissionManager;
 	private SmartContractRequestHandler contracts;
@@ -941,6 +949,20 @@ public class ServicesContext {
 		return backingAccounts;
 	}
 
+	public GlobalDynamicProperties globalDynamicProperties() {
+		if (globalDynamicProperties == null) {
+			globalDynamicProperties = new GlobalDynamicProperties(properties());
+		}
+		return globalDynamicProperties;
+	}
+
+	public TokenLedger tokenLedger() {
+		if (tokenLedger == null) {
+			tokenLedger = new HederaTokenLedger(ids(), globalDynamicProperties(), this::tokens);
+		}
+		return tokenLedger;
+	}
+
 	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
@@ -948,8 +970,8 @@ public class ServicesContext {
 					MerkleAccount::new,
 					backingAccounts(),
 					new ChangeSummaryManager<>());
-			delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
-			ledger = new HederaLedger(ids(), creator(), recordsHistorian(), delegate);
+			delegate.setKeyComparator(ACCOUNT_ID_COMPARATOR);
+			ledger = new HederaLedger(tokenLedger(), ids(), creator(), recordsHistorian(), delegate);
 		}
 		return ledger;
 	}
@@ -1206,6 +1228,7 @@ public class ServicesContext {
 					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
+					NOOP_TOKEN_LEDGER,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,

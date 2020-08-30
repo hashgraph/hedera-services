@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.tokens.TokenScope;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.hedera.services.ledger.HederaLedger.HBAR_TOKEN_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -58,6 +58,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.*;
@@ -135,6 +136,7 @@ public class MerkleAccountPropertyTest {
 				adminKey,
 				"UnfrozenToken", false,
 				new EntityId(1, 2, 3));
+		var tokenScope = TokenScope.scopeOf(tokenId, unfrozenToken);
 		var tokenBalance = new TokenScopedPropertyValue(tokenId, unfrozenToken, newTokenBalance);
 
 		// when:
@@ -169,7 +171,7 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 		// and:
-		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, tokenId));
+		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, tokenScope));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
@@ -181,7 +183,7 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void delegatesToNonQueryCtxAsExpected() {
+	public void delegatesToNonScopedGetterAsExpected() {
 		// setup:
 		var subject = mock(AccountProperty.class);
 		var account = mock(MerkleAccount.class);
@@ -192,9 +194,21 @@ public class MerkleAccountPropertyTest {
 		willCallRealMethod().given(subject).scopedGetter();
 
 		// when:
-		subject.scopedGetter().apply(account, HBAR_TOKEN_ID);
+		subject.scopedGetter().apply(account, TokenScope.scopeOf(null, null));
 
 		// then:
 		verify(mockGetter).apply(account);
+	}
+
+	@Test
+	public void defaultSetterTestisOk() {
+		// setup:
+		var subject = mock(AccountProperty.class);
+
+		// given:
+		willCallRealMethod().given(subject).scopedSetterValidity();
+
+		// expect:
+		assertEquals(OK, subject.scopedSetterValidity().apply(null, null));
 	}
 }
