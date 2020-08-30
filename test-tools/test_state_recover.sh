@@ -430,6 +430,6 @@ step_delete_extra_states
 step2_delete_old_state
 step3_recover
 step_cmp_event_files
-# step_copy_nodes
-# step4_check
-# step5_normal_restart
+step_copy_nodes
+step4_check
+step5_normal_restart
