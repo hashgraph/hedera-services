@@ -60,15 +60,6 @@ public interface BeanProperty<A> {
 	 * @return the getter on the target type.
 	 */
 	default BiFunction<A, TokenScope, Object> scopedGetter() {
-		return (account, ignoredScope) -> getter().apply(account);
-	}
-
-	/**
-	 * Provides a token-scoped setter check for the property at hand.
-	 *
-	 * @return the getter on the target type.
-	 */
-	default BiFunction<A, TokenScope, ResponseCodeEnum> scopedSetterValidity() {
-		return (ignoredAccount, ignoredScope) -> OK;
+		throw new UnsupportedOperationException("Only token-scoped properties implement this method!");
 	}
 }

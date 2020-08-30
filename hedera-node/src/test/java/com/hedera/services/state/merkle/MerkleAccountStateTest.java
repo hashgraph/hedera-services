@@ -194,7 +194,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void willNotSetNewBalanceIfTokenFreezesByDefault() {
 		// given:
-		var result = subject.validityOfSettingTokenBalance(
+		var result = subject.validityOfAdjustment(
 				tokenWith(firstToken - 1), frozenToken, firstBalance + 1);
 
 		// expect:
@@ -203,7 +203,8 @@ class MerkleAccountStateTest {
 		// and:
 		assertThrows(
 				IllegalStateException.class,
-				() -> subject.setTokenBalance(tokenWith(firstToken - 1), frozenToken, firstBalance + 1));
+				() -> subject.adjustTokenBalance(
+						tokenWith(firstToken - 1), frozenToken, firstBalance + 1));
 		assertEquals(0, subject.getTokenBalance(tokenWith(firstToken - 1)));
 	}
 
@@ -301,9 +302,9 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void willNotSetBalanceIfTokenFrozen() {
+	public void willNotAdjustBalanceIfTokenFrozen() {
 		// given:
-		var result = subject.validityOfSettingTokenBalance(
+		var result = subject.validityOfAdjustment(
 				tokenWith(thirdToken), frozenToken, 0);
 
 		// expect:
@@ -313,26 +314,39 @@ class MerkleAccountStateTest {
 		// and:
 		assertThrows(
 				IllegalStateException.class,
-				() -> subject.setTokenBalance(tokenWith(thirdToken), frozenToken, 0));
+				() -> subject.adjustTokenBalance(tokenWith(thirdToken), frozenToken, 0));
 	}
 
 	@Test
-	public void updatesUnfrozenTokenBalanceIfPresent()	 {
+	public void adjustsUnfrozenTokenBalanceUpIfPresent() {
 		// given:
-		assertEquals(OK, subject.validityOfSettingTokenBalance(
-				tokenWith(firstToken), unfrozenToken, firstBalance + 1));
+		assertEquals(OK, subject.validityOfAdjustment(
+				tokenWith(firstToken), unfrozenToken, 1));
 
 		// when:
-		subject.setTokenBalance(tokenWith(firstToken), unfrozenToken, firstBalance + 1);
+		subject.adjustTokenBalance(tokenWith(firstToken), unfrozenToken, 1);
 
 		// expect:
 		assertEquals(firstBalance + 1, subject.getTokenBalance(tokenWith(firstToken)));
 	}
 
 	@Test
+	public void adjustsUnfrozenTokenDownBalanceIfPresent() {
+		// given:
+		assertEquals(OK, subject.validityOfAdjustment(
+				tokenWith(firstToken), unfrozenToken, -11));
+
+		// when:
+		subject.adjustTokenBalance(tokenWith(firstToken), unfrozenToken, -11);
+
+		// expect:
+		assertEquals(firstBalance - 11, subject.getTokenBalance(tokenWith(firstToken)));
+	}
+
+	@Test
 	public void createsFirstUnfrozenTokenIfMissing() {
 		// given:
-		subject.setTokenBalance(tokenWith(firstToken - 1), unfrozenToken, firstBalance + 1);
+		subject.adjustTokenBalance(tokenWith(firstToken - 1), unfrozenToken, firstBalance + 1);
 
 		// expect:
 		assertEquals(firstBalance + 1, subject.getTokenBalance(tokenWith(firstToken - 1)));
@@ -341,7 +355,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void createsSecondUnfrozenTokenIfMissing() {
 		// given:
-		subject.setTokenBalance(tokenWith(secondToken - 1), unfrozenToken, secondBalance + 1);
+		subject.adjustTokenBalance(tokenWith(secondToken - 1), unfrozenToken, secondBalance + 1);
 
 		// expect:
 		assertEquals(secondBalance + 1, subject.getTokenBalance(tokenWith(secondToken - 1)));
@@ -350,7 +364,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void createsThirdUnfrozenTokenIfMissing() {
 		// given:
-		subject.setTokenBalance(tokenWith(thirdToken - 1), unfrozenToken, thirdBalance + 1);
+		subject.adjustTokenBalance(tokenWith(thirdToken - 1), unfrozenToken, thirdBalance + 1);
 
 		// expect:
 		assertEquals(thirdBalance + 1, subject.getTokenBalance(tokenWith(thirdToken - 1)));
@@ -359,7 +373,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void createsFourthUnfrozenTokenIfMissing() {
 		// given:
-		subject.setTokenBalance(tokenWith(thirdToken + 1), unfrozenToken, thirdBalance + 2);
+		subject.adjustTokenBalance(tokenWith(thirdToken + 1), unfrozenToken, thirdBalance + 2);
 
 		// expect:
 		assertEquals(thirdBalance + 2, subject.getTokenBalance(tokenWith(thirdToken + 1)));
@@ -372,15 +386,27 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void refusesToSetNegativeBalance() {
+	public void refusesToInitializeBalanceToNegative() {
 		// expect:
 		assertEquals(
 				SETTING_NEGATIVE_ACCOUNT_BALANCE,
-				subject.validityOfSettingTokenBalance(tokenWith(firstToken), unfrozenToken, -1));
+				subject.validityOfAdjustment(tokenWith(firstToken - 1), unfrozenToken, -1));
 		// and:
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> subject.setTokenBalance(tokenWith(firstToken), unfrozenToken, -1));
+				() -> subject.adjustTokenBalance(tokenWith(firstToken - 1), unfrozenToken, -1));
+	}
+
+	@Test
+	public void refusesToAdjustBalanceToNegative() {
+		// expect:
+		assertEquals(
+				SETTING_NEGATIVE_ACCOUNT_BALANCE,
+				subject.validityOfAdjustment(tokenWith(firstToken), unfrozenToken, -(firstBalance + 1)));
+		// and:
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> subject.adjustTokenBalance(tokenWith(firstToken), unfrozenToken, -(firstBalance + 1)));
 	}
 
 	@Test
@@ -696,11 +722,27 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	public void relationshipTestWorks() {
+		// expect;
+		assertTrue(subject.hasRelationshipWith(tokenWith(firstToken)));
+		assertFalse(subject.hasRelationshipWith(tokenWith(firstToken - 1)));
+	}
+
+	@Test
 	public void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleAccountState.RELEASE_080_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
+	}
+
+	@Test
+	public void tokenRelDescribesAsExpected() {
+		// setup:
+		var expected = "[0.0.555(balance=123), 0.0.666(balance=234), 0.0.777(balance=345,FROZEN)]";
+
+		// expect:
+		assertEquals(subject.readableTokenRels(), expected);
 	}
 
 	@Test

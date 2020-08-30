@@ -52,6 +52,11 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 	}
 
 	@Override
+	public MerkleAccount getDetachedCopy(AccountID id) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
 	public void flushMutableRefs() {
 		cache.keySet()
 				.stream()

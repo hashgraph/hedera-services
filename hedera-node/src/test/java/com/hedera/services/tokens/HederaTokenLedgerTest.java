@@ -23,6 +23,7 @@ package com.hedera.services.tokens;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -41,11 +42,11 @@ import org.junit.runner.RunWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class HederaTokenLedgerTest {
@@ -53,14 +54,18 @@ class HederaTokenLedgerTest {
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 
+	MerkleToken token;
+
 	Key adminKey, freezeKey;
 	String symbol = "NotHbar";
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
+	TokenID misc = IdUtils.asToken("3.2.1");
 	boolean freezeDefault = true;
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
+	int MAX_TOKENS_PER_ACCOUNT = 10;
 
 	HederaTokenLedger subject;
 
@@ -69,12 +74,71 @@ class HederaTokenLedgerTest {
 		adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		freezeKey = TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT.asKey();
 
+		token = mock(MerkleToken.class);
+
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
+
 		tokens = (FCMap<MerkleEntityId, MerkleToken>)mock(FCMap.class);
+		given(tokens.get(MerkleEntityId.fromTokenId(created))).willReturn(token);
+
 		properties = mock(GlobalDynamicProperties.class);
+		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 
 		subject = new HederaTokenLedger(ids, properties, () -> tokens);
+	}
+
+	@Test
+	public void delegatesIdLookup() {
+		// expect:
+		assertSame(token, subject.lookup(created).get());
+	}
+
+	@Test
+	public void rejectsNewTokenForSaturatedAccount() {
+		// setup:
+		var account = mock(MerkleAccount.class);
+
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.relationshipStatus(account, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void allowsOldTokenForSaturatedAccount() {
+		// setup:
+		var account = mock(MerkleAccount.class);
+
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+
+		// when:
+		var status = subject.relationshipStatus(account, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void allowsNewTokenForUndersaturatedAccount() {
+		// setup:
+		var account = mock(MerkleAccount.class);
+
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+
+		// when:
+		var status = subject.relationshipStatus(account, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		verify(account, never()).hasRelationshipWith(misc);
 	}
 
 	@Test

@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.tokens.TokenScope;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcqueue.FCQueue;
 
 import java.util.function.BiConsumer;
@@ -81,7 +80,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return (a, v) -> {
 				if (v instanceof TokenScopedPropertyValue) {
 					var scopedV = (TokenScopedPropertyValue)v;
-					a.setTokenBalance(scopedV.id(), scopedV.token(), (long)scopedV.value());
+					a.adjustTokenBalance(scopedV.id(), scopedV.token(), (long)scopedV.value());
 				} else {
 					try {
 						a.setBalance((long)v);

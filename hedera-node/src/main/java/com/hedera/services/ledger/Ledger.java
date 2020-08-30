@@ -20,7 +20,9 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hedera.services.tokens.TokenScope;
+
+import java.util.Optional;
 
 /**
  * Defines a ledger type with minimal semantics for manipulating
@@ -68,6 +70,15 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	A get(K id);
 
 	/**
+	 * Gets a detached account reflecting all token-scoped changes so far,
+	 * if one is present.
+	 *
+	 * @param id the id of the relevant account.
+	 * @return the detached account.
+	 */
+	A getDetachedTokenView(K id);
+
+	/**
 	 * Gets the current property value of the specified account. This value
 	 * need not be persisted to a durable backing store.
 	 *
@@ -86,7 +97,7 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * @param property which property to fetch.
 	 * @return the value of the property.
 	 */
-	Object get(K id, P property, TokenID scope);
+	Object get(K id, P property, TokenScope scope);
 
 	/**
 	 * Indicates whether an account is present (in either a saved or transient

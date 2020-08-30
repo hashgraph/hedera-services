@@ -21,12 +21,9 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.tokens.TokenScope;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -240,6 +237,26 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.toString();
 	}
 
+	public String readableTokenRels() {
+		var sb = new StringBuilder("[");
+		for (int i = 0, n = numTokenRelationships(); i < n; i++) {
+			sb.append("0.0.")
+					.append(tokenRels[num(i)])
+					.append("(balance=")
+					.append(tokenRels[balance(i)]);
+			if (isFrozen(i)) {
+				sb.append(",FROZEN");
+			}
+			sb.append(")");
+			if (i < n - 1) {
+				sb.append(", ");
+			}
+		}
+		sb.append("]");
+
+		return sb.toString();
+	}
+
 	public JKey key() {
 		return key;
 	}
@@ -328,13 +345,26 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.proxy = proxy;
 	}
 
+	long[] getTokenRels() {
+		return tokenRels;
+	}
+
+	public void setTokenRels(long[] tokenRels) {
+		this.tokenRels = tokenRels;
+	}
+
+	/* --- Token Manipulation --- */
+	public int numTokenRelationships() {
+		return tokenRels.length / NUM_TOKEN_PROPS;
+	}
+
+	public boolean hasRelationshipWith(TokenID id) {
+		return logicalIndexOf(id) >= 0;
+	}
+
 	public long getTokenBalance(TokenID id) {
 		int i = logicalIndexOf(id);
 		return (i < 0) ? 0 : tokenRels[balance(i)];
-	}
-
-	public int numTokenRelationships() {
-		return tokenRels.length / NUM_TOKEN_PROPS;
 	}
 
 	public boolean isFrozen(TokenID id, MerkleToken token) {
@@ -376,12 +406,12 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	}
 
 
-	public void setTokenBalance(TokenID id, MerkleToken token, long balance) {
-		if (balance < 0) {
-			throwBalanceIse(id, balance);
-		}
+	public void adjustTokenBalance(TokenID id, MerkleToken token, long adjustment) {
 		int i = logicalIndexOf(id), at = i;
 		if (i < 0) {
+			if (adjustment < 0) {
+				throwBalanceIse(id, adjustment);
+			}
 			if (token.accountsAreFrozenByDefault()) {
 				throwFrozenIse(id);
 			}
@@ -392,7 +422,12 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				throwFrozenIse(id);
 			}
 		}
-		tokenRels[balance(at)] = balance;
+		int pos = balance(at);
+		long newBalance = tokenRels[pos] + adjustment;
+		if (newBalance < 0) {
+			throwBalanceIse(id, newBalance);
+		}
+		tokenRels[pos] = newBalance;
 	}
 
 	private void throwFrozenIse(TokenID id) {
@@ -405,18 +440,21 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				"Account cannot have balance %d for token '%s'!", balance, readableId(id)));
 	}
 
-	public ResponseCodeEnum validityOfSettingTokenBalance(TokenID id, MerkleToken token, long balance) {
-		if (balance < 0) {
-			return SETTING_NEGATIVE_ACCOUNT_BALANCE;
-		}
+	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
 		int i = logicalIndexOf(id), at = i;
 		if (i < 0) {
 			if (token.accountsAreFrozenByDefault()) {
 				return ACCOUNT_FROZEN_FOR_TOKEN;
 			}
+			if (adjustment < 0) {
+				return SETTING_NEGATIVE_ACCOUNT_BALANCE;
+			}
 		} else {
 			if (isFrozen(at)) {
 				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+			if (tokenRels[balance(at)] + adjustment < 0) {
+				return SETTING_NEGATIVE_ACCOUNT_BALANCE;
 			}
 		}
 		return OK;

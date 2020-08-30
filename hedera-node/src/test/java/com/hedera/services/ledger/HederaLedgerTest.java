@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,8 +30,11 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.tokens.HederaTokenLedger;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -59,13 +62,22 @@ import org.mockito.InOrder;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.test.utils.IdUtils.tokenWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -84,11 +96,18 @@ public class HederaLedgerTest {
 	final long MISC_BALANCE = 1_234L;
 	final long RAND_BALANCE = 2_345L;
 	final long GENESIS_BALANCE = 50_000_000_000L;
+	final long miscFrozenTokenBalance = 500L;
 	final HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
 	final AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
 	final AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	final AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	final AccountID genesis = AccountID.newBuilder().setAccountNum(2).build();
+
+	TokenID frozenId = IdUtils.tokenWith(111);
+	MerkleToken frozenToken;
+	TokenID tokenId = IdUtils.tokenWith(222);
+	MerkleToken token;
+	MerkleAccount account;
 
 	FCMapBackingAccounts backingAccounts;
 	FCMap<MerkleEntityId, MerkleAccount> backingMap;
@@ -121,15 +140,119 @@ public class HederaLedgerTest {
 				return TokenID.newBuilder().setTokenNum(nextId++).build();
 			}
 		};
+
+		var freezeKey = new JEd25519Key("w/e".getBytes());
+
+		account = mock(MerkleAccount.class);
+
+		frozenToken = mock(MerkleToken.class);
+		given(frozenToken.freezeKey()).willReturn(Optional.of(freezeKey));
+		given(frozenToken.accountsAreFrozenByDefault()).willReturn(true);
+		token = mock(MerkleToken.class);
+		given(token.freezeKey()).willReturn(Optional.empty());
+
 		ledger = mock(TransactionalLedger.class);
 		creator = mock(ExpiringCreations.class);
-		addToLedger(misc, MISC_BALANCE, noopCustomizer);
+		addToLedger(misc, MISC_BALANCE, noopCustomizer, Map.of(
+				frozenId,
+				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
 		tokenLedger = mock(HederaTokenLedger.class);
 		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
+	}
+
+	@Test
+	public void getsTokenBalanceInScope() {
+		// given:
+		var balance = subject.getTokenBalance(misc, frozenId);
+
+		// expect:
+		assertEquals(miscFrozenTokenBalance, balance);
+	}
+
+	@Test
+	public void refusesToAdjustNonexistentAccount() {
+		given(ledger.exists(misc)).willReturn(false);
+
+		// given:
+		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void refusesToAdjustNonexistentToken() {
+		given(ledger.exists(misc)).willReturn(true);
+		given(tokenLedger.lookup(tokenId)).willReturn(Optional.empty());
+
+		// given:
+		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, status);
+	}
+
+	@Test
+	public void refusesToAdjustIneligibleTokenBalance() {
+		given(ledger.exists(misc)).willReturn(true);
+		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
+		given(ledger.getDetachedTokenView(misc)).willReturn(account);
+
+		given(tokenLedger.relationshipStatus(account, tokenId))
+				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		// given:
+		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		// expect:
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+	}
+
+	@Test
+	public void refusesToAdjustIncorrectly() {
+		given(ledger.exists(misc)).willReturn(true);
+		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
+		given(ledger.getDetachedTokenView(misc)).willReturn(account);
+		given(tokenLedger.relationshipStatus(account, tokenId)).willReturn(OK);
+		given(account.validityOfAdjustment(tokenId, token, 555))
+				.willReturn(ACCOUNT_FROZEN_FOR_TOKEN);
+
+		// given:
+		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		// expect:
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
+	public void adjustsIfValid() {
+		given(ledger.exists(misc)).willReturn(true);
+		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
+		given(ledger.getDetachedTokenView(misc)).willReturn(account);
+		given(tokenLedger.relationshipStatus(account, tokenId)).willReturn(OK);
+		given(account.validityOfAdjustment(tokenId, token, 555)).willReturn(OK);
+
+		// given:
+		var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(ledger).set(
+				argThat(misc::equals),
+				argThat(BALANCE::equals),
+				argThat(v -> {
+					var sv = (TokenScopedPropertyValue)v;
+					return sv.id().equals(tokenId) && (long)sv.value() == 555;
+				}));
+		// and:
+		assertEquals(
+				AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
+				subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
 	}
 
 	private void setupWithLiveLedger() {
@@ -150,7 +273,8 @@ public class HederaLedgerTest {
 			new HederaAccountCustomizer()
 					.key(new JContractIDKey(0, 0, 2))
 					.customizing(genesisAccount);
-		} catch (Exception impossible) {}
+		} catch (Exception impossible) {
+		}
 		backingAccounts.put(genesis, genesisAccount);
 		ledger = new TransactionalLedger<>(
 				AccountProperty.class,
@@ -418,6 +542,37 @@ public class HederaLedgerTest {
 	}
 
 	@Test
+	public void resetsTokenTransferTrackingAfterRollback() {
+		// setup:
+		subject.begin();
+		// and:
+		subject.numTouches = 2;
+		subject.tokensTouched[0] = tokenWith(111);
+		subject.tokensTouched[1] = tokenWith(222);
+		// and:
+		subject.netTokenTransfers.put(
+				tokenWith(111),
+				TransferList.newBuilder()
+						.addAccountAmounts(
+								AccountAmount.newBuilder()
+										.setAccountID(IdUtils.asAccount("0.0.2"))));
+		subject.netTokenTransfers.put(
+				tokenWith(222),
+				TransferList.newBuilder()
+						.addAccountAmounts(
+								AccountAmount.newBuilder()
+										.setAccountID(IdUtils.asAccount("0.0.3"))));
+
+		// when:
+		subject.rollback();
+
+		// then:
+		assertEquals(0, subject.numTouches);
+		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
+		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
+	}
+
+	@Test
 	public void resetsNetTransfersAfterRollback() {
 		setupWithLiveLedger();
 
@@ -536,7 +691,7 @@ public class HederaLedgerTest {
 	@Test
 	public void purgesExpiredPayerRecords() {
 		// setup:
-		Consumer<ExpirableTxnRecord> cb = (Consumer<ExpirableTxnRecord>)mock(Consumer.class);
+		Consumer<ExpirableTxnRecord> cb = (Consumer<ExpirableTxnRecord>) mock(Consumer.class);
 		FCQueue<ExpirableTxnRecord> records = asExpirableRecords(50L, 100L, 200L, 311L, 500L);
 		List<ExpirableTxnRecord> added = new ArrayList<>(records);
 		addPayerRecords(misc, records);
@@ -559,7 +714,7 @@ public class HederaLedgerTest {
 		// and:
 		assertTrue(captor.getValue() == records);
 		assertThat(
-				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+				((FCQueue<ExpirableTxnRecord>) captor.getValue())
 						.stream()
 						.map(ExpirableTxnRecord::getExpiry)
 						.collect(Collectors.toList()),
@@ -585,7 +740,7 @@ public class HederaLedgerTest {
 		// and:
 		assertTrue(captor.getValue() == records);
 		assertThat(
-				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+				((FCQueue<ExpirableTxnRecord>) captor.getValue())
 						.stream()
 						.map(ExpirableTxnRecord::getExpiry)
 						.collect(Collectors.toList()),
@@ -611,7 +766,7 @@ public class HederaLedgerTest {
 				captor.capture());
 		// and:
 		assertTrue(captor.getValue() == records);
-		assertTrue(((FCQueue<ExpirableTxnRecord>)captor.getValue()).isEmpty());
+		assertTrue(((FCQueue<ExpirableTxnRecord>) captor.getValue()).isEmpty());
 		// and:
 		assertEquals(5, HederaLedger.LedgerTxnEvictionStats.INSTANCE.recordsPurged());
 		assertEquals(1, HederaLedger.LedgerTxnEvictionStats.INSTANCE.accountsTouched());
@@ -637,7 +792,7 @@ public class HederaLedgerTest {
 		// and:
 		assertTrue(captor.getValue() == records);
 		assertThat(
-				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+				((FCQueue<ExpirableTxnRecord>) captor.getValue())
 						.stream()
 						.map(ExpirableTxnRecord::getExpiry)
 						.collect(Collectors.toList()),
@@ -665,7 +820,7 @@ public class HederaLedgerTest {
 		// and:
 		assertTrue(captor.getValue() == records);
 		assertThat(
-				((FCQueue<ExpirableTxnRecord>)captor.getValue())
+				((FCQueue<ExpirableTxnRecord>) captor.getValue())
 						.stream()
 						.map(ExpirableTxnRecord::getExpiry)
 						.collect(Collectors.toList()),
@@ -908,7 +1063,30 @@ public class HederaLedgerTest {
 		inOrder.verify(ledger).rollback();
 	}
 
-	private void addToLedger(AccountID id, long balance, HederaAccountCustomizer customizer) {
+	private void addToLedger(
+			AccountID id,
+			long balance,
+			HederaAccountCustomizer customizer
+	) {
+		addToLedger(id, balance, customizer, Collections.emptyMap());
+	}
+
+	private static class TokenInfo {
+		final long balance;
+		final MerkleToken token;
+
+		public TokenInfo(long balance, MerkleToken token) {
+			this.balance = balance;
+			this.token = token;
+		}
+	}
+
+	private void addToLedger(
+			AccountID id,
+			long balance,
+			HederaAccountCustomizer customizer,
+			Map<TokenID, TokenInfo> tokenInfo
+	) {
 		when(ledger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
 		when(ledger.get(id, BALANCE)).thenReturn(balance);
 		when(ledger.get(id, IS_DELETED)).thenReturn(false);
@@ -916,17 +1094,29 @@ public class HederaLedgerTest {
 		when(ledger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
 		when(ledger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
 		when(ledger.exists(id)).thenReturn(true);
+		// and:
+		for (TokenID tId : tokenInfo.keySet()) {
+			var info = tokenInfo.get(tId);
+			when(ledger.get(
+					argThat(id::equals),
+					argThat(BALANCE::equals),
+					argThat(s -> s.id().equals(tId)))).thenReturn(info.balance);
+		}
 	}
+
 	private void addDeletedAccountToLedger(AccountID id, HederaAccountCustomizer customizer) {
 		when(ledger.get(id, BALANCE)).thenReturn(0L);
 		when(ledger.get(id, IS_DELETED)).thenReturn(true);
 	}
+
 	private void addPayerRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
 		when(ledger.get(id, PAYER_RECORDS)).thenReturn(records);
 	}
+
 	private void addRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
 		when(ledger.get(id, HISTORY_RECORDS)).thenReturn(records);
 	}
+
 	FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {
 		FCQueue<ExpirableTxnRecord> records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 		for (int i = 0; i < expiries.length; i++) {

@@ -178,4 +178,6 @@ enum ResponseCodeEnum {
   INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
 
   ACCOUNT_FROZEN_FOR_TOKEN = 165;
+  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166;
+  INVALID_TOKEN_ID = 167;
 }

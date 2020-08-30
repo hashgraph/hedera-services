@@ -186,29 +186,11 @@ public class MerkleAccountPropertyTest {
 	public void delegatesToNonScopedGetterAsExpected() {
 		// setup:
 		var subject = mock(AccountProperty.class);
-		var account = mock(MerkleAccount.class);
-		var mockGetter = mock(Function.class);
 
-		given(subject.getter()).willReturn(mockGetter);
 		// given:
 		willCallRealMethod().given(subject).scopedGetter();
 
-		// when:
-		subject.scopedGetter().apply(account, TokenScope.scopeOf(null, null));
-
-		// then:
-		verify(mockGetter).apply(account);
-	}
-
-	@Test
-	public void defaultSetterTestisOk() {
-		// setup:
-		var subject = mock(AccountProperty.class);
-
-		// given:
-		willCallRealMethod().given(subject).scopedSetterValidity();
-
 		// expect:
-		assertEquals(OK, subject.scopedSetterValidity().apply(null, null));
+		assertThrows(UnsupportedOperationException.class, subject::scopedGetter);
 	}
 }

@@ -39,6 +39,11 @@ public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, Merk
 	}
 
 	@Override
+	public MerkleAccount getDetachedCopy(AccountID id) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
 	public void flushMutableRefs() { }
 
 	@Override

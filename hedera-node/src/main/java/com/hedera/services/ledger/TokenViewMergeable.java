@@ -1,4 +1,4 @@
-package com.hedera.services.tokens;
+package com.hedera.services.ledger;
 
 /*-
  * ‌
@@ -20,31 +20,7 @@ package com.hedera.services.tokens;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public class TokenScope {
-	private final TokenID id;
-	private final MerkleToken token;
-
-	private TokenScope(TokenID id, MerkleToken token) {
-		this.id = id;
-		this.token = token;
-	}
-
-	public static TokenScope scopeOf(TokenID id, MerkleToken token) {
-		return new TokenScope(id, token);
-	}
-
-	public static TokenScope idScopeOf(TokenID id) {
-		return new TokenScope(id, null);
-	}
-
-	public TokenID id() {
-		return id;
-	}
-
-	public MerkleToken token() {
-		return token;
-	}
+public interface TokenViewMergeable<T> {
+	void mergeTokenPropertiesFrom(T viewSoFar);
+	String readableTokenRelationships();
 }

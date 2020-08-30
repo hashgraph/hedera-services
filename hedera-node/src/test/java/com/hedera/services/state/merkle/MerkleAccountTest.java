@@ -43,16 +43,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
 import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
@@ -75,14 +77,14 @@ public class MerkleAccountTest {
 	long firstToken = 555, secondToken = 666, thirdToken = 777;
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
 	long firstFlags = 0, secondFlags = 0, thirdFlags = 0;
-	long[] tokenBalances = new long[] {
+	long[] tokenRels = new long[] {
 			firstToken, firstBalance, firstFlags,
 			secondToken, secondBalance, secondFlags,
 			thirdToken, thirdBalance, thirdFlags
 	};
 	long otherFirstBalance = 321, otherSecondBalance = 432, otherThirdBalance = 543;
 	long otherFirstFlags = 0, otherSecondFlags = 0, otherThirdFlags = 0;
-	long[] otherTokenBalances = new long[] {
+	long[] otherTokenRels = new long[] {
 			firstToken, otherFirstBalance, otherFirstFlags,
 			secondToken, otherSecondBalance, otherSecondFlags,
 			thirdToken, otherThirdBalance, otherThirdFlags
@@ -141,14 +143,14 @@ public class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				tokenBalances);
+				tokenRels);
 		otherState = new MerkleAccountState(
 				otherKey,
 				otherExpiry, otherBalance, otherAutoRenewSecs, otherSenderThreshold, otherReceiverThreshold,
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy,
-				otherTokenBalances);
+				otherTokenRels);
 
 		subject = new MerkleAccount(List.of(state, records, payerRecords));
 	}
@@ -168,6 +170,43 @@ public class MerkleAccountTest {
 
 		// then:
 		assertThrows(IllegalStateException.class, () -> original.copy());
+	}
+
+	@Test
+	public void tokenMergeWorks() {
+		// when:
+		subject.mergeTokenPropertiesFrom(new MerkleAccount(
+				List.of(otherState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ)));
+
+		// then:
+		assertSame(otherTokenRels, subject.state().getTokenRels());
+	}
+
+	@Test
+	public void tokenDescriptionDelegates() {
+		// setup:
+		var expected = "[0.0.555(balance=123), 0.0.666(balance=234), 0.0.777(balance=345,FROZEN)]";
+		var freezableToken = mock(MerkleToken.class);
+
+		given(freezableToken.freezeKey()).willReturn(Optional.of(otherKey));
+
+		// given:
+		state.freeze(IdUtils.tokenWith(thirdToken), freezableToken);
+
+		// expect:
+		assertEquals(expected, subject.readableTokenRelationships());
+	}
+
+	@Test
+	public void tokenCopyWorks() {
+		// given:
+		var tokenCopy = subject.tokenCopy();
+
+		// expect:
+		assertSame(IMMUTABLE_EMPTY_FCQ, tokenCopy.payerRecords());
+		assertSame(IMMUTABLE_EMPTY_FCQ, tokenCopy.records());
+		assertNotSame(subject.state(), tokenCopy.state());
+		assertEquals(subject.state(), tokenCopy.state());
 	}
 
 	@Test
@@ -226,10 +265,10 @@ public class MerkleAccountTest {
 		given(token.accountsAreFrozenByDefault()).willReturn(false);
 
 		// when:
-		subject.setTokenBalance(id, token, secondBalance + 1);
+		subject.adjustTokenBalance(id, token, secondBalance + 1);
 
 		// expect:
-		assertEquals(secondBalance + 1, subject.getTokenBalance(id));
+		assertEquals(2 * secondBalance + 1, subject.getTokenBalance(id));
 	}
 
 	@Test
@@ -265,6 +304,14 @@ public class MerkleAccountTest {
 	}
 
 	@Test
+	public void relationshipStatusDelegates() {
+		// expect:
+		assertEquals(3, subject.numTokenRelationships());
+		assertTrue(subject.hasRelationshipWith(IdUtils.tokenWith(firstToken)));
+		assertFalse(subject.hasRelationshipWith(IdUtils.tokenWith(firstToken - 1)));
+	}
+
+	@Test
 	public void validityDelegates() {
 		// setup:
 		var id = IdUtils.tokenWith(secondToken);
@@ -275,7 +322,7 @@ public class MerkleAccountTest {
 		state.freeze(id, token);
 
 		// when:
-		var validity = subject.validityOfSettingTokenBalance(id, token, 123);
+		var validity = subject.validityOfAdjustment(id, token, 123);
 
 		// expect:
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, validity);
@@ -295,9 +342,12 @@ public class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
-		subject.setTokenBalance(IdUtils.tokenWith(firstToken), unfrozenToken, otherFirstBalance);
-		subject.setTokenBalance(IdUtils.tokenWith(secondToken), unfrozenToken, otherSecondBalance);
-		subject.setTokenBalance(IdUtils.tokenWith(thirdToken), unfrozenToken, otherThirdBalance);
+		subject.adjustTokenBalance(
+				IdUtils.tokenWith(firstToken), unfrozenToken, otherFirstBalance - firstBalance);
+		subject.adjustTokenBalance(
+				IdUtils.tokenWith(secondToken), unfrozenToken, otherSecondBalance - secondBalance);
+		subject.adjustTokenBalance(
+				IdUtils.tokenWith(thirdToken), unfrozenToken, otherThirdBalance - thirdBalance);
 
 		// then:
 		assertEquals(otherState, subject.state());

@@ -23,6 +23,7 @@ package com.hedera.services.tokens;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.MiscUtils;
@@ -30,15 +31,20 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreate;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 
 /**
  * Provides a ledger for arbitrary tokens.
@@ -61,6 +67,14 @@ public class HederaTokenLedger implements TokenLedger {
 	}
 
 	@Override
+	public ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id) {
+		if (account.numTokenRelationships() >= properties.maxTokensPerAccount()) {
+			return account.hasRelationshipWith(id) ? OK : TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+		}
+		return OK;
+	}
+
+	@Override
 	public TokenCreationResult create(TokenCreation request, AccountID sponsor) {
 		var adminKey = asUsableFcKey(request.getAdminKey());
 		if (adminKey.isEmpty())	{
@@ -69,5 +83,10 @@ public class HederaTokenLedger implements TokenLedger {
 
 		var created = ids.newTokenId(sponsor);
 		return success(created);
+	}
+
+	@Override
+	public Optional<MerkleToken> lookup(TokenID id) {
+		return Optional.ofNullable(tokens.get().get(fromTokenId(id)));
 	}
 }
