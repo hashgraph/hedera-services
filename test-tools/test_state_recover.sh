@@ -15,7 +15,7 @@ set -eE
 trap ' print_banner "TEST FAILED" ' ERR 
 
 PACKAGE="com.hedera.services.ServicesMain"
-CLIENT="mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest -Dexec.cleanupDaemonThreads=false"
+CLIENT="mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest -Dexec.args='10 2 2' -Dexec.cleanupDaemonThreads=false"
 
 platform='unknown'
 unamestr=`uname`
@@ -79,6 +79,8 @@ function step1_original_run()
 
     # remove old state and logs
     rm -rf data/saved/; rm -rf data/eventStream*/; rm -f output/*.log
+    rm -rf data/accountBalances
+    rm -rf data/recordstreams
 
     # recover settings.txt and config to default
     git checkout settings.txt
@@ -90,6 +92,7 @@ function step1_original_run()
 
     # save many signed state on disk so we can test of removing more signed state
     echo "state.signedStateDisk,     3000" >> settings.txt
+    echo "accountBalanceExportPeriodMinutes=1" >> data/config/application.properties
 
     echo "Making sure enableStateRecovery is false"
     sed -i -e s/'enableStateRecovery'.*/'enableStateRecovery,   false '/g  settings.txt
@@ -193,6 +196,8 @@ function step3_recover()
     print_banner "Running ${FUNCNAME[0]}"
 
     rm -rf data/eventStreamRecover
+    rm -rf data/accountBalancesOriginal
+    rm -rf data/recordstreamsOriginal
 
     # enable state recover and set correct stream directory 
     echo "enableStateRecovery,   true" >> settings.txt
@@ -204,6 +209,14 @@ function step3_recover()
     echo "eventsLogDir,   data/eventStreamRecover" >> settings.txt
     echo "enableEventStreaming,  true" >> settings.txt
     
+    # back up account balance
+    cp -r data/accountBalances data/accountBalancesOriginal
+    rm -rf data/accountBalances/*
+
+    # back up record stream
+    cp -r data/recordstreams data/recordstreamsOriginal
+    rm -rf data/recordstreams/*
+
     echo "signedStateFreq, 1" >> settings.txt
     echo "recoverEventsPerRound, 250" >> settings.txt
     # launch HGCApp in recover mode
@@ -229,6 +242,24 @@ function step_cmp_event_files
         print_banner "Event files are different"
         exit 64
     fi
+
+    # compare generated account files with original ones, ignore files exist in original ones only
+    diff_amount=`diff  data/accountBalances/balance0.0.3/ data/accountBalancesOriginal/balance0.0.3/ | grep diff | wc -l`
+    if [ $(( $diff_amount )) -eq 0 ]; then
+        print_banner "Account files are same"
+    else
+        print_banner "Account files are different"
+        exit 65
+    fi 
+
+    # compare generated account files with original ones, ignore files exist in original ones only
+    diff_amount=`diff  data/recordstreams/record0.0.3/ data/recordstreamsOriginal/record0.0.3/ | grep diff | wc -l`
+    if [ $(( $diff_amount )) -eq 0 ]; then
+        print_banner "Record files are same"
+    else
+        print_banner "Record files are different"
+        exit 66
+    fi 
 } 
 
 # copy newly generated signed state to other nodes
@@ -335,41 +366,6 @@ function launch_hgc_and_client
     kill -9 $pid
 }
 
-function recover_common
-{
-    state_round=$(get_last_round_number)
-
-    #unzip backed up postgres file
-    echo "Unzip database for round $state_round "
-    cd data/saved/$PACKAGE/0/123/$state_round
-    gunzip PostgresBackup.tar.gz
-    chmod 666 *
-    cd -
-}
-
-function recover_linux
-{
-    state_round=$(get_last_round_number)
-    sudo -u postgres psql -f ../test-tools/drop_database.psql
-    sudo -u postgres createdb fcfs ; sudo -u postgres pg_restore  --format=tar --dbname=fcfs data/saved/$PACKAGE/0/123/$state_round/PostgresBackup.tar ; 
-}
-
-function recover_macOS
-{
-    postgres_version="10.9-alpine"
-    echo "Stop and restart Postgres version: $postgres_version"
-    echo "If Postgres version in your docker are different, please change this script accordingly "
-
-    docker rm -f postgres
-    docker run --name postgres -d -p 5432:5432 --env POSTGRES_PASSWORD=password --env POSTGRES_USER=swirlds --env POSTGRES_DB=fcfs postgres:$postgres_version
-
-    #wait a few second for database to ready
-    sleep 5
-
-    #restore database may through some error, ignore them
-    ret=0
-    PGPASSWORD="password" pg_restore --format=tar --dbname=fcfs --clean --username=swirlds --host=localhost --port=5432 data/saved/$PACKAGE/0/123/$state_round/PostgresBackup.tar || ret=$?
-}
 
 function skip_step1()
 {
@@ -381,25 +377,6 @@ function skip_step1()
     cp -r data/prevRun/* data/saved/ 
 
     rm -f swirlds.log
-}
-
-function step_recover_posgres
-{
-    # remove other wise during recover, otherwise the service would try to create the same fiels
-    rm -rf data/recordstreams
-
-    # no longer need recover psql since platform doing it internally
-
-    # recover_common
-
-    # if [[ $platform == 'linux' ]]; then
-    #     echo "Recover for Linux"
-    #     recover_linux
-    # elif [[ $platform == 'macOS' ]]; then
-    #     echo "Recover for macOS"
-    #     recover_macOS
-    # fi
-
 }
 
 #
@@ -448,7 +425,6 @@ if [[ "recover" == $1 ]] ; then
     # echo "Start Production Version Recover Process"
     prepare_recover $2 $3 $4 $5
     step2_delete_old_state
-    step_recover_posgres
     step3_recover
     step_cmp_event_files
     step_copy_nodes $5
@@ -457,7 +433,6 @@ if [[ "recover" == $1 ]] ; then
 elif [[ "reload" == $1 ]] ; then
     echo "Reload from saved state and restore database first"
     rm -f output/*.log
-    step_recover_posgres
     java -cp 'data/lib/*' com.swirlds.platform.Browser
 elif [[ "skip1" == $1 ]] ; then
     echo "Skip step 1"
@@ -467,7 +442,6 @@ else
 fi
 step_delete_extra_states
 step2_delete_old_state
-step_recover_posgres
 step3_recover
 step_cmp_event_files
 step_copy_nodes
