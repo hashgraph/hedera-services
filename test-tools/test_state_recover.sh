@@ -215,7 +215,7 @@ function step3_recover()
 
     # back up record stream
     cp -r data/recordstreams data/recordstreamsOriginal
-    rm -rf data/recordstreams/*
+    # rm -rf data/recordstreams/*
 
     echo "signedStateFreq, 1" >> settings.txt
     echo "recoverEventsPerRound, 250" >> settings.txt
@@ -444,6 +444,6 @@ step_delete_extra_states
 step2_delete_old_state
 step3_recover
 step_cmp_event_files
-step_copy_nodes
-step4_check
-step5_normal_restart
+# step_copy_nodes
+# step4_check
+# step5_normal_restart

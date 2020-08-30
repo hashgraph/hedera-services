@@ -166,10 +166,14 @@ public class RecordStream implements Runnable {
 				file = new File(fileName);
 
 				if (file.exists() && !file.isDirectory()) {
+					//for state reover test only
+					// delete and recreate later
+					file.delete();
 					//should not exist already
-					log.error("ERROR: Record file {} already exists ", fileName);
-					return;
-				} else {
+					log.info("WARNING: Record file {} already exists ", fileName);
+//					return;
+				}
+//				else {
 					stream = new FileOutputStream(file, false);
 					dos = new DataOutputStream(new BufferedOutputStream(stream));
 					if (log.isDebugEnabled()) {
@@ -195,7 +199,7 @@ public class RecordStream implements Runnable {
 					} else {
 						md.update(prevFileHash);
 					}
-				}
+//				}
 
 			} catch (IOException e) {
 				log.error("createFile - Exception {} - {}", ExceptionUtils.getStackTrace(e), e.getMessage());
