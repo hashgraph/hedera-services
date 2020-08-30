@@ -80,7 +80,6 @@ function step1_original_run()
     # remove old state and logs
     rm -rf data/saved/; rm -rf data/eventStream*/; rm -f output/*.log
     rm -rf data/accountBalances
-    rm -rf data/recordstreams
 
     # recover settings.txt and config to default
     git checkout settings.txt
@@ -197,7 +196,6 @@ function step3_recover()
 
     rm -rf data/eventStreamRecover
     rm -rf data/accountBalancesOriginal
-    rm -rf data/recordstreamsOriginal
 
     # enable state recover and set correct stream directory 
     echo "enableStateRecovery,   true" >> settings.txt
@@ -213,15 +211,11 @@ function step3_recover()
     cp -r data/accountBalances data/accountBalancesOriginal
     rm -rf data/accountBalances/*
 
-    # back up record stream
-    cp -r data/recordstreams data/recordstreamsOriginal
-    # rm -rf data/recordstreams/*
-
     echo "signedStateFreq, 1" >> settings.txt
     echo "recoverEventsPerRound, 250" >> settings.txt
     # launch HGCApp in recover mode
     ret=0
-    java  -Xmx14g -Xms12g -cp 'data/lib/*' com.swirlds.platform.Browser -local 0 || ret=$?
+    java -Djava.awt.headless=true -Xmx14g -Xms12g -cp 'data/lib/*' com.swirlds.platform.Browser -local 0 || ret=$?
 
     echo "Recover mode exited with: $ret"
 
@@ -252,14 +246,6 @@ function step_cmp_event_files
         exit 65
     fi 
 
-    # compare generated account files with original ones, ignore files exist in original ones only
-    diff_amount=`diff  data/recordstreams/record0.0.3/ data/recordstreamsOriginal/record0.0.3/ | grep diff | wc -l`
-    if [ $(( $diff_amount )) -eq 0 ]; then
-        print_banner "Record files are same"
-    else
-        print_banner "Record files are different"
-        exit 66
-    fi 
 } 
 
 # copy newly generated signed state to other nodes
@@ -350,7 +336,7 @@ function launch_hgc_and_client
 
     # run HGCApp for a while then shut it down
     # then we have needed old states, event stream, and HGCApp expected result
-    java -cp 'data/lib/*' com.swirlds.platform.Browser &
+    java -Djava.awt.headless=true -cp 'data/lib/*' com.swirlds.platform.Browser &
     pid=$!  # remember prcoess ID of server
     sleep 80
     print_banner "Now lanching client "
@@ -433,7 +419,7 @@ if [[ "recover" == $1 ]] ; then
 elif [[ "reload" == $1 ]] ; then
     echo "Reload from saved state and restore database first"
     rm -f output/*.log
-    java -cp 'data/lib/*' com.swirlds.platform.Browser
+    java -Djava.awt.headless=true -cp 'data/lib/*' com.swirlds.platform.Browser
 elif [[ "skip1" == $1 ]] ; then
     echo "Skip step 1"
     skip_step1
