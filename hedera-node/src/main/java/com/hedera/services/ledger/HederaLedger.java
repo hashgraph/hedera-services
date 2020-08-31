@@ -260,6 +260,10 @@ public class HederaLedger {
 		return validity;
 	}
 
+	public void dropPendingTokenChanges() {
+		ledger.dropPendingTokenChanges();
+	}
+
 	public ResponseCodeEnum doAtomicTokenTransfers(TokenTransfers transfers) {
 		throw new AssertionError("Not implemented");
 	}

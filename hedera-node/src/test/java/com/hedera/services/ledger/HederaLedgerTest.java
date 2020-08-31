@@ -415,6 +415,15 @@ public class HederaLedgerTest {
 	}
 
 	@Test
+	public void delegatesTokenChangeDrop() {
+		// when:
+		subject.dropPendingTokenChanges();
+
+		// then:
+		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
 	public void resetsNetTransfersAfterCommit() {
 		setupWithLiveLedger();
 

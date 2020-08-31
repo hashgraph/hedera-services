@@ -43,9 +43,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
-		throw new UnsupportedOperationException();
-	}
+	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
 
 	@Override
 	public boolean exists(TokenID id) {
