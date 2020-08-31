@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -62,6 +63,11 @@ public class EntityIdTest {
 			.setShardNum(shard)
 			.setRealmNum(realm)
 			.setTopicNum(num)
+			.build();
+	TokenID tokenId = TokenID.newBuilder()
+			.setShardNum(shard)
+			.setRealmNum(realm)
+			.setTokenNum(num)
 			.build();
 
 	EntityId subject;
@@ -124,11 +130,13 @@ public class EntityIdTest {
 		assertNull(EntityId.ofNullableAccountId(null));
 		assertNull(EntityId.ofNullableContractId(null));
 		assertNull(EntityId.ofNullableTopicId(null));
+		assertNull(EntityId.ofNullableTokenId(null));
 		// and:
 		assertEquals(subject, EntityId.ofNullableAccountId(accountId));
 		assertEquals(subject, EntityId.ofNullableContractId(contractId));
 		assertEquals(subject, EntityId.ofNullableTopicId(topicId));
 		assertEquals(subject, EntityId.ofNullableFileId(fileId));
+		assertEquals(subject, EntityId.ofNullableTokenId(tokenId));
 	}
 
 	@Test
@@ -189,5 +197,6 @@ public class EntityIdTest {
 	public void viewsWork() {
 		// expect:
 		assertEquals(contractId, subject.toGrpcContractId());
+		assertEquals(tokenId, subject.toGrpcTokenId());
 	}
 }
