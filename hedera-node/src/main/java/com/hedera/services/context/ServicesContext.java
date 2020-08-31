@@ -164,6 +164,7 @@ import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -871,6 +872,9 @@ public class ServicesContext {
 				entry(ConsensusSubmitMessage,
 						List.of(new SubmitMessageTransitionLogic(
 								this::topics, validator(), txnCtx()))),
+				/* Token */
+				entry(TokenCreate,
+						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
@@ -955,7 +959,7 @@ public class ServicesContext {
 		return globalDynamicProperties;
 	}
 
-	public TokenStore tokenLedger() {
+	public TokenStore tokenStore() {
 		if (tokenStore == null) {
 			tokenStore = new HederaTokenStore(ids(), globalDynamicProperties(), this::tokens);
 		}
@@ -970,7 +974,7 @@ public class ServicesContext {
 					backingAccounts(),
 					new ChangeSummaryManager<>());
 			delegate.setKeyComparator(ACCOUNT_ID_COMPARATOR);
-			ledger = new HederaLedger(tokenLedger(), ids(), creator(), recordsHistorian(), delegate);
+			ledger = new HederaLedger(tokenStore(), ids(), creator(), recordsHistorian(), delegate);
 		}
 		return ledger;
 	}

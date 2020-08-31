@@ -264,6 +264,8 @@ public class MiscUtils {
 			return "deleteTopic";
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return "submitMessage";
+		} else if (txn.hasTokenCreation()) {
+			return "tokenCreate";
 		} else {
 			return "NotImplemented";
 		}
@@ -312,6 +314,8 @@ public class MiscUtils {
 			return ConsensusDeleteTopic;
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return ConsensusSubmitMessage;
+		} else if (txn.hasTokenCreation()) {
+			return TokenCreate;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

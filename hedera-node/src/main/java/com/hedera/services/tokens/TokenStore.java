@@ -48,4 +48,5 @@ public interface TokenStore {
 	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor);
 	void commitCreation();
 	void rollbackCreation();
+	boolean isCreationPending();
 }

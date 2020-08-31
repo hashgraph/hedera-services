@@ -266,6 +266,10 @@ public class MerkleAccount extends AbstractMerkleInternal
 		state().unfreeze(id, token);
 	}
 
+	public boolean isFrozen(TokenID id, MerkleToken token) {
+		return state().isFrozen(id, token);
+	}
+
 	public long getReceiverThreshold() {
 		return state().receiverThreshold();
 	}

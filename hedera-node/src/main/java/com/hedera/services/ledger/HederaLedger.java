@@ -35,6 +35,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -258,6 +259,14 @@ public class HederaLedger {
 			updateTokenXfers(tId, aId, adjustment);
 		}
 		return validity;
+	}
+
+	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+		return tokenStore.freeze(aId, tId);
+	}
+
+	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
+		return tokenStore.unfreeze(aId, tId);
 	}
 
 	public void dropPendingTokenChanges() {

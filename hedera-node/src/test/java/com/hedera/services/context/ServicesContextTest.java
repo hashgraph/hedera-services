@@ -422,7 +422,7 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
-		assertThat(ctx.tokenLedger(), instanceOf(HederaTokenStore.class));
+		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());

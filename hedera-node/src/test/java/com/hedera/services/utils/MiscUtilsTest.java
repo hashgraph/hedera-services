@@ -68,6 +68,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -79,6 +80,7 @@ import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.UncheckedSubmit;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -303,6 +305,7 @@ public class MiscUtilsTest {
 			put("updateTopic", new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put("deleteTopic", new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put("submitMessage", new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put("tokenCreate", new BodySetter<>(TokenCreation.class));
 		}};
 
 		// expect:
@@ -536,6 +539,7 @@ public class MiscUtilsTest {
 			put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
+			put(TokenCreate, new BodySetter<>(TokenCreation.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

@@ -73,6 +73,30 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::isSmartContract;
 		}
 	},
+	IS_FROZEN {
+		@Override
+		@SuppressWarnings("unchecked")
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, v) -> {
+				var scopedV = (TokenScopedPropertyValue)v;
+				if ((boolean)scopedV.value()) {
+					a.freeze(scopedV.id(), scopedV.token());
+				} else {
+					a.unfreeze(scopedV.id(), scopedV.token());
+				}
+			};
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public BiFunction<MerkleAccount, TokenScope, Object> scopedGetter() {
+			return (a, s) -> a.isFrozen(s.id(), s.token());
+		}
+	},
 	BALANCE {
 		@Override
 		@SuppressWarnings("unchecked")

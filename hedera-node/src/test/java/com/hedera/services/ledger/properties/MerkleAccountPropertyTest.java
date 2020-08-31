@@ -36,17 +36,18 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcqueue.FCQueue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
@@ -58,9 +59,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -128,7 +130,8 @@ public class MerkleAccountPropertyTest {
 		account.payerRecords().offer(origPayerRecords.get(0));
 		account.payerRecords().offer(origPayerRecords.get(1));
 		// and:
-		var tokenId = IdUtils.tokenWith(123);
+		var unfrozenTokenId = IdUtils.tokenWith(123);
+		var frozenTokenId = IdUtils.tokenWith(321);
 		var newTokenBalance = 1_234_567L;
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		var unfrozenToken = new MerkleToken(
@@ -136,10 +139,22 @@ public class MerkleAccountPropertyTest {
 				adminKey,
 				"UnfrozenToken", false,
 				new EntityId(1, 2, 3));
-		var tokenScope = TokenScope.scopeOf(tokenId, unfrozenToken);
-		var tokenBalance = new TokenScopedPropertyValue(tokenId, unfrozenToken, newTokenBalance);
+		var unfrozenTokenScope = TokenScope.scopeOf(unfrozenTokenId, unfrozenToken);
+		var tokenBalance = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, newTokenBalance);
+		var frozenToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"FrozenToken", true,
+				new EntityId(1, 2, 3));
+		frozenToken.setFreezeKey(adminKey);
+		var frozenTokenScope = TokenScope.scopeOf(frozenTokenId, frozenToken);
+		var tokenFreeze = new TokenScopedPropertyValue(frozenTokenId, frozenToken, true);
+		var tokenUnfreeze = new TokenScopedPropertyValue(frozenTokenId, frozenToken, false);
 
-		// when:
+		// expect:
+		assertFalse((boolean)IS_FROZEN.scopedGetter().apply(account, unfrozenTokenScope));
+		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		// and when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
 		IS_SMART_CONTRACT.setter().accept(account, newIsContract);
@@ -155,6 +170,7 @@ public class MerkleAccountPropertyTest {
 		PAYER_RECORDS.setter().accept(account, newPayerRecords);
 		// and:
 		BALANCE.setter().accept(account, tokenBalance);
+		IS_FROZEN.setter().accept(account, tokenUnfreeze);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -171,7 +187,12 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newRecords, HISTORY_RECORDS.getter().apply(account));
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 		// and:
-		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, tokenScope));
+		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, unfrozenTokenScope));
+		assertFalse((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		// and when:
+		IS_FROZEN.setter().accept(account, tokenFreeze);
+		// then:
+		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {

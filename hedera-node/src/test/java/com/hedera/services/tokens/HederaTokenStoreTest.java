@@ -43,15 +43,19 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -90,7 +94,7 @@ class HederaTokenStoreTest {
 	@BeforeEach
 	public void setup() {
 		adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-		freezeKey = TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT.asKey();
+		freezeKey = CARELESS_SIGNING_PAYER_KT.asKey();
 
 		token = mock(MerkleToken.class);
 
@@ -152,7 +156,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustabilityCheckRejectsMissingAccount() {
+	public void freezingRejectsMissingAccount() {
+		given(ledger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.freeze(sponsor, misc);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void adjustingRejectsMissingAccount() {
 		given(ledger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -163,7 +178,19 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustabilityCheckRejectsMissingToken() {
+	public void understandsPendingCreation() {
+		// expect:
+		assertFalse(subject.isCreationPending());
+
+		// and when:
+		subject.pendingId = misc;
+
+		// expect:
+		assertTrue(subject.isCreationPending());
+	}
+
+	@Test
+	public void adjustingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
 		// when:
@@ -174,7 +201,84 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustabilityCheckRejectsSaturatedAccount() {
+	public void freezingRejectsUnfreezableToken() {
+		given(token.freezeKey()).willReturn(Optional.empty());
+
+		// when:
+		var status = subject.freeze(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, status);
+	}
+
+	@Test
+	public void freezingRejectsSaturatedAccountIfExplicitFreezeRequired() {
+		givenTokenWithFreezeKey(true);
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.freeze(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void unfreezingRejectsSaturatedAccountIfExplicitUnfreezeRequired() {
+		givenTokenWithFreezeKey(true);
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.unfreeze(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void freezingPermitsForSaturatedAccountIfFreezeIsImplicit() {
+		givenTokenWithFreezeKey(true);
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.freeze(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void performsValidFreeze() {
+		// setup:
+		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
+
+		givenTokenWithFreezeKey(false);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+
+		// when:
+		subject.freeze(treasury, misc);
+
+		// then:
+		verify(ledger).set(argThat(treasury::equals), argThat(IS_FROZEN::equals), captor.capture());
+		// and:
+		assertEquals(misc, captor.getValue().id());
+		assertSame(token, captor.getValue().token());
+		assertEquals(true, (boolean)captor.getValue().value());
+	}
+
+	private void givenTokenWithFreezeKey(boolean freezeDefault) {
+		given(token.freezeKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
+		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
+	}
+
+	@Test
+	public void adjustingRejectsSaturatedAccount() {
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
 		given(account.hasRelationshipWith(misc)).willReturn(false);
 
@@ -295,7 +399,7 @@ class HederaTokenStoreTest {
 				symbol,
 				freezeDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
-		expected.setFreezeKey(TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
+		expected.setFreezeKey(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
 
 		// given:
 		var req = fullyValidAttempt().build();

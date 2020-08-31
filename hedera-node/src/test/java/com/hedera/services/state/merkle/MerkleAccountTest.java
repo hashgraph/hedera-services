@@ -283,7 +283,7 @@ public class MerkleAccountTest {
 		subject.freeze(id, token);
 
 		// expect:
-		assertTrue(state.isFrozen(id, token));
+		assertTrue(subject.isFrozen(id, token));
 	}
 
 	@Test

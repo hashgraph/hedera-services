@@ -424,6 +424,21 @@ public class HederaLedgerTest {
 	}
 
 	@Test
+	public void delegatesFreezeOps() {
+		// when:
+		subject.freeze(misc, frozenId);
+
+		// then:
+		verify(tokenStore).freeze(misc, frozenId);
+
+		// and when:
+		subject.unfreeze(misc, frozenId);
+
+		// then:
+		verify(tokenStore).unfreeze(misc, frozenId);
+	}
+
+	@Test
 	public void resetsNetTransfersAfterCommit() {
 		setupWithLiveLedger();
 
@@ -605,6 +620,8 @@ public class HederaLedgerTest {
 		subject.adjustTokenBalance(c, tB, +50);
 		subject.adjustTokenBalance(c, tB, -50);
 		subject.adjustTokenBalance(c, tA, +5000);
+		System.out.println(subject.freeze(a, tB));
+		System.out.println(subject.adjustTokenBalance(a, tB, +1_000_000));
 		System.out.println(ledger.changeSetSoFar());
 
 		// then:
@@ -624,12 +641,15 @@ public class HederaLedgerTest {
 	}
 
 	private TokenCreation stdWith(String symbol, AccountID account) {
+		var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		return TokenCreation.newBuilder()
-				.setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
+				.setAdminKey(key)
+				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.setSymbol(symbol)
 				.setFloat(1_000_000)
 				.setTreasury(account)
 				.setDivisibility(100)
+				.setFreezeDefault(false)
 				.build();
 	}
 

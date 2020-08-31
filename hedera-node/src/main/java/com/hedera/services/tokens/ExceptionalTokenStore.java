@@ -43,6 +43,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean isCreationPending() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
 
 	@Override
@@ -54,6 +59,4 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
-
-
 }
