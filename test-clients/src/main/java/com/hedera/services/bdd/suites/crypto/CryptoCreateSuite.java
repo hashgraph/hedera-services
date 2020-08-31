@@ -69,7 +69,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		);
 	}
 
-
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
 				createAnAccountEmptyThresholdKey(),
@@ -119,7 +118,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaCreateSucceeds() {
 		return defaultHapiSpec("VanillaCreateSucceeds")
 				.given(
-						cryptoCreate("testAccount").via("txn")
+						cryptoCreate("testAccount").via("txn"),
+						UtilVerbs.sleepFor(2000)
 				).when().then(
 						getTxnRecord("txn").logged()
 				);

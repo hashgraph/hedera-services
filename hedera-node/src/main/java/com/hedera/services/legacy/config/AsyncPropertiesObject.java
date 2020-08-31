@@ -84,6 +84,9 @@ public class AsyncPropertiesObject {
 	private static boolean startStatsDumpTimer = false;
 	private static int     statsDumpTimerValue = 60; // in seconds
 
+	// Re-try times for querying binary object store (for file services)
+	private static int binaryObjectQueryRetryTimes = ApplicationConstants.BINARY_OBJECT_QUERY_RETRY_TIMES;
+
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
 		port = appConfig.getInt("port", ApplicationConstants.APP_PORT);
@@ -139,6 +142,9 @@ public class AsyncPropertiesObject {
 		// properties for timers
 		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
 		statsDumpTimerValue = appConfig.getInt("statsDumpTimerValue",60);
+
+		// Re-try times for querying binary object store (for file services)
+		binaryObjectQueryRetryTimes = appConfig.getInt("binary.object.query.retry.times", 3);
 
 	}
 
@@ -303,5 +309,8 @@ public class AsyncPropertiesObject {
 
 	static int getStatsDumpTimerValue() {
 		return statsDumpTimerValue;
+	}
+	static int getBinaryObjectQueryRetryTimes() {
+		return binaryObjectQueryRetryTimes;
 	}
 }

@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAc
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MapValueFactory;
@@ -59,13 +60,15 @@ class GetAccountBalanceAnswerTest {
 	private MerkleAccount contractV = MapValueFactory.newContract().balance(balance).get();
 
 	private GetAccountBalanceAnswer subject;
+	private PropertySource propertySource;
 
 	@BeforeEach
 	private void setup() {
 		accounts = mock(FCMap.class);
+		propertySource = mock(PropertySource.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(idLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(idLit)))).willReturn(contractV);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
 
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountBalanceAnswer(optionValidator);

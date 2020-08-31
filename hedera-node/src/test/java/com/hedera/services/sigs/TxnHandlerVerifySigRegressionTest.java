@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.queries.validation.QueryFeeCheck;
@@ -107,6 +108,7 @@ public class TxnHandlerVerifySigRegressionTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
 		subject = new TransactionHandler(
 				null,
 				() -> accounts,
@@ -115,7 +117,7 @@ public class TxnHandlerVerifySigRegressionTest {
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts),
+				() -> new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accounts),
 				new MockAccountNumbers(),

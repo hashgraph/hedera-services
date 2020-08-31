@@ -314,4 +314,8 @@ public class PropertiesLoader {
 	public static int getStatsDumpTimerValue() {
 		return AsyncPropertiesObject.getStatsDumpTimerValue();
 	}
+
+	public static int getBinaryObjectQueryRetryTimes() {
+		return AsyncPropertiesObject.getBinaryObjectQueryRetryTimes();
+	}
 }

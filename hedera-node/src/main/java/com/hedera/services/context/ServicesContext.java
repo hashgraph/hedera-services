@@ -441,14 +441,15 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
-					() -> queryableStorage().get());
+					() -> queryableStorage().get(),
+					properties());
 		}
 		return stateViews;
 	}
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(this::topics, this::accounts, this::storage);
+			currentView = new StateView(this::topics, this::accounts, this::storage, properties());
 		}
 		return currentView;
 	}
