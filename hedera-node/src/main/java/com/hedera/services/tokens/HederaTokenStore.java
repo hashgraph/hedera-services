@@ -21,31 +21,31 @@ package com.hedera.services.tokens;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -63,8 +63,9 @@ public class HederaTokenStore implements TokenStore {
 
 	private final EntityIdSource ids;
 	private final GlobalDynamicProperties properties;
-	private final BackingAccounts<AccountID, MerkleAccount> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
@@ -72,13 +73,69 @@ public class HederaTokenStore implements TokenStore {
 	public HederaTokenStore(
 			EntityIdSource ids,
 			GlobalDynamicProperties properties,
-			BackingAccounts<AccountID, MerkleAccount> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
 	) {
 		this.ids = ids;
 		this.tokens = tokens;
-		this.accounts = accounts;
 		this.properties = properties;
+	}
+
+	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+		this.ledger = ledger;
+	}
+
+	@Override
+	public boolean exists(TokenID id) {
+		return pendingId.equals(id) || tokens.get().containsKey(fromTokenId(id));
+	}
+
+	@Override
+	public MerkleToken get(TokenID id) {
+		throwIfMissing(id);
+
+		return pendingId.equals(id) ? pendingCreation : tokens.get().get(fromTokenId(id));
+	}
+
+	@Override
+	public ResponseCodeEnum checkThawability(AccountID aId, TokenID tId) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public ResponseCodeEnum checkFreezability(AccountID aId, TokenID tId) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
+	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
+		var validity = checkExistence(aId, tId);
+		if (validity != OK) {
+			return validity;
+		}
+
+		var account = ledger.getDetachedTokenView(aId);
+		if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
+			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+		}
+
+		validity = account.validityOfAdjustment(tId, get(tId), adjustment);
+		if (validity != OK) {
+			return validity;
+		}
+
+		return OK;
+	}
+
+	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
+		var validity = ledger.exists(aId) ? OK : INVALID_ACCOUNT_ID;
+		if (validity != OK) {
+			return validity;
+		}
+		return exists(tId) ? OK : INVALID_TOKEN_ID;
+	}
+
+	private boolean unsaturated(MerkleAccount account) {
+		return account.numTokenRelationships() < properties.maxTokensPerAccount();
 	}
 
 	@Override
@@ -145,7 +202,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum treasuryCheck(AccountID id) {
-		if (!accounts.contains(id) || accounts.getRef(id).isDeleted()) {
+		if (!ledger.exists(id) || (boolean)ledger.get(id, AccountProperty.IS_DELETED)) {
 			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 		}
 		return OK;
@@ -180,6 +237,12 @@ public class HederaTokenStore implements TokenStore {
 	private void throwIfNoCreationPending() {
 		if (pendingId == NO_PENDING_ID) {
 			throw new IllegalStateException("No pending token creation!");
+		}
+	}
+
+	private void throwIfMissing(TokenID id) {
+		if (!exists(id)) {
+			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
 		}
 	}
 }

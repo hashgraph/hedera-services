@@ -21,8 +21,10 @@ package com.hedera.services.tokens;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -38,26 +40,32 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
 	EntityIdSource ids;
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
+	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	MerkleToken token;
 	MerkleAccount account;
@@ -71,9 +79,9 @@ class HederaTokenStoreTest {
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
+	TokenID pending = IdUtils.asToken("1.2.555555");
 	int MAX_TOKENS_PER_ACCOUNT = 100;
 	int MAX_TOKEN_SYMBOL_LENGTH = 10;
-	BackingAccounts<AccountID, MerkleAccount> accounts;
 
 	HederaTokenStore subject;
 
@@ -87,21 +95,147 @@ class HederaTokenStoreTest {
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 
+		account = mock(MerkleAccount.class);
+
+		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)mock(TransactionalLedger.class);
+		given(ledger.exists(treasury)).willReturn(true);
+		given(ledger.exists(sponsor)).willReturn(true);
+		given(ledger.get(treasury, IS_DELETED)).willReturn(false);
+		given(ledger.getDetachedTokenView(treasury)).willReturn(account);
+
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
-
-		account = mock(MerkleAccount.class);
-		given(account.isDeleted()).willReturn(false);
-
-		accounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
-		given(accounts.contains(treasury)).willReturn(true);
-		given(accounts.getRef(treasury)).willReturn(account);
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
+		given(tokens.get(fromTokenId(misc))).willReturn(token);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolLength()).willReturn(MAX_TOKEN_SYMBOL_LENGTH);
 
-		subject = new HederaTokenStore(ids, properties, accounts, () -> tokens);
+		subject = new HederaTokenStore(ids, properties, () -> tokens);
+		subject.setLedger(ledger);
+	}
+
+	@Test
+	public void getDelegates() {
+		// expect:
+		assertSame(token, subject.get(misc));
+	}
+
+	@Test
+	public void getThrowsIseOnMissing() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
+	}
+
+	@Test
+	public void getCanReturnPending() {
+		// setup:
+		subject.pendingId = pending;
+		subject.pendingCreation = token;
+
+		// expect:
+		assertSame(token, subject.get(pending));
+	}
+
+	@Test
+	public void existenceCheckIncludesPending() {
+		// setup:
+		subject.pendingId = pending;
+
+		// expect:
+		assertTrue(subject.exists(pending));
+	}
+
+	@Test
+	public void adjustabilityCheckRejectsMissingAccount() {
+		given(ledger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.adjustBalance(sponsor, misc, 1);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void adjustabilityCheckRejectsMissingToken() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.adjustBalance(sponsor, misc, 1);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
+	}
+
+	@Test
+	public void adjustabilityCheckRejectsSaturatedAccount() {
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.adjustBalance(treasury, misc, 1);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void allowsNewTokenForUndersaturatedAccount() {
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(account.validityOfAdjustment(misc, token, 1)).willReturn(OK);
+
+		// when:
+		var status = subject.adjustBalance(treasury, misc, 1);
+
+		// then:
+		assertEquals(OK, status);
+		verify(account, never()).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void allowsAdjustingOldRelationships() {
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, 1)).willReturn(OK);
+
+		// when:
+		var status = subject.adjustBalance(treasury, misc, 1);
+
+		// then:
+		assertEquals(OK, status);
+		verify(account).hasRelationshipWith(misc);
+	}
+
+	@Test
+	public void refusesInvalidAdjustment() {
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, -1)).willReturn(SETTING_NEGATIVE_ACCOUNT_BALANCE);
+
+		// when:
+		var status = subject.adjustBalance(treasury, misc, -1);
+
+		// then:
+		assertEquals(SETTING_NEGATIVE_ACCOUNT_BALANCE, status);
+	}
+
+	@Test
+	public void performsValidAdjustment() {
+		// setup:
+		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
+
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, -1)).willReturn(OK);
+
+		// when:
+		subject.adjustBalance(treasury, misc, -1);
+
+		// then:
+//		verify(account).adjustTokenBalance(argThat(misc::equals), argThat(token::equals), captor.capture());
 	}
 
 	@Test
@@ -151,22 +285,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsNewTokenForSaturatedAccount() {
-		// setup:
-		var account = mock(MerkleAccount.class);
-
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.relationshipStatus(account, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
 	public void allowsOldTokenForSaturatedAccount() {
 		// setup:
 		var account = mock(MerkleAccount.class);
@@ -178,23 +296,8 @@ class HederaTokenStoreTest {
 		var status = subject.relationshipStatus(account, misc);
 
 		// then:
-		assertEquals(ResponseCodeEnum.OK, status);
+		assertEquals(OK, status);
 		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
-	public void allowsNewTokenForUndersaturatedAccount() {
-		// setup:
-		var account = mock(MerkleAccount.class);
-
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
-
-		// when:
-		var status = subject.relationshipStatus(account, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, status);
-		verify(account, never()).hasRelationshipWith(misc);
 	}
 
 	@Test
@@ -206,7 +309,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+		assertEquals(OK, result.getStatus());
 		assertEquals(created, result.getCreated().get());
 	}
 
@@ -286,7 +389,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsMissingTreasury() {
-		given(accounts.contains(treasury)).willReturn(false);
+		given(ledger.exists(treasury)).willReturn(false);
 		// and:
 		var req = fullyValidAttempt()
 				.build();
@@ -300,7 +403,8 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsDeletedTreasuryAccount() {
-		given(account.isDeleted()).willReturn(true);
+		given(ledger.get(treasury, IS_DELETED)).willReturn(true);
+
 		// and:
 		var req = fullyValidAttempt()
 				.build();

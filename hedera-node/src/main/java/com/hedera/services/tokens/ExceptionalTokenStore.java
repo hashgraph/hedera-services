@@ -9,11 +9,28 @@ import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.Optional;
 
-public enum ExceptionalTokenLedger implements TokenStore {
+public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_LEDGER;
+
+
 
 	@Override
 	public ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum checkThawability(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum checkFreezability(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -29,6 +46,16 @@ public enum ExceptionalTokenLedger implements TokenStore {
 
 	@Override
 	public void rollbackCreation() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean exists(TokenID id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public MerkleToken get(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
 

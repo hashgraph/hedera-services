@@ -199,7 +199,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.tokens.ExceptionalTokenLedger.NOOP_TOKEN_LEDGER;
+import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_LEDGER;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 import com.hedera.services.utils.Pause;
@@ -957,7 +957,7 @@ public class ServicesContext {
 
 	public TokenStore tokenLedger() {
 		if (tokenStore == null) {
-			tokenStore = new HederaTokenStore(ids(), globalDynamicProperties(), backingAccounts(), this::tokens);
+			tokenStore = new HederaTokenStore(ids(), globalDynamicProperties(), this::tokens);
 		}
 		return tokenStore;
 	}

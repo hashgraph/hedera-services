@@ -10,9 +10,18 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Optional;
 
 public interface TokenStore {
-	ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id);
+	boolean exists(TokenID id);
+	MerkleToken get(TokenID id);
+
+	ResponseCodeEnum checkThawability(AccountID aId, TokenID tId);
+	ResponseCodeEnum checkFreezability(AccountID aId, TokenID tId);
+	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
+
 	Optional<MerkleToken> lookup(TokenID id);
+
 	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor);
 	void commitCreation();
 	void rollbackCreation();
+
+	ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id);
 }

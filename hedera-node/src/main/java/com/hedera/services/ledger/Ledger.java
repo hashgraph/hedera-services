@@ -70,8 +70,7 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	A get(K id);
 
 	/**
-	 * Gets a detached account reflecting all token-scoped changes so far,
-	 * if one is present.
+	 * Gets a detached account reflecting all token-scoped changes so far.
 	 *
 	 * @param id the id of the relevant account.
 	 * @return the detached account.
