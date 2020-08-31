@@ -151,7 +151,8 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionID(accessor.getTxnId())
 				.setTransactionFee(amount)
 				.setTransactionHash(hash)
-				.setConsensusTimestamp(consensusTimestamp);
+				.setConsensusTimestamp(consensusTimestamp)
+				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
