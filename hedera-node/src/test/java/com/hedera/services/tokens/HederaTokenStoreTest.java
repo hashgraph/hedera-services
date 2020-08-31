@@ -28,6 +28,7 @@ import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -101,7 +103,7 @@ class HederaTokenStoreTest {
 		given(ledger.exists(treasury)).willReturn(true);
 		given(ledger.exists(sponsor)).willReturn(true);
 		given(ledger.get(treasury, IS_DELETED)).willReturn(false);
-		given(ledger.getDetachedTokenView(treasury)).willReturn(account);
+		given(ledger.getTokenRef(treasury)).willReturn(account);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
@@ -230,12 +232,17 @@ class HederaTokenStoreTest {
 
 		given(account.hasRelationshipWith(misc)).willReturn(true);
 		given(account.validityOfAdjustment(misc, token, -1)).willReturn(OK);
+		given(tokens.get(fromTokenId(misc))).willReturn(token);
 
 		// when:
 		subject.adjustBalance(treasury, misc, -1);
 
 		// then:
-//		verify(account).adjustTokenBalance(argThat(misc::equals), argThat(token::equals), captor.capture());
+		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		// and:
+		assertEquals(misc, captor.getValue().id());
+		assertSame(token, captor.getValue().token());
+		assertEquals(-1, (long)captor.getValue().value());
 	}
 
 	@Test
@@ -279,29 +286,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void delegatesIdLookup() {
-		// expect:
-		assertSame(token, subject.lookup(created).get());
-	}
-
-	@Test
-	public void allowsOldTokenForSaturatedAccount() {
-		// setup:
-		var account = mock(MerkleAccount.class);
-
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
-		given(account.hasRelationshipWith(misc)).willReturn(true);
-
-		// when:
-		var status = subject.relationshipStatus(account, misc);
-
-		// then:
-		assertEquals(OK, status);
-		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
 	public void happyPathWorks() {
+		// setup:
+		var expected = new MerkleToken(
+				tokenFloat,
+				divisibility,
+				TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked(),
+				symbol,
+				freezeDefault,
+				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		expected.setFreezeKey(TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
+
 		// given:
 		var req = fullyValidAttempt().build();
 
@@ -311,6 +306,9 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(OK, result.getStatus());
 		assertEquals(created, result.getCreated().get());
+		// and:
+		assertEquals(created, subject.pendingId);
+		assertEquals(expected, subject.pendingCreation);
 	}
 
 	@Test
@@ -459,7 +457,7 @@ class HederaTokenStoreTest {
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
-	private TokenCreation.Builder fullyValidAttempt() {
+	TokenCreation.Builder fullyValidAttempt() {
 		return TokenCreation.newBuilder()
 				.setAdminKey(adminKey)
 				.setFreezeKey(freezeKey)

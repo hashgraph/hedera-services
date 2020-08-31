@@ -70,12 +70,14 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	A get(K id);
 
 	/**
-	 * Gets a detached account reflecting all token-scoped changes so far.
+	 * Gets a mutable ref encapsulating all token-scoped changes
+	 * to the account so far. Any non-token changes to this account
+	 * will be ignored.
 	 *
 	 * @param id the id of the relevant account.
-	 * @return the detached account.
+	 * @return the account.
 	 */
-	A getDetachedTokenView(K id);
+	A getTokenRef(K id);
 
 	/**
 	 * Gets the current property value of the specified account. This value

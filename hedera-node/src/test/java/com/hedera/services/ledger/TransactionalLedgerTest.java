@@ -70,7 +70,7 @@ public class TransactionalLedgerTest {
 		backingAccounts = mock(BackingAccounts.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
-		given(backingAccounts.getDetachedCopy(1L)).willReturn(account1TokenCopy);
+		given(backingAccounts.getTokenCopy(1L)).willReturn(account1TokenCopy);
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
@@ -81,15 +81,15 @@ public class TransactionalLedgerTest {
 		// expect:
 		assertEquals(1L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
 		// and:
-		assertTrue(subject.detachedTokenCopies.isEmpty());
+		assertTrue(subject.tokenRefs.isEmpty());
 	}
 
 	@Test
 	public void returnsNewDetachedCopyIfNonePresent() {
 		// expect:
-		assertSame(account1TokenCopy, subject.getDetachedTokenView(1L));
+		assertSame(account1TokenCopy, subject.getTokenRef(1L));
 		// and:
-		assertEquals(1, subject.detachedTokenCopies.size());
+		assertEquals(1, subject.tokenRefs.size());
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class TransactionalLedgerTest {
 		subject.dropPendingTokenChanges();
 
 		// then:
-		assertTrue(subject.detachedTokenCopies.isEmpty());
+		assertTrue(subject.tokenRefs.isEmpty());
 	}
 
 	@Test
@@ -121,7 +121,7 @@ public class TransactionalLedgerTest {
 		subject.commit();
 
 		// then:
-		assertTrue(subject.detachedTokenCopies.isEmpty());
+		assertTrue(subject.tokenRefs.isEmpty());
 	}
 
 	@Test
@@ -137,7 +137,7 @@ public class TransactionalLedgerTest {
 		subject.rollback();
 
 		// then:
-		assertTrue(subject.detachedTokenCopies.isEmpty());
+		assertTrue(subject.tokenRefs.isEmpty());
 	}
 
 	@Test
@@ -151,7 +151,7 @@ public class TransactionalLedgerTest {
 		subject.set(1L, TOKEN, newSv);
 
 		// then:
-		assertSame(account1TokenCopy, subject.getDetachedTokenView(1L));
+		assertSame(account1TokenCopy, subject.getTokenRef(1L));
 	}
 
 	@Test
@@ -195,8 +195,8 @@ public class TransactionalLedgerTest {
 		subject.set(1L, TOKEN, newSv);
 
 		// then:
-		assertTrue(subject.detachedTokenCopies.containsKey(1L));
-		assertEquals(668L, subject.detachedTokenCopies.get(1L).tokenThing);
+		assertTrue(subject.tokenRefs.containsKey(1L));
+		assertEquals(668L, subject.tokenRefs.get(1L).tokenThing);
 		// and:
 		assertEquals(2L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
 	}
@@ -386,7 +386,7 @@ public class TransactionalLedgerTest {
 	@Test
 	public void throwsOnGettingMissingDetachedRef() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getDetachedTokenView(2L));
+		assertThrows(IllegalArgumentException.class, () -> subject.getTokenRef(2L));
 	}
 
 	@Test

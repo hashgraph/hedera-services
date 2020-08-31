@@ -20,6 +20,8 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -36,13 +38,16 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.tokens.HederaTokenStore;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -114,7 +119,7 @@ public class HederaLedgerTest {
 
 	HederaLedger subject;
 
-	HederaTokenStore tokenLedger;
+	HederaTokenStore tokenStore;
 	EntityIdSource ids;
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
@@ -165,8 +170,8 @@ public class HederaLedgerTest {
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
-		tokenLedger = mock(HederaTokenStore.class);
-		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
+		tokenStore = mock(HederaTokenStore.class);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
 	}
 
 	@Test
@@ -179,35 +184,8 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void refusesToAdjustNonexistentAccount() {
-		given(ledger.exists(misc)).willReturn(false);
-
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	public void refusesToAdjustNonexistentToken() {
-		given(ledger.exists(misc)).willReturn(true);
-		given(tokenLedger.lookup(tokenId)).willReturn(Optional.empty());
-
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
-
-		// expect:
-		assertEquals(INVALID_TOKEN_ID, status);
-	}
-
-	@Test
-	public void refusesToAdjustIneligibleTokenBalance() {
-		given(ledger.exists(misc)).willReturn(true);
-		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
-		given(ledger.getDetachedTokenView(misc)).willReturn(account);
-
-		given(tokenLedger.relationshipStatus(account, tokenId))
+	public void refusesToAdjustWrongly() {
+		given(tokenStore.adjustBalance(misc, tokenId, 555))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// given:
@@ -215,31 +193,13 @@ public class HederaLedgerTest {
 
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-	}
-
-	@Test
-	public void refusesToAdjustIncorrectly() {
-		given(ledger.exists(misc)).willReturn(true);
-		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
-		given(ledger.getDetachedTokenView(misc)).willReturn(account);
-		given(tokenLedger.relationshipStatus(account, tokenId)).willReturn(OK);
-		given(account.validityOfAdjustment(tokenId, token, 555))
-				.willReturn(ACCOUNT_FROZEN_FOR_TOKEN);
-
-		// given:
-		var status = subject.adjustTokenBalance(misc, tokenId, 555);
-
-		// expect:
-		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+		// and:
+		assertEquals(0, subject.numTouches);
 	}
 
 	@Test
 	public void adjustsIfValid() {
-		given(ledger.exists(misc)).willReturn(true);
-		given(tokenLedger.lookup(tokenId)).willReturn(Optional.of(token));
-		given(ledger.getDetachedTokenView(misc)).willReturn(account);
-		given(tokenLedger.relationshipStatus(account, tokenId)).willReturn(OK);
-		given(account.validityOfAdjustment(tokenId, token, 555)).willReturn(OK);
+		given(tokenStore.adjustBalance(misc, tokenId, 555)).willReturn(OK);
 
 		// given:
 		var status = subject.adjustTokenBalance(misc, tokenId, 555);
@@ -247,17 +207,15 @@ public class HederaLedgerTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(ledger).set(
-				argThat(misc::equals),
-				argThat(BALANCE::equals),
-				argThat(v -> {
-					var sv = (TokenScopedPropertyValue)v;
-					return sv.id().equals(tokenId) && (long)sv.value() == 555;
-				}));
-		// and:
 		assertEquals(
 				AccountAmount.newBuilder().setAccountID(misc).setAmount(555).build(),
 				subject.netTokenTransfers.get(tokenId).getAccountAmounts(0));
+	}
+
+	@Test
+	public void injectsLedgerToTokenStore() {
+		// expect:
+		verify(tokenStore).setLedger(ledger);
 	}
 
 	private void setupWithLiveLedger() {
@@ -266,7 +224,13 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
+		FCMap<MerkleEntityId, MerkleToken> tokens =
+				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
+		tokenStore = new HederaTokenStore(
+				ids,
+				new GlobalDynamicProperties(mock(PropertySource.class)),
+				() -> tokens);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
 	}
 
 	private void setupWithLiveFcBackedLedger() {
@@ -286,7 +250,7 @@ public class HederaLedgerTest {
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
 	}
 
 	@Test
@@ -601,6 +565,8 @@ public class HederaLedgerTest {
 	@Test
 	public void returnsNetTransfersInBalancedTxn() {
 		setupWithLiveLedger();
+		// and:
+		TokenID tA, tB;
 
 		// when:
 		subject.begin();
@@ -609,11 +575,27 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
+		tA = tokenStore.createProvisionally(stdWith("Mine", a), a).getCreated().get();
+		tokenStore.commitCreation();
+		tB = tokenStore.createProvisionally(stdWith("Yours", b), b).getCreated().get();
+		tokenStore.commitCreation();
+		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
 		subject.adjustBalance(c, 1_000L);
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
+		System.out.println(ledger.changeSetSoFar());
+		// and:
+		subject.adjustTokenBalance(a, tA, +10_000);
+		subject.adjustTokenBalance(a, tA, -5_000);
+		subject.adjustTokenBalance(a, tB, +1);
+		subject.adjustTokenBalance(a, tB, -1);
+		subject.adjustTokenBalance(b, tB, +10_000);
+		subject.adjustTokenBalance(c, tB, +50);
+		subject.adjustTokenBalance(c, tB, +50);
+		subject.adjustTokenBalance(c, tB, -50);
+		subject.adjustTokenBalance(c, tA, +5000);
 		System.out.println(ledger.changeSetSoFar());
 
 		// then:
@@ -624,6 +606,33 @@ public class HederaLedgerTest {
 						AccountAmount.newBuilder().setAccountID(b).setAmount(5_250L).build(),
 						AccountAmount.newBuilder().setAccountID(c).setAmount(4_250L).build(),
 						AccountAmount.newBuilder().setAccountID(genesis).setAmount(-11_000L).build()));
+		// and:
+		assertThat(subject.netTokenTransfersInTxn(),
+				contains(
+						construct(tA, aa(a, +5_000), aa(c, +5_000)),
+						construct(tB, aa(b, +10_000), aa(c, +50))
+				));
+	}
+
+	private TokenCreation stdWith(String symbol, AccountID account) {
+		return TokenCreation.newBuilder()
+				.setAdminKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
+				.setSymbol(symbol)
+				.setFloat(1_000_000)
+				.setTreasury(account)
+				.setDivisibility(100)
+				.build();
+	}
+
+	private AccountAmount aa(AccountID account, long amount) {
+		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+	}
+
+	private TokenTransferList construct(TokenID token, AccountAmount... xfers) {
+		return TokenTransferList.newBuilder()
+				.setToken(token)
+				.addAllTransfers(List.of(xfers))
+				.build();
 	}
 
 	@Test

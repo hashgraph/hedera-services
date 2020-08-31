@@ -43,8 +43,8 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	}
 
 	@Override
-	public MerkleAccount getDetachedCopy(AccountID id) {
-		throw new AssertionError("Not implemented");
+	public MerkleAccount getTokenCopy(AccountID id) {
+		return getRef(id).tokenCopy();
 	}
 
 	@Override

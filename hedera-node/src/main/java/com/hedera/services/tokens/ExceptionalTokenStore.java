@@ -1,5 +1,7 @@
 package com.hedera.services.tokens;
 
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -7,25 +9,16 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-import java.util.Optional;
-
 public enum ExceptionalTokenStore implements TokenStore {
-	NOOP_TOKEN_LEDGER;
-
-
+	NOOP_TOKEN_STORE;
 
 	@Override
-	public ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id) {
+	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum checkThawability(AccountID aId, TokenID tId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum checkFreezability(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -50,6 +43,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean exists(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
@@ -59,8 +57,5 @@ public enum ExceptionalTokenStore implements TokenStore {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public Optional<MerkleToken> lookup(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
+
 }

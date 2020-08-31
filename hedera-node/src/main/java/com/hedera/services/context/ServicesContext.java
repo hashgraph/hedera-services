@@ -199,7 +199,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_LEDGER;
+import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 import com.hedera.services.utils.Pause;
@@ -1227,7 +1227,7 @@ public class ServicesContext {
 					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
-					NOOP_TOKEN_LEDGER,
+					NOOP_TOKEN_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,

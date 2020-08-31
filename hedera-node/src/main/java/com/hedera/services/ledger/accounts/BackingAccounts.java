@@ -54,7 +54,7 @@ public interface BackingAccounts<K, A> {
 	 * @param id the id of the relevant account.
 	 * @return a detached copy of the account.
 	 */
-	A getDetachedCopy(K id);
+	A getTokenCopy(K id);
 
 	/**
 	 * Gets a reference to the account with the specified id which should not be mutated.

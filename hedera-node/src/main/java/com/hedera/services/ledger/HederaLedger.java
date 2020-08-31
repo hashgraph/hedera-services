@@ -37,14 +37,19 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -97,6 +102,10 @@ public class HederaLedger {
 			.comparingLong(AccountID::getAccountNum)
 			.thenComparingLong(AccountID::getShardNum)
 			.thenComparingLong(AccountID::getRealmNum);
+	public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator
+			.comparingLong(TokenID::getTokenNum)
+			.thenComparingLong(TokenID::getShardNum)
+			.thenComparingLong(TokenID::getRealmNum);
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
@@ -123,6 +132,7 @@ public class HederaLedger {
 		creator.setLedger(this);
 		historian.setLedger(this);
 		historian.setCreator(creator);
+		tokenStore.setLedger(ledger);
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -150,8 +160,28 @@ public class HederaLedger {
 
 	public TransferList.Builder pendingNetTransfersInTxn() {
 		ledger.throwIfNotInTxn();
-		purgeZeroAdjustments();
+		purgeZeroAdjustments(netTransfers);
 		return netTransfers;
+	}
+
+	public List<TokenTransferList> netTokenTransfersInTxn() {
+		if (numTouches == 0) {
+			return Collections.emptyList();
+		}
+		List<TokenTransferList> all = new ArrayList<>();
+		Arrays.sort(tokensTouched, 0, numTouches, TOKEN_ID_COMPARATOR);
+		for (int i = 0; i < numTouches; i++) {
+			var token = tokensTouched[i];
+			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
+				var netTransfersHere = netTokenTransfers.get(token);
+				purgeZeroAdjustments(netTransfersHere);
+				all.add(TokenTransferList.newBuilder()
+						.setToken(token)
+						.addAllTransfers(netTransfersHere.getAccountAmountsList())
+						.build());
+			}
+		}
+		return all;
 	}
 
 	private void clearNetTokenTransfers() {
@@ -161,13 +191,13 @@ public class HederaLedger {
 		numTouches = 0;
 	}
 
-	private void purgeZeroAdjustments() {
+	private void purgeZeroAdjustments(TransferList.Builder xfers) {
 		int lastZeroRemoved;
 		do {
 			lastZeroRemoved = -1;
-			for (int i = 0; i < netTransfers.getAccountAmountsCount(); i++) {
-				if (netTransfers.getAccountAmounts(i).getAmount() == 0) {
-					netTransfers.removeAccountAmounts(i);
+			for (int i = 0; i < xfers.getAccountAmountsCount(); i++) {
+				if (xfers.getAccountAmounts(i).getAmount() == 0) {
+					xfers.removeAccountAmounts(i);
 					lastZeroRemoved = i;
 					break;
 				}
@@ -223,32 +253,11 @@ public class HederaLedger {
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
-		if (!ledger.exists(aId)) {
-			return INVALID_ACCOUNT_ID;
+		var validity = tokenStore.adjustBalance(aId, tId, adjustment);
+		if (validity == OK) {
+			updateTokenXfers(tId, aId, adjustment);
 		}
-
-		var candidate = tokenStore.lookup(tId);
-		if (candidate.isEmpty()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		var account = ledger.getDetachedTokenView(aId);
-		var validity = tokenStore.relationshipStatus(account, tId);
-		if (validity != OK) {
-			return validity;
-		}
-
-		var token = candidate.get();
-		validity = account.validityOfAdjustment(tId, token, adjustment);
-		if (validity != OK) {
-			return validity;
-		}
-
-		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, adjustment);
-		ledger.set(aId, BALANCE, scopedAdjustment);
-		updateTokenXfers(tId, aId, adjustment);
-
-		return OK;
+		return validity;
 	}
 
 	public ResponseCodeEnum doAtomicTokenTransfers(TokenTransfers transfers) {

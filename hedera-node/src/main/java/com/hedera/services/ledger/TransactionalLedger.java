@@ -70,7 +70,7 @@ public class TransactionalLedger<
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	final Map<K, A> detachedTokenCopies = new HashMap<>();
+	final Map<K, A> tokenRefs = new HashMap<>();
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
@@ -108,13 +108,13 @@ public class TransactionalLedger<
 
 		changes.clear();
 		deadAccounts.clear();
-		detachedTokenCopies.clear();
+		tokenRefs.clear();
 
 		isInTransaction = false;
 	}
 
 	void dropPendingTokenChanges() {
-		detachedTokenCopies.clear();
+		tokenRefs.clear();
 	}
 
 	void commit() {
@@ -131,7 +131,7 @@ public class TransactionalLedger<
 					.filter(id -> !deadAccounts.contains(id))
 					.forEach(id -> accounts.put(id, get(id)));
 			changes.clear();
-			detachedTokenCopies.clear();
+			tokenRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
 					? deadAccounts.stream().sorted(keyComparator.get())
@@ -174,12 +174,12 @@ public class TransactionalLedger<
 					change.getValue().entrySet().stream()
 							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
 							.collect(joining(", ")));
-			if (detachedTokenCopies.containsKey(id)) {
+			if (tokenRefs.containsKey(id)) {
 				if (change.getValue().size() > 0) {
 					desc.append(", ");
 				}
 				desc.append("TOKENS -> ");
-				var view = detachedTokenCopies.get(id);
+				var view = tokenRefs.get(id);
 				desc.append(view.readableTokenRelationships());
 			}
 			desc.append("]");
@@ -212,7 +212,7 @@ public class TransactionalLedger<
 		assertIsSettable(id);
 
 		if (value instanceof TokenScopedPropertyValue) {
-			var viewSoFar = detachedTokenCopies.computeIfAbsent(id, ignore -> toDetachedTarget(id));
+			var viewSoFar = tokenRefs.computeIfAbsent(id, ignore -> toDetachedTarget(id));
 			property.setter().accept(viewSoFar, value);
 			changes.computeIfAbsent(id, changeFactory);
 		} else {
@@ -231,7 +231,7 @@ public class TransactionalLedger<
 			changeManager.persist(changeSet, account);
 		}
 
-		var viewSoFar = detachedTokenCopies.get(id);
+		var viewSoFar = tokenRefs.get(id);
 		if (viewSoFar != null) {
 			account.mergeTokenPropertiesFrom(viewSoFar);
 		}
@@ -240,10 +240,10 @@ public class TransactionalLedger<
 	}
 
 	@Override
-	public A getDetachedTokenView(K id) {
+	public A getTokenRef(K id) {
 		throwIfMissing(id);
 
-		return detachedTokenCopies.computeIfAbsent(id, ignore -> toDetachedTarget(id));
+		return tokenRefs.computeIfAbsent(id, ignore -> toDetachedTarget(id));
 	}
 
 	@Override
@@ -262,7 +262,7 @@ public class TransactionalLedger<
 	public Object get(K id, P property, TokenScope scope) {
 		throwIfMissing(id);
 
-		var viewSoFar = detachedTokenCopies.get(id);
+		var viewSoFar = tokenRefs.get(id);
 		viewSoFar = (viewSoFar != null) ? viewSoFar : toGetterTarget(id);
 		return property.scopedGetter().apply(viewSoFar, scope);
 	}
@@ -290,7 +290,7 @@ public class TransactionalLedger<
 	}
 
 	private A toDetachedTarget(K id) {
-		return isPendingCreation(id) ? newAccount.get() : accounts.getDetachedCopy(id);
+		return isPendingCreation(id) ? newAccount.get() : accounts.getTokenCopy(id);
 	}
 
 	private boolean isPendingCreation(K id) {

@@ -24,9 +24,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
@@ -36,6 +39,7 @@ import com.swirlds.fcmap.FCMap;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
@@ -80,6 +84,7 @@ public class HederaTokenStore implements TokenStore {
 		this.properties = properties;
 	}
 
+	@Override
 	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
 		this.ledger = ledger;
 	}
@@ -97,12 +102,12 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum checkThawability(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
 		throw new AssertionError("Not implemented");
 	}
 
 	@Override
-	public ResponseCodeEnum checkFreezability(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		throw new AssertionError("Not implemented");
 	}
 
@@ -113,16 +118,19 @@ public class HederaTokenStore implements TokenStore {
 			return validity;
 		}
 
-		var account = ledger.getDetachedTokenView(aId);
+		var account = ledger.getTokenRef(aId);
 		if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
 			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 		}
 
-		validity = account.validityOfAdjustment(tId, get(tId), adjustment);
+		var token = get(tId);
+		validity = account.validityOfAdjustment(tId, token, adjustment);
 		if (validity != OK) {
 			return validity;
 		}
 
+		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, adjustment);
+		ledger.set(aId, BALANCE, scopedAdjustment);
 		return OK;
 	}
 
@@ -136,14 +144,6 @@ public class HederaTokenStore implements TokenStore {
 
 	private boolean unsaturated(MerkleAccount account) {
 		return account.numTokenRelationships() < properties.maxTokensPerAccount();
-	}
-
-	@Override
-	public ResponseCodeEnum relationshipStatus(MerkleAccount account, TokenID id) {
-		if (account.numTokenRelationships() >= properties.maxTokensPerAccount()) {
-			return account.hasRelationshipWith(id) ? OK : TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-		}
-		return OK;
 	}
 
 	@Override
@@ -165,18 +165,27 @@ public class HederaTokenStore implements TokenStore {
 		if (validity != OK) {
 			return failure(validity);
 		}
-		validity = freezeSemanticsCheck(request);
+		var freezeKey = asUsableFcKey(request.getFreezeKey());
+		validity = freezeSemanticsCheck(freezeKey, request.getFreezeDefault());
 		if (validity != OK) {
 			return failure(validity);
 		}
 
-		var created = ids.newTokenId(sponsor);
-		return success(created);
+		pendingId = ids.newTokenId(sponsor);
+		pendingCreation = new MerkleToken(
+			request.getFloat(),
+			request.getDivisibility(),
+			adminKey.get(),
+				request.getSymbol(),
+				request.getFreezeDefault(),
+				EntityId.ofNullableAccountId(request.getTreasury()));
+		freezeKey.ifPresent(pendingCreation::setFreezeKey);
+
+		return success(pendingId);
 	}
 
-	private ResponseCodeEnum freezeSemanticsCheck(TokenCreation request) {
-		var candidate = asUsableFcKey(request.getFreezeKey());
-		if (candidate.isEmpty() && request.getFreezeDefault()) {
+	private ResponseCodeEnum freezeSemanticsCheck(Optional<JKey> candidate, boolean freezeDefault) {
+		if (candidate.isEmpty() && freezeDefault) {
 			return TOKEN_HAS_NO_FREEZE_KEY;
 		}
 		return OK;
@@ -206,11 +215,6 @@ public class HederaTokenStore implements TokenStore {
 			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 		}
 		return OK;
-	}
-
-	@Override
-	public Optional<MerkleToken> lookup(TokenID id) {
-		return Optional.ofNullable(tokens.get().get(fromTokenId(id)));
 	}
 
 	@Override
