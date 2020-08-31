@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.test.utils.EntityIdConverter;
@@ -50,11 +51,13 @@ class GetMerkleTopicInfoResourceUsageTest {
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	TopicID topicId = asTopic("0.0.1234");
 	GetTopicInfoResourceUsage subject;
+	PropertySource propertySource;
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		topics = mock(FCMap.class);
-		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER);
+		propertySource = mock(PropertySource.class);
+		view = new StateView(() -> topics, StateView.EMPTY_ACCOUNTS_SUPPLIER, propertySource);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.records.TxnIdRecentHistory;
@@ -146,6 +147,9 @@ public class FreezeServiceImplTest {
     var policies = new SystemOpPolicies(new MockEntityNumbers());
     var platformStatus = new ContextPlatformStatus();
     platformStatus.set(PlatformStatus.ACTIVE);
+
+    PropertySource propertySource = null;
+
     transactionHandler = new TransactionHandler(
             receiptCache,
             () -> accountFCMap,
@@ -154,7 +158,7 @@ public class FreezeServiceImplTest {
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(() -> topicFCMap, () -> accountFCMap),
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource ),
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),

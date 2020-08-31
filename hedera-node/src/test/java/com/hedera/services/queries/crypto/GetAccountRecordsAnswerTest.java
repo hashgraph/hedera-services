@@ -20,6 +20,7 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -68,6 +69,7 @@ class GetAccountRecordsAnswerTest {
 
 	GetAccountRecordsAnswer subject;
 
+	PropertySource propertySource;
 	@BeforeEach
 	private void setup() throws Throwable {
 		payerAccount = MapValueFactory.newAccount()
@@ -85,7 +87,9 @@ class GetAccountRecordsAnswerTest {
 
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+
+		propertySource = mock(PropertySource.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
 
 		optionValidator = mock(OptionValidator.class);
 

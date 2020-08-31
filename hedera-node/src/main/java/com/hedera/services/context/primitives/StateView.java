@@ -20,6 +20,7 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
@@ -44,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
@@ -76,7 +78,7 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
 			() -> EMPTY_STORAGE;
 
-	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER);
+	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER, null);
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
@@ -85,17 +87,21 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
+	private final PropertySource properties;
+
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			PropertySource properties
 	) {
-		this(topics, accounts, EMPTY_STORAGE_SUPPLIER);
+		this(topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
 	}
 
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage
+			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
+			PropertySource properties
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
@@ -106,6 +112,7 @@ public class StateView {
 		fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
 		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
+		this.properties = properties;
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -125,25 +132,44 @@ public class StateView {
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
-		try {
-			var attr = fileAttrs.get(id);
-			if (attr == null) {
+		int retries = properties.getIntProperty("binary.object.query.retry.times");
+		while (retries >= 0) {
+			try {
+				return getFileInfo(id);
+			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
+				log.info("May run into a temp issue getting info for {}, will retry {} times", readableId(id), retries);
+				try {
+					TimeUnit.MILLISECONDS.sleep(100);
+				} catch (InterruptedException ie) {
+					// Sleep interrupted, no need to do anything and just try fetch again.
+				}
+			} catch (Exception unknown) {
+				log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
 				return Optional.empty();
 			}
-
-			var info = FileGetInfoResponse.FileInfo.newBuilder()
-					.setFileID(id)
-					.setDeleted(attr.isDeleted())
-					.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
-					.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
-			if (!attr.getWacl().isEmpty()) {
-				info.setKeys(mapJKey(attr.getWacl()).getKeyList());
+			retries--;
+			if (retries < 0) {
+				log.warn("Can't get info for {} at this moment. Try again later", readableId(id));
+				return Optional.empty();
 			}
-			return Optional.of(info.build());
-		} catch (Exception unknown) {
-			log.warn("Unexpected problem getting info for {}", readableId(id), unknown);
+		}
+		return Optional.empty();
+	}
+
+	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) throws com.swirlds.blob.BinaryObjectNotFoundException, Exception {
+		var attr = fileAttrs.get(id);
+		if (attr == null) {
 			return Optional.empty();
 		}
+		var info = FileGetInfoResponse.FileInfo.newBuilder()
+				.setFileID(id)
+				.setDeleted(attr.isDeleted())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpirationTimeSeconds()))
+				.setSize(Optional.ofNullable(fileContents.get(id)).orElse(EMPTY_BYTES).length);
+		if (!attr.getWacl().isEmpty()) {
+			info.setKeys(mapJKey(attr.getWacl()).getKeyList());
+		}
+		return Optional.of(info.build());
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {

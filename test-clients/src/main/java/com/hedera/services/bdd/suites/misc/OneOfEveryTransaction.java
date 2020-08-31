@@ -133,7 +133,7 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 				cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_234L)),
 				cryptoDelete("tbd")
 						.via("deleteTxn")
-						.transfer(FUNDING),
+						.transfer(GENESIS),
 				/* File txns */
 				fileCreate("fileTbd")
 						.key("fileFirstKey")
@@ -141,12 +141,9 @@ public class OneOfEveryTransaction extends HapiApiSuite {
 				fileAppend("fileTbd")
 						.content("nopqrstuvwxyz"),
 				fileUpdate("fileTbd")
-						.payingWith(SCENARIO_PAYER_NAME)
 						.wacl("fileSecondKey"),
-				getFileInfo("fileTbd")
-						.payingWith(SCENARIO_PAYER_NAME),
+				getFileInfo("fileTbd"),
 				fileDelete("fileTbd")
-						.payingWith(SCENARIO_PAYER_NAME)
 						.sigControl(ControlForKey.forKey("fileTbd", revocationDeleteSigs)),
 				/* Consensus txns */
 				createTopic("topicTbd")
