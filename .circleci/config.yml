@@ -1041,24 +1041,19 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - start-testnet:
-                use-existing-network: true
-                use-hugepage: true
+          workflow-name: "custom-migration"
       - run-custom-migration:
           context: Slack
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
   nightly-simulate-network-outage:
     triggers:
         - schedule:
