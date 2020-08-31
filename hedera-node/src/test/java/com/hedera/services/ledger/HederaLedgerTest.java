@@ -35,7 +35,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.tokens.HederaTokenLedger;
+import com.hedera.services.tokens.HederaTokenStore;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -114,7 +114,7 @@ public class HederaLedgerTest {
 
 	HederaLedger subject;
 
-	HederaTokenLedger tokenLedger;
+	HederaTokenStore tokenLedger;
 	EntityIdSource ids;
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
@@ -139,6 +139,11 @@ public class HederaLedgerTest {
 			public TokenID newTokenId(AccountID sponsor) {
 				return TokenID.newBuilder().setTokenNum(nextId++).build();
 			}
+
+			@Override
+			public void reclaimLastId() {
+				nextId--;
+			}
 		};
 
 		var freezeKey = new JEd25519Key("w/e".getBytes());
@@ -160,7 +165,7 @@ public class HederaLedgerTest {
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
-		tokenLedger = mock(HederaTokenLedger.class);
+		tokenLedger = mock(HederaTokenStore.class);
 		subject = new HederaLedger(tokenLedger, ids, creator, historian, ledger);
 	}
 

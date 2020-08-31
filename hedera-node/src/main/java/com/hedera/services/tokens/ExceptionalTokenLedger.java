@@ -9,7 +9,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.Optional;
 
-public enum ExceptionalTokenLedger implements TokenLedger {
+public enum ExceptionalTokenLedger implements TokenStore {
 	NOOP_TOKEN_LEDGER;
 
 	@Override
@@ -18,7 +18,17 @@ public enum ExceptionalTokenLedger implements TokenLedger {
 	}
 
 	@Override
-	public TokenCreationResult create(TokenCreation request, AccountID sponsor) {
+	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void commitCreation() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void rollbackCreation() {
 		throw new UnsupportedOperationException();
 	}
 

@@ -33,7 +33,7 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.tokens.TokenLedger;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -67,7 +67,7 @@ import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.legacy.config.PropertiesLoader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -149,7 +149,7 @@ public class SmartContractRequestHandlerPayableTest {
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
-            mock(TokenLedger.class),
+            mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),

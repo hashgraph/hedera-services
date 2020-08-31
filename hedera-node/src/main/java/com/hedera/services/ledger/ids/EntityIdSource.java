@@ -53,4 +53,11 @@ public interface EntityIdSource {
 	 * @return an appropriate id to use
 	 */
 	TokenID newTokenId(AccountID sponsor);
+
+	/**
+	 * Reclaims the last id issued.
+	 *
+	 * @return an appropriate id to use
+	 */
+	void reclaimLastId();
 }

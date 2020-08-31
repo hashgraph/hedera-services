@@ -76,4 +76,13 @@ class SeqNoEntityIdSourceTest {
 		// then:
 		assertEquals(asToken("1.2.555"), newId);
 	}
+
+	@Test
+	public void reclaimDecrementsId() {
+		// when:
+		subject.reclaimLastId();
+
+		// then:
+		verify(seqNo).decrement();
+	}
 }

@@ -41,4 +41,9 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
 	public TokenID newTokenId(AccountID sponsor) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public void reclaimLastId() {
+		throw new UnsupportedOperationException();
+	}
 }

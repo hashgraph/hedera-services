@@ -140,9 +140,8 @@ import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRI
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
 
-import com.hedera.services.tokens.ExceptionalTokenLedger;
-import com.hedera.services.tokens.HederaTokenLedger;
-import com.hedera.services.tokens.TokenLedger;
+import com.hedera.services.tokens.HederaTokenStore;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -305,7 +304,7 @@ public class ServicesContext {
 	private FileAnswers fileAnswers;
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
-	private TokenLedger tokenLedger;
+	private TokenStore tokenStore;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -956,11 +955,11 @@ public class ServicesContext {
 		return globalDynamicProperties;
 	}
 
-	public TokenLedger tokenLedger() {
-		if (tokenLedger == null) {
-			tokenLedger = new HederaTokenLedger(ids(), globalDynamicProperties(), this::tokens);
+	public TokenStore tokenLedger() {
+		if (tokenStore == null) {
+			tokenStore = new HederaTokenStore(ids(), globalDynamicProperties(), backingAccounts(), this::tokens);
 		}
-		return tokenLedger;
+		return tokenStore;
 	}
 
 	public HederaLedger ledger() {

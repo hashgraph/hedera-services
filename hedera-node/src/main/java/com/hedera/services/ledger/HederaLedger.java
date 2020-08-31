@@ -32,7 +32,7 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.tokens.TokenLedger;
+import com.hedera.services.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -98,7 +98,7 @@ public class HederaLedger {
 			.thenComparingLong(AccountID::getShardNum)
 			.thenComparingLong(AccountID::getRealmNum);
 
-	private final TokenLedger tokenLedger;
+	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
@@ -109,7 +109,7 @@ public class HederaLedger {
 	final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
 
 	public HederaLedger(
-			TokenLedger tokenLedger,
+			TokenStore tokenStore,
 			EntityIdSource ids,
 			EntityCreator creator,
 			AccountRecordsHistorian historian,
@@ -118,7 +118,7 @@ public class HederaLedger {
 		this.ids = ids;
 		this.ledger = ledger;
 		this.historian = historian;
-		this.tokenLedger = tokenLedger;
+		this.tokenStore = tokenStore;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
@@ -227,13 +227,13 @@ public class HederaLedger {
 			return INVALID_ACCOUNT_ID;
 		}
 
-		var candidate = tokenLedger.lookup(tId);
+		var candidate = tokenStore.lookup(tId);
 		if (candidate.isEmpty()) {
 			return INVALID_TOKEN_ID;
 		}
 
 		var account = ledger.getDetachedTokenView(aId);
-		var validity = tokenLedger.relationshipStatus(account, tId);
+		var validity = tokenStore.relationshipStatus(account, tId);
 		if (validity != OK) {
 			return validity;
 		}

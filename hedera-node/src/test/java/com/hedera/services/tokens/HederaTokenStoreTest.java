@@ -21,7 +21,7 @@ package com.hedera.services.tokens;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -39,9 +39,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,12 +54,13 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
-class HederaTokenLedgerTest {
+class HederaTokenStoreTest {
 	EntityIdSource ids;
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 
 	MerkleToken token;
+	MerkleAccount account;
 
 	Key adminKey, freezeKey;
 	String symbol = "NotHbar";
@@ -65,9 +71,11 @@ class HederaTokenLedgerTest {
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
-	int MAX_TOKENS_PER_ACCOUNT = 10;
+	int MAX_TOKENS_PER_ACCOUNT = 100;
+	int MAX_TOKEN_SYMBOL_LENGTH = 10;
+	BackingAccounts<AccountID, MerkleAccount> accounts;
 
-	HederaTokenLedger subject;
+	HederaTokenStore subject;
 
 	@BeforeEach
 	public void setup() {
@@ -79,13 +87,61 @@ class HederaTokenLedgerTest {
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 
-		tokens = (FCMap<MerkleEntityId, MerkleToken>)mock(FCMap.class);
-		given(tokens.get(MerkleEntityId.fromTokenId(created))).willReturn(token);
+		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
+		given(tokens.get(fromTokenId(created))).willReturn(token);
+
+		account = mock(MerkleAccount.class);
+		given(account.isDeleted()).willReturn(false);
+
+		accounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
+		given(accounts.contains(treasury)).willReturn(true);
+		given(accounts.getRef(treasury)).willReturn(account);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(properties.maxTokenSymbolLength()).willReturn(MAX_TOKEN_SYMBOL_LENGTH);
 
-		subject = new HederaTokenLedger(ids, properties, () -> tokens);
+		subject = new HederaTokenStore(ids, properties, accounts, () -> tokens);
+	}
+
+	@Test
+	public void rollbackReclaimsIdAndClears() {
+		// setup:
+		subject.pendingId = created;
+		subject.pendingCreation = token;
+
+		// when:
+		subject.rollbackCreation();
+
+		// then:
+		verify(tokens, never()).put(fromTokenId(created), token);
+		verify(ids).reclaimLastId();
+		// and:
+		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
+		assertNull(subject.pendingCreation);
+	}
+
+	@Test
+	public void commitAndRollbackThrowIseIfNoPendingCreation() {
+		// expect:
+		assertThrows(IllegalStateException.class, subject::commitCreation);
+		assertThrows(IllegalStateException.class, subject::rollbackCreation);
+	}
+
+	@Test
+	public void commitPutsToMapAndClears() {
+		// setup:
+		subject.pendingId = created;
+		subject.pendingCreation = token;
+
+		// when:
+		subject.commitCreation();
+
+		// then:
+		verify(tokens).put(fromTokenId(created), token);
+		// and:
+		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
+		assertNull(subject.pendingCreation);
 	}
 
 	@Test
@@ -147,7 +203,7 @@ class HederaTokenLedgerTest {
 		var req = fullyValidAttempt().build();
 
 		// when:
-		var result = subject.create(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
@@ -162,7 +218,7 @@ class HederaTokenLedgerTest {
 				.build();
 
 		// when:
-		var result = subject.create(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_ADMIN_KEY, result.getStatus());
@@ -177,11 +233,126 @@ class HederaTokenLedgerTest {
 				.build();
 
 		// when:
-		var result = subject.create(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_ADMIN_KEY, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	public void rejectsInvalidSymbol() {
+		// given:
+		var req = fullyValidAttempt()
+				.setSymbol(IntStream.range(0, MAX_TOKEN_SYMBOL_LENGTH + 1)
+						.mapToObj(ignore -> "A")
+						.collect(Collectors.joining("")))
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
+	}
+
+	@Test
+	public void rejectsMissingSymbol() {
+		// given:
+		var req = fullyValidAttempt()
+				.clearSymbol()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
+	}
+
+	@Test
+	public void rejectsNonAlphanumericSymbol() {
+		// given:
+		var req = fullyValidAttempt()
+				.setSymbol("!!!")
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
+	}
+
+	@Test
+	public void rejectsMissingTreasury() {
+		given(accounts.contains(treasury)).willReturn(false);
+		// and:
+		var req = fullyValidAttempt()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
+	}
+
+	@Test
+	public void rejectsDeletedTreasuryAccount() {
+		given(account.isDeleted()).willReturn(true);
+		// and:
+		var req = fullyValidAttempt()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
+	}
+
+	@Test
+	public void rejectsInsufficientFloat() {
+		// given:
+		var req = fullyValidAttempt()
+				.setFloat(0L)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_FLOAT, result.getStatus());
+	}
+
+	@Test
+	public void rejectsInvalidDivisibility() {
+		// given:
+		var req = fullyValidAttempt()
+				.setDivisibility(1 << 30)
+				.setFloat(1L << 34)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+	}
+
+	@Test
+	public void rejectsFreezeDefaultWithoutFreezeKey() {
+		// given:
+		var req = fullyValidAttempt()
+				.clearFreezeKey()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
 	private TokenCreation.Builder fullyValidAttempt() {

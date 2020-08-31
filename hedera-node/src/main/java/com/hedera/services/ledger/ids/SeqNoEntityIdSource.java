@@ -60,4 +60,9 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 				.setTokenNum(seqNo.get().getAndIncrement())
 				.build();
 	}
+
+	@Override
+	public void reclaimLastId() {
+		seqNo.get().decrement();
+	}
 }

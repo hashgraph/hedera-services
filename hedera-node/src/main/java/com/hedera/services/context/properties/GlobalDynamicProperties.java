@@ -30,4 +30,8 @@ public class GlobalDynamicProperties {
 	public int maxTokensPerAccount() {
 		return 1_000;
 	}
+
+	public int maxTokenSymbolLength() {
+		return 10;
+	}
 }
