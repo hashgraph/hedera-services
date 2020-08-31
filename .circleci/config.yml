@@ -1035,23 +1035,18 @@ workflows:
           workflow-name: "nightly-software-update-regression"
 
   custom-migration:
-#    triggers:
-#      - schedule:
-#          cron: "0 4 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+    triggers:
+      - schedule:
+          cron: "0 4 * * *"
+          filters:
+            branches:
+              only:
+                - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
       - start-singlejob-testnet:
           context: Slack
-          filters:
-            branches:
-              only:
-                - 00495-D-custom-migration-regression-fix
-
           requires:
             - fast-build-artifact
           workflow-name: "custom-migration"
