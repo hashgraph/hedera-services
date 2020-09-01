@@ -994,20 +994,21 @@ workflows:
                 at: /
           workflow-name: "nightly-zero-stake-regression"
 
-  nightly-migration-regression:
-#    triggers:
-#      - schedule:
-#          cron: "0 23,8 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
+# This workflow will be running normally in master branch on a daily basis
+  nightly-public-testnet-migration-regression:
+#        triggers:
+#          - schedule:
+#              cron: "0 23,8 * * *"
+#              filters:
+#                branches:
+#                  only:
+#                    - master
     jobs:
       - build-platform-and-services:
-         filters:
-           branches:
-             only:
-              - 00438-D-mainnet-JRS-migration
+          filters:
+            branches:
+              only:
+                - 00438-D-mainnet-JRS-migration
       - run-testnet-migration-regression:
           context: Slack
           requires:
@@ -1017,6 +1018,24 @@ workflows:
             - attach_workspace:
                 at: /
           workflow-name: "nightly-migration-regression"
+
+# The mainnet migration test needs to be run in a 13-node test network.
+# Enable this workflow to run on a daily only when a new release branch is tagged and branched.
+# Once this branch is released, disable this workflow.
+  nightly-mainnet-migration-regression:
+#    triggers:
+#          - schedule:
+#              cron: "0 23,8 * * *"
+#              filters:
+#                branches:
+#                  only:
+#                    - release-branch-N
+    jobs:
+      - build-platform-and-services:
+          filters:
+            branches:
+              only:
+                - 00438-D-mainnet-JRS-migration
       - run-mainnet-migration-regression:
           context: Slack
           requires:
