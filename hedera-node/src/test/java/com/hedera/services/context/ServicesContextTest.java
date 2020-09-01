@@ -125,6 +125,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -157,6 +158,7 @@ public class ServicesContextTest {
 	@BeforeEach
 	void setup() {
 		topics = mock(FCMap.class);
+		tokens = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		seqNo = mock(SequenceNumber.class);

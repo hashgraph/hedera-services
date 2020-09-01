@@ -39,6 +39,8 @@ public interface TokenStore {
 	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
 
 	boolean exists(TokenID id);
+	boolean symbolExists(String symbol);
+	TokenID lookup(String symbol);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);

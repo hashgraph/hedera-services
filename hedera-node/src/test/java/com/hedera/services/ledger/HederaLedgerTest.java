@@ -51,7 +51,10 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.fcmap.FCMap;
@@ -86,8 +89,10 @@ import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.tokenWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -95,6 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.doThrow;
@@ -122,9 +128,34 @@ public class HederaLedgerTest {
 
 	TokenID frozenId = IdUtils.tokenWith(111);
 	MerkleToken frozenToken;
+	String frozenSymbol = "FREEZE";
 	TokenID tokenId = IdUtils.tokenWith(222);
 	MerkleToken token;
+	String otherSymbol = "FLOW";
 	MerkleAccount account;
+	String missingSymbol = "DIE";
+	TokenID missingId = IdUtils.tokenWith(333);
+
+	TokenTransfers multipleValidTokenTransfers = TokenTransfers.newBuilder()
+			.addAllTransfers(List.of(
+					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
+					fromRef(otherSymbol, misc, +1_000), fromId(tokenId, rand, -1_000)
+			)).build();
+	TokenTransfers missingSymbolTokenTransfers = TokenTransfers.newBuilder()
+			.addAllTransfers(List.of(
+					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
+					fromRef(missingSymbol, misc, +1_000), fromId(tokenId, rand, -1_000)
+			)).build();
+	TokenTransfers missingIdTokenTransfers = TokenTransfers.newBuilder()
+			.addAllTransfers(List.of(
+					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
+					fromId(missingId, misc, +1_000), fromId(tokenId, rand, -1_000)
+			)).build();
+	TokenTransfers unmatchedTokenTransfers = TokenTransfers.newBuilder()
+			.addAllTransfers(List.of(
+					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
+					fromRef(frozenSymbol, misc, +2_000), fromId(frozenId, rand, -1_000)
+			)).build();
 
 	FCMapBackingAccounts backingAccounts;
 	FCMap<MerkleEntityId, MerkleAccount> backingMap;
@@ -136,6 +167,22 @@ public class HederaLedgerTest {
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+
+	private TokenTransfer fromRef(String symbol, AccountID account, long amount) {
+		return TokenTransfer.newBuilder()
+				.setToken(TokenRef.newBuilder().setSymbol(symbol))
+				.setAccount(account)
+				.setAmount(amount)
+				.build();
+	}
+
+	private TokenTransfer fromId(TokenID token, AccountID account, long amount) {
+		return TokenTransfer.newBuilder()
+				.setToken(TokenRef.newBuilder().setTokenId(token))
+				.setAccount(account)
+				.setAmount(amount)
+				.build();
+	}
 
 	@BeforeEach
 	private void setupWithMockLedger() {
@@ -182,8 +229,85 @@ public class HederaLedgerTest {
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
 		historian = mock(AccountRecordsHistorian.class);
+
 		tokenStore = mock(HederaTokenStore.class);
+		given(tokenStore.exists(frozenId)).willReturn(true);
+		given(tokenStore.exists(tokenId)).willReturn(true);
+		given(tokenStore.exists(missingId)).willReturn(false);
+		given(tokenStore.symbolExists(frozenSymbol)).willReturn(true);
+		given(tokenStore.lookup(frozenSymbol)).willReturn(frozenId);
+		given(tokenStore.symbolExists(otherSymbol)).willReturn(true);
+		given(tokenStore.lookup(otherSymbol)).willReturn(tokenId);
+		given(tokenStore.symbolExists(missingSymbol)).willReturn(false);
+
 		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
+	}
+
+	@Test
+	public void requiresAllNetZeroTransfers() {
+		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(unmatchedTokenTransfers);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, outcome);
+		// and:
+		assertTrue(netXfers.isEmpty());
+	}
+
+	@Test
+	public void rejectsMissingId() {
+		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(missingIdTokenTransfers);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(INVALID_TOKEN_ID, outcome);
+		// and:
+		assertTrue(netXfers.isEmpty());
+	}
+
+	@Test
+	public void rejectsMissingSymbol() {
+		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(missingSymbolTokenTransfers);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(INVALID_TOKEN_ID, outcome);
+		// and:
+		assertTrue(netXfers.isEmpty());
+	}
+
+	@Test
+	public void happyPathTransfers() {
+		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+
+		// when:
+		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfers);
+		// and:
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		// then:
+		assertEquals(OK, outcome);
+		// and:
+		assertEquals(frozenId, netXfers.get(0).getToken());
+		assertEquals(
+				List.of(aa(misc, 1_000), aa(rand, -1_000)),
+				netXfers.get(0).getTransfersList());
+		assertEquals(tokenId, netXfers.get(1).getToken());
+		assertEquals(
+				List.of(aa(misc, 1_000), aa(rand, -1_000)),
+				netXfers.get(1).getTransfersList());
 	}
 
 	@Test

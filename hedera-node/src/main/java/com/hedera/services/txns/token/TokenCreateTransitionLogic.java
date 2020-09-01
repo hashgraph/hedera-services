@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;

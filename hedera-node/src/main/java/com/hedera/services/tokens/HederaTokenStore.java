@@ -37,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -47,7 +49,6 @@ import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
-import static com.hedera.services.utils.MiscUtils.uncheckedSha384Hash;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
@@ -74,6 +75,8 @@ public class HederaTokenStore implements TokenStore {
 
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
+	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
+
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
@@ -85,6 +88,9 @@ public class HederaTokenStore implements TokenStore {
 		this.ids = ids;
 		this.tokens = tokens;
 		this.properties = properties;
+
+		tokens.get().entrySet().forEach(entry ->
+				symbolKeyedIds.put(entry.getValue().symbol(), entry.getKey().toTokenId()));
 	}
 
 	@Override
@@ -100,6 +106,18 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public boolean exists(TokenID id) {
 		return pendingId.equals(id) || tokens.get().containsKey(fromTokenId(id));
+	}
+
+	@Override
+	public boolean symbolExists(String symbol) {
+		return symbolKeyedIds.containsKey(symbol);
+	}
+
+	@Override
+	public TokenID lookup(String symbol) {
+		throwIfSymbolMissing(symbol);
+
+		return symbolKeyedIds.get(symbol);
 	}
 
 	@Override
@@ -266,6 +284,8 @@ public class HederaTokenStore implements TokenStore {
 		throwIfNoCreationPending();
 
 		tokens.get().put(fromTokenId(pendingId), pendingCreation);
+		symbolKeyedIds.put(pendingCreation.symbol(), pendingId);
+
 		resetPendingCreation();
 	}
 
@@ -291,6 +311,12 @@ public class HederaTokenStore implements TokenStore {
 	private void throwIfMissing(TokenID id) {
 		if (!exists(id)) {
 			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
+		}
+	}
+
+	private void throwIfSymbolMissing(String symbol) {
+		if (!symbolExists(symbol)) {
+			throw new IllegalArgumentException(String.format("No such symbol '%s'!", symbol));
 		}
 	}
 }

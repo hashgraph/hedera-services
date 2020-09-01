@@ -205,4 +205,12 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 				.setAccountNum(num)
 				.build();
 	}
+
+	public TokenID toTokenId() {
+		return TokenID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTokenNum(num)
+				.build();
+	}
 }

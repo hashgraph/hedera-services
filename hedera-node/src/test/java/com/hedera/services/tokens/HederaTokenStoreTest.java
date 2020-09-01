@@ -97,6 +97,7 @@ class HederaTokenStoreTest {
 		freezeKey = CARELESS_SIGNING_PAYER_KT.asKey();
 
 		token = mock(MerkleToken.class);
+		given(token.symbol()).willReturn(symbol);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -126,6 +127,47 @@ class HederaTokenStoreTest {
 	public void getDelegates() {
 		// expect:
 		assertSame(token, subject.get(misc));
+	}
+
+	@Test
+	public void throwsIseIfSymbolMissing() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.lookup("nope"));
+	}
+
+	@Test
+	public void doesntIncludesPendingInSymbolLookup() {
+		// setup:
+		var aToken = mock(MerkleToken.class);
+		subject.pendingCreation = aToken;
+		subject.pendingId = pending;
+
+		given(aToken.symbol()).willReturn(symbol);
+
+		// expect:
+		assertFalse(subject.symbolExists(symbol));
+	}
+
+	@Test
+	public void initializesLookupTable() {
+		// setup:
+		var aToken = mock(MerkleToken.class);
+		var bToken = mock(MerkleToken.class);
+		// and:
+		tokens = new FCMap<>();
+		tokens.put(fromTokenId(misc), aToken);
+		tokens.put(fromTokenId(pending), bToken);
+
+		given(aToken.symbol()).willReturn("misc");
+		given(bToken.symbol()).willReturn("pending");
+
+		// when:
+		subject = new HederaTokenStore(ids, properties, () -> tokens);
+
+		// then:
+		assertEquals(2, subject.symbolKeyedIds.size());
+		assertEquals(misc, subject.lookup("misc"));
+		assertEquals(pending, subject.lookup("pending"));
 	}
 
 	@Test
@@ -397,6 +439,9 @@ class HederaTokenStoreTest {
 		// and:
 		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
 		assertNull(subject.pendingCreation);
+		// and:
+		assertTrue(subject.symbolKeyedIds.containsKey(symbol));
+		assertEquals(created, subject.symbolKeyedIds.get(symbol));
 	}
 
 	@Test

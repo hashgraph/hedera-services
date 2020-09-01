@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -68,6 +70,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 /**
  * Provides a ledger for Hedera Services crypto and smart contract
@@ -94,9 +97,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @SuppressWarnings("unchecked")
 public class HederaLedger {
 	private static final Logger log = LogManager.getLogger(HederaLedger.class);
-	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
-	private static final long[] NO_NEW_BALANCES = new long[0];
+
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
+	private static final long[] NO_NEW_BALANCES = new long[0];
+	private static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -185,27 +190,6 @@ public class HederaLedger {
 		return all;
 	}
 
-	private void clearNetTokenTransfers() {
-		for (int i = 0; i < numTouches; i++) {
-			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
-		}
-		numTouches = 0;
-	}
-
-	private void purgeZeroAdjustments(TransferList.Builder xfers) {
-		int lastZeroRemoved;
-		do {
-			lastZeroRemoved = -1;
-			for (int i = 0; i < xfers.getAccountAmountsCount(); i++) {
-				if (xfers.getAccountAmounts(i).getAmount() == 0) {
-					xfers.removeAccountAmounts(i);
-					lastZeroRemoved = i;
-					break;
-				}
-			}
-		} while (lastZeroRemoved != -1);
-	}
-
 	public String currentChangeSet() {
 		if (ledger.isInTransaction()) {
 			return ledger.changeSetSoFar();
@@ -274,8 +258,39 @@ public class HederaLedger {
 		clearNetTokenTransfers();
 	}
 
-	public ResponseCodeEnum doAtomicTokenTransfers(TokenTransfers transfers) {
-		throw new AssertionError("Not implemented");
+	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
+		var validity = OK;
+
+		for (TokenTransfer transfer : transfers.getTransfersList())	{
+			var id = resolve(transfer.getToken());
+			if (id == MISSING_TOKEN) {
+				validity = INVALID_TOKEN_ID;
+			}
+			if (validity == OK) {
+				validity = adjustTokenBalance(transfer.getAccount(), id, transfer.getAmount());
+			}
+			if (validity != OK) {
+				break;
+			}
+		}
+		if (validity == OK) {
+			validity = checkNetOfTokenTransfers();
+		}
+		if (validity != OK) {
+			dropPendingTokenChanges();
+		}
+
+		return validity;
+	}
+
+	private TokenID resolve(TokenRef ref) {
+		String symbol;
+		TokenID id;
+		if (ref.hasTokenId()) {
+			return tokenStore.exists(id = ref.getTokenId()) ? id : MISSING_TOKEN;
+		} else {
+			return tokenStore.symbolExists(symbol = ref.getSymbol()) ? tokenStore.lookup(symbol) : MISSING_TOKEN;
+		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -491,6 +506,43 @@ public class HederaLedger {
 	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
+
+	private ResponseCodeEnum checkNetOfTokenTransfers() {
+		if (numTouches == 0) {
+			return OK;
+		}
+		for (int i = 0; i < numTouches; i++) {
+			var token = tokensTouched[i];
+			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
+				if (!isNetZeroAdjustment(netTokenTransfers.get(token))) {
+					return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+				}
+			}
+		}
+		return OK;
+	}
+
+	private void clearNetTokenTransfers() {
+		for (int i = 0; i < numTouches; i++) {
+			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
+		}
+		numTouches = 0;
+	}
+
+	private void purgeZeroAdjustments(TransferList.Builder xfers) {
+		int lastZeroRemoved;
+		do {
+			lastZeroRemoved = -1;
+			for (int i = 0; i < xfers.getAccountAmountsCount(); i++) {
+				if (xfers.getAccountAmounts(i).getAmount() == 0) {
+					xfers.removeAccountAmounts(i);
+					lastZeroRemoved = i;
+					break;
+				}
+			}
+		} while (lastZeroRemoved != -1);
+	}
+
 
 	public enum LedgerTxnEvictionStats {
 		INSTANCE;
