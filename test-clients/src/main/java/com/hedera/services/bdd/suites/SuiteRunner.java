@@ -67,6 +67,7 @@ import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
+import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,6 +124,8 @@ public class SuiteRunner {
 				new CryptoTransferSuite(),
 				new CryptoRecordsSanityCheckSuite(),
 				new Issue2144Spec()));
+		put("CiTokenJob", aof(
+				new TokenCreateSpecs()));
 		put("CiFileJob", aof(
 				new FileRecordsSanityCheckSuite(),
 				new VersionInfoSpec(),
@@ -159,6 +162,8 @@ public class SuiteRunner {
 		/* Functional tests - FILE */
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
+		/* Functional tests - TOKEN */
+		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
 		/* Functional tests - CRYPTO */
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
