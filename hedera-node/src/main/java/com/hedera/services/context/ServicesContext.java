@@ -34,7 +34,9 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
@@ -329,6 +331,7 @@ public class ServicesContext {
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private HederaNodeStats stats;
+	private TokenController tokenGrpc;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
@@ -669,6 +672,8 @@ public class ServicesContext {
 				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
 				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
 				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
+				/* Token */
+				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -1097,6 +1102,13 @@ public class ServicesContext {
 		return systemOpPolicies;
 	}
 
+	public TokenController tokenGrpc() {
+		if (tokenGrpc == null) {
+			tokenGrpc = new TokenController(txnResponseHelper(), queryResponseHelper());
+		}
+		return tokenGrpc;
+	}
+
 	public CryptoController cryptoGrpc() {
 		if (cryptoGrpc == null) {
 			cryptoGrpc = new CryptoController(
@@ -1143,7 +1155,14 @@ public class ServicesContext {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
 					new NettyServerManager(),
-					List.of(cryptoGrpc(), filesGrpc(), freezeGrpc(), contractsGrpc(), consensusGrpc(), networkGrpc()),
+					List.of(
+							cryptoGrpc(),
+							filesGrpc(),
+							freezeGrpc(),
+							contractsGrpc(),
+							consensusGrpc(),
+							networkGrpc(),
+							tokenGrpc()),
 					Collections.emptyList());
 		}
 		return grpc;

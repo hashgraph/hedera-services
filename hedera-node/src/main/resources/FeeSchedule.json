@@ -1552,6 +1552,47 @@
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TransactionGetRecord",
+            "nodedata": {
+              "constant": 54605,
+              "bpt": 87,
+              "vpt": 218244,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 87,
+              "sbpr": 2,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 709869,
+              "bpt": 1135,
+              "vpt": 2837169,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 8,
+              "bpr": 1135,
+              "sbpr": 28,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 709869,
+              "bpt": 1135,
+              "vpt": 2837169,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 8,
+              "bpr": 1135,
+              "sbpr": 28,
+              "min": 0,
+              "max": 1000000000000000
+            }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenCreate",
           "feeData": {
             "nodedata": {
               "constant": 54605,
@@ -3150,6 +3191,49 @@
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TransactionGetRecord",
+          "feeData": {
+            "nodedata": {
+              "constant": 54605,
+              "bpt": 87,
+              "vpt": 218244,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 87,
+              "sbpr": 2,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 709869,
+              "bpt": 1135,
+              "vpt": 2837169,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 8,
+              "bpr": 1135,
+              "sbpr": 28,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 709869,
+              "bpt": 1135,
+              "vpt": 2837169,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 8,
+              "bpr": 1135,
+              "sbpr": 28,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenCreate",
           "feeData": {
             "nodedata": {
               "constant": 54605,

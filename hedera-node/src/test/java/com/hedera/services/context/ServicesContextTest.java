@@ -26,6 +26,7 @@ import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
@@ -424,6 +425,7 @@ public class ServicesContextTest {
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
 		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
+		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

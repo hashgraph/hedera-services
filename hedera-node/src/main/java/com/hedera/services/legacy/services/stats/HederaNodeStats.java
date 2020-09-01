@@ -375,7 +375,15 @@ public class HederaNodeStats {
 		updateCountStat(type, RECEIVED_SUFFIX);
 	}
 
-	public void networkTxnSubmited(String type) {
+	public void networkTxnSubmitted(String type) {
+		updateCountStat(type, SUBMITTED_SUFFIX);
+	}
+
+	public void tokenTxnReceived(String type) {
+		updateCountStat(type, RECEIVED_SUFFIX);
+	}
+
+	public void tokenTxnSubmitted(String type) {
 		updateCountStat(type, SUBMITTED_SUFFIX);
 	}
 
