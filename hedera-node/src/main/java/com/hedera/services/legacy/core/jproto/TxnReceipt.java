@@ -167,6 +167,7 @@ public class TxnReceipt implements SelfSerializable {
 		this.contractId = contractId;
 		this.exchangeRates = exchangeRate;
 		this.topicId = topicId;
+		this.tokenId = tokenId;
 		this.topicSequenceNumber = topicSequenceNumber;
 		this.topicRunningHash = ((topicRunningHash != MISSING_RUNNING_HASH) && (topicRunningHash.length > 0))
 				? topicRunningHash

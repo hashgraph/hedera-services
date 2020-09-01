@@ -271,6 +271,7 @@ public class HederaLedger {
 
 	public void dropPendingTokenChanges() {
 		ledger.dropPendingTokenChanges();
+		clearNetTokenTransfers();
 	}
 
 	public ResponseCodeEnum doAtomicTokenTransfers(TokenTransfers transfers) {

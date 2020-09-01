@@ -416,11 +416,31 @@ public class HederaLedgerTest {
 
 	@Test
 	public void delegatesTokenChangeDrop() {
+		subject.numTouches = 2;
+		subject.tokensTouched[0] = tokenWith(111);
+		subject.tokensTouched[1] = tokenWith(222);
+		// and:
+		subject.netTokenTransfers.put(
+				tokenWith(111),
+				TransferList.newBuilder()
+						.addAccountAmounts(
+								AccountAmount.newBuilder()
+										.setAccountID(IdUtils.asAccount("0.0.2"))));
+		subject.netTokenTransfers.put(
+				tokenWith(222),
+				TransferList.newBuilder()
+						.addAccountAmounts(
+								AccountAmount.newBuilder()
+										.setAccountID(IdUtils.asAccount("0.0.3"))));
 		// when:
 		subject.dropPendingTokenChanges();
 
 		// then:
 		verify(ledger).dropPendingTokenChanges();
+		// and;
+		assertEquals(0, subject.numTouches);
+		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
+		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
 	}
 
 	@Test
