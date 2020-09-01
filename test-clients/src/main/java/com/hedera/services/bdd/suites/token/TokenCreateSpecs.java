@@ -30,6 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 
@@ -51,13 +52,14 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public static HapiApiSpec defaultTokenCreateWorks() {
 		return defaultHapiSpec("DefaultTokenCreateWorks")
 				.given(
-						cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-								.via("hmm"),
+						cryptoCreate("civilian")
+								.balance(A_HUNDRED_HBARS)
+				).when(
 						tokenCreate("first")
+								.payingWith("civilian")
 								.via("tokenCreation")
-				).when().then(
-						getTxnRecord("tokenCreation").logged(),
-						getTxnRecord("hmm").logged()
+				).then(
+						getTxnRecord("tokenCreation").logged()
 				);
 	}
 
