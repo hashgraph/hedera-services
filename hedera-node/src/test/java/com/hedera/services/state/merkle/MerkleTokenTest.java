@@ -23,32 +23,45 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.serdes.IoReadingFunction;
+import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
+
+import java.io.IOException;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.inOrder;
 
 @RunWith(JUnitPlatform.class)
 class MerkleTokenTest {
 	JKey adminKey, otherAdminKey;
 	JKey freezeKey, otherFreezeKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
-	long divisibility = 2, otherDivisibility = 3;
+	int divisibility = 2, otherDivisibility = 3;
 	long tokenFloat = 1_000_000, otherFloat = 1_000_001;
 	boolean freezeDefault = true, otherFreezeDefault = false;
-	EntityId treasury = new EntityId(1,2, 3), otherTreasury = new EntityId(3, 2, 1);
+	EntityId treasury = new EntityId(1, 2, 3), otherTreasury = new EntityId(3, 2, 1);
 
 	MerkleToken subject;
 	MerkleToken other;
@@ -70,6 +83,65 @@ class MerkleTokenTest {
 	@AfterEach
 	public void cleanup() {
 		MerkleToken.serdes = new DomainSerdes();
+	}
+
+	@Test
+	public void deleteIsNoop() {
+		// expect:
+		assertDoesNotThrow(subject::delete);
+	}
+
+	@Test
+	public void serializeWorks() throws IOException {
+		// setup:
+		var out = mock(SerializableDataOutputStream.class);
+		// and:
+		InOrder inOrder = inOrder(serdes, out);
+
+		// when:
+		subject.serialize(out);
+
+		// then:
+		inOrder.verify(serdes).serializeKey(adminKey, out);
+		inOrder.verify(out).writeNormalisedString(symbol);
+		inOrder.verify(out).writeSerializable(treasury, true);
+		inOrder.verify(out).writeLong(tokenFloat);
+		inOrder.verify(out).writeInt(divisibility);
+		inOrder.verify(out).writeBoolean(freezeDefault);
+		inOrder.verify(serdes).writeNullable(
+				argThat(freezeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+	}
+
+	@Test
+	public void copyWorks() {
+		// given:
+		var copySubject = subject.copy();
+
+		// expect:
+		assertNotSame(copySubject, subject);
+		assertEquals(subject, copySubject);
+	}
+
+	@Test
+	public void deserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		given(serdes.deserializeKey(fin)).willReturn(adminKey);
+		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class))).willReturn(freezeKey);
+		given(fin.readNormalisedString(anyInt())).willReturn(symbol);
+		given(fin.readLong()).willReturn(subject.tokenFloat());
+		given(fin.readInt()).willReturn(subject.divisibility());
+		given(fin.readBoolean()).willReturn(subject.accountsAreFrozenByDefault());
+		given(fin.readSerializable()).willReturn(subject.treasury());
+		// and:
+		var read = new MerkleToken();
+
+		// when:
+		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, read);
 	}
 
 	@Test

@@ -76,7 +76,7 @@ class DelegatingSigMetadataLookupTest {
 	JKey adminKey;
 	JKey freezeKey;
 	String symbol = "NotAnHbar";
-	long divisibility = 2;
+	int divisibility = 2;
 	long tokenFloat = 1_000_000;
 	boolean freezeDefault = true;
 	EntityId treasury = new EntityId(1,2, 3);

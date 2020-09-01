@@ -226,6 +226,16 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void unfreezingIsNoopWithoutFreezeKey() {
+		// when:
+		var status = subject.unfreeze(treasury, misc);
+
+		// then:
+		assertEquals(OK, status);
+	}
+
+
+	@Test
 	public void unfreezingRejectsSaturatedAccountIfExplicitUnfreezeRequired() {
 		givenTokenWithFreezeKey(true);
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);

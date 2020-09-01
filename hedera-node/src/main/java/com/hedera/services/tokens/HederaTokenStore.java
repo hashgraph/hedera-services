@@ -130,7 +130,7 @@ public class HederaTokenStore implements TokenStore {
 
 		var token = get(tId);
 		if (token.freezeKey().isEmpty()) {
-			return TOKEN_HAS_NO_FREEZE_KEY;
+			return value ? TOKEN_HAS_NO_FREEZE_KEY : OK;
 		}
 
 		var account = ledger.getTokenRef(aId);

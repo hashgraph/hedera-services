@@ -41,6 +41,7 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleLeaf  {
+	static final int MAX_CONCEIVABLE_SYMBOL_LENGTH = 256;
 	static final JKey UNUSED_KEY = null;
 
 	static final int MERKLE_VERSION = 1;
@@ -51,8 +52,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
 
+	private int divisibility;
 	private long tokenFloat;
-	private long divisibility;
 	private JKey adminKey;
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
@@ -71,7 +72,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	public MerkleToken(
 			long tokenFloat,
-			long divisibility,
+			int divisibility,
 			JKey adminKey,
 			String symbol,
 			boolean accountsFrozenByDefault,
@@ -144,28 +145,44 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		throw new AssertionError("Not implemented");
+		adminKey = serdes.deserializeKey(in);
+		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_LENGTH);
+		treasury = in.readSerializable();
+		tokenFloat = in.readLong();
+		divisibility = in.readInt();
+		accountsFrozenByDefault = in.readBoolean();
+		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		throw new AssertionError("Not implemented");
+		serdes.serializeKey(adminKey, out);
+		out.writeNormalisedString(symbol);
+		out.writeSerializable(treasury, true);
+		out.writeLong(tokenFloat);
+		out.writeInt(divisibility);
+		out.writeBoolean(accountsFrozenByDefault);
+		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleToken copy() {
-		throw new AssertionError("Not implemented");
-	}
-
-	@Override
-	public boolean isImmutable() {
-		throw new AssertionError("Not implemented");
+		var fc = new MerkleToken(
+			tokenFloat,
+			divisibility,
+			adminKey,
+			symbol,
+			accountsFrozenByDefault,
+			treasury);
+		if (freezeKey != UNUSED_KEY) {
+			fc.setFreezeKey(freezeKey);
+		}
+		return fc;
 	}
 
 	@Override
 	public void delete() {
-		throw new AssertionError("Not implemented");
 	}
 
 	/* --- Bean --- */
@@ -173,7 +190,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return tokenFloat;
 	}
 
-	public long divisibility() {
+	public int divisibility() {
 		return divisibility;
 	}
 

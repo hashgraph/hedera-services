@@ -53,7 +53,7 @@ public class FCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAc
 
 	@Override
 	public MerkleAccount getTokenCopy(AccountID id) {
-		throw new AssertionError("Not implemented");
+		return getRef(id).tokenCopy();
 	}
 
 	@Override
