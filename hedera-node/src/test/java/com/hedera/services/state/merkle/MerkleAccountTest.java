@@ -183,6 +183,12 @@ public class MerkleAccountTest {
 	}
 
 	@Test
+	public void explicitBalancesDelegates() {
+		// expect:
+		assertEquals(3, subject.getAllExplicitTokenBalances().size());
+	}
+
+	@Test
 	public void tokenDescriptionDelegates() {
 		// setup:
 		var expected = "[0.0.555(balance=123), 0.0.666(balance=234), 0.0.777(balance=345,FROZEN)]";

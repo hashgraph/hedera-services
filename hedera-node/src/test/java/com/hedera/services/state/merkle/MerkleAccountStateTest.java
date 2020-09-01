@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,9 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
+import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
 import static com.hedera.services.state.merkle.MerkleAccountState.FREEZE_MASK;
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
 import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
@@ -81,7 +83,7 @@ class MerkleAccountStateTest {
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
 	long firstFlag = 0, secondFlag = 0, thirdFlag = 0 | MerkleAccountState.FREEZE_MASK;
 	long[] tokenRels = new long[] {
-		firstToken, firstBalance, firstFlag,
+			firstToken, firstBalance, firstFlag,
 			secondToken, secondBalance, secondFlag,
 			thirdToken, thirdBalance, thirdFlag
 	};
@@ -165,6 +167,17 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	public void returnsExplicitBalances() {
+		// expect:
+		assertEquals(
+				List.of(
+						tokenBalanceWith(firstToken, firstBalance),
+						tokenBalanceWith(secondToken, secondBalance),
+						tokenBalanceWith(thirdToken, thirdBalance)),
+						subject.getAllExplicitTokenBalances());
+	}
+
+	@Test
 	public void rejectsMisalignedRelationships() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () ->
@@ -184,7 +197,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void getsTokenBalanceIfPresent()	 {
+	public void getsTokenBalanceIfPresent() {
 		// expect:
 		assertEquals(firstBalance, subject.getTokenBalance(tokenWith(firstToken)));
 		assertEquals(secondBalance, subject.getTokenBalance(tokenWith(secondToken)));
@@ -410,7 +423,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void getsLogicalInsertIndexIfMissing()	 {
+	public void getsLogicalInsertIndexIfMissing() {
 		// expect:
 		assertEquals(-1, subject.logicalIndexOf(tokenWith(firstToken - 1)));
 		assertEquals(-2, subject.logicalIndexOf(tokenWith(secondToken - 1)));
@@ -434,8 +447,8 @@ class MerkleAccountStateTest {
 						"receiverSigRequired=" + receiverSigRequired + ", " +
 						"proxy=" + proxy + ", " +
 						"tokenRels=[555, 123, " + firstFlag + ", " +
-							"666, 234, " + secondFlag + ", " +
-							"777, 345, " + thirdFlag + "]" + "}",
+						"666, 234, " + secondFlag + ", " +
+						"777, 345, " + thirdFlag + "]" + "}",
 				subject.toString());
 	}
 

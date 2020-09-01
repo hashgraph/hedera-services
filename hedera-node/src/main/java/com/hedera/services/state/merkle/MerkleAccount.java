@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
@@ -252,6 +253,10 @@ public class MerkleAccount extends AbstractMerkleInternal
 
 	public void adjustTokenBalance(TokenID id, MerkleToken token, long adjustment) {
 		state().adjustTokenBalance(id, token, adjustment);
+	}
+
+	public List<TokenBalance> getAllExplicitTokenBalances() {
+		return state().getAllExplicitTokenBalances();
 	}
 
 	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {

@@ -25,6 +25,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -35,8 +36,11 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -45,6 +49,7 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
+import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
@@ -80,7 +85,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	long[] tokenRels = NO_TOKEN_BALANCES;
 
-	public MerkleAccountState() { }
+	public MerkleAccountState() {
+	}
 
 	public MerkleAccountState(
 			JKey key,
@@ -360,6 +366,17 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	public boolean hasRelationshipWith(TokenID id) {
 		return logicalIndexOf(id) >= 0;
+	}
+
+	public List<TokenBalance> getAllExplicitTokenBalances() {
+		return IntStream.range(0, numTokenRelationships())
+				.mapToObj(i -> TokenBalance.newBuilder()
+						.setTokenId(TokenID.newBuilder()
+								.setShardNum(0)
+								.setRealmNum(0)
+								.setTokenNum(tokenRels[num(i)]))
+						.setBalance(tokenRels[balance(i)]).build())
+				.collect(toList());
 	}
 
 	public long getTokenBalance(TokenID id) {

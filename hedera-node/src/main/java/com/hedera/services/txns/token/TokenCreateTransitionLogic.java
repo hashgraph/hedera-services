@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -78,7 +79,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
-		var scaledInitialFloat = op.getFloat() * op.getDivisibility();
+		var scaledInitialFloat = initialTinyFloat(op.getFloat(), op.getDivisibility());
 
 		var status = ledger.unfreeze(op.getTreasury(), created);
 		if (status == OK) {
@@ -92,6 +93,13 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	/* The preconditions on validity of this computation must be enforced by the TokenStore. */
+	private long initialTinyFloat(long initialFloat, int divisibility) {
+		return BigInteger.valueOf(initialFloat)
+				.multiply(BigInteger.valueOf(10).pow(divisibility))
+				.longValueExact();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

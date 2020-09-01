@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.math.BigInteger;
+
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,10 +44,12 @@ import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @RunWith(JUnitPlatform.class)
-
 class TokenCreateTransitionLogicTest {
-	private int divisibility = 100;
+	private int divisibility = 2;
 	private long initialFloat = 1_000_000L;
+	private long tinyFloat = BigInteger.valueOf(initialFloat)
+			.multiply(BigInteger.valueOf(10).pow(divisibility))
+			.longValueExact();
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private TokenID created = IdUtils.asToken("1.2.666");
@@ -116,7 +120,7 @@ class TokenCreateTransitionLogicTest {
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, initialFloat * divisibility))
+		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
@@ -158,7 +162,7 @@ class TokenCreateTransitionLogicTest {
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, divisibility * initialFloat))
+		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
 				.willReturn(OK);
 
 		// when:

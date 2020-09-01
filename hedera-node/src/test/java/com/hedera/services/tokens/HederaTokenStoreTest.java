@@ -529,17 +529,54 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsInsufficientFloat() {
+	public void allowsZeroFloatAndDivisibility() {
 		// given:
 		var req = fullyValidAttempt()
 				.setFloat(0L)
+				.setDivisibility(0)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_FLOAT, result.getStatus());
+		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+	}
+
+	@Test
+	public void rejectsJustOverflowingFloat() {
+		int divisibility = 1;
+		long initialFloat = 1L << 62;
+
+		// given:
+		var req = fullyValidAttempt()
+				.setFloat(initialFloat)
+				.setDivisibility(divisibility)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+	}
+
+	@Test
+	public void rejectsOverflowingFloat() {
+		int divisibility = 1 << 30;
+		long initialFloat = 1L << 34;
+
+		// given:
+		var req = fullyValidAttempt()
+				.setFloat(initialFloat)
+				.setDivisibility(divisibility)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
 	}
 
 	@Test

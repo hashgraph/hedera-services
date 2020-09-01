@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
+import java.math.BigInteger;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -230,13 +231,18 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
-		if (tokenFloat < 1) {
+		if (tokenFloat < 0) {
 			return INVALID_TOKEN_FLOAT;
 		}
-		if (tokenFloat * divisibility <= 0) {
+
+		try {
+			var tinyTokenFloat = BigInteger.valueOf(10)
+					.pow(divisibility)
+					.multiply(BigInteger.valueOf(tokenFloat));
+			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DIVISIBILITY;
+		} catch (ArithmeticException ignore) {
 			return INVALID_TOKEN_DIVISIBILITY;
 		}
-		return OK;
 	}
 
 	private ResponseCodeEnum symbolCheck(String symbol) {

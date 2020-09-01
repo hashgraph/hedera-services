@@ -430,6 +430,10 @@ public class HapiSpecRegistry {
 		return get(name, TopicID.class);
 	}
 
+	public TokenID getTokenID(String name) {
+		return get(name, TokenID.class);
+	}
+
 	public boolean hasFileId(String name) {
 		return hasVia(this::getFileId, name);
 	}

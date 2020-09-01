@@ -36,6 +36,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -158,9 +159,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return Arrays.asList(
+		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),
-				ignore -> adminKey);
+				ignore -> adminKey));
+		freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
+		return signers;
 	}
 
 	@Override

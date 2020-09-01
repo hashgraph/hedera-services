@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -61,6 +62,7 @@ import java.util.regex.Pattern;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -140,6 +142,10 @@ public class TxnUtils {
 
 	public static AccountID asId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
+	}
+
+	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
+		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}
 
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {

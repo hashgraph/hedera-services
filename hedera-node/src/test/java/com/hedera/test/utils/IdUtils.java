@@ -23,6 +23,7 @@ package com.hedera.test.utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -94,5 +95,19 @@ public class IdUtils {
 
 	public static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+	}
+
+	public static TokenBalance tokenBalanceWith(long id, long balance) {
+		return TokenBalance.newBuilder()
+				.setTokenId(IdUtils.asToken("0.0." + id))
+				.setBalance(balance)
+				.build();
+	}
+
+	public static TokenBalance tokenBalanceWith(TokenID id, long balance) {
+		return TokenBalance.newBuilder()
+				.setTokenId(id)
+				.setBalance(balance)
+				.build();
 	}
 }
