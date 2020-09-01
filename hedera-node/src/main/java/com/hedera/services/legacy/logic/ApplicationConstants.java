@@ -86,5 +86,6 @@ public class ApplicationConstants {
 	public static int MAX_CONCURRENT_CALLS = 100;
 	public static int NETTY_FLOW_CONTROL_WINDOW = 65535;
 
+	public static int BINARY_OBJECT_QUERY_RETRY_TIMES = 0;
 	public static int MAX_GAS_LIMIT = 300000;
 }

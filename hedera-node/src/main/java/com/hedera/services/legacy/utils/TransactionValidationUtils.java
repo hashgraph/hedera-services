@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
@@ -203,22 +202,12 @@ public class TransactionValidationUtils {
 		return OK;
 	}
 
-
 	public static void constructGetBySolidityIDErrorResponse(
 			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
 		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
 				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
 		responseObserver.onNext(Response.newBuilder().setGetBySolidityID(
 				GetBySolidityIDResponse.newBuilder().setHeader(responseHeader)).build());
-		responseObserver.onCompleted();
-	}
-
-	public static void constructContractGetInfoErrorResponse(
-			StreamObserver<Response> responseObserver, ResponseCodeEnum validationCode, long scheduledFee) {
-		ResponseHeader responseHeader = RequestBuilder.getResponseHeader(
-				validationCode, scheduledFee, ResponseType.ANSWER_ONLY, ByteString.EMPTY);
-		responseObserver.onNext(Response.newBuilder().setContractGetInfo(
-				ContractGetInfoResponse.newBuilder().setHeader(responseHeader)).build());
 		responseObserver.onCompleted();
 	}
 
@@ -258,9 +247,6 @@ public class TransactionValidationUtils {
 		ResponseCodeEnum responseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 		if (methodMsg.startsWith("getBySolidityID")) {
 			TransactionValidationUtils.constructGetBySolidityIDErrorResponse(responseObserver,
-					responseCode, 0);
-		} else if (methodMsg.startsWith("getContractInfo")) {
-			TransactionValidationUtils.constructContractGetInfoErrorResponse(responseObserver,
 					responseCode, 0);
 		} else if (methodMsg.startsWith("contractCallLocalMethod")) {
 			TransactionValidationUtils.constructContractCallLocalErrorResponse(responseObserver,

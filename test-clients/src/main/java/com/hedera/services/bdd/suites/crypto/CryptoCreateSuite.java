@@ -65,16 +65,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveTests(),
 				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				invalidPayerSigNotQueryable()
-//				vanillaCreateSucceeds()
-//				requiresNewKeyToSign()
 		);
 	}
 
@@ -124,33 +115,11 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec invalidPayerSigNotQueryable() {
-		KeyShape origShape = listOf(3);
-		KeyShape newShape = SIMPLE;
-
-		return defaultHapiSpec("InvalidPayerSigNotQueryable")
-				.given(
-						UtilVerbs.newKeyNamed("newKey").shape(newShape),
-						UtilVerbs.newKeyNamed("origKey").shape(origShape),
-						cryptoCreate("payer").key("origKey").via("txn")
-				).when(
-						cryptoUpdate("payer")
-								.key("newKey")
-								.deferStatusResolution(),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 100L))
-								.via("impossibleTxn")
-								.fee(2_000_000L)
-								.signedBy("origKey", GENESIS)
-								.payingWith("payer")
-								.hasKnownStatus(UNKNOWN)
-				).then(
-				);
-	}
-
 	private HapiApiSpec vanillaCreateSucceeds() {
 		return defaultHapiSpec("VanillaCreateSucceeds")
 				.given(
-						cryptoCreate("testAccount").via("txn")
+						cryptoCreate("testAccount").via("txn"),
+						UtilVerbs.sleepFor(2000)
 				).when().then(
 						getTxnRecord("txn").logged()
 				);

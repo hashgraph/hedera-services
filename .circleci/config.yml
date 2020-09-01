@@ -1,6 +1,22 @@
 version: 2.1
 
 commands:
+  install-tools:
+    description: Install tools for JRS regression
+    steps:
+      - run:
+          name: Install necessary tools
+          command: |
+            sudo apt update -y;
+            sudo apt install -y net-tools;
+            sudo apt install -y curl;
+            sudo apt install -y python3.7;
+            sudo rm /usr/bin/python3;
+            sudo ln -s python3.7 /usr/bin/python3;
+            sudo apt install -y python3-pip;
+            pip3 -q install matplotlib;
+            sudo apt-get install -y python3-setuptools;
+            pip3 install awscli;
   ensure-env-vars:
     description: Ensure the builtin CircleCI env vars are available
     steps:
@@ -898,7 +914,7 @@ executors:
     working_directory: /repo
 
 workflows:
-  nightly-services-regression:
+  nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
           cron: "0 23,8 * * *"
@@ -907,9 +923,116 @@ workflows:
               only:
                 - master
     jobs:
-      - build-platform-and-services:
+      - build-platform-and-services
+      - run-basic-suiterunner-tests:
           context: Slack
-          workflow-name: "nightly-services-regression"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-basic-suiterunner-regression"
+
+  nightly-performance-regression:
+    triggers:
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-performance-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-performance-regression"
+
+  nightly-network-error-regression:
+    triggers:
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-network-error-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-network-error-regression"
+
+  nightly-zero-stake-regression:
+    triggers:
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-zero-stake-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-zero-stake-regression"
+
+  nightly-migration-regression:
+    triggers:
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-migration-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-migration-regression"
+
+  nightly-software-update-regression:
+    triggers:
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - run-software-update-regression:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+          workflow-name: "nightly-software-update-regression"
 
   custom-migration:
     triggers:
@@ -918,24 +1041,19 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - start-testnet:
-                use-existing-network: true
-                use-hugepage: true
+          workflow-name: "custom-migration"
       - run-custom-migration:
           context: Slack
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -1072,6 +1190,10 @@ workflows:
             - attach_workspace:
                 at: /
 
+# Now that JRS nightly regression covers all this regression workflow's coverage and is stable.
+# We'll disable the CircleCi side regression workflow. No need to keep both
+# We'll keep this workflow for now in case we need to run some tests and need this workflow.
+# Later we may clean up these obsolete workflows completely.
   nightly-regression:
     triggers:
       - schedule:
@@ -1079,7 +1201,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - master
+                  - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1579,7 +1701,7 @@ jobs:
             - root/.m2
             - repo/hedera-node
 
-  build-platform-and-services:
+  run-basic-suiterunner-tests:
     parameters:
       workflow-name:
         type: string
@@ -1587,6 +1709,155 @@ jobs:
     executor:
       name: build-executor
       workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run various suites in SuiteRunner
+          command: |
+              cd /swirlds-platform/regression; ./regression_services_circleci.sh AWS-Services-Daily-Comp-4N-1C.json /repo
+
+      - run:
+          name: Sync results of SuiteRunner suites to AWS
+          command: |
+              aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+              tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-performance-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Performance regression
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Perf-4N-4C.json /repo
+
+      - run:
+          name: Sync results of performance regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-network-error-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run network error regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-NetError-4N-1C.json /repo
+
+      - run:
+          name: Sync results of network error regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-zero-stake-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run Zero stake regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Comp-6_2N-1C.json /repo
+
+      - run:
+          name: Sync results of zero stake regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-migration-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Modify Payer account for Migration test
+          command: |
+            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
+            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+
+      - run:
+          name: Run Migration test
+          command: |
+            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
+
+      - run:
+          name: Sync results of migration test to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  run-software-update-regression:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Run Software Update regression tests
+          command: |
+            cd /swirlds-platform/regression;
+            ./regression_services_circleci.sh AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo
+
+      - run:
+          name: Sync results of software update regression to AWS
+          command: |
+            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs;
+            tar -czvf /results.tar.gz  /swirlds-platform/regression/results/*
+
+      - store_artifacts:
+          path: /results.tar.gz
+
+  build-platform-and-services:
+    parameters:
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
     steps:
       - attach_workspace:
           at: /
@@ -1606,94 +1877,19 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config ;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
-
-      - run:
-          name: Install necessary tools
-          command: |
-            sudo apt update -y;
-            sudo apt install -y net-tools;
-            sudo apt install -y curl;
-            sudo apt install -y python3.7;
-            sudo rm /usr/bin/python3;
-            sudo ln -s python3.7 /usr/bin/python3;
-            sudo apt install -y python3-pip;
-            pip3 -q install matplotlib;
-            sudo apt-get install -y python3-setuptools;
-            pip3 install awscli;
 
       - run:
           name: Save PEM file to keys folder
           command: |
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
 
-      - run:
-          name: Run various suites in SuiteRunner
-          command: |
-            cd /swirlds-platform/regression; ./regression_services_circleci.sh AWS-Services-Daily-Comp-4N-1C.json /repo
-
-      - run:
-          name: Sync results of SuiteRunner suites to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Performance regression
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Perf-4N-4C.json /repo
-
-      - run:
-          name: Sync results of performance regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Run network error regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-NetError-4N-1C.json /repo
-
-      - run:
-          name: Sync results of network error regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Run Zero stake regression tests
-          command: |
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Comp-6_2N-1C.json /repo
-
-      - run:
-          name: Sync results of zero stake regression to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
-      - run:
-          name: Modify Payer account for Migration test
-          # MigrationTest should be the last one in nightly services regression
-          command: |
-            sed -i 's/default.payer=0.0.2/default.payer=0.0.50/g' /repo/test-clients/src/main/resource/spec-default.properties;
-            echo -n "$KEY_50" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
-
-      - run:
-          name: Run Migration test
-          command: |
-            cd /repo ; mvn --no-transfer-progress clean install -DskipTests;
-            cd /swirlds-platform/regression;
-            rm -rf /swirlds-platform/regression/results/;
-            ./regression_services_circleci.sh AWS-Services-Daily-Migration-4N-1C.json /repo
-
-      - run:
-          name: Sync results of migration test to AWS
-          command: |
-            aws s3 sync /swirlds-platform/regression/results/ s3://hedera-service-regression-jrs
-
+      - persist_to_workspace:
+          root: /
+          paths:
+            - repo/
+            - swirlds-platform/
   aws-summary:
     executor: ci-test-executor
     steps:
@@ -1834,7 +2030,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -1850,7 +2046,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -2548,16 +2744,14 @@ jobs:
           dsl-args: "ControlAccountsExemptForUpdates"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.TxRecordTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
+#      - run-scenario-test:
+#          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
       - run-eet-suites:
-          dsl-args: "CryptoCreateSuite -TLS=on"
-      - run-eet-suites:
-          dsl-args: "CryptoUpdateSuite"
+          dsl-args: "CryptoUpdateSuite -TLS=on"
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:

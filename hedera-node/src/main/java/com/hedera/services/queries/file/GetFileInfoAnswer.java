@@ -38,7 +38,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
 public class GetFileInfoAnswer implements AnswerService {
+	private static final Logger log = LogManager.getLogger(GetFileInfoAnswer.class);
+
 	private final OptionValidator validator;
 
 	public GetFileInfoAnswer(OptionValidator validator) {
@@ -62,12 +68,13 @@ public class GetFileInfoAnswer implements AnswerService {
 
 		ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
+			log.info("FileGetInfo not successful for: validity {}, query {} ", validity.toString(), query.getFileGetInfo().toString());
 			response.setHeader(header(validity, type, cost));
 		} else {
 			if (type == COST_ANSWER) {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
-				var info = view.infoFor(op.getFileID());
+				var info = view.infoForFile(op.getFileID());
 				/* Include cost here to satisfy legacy regression tests. */
 				response.setHeader(answerOnlyHeader(OK, cost));
 				response.setFileInfo(info.get());

@@ -103,7 +103,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.builder.RequestBuilder.getTimestamp;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionRecord;
-import static com.hedera.services.legacy.core.jproto.JKey.convertJKey;
 import static com.hedera.services.legacy.core.jproto.JKey.convertKey;
 
 /**
@@ -598,50 +597,6 @@ public class SmartContractRequestHandler {
 	}
 
 	/**
-	 * Return available information about the contract
-	 *
-	 * @param cid
-	 * @return Contract information
-	 * @throws Exception
-	 * 		Passes through lower-level exceptions; does not generate any
-	 */
-	public ContractInfo getContractInfo(ContractID cid) {
-		ContractInfo infoToReturn = null;
-		AccountID id = asAccount(cid);
-		String contractEthAddress = asSolidityAddressHex(id);
-		if (!StringUtils.isEmpty(contractEthAddress)) {
-			ContractInfo.Builder builder = ContractInfo.newBuilder();
-			MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
-			if (contract != null && contract.isSmartContract()) {
-				builder.setContractID(cid)
-						.setBalance(contract.getBalance())
-						.setMemo(contract.getMemo())
-						.setAccountID(id)
-						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-						.setContractAccountID(contractEthAddress);
-				var address = asSolidityAddress(cid);
-				long bytesUsed = lengthIfPresent(storageView.get(address)) + lengthIfPresent(bytecodeView.get(address));
-				builder.setStorage(bytesUsed);
-
-				JKey key = contract.getKey();
-				if (key != null) {
-					try {
-						builder.setAdminKey(convertJKey(key, 1));
-					} catch (Exception ignore) {
-					}
-				}
-				infoToReturn = builder.build();
-			}
-		}
-		return infoToReturn;
-	}
-
-	private int lengthIfPresent(byte[] data) {
-		return Optional.ofNullable(data).map(bytes -> bytes.length).orElse(0);
-	}
-
-	/**
 	 * Modify an existing contract
 	 *
 	 * @param transaction
@@ -711,23 +666,6 @@ public class SmartContractRequestHandler {
 				transaction.getTransactionID(),
 				getTimestamp(consensusTime),
 				receipt).build();
-	}
-
-	/**
-	 * Return the stored bytecode for this contract
-	 *
-	 * @param cid
-	 * @return Contract bytecode as a Bytestring
-	 */
-	public ByteString getContractBytecode(ContractID cid) {
-		AccountID id = asAccount(cid);
-		MerkleAccount contract = accounts.get().get(MerkleEntityId.fromAccountId(id));
-		if (contract != null && contract.isSmartContract()) {
-			String contractEthAddress = asSolidityAddressHex(id);
-			byte[] contractEthAddressBytes = ByteUtil.hexStringToBytes(contractEthAddress);
-			return ByteString.copyFrom(repository.getCode(contractEthAddressBytes));
-		}
-		return ByteString.EMPTY;
 	}
 
 	/**

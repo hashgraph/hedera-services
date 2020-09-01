@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.UncheckedSubmit;
 
 import java.util.EnumMap;
 
@@ -74,6 +75,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(SystemDelete, "systemDelete");
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");
+		permissionKeys.put(UncheckedSubmit, "uncheckedSubmit");
 		/* Queries */
 		permissionKeys.put(ConsensusGetTopicInfo, "getTopicInfo");
 		permissionKeys.put(GetBySolidityID, "getBySolidityID");

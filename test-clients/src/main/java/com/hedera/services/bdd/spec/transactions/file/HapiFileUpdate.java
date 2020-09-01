@@ -204,6 +204,11 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			var newRateSet = ExchangeRateSet.parseFrom(newContents.get());
 			spec.ratesProvider().updateRateSet(newRateSet);
 		}
+
+		if (verboseLoggingOn) {
+			log.info("Updated file  {} with ID {}.", file, lastReceipt.getFileID());
+		}
+
 	}
 
 	@Override

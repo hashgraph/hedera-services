@@ -22,8 +22,11 @@ package com.hedera.services.grpc.controllers;
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,20 +39,25 @@ import static com.hedera.services.grpc.controllers.NetworkController.*;
 @RunWith(JUnitPlatform.class)
 class NetworkControllerTest {
 	Query query = Query.getDefaultInstance();
+	Transaction txn = Transaction.getDefaultInstance();
 	MetaAnswers answers;
+	TxnResponseHelper txnResponseHelper;
 	QueryResponseHelper queryResponseHelper;
 	StreamObserver<Response> queryObserver;
+	StreamObserver<TransactionResponse> txnObserver;
 
 	NetworkController subject;
 
 	@BeforeEach
 	private void setup() {
 		answers = mock(MetaAnswers.class);
+		txnObserver = mock(StreamObserver.class);
 		queryObserver = mock(StreamObserver.class);
 
+		txnResponseHelper = mock(TxnResponseHelper.class);
 		queryResponseHelper = mock(QueryResponseHelper.class);
 
-		subject = new NetworkController(answers, queryResponseHelper);
+		subject = new NetworkController(answers, txnResponseHelper, queryResponseHelper);
 	}
 
 	@Test
@@ -60,5 +68,14 @@ class NetworkControllerTest {
 		// expect:
 		verify(answers).getVersionInfo();
 		verify(queryResponseHelper).respondToNetwork(query, queryObserver, null, GET_VERSION_INFO_METRIC);
+	}
+
+	@Test
+	public void forwardsUncheckedSubmitAsExpected() {
+		// when:
+		subject.uncheckedSubmit(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToNetwork(txn, txnObserver, UNCHECKED_SUBMIT_METRIC);
 	}
 }

@@ -23,7 +23,9 @@ package com.hedera.services.legacy.unit;
 import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
@@ -70,6 +72,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -84,6 +87,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import javax.naming.Context;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -167,6 +172,9 @@ class PreCheckValidationTest {
 
 		precheckVerifier = mock(PrecheckVerifier.class);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -174,12 +182,13 @@ class PreCheckValidationTest {
 				precheckVerifier,
 				TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap),
+				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
 				"./configuration/dev/application.properties",
 				"./configuration/dev/api-permission.properties");
@@ -401,6 +410,9 @@ class PreCheckValidationTest {
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -409,12 +421,13 @@ class PreCheckValidationTest {
 				TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 		localTransactionHandler.setThrottling(function -> true);
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
@@ -445,6 +458,9 @@ class PreCheckValidationTest {
 		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
 		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
 		TransactionHandler localTransactionHandler = new TransactionHandler(
 				localRecordCache,
 				() -> accountFCMap,
@@ -453,12 +469,13 @@ class PreCheckValidationTest {
 				TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
 				policies,
-				new StandardExemptions(new MockAccountNumbers(), policies));
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
 
 		TxnValidityAndFeeReq result =
 				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);

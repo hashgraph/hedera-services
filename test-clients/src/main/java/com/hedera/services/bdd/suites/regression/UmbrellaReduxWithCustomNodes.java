@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -122,7 +121,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS)
                                 .via("messageSubmissionSimple"),
                         QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
-                                .has(TransactionRecordAsserts
+                                .hasPriority(TransactionRecordAsserts
                                         .recordWith()
                                         .checkTopicRunningHashVersion(topic_running_hash_version)
                                 )

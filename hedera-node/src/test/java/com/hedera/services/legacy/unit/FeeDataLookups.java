@@ -27,11 +27,14 @@ import com.hedera.services.legacy.unit.handler.FileServiceHandler;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
+import com.hederahashgraph.fee.CryptoFeeBuilder;
+import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.InvalidFileIDException;
+import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import com.swirlds.fcmap.FCMap;
 
 public class FeeDataLookups {
@@ -39,117 +42,100 @@ public class FeeDataLookups {
 	static FeeData getCryptoCreateTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoCreateTxFeeMatrices(txBody, sigValObj);
+	  return new CryptoFeeBuilder().getCryptoCreateTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getCryptoUpdateTransactionFeeMatrices(TransactionBody txBody,
 			Timestamp expirationTimeStamp,
 			SigValueObj sigValObj, Key existingKey) throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoUpdateTxFeeMatrices(txBody, sigValObj,
+	  return new CryptoFeeBuilder().getCryptoUpdateTxFeeMatrices(txBody, sigValObj,
 			  expirationTimeStamp, existingKey);
 	}
 
 	static FeeData getCryptoTransferTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoTransferTxFeeMatrices(txBody, sigValObj);
+	  return new CryptoFeeBuilder().getCryptoTransferTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getCryptoDeleteTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoDeleteTxFeeMatrices(txBody, sigValObj);
+	  return new CryptoFeeBuilder().getCryptoDeleteTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getSmartContractCreateTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getSmFeeBuilder()
-		  .getContractCreateTxFeeMatrices(txBody, sigValObj);
+	  return new SmartContractFeeBuilder().getContractCreateTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getSmartContractCallTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getSmFeeBuilder()
-		  .getContractCallTxFeeMatrices(txBody, sigValObj);
+	  return new SmartContractFeeBuilder().getContractCallTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getSmartContractUpdateTransactionFeeMatrices(TransactionBody txBody,
 			Timestamp contractExpiryTime, SigValueObj sigValObj) throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getSmFeeBuilder()
-		  .getContractUpdateTxFeeMatrices(txBody, contractExpiryTime,
-			  sigValObj);
+	  return new SmartContractFeeBuilder().getContractUpdateTxFeeMatrices(txBody, contractExpiryTime, sigValObj);
 
 	}
 
 	static FeeData getFileCreateTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getFileCreateTxFeeMatrices(txBody, sigValObj);
+	  return new FileFeeBuilder().getFileCreateTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getFileDeleteTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getFileDeleteTxFeeMatrices(txBody, sigValObj);
+	  return new FileFeeBuilder().getFileDeleteTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getFileAppendTransactionFeeMatrices(TransactionBody txBody,
 			Timestamp expirationTimeStamp,
 			SigValueObj sigValObj) throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getFileAppendTxFeeMatrices(txBody, expirationTimeStamp,
+	  return new FileFeeBuilder().getFileAppendTxFeeMatrices(txBody, expirationTimeStamp,
 			  sigValObj);
 	}
 
 	static FeeData getFileUpdateTransactionFeeMatrices(TransactionBody txBody,
 			Timestamp expirationTimeStamp,
 			SigValueObj sigValObj) throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getFileUpdateTxFeeMatrices(txBody, expirationTimeStamp,
+	  return new FileFeeBuilder().getFileUpdateTxFeeMatrices(txBody, expirationTimeStamp,
 			  sigValObj);
 	}
 
 	static FeeData getAddLiveHashTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoAddLiveHashTxFeeMatrices(txBody, sigValObj);
+	  return new CryptoFeeBuilder().getCryptoAddLiveHashTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getDeleteLiveHashTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getCrFeeBuilder()
-		  .getCryptoDeleteLiveHashTxFeeMatrices(txBody, sigValObj);
+	  return new CryptoFeeBuilder().getCryptoDeleteLiveHashTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static FeeData getSystemDeleteTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj numSignatures)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getSystemDeleteFileTxFeeMatrices(txBody, numSignatures);
+	  return new FileFeeBuilder().getSystemDeleteFileTxFeeMatrices(txBody, numSignatures);
 	}
 
 	static FeeData getSystemUndeleteTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj numSignatures)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getFileFeeBuilder()
-		  .getSystemUnDeleteFileTxFeeMatrices(txBody, numSignatures);
+	  return new FileFeeBuilder().getSystemUnDeleteFileTxFeeMatrices(txBody, numSignatures);
 	}
 
 	static FeeData getContractDeleteTransactionFeeMatrices(TransactionBody txBody,
 			SigValueObj sigValObj)
 		throws InvalidTxBodyException {
-	  return GlobalFlag.getInstance().getSmFeeBuilder()
-		  .getContractDeleteTxFeeMatrices(txBody, sigValObj);
+	  return new SmartContractFeeBuilder().getContractDeleteTxFeeMatrices(txBody, sigValObj);
 	}
 
 	static public FeeData getConsensusUpdateTopicTransactionFeeMatrices(

@@ -22,12 +22,9 @@ package com.hedera.services.bdd.suites.file;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,8 +87,8 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
 						.contents("This is something new.")
 						.via("unauthorizedTxn")
 		).then(
-				getTxnRecord("unauthorizedTxn").has(recordWith().feeDifferentThan(0L)),
-				getTxnRecord("authorizedTxn").has(recordWith().fee(0L))
+				getTxnRecord("unauthorizedTxn").hasPriority(recordWith().feeDifferentThan(0L)),
+				getTxnRecord("authorizedTxn").hasPriority(recordWith().fee(0L))
 		);
 	}
 

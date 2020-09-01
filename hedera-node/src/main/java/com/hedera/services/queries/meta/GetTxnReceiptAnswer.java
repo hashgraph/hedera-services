@@ -64,11 +64,14 @@ public class GetTxnReceiptAnswer implements AnswerService {
 
 		if (validity == OK) {
 			var txnId = op.getTransactionID();
-			var receipt = recordCache.getReceipt(txnId);
+			var receipt = recordCache.getPriorityReceipt(txnId);
 			if (receipt == null) {
 				validity = RECEIPT_NOT_FOUND;
 			} else {
 				opResponse.setReceipt(receipt);
+				if (op.getIncludeDuplicates()) {
+					opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
+				}
 			}
 		}
 		opResponse.setHeader(answerOnlyHeader(validity));

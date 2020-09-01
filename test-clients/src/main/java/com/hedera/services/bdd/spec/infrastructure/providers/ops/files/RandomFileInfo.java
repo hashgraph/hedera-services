@@ -70,8 +70,6 @@ public class RandomFileInfo implements OpProvider {
 				.hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
 				.hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
-//		System.out.println(String.format("Cost-answer precheck: %s", permissibleCostAnswerPrechecks.toString()));
-
 		return Optional.of(op);
 	}
 }

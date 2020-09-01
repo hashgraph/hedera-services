@@ -149,7 +149,7 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void recognizesOkFile() throws Exception {
-		given(view.infoFor(target)).willReturn(Optional.of(asMinimalInfo(attr)));
+		given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(attr)));
 
 		// when:
 		var status = subject.queryableFileStatus(target, view);
@@ -160,7 +160,7 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void recognizesDeletedFile() throws Exception {
-		given(view.infoFor(target)).willReturn(Optional.of(asMinimalInfo(deletedAttr)));
+		given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(deletedAttr)));
 
 		// when:
 		var status = subject.queryableFileStatus(target, view);
@@ -172,7 +172,7 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void recognizesMissingFile() {
-		given(view.infoFor(target)).willReturn(Optional.empty());
+		given(view.infoForFile(target)).willReturn(Optional.empty());
 
 		// when:
 		var status = subject.queryableFileStatus(target, view);

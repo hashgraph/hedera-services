@@ -68,7 +68,7 @@ class GetFileInfoResourceUsageTest {
 	public void throwsIaeOnMissingInfo() {
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 
-		given(view.infoFor(any())).willReturn(Optional.empty());
+		given(view.infoForFile(any())).willReturn(Optional.empty());
 
 		// then:
 		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(answerOnlyQuery, view));
@@ -84,7 +84,7 @@ class GetFileInfoResourceUsageTest {
 		Query answerOnlyQuery = fileInfoQuery(target, ANSWER_ONLY);
 		Query costAnswerQuery = fileInfoQuery(target, COST_ANSWER);
 		// and:
-		given(view.infoFor(target)).willReturn(Optional.ofNullable(targetInfo));
+		given(view.infoForFile(target)).willReturn(Optional.ofNullable(targetInfo));
 		// and:
 		given(usageEstimator.getFileInfoQueryFeeMatrices(wacl.getKeyList(), COST_ANSWER))
 				.willReturn(costAnswerUsage);

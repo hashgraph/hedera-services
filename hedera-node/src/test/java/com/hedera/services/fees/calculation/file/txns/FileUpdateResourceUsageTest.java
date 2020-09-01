@@ -125,7 +125,7 @@ class FileUpdateResourceUsageTest {
 		// and:
 		long oldBytes = oldSize + UsageEstimatorUtils.keyBytes(info.getKeys().getKeysList());
 
-		given(view.infoFor(fid)).willReturn(Optional.of(info));
+		given(view.infoForFile(fid)).willReturn(Optional.of(info));
 		// and:
 		var op = FileUpdateTransactionBody.newBuilder()
 				.setFileID(fid)
@@ -170,7 +170,7 @@ class FileUpdateResourceUsageTest {
 		// and:
 		long oldBytes = oldSize + UsageEstimatorUtils.keyBytes(info.getKeys().getKeysList());
 
-		given(view.infoFor(fid)).willReturn(Optional.of(info));
+		given(view.infoForFile(fid)).willReturn(Optional.of(info));
 		// and:
 		var op = FileUpdateTransactionBody.newBuilder()
 				.setFileID(fid)

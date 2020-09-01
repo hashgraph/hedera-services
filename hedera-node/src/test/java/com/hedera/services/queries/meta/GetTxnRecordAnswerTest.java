@@ -21,6 +21,7 @@ package com.hedera.services.queries.meta;
  */
 
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -47,6 +48,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -84,12 +89,14 @@ class GetTxnRecordAnswerTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private GetTxnRecordAnswer subject;
+	private PropertySource propertySource;
 
 	@BeforeEach
 	private void setup() {
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+		propertySource = mock(PropertySource.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 
@@ -147,6 +154,84 @@ class GetTxnRecordAnswerTest {
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		// and:
+		verify(recordCache, never()).getDuplicateRecords(any());
+	}
+
+	@Test
+	public void getsRecordFromCtxWhenAvailable() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+		Map<String, Object> ctx = new HashMap<>();
+
+		// given:
+		ctx.put(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY, cachedTargetRecord);
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		// and:
+		verify(answerFunctions, never()).txnRecord(any(), any(), any());
+	}
+
+	@Test
+	public void getsDuplicateRecordsFromCtxWhenAvailable() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
+		Map<String, Object> ctx = new HashMap<>();
+
+		// given:
+		ctx.put(GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY, cachedTargetRecord);
+		ctx.put(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY, List.of(cachedTargetRecord));
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		assertEquals(List.of(cachedTargetRecord), opResponse.getDuplicateTransactionRecordsList());
+	}
+
+	@Test
+	public void recognizesMissingRecordWhenCtxGiven() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(RECORD_NOT_FOUND, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		verify(answerFunctions, never()).txnRecord(any(), any(), any());
+	}
+
+	@Test
+	public void getsDuplicateRecordsWhenRequested() throws Throwable {
+		// setup:
+		Query sensibleQuery = getRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
+		given(answerFunctions.txnRecord(recordCache, view, sensibleQuery))
+				.willReturn(Optional.of(cachedTargetRecord));
+		given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetRecordResponse opResponse = response.getTransactionGetRecord();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(cachedTargetRecord, opResponse.getTransactionRecord());
+		assertEquals(List.of(cachedTargetRecord), opResponse.getDuplicateTransactionRecordsList());
 	}
 
 	@Test
@@ -232,16 +317,21 @@ class GetTxnRecordAnswerTest {
 		assertEquals(HederaFunctionality.TransactionGetRecord, subject.canonicalFunction());
 	}
 
-	 Query getRecordQuery(TransactionID txnId, ResponseType type, long payment) throws Throwable {
+	Query getRecordQuery(TransactionID txnId, ResponseType type, long payment, boolean duplicates) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 		TransactionGetRecordQuery.Builder op = TransactionGetRecordQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder()
 						.setResponseType(type)
 						.setPayment(paymentTxn))
-				.setTransactionID(txnId);
+				.setTransactionID(txnId)
+				.setIncludeDuplicates(duplicates);
 		return Query.newBuilder()
 				.setTransactionGetRecord(op)
 				.build();
+	}
+
+	 Query getRecordQuery(TransactionID txnId, ResponseType type, long payment) throws Throwable {
+		return getRecordQuery(txnId, type, payment, false);
 	}
 
 	 ExpirableTxnRecord constructTargetRecord() {

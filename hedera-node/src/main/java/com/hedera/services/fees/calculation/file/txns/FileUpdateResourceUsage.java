@@ -64,7 +64,7 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 	) {
 		long newKeyBytes, newContentBytes, newSecs;
 		long oldKeyBytes = 0, oldContentBytes = 0, oldSecs = 0;
-		var info = view.infoFor(op.getFileID());
+		var info = view.infoForFile(op.getFileID());
 		if (info.isPresent()) {
 			var details = info.get();
 			oldSecs = details.getExpirationTime().getSeconds() - at;

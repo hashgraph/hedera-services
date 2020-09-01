@@ -319,6 +319,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		loggingOff = true;
 		return self();
 	}
+	public T logging() {
+		loggingOff = false;
+		return self();
+	}
+
 	public T recordNodePaymentAs(String s) {
 		recordsNodePayment = true;
 		nodePaymentName = s;

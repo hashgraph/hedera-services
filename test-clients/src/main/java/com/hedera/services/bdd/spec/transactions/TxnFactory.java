@@ -48,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.TRUE;
@@ -114,6 +115,10 @@ public class TxnFactory {
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
 		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
 		return (T)opBuilder.build();
+	}
+
+	public Consumer<UncheckedSubmitBody.Builder> defaultDef_UncheckedSubmitBody() {
+		return builder -> {};
 	}
 
 	public Consumer<ConsensusSubmitMessageTransactionBody.Builder> defaultDef_ConsensusSubmitMessageTransactionBody() {

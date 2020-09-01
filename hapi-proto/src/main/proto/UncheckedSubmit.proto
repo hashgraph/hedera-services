@@ -1,17 +1,19 @@
-package com.hedera.services.legacy.services.context;
+syntax = "proto3";
+
+package proto;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Network Services Protobuf
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,18 +22,12 @@ package com.hedera.services.legacy.services.context;
  * ‍
  */
 
-import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.legacy.service.GlobalFlag;
-import com.swirlds.common.PlatformStatus;
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
 
-public class DefaultCurrentPlatformStatus implements CurrentPlatformStatus {
-	@Override
-	public synchronized void set(PlatformStatus status) {
-		GlobalFlag.getInstance().setPlatformStatus(status);
-	}
-
-	@Override
-	public synchronized PlatformStatus get() {
-		return GlobalFlag.getInstance().getPlatformStatus();
-	}
+/*
+Submit an arbitrary (serialized) Transaction to the network without prechecks. Requires superuser privileges.
+*/
+message UncheckedSubmitBody {
+    bytes transactionBytes = 1; // The serialized bytes of the Transaction to be submitted without prechecks
 }

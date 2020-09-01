@@ -30,6 +30,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.legacy.core.jproto.JKey;
 
+import java.util.Map;
+
 /**
  * Defines a type able to calculate the fees required for various operations within Hedera Services.
  *
@@ -45,6 +47,11 @@ public interface FeeCalculator {
 
 	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
 	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
-	FeeObject computePayment(Query query, FeeData usagePrices, StateView view, Timestamp at);
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
+	FeeObject computePayment(
+			Query query,
+			FeeData usagePrices,
+			StateView view,
+			Timestamp at,
+			Map<String, Object> queryCtx);
 }

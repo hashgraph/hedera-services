@@ -84,7 +84,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						getAccountInfo("transferAccount")
 								.has(accountWith().balance(B)),
 						getTxnRecord("deleteTxn")
-								.has(recordWith().transfers(including(
+								.hasPriority(recordWith().transfers(including(
 										tinyBarsFromTo("toBeDeleted", "transferAccount", B)))));
 	}
 }

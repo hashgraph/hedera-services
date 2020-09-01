@@ -20,17 +20,28 @@ package com.hedera.services.context.primitives;
  * ‍
  */
 
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -46,17 +57,29 @@ import static org.mockito.BDDMockito.*;
 class StateViewTest {
 	long expiry = 2_000_000L;
 	byte[] data = "SOMETHING".getBytes();
+	byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	byte[] expectedStorage = "The Ecstasy".getBytes();
 	JFileInfo metadata;
 	JFileInfo immutableMetadata;
 	FileID target = asFile("0.0.123");
 	ContractID cid = asContract("3.2.1");
+	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+	ContractID notCid = asContract("1.2.3");
+	byte[] notCidAddress = asSolidityAddress((int) notCid.getShardNum(), notCid.getRealmNum(), notCid.getContractNum());
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
 
+	Map<byte[], byte[]> storage;
 	Map<byte[], byte[]> bytecode;
 	Map<FileID, byte[]> contents;
 	Map<FileID, JFileInfo> attrs;
+
+	FCMap<MerkleEntityId, MerkleAccount> contracts;
+
+	MerkleAccount contract;
+	MerkleAccount notContract;
+	PropertySource propertySource;
 
 	StateView subject;
 
@@ -81,14 +104,76 @@ class StateViewTest {
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
 				.build();
 
+		notContract = MapValueFactory.newAccount()
+				.isSmartContract(false)
+				.get();
+		contract = MapValueFactory.newAccount()
+				.memo("Stay cold...")
+				.isSmartContract(true)
+				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+				.proxy(asAccount("1.2.3"))
+				.senderThreshold(1_234L)
+				.receiverThreshold(4_321L)
+				.receiverSigRequired(true)
+				.balance(555L)
+				.autoRenewPeriod(1_000_000L)
+				.expirationTime(9_999_999L)
+				.get();
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
+		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
+		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
+
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
+		storage = mock(Map.class);
 		bytecode = mock(Map.class);
+		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
+		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
+		propertySource = mock(PropertySource.class);
 
-		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, StateView.EMPTY_ACCOUNTS_SUPPLIER);
+		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
-		subject.bytecode = bytecode;
+		subject.contractBytecode = bytecode;
+		subject.contractStorage = storage;
+	}
+
+	@Test
+	public void getsContractInfo() throws Exception {
+		// when:
+		var info = subject.infoForContract(cid).get();
+
+		// then:
+		assertEquals(cid, info.getContractID());
+		assertEquals(asAccount(cid), info.getAccountID());
+		assertEquals(JKey.mapJKey(contract.getKey()), info.getAdminKey());
+		assertEquals(contract.getMemo(), info.getMemo());
+		assertEquals(contract.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
+		assertEquals(contract.getBalance(), info.getBalance());
+		assertEquals(asSolidityAddressHex(asAccount(cid)), info.getContractAccountID());
+		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
+		// and:
+		assertEquals(expectedStorage.length + expectedBytecode.length, info.getStorage());
+	}
+
+	@Test
+	public void returnsEmptyOptionalIfContractMissing() {
+		given(contracts.get(any())).willReturn(null);
+
+		// expect:
+		assertTrue(subject.infoForContract(cid).isEmpty());
+	}
+
+	@Test
+	public void handlesNullKey() {
+		// given:
+		contract.setKey(null);
+
+		// when:
+		var info = subject.infoForContract(cid).get();
+
+		// then:
+		assertFalse(info.hasAdminKey());
 	}
 
 	@Test
@@ -104,17 +189,20 @@ class StateViewTest {
 
 	@Test
 	public void getsBytecode() {
-		// setup:
-		byte[] address = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-		var expected = "A Supermarket in California".getBytes();
-
-		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(address, bytes)))).willReturn(expected);
-
 		// when:
 		var actual = subject.bytecodeOf(cid);
 
 		// then:
-		assertArrayEquals(expected, actual.get());
+		assertArrayEquals(expectedBytecode, actual.get());
+	}
+
+	@Test
+	public void getsStorage() {
+		// when:
+		var actual = subject.storageOf(cid);
+
+		// then:
+		assertArrayEquals(expectedStorage, actual.get());
 	}
 
 	@Test
@@ -134,7 +222,7 @@ class StateViewTest {
 		given(contents.get(target)).willReturn(data);
 
 		// when:
-		var info = subject.infoFor(target);
+		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isPresent());
@@ -147,7 +235,7 @@ class StateViewTest {
 		given(contents.get(target)).willReturn(data);
 
 		// when:
-		var info = subject.infoFor(target);
+		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isPresent());
@@ -166,7 +254,7 @@ class StateViewTest {
 		given(attrs.get(target)).willReturn(metadata);
 
 		// when:
-		var info = subject.infoFor(target);
+		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isPresent());
@@ -174,9 +262,22 @@ class StateViewTest {
 	}
 
 	@Test
+	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
+		// setup:
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
+		given(propertySource.getIntProperty("binary.object.query.retry.times")).willReturn(3);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
 	public void returnsEmptyForMissing() {
 		// when:
-		var info = subject.infoFor(target);
+		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());
@@ -205,7 +306,7 @@ class StateViewTest {
 		given(attrs.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
-		var info = subject.infoFor(target);
+		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());

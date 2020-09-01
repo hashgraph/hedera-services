@@ -54,6 +54,8 @@ import "ConsensusUpdateTopic.proto";
 import "ConsensusDeleteTopic.proto";
 import "ConsensusSubmitMessage.proto";
 
+import "UncheckedSubmit.proto";
+
 /* A single transaction. All transaction types are possible here. */
 message TransactionBody {
   TransactionID transactionID = 1; // The ID for this transaction, which includes the payer's account (the account paying the transaction fee). If two transactions have the same transactionID, they won't both have an effect
@@ -87,5 +89,7 @@ message TransactionBody {
     ConsensusUpdateTopicTransactionBody consensusUpdateTopic = 25;
     ConsensusDeleteTopicTransactionBody consensusDeleteTopic = 26;
     ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27;
+
+    UncheckedSubmitBody uncheckedSubmit = 28;
   }
 }

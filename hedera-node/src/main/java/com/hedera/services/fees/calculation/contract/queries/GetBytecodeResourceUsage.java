@@ -31,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class GetBytecodeResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetTxnRecordResourceUsage.class);
+	private static final Logger log = LogManager.getLogger(GetBytecodeResourceUsage.class);
 
 	private static final byte[] EMPTY_BYTECODE = new byte[0];
 

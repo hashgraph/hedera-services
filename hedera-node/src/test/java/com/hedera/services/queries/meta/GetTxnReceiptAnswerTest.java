@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,6 +55,12 @@ class GetTxnReceiptAnswerTest {
 			.build();
 	private TransactionReceipt receipt = TransactionReceipt.newBuilder()
 			.setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+			.build();
+	private TransactionReceipt duplicateReceipt = TransactionReceipt.newBuilder()
+			.setStatus(DUPLICATE_TRANSACTION)
+			.build();
+	private TransactionReceipt unclassifiableReceipt = TransactionReceipt.newBuilder()
+			.setStatus(INVALID_NODE_ACCOUNT)
 			.build();
 
 	StateView view;
@@ -92,7 +100,7 @@ class GetTxnReceiptAnswerTest {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId);
 
-		given(recordCache.getReceipt(validTxnId)).willReturn(null);
+		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(null);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -103,11 +111,13 @@ class GetTxnReceiptAnswerTest {
 	}
 
 	@Test
-	public void shortCircuitsToAnswerOnly() {
+	public void returnsDuplicatesIfRequested() {
 		// setup:
-		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
+		Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, true);
+		var duplicateReceipts = List.of(duplicateReceipt, unclassifiableReceipt);
 
-		given(recordCache.getReceipt(validTxnId)).willReturn(receipt);
+		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
+		given(recordCache.getDuplicateReceipts(validTxnId)).willReturn(duplicateReceipts);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -118,6 +128,27 @@ class GetTxnReceiptAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
 		assertEquals(receipt, opResponse.getReceipt());
+		assertEquals(duplicateReceipts, opResponse.getDuplicateTransactionReceiptsList());
+	}
+
+	@Test
+	public void shortCircuitsToAnswerOnly() {
+		// setup:
+		Query sensibleQuery = queryWith(validTxnId, ResponseType.COST_ANSWER);
+
+		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
+
+		// when:
+		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+
+		// then:
+		TransactionGetReceiptResponse opResponse = response.getTransactionGetReceipt();
+		assertTrue(opResponse.hasHeader(), "Missing response header!");
+		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
+		assertEquals(receipt, opResponse.getReceipt());
+		assertTrue(opResponse.getDuplicateTransactionReceiptsList().isEmpty());
+		verify(recordCache, never()).getDuplicateReceipts(any());
 	}
 
 	@Test
@@ -169,11 +200,16 @@ class GetTxnReceiptAnswerTest {
 		assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
 	}
 
-	private Query queryWith(TransactionID txnId, ResponseType type) {
+	private Query queryWith(TransactionID txnId, ResponseType type, boolean duplicates) {
 		TransactionGetReceiptQuery.Builder op = TransactionGetReceiptQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(type))
-				.setTransactionID(txnId);
+				.setTransactionID(txnId)
+				.setIncludeDuplicates(duplicates);
 		return Query.newBuilder().setTransactionGetReceipt(op).build();
+	}
+
+	private Query queryWith(TransactionID txnId, ResponseType type) {
+		return queryWith(txnId, type, false);
 	}
 
 	private Query queryWith(TransactionID txnId) {

@@ -20,6 +20,7 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
@@ -76,6 +77,8 @@ class AnswerFunctionsTest {
 	private RecordCache recordCache;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
+	private PropertySource properties;
+
 	private AnswerFunctions subject;
 
 	@BeforeEach
@@ -86,7 +89,8 @@ class AnswerFunctionsTest {
 
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+		properties = mock(PropertySource.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, properties);
 
 		recordCache = mock(RecordCache.class);
 
@@ -98,7 +102,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(absentTxnId);
 
-		given(recordCache.getRecord(absentTxnId)).willReturn(null);
+		given(recordCache.getPriorityRecord(absentTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -112,7 +116,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.getRecord(targetTxnId)).willReturn(null);
+		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(null);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
@@ -126,7 +130,7 @@ class AnswerFunctionsTest {
 		// setup:
 		Query validQuery = getRecordQuery(targetTxnId);
 
-		given(recordCache.getRecord(targetTxnId)).willReturn(cachedTargetRecord);
+		given(recordCache.getPriorityRecord(targetTxnId)).willReturn(cachedTargetRecord);
 
 		// when:
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);

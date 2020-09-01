@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZE
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.io.Files;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.files.HederaFs;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -132,6 +134,8 @@ class AwareFcfsUsagePricesTest {
 
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		given(accessor.getTxnId()).willReturn(cryptoTransferTxn.getTransactionID());
+		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.accessor()).willReturn(accessor);
 
@@ -156,6 +160,7 @@ class AwareFcfsUsagePricesTest {
 		subject.loadPriceSchedules();
 		// and:
 		given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(accessor.getFunction()).willReturn(UNRECOGNIZED);
 
 		// when:
 		FeeData actual = subject.activePrices();
@@ -227,10 +232,30 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void throwsNfseOnBadScheduleInFcfs() {
+	public void throwsNfseOnMissingScheduleInFcfs() {
 		given(hfs.exists(schedules)).willReturn(false);
 
 		// expect:
 		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+	}
+
+	@Test
+	public void throwsNfseOnBadScheduleInFcfs() {
+		given(hfs.exists(schedules)).willReturn(true);
+		given(hfs.cat(any())).willReturn("NONSENSE".getBytes());
+
+		// expect:
+		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+	}
+
+	@Test
+	public void usesDefaultPricesForUnexpectedFailure() {
+		given(accessor.getFunction()).willThrow(IllegalStateException.class);
+
+		// when:
+		var prices = subject.activePrices();
+
+		// then:
+		assertEquals(DEFAULT_USAGE_PRICES, prices);
 	}
 }

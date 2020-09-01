@@ -52,7 +52,7 @@ public class GetFileContentsResourceUsage implements QueryResourceUsageEstimator
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
 		try {
 			var op = query.getFileGetContents();
-			var info = view.infoFor(op.getFileID());
+			var info = view.infoForFile(op.getFileID());
 			return usageEstimator.getFileContentQueryFeeMatrices((int)info.get().getSize(), type);
 		} catch (Exception illegal) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, illegal);

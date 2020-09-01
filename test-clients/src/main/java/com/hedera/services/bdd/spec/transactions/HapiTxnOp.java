@@ -118,6 +118,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	abstract protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec);
 
+	public byte[] serializeSignedTxnFor(HapiApiSpec spec) throws Throwable {
+		return finalizedTxn(spec, opBodyDef(spec)).toByteArray();
+	}
+
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		stats = new TxnObs(type());
@@ -547,6 +551,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T noLogging() {
 		loggingOff = true;
+		return self();
+	}
+
+	public T logging() {
+		loggingOff = false;
 		return self();
 	}
 
