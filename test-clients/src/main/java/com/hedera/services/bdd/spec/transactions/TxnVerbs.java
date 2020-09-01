@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -97,6 +98,11 @@ public class TxnVerbs {
 	}
 	public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
 		return new HapiFileDelete(fileNameSupplier);
+	}
+
+	/* TOKEN */
+	public static HapiTokenCreate tokenCreate(String token) {
+		return new HapiTokenCreate(token);
 	}
 
 	/* SYSTEM */

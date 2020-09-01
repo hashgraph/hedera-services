@@ -228,6 +228,9 @@ public class HapiSpecSetup {
 	}
 	public long defaultThroughputObsExpiryMs() { return props.getLong("default.throughputObs.expiry.ms"); }
 	public long defaultThroughputObsSleepMs() { return props.getLong("default.throughputObs.sleep.ms"); }
+	public String defaultTokenSymbol() { return props.get("default.token.symbol"); }
+	public long defaultTokenFloat() { return props.getLong("default.token.float"); }
+	public int defaultTokenDivisibility() { return props.getInteger("default.token.divisibility"); }
 	public int defaultTopicRunningHashVersion() { return props.getInteger("default.topic.runningHash.version"); }
 	public AccountID defaultTransfer() {
 		return props.getAccount("default.transfer");

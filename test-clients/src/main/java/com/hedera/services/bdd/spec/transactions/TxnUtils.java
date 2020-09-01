@@ -26,6 +26,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -63,6 +65,10 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static java.util.stream.Collectors.toList;
@@ -300,5 +306,37 @@ public class TxnUtils {
 				.filter(aa -> aa.getAccountID().equals(payer) && aa.getAmount() < 0)
 				.findAny();
 		return deduction.isPresent() ? OptionalLong.of(deduction.get().getAmount()) : OptionalLong.empty();
+	}
+
+	public static FeeData defaultPartitioning(FeeComponents components, int numPayerKeys) {
+		var partitions = FeeData.newBuilder();
+
+		long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR);
+		var network = FeeComponents.newBuilder()
+				.setConstant(FEE_MATRICES_CONST)
+				.setBpt(components.getBpt())
+				.setVpt(components.getVpt())
+				.setRbh(networkRbh);
+
+		var node = FeeComponents.newBuilder()
+				.setConstant(FEE_MATRICES_CONST)
+				.setBpt(components.getBpt())
+				.setVpt(numPayerKeys)
+				.setBpr(components.getBpr())
+				.setSbpr(components.getSbpr());
+
+		var service = FeeComponents.newBuilder()
+				.setConstant(FEE_MATRICES_CONST)
+				.setRbh(components.getRbh())
+				.setSbh(components.getSbh())
+				.setTv(components.getTv());
+
+		partitions.setNetworkdata(network).setNodedata(node).setServicedata(service);
+
+		return partitions.build();
+	}
+
+	public static long nonDegenerateDiv(long dividend, int divisor) {
+		return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
 	}
 }
