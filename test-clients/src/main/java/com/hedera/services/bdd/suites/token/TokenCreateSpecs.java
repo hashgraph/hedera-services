@@ -59,7 +59,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationRequiresAppropriateSigs() {
 		String token = "frozenToken";
 
-		return defaultHapiSpec("DefaultTokenCreateWorks")
+		return defaultHapiSpec("CreationRequiresAppropriateSigs")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -96,7 +96,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec initialFloatMustBeSane() {
 		String token = "myToken";
 
-		return defaultHapiSpec("DefaultTokenCreateWorks")
+		return defaultHapiSpec("InitialFloatMustBeSane")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
 				).when(
@@ -123,7 +123,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		int divisibility = 1;
 		long tokenFloat = 100_000;
 
-		return defaultHapiSpec("DefaultTokenCreateWorks")
+		return defaultHapiSpec("TreasuryHasCorrectBalance")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(A_HUNDRED_HBARS)
