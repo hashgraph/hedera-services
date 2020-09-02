@@ -60,11 +60,20 @@ class TokenControllerTest {
 	}
 
 	@Test
-	public void forwardsUncheckedSubmitAsExpected() {
+	public void forwardTokenCreateAsExpected() {
 		// when:
 		subject.createToken(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_CREATE_METRIC);
+	}
+
+	@Test
+	public void forwardTokenTransactAsExpected() {
+		// when:
+		subject.transferTokens(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_TRANSACT_METRIC);
 	}
 }

@@ -29,6 +29,11 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Predicate;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
+
 public class TokenTransactTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenTransactTransitionLogic.class);
 
@@ -42,11 +47,18 @@ public class TokenTransactTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		throw new AssertionError("Not implemented");
+		try {
+			var op = txnCtx.accessor().getTxn().getTokenTransfers();
+			var outcome = ledger.doAtomicZeroSumTokenTransfers(op);
+			txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
+		} catch (Exception e) {
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			txnCtx.setStatus(FAIL_INVALID);
+		}
 	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		throw new AssertionError("Not implemented");
+		return TransactionBody::hasTokenTransfers;
 	}
 }

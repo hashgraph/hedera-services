@@ -142,14 +142,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		adminKey = netOf(spec, adminKeyName, Optional.empty(), Optional.empty(), Optional.of(this::effectiveKeyGen));
+		String usableSymbol = symbol.orElse(token);
 		TokenCreation opBody = spec
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(
 						TokenCreation.class, b -> {
 							b.setAdminKey(adminKey);
+							b.setSymbol(usableSymbol);
 							initialFloat.ifPresent(a -> b.setFloat(a));
 							divisibility.ifPresent(d -> b.setDivisibility(d));
-							symbol.ifPresent(s -> b.setSymbol(s));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
 							freezeDefault.ifPresent(f -> b.setFreezeDefault(f));
@@ -177,6 +178,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			return;
 		}
 		spec.registry().saveKey(token, adminKey);
+		spec.registry().saveSymbol(token, symbol.orElse(token));
 		spec.registry().saveTokenId(token, lastReceipt.getTokenId());
 	}
 

@@ -32,4 +32,5 @@ import "Transaction.proto";
 /* The requests and responses for different network services. */
 service TokenService {
     rpc createToken (Transaction) returns (TransactionResponse);
+    rpc transferTokens (Transaction) returns (TransactionResponse);
 }

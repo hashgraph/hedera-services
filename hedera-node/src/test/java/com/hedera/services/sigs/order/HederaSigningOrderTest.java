@@ -87,6 +87,7 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -1124,6 +1125,18 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
+	@Test
+	public void getsTokenTransactAllSenders() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
@@ -1152,7 +1165,6 @@ public class HederaSigningOrderTest {
 	) throws Throwable {
 		setupFor(scenario, waclSigns, updateAccountSigns, Optional.empty());
 	}
-
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,

@@ -34,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -226,6 +227,8 @@ public class HederaSigningOrder {
 	) {
 		if (txn.hasTokenCreation()) {
 			return Optional.of(tokenCreate(txn.getTokenCreation(), factory));
+		} else if (txn.hasTokenTransfers()) {
+			return Optional.of(tokenTransact(txn.getTransactionID(), txn.getTokenTransfers(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -510,6 +513,29 @@ public class HederaSigningOrder {
 
 		addToMutableReqIfPresent(op, TokenCreation::hasAdminKey, TokenCreation::getAdminKey, required);
 		addToMutableReqIfPresent(op, TokenCreation::hasFreezeKey, TokenCreation::getFreezeKey, required);
+
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> tokenTransact(
+			TransactionID txnId,
+			TokenTransfers op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		for (TokenTransfer transfer : op.getTransfersList()) {
+			if (transfer.getAmount() < 0) {
+				var account = transfer.getAccount();
+				var result = sigMetaLookup.accountSigningMetaFor(account);
+				if (result.succeeded())	 {
+					required = mutable(required);
+					required.add(result.metadata().getKey());
+				} else {
+					return factory.forMissingAccount(account, txnId);
+				}
+			}
+		}
 
 		return factory.forValidOrder(required);
 	}

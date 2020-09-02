@@ -60,6 +60,17 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
+				.withAccount(FIRST_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(FIRST_TOKEN_SENDER_KT).get())
+				.withAccount(SECOND_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(SECOND_TOKEN_SENDER_KT).get())
+				.withAccount(TOKEN_RECEIVER_ID,
+						newAccount()
+								.balance(0L).get())
 				.withAccount(DEFAULT_NODE_ID,
 						newAccount()
 								.balance(0L)
@@ -267,13 +278,20 @@ public interface TxnHandlingScenario {
 
 	String KNOWN_TOKEN_NO_FREEZE_ID = "0.0.666";
 	TokenID KNOWN_TOKEN_NO_FREEZE = asToken(KNOWN_TOKEN_NO_FREEZE_ID);
-
 	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";
 	TokenID KNOWN_TOKEN_WITH_FREEZE = asToken(KNOWN_TOKEN_WITH_FREEZE_ID);
+	String FIRST_TOKEN_SENDER_ID = "0.0.888";
+	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
+	String SECOND_TOKEN_SENDER_ID = "0.0.999";
+	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
+	String TOKEN_RECEIVER_ID = "0.0.1111";
+	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
 
 	String UNKNOWN_TOKEN_ID = "0.0.666";
 	TokenID UNKNOWN_TOKEN = asToken(UNKNOWN_TOKEN_ID);
 
+	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
+	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree TOKEN_ADMIN_KT = withRoot(ed25519());
 	KeyTree TOKEN_FREEZE_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());

@@ -73,6 +73,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
 		permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
 		permissionKeys.put(TokenCreate, "tokenCreate");
+		permissionKeys.put(TokenTransact, "tokenTransact");
 		permissionKeys.put(SystemDelete, "systemDelete");
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");

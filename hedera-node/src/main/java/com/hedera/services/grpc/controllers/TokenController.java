@@ -33,6 +33,7 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	private static final Logger log = LogManager.getLogger(TokenController.class);
 
 	public static final String TOKEN_CREATE_METRIC = "createToken";
+	public static final String TOKEN_TRANSACT_METRIC = "transferTokens";
 
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
@@ -48,5 +49,9 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void createToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.respondToToken(signedTxn, observer, TOKEN_CREATE_METRIC);
+	}
+	@Override
+	public void transferTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_TRANSACT_METRIC);
 	}
 }

@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -118,10 +119,13 @@ public class TxnFactory {
 		return (T)opBuilder.build();
 	}
 
+	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {
+		return builder -> {};
+	}
+
 	public Consumer<TokenCreation.Builder> defaultDef_TokenCreation() {
 		return builder -> {
 			builder.setTreasury(setup.defaultPayer());
-			builder.setSymbol(setup.defaultTokenSymbol());
 			builder.setDivisibility(setup.defaultTokenDivisibility());
 			builder.setFloat(setup.defaultTokenFloat());
 		};

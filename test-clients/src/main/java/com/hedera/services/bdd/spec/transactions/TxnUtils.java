@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,9 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenTransfer;
+import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -52,6 +55,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
@@ -59,10 +63,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -71,9 +77,13 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class TxnUtils {
 	public static final int BYTES_4K = 4 * (1 << 10);
@@ -219,16 +229,16 @@ public class TxnUtils {
 
 	public static String solidityIdFrom(ContractID contract) {
 		return ByteUtil.toHexString(ByteUtil.merge(
-					ByteUtil.intToBytes((int)contract.getShardNum()),
-					ByteUtil.longToBytes(contract.getRealmNum()),
-					ByteUtil.longToBytes(contract.getContractNum())));
+				ByteUtil.intToBytes((int) contract.getShardNum()),
+				ByteUtil.longToBytes(contract.getRealmNum()),
+				ByteUtil.longToBytes(contract.getContractNum())));
 	}
 
 	public static TransactionID extractTxnId(Transaction txn) throws Throwable {
 		return extractTransactionBody(txn).getTransactionID();
 	}
 
-	public static TransferList asTransferList(List<AccountAmount>... specifics)	 {
+	public static TransferList asTransferList(List<AccountAmount>... specifics) {
 		TransferList.Builder builder = TransferList.newBuilder();
 		Arrays.stream(specifics).forEach(builder::addAllAccountAmounts);
 		return builder.build();
@@ -280,7 +290,7 @@ public class TxnUtils {
 				.setRealmNum(id.getRealmNum())
 				.setTopicNum(id.getAccountNum())
 				.build();
-        }
+	}
 
 	public static byte[] randomUtf8Bytes(int n) {
 		byte[] data = new byte[n];
@@ -291,6 +301,27 @@ public class TxnUtils {
 			i += rnd.length;
 		}
 		return data;
+	}
+
+	public static String readableTokenTransferList(TokenTransfers xfers) {
+		Map<TokenRef, List<AccountAmount>> inter = xfers.getTransfersList()
+				.stream()
+				.collect(groupingBy(
+						TokenTransfer::getToken,
+						mapping(TxnUtils::projecting, toList())));
+		return inter.entrySet().stream()
+				.map(entry -> String.format("%s(%s)",
+						entry.getKey().hasTokenId()
+								? asTokenString(entry.getKey().getTokenId())
+								: entry.getKey().getSymbol()))
+				.collect(Collectors.joining(", "));
+	}
+
+	private static AccountAmount projecting(TokenTransfer xfer) {
+		return AccountAmount.newBuilder()
+				.setAccountID(xfer.getAccount())
+				.setAmount(xfer.getAmount())
+				.build();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {

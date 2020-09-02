@@ -51,8 +51,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -138,23 +136,23 @@ public class HederaLedgerTest {
 
 	TokenTransfers multipleValidTokenTransfers = TokenTransfers.newBuilder()
 			.addAllTransfers(List.of(
-					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
-					fromRef(otherSymbol, misc, +1_000), fromId(tokenId, rand, -1_000)
+					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
+					IdUtils.fromRef(otherSymbol, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
 			)).build();
 	TokenTransfers missingSymbolTokenTransfers = TokenTransfers.newBuilder()
 			.addAllTransfers(List.of(
-					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
-					fromRef(missingSymbol, misc, +1_000), fromId(tokenId, rand, -1_000)
+					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
+					IdUtils.fromRef(missingSymbol, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
 			)).build();
 	TokenTransfers missingIdTokenTransfers = TokenTransfers.newBuilder()
 			.addAllTransfers(List.of(
-					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
-					fromId(missingId, misc, +1_000), fromId(tokenId, rand, -1_000)
+					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
+					IdUtils.fromId(missingId, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
 			)).build();
 	TokenTransfers unmatchedTokenTransfers = TokenTransfers.newBuilder()
 			.addAllTransfers(List.of(
-					fromRef(frozenSymbol, misc, +1_000), fromId(frozenId, rand, -1_000),
-					fromRef(frozenSymbol, misc, +2_000), fromId(frozenId, rand, -1_000)
+					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
+					IdUtils.fromRef(frozenSymbol, misc, +2_000), IdUtils.fromId(frozenId, rand, -1_000)
 			)).build();
 
 	FCMapBackingAccounts backingAccounts;
@@ -167,22 +165,6 @@ public class HederaLedgerTest {
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
-
-	private TokenTransfer fromRef(String symbol, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.setAccount(account)
-				.setAmount(amount)
-				.build();
-	}
-
-	private TokenTransfer fromId(TokenID token, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(token))
-				.setAccount(account)
-				.setAmount(amount)
-				.build();
-	}
 
 	@BeforeEach
 	private void setupWithMockLedger() {

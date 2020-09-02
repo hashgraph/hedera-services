@@ -2783,6 +2783,8 @@ jobs:
     steps:
       - run-eet-suites:
           dsl-args: "TokenCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenTransactSpecs"
   run-file-scenarios:
     parameters:
       runner:

@@ -266,6 +266,8 @@ public class MiscUtils {
 			return "submitMessage";
 		} else if (txn.hasTokenCreation()) {
 			return "tokenCreate";
+		} else if (txn.hasTokenTransfers()) {
+			return "tokenTransact";
 		} else {
 			return "NotImplemented";
 		}
@@ -316,6 +318,8 @@ public class MiscUtils {
 			return ConsensusSubmitMessage;
 		} else if (txn.hasTokenCreation()) {
 			return TokenCreate;
+		} else if (txn.hasTokenTransfers()) {
+			return TokenTransact;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

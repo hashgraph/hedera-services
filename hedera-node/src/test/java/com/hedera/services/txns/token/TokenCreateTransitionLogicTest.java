@@ -38,7 +38,6 @@ import org.junit.runner.RunWith;
 import java.math.BigInteger;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -64,7 +63,6 @@ class TokenCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
