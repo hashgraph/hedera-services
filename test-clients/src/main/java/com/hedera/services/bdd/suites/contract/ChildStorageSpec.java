@@ -134,15 +134,18 @@ public class ChildStorageSpec extends HapiApiSuite {
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 0)
 						.has(resultWith().resultThruAbi(
 						GET_CHILD_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(child0) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(child0) })))
+						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 1)
 						.has(resultWith().resultThruAbi(
 						GET_CHILD_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(child1) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(child1) })))
+						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_MY_VALUE_ABI)
 						.has(resultWith().resultThruAbi(
 						GET_MY_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(parent) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(parent) })))
+						.expectStrictCostAnswer(),
 		};
 	}
 
