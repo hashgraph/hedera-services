@@ -1041,24 +1041,19 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - X-disable-master
     jobs:
       - fast-build-artifact:
           context: Slack
-      - regression-target-testnet:
+      - start-singlejob-testnet:
           context: Slack
           requires:
             - fast-build-artifact
-          pre-steps:
-            - attach_workspace:
-                at: /
-            - start-testnet:
-                use-existing-network: true
-                use-hugepage: true
+          workflow-name: "custom-migration"
       - run-custom-migration:
           context: Slack
           requires:
-            - regression-target-testnet
+            - start-singlejob-testnet
   nightly-simulate-network-outage:
     triggers:
         - schedule:
@@ -2035,7 +2030,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=17,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true
@@ -2051,7 +2046,7 @@ jobs:
           at: /
       - run-eet-suites:
           dsl-args: "UmbrellaRedux"
-          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=10"
+          ci-properties-map: "duration=85,unit=MINUTES,props=regression-file_ops.properties,maxOpsPerSec=20"
           node-terraform-index: 0
           node-account: 3
           perf-run: true

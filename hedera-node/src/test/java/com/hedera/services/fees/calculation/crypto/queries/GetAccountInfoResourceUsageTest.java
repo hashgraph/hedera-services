@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -58,12 +59,15 @@ class GetAccountInfoResourceUsageTest {
 	String a = "0.0.1234";
 	MerkleAccount aValue;
 
+	PropertySource propertySource;
+
 	@BeforeEach
 	private void setup() throws Throwable {
 		aValue = MapValueFactory.newAccount().accountKeys(aKey).get();
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+		propertySource = mock(PropertySource.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
 
 		subject = new GetAccountInfoResourceUsage(usageEstimator);
 	}

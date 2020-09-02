@@ -196,6 +196,10 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 		}
 		spec.registry().saveFileId(fileName, lastReceipt.getFileID());
 		spec.registry().saveTimestamp(fileName, expiryUsed.get());
+		if (verboseLoggingOn) {
+			log.info("Created file {} with ID {}.",  fileName , lastReceipt.getFileID());
+		}
+
 	}
 
 	@Override
