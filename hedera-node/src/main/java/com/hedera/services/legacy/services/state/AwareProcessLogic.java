@@ -191,7 +191,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
+		log.info("debug log for duplicate transaction : {}", ctx.txnCtx().accessor().getSignedTxn4Log());
 		if (duplicity == DUPLICATE) {
+			log.info("found duplicate transaction : {}", ctx.txnCtx().accessor().getTxnId());
 			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
 			return;

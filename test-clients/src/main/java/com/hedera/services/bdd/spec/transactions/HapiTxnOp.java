@@ -211,6 +211,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	private TransactionResponse timedCall(HapiApiSpec spec, Transaction txn) {
+		log.info("Transaction ID : {}", txn.getBody().getTransactionID());
 		submitTime = System.currentTimeMillis();
 		TransactionResponse response = callToUse(spec).apply(txn);
 		long after = System.currentTimeMillis();

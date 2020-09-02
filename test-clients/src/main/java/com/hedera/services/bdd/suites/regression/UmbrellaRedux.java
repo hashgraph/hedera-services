@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,6 +75,7 @@ public class UmbrellaRedux extends HapiApiSuite {
 				.withProperties(Map.of(
 						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
 				.given(
+						UtilVerbs.sleepFor(new Random().nextInt(1000)),
 						cryptoCreate(UNIQUE_PAYER_ACCOUNT)
 								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
 								.withRecharging()
