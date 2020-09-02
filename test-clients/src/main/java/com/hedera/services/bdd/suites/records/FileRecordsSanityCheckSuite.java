@@ -77,18 +77,6 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec fileCreateRecordSanityChecksWithTls() {
-		return defaultHapiSpec("FileCreateRecordSanityChecksWithTls")
-				.given(
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
-				).when(
-						fileCreate("test").via("txn")
-				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
-						validateRecordTransactionFees("txn")
-				);
-	}
-
 	private HapiApiSpec fileDeleteRecordSanityChecks() {
 		return defaultHapiSpec("FileDeleteRecordSanityChecks")
 				.given(flattened(
