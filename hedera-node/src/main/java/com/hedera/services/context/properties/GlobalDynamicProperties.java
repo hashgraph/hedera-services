@@ -32,6 +32,6 @@ public class GlobalDynamicProperties {
 	}
 
 	public int maxTokenSymbolLength() {
-		return 10;
+		return 32;
 	}
 }
