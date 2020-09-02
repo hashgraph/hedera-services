@@ -26,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
@@ -46,8 +47,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 						fileCreateRecordSanityChecks(),
 						fileDeleteRecordSanityChecks(),
 						fileAppendRecordSanityChecks(),
-						fileUpdateRecordSanityChecks(),
-						fileCreateRecordSanityChecksWithTls()
+						fileUpdateRecordSanityChecks()
 				}
 		);
 	}
@@ -67,18 +67,6 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 
 	private HapiApiSpec fileCreateRecordSanityChecks() {
 		return defaultHapiSpec("FileCreateRecordSanityChecks")
-				.given(
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
-				).when(
-						fileCreate("test").via("txn")
-				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
-						validateRecordTransactionFees("txn")
-				);
-	}
-
-	private HapiApiSpec fileCreateRecordSanityChecksWithTls() {
-		return defaultHapiSpec("FileCreateRecordSanityChecksWithTls")
 				.given(
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				).when(
@@ -113,6 +101,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 								.via("txn")
 								.fee(95_000_000L)
 				).then(
+						getFileInfo("test").expectStrictCostAnswer(),
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
 				);
