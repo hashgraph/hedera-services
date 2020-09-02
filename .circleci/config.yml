@@ -2743,8 +2743,8 @@ jobs:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
           dsl-args: "ConsensusThrottlesSpecs"
-      - run-eet-suites:
-          dsl-args: "BucketThrottlingSpec"
+#      - run-eet-suites:
+#          dsl-args: "BucketThrottlingSpec"
       - run-eet-suites:
           dsl-args: "ControlAccountsExemptForUpdates"
       - run-scenario-test:
