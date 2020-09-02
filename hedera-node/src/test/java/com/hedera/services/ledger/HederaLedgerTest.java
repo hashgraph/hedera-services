@@ -20,8 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
@@ -346,7 +345,7 @@ public class HederaLedgerTest {
 				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
 		tokenStore = new HederaTokenStore(
 				ids,
-				new GlobalDynamicProperties(mock(PropertySource.class)),
+				new MockGlobalDynamicProps(),
 				() -> tokens);
 		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
 	}
@@ -737,6 +736,7 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
+		System.out.println(tokenStore.createProvisionally(stdWith("Mine", a), a).getStatus());
 		tA = tokenStore.createProvisionally(stdWith("Mine", a), a).getCreated().get();
 		tokenStore.commitCreation();
 		tB = tokenStore.createProvisionally(stdWith("Yours", b), b).getCreated().get();

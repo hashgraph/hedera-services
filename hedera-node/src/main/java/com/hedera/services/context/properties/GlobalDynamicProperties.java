@@ -23,15 +23,43 @@ package com.hedera.services.context.properties;
 public class GlobalDynamicProperties {
 	private final PropertySource properties;
 
+	private int maxTokensPerAccount;
+	private int maxTokensSymbolLength;
+	private long maxAccountNum;
+	private long defaultContractSendThreshold;
+	private long defaultContractReceiveThreshold;
+
 	public GlobalDynamicProperties(PropertySource properties) {
 		this.properties = properties;
+
+		reload();
+	}
+
+	public void reload() {
+		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
+		maxTokensSymbolLength = properties.getIntProperty("tokens.maxSymbolLength");
+		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
+		defaultContractSendThreshold = properties.getLongProperty("contracts.defaultSendThreshold");
+		defaultContractReceiveThreshold = properties.getLongProperty("contracts.defaultReceiveThreshold");
+	}
+
+	public long defaultContractSendThreshold() {
+		return defaultContractSendThreshold;
+	}
+
+	public long defaultContractReceiveThreshold() {
+		return defaultContractReceiveThreshold;
 	}
 
 	public int maxTokensPerAccount() {
-		return 1_000;
+		return maxTokensPerAccount;
 	}
 
 	public int maxTokenSymbolLength() {
-		return 32;
+		return maxTokensSymbolLength;
+	}
+
+	public long maxAccountNum() {
+		return maxAccountNum;
 	}
 }

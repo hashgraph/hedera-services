@@ -176,24 +176,12 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
 	}
 
-	public static long getDefaultContractSenderThreshold() {
-		return SyncPropertiesObject.getDefaultContractSenderThreshold();
-	}
-
-	public static long getDefaultContractReceiverThreshold() {
-		return SyncPropertiesObject.getDefaultContractReceiverThreshold();
-	}
-
 	public static long getNodeAccountBalanceValidity() {
 		return SyncPropertiesObject.getNodeAccountBalanceValidity();
 	}
 
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
-	}
-
-	public static long getConfigAccountNum() {
-		return SyncPropertiesObject.getConfigAccountNum();
 	}
 
 	public static int getlocalCallEstReturnBytes() {

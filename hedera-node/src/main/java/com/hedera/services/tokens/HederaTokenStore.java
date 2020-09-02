@@ -56,9 +56,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static java.util.stream.IntStream.range;
 
 /**
@@ -264,10 +267,16 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum symbolCheck(String symbol) {
-		if (symbol.length() < 1 || symbol.length() > properties.maxTokenSymbolLength()) {
-			return INVALID_TOKEN_SYMBOL;
+		if (symbolKeyedIds.containsKey(symbol)) {
+			return TOKEN_SYMBOL_ALREADY_IN_USE;
 		}
-		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isAlphabetic)
+		if (symbol.length() < 1) {
+			return MISSING_TOKEN_SYMBOL;
+		}
+		if (symbol.length() > properties.maxTokenSymbolLength()) {
+			return TOKEN_SYMBOL_TOO_LONG;
+		}
+		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isLetterOrDigit)
 				? OK
 				: INVALID_TOKEN_SYMBOL;
 	}

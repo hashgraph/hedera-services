@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -174,7 +175,7 @@ public class SmartContractRequestHandlerMiscTest {
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));

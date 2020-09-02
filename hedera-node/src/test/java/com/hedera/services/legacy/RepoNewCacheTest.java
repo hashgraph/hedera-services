@@ -22,6 +22,7 @@ package com.hedera.services.legacy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
@@ -36,7 +37,6 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
-import com.hedera.test.mocks.TestProperties;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -62,7 +62,6 @@ import org.spongycastle.util.encoders.Hex;
 import static org.mockito.BDDMockito.*;
 
 public class RepoNewCacheTest {
-
   @Ignore
   public void test() {
     FCMap<MerkleEntityId, MerkleAccount> accountMap =
@@ -81,7 +80,7 @@ public class RepoNewCacheTest {
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
     byte[] keyByte = null;
@@ -198,7 +197,7 @@ public class RepoNewCacheTest {
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
     String someKey = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));

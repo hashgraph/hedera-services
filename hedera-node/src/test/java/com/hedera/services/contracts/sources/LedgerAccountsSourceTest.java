@@ -20,6 +20,8 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
@@ -60,16 +62,17 @@ class LedgerAccountsSourceTest {
 	byte[] key = EntityIdUtils.asSolidityAddress(1, 2, 13257);
 
 	HederaLedger ledger;
-	PropertySource properties;
 
 	LedgerAccountsSource subject;
 
 	@BeforeEach
 	void setup() {
-		properties = mock(PropertySource.class);
+		var props = mock(GlobalDynamicProperties.class);
+		given(props.defaultContractReceiveThreshold()).willReturn(receiveThreshold);
+		given(props.defaultContractSendThreshold()).willReturn(sendThreshold);
 		ledger = mock(HederaLedger.class);
 
-		subject = new LedgerAccountsSource(ledger, properties);
+		subject = new LedgerAccountsSource(ledger, props);
 	}
 
 	@Test
@@ -194,8 +197,6 @@ class LedgerAccountsSourceTest {
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> txnLedger = mock(TransactionalLedger.class);
 
-		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn(sendThreshold);
-		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn(receiveThreshold);
 		given(ledger.exists(target)).willReturn(false);
 
 		// when:
@@ -259,7 +260,5 @@ class LedgerAccountsSourceTest {
 		verify(txnLedger).set(target, AUTO_RENEW_PERIOD, autoRenew);
 		verify(txnLedger).set(target, PROXY, EntityId.ofNullableAccountId(proxy));
 		verify(txnLedger).set(target, MEMO, "");
-		// and:
-		verify(properties, never()).getLongProperty(any());
 	}
 }

@@ -433,7 +433,7 @@ public class ServicesContext {
 
 	public LedgerValidator ledgerValidator() {
 		if (ledgerValidator == null) {
-			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties());
+			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties(), globalDynamicProperties());
 		}
 		return ledgerValidator;
 	}
@@ -819,7 +819,8 @@ public class ServicesContext {
 					properties(),
 					contents -> {
 						var config = uncheckedParse(contents);
-						((StandardizedPropertySources) propertySources()).updateThrottlePropsFrom(config);
+						((StandardizedPropertySources) propertySources()).reloadFrom(config);
+						globalDynamicProperties().reload();
 						populateApplicationPropertiesWithProto(config);
 					},
 					ConfigListUtils::isConfigList
@@ -1226,7 +1227,8 @@ public class ServicesContext {
 						}
 					},
 					config -> {
-						((StandardizedPropertySources) propertySources()).updateThrottlePropsFrom(config);
+						((StandardizedPropertySources)propertySources()).reloadFrom(config);
+						globalDynamicProperties().reload();
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
 					PropertiesLoader::populateAPIPropertiesWithProto);
@@ -1261,7 +1263,9 @@ public class ServicesContext {
 					NOOP_EXPIRING_CREATIONS,
 					NOOP_RECORDS_HISTORIAN,
 					pureDelegate);
-			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger, properties());
+			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(
+					pureLedger,
+					globalDynamicProperties());
 			newPureRepo = () -> {
 				var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());
 				pureRepository.setStoragePersistence(storagePersistence());
@@ -1280,7 +1284,7 @@ public class ServicesContext {
 
 	public LedgerAccountsSource accountSource() {
 		if (accountSource == null) {
-			accountSource = new LedgerAccountsSource(ledger(), properties());
+			accountSource = new LedgerAccountsSource(ledger(), globalDynamicProperties());
 		}
 		return accountSource;
 	}

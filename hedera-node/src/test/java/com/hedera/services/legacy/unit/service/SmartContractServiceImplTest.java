@@ -36,6 +36,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
@@ -230,7 +231,7 @@ public class SmartContractServiceImplTest {
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),
 				delegate);
-		ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+		ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
 		Source<byte[], AccountState> accountSource = ledgerSource;
 		repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 		repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));

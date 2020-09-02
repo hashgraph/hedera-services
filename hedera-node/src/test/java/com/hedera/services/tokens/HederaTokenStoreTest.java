@@ -54,6 +54,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
+import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -501,7 +502,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsInvalidSymbol() {
+	public void rejectsSymbolTooLong() {
 		// given:
 		var req = fullyValidAttempt()
 				.setSymbol(IntStream.range(0, MAX_TOKEN_SYMBOL_LENGTH + 1)
@@ -513,7 +514,24 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
+		assertEquals(ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG, result.getStatus());
+	}
+
+	@Test
+	public void rejectsDuplicateSymbol() {
+		// setup:
+		subject.symbolKeyedIds.put("OOPS", misc);
+
+		// given:
+		var req = fullyValidAttempt()
+				.setSymbol("OOPS")
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE, result.getStatus());
 	}
 
 	@Test
@@ -527,7 +545,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
+		assertEquals(ResponseCodeEnum.MISSING_TOKEN_SYMBOL, result.getStatus());
 	}
 
 	@Test

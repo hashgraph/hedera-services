@@ -64,11 +64,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
 								.initialFloat(FLOAT)
-								.divisibility(0)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
 								.initialFloat(FLOAT)
-								.divisibility(0)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						tokenTransact(

@@ -163,7 +163,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		}
 
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext( nodeId, platform, this, properties);
+		ctx = new ServicesContext(nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
