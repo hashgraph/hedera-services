@@ -276,6 +276,13 @@ public class CommonUtils {
     return transaction.getSigMap();
   }
 
+  public static SignatureMap extractSignatureMapOrUseDefault(Transaction transaction) {
+    try {
+      return extractSignatureMap(transaction);
+    } catch (InvalidProtocolBufferException ignoreToReturnDefault) { }
+    return SignatureMap.getDefaultInstance();
+  }
+
   public static void writeTxId2File(String txIdString) throws IOException {
     writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
   }
