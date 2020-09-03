@@ -70,7 +70,7 @@ networks:
         persistent: {contents: MrBleaney.txt, num: 39283}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [101, 102]
+        numsToFetch: [121]
   localhost:
     bootstrap: 2
     defaultNode: 3
