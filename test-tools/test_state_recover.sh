@@ -113,6 +113,9 @@ function step1_original_run()
     mkdir -p data/prevRun/$PACKAGE
     cp -r data/saved/$PACKAGE data/prevRun/
 
+    rm -rf data/eventStreamOriginal
+    cp -r data/eventStream/ data/eventStreamOriginal
+
     cp swirlds.log swirdsStep1.log
 }
 
@@ -189,6 +192,32 @@ function step2_delete_old_state()
     done 
 }
 
+function delete_event_files() {
+    print_banner "Running ${FUNCNAME[0]}"
+    event_files_amount=`ls -tr data/eventStream/events_0.0.3/*evts | sort -n| wc -l `
+    echo "There are $event_files_amount event files"
+    random_num=$(( ( RANDOM % ($event_files_amount - 1)/2 + 1 ) ))
+
+    echo "Deleting $random_num event files"
+    ls -1a data/eventStream/events_0.0.3/*evts | sort -n| tail -$random_num | xargs rm 
+
+    last_file=`ls -1a data/eventStream/events_0.0.3/*evts | tail -1`
+
+    ls -la $last_file
+    #truncate the last one
+    file_size=`wc -c < $last_file`
+    truncate_size=$(( ($file_size - 1)/2  ))
+    echo "Truncate the last file $last_file bytes $truncate_size"
+    
+    split -b $truncate_size $last_file
+
+    # results from split is in current directoires, names as xaa, xab, xac, etc
+    cp xaa $last_file
+
+    echo "After truncate"
+    ls -la $last_file
+}
+
 # change settings to enable recover mode
 function step3_recover()
 {
@@ -234,7 +263,27 @@ function step_cmp_event_files
         print_banner "Event files are same"
     else
         print_banner "Event files are different"
-        exit 64
+
+        # probably due to the last event in round bit is manually set
+        last_event_file=`ls -1a data/eventStream/events_0.0.3/*evts | tail -1`
+        last_recover_file=`ls -1a data/eventStreamRecover/events_0.0.3/*evts | tail -1`
+        cmp_result=`cmp -l $last_event_file $last_recover_file 2>&1` || ret=$?
+        echo "$cmp_result"  #something like  2442043   0   1
+        #split result to strings
+        vars=( $cmp_result )
+        printf '%s\n' "${vars[@]}"
+
+        if [[ "${vars[5]}" == "0" && "${vars[6]}" == "1" ]]; then
+            # cmp: EOF on data/eventStreamRecover/events_0.0.3/2020-09-02T13_50_00.004246Z.evts
+            # 2600400   0   1
+            echo "Event file only different at one bit cause by lastInRoundReceived, which is expected"
+        elif [[ "${vars[1]}" == "EOF" && "${vars[2]}" == "on" ]]; then
+            # cmp: EOF on data/eventStreamRecover/events_0.0.3/2020-09-02T13_50_00.004246Z.evts
+            echo "Event file only partial equal with the last recovered event is the lase one of its round"
+        else
+            echo "Recover event files are different compared with originals."
+            exit 64
+        fi        
     fi
 
     # compare generated account files with original ones, ignore files exist in original ones only
@@ -361,6 +410,7 @@ function skip_step1()
     rm -rf data/saved
     mkdir -p data/saved
     cp -r data/prevRun/* data/saved/ 
+    cp -r data/eventStreamOriginal data/eventStream
 
     rm -f swirlds.log
 }
@@ -428,6 +478,7 @@ else
 fi
 step_delete_extra_states
 step2_delete_old_state
+delete_event_files
 step3_recover
 step_cmp_event_files
 step_copy_nodes
