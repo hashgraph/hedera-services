@@ -261,9 +261,10 @@ class RecordCacheTest {
 		Instant consensusTime = Instant.now();
 		TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
 		Transaction signedTxn = Transaction.newBuilder()
-				.setBody(TransactionBody.newBuilder()
-					.setTransactionID(txnId)
-					.setMemo("Catastrophe!"))
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setTransactionID(txnId)
+						.setMemo("Catastrophe!")
+						.build().toByteString())
 				.build();
 		// and:
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());

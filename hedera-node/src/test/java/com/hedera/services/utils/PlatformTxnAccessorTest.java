@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.goterl.lazycode.lazysodium.interfaces.Sign;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -165,23 +166,6 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void usesBodyCorrectly() throws Exception {
-		// given:
-		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBody(someTxn)
-				.build();
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
-
-		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-
-		// then:
-		assertEquals(someTxn, subject.getTxn());
-		assertThat(List.of(subject.getTxnBytes()), contains(someTxn.toByteArray()));
-	}
-
-	@Test
 	public void usesBodyBytesCorrectly() throws Exception {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
@@ -215,13 +199,12 @@ public class PlatformTxnAccessorTest {
 		Transaction signedTxn4Log = subject.getSignedTxn4Log();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
-				.setBodyBytes(signedTxn4Log.getBody().toByteString())
-				.clearBody()
+				.setBodyBytes(CommonUtils.extractTransactionBodyBytes(signedTxn4Log))
 				.build();
 
 		// then:
 		assertEquals(ByteString.EMPTY, signedTxn4Log.getBodyBytes());
-		assertEquals(someTxn, signedTxn4Log.getBody());
+		assertEquals(someTxn, CommonUtils.extractTransactionBody(signedTxn4Log));
 		assertEquals(signedTxnWithBody, asBodyBytes);
 	}
 

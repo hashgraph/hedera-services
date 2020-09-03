@@ -59,7 +59,7 @@ public class PrecheckVerifierTest {
 	private static final TransactionBody txn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 			.build();
-	private static final Transaction signedTxn = Transaction.newBuilder().setBody(txn).build();
+	private static final Transaction signedTxn = Transaction.newBuilder().setBodyBytes(txn.toByteString()).build();
 	private static final PlatformTxnAccessor accessor = uncheckedAccessorFor(PlatformTxnFactory.from(signedTxn));
 	private final static byte[][] VALID_SIG_BYTES = {
 			"firstSig".getBytes(),

@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hedera.services.context.ServicesNodeType.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -61,9 +62,10 @@ class TxnHandlerSubmissionFlowTest {
 	long feeRequired = 1_234L;
 	TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
 	Transaction signedTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
 					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-					.setTransactionID(txnId))
+					.setTransactionID(txnId)
+					.build().toByteString())
 			.build();
 	TxnValidityAndFeeReq okMeta = new TxnValidityAndFeeReq(OK);
 
@@ -76,13 +78,13 @@ class TxnHandlerSubmissionFlowTest {
 	private TxnHandlerSubmissionFlow subject;
 
 	@BeforeEach
-	private void setup() {
+	private void setup() throws Exception {
 		logic = mock(TransitionLogic.class);
 		txnHandler = mock(TransactionHandler.class);
 		syntaxCheck = mock(Function.class);
 		given(logic.syntaxCheck()).willReturn(syntaxCheck);
 		logicLookup = mock(TransitionLogicLookup.class);
-		given(logicLookup.lookupFor(CryptoTransfer, signedTxn.getBody())).willReturn(Optional.of(logic));
+		given(logicLookup.lookupFor(CryptoTransfer, CommonUtils.extractTransactionBody(signedTxn))).willReturn(Optional.of(logic));
 		submissionManager = mock(PlatformSubmissionManager.class);
 
 		subject = new TxnHandlerSubmissionFlow(STAKED_NODE, txnHandler, logicLookup, submissionManager);
