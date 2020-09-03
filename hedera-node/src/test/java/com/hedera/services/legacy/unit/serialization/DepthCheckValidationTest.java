@@ -51,11 +51,11 @@ public class DepthCheckValidationTest {
 				RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
 	}
 
-	private Transaction createTransaction() {
-		KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
-		return TestHelper
-				.createAccount(payerAccountId, nodeAccountId, firstPair, 1000l);
-	}
+//	private Transaction createTransaction() {
+//		KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
+//		return TestHelper
+//				.createAccount(payerAccountId, nodeAccountId, firstPair, 1000l);
+//	}
 /*
 	private Transaction genSignedTx() throws Exception {
 		KeyPair pair = new KeyPairGenerator().generateKeyPair();
@@ -96,33 +96,33 @@ public class DepthCheckValidationTest {
 		return TestHelper.genMultiLayerThresholdKey(16, basicThresholdKey);
 	}
 
-	@Test
-	public void testValidateTxBodyDepthPositive() throws Exception {
-		Transaction origTransaction = createTransaction();
-		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
-		Key key_47 = getKey_Depth47();
-		assert TransactionValidationUtils.getDepth(key_47) == 47;
-		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_47).build();
-		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 48;
-		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
-		assert TransactionValidationUtils.getDepth(trBody) == 49;
-		assert TransactionValidationUtils.validateTxBodyDepth(trBody);
-	}
+//	@Test
+//	public void testValidateTxBodyDepthPositive() throws Exception {
+//		Transaction origTransaction = createTransaction();
+//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+//		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
+//		Key key_47 = getKey_Depth47();
+//		assert TransactionValidationUtils.getDepth(key_47) == 47;
+//		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_47).build();
+//		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 48;
+//		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
+//		assert TransactionValidationUtils.getDepth(trBody) == 49;
+//		assert TransactionValidationUtils.validateTxBodyDepth(trBody);
+//	}
 
-	@Test
-	public void testValidateTxBodyDepthNegative() throws Exception {
-		Transaction origTransaction = createTransaction();
-		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
-		Key key_48 = getKey_Depth48();
-		assert TransactionValidationUtils.getDepth(key_48) == 48;
-		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_48).build();
-		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 49;
-		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
-		assert TransactionValidationUtils.getDepth(trBody) == 50;
-		assert !TransactionValidationUtils.validateTxBodyDepth(trBody);
-	}
+//	@Test
+//	public void testValidateTxBodyDepthNegative() throws Exception {
+//		Transaction origTransaction = createTransaction();
+//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+//		CryptoCreateTransactionBody cryptoCreateTransactionBody = trBody.getCryptoCreateAccount();
+//		Key key_48 = getKey_Depth48();
+//		assert TransactionValidationUtils.getDepth(key_48) == 48;
+//		cryptoCreateTransactionBody = cryptoCreateTransactionBody.toBuilder().setKey(key_48).build();
+//		assert TransactionValidationUtils.getDepth(cryptoCreateTransactionBody) == 49;
+//		trBody = trBody.toBuilder().setCryptoCreateAccount(cryptoCreateTransactionBody).build();
+//		assert TransactionValidationUtils.getDepth(trBody) == 50;
+//		assert !TransactionValidationUtils.validateTxBodyDepth(trBody);
+//	}
 
 	private Signature getSig_Depth48(Signature base) {
 		return TestHelper.genMultiLayerThresholdSig(16, base);

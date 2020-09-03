@@ -72,83 +72,83 @@ public class RequestValidationTest {
   /**
    * testing nodeAccount Validation function for positive and negative scenario
    */
-  @Test
-  public void testNodeAccountValidation() throws Exception {
-    long nodeAccShard = 0;
-    long nodeAccRealm = 2;
-    long nodeAccnNum = 1007;
-    AccountID nodeAcc = AccountID.newBuilder().setShardNum(nodeAccShard).setRealmNum(nodeAccRealm)
-        .setAccountNum(nodeAccnNum).build();
-
-    var policies = new SystemOpPolicies(new MockEntityNumbers());
-    var platformStatus = new ContextPlatformStatus();
-    platformStatus.set(PlatformStatus.ACTIVE);
-    TransactionHandler trHandler =
-        new TransactionHandler(
-                null,
-                null,
-                null,
-                nodeAcc,
-                null,
-                TEST_USAGE_PRICES,
-                TestExchangeRates.TEST_EXCHANGE,
-                TestFeesFactory.FEES_FACTORY.get(),
-                () -> StateView.EMPTY_VIEW,
-                new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-                null,
-                null,
-                new MockAccountNumbers(),
-                null,
-                policies,
-                new StandardExemptions(new MockAccountNumbers(), policies),
-                platformStatus);
-    Timestamp timestamp =
-        RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
-
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-    KeyPair pair = new KeyPairGenerator().generateKeyPair();
-
-    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-
-    String pubKeyStr = MiscUtils.commonsBytesToHex(pubKey);
-
-    Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
-    List<Key> keyList = new ArrayList<Key>();
-    keyList.add(key);
-
-    long transactionFee = 100l;
-    boolean generateRecord = true;
-    String memo = "NodeAccount test";
-    long initialBalance = 10000l;
-    long sendRecordThreshold = 100l;
-    long receiveRecordThreshold = 100l;
-    boolean receiverSigRequired = true;
-    Duration autoRenewPeriod = RequestBuilder.getDuration(500);
-
-    Transaction matchingNodeAccTransaction =
-        RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
-            nodeAccRealm, nodeAccShard, transactionFee, timestamp, transactionDuration,
-            generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().addSigs(
-                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
-    Transaction nonMatchingTransaction =
-        RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
-            nodeAccRealm + 1, nodeAccShard + 1, transactionFee, timestamp, transactionDuration,
-            generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().addSigs(
-                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
-    TransactionBody matchingBody = CommonUtils.extractTransactionBody(matchingNodeAccTransaction);
-    TransactionBody nonMatchingBody = CommonUtils.extractTransactionBody(nonMatchingTransaction);
-    ResponseCodeEnum matchingPreCheckReturn = trHandler.validateNodeAccount(matchingBody);
-    Assertions.assertEquals(matchingPreCheckReturn, OK);
-    ResponseCodeEnum nonMatchingPreCheckReturn = trHandler.validateNodeAccount(nonMatchingBody);
-    Assertions.assertNotEquals(nonMatchingPreCheckReturn, OK);
-  }
+//  @Test
+//  public void testNodeAccountValidation() throws Exception {
+//    long nodeAccShard = 0;
+//    long nodeAccRealm = 2;
+//    long nodeAccnNum = 1007;
+//    AccountID nodeAcc = AccountID.newBuilder().setShardNum(nodeAccShard).setRealmNum(nodeAccRealm)
+//        .setAccountNum(nodeAccnNum).build();
+//
+//    var policies = new SystemOpPolicies(new MockEntityNumbers());
+//    var platformStatus = new ContextPlatformStatus();
+//    platformStatus.set(PlatformStatus.ACTIVE);
+//    TransactionHandler trHandler =
+//        new TransactionHandler(
+//                null,
+//                null,
+//                null,
+//                nodeAcc,
+//                null,
+//                TEST_USAGE_PRICES,
+//                TestExchangeRates.TEST_EXCHANGE,
+//                TestFeesFactory.FEES_FACTORY.get(),
+//                () -> StateView.EMPTY_VIEW,
+//                new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+//                null,
+//                null,
+//                new MockAccountNumbers(),
+//                null,
+//                policies,
+//                new StandardExemptions(new MockAccountNumbers(), policies),
+//                platformStatus);
+//    Timestamp timestamp =
+//        RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(10));
+//
+//    Duration transactionDuration = RequestBuilder.getDuration(30);
+//
+//    KeyPair pair = new KeyPairGenerator().generateKeyPair();
+//
+//    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+//
+//    String pubKeyStr = MiscUtils.commonsBytesToHex(pubKey);
+//
+//    Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
+//    List<Key> keyList = new ArrayList<Key>();
+//    keyList.add(key);
+//
+//    long transactionFee = 100l;
+//    boolean generateRecord = true;
+//    String memo = "NodeAccount test";
+//    long initialBalance = 10000l;
+//    long sendRecordThreshold = 100l;
+//    long receiveRecordThreshold = 100l;
+//    boolean receiverSigRequired = true;
+//    Duration autoRenewPeriod = RequestBuilder.getDuration(500);
+//
+//    Transaction matchingNodeAccTransaction =
+//        RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
+//            nodeAccRealm, nodeAccShard, transactionFee, timestamp, transactionDuration,
+//            generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
+//            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
+//            SignatureList.newBuilder().addSigs(
+//                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
+//                .build());
+//    Transaction nonMatchingTransaction =
+//        RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
+//            nodeAccRealm + 1, nodeAccShard + 1, transactionFee, timestamp, transactionDuration,
+//            generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
+//            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
+//            SignatureList.newBuilder().addSigs(
+//                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
+//                .build());
+//    TransactionBody matchingBody = CommonUtils.extractTransactionBody(matchingNodeAccTransaction);
+//    TransactionBody nonMatchingBody = CommonUtils.extractTransactionBody(nonMatchingTransaction);
+//    ResponseCodeEnum matchingPreCheckReturn = trHandler.validateNodeAccount(matchingBody);
+//    Assertions.assertEquals(matchingPreCheckReturn, OK);
+//    ResponseCodeEnum nonMatchingPreCheckReturn = trHandler.validateNodeAccount(nonMatchingBody);
+//    Assertions.assertNotEquals(nonMatchingPreCheckReturn, OK);
+//  }
 
   @Test
   public void apiPermissionValidation_Number_Test() {
