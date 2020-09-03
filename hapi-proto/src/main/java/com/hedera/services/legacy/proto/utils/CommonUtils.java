@@ -254,10 +254,10 @@ public class CommonUtils {
       throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
     ByteString bodyBytes;
-    if (signedTransactionBytes.size() > 0) {
-      bodyBytes = SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
-    } else {
+    if (signedTransactionBytes.isEmpty()) {
       bodyBytes = transaction.getBodyBytes();
+    } else {
+      bodyBytes = SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
     }
 
     return TransactionBody.parseFrom(bodyBytes);
