@@ -1128,6 +1128,20 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsTokenTransactAllSenders() throws Throwable {
 		// given:
+		setupFor(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenTransactMissingSenders() throws Throwable {
+		// given:
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
 
 		// when:

@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -43,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -179,8 +181,10 @@ public interface TxnHandlingScenario {
 						new EntityId(1, 2, 4));
 		frozenToken.setFreezeKey(optionalFreezeKey);
 
-		given(tokens.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
-		given(tokens.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
+		given(tokens.get(fromTokenId(KNOWN_TOKEN_NO_FREEZE)))
+				.willReturn(unfrozenToken);
+		given(tokens.get(fromTokenId(KNOWN_TOKEN_WITH_FREEZE)))
+				.willReturn(frozenToken);
 
 		return tokens;
 	}

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,11 +31,14 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 
 public class TokenTransactSpecs extends HapiApiSuite {
@@ -58,8 +60,45 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						txnsAreAtomic(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 				}
 		);
+	}
+
+	public HapiApiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
+		int salt = Instant.now().getNano();
+
+		return defaultHapiSpec("IfFreezeIsDefaultTokensMustBeUnfrozen")
+				.given(
+						cryptoCreate("randomBeneficiary"),
+						cryptoCreate("treasury"),
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						newKeyNamed("freezeKey")
+				).when(
+						tokenCreate(A_TOKEN)
+								.treasury("treasury")
+								.freezeKey("freezeKey")
+								.freezeDefault(true)
+								.symbol("frozenByDefault" + salt),
+						tokenTransact(
+								moving(100, A_TOKEN)
+										.between("treasury", "randomBeneficiary")
+						).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+						/* and */
+						tokenCreate(B_TOKEN)
+								.treasury("treasury")
+								.freezeDefault(false)
+								.symbol("unfrozenByDefault" + salt),
+						tokenTransact(
+								moving(100, B_TOKEN)
+										.between("treasury", "randomBeneficiary")
+						).payingWith("payer").via("successfulTransfer")
+				).then(
+						getAccountBalance("randomBeneficiary")
+								.logged()
+								.hasTokenBalance(B_TOKEN, 100),
+						getTxnRecord("successfulTransfer").logged()
+				);
 	}
 
 	public HapiApiSpec txnsAreAtomic() {
@@ -91,8 +130,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 				).then(
 						getAccountBalance("firstTreasury")
+								.logged()
 								.hasTokenBalance(A_TOKEN, 123),
 						getAccountBalance("secondTreasury")
+								.logged()
 								.hasTokenBalance(B_TOKEN, 234),
 						getAccountBalance("beneficiary").logged(),
 						/* Cleanup */
@@ -123,8 +164,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(A_TOKEN, FLOAT - 100)
-								.hasTokenBalance(B_TOKEN, FLOAT - 100)
-								.logged(),
+								.hasTokenBalance(B_TOKEN, FLOAT - 100),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 100),
 						getAccountBalance(SECOND_USER)
