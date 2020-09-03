@@ -93,9 +93,7 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 	}
 	private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
 		List<KeyTree> signers = allKts();
-		return useSigMap
-				? sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory)
-				: sigFactory.signWithSigList(txnWithSigs, signers);
+		return sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory);
 	}
 	private List<KeyTree> allKts() {
 		return Stream.of(
