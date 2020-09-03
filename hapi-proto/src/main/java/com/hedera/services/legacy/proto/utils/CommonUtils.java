@@ -20,8 +20,10 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.DecoderException;
@@ -248,16 +250,18 @@ public class CommonUtils {
 //    return rv;
 //  }
 
-//  public static TransactionBody extractTransactionBody(Transaction transaction)
-//      throws InvalidProtocolBufferException {
-//    TransactionBody bodyToReturn;
-//    if (transaction.hasBody()) {
-//      bodyToReturn = transaction.getBody();
-//    } else {
-//      bodyToReturn = TransactionBody.parseFrom(transaction.getBodyBytes());
-//    }
-//    return bodyToReturn;
-//  }
+  public static TransactionBody extractTransactionBody(Transaction transaction)
+      throws InvalidProtocolBufferException {
+    ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
+    ByteString bodyBytes;
+    if (signedTransactionBytes.size() > 0) {
+      bodyBytes = SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
+    } else {
+      bodyBytes = transaction.getBodyBytes();
+    }
+
+    return TransactionBody.parseFrom(bodyBytes);
+  }
 
   public static void writeTxId2File(String txIdString) throws IOException {
     writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
