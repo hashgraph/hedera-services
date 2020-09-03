@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Signature;
@@ -67,13 +68,8 @@ public class SignedTxnAccessor {
 	public SignedTxnAccessor(byte[] signedTxnBytes) throws InvalidProtocolBufferException {
 		this.signedTxnBytes = signedTxnBytes;
 		signedTxn = Transaction.parseFrom(signedTxnBytes);
-		if (signedTxn.hasBody()) {
-			txn = signedTxn.getBody();
-			txnBytes = txn.toByteArray();
-		} else {
-			txnBytes = signedTxn.getBodyBytes().toByteArray();
-			txn = TransactionBody.parseFrom(txnBytes);
-		}
+		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn).toByteArray();
+		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
 	}
 
@@ -89,15 +85,16 @@ public class SignedTxnAccessor {
 	}
 
 	public Transaction getSignedTxn4Log() {
-		if (signedTxn4Log == null) {
-			try {
-				signedTxn4Log = signedTxn.hasBody() ? signedTxn : signedTxn.toBuilder()
-						.setBody(TransactionBody.parseFrom(signedTxn.getBodyBytes()))
-						.clearBodyBytes()
-						.build();
-			} catch (InvalidProtocolBufferException ignore) { }
-		}
-		return signedTxn4Log;
+//		if (signedTxn4Log == null) {
+//			try {
+//				signedTxn4Log = signedTxn.hasBody() ? signedTxn : signedTxn.toBuilder()
+//						.setBody(TransactionBody.parseFrom(signedTxn.getBodyBytes()))
+//						.clearBodyBytes()
+//						.build();
+//			} catch (InvalidProtocolBufferException ignore) { }
+//		}
+//		return signedTxn4Log;
+		return signedTxn;
 	}
 
 	public byte[] getTxnBytes() {
@@ -108,9 +105,9 @@ public class SignedTxnAccessor {
 		return signedTxn;
 	}
 
-	public List<Signature> getSigsList() {
-		return signedTxn.getSigs().getSigsList();
-	}
+//	public List<Signature> getSigsList() {
+//		return signedTxn.getSigs().getSigsList();
+//	}
 
 	public TransactionBody getTxn() {
 		return txn;
