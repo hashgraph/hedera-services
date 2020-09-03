@@ -23,6 +23,7 @@ package com.hedera.services.legacy.proto.utils;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -261,6 +262,16 @@ public class CommonUtils {
     }
 
     return TransactionBody.parseFrom(bodyBytes);
+  }
+
+  public static SignatureMap extractSignatureMap(Transaction transaction)
+          throws InvalidProtocolBufferException {
+    ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
+    if (!signedTransactionBytes.isEmpty()) {
+      return SignedTransaction.parseFrom(signedTransactionBytes).getSigMap();
+    }
+
+    return transaction.getSigMap();
   }
 
   public static void writeTxId2File(String txIdString) throws IOException {

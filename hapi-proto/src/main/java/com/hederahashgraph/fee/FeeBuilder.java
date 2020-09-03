@@ -20,6 +20,8 @@ package com.hederahashgraph.fee;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
@@ -327,26 +329,19 @@ public class FeeBuilder {
     return keyStorageSize;
   }
 
-//  public static int getSignatureCount(Transaction transaction) {
-//    if (transaction.hasSigMap()) {
-//      return transaction.getSigMap().getSigPairCount();
-//    } else if (transaction.hasSigs()) {
-//      Signature sig = Signature.newBuilder().setSignatureList(transaction.getSigs()).build();
-//      return calculateNoOfSigs(sig, 0);
-//    } else {
-//      return 0;
-//    }
-//  }
+  public static int getSignatureCount(Transaction transaction) {
+    try {
+      return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
+    } catch (InvalidProtocolBufferException ignoreToReturnZeroCount) { }
+    return 0;
+  }
 
-//  public static int getSignatureSize(Transaction transaction) {
-//    if (transaction.hasSigMap()) {
-//      return transaction.getSigMap().toByteArray().length;
-//    } else if (transaction.hasSigs()) {
-//      return transaction.getSigs().toByteArray().length;
-//    } else {
-//      return 0;
-//    }
-//  }
+  public static int getSignatureSize(Transaction transaction) {
+    try {
+      return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
+    } catch (InvalidProtocolBufferException ignoreToReturnZeroSize) { }
+    return 0;
+  }
 
   /**
    * Convert tinyCents to tinybars
