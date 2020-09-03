@@ -25,6 +25,8 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
    platform='macOS'
 fi
 
+state_delete_num=0
+
 function get_last_round_number()
 {
     local lastRoundNumber=`ls -tr data/saved/$PACKAGE/0/123 | sort -n| tail -1`
@@ -87,7 +89,7 @@ function step1_original_run()
     echo "Please make sure log4j.xml append is enabled."
 
     # Change settings.txt to save state more frequently
-    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    60 '/g  settings.txt
 
     # save many signed state on disk so we can test of removing more signed state
     echo "state.signedStateDisk,     3000" >> settings.txt
@@ -104,7 +106,7 @@ function step1_original_run()
     # enable streaming
     echo "enableEventStreaming,      true" >> settings.txt
     echo "eventsLogDir,              data/eventStream" >> settings.txt
-    echo "eventsLogPeriod,           30" >> settings.txt
+    echo "eventsLogPeriod,           15" >> settings.txt
 
     launch_hgc_and_client
 
@@ -182,9 +184,9 @@ function step2_delete_old_state()
     echo "Created signed state amount: $signed_state_amount"
 
     #random delete some states
-    random_num=$(( ( RANDOM % ($signed_state_amount - 1) + 1 ) ))
+    state_delete_num=$(( ( RANDOM % ($signed_state_amount - 1) + 1 ) ))
 
-    echo "Deleting $random_num signed states"
+    echo "Deleting $state_delete_num signed states"
 
     # remove most of states only leaving one
     for ((i=1;i<=random_num;i++)); do
@@ -196,7 +198,7 @@ function delete_event_files() {
     print_banner "Running ${FUNCNAME[0]}"
     event_files_amount=`ls -tr data/eventStream/events_0.0.3/*evts | sort -n| wc -l `
     echo "There are $event_files_amount event files"
-    random_num=$(( ( RANDOM % ($event_files_amount - 1)/2 + 1 ) ))
+    random_num=$(( ( RANDOM % ($state_delete_num )/2 ) ))
 
     echo "Deleting $random_num event files"
     ls -1a data/eventStream/events_0.0.3/*evts | sort -n| tail -$random_num | xargs rm 
@@ -230,7 +232,7 @@ function step3_recover()
     echo "enableStateRecovery,   true" >> settings.txt
     echo "playbackStreamFileDirectory,   data/eventStream " >> settings.txt
 
-    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    60 '/g  settings.txt
 
     # save event to different directory
     echo "eventsLogDir,   data/eventStreamRecover" >> settings.txt
@@ -355,7 +357,7 @@ function step5_normal_restart()
     print_banner "Running ${FUNCNAME[0]}"
 
     # Change settings.txt to save state more frequently
-    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    20 '/g  settings.txt
+    sed -i -e s/'state.saveStatePeriod'.*/'state.saveStatePeriod,    60 '/g  settings.txt
     
     # save event to different directory
     sed -i -e s/'eventsLogDir'.*/'eventsLogDir, data\/eventStreamResume'/g  settings.txt
@@ -387,6 +389,7 @@ function launch_hgc_and_client
     # then we have needed old states, event stream, and HGCApp expected result
     java -Djava.awt.headless=true -cp 'data/lib/*' com.swirlds.platform.Browser &
     pid=$!  # remember prcoess ID of server
+    echo "Running server as java process $pid"
     sleep 80
     print_banner "Now lanching client "
 
