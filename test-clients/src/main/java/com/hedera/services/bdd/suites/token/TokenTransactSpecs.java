@@ -22,17 +22,22 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -52,9 +57,51 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
+						txnsAreAtomic(),
 				}
 		);
 	}
+
+	public HapiApiSpec txnsAreAtomic() {
+		final int MONOGAMOUS_NETWORK = 1;
+		final int ADVENTUROUS_NETWORK = 1_000;
+		int salt = Instant.now().getNano();
+
+		return defaultHapiSpec("TxnsAreAtomic")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("secondTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
+						)),
+						tokenCreate(A_TOKEN)
+								.symbol("firstly" + salt)
+								.initialFloat(123)
+								.treasury("firstTreasury"),
+						tokenCreate(B_TOKEN)
+								.symbol("secondly" + salt)
+								.initialFloat(234)
+								.treasury("secondTreasury"),
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+				).then(
+						getAccountBalance("firstTreasury")
+								.hasTokenBalance(A_TOKEN, 123),
+						getAccountBalance("secondTreasury")
+								.hasTokenBalance(B_TOKEN, 234),
+						getAccountBalance("beneficiary").logged(),
+						/* Cleanup */
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
+						))
+				);
+	}
+
 
 	public HapiApiSpec balancesChangeOnTokenTransfer() {
 		return defaultHapiSpec("BalancesChangeOnTokenTransfer")

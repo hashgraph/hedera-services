@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSIONINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
@@ -92,6 +93,7 @@ public class MiscUtils {
 		queryFunctions.put(FILEGETINFO, FileGetInfo);
 		queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
+		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
@@ -182,6 +184,8 @@ public class MiscUtils {
 
 	public static Optional<QueryHeader> activeHeaderFrom(Query query) {
 		switch (query.getQueryCase()) {
+			case TOKENGETINFO:
+				return Optional.of(query.getTokenGetInfo().getHeader());
 			case CONSENSUSGETTOPICINFO:
 				return Optional.of(query.getConsensusGetTopicInfo().getHeader());
 			case GETBYSOLIDITYID:

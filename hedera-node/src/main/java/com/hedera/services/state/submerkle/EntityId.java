@@ -192,4 +192,12 @@ public class EntityId implements SelfSerializable {
 				.setTokenNum(num)
 				.build();
 	}
+
+	public AccountID toGrpcAccountId() {
+		return AccountID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setAccountNum(num)
+				.build();
+	}
 }

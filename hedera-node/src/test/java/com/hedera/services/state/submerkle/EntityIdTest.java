@@ -196,6 +196,7 @@ public class EntityIdTest {
 	@Test
 	public void viewsWork() {
 		// expect:
+		assertEquals(accountId, subject.toGrpcAccountId());
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
 	}

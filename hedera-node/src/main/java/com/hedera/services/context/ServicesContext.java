@@ -34,6 +34,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
@@ -45,6 +46,8 @@ import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.contract.GetBytecodeAnswer;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
+import com.hedera.services.queries.token.GetTokenInfoAnswer;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
@@ -310,6 +313,7 @@ public class ServicesContext {
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
+	private TokenAnswers tokenAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
 	private IssEventInfo issEventInfo;
@@ -455,6 +459,7 @@ public class ServicesContext {
 	public Supplier<StateView> stateViews() {
 		if (stateViews == null) {
 			stateViews = () -> new StateView(
+					tokenStore(),
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
@@ -465,7 +470,7 @@ public class ServicesContext {
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(this::topics, this::accounts, this::storage, properties());
+			currentView = new StateView(tokenStore(), this::topics, this::accounts, this::storage, properties());
 		}
 		return currentView;
 	}
@@ -589,6 +594,15 @@ public class ServicesContext {
 		return entityNums;
 	}
 
+	public TokenAnswers tokenAnswers() {
+		if (tokenAnswers == null) {
+			tokenAnswers = new TokenAnswers(
+					new GetTokenInfoAnswer()
+			);
+		}
+		return tokenAnswers;
+	}
+
 	public CryptoAnswers cryptoAnswers() {
 		if (cryptoAnswers == null) {
 			cryptoAnswers = new CryptoAnswers(
@@ -640,7 +654,9 @@ public class ServicesContext {
 							new GetTopicInfoResourceUsage(),
 							/* Smart Contract */
 							new GetBytecodeResourceUsage(contractFees),
-							new GetContractInfoResourceUsage(contractFees)
+							new GetContractInfoResourceUsage(contractFees),
+							/* Token */
+							new GetTokenInfoResourceUsage()
 					),
 					txnUsageEstimators(fileFees, cryptoFees, contractFees)
 			);
@@ -1110,7 +1126,7 @@ public class ServicesContext {
 
 	public TokenController tokenGrpc() {
 		if (tokenGrpc == null) {
-			tokenGrpc = new TokenController(txnResponseHelper(), queryResponseHelper());
+			tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return tokenGrpc;
 	}

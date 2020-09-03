@@ -22,16 +22,30 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.service.proto.java";
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
 
-import "Query.proto";
-import "Response.proto";
-import "TransactionResponse.proto";
-import "Transaction.proto";
+import "BasicTypes.proto";
+import "QueryHeader.proto";
+import "ResponseHeader.proto";
 
-/* The requests and responses for different network services. */
-service TokenService {
-    rpc createToken (Transaction) returns (TransactionResponse);
-    rpc transferTokens (Transaction) returns (TransactionResponse);
-    rpc getTokenInfo (Query) returns (Response);
+message TokenGetInfoQuery {
+    QueryHeader header = 1;
+    TokenRef token = 2;
+}
+
+message TokenInfo {
+    TokenID tokenId = 1;
+    string symbol = 2;
+    AccountID treasury = 3;
+    uint64 currentFloat = 4;
+    uint32 divisibility = 5;
+    Key adminKey = 6;
+    Key freezeKey = 7;
+    bool freezeDefault = 8;
+}
+
+message TokenGetInfoResponse {
+    ResponseHeader header = 1;
+    TokenInfo tokenInfo = 2;
 }

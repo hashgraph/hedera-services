@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 
 
 /**
@@ -36,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
  * @author Michael Tinker
  */
 public interface TokenStore {
+	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+
 	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
 
 	boolean exists(TokenID id);
@@ -51,4 +54,14 @@ public interface TokenStore {
 	void commitCreation();
 	void rollbackCreation();
 	boolean isCreationPending();
+
+	default TokenID resolve(TokenRef ref) {
+		String symbol;
+		TokenID id;
+		if (ref.hasTokenId()) {
+			return exists(id = ref.getTokenId()) ? id : MISSING_TOKEN;
+		} else {
+			return symbolExists(symbol = ref.getSymbol()) ? lookup(symbol) : MISSING_TOKEN;
+		}
+	}
 }

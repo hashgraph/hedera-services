@@ -32,6 +32,7 @@ import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -384,6 +385,7 @@ public class ServicesContextTest {
 		assertThat(ctx.accountSource(), instanceOf(LedgerAccountsSource.class));
 		assertThat(ctx.bytecodeDb(), instanceOf(BlobStorageSource.class));
 		assertThat(ctx.cryptoAnswers(), instanceOf(CryptoAnswers.class));
+		assertThat(ctx.tokenAnswers(), instanceOf(TokenAnswers.class));
 		assertThat(ctx.consensusGrpc(), instanceOf(ConsensusController.class));
 		assertThat(ctx.storagePersistence(), instanceOf(BlobStoragePersistence.class));
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));

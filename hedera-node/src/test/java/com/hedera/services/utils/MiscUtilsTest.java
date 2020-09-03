@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
@@ -346,6 +347,7 @@ public class MiscUtilsTest {
 			put(FileGetInfo, new BodySetter<>(FileGetInfoQuery.class));
 			put(TransactionGetReceipt, new BodySetter<>(TransactionGetReceiptQuery.class));
 			put(TransactionGetRecord, new BodySetter<>(TransactionGetRecordQuery.class));
+			put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
 		}};
 
 		// expect:
@@ -354,6 +356,16 @@ public class MiscUtilsTest {
 			setter.setDefaultInstanceOnQuery(query);
 			assertEquals(function, functionalityOfQuery(query.build()).get());
 		});
+	}
+
+	@Test
+	public void worksForGetTokenInfo() {
+		var op = TokenGetInfoQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}
 
 	@Test

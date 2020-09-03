@@ -228,6 +228,7 @@ enum HederaFunctionality {
     UncheckedSubmit = 55;
     TokenCreate = 56;
     TokenTransact = 57;
+    TokenGetInfo = 58;
 }
 
 /*

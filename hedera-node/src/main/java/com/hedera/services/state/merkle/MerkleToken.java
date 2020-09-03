@@ -42,12 +42,11 @@ import static com.hedera.services.utils.MiscUtils.describe;
 
 public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleLeaf  {
 	static final int MAX_CONCEIVABLE_SYMBOL_LENGTH = 256;
-	static final JKey UNUSED_KEY = null;
-
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
-
 	static DomainSerdes serdes = new DomainSerdes();
+
+	public static final JKey UNUSED_KEY = null;
 
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();

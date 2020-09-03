@@ -21,7 +21,10 @@ package com.hedera.services.grpc.controllers;
  */
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
@@ -34,24 +37,34 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 
 	public static final String TOKEN_CREATE_METRIC = "createToken";
 	public static final String TOKEN_TRANSACT_METRIC = "transferTokens";
+	public static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 
+	private final TokenAnswers tokenAnswers;
 	private final TxnResponseHelper txnHelper;
 	private final QueryResponseHelper queryHelper;
 
 	public TokenController(
+			TokenAnswers tokenAnswers,
 			TxnResponseHelper txnHelper,
 			QueryResponseHelper queryHelper
 	) {
 		this.txnHelper = txnHelper;
 		this.queryHelper = queryHelper;
+		this.tokenAnswers = tokenAnswers;
 	}
 
 	@Override
 	public void createToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.respondToToken(signedTxn, observer, TOKEN_CREATE_METRIC);
 	}
+
 	@Override
 	public void transferTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.respondToToken(signedTxn, observer, TOKEN_TRANSACT_METRIC);
+	}
+
+	@Override
+	public void getTokenInfo(Query query, StreamObserver<Response> observer) {
+		queryHelper.respondToToken(query, observer, tokenAnswers.getTokenInfo(), TOKEN_GET_INFO_METRIC);
 	}
 }

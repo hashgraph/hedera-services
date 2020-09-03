@@ -25,6 +25,7 @@ public class ScreenedSysFileProps implements PropertySource {
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("configAccountNum", "ledger.maxAccountNum"),
+			entry("defaultContractReceiverThreshold", "contracts.defaultReceiveThreshold"),
 			entry("defaultContractSenderThreshold", "contracts.defaultSendThreshold")
 	);
 

@@ -22,6 +22,7 @@ package com.hedera.services.grpc.controllers;
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.grpc.controllers.TokenController.*;
 
@@ -41,6 +43,7 @@ class TokenControllerTest {
 	Query query = Query.getDefaultInstance();
 	Transaction txn = Transaction.getDefaultInstance();
 
+	TokenAnswers answers;
 	TxnResponseHelper txnResponseHelper;
 	QueryResponseHelper queryResponseHelper;
 	StreamObserver<Response> queryObserver;
@@ -50,13 +53,14 @@ class TokenControllerTest {
 
 	@BeforeEach
 	private void setup() {
+		answers = mock(TokenAnswers.class);
 		txnObserver = mock(StreamObserver.class);
 		queryObserver = mock(StreamObserver.class);
 
 		txnResponseHelper = mock(TxnResponseHelper.class);
 		queryResponseHelper = mock(QueryResponseHelper.class);
 
-		subject = new TokenController(txnResponseHelper, queryResponseHelper);
+		subject = new TokenController(answers, txnResponseHelper, queryResponseHelper);
 	}
 
 	@Test
@@ -75,5 +79,14 @@ class TokenControllerTest {
 
 		// expect:
 		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_TRANSACT_METRIC);
+	}
+
+	@Test
+	public void forwardsTokenInfoAsExpected() {
+		// when:
+		subject.getTokenInfo(query, queryObserver);
+
+		// expect:
+		verify(queryResponseHelper).respondToToken(query, queryObserver,null , TOKEN_GET_INFO_METRIC);
 	}
 }

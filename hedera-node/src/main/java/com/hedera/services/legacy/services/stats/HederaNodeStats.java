@@ -387,6 +387,14 @@ public class HederaNodeStats {
 		updateCountStat(type, SUBMITTED_SUFFIX);
 	}
 
+	public void tokenQueryReceived(String type) {
+		updateCountStat(type, RECEIVED_SUFFIX);
+	}
+
+	public void tokenQueryAnswered(String type) {
+		updateCountStat(type, SUBMITTED_SUFFIX);
+	}
+
 	public void hcsQueryReceived(String type) {
 		updateCountStat(type, RECEIVED_SUFFIX);
 	}

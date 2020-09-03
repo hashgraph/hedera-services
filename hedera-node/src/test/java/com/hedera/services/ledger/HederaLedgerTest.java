@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.HederaTokenStore;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -50,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -220,6 +222,18 @@ public class HederaLedgerTest {
 		given(tokenStore.symbolExists(otherSymbol)).willReturn(true);
 		given(tokenStore.lookup(otherSymbol)).willReturn(tokenId);
 		given(tokenStore.symbolExists(missingSymbol)).willReturn(false);
+		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(missingSymbol).build()))
+				.willReturn(TokenStore.MISSING_TOKEN);
+		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(missingId).build()))
+				.willReturn(TokenStore.MISSING_TOKEN);
+		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(frozenId).build()))
+				.willReturn(frozenId);
+		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(frozenSymbol).build()))
+				.willReturn(frozenId);
+		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(tokenId).build()))
+				.willReturn(tokenId);
+		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(otherSymbol).build()))
+				.willReturn(tokenId);
 
 		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
 	}

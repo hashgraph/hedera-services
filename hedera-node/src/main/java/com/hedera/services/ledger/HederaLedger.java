@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -35,7 +34,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -67,7 +65,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORD
 import static com.hedera.services.tokens.TokenScope.idScopeOf;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -100,7 +97,6 @@ public class HederaLedger {
 
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
-	private static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
@@ -262,8 +258,8 @@ public class HederaLedger {
 		var validity = OK;
 
 		for (TokenTransfer transfer : transfers.getTransfersList())	{
-			var id = resolve(transfer.getToken());
-			if (id == MISSING_TOKEN) {
+			var id = tokenStore.resolve(transfer.getToken());
+			if (id == TokenStore.MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
 			}
 			if (validity == OK) {
@@ -281,16 +277,6 @@ public class HederaLedger {
 		}
 
 		return validity;
-	}
-
-	private TokenID resolve(TokenRef ref) {
-		String symbol;
-		TokenID id;
-		if (ref.hasTokenId()) {
-			return tokenStore.exists(id = ref.getTokenId()) ? id : MISSING_TOKEN;
-		} else {
-			return tokenStore.symbolExists(symbol = ref.getSymbol()) ? tokenStore.lookup(symbol) : MISSING_TOKEN;
-		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */

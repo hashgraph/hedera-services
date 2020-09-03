@@ -1,10 +1,8 @@
-syntax = "proto3";
-
-package proto;
+package com.hedera.services.queries.token;
 
 /*-
  * ‌
- * Hedera Network Services Protobuf
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -22,16 +20,14 @@ package proto;
  * ‍
  */
 
-option java_package = "com.hederahashgraph.service.proto.java";
+public class TokenAnswers {
+	private final GetTokenInfoAnswer tokenInfo;
 
-import "Query.proto";
-import "Response.proto";
-import "TransactionResponse.proto";
-import "Transaction.proto";
+	public TokenAnswers(GetTokenInfoAnswer tokenInfo) {
+		this.tokenInfo = tokenInfo;
+	}
 
-/* The requests and responses for different network services. */
-service TokenService {
-    rpc createToken (Transaction) returns (TransactionResponse);
-    rpc transferTokens (Transaction) returns (TransactionResponse);
-    rpc getTokenInfo (Query) returns (Response);
+	public GetTokenInfoAnswer getTokenInfo() {
+		return tokenInfo;
+	}
 }

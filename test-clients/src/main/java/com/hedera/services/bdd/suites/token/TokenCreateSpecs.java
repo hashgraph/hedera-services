@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -64,8 +65,32 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
+						creationYieldsExpectedToken(),
 				}
 		);
+	}
+
+	public HapiApiSpec creationYieldsExpectedToken() {
+		int salt = Instant.now().getNano();
+
+		return defaultHapiSpec("CreationYieldsExpectedToken")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed("freeze")
+				).when(
+						tokenCreate("primary")
+								.symbol("UniquelyMaybe" + salt)
+								.initialFloat(123)
+								.divisibility(4)
+								.freezeDefault(true)
+								.freezeKey("freeze")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getTokenInfo("primary")
+								.logged()
+								.hasTokenId("primary")
+				);
 	}
 
 	public HapiApiSpec numAccountsAllowedIsDynamic() {
