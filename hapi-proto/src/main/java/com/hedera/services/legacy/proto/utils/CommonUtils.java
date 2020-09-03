@@ -251,17 +251,19 @@ public class CommonUtils {
 //    return rv;
 //  }
 
-  public static TransactionBody extractTransactionBody(Transaction transaction)
+  public static ByteString extractTransactionBodyBytes(Transaction transaction)
       throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
-    ByteString bodyBytes;
-    if (signedTransactionBytes.isEmpty()) {
-      bodyBytes = transaction.getBodyBytes();
-    } else {
-      bodyBytes = SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
+    if (!signedTransactionBytes.isEmpty()) {
+      return SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
     }
 
-    return TransactionBody.parseFrom(bodyBytes);
+    return transaction.getBodyBytes();
+  }
+
+  public static TransactionBody extractTransactionBody(Transaction transaction)
+          throws InvalidProtocolBufferException {
+    return TransactionBody.parseFrom(extractTransactionBodyBytes(transaction));
   }
 
   public static SignatureMap extractSignatureMap(Transaction transaction)
