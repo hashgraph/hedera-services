@@ -25,7 +25,6 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.sigs.SigFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.swirlds.common.crypto.SignatureType;
@@ -65,9 +64,6 @@ public class SigListPubKeyToSigBytesTest {
 			Stream.of(payerSigners, otherPartySigners).flatMap(Arrays::stream).toArray(n -> new KeyTree[n]);
 	private final static KeyFactory factory = KeyFactory.getDefaultInstance();
 	private static Transaction signedTxn;
-	private static List<Signature> payerSigs;
-	private static List<Signature> allPartySigs;
-	private static List<Signature> otherPartySigs;
 	private static ByteString[] expectedPayerSigBytes;
 	private static ByteString[] expectedAllPartySigBytes;
 	private static ByteString[] expectedNonPayerSigBytes;
@@ -75,9 +71,6 @@ public class SigListPubKeyToSigBytesTest {
 	@BeforeAll
 	private static void setupAll() throws Throwable {
 		signedTxn = newSignedSystemDelete().nonPayerKts(otherPartySigners).useSigList().get();
-		payerSigs = signedTxn.getSigs().getSigsList().subList(0, 1);
-		allPartySigs = signedTxn.getSigs().getSigsList();
-		otherPartySigs = signedTxn.getSigs().getSigsList().subList(1, 3);
 		expectedPayerSigBytes = getExpectedSigBytes(payerSigners);
 		expectedAllPartySigBytes = getExpectedSigBytes(allPartySigners);
 		expectedNonPayerSigBytes = getExpectedSigBytes(otherPartySigners);
@@ -159,19 +152,6 @@ public class SigListPubKeyToSigBytesTest {
 
 		// then:
 		assertThat(sigBytes, contains(expectedAllPartySigBytes));
-	}
-
-	@Test
-	public void failsAfterSigBytesAreExhausted() {
-		// given:
-		PubKeyToSigBytes subject = PubKeyToSigBytes.from(otherPartySigs);
-
-		// expect:
-		assertThrows(KeySignatureCountMismatchException.class, () -> {
-			for (int i = 1; i < 7; i++)	{
-				subject.sigBytesFor(ANY_PUBLIC_KEY);
-			}
-		});
 	}
 
 	private static ByteString[] getExpectedSigBytes(KeyTree[] kts) {
