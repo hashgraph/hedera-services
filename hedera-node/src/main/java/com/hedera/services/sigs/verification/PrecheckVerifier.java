@@ -80,13 +80,13 @@ public class PrecheckVerifier {
 		try {
 			List<JKey> reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
 
-			if (accessor.getSignedTxn().hasSigs()) {
-				List<com.hederahashgraph.api.proto.java.Signature> sigs = accessor.getSigsList();
-				if (reqKeys.size() > sigs.size()) {
-					throw new KeySignatureCountMismatchException("Incompatible key/sig shapes!");
-				}
-				assertCompatibility(reqKeys, sigs.subList(0, reqKeys.size()));
-			}
+//			if (accessor.getSignedTxn().hasSigs()) {
+//				List<com.hederahashgraph.api.proto.java.Signature> sigs = accessor.getSigsList();
+//				if (reqKeys.size() > sigs.size()) {
+//					throw new KeySignatureCountMismatchException("Incompatible key/sig shapes!");
+//				}
+//				assertCompatibility(reqKeys, sigs.subList(0, reqKeys.size()));
+//			}
 
 			List<Signature> availSigs = getAvailSigs(reqKeys, accessor);
 			syncVerifier.verifySync(availSigs);
