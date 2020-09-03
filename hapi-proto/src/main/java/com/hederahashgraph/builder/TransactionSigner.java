@@ -110,16 +110,16 @@ public class TransactionSigner {
    * @param privKeyList
    * @return signed transaction
    */
-  public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    for (PrivateKey pk : privKeyList) {
-      List<PrivateKey> aList = new ArrayList<>();
-      aList.add(pk);
-      privKeysList.add(aList);
-    }
-
-    return signTransactionNew(transaction, privKeysList);
-  }
+//  public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
+//    List<List<PrivateKey>> privKeysList = new ArrayList<>();
+//    for (PrivateKey pk : privKeyList) {
+//      List<PrivateKey> aList = new ArrayList<>();
+//      aList.add(pk);
+//      privKeysList.add(aList);
+//    }
+//
+//    return signTransactionNew(transaction, privKeysList);
+//  }
 
   /**
    * Signs transaction using SignatureList with provided private keys. The generated signatures are contained in a
@@ -130,51 +130,51 @@ public class TransactionSigner {
    * @param privKeyList private key list for signing
    * @return transaction with signatures
    */
-  public static Transaction signTransactionNew(Transaction transaction,
-      List<List<PrivateKey>> privKeysList) {
-    Transaction rv = null;
-
-    byte[] bodyBytes;
-    if(transaction.hasBody()) {
-    	bodyBytes = transaction.getBody().toByteArray();
-    }else {
-    	bodyBytes = transaction.getBodyBytes().toByteArray();
-    }
-    Builder allSigsBuilder = SignatureList.newBuilder();
-
-    for (List<PrivateKey> privKeyList : privKeysList) {
-      List<Signature> sigs = new ArrayList<>();
-      for (PrivateKey priv : privKeyList) {
-        com.hederahashgraph.api.proto.java.Signature.Builder sigBuilder = Signature.newBuilder();
-        ByteString sigBytes = signBytes(bodyBytes, priv);
-        if (priv instanceof EdDSAPrivateKey) {
-          sigBuilder.setEd25519(sigBytes);
-        } else {
-          sigBuilder.setECDSA384(sigBytes);
-        }
-
-        Signature sig = sigBuilder.build();
-        sigs.add(sig);
-      }
-
-      Signature sigEntry = null;
-//			if(privKeyList.size() == 1) {
-//				sigEntry = sigs.get(0);				
-//			} else {
-      sigEntry = Signature.newBuilder()
-          .setSignatureList(SignatureList.newBuilder().addAllSigs(sigs)).build();
-//			}
-
-      allSigsBuilder.addSigs(sigEntry);
-    }
-    SignatureList sigs = allSigsBuilder.build();
-    if(transaction.hasBody()) {
-    	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigs).build();
-    }else {
-    	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigs(sigs).build();
-    }
-    return rv;
-  }
+//  public static Transaction signTransactionNew(Transaction transaction,
+//      List<List<PrivateKey>> privKeysList) {
+//    Transaction rv = null;
+//
+//    byte[] bodyBytes;
+//    if(transaction.hasBody()) {
+//    	bodyBytes = transaction.getBody().toByteArray();
+//    }else {
+//    	bodyBytes = transaction.getBodyBytes().toByteArray();
+//    }
+//    Builder allSigsBuilder = SignatureList.newBuilder();
+//
+//    for (List<PrivateKey> privKeyList : privKeysList) {
+//      List<Signature> sigs = new ArrayList<>();
+//      for (PrivateKey priv : privKeyList) {
+//        com.hederahashgraph.api.proto.java.Signature.Builder sigBuilder = Signature.newBuilder();
+//        ByteString sigBytes = signBytes(bodyBytes, priv);
+//        if (priv instanceof EdDSAPrivateKey) {
+//          sigBuilder.setEd25519(sigBytes);
+//        } else {
+//          sigBuilder.setECDSA384(sigBytes);
+//        }
+//
+//        Signature sig = sigBuilder.build();
+//        sigs.add(sig);
+//      }
+//
+//      Signature sigEntry = null;
+////			if(privKeyList.size() == 1) {
+////				sigEntry = sigs.get(0);
+////			} else {
+//      sigEntry = Signature.newBuilder()
+//          .setSignatureList(SignatureList.newBuilder().addAllSigs(sigs)).build();
+////			}
+//
+//      allSigsBuilder.addSigs(sigEntry);
+//    }
+//    SignatureList sigs = allSigsBuilder.build();
+//    if(transaction.hasBody()) {
+//    	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigs).build();
+//    }else {
+//    	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigs(sigs).build();
+//    }
+//    return rv;
+//  }
 
   /**
    * Signs transaction with provided key and public to private key map. The generated signatures are
@@ -187,63 +187,63 @@ public class TransactionSigner {
    * private keys.
    * @return transaction with signatures
    */
-  public static Transaction signTransactionComplex(Transaction transaction, List<Key> keys,
-      Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
-    if(SIGNATURE_FORMAT_ENUM.SignatureMap.name().equals(SIGNATURE_FORMAT))
-      return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
-    else if(SIGNATURE_FORMAT_ENUM.Random.name().equals(SIGNATURE_FORMAT)) {
-      int coin = rand.nextInt(2);
-      if(coin == 0) {
-        return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
-      }
-    }
-    
-    Transaction rv = null;
-    byte[] bodyBytes;
-    if(transaction.hasBody()) {
-    	bodyBytes = transaction.getBody().toByteArray();
-    }else {
-    	bodyBytes = transaction.getBodyBytes().toByteArray();
-    }
-    
-    List<Signature> sigs = new ArrayList<>();
-    for (Key key : keys) {
-      Signature sig = KeyExpansion.sign(key, bodyBytes, pubKey2privKeyMap, 1);
-      sigs.add(sig);
-    }
-    SignatureList sigsList = SignatureList.newBuilder().addAllSigs(sigs).build();
-    
-    if(transaction.hasBody()) {
-      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
-        rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
-      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
-        rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
-      } else {//random
-        int coin = rand.nextInt(2);
-        if(coin == 0) {
-          rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
-        } else {
-          rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
-        }
-      }
-    } else {// tx has bodybytes
-      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
-        TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
-        rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
-      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
-        rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
-      } else {//random
-        int coin = rand.nextInt(2);
-        if(coin == 0) {
-          TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
-          rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
-        } else {
-          rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
-        }
-      }
-    }
-    return rv;
-  }
+//  public static Transaction signTransactionComplex(Transaction transaction, List<Key> keys,
+//      Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
+//    if(SIGNATURE_FORMAT_ENUM.SignatureMap.name().equals(SIGNATURE_FORMAT))
+//      return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
+//    else if(SIGNATURE_FORMAT_ENUM.Random.name().equals(SIGNATURE_FORMAT)) {
+//      int coin = rand.nextInt(2);
+//      if(coin == 0) {
+//        return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
+//      }
+//    }
+//
+//    Transaction rv = null;
+//    byte[] bodyBytes;
+//    if(transaction.hasBody()) {
+//    	bodyBytes = transaction.getBody().toByteArray();
+//    }else {
+//    	bodyBytes = transaction.getBodyBytes().toByteArray();
+//    }
+//
+//    List<Signature> sigs = new ArrayList<>();
+//    for (Key key : keys) {
+//      Signature sig = KeyExpansion.sign(key, bodyBytes, pubKey2privKeyMap, 1);
+//      sigs.add(sig);
+//    }
+//    SignatureList sigsList = SignatureList.newBuilder().addAllSigs(sigs).build();
+//
+//    if(transaction.hasBody()) {
+//      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
+//        rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
+//      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
+//        rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+//      } else {//random
+//        int coin = rand.nextInt(2);
+//        if(coin == 0) {
+//          rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
+//        } else {
+//          rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+//        }
+//      }
+//    } else {// tx has bodybytes
+//      if(TX_BODY_FORMAT_ENUM.Body.name().equals(TX_BODY_FORMAT)) {
+//        TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
+//        rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
+//      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.name().equals(TX_BODY_FORMAT)) {
+//        rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+//      } else {//random
+//        int coin = rand.nextInt(2);
+//        if(coin == 0) {
+//          TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
+//          rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
+//        } else {
+//          rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+//        }
+//      }
+//    }
+//    return rv;
+//  }
 
   /**
    * Signs transaction with provided key and public to private key map. The generated signatures are
@@ -255,24 +255,24 @@ public class TransactionSigner {
    * private keys.
    * @return transaction with signatures as a SignatureMap object
    */
-  public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
-      Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
-    Transaction rv = null;
-    byte[] bodyBytes;
-    if(transaction.hasBody()) {
-    	bodyBytes = transaction.getBody().toByteArray();
-    }else {
-    	bodyBytes = transaction.getBodyBytes().toByteArray();
-    }
-    
-    SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
-    if(transaction.hasBody()) {
-    	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
-    }else {
-    	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
-    }
-    return rv;
-  }
+//  public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
+//      Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
+//    Transaction rv = null;
+//    byte[] bodyBytes;
+//    if(transaction.hasBody()) {
+//    	bodyBytes = transaction.getBody().toByteArray();
+//    }else {
+//    	bodyBytes = transaction.getBodyBytes().toByteArray();
+//    }
+//
+//    SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
+//    if(transaction.hasBody()) {
+//    	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
+//    }else {
+//    	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
+//    }
+//    return rv;
+//  }
 
   /**
    * Signs a message with provided key and public to private key map. The generated signatures are
@@ -357,40 +357,40 @@ public class TransactionSigner {
    * @return transaction with signatures
    * @throws Exception
    */
-    public static Transaction signTransactionNewWithSignatureMap(Transaction transaction,
-        List<List<PrivateKey>> privKeysList, List<List<PublicKey>> pubKeysList) throws Exception {
-      Transaction rv = null;
-  
-      byte[] bodyBytes;
-      if(transaction.hasBody()) {
-      	bodyBytes = transaction.getBody().toByteArray();
-      }else {
-      	bodyBytes = transaction.getBodyBytes().toByteArray();
-      }
-      
-      if(pubKeysList.size() != privKeysList.size()) {
-        new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
-      }
-      
-      List<SignaturePair> pairs = new ArrayList<>();
-      int i = 0;
-      for (List<PrivateKey> privKeyList : privKeysList) {
-        List<PublicKey> pubKeyList = pubKeysList.get(i++);
-        int j = 0;
-        for(PrivateKey privKey : privKeyList) {
-          PublicKey pubKey = pubKeyList.get(j++);
-          SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
-          pairs.add(sig);
-        }
-      }
-      SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
-      if(transaction.hasBody()) {
-      	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
-      }else {
-      	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
-      }
-      return rv;
-    }
+//    public static Transaction signTransactionNewWithSignatureMap(Transaction transaction,
+//        List<List<PrivateKey>> privKeysList, List<List<PublicKey>> pubKeysList) throws Exception {
+//      Transaction rv = null;
+//
+//      byte[] bodyBytes;
+//      if(transaction.hasBody()) {
+//      	bodyBytes = transaction.getBody().toByteArray();
+//      }else {
+//      	bodyBytes = transaction.getBodyBytes().toByteArray();
+//      }
+//
+//      if(pubKeysList.size() != privKeysList.size()) {
+//        new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
+//      }
+//
+//      List<SignaturePair> pairs = new ArrayList<>();
+//      int i = 0;
+//      for (List<PrivateKey> privKeyList : privKeysList) {
+//        List<PublicKey> pubKeyList = pubKeysList.get(i++);
+//        int j = 0;
+//        for(PrivateKey privKey : privKeyList) {
+//          PublicKey pubKey = pubKeyList.get(j++);
+//          SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
+//          pairs.add(sig);
+//        }
+//      }
+//      SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
+//      if(transaction.hasBody()) {
+//      	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
+//      }else {
+//      	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
+//      }
+//      return rv;
+//    }
 
   private static SignaturePair signAsSignaturePair(PublicKey pubKey, PrivateKey privKey,
       byte[] bodyBytes) throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, DecoderException {
@@ -411,21 +411,21 @@ public class TransactionSigner {
    * @return signed transaction
    * @throws Exception 
    */
-  public static Transaction signTransactionWithSignatureMap(Transaction transaction, List<PrivateKey> privKeyList, List<PublicKey> pubKeyList) throws Exception {
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<List<PublicKey>> pubKeysList = new ArrayList<>();
-    int i = 0;
-    for (PrivateKey pk : privKeyList) {
-      List<PrivateKey> aList = new ArrayList<>();
-      aList.add(pk);
-      privKeysList.add(aList);
-      
-      List<PublicKey> bList = new ArrayList<>();
-      PublicKey pubKey = pubKeyList.get(i++);
-      bList.add(pubKey);
-      pubKeysList.add(bList);
-    }
-  
-    return signTransactionNewWithSignatureMap(transaction, privKeysList, pubKeysList);
-  }
+//  public static Transaction signTransactionWithSignatureMap(Transaction transaction, List<PrivateKey> privKeyList, List<PublicKey> pubKeyList) throws Exception {
+//    List<List<PrivateKey>> privKeysList = new ArrayList<>();
+//    List<List<PublicKey>> pubKeysList = new ArrayList<>();
+//    int i = 0;
+//    for (PrivateKey pk : privKeyList) {
+//      List<PrivateKey> aList = new ArrayList<>();
+//      aList.add(pk);
+//      privKeysList.add(aList);
+//
+//      List<PublicKey> bList = new ArrayList<>();
+//      PublicKey pubKey = pubKeyList.get(i++);
+//      bList.add(pubKey);
+//      pubKeysList.add(bList);
+//    }
+//
+//    return signTransactionNewWithSignatureMap(transaction, privKeysList, pubKeysList);
+//  }
 }

@@ -166,14 +166,14 @@ public class FeeBuilder {
    * This method is invoked by individual Fee builder classes to calculated the number of signatures
    * in transaction.
    */
-  public static long getVPT(Transaction tx) {
-    // need to verify recursive depth of signatures
-    if (tx == null) {
-      return 0;
-    }
-    Signature sig = Signature.newBuilder().setSignatureList(tx.getSigs()).build();
-    return calculateNoOfSigs(sig, 0);
-  }
+//  public static long getVPT(Transaction tx) {
+//    // need to verify recursive depth of signatures
+//    if (tx == null) {
+//      return 0;
+//    }
+//    Signature sig = Signature.newBuilder().setSignatureList(tx.getSigs()).build();
+//    return calculateNoOfSigs(sig, 0);
+//  }
 
   public static int calculateNoOfSigsInList(SignatureList signatureList) {
     if (signatureList == null) {
@@ -186,21 +186,21 @@ public class FeeBuilder {
   /**
    * This method returns the gas converted to hashbar units. (This needs to be updated)
    */
-  public static long getGas(Transaction tx) throws Exception {
-    long gas = 0;
-    TransactionBody body;
-    if (tx.hasBody()) {
-      body = tx.getBody();
-    } else {
-      body = TransactionBody.parseFrom(tx.getBodyBytes());
-    }
-    if (body.hasContractCreateInstance()) {
-      gas = body.getContractCreateInstance().getGas();
-    } else if (body.hasContractCall()) {
-      gas = body.getContractCall().getGas();
-    }
-    return gas * 1; // 1 Gas = 1 hashbars - need to get from standard configuration
-  }
+//  public static long getGas(Transaction tx) throws Exception {
+//    long gas = 0;
+//    TransactionBody body;
+//    if (tx.hasBody()) {
+//      body = tx.getBody();
+//    } else {
+//      body = TransactionBody.parseFrom(tx.getBodyBytes());
+//    }
+//    if (body.hasContractCreateInstance()) {
+//      gas = body.getContractCreateInstance().getGas();
+//    } else if (body.hasContractCall()) {
+//      gas = body.getContractCall().getGas();
+//    }
+//    return gas * 1; // 1 Gas = 1 hashbars - need to get from standard configuration
+//  }
 
   /**
    * This method returns the Key size in bytes
@@ -327,26 +327,26 @@ public class FeeBuilder {
     return keyStorageSize;
   }
 
-  public static int getSignatureCount(Transaction transaction) {
-    if (transaction.hasSigMap()) {
-      return transaction.getSigMap().getSigPairCount();
-    } else if (transaction.hasSigs()) {
-      Signature sig = Signature.newBuilder().setSignatureList(transaction.getSigs()).build();
-      return calculateNoOfSigs(sig, 0);
-    } else {
-      return 0;
-    }
-  }
+//  public static int getSignatureCount(Transaction transaction) {
+//    if (transaction.hasSigMap()) {
+//      return transaction.getSigMap().getSigPairCount();
+//    } else if (transaction.hasSigs()) {
+//      Signature sig = Signature.newBuilder().setSignatureList(transaction.getSigs()).build();
+//      return calculateNoOfSigs(sig, 0);
+//    } else {
+//      return 0;
+//    }
+//  }
 
-  public static int getSignatureSize(Transaction transaction) {
-    if (transaction.hasSigMap()) {
-      return transaction.getSigMap().toByteArray().length;
-    } else if (transaction.hasSigs()) {
-      return transaction.getSigs().toByteArray().length;
-    } else {
-      return 0;
-    }
-  }
+//  public static int getSignatureSize(Transaction transaction) {
+//    if (transaction.hasSigMap()) {
+//      return transaction.getSigMap().toByteArray().length;
+//    } else if (transaction.hasSigs()) {
+//      return transaction.getSigs().toByteArray().length;
+//    } else {
+//      return 0;
+//    }
+//  }
 
   /**
    * Convert tinyCents to tinybars

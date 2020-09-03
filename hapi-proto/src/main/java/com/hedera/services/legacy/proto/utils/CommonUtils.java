@@ -212,52 +212,52 @@ public class CommonUtils {
    *
    * @return generated readable string
    */
-  public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
-    String rv = null;
-    try {
-      TransactionBody body;
-      if (grpcTransaction.hasBody()) {
-        body = grpcTransaction.getBody();
-      } else {
-        body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
-      }
-      rv = "body=" + TextFormat.shortDebugString(body) + "; sigs=" + TextFormat.shortDebugString(
-          grpcTransaction.hasSigs() ? grpcTransaction.getSigs() : grpcTransaction.getSigMap());
-    } catch (InvalidProtocolBufferException e) {
-      throw e;
-    }
-    return rv;
-  }
+//  public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
+//    String rv = null;
+//    try {
+//      TransactionBody body;
+//      if (grpcTransaction.hasBody()) {
+//        body = grpcTransaction.getBody();
+//      } else {
+//        body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
+//      }
+//      rv = "body=" + TextFormat.shortDebugString(body) + "; sigs=" + TextFormat.shortDebugString(
+//          grpcTransaction.hasSigs() ? grpcTransaction.getSigs() : grpcTransaction.getSigMap());
+//    } catch (InvalidProtocolBufferException e) {
+//      throw e;
+//    }
+//    return rv;
+//  }
 
   /**
    * Generates a short human readable string for grpc transaction.
    *
    * @return generated readable string
    */
-  public static String toReadableStringShort(
-          Transaction grpcTransaction) throws InvalidProtocolBufferException {
-    String rv = null;
-    TransactionBody body;
-    if (grpcTransaction.hasBody()) {
-      body = grpcTransaction.getBody();
-    } else {
-      body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
-    }
-    rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID()) + "; memo=" + body
-            .getMemo();
-    return rv;
-  }
+//  public static String toReadableStringShort(
+//          Transaction grpcTransaction) throws InvalidProtocolBufferException {
+//    String rv = null;
+//    TransactionBody body;
+//    if (grpcTransaction.hasBody()) {
+//      body = grpcTransaction.getBody();
+//    } else {
+//      body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
+//    }
+//    rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID()) + "; memo=" + body
+//            .getMemo();
+//    return rv;
+//  }
 
-  public static TransactionBody extractTransactionBody(Transaction transaction)
-      throws InvalidProtocolBufferException {
-    TransactionBody bodyToReturn;
-    if (transaction.hasBody()) {
-      bodyToReturn = transaction.getBody();
-    } else {
-      bodyToReturn = TransactionBody.parseFrom(transaction.getBodyBytes());
-    }
-    return bodyToReturn;
-  }
+//  public static TransactionBody extractTransactionBody(Transaction transaction)
+//      throws InvalidProtocolBufferException {
+//    TransactionBody bodyToReturn;
+//    if (transaction.hasBody()) {
+//      bodyToReturn = transaction.getBody();
+//    } else {
+//      bodyToReturn = TransactionBody.parseFrom(transaction.getBodyBytes());
+//    }
+//    return bodyToReturn;
+//  }
 
   public static void writeTxId2File(String txIdString) throws IOException {
     writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
