@@ -20,8 +20,11 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -32,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -40,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -57,6 +62,17 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
+				.withAccount(FIRST_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(FIRST_TOKEN_SENDER_KT).get())
+				.withAccount(SECOND_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(SECOND_TOKEN_SENDER_KT).get())
+				.withAccount(TOKEN_RECEIVER_ID,
+						newAccount()
+								.balance(0L).get())
 				.withAccount(DEFAULT_NODE_ID,
 						newAccount()
 								.balance(0L)
@@ -144,6 +160,33 @@ public interface TxnHandlingScenario {
 		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
+	}
+
+	default FCMap<MerkleEntityId, MerkleToken> tokens() {
+		var tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
+		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
+
+		var unfrozenToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"UnfrozenToken", false,
+				new EntityId(1, 2, 3));
+		given(tokens.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
+
+		var frozenToken = new MerkleToken(
+						100, 1,
+						adminKey,
+						"FrozenToken", true,
+						new EntityId(1, 2, 4));
+		frozenToken.setFreezeKey(optionalFreezeKey);
+
+		given(tokens.get(fromTokenId(KNOWN_TOKEN_NO_FREEZE)))
+				.willReturn(unfrozenToken);
+		given(tokens.get(fromTokenId(KNOWN_TOKEN_WITH_FREEZE)))
+				.willReturn(frozenToken);
+
+		return tokens;
 	}
 
 	String MISSING_ACCOUNT_ID = "1.2.3";
@@ -237,7 +280,25 @@ public interface TxnHandlingScenario {
 	String MISSING_TOPIC_ID = "0.0.12121";
 	TopicID MISSING_TOPIC = asTopic(MISSING_TOPIC_ID);
 
-	KeyTree MISC_TOPIC_SUBMIT_KEY = withRoot(ed25519());
-	KeyTree MISC_TOPIC_ADMIN_KEY = withRoot(ed25519());
-	KeyTree UPDATE_TOPIC_ADMIN_KEY = withRoot(ed25519());
+	String KNOWN_TOKEN_NO_FREEZE_ID = "0.0.666";
+	TokenID KNOWN_TOKEN_NO_FREEZE = asToken(KNOWN_TOKEN_NO_FREEZE_ID);
+	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";
+	TokenID KNOWN_TOKEN_WITH_FREEZE = asToken(KNOWN_TOKEN_WITH_FREEZE_ID);
+	String FIRST_TOKEN_SENDER_ID = "0.0.888";
+	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
+	String SECOND_TOKEN_SENDER_ID = "0.0.999";
+	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
+	String TOKEN_RECEIVER_ID = "0.0.1111";
+	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
+
+	String UNKNOWN_TOKEN_ID = "0.0.666";
+	TokenID UNKNOWN_TOKEN = asToken(UNKNOWN_TOKEN_ID);
+
+	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
+	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());
+	KeyTree TOKEN_ADMIN_KT = withRoot(ed25519());
+	KeyTree TOKEN_FREEZE_KT = withRoot(ed25519());
+	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
+	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
+	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());
 }

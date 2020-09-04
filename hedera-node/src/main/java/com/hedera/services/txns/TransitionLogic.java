@@ -26,6 +26,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 /**
  * Defines a type that can perform a specific kind of state transition
  * within the active node and transaction context, under two conditions:
@@ -50,6 +52,8 @@ import java.util.function.Predicate;
  * @author Michael Tinker
  */
 public interface TransitionLogic {
+	Function<TransactionBody, ResponseCodeEnum> SYNTAX_RUBBER_STAMP = ignore -> OK;
+
 	/**
 	 * Mutates the active state based on the active node and transaction context.
 	 *
@@ -69,5 +73,7 @@ public interface TransitionLogic {
 	 *
 	 * @return a syntax check functional.
 	 */
-	Function<TransactionBody, ResponseCodeEnum> syntaxCheck();
+	default Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_RUBBER_STAMP;
+	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.ledger.ids;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -32,7 +33,7 @@ import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
 @RunWith(JUnitPlatform.class)
-class SeqNoMerkleEntityIdSourceTest {
+class SeqNoEntityIdSourceTest {
 	final AccountID sponsor = asAccount("1.2.3");
 	SequenceNumber seqNo;
 	SeqNoEntityIdSource subject;
@@ -63,5 +64,25 @@ class SeqNoMerkleEntityIdSourceTest {
 
 		// then:
 		assertEquals(asFile("1.2.555"), newId);
+	}
+
+	@Test
+	public void returnsExpectedTokenId() {
+		given(seqNo.getAndIncrement()).willReturn(555L);
+
+		// when:
+		TokenID newId = subject.newTokenId(sponsor);
+
+		// then:
+		assertEquals(asToken("1.2.555"), newId);
+	}
+
+	@Test
+	public void reclaimDecrementsId() {
+		// when:
+		subject.reclaimLastId();
+
+		// then:
+		verify(seqNo).decrement();
 	}
 }

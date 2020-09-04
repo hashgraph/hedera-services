@@ -200,4 +200,23 @@ class QueryResponseHelperTest {
 		inOrder.verify(observer).onCompleted();
 		inOrder.verify(stats).networkQueryAnswered(metric);
 	}
+
+	@Test
+	public void helpsWithTokenHappyPath() {
+		// setup:
+		InOrder inOrder = inOrder(answerFlow, stats, observer);
+
+		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
+		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
+
+		// when:
+		subject.respondToToken(query, observer, answer, metric);
+
+		// then:
+		inOrder.verify(stats).tokenQueryReceived(metric);
+		inOrder.verify(answerFlow).satisfyUsing(answer, query);
+		inOrder.verify(observer).onNext(okResponse);
+		inOrder.verify(observer).onCompleted();
+		inOrder.verify(stats).tokenQueryAnswered(metric);
+	}
 }

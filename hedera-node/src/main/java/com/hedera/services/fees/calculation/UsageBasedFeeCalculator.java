@@ -38,7 +38,6 @@ import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,11 +82,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	@Override
 	public void init() {
-		try {
-			usagePrices.loadPriceSchedules();
-		} catch (NoFeeScheduleExistsException nfse) {
-			throw new IllegalStateException(nfse);
-		}
+		usagePrices.loadPriceSchedules();
 	}
 
 	@Override

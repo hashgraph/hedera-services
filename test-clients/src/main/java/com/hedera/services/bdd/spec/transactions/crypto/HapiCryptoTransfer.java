@@ -80,6 +80,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private final static Collector<TransferList, ?, TransferList> mergingAccounts = transferCollector(accountMerge);
 	private final static Collector<TransferList, ?, TransferList> appendingAccounts = transferCollector(accountAppend);
 
+	@SafeVarargs
 	public HapiCryptoTransfer(Function<HapiApiSpec, TransferList>... providers) {
 		numLogicalTransfers = providers.length;
 		if (providers.length == 0) {

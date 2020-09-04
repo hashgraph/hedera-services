@@ -21,11 +21,10 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 
 import java.time.Instant;
 
 public interface BalancesExporter {
 	boolean isTimeToExport(Instant now);
-	void toCsvFile(ServicesState signedState, Instant when) throws InvalidTotalAccountBalanceException;
+	void toCsvFile(ServicesState signedState, Instant when);
 }

@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,12 @@ import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -38,9 +43,12 @@ import org.mockito.Mockito;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,16 +72,32 @@ class ExpirableTxnRecordTest {
 	TxnId.Provider legacyTxnIdProvider;
 	TxnReceipt.Provider legacyReceiptProvider;
 	RichInstant.Provider legacyInstantProvider;
-	HbarAdjustments.Provider legacyAdjustmentsProvider;
+	CurrencyAdjustments.Provider legacyAdjustmentsProvider;
 	SolidityFnResult.Provider legacyFnResultProvider;
 
 	byte[] pretendHash = "not-really-a-hash".getBytes();
+
+	TokenID tokenA = IdUtils.asToken("1.2.3");
+	TokenID tokenB = IdUtils.asToken("1.2.4");
+	AccountID sponsor = IdUtils.asAccount("1.2.5");
+	AccountID beneficiary = IdUtils.asAccount("1.2.6");
+	AccountID magician = IdUtils.asAccount("1.2.7");
+	TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
+			.setToken(tokenA)
+			.addAllTransfers(
+					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
+			.build();
+	TokenTransferList bTokenTransfers = TokenTransferList.newBuilder()
+			.setToken(tokenB)
+			.addAllTransfers(
+					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
+			.build();
 
 	ExpirableTxnRecord subject;
 
 	@BeforeEach
 	public void setup() {
-		subject = subjectRecord();
+		subject = subjectRecordWithTokenTransfers();
 
 		din = mock(DataInputStream.class);
 
@@ -82,7 +106,7 @@ class ExpirableTxnRecordTest {
 		legacyReceiptProvider = mock(TxnReceipt.Provider.class);
 		legacyInstantProvider = mock(RichInstant.Provider.class);
 		legacyFnResultProvider = mock(SolidityFnResult.Provider.class);
-		legacyAdjustmentsProvider = mock(HbarAdjustments.Provider.class);
+		legacyAdjustmentsProvider = mock(CurrencyAdjustments.Provider.class);
 
 		ExpirableTxnRecord.legacyAdjustmentsProvider = legacyAdjustmentsProvider;
 		ExpirableTxnRecord.legacyFnResultProvider = legacyFnResultProvider;
@@ -97,8 +121,19 @@ class ExpirableTxnRecordTest {
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.build()
-		);
+						.build());
+		s.setExpiry(expiry);
+		s.setSubmittingMember(submittingMember);
+		return s;
+	}
+
+	private ExpirableTxnRecord subjectRecordWithTokenTransfers() {
+		var s = ExpirableTxnRecord.fromGprc(
+				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+						.setTransactionHash(ByteString.copyFrom(pretendHash))
+						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+						.build());
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);
 		return s;
@@ -125,8 +160,9 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	public void v070DeserializeWorks() throws IOException {
 		// setup:
+		subject = subjectRecord();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
 		given(serdes.readNullableSerializable(fin))
@@ -148,7 +184,44 @@ class ExpirableTxnRecordTest {
 		var deserializedRecord = new ExpirableTxnRecord();
 
 		// when:
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.MERKLE_VERSION);
+		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_070_VERSION);
+
+		// then:
+		assertEquals(subject, deserializedRecord);
+	}
+
+	@Test
+	public void v080DeserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		given(serdes.readNullableSerializable(fin))
+				.willReturn(subject.getReceipt())
+				.willReturn(subject.getTxnId())
+				.willReturn(subject.getHbarAdjustments())
+				.willReturn(subject.getContractCallResult())
+				.willReturn(subject.getContractCreateResult());
+		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
+				.willReturn(List.of(
+						(SelfSerializable) subject.getTokens().get(0),
+						(SelfSerializable) subject.getTokens().get(1)))
+				.willReturn(List.of(
+						(SelfSerializable) subject.getTokenAdjustments().get(0),
+						(SelfSerializable) subject.getTokenAdjustments().get(1)));
+		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
+				.willReturn(subject.getTxnHash());
+		given(serdes.readNullableInstant(fin))
+				.willReturn(subject.getConsensusTimestamp());
+		given(fin.readLong()).willReturn(subject.getFee())
+				.willReturn(subject.getExpiry())
+				.willReturn(subject.getSubmittingMember());
+		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+				.willReturn(subject.getMemo());
+		// and:
+		var deserializedRecord = new ExpirableTxnRecord();
+
+		// when:
+		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_080_VERSION);
 
 		// then:
 		assertEquals(subject, deserializedRecord);
@@ -175,6 +248,10 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
 		inOrder.verify(fout).writeLong(subject.getExpiry());
 		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
+		inOrder.verify(fout).writeSerializableList(
+				subject.getTokens(), true, true);
+		inOrder.verify(fout).writeSerializableList(
+				subject.getTokenAdjustments(), true, true);
 	}
 
 	@Test
@@ -206,7 +283,7 @@ class ExpirableTxnRecordTest {
 		// given:
 		var one = subject;
 		var two = DomainSerdesTest.recordOne();
-		var three = subjectRecord();
+		var three = subjectRecordWithTokenTransfers();
 
 		// when:
 		assertEquals(one, one);
@@ -235,7 +312,11 @@ class ExpirableTxnRecordTest {
 						"contractCreation=SolidityFnResult{gasUsed=55, bloom=, " +
 						"result=, error=null, contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 						"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
-						"adjustments=HbarAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}}",
+						"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}," +
+						" " +
+						"tokenAdjustments=" +
+						"1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
+						"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]})}",
 				subject.toString());
 	}
 
@@ -243,6 +324,7 @@ class ExpirableTxnRecordTest {
 	public void legacyProviderWorks() throws IOException {
 		// setup:
 		var readFullyOccurrence = new AtomicInteger(0);
+		subject = subjectRecord();
 
 		given(din.readLong())
 				.willReturn(-2L)
@@ -268,7 +350,7 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getMemo().getBytes().length);
 		// and:
 		willAnswer(invocation -> {
-			var buffer = (byte[])invocation.getArgument(0);
+			var buffer = (byte[]) invocation.getArgument(0);
 			if (readFullyOccurrence.getAndIncrement() == 0) {
 				System.arraycopy(pretendHash, 0, buffer, 0, pretendHash.length);
 			} else {
@@ -292,7 +374,7 @@ class ExpirableTxnRecordTest {
 		ExpirableTxnRecord.legacyTxnIdProvider = TxnId.LEGACY_PROVIDER;
 		ExpirableTxnRecord.legacyReceiptProvider = TxnReceipt.LEGACY_PROVIDER;
 		ExpirableTxnRecord.legacyInstantProvider = RichInstant.LEGACY_PROVIDER;
-		ExpirableTxnRecord.legacyAdjustmentsProvider = HbarAdjustments.LEGACY_PROVIDER;
+		ExpirableTxnRecord.legacyAdjustmentsProvider = CurrencyAdjustments.LEGACY_PROVIDER;
 		ExpirableTxnRecord.legacyFnResultProvider = SolidityFnResult.LEGACY_PROVIDER;
 		ExpirableTxnRecord.serdes = new DomainSerdes();
 	}

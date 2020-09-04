@@ -20,17 +20,32 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-public class TestAccount {
+import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.TokenViewMergeable;
+
+public class TestAccount implements TokenViewMergeable<TestAccount> {
+	private static final long DEFAULT_TOKEN_THING = 123L;
+
 	public long value;
+	public long tokenThing;
 	public Object thing;
 	public boolean flag;
 
-	public TestAccount() {}
-	public TestAccount(long value, Object thing, boolean flag) {
+	public TestAccount() {
+		tokenThing = DEFAULT_TOKEN_THING;
+	}
+
+	public TestAccount(long value, Object thing, boolean flag, long tokenThing) {
 		this.value = value;
 		this.thing = thing;
 		this.flag = flag;
+		this.tokenThing = tokenThing;
 	}
+
+	public TestAccount(long value, Object thing, boolean flag) {
+		this(value, thing, flag, DEFAULT_TOKEN_THING);
+	}
+
 
 	public Object getThing() {
 		return thing;
@@ -56,6 +71,14 @@ public class TestAccount {
 		this.value = value;
 	}
 
+	public long getTokenThing() {
+		return tokenThing;
+	}
+
+	public void setTokenThing(long tokenThing) {
+		this.tokenThing = tokenThing;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
@@ -65,6 +88,29 @@ public class TestAccount {
 			return false;
 		}
 		TestAccount that = (TestAccount)o;
-		return thing.equals(that.thing) && (flag == that.flag) && (value == that.value);
+		return thing.equals(that.thing)
+				&& (flag == that.flag)
+				&& (value == that.value)
+				&& this.tokenThing == that.tokenThing;
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("flag", flag)
+				.add("thing", thing)
+				.add("value", value)
+				.add("tokenThing", tokenThing)
+				.toString();
+	}
+
+	@Override
+	public void mergeTokenPropertiesFrom(TestAccount viewSoFar) {
+		this.tokenThing = viewSoFar.tokenThing;
+	}
+
+	@Override
+	public String readableTokenRelationships() {
+		return "OK(" + tokenThing + ")";
 	}
 }

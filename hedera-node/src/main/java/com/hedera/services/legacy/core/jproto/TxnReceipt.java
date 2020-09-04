@@ -55,7 +55,9 @@ public class TxnReceipt implements SelfSerializable {
 	static final long MISSING_TOPIC_SEQ_NO = 0L;
 	static final long MISSING_RUNNING_HASH_VERSION = 0L;
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_070_VERSION = 1;
+	static final int RELEASE_080_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_080_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -117,6 +119,7 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId accountId;
 	EntityId fileId;
 	EntityId topicId;
+	EntityId tokenId;
 	EntityId contractId;
 	ExchangeRates exchangeRates;
 
@@ -127,6 +130,7 @@ public class TxnReceipt implements SelfSerializable {
 			@Nullable EntityId accountId,
 			@Nullable EntityId fileId,
 			@Nullable EntityId contractId,
+			@Nullable EntityId tokenId,
 			@Nullable ExchangeRates exchangeRates,
 			@Nullable EntityId topicId,
 			long topicSequenceNumber,
@@ -137,6 +141,7 @@ public class TxnReceipt implements SelfSerializable {
 				accountId,
 				fileId,
 				contractId,
+				tokenId,
 				exchangeRates,
 				topicId,
 				topicSequenceNumber,
@@ -149,6 +154,7 @@ public class TxnReceipt implements SelfSerializable {
 			@Nullable EntityId accountId,
 			@Nullable EntityId fileId,
 			@Nullable EntityId contractId,
+			@Nullable EntityId tokenId,
 			@Nullable ExchangeRates exchangeRate,
 			@Nullable EntityId topicId,
 			long topicSequenceNumber,
@@ -161,6 +167,7 @@ public class TxnReceipt implements SelfSerializable {
 		this.contractId = contractId;
 		this.exchangeRates = exchangeRate;
 		this.topicId = topicId;
+		this.tokenId = tokenId;
 		this.topicSequenceNumber = topicSequenceNumber;
 		this.topicRunningHash = ((topicRunningHash != MISSING_RUNNING_HASH) && (topicRunningHash.length > 0))
 				? topicRunningHash
@@ -188,6 +195,7 @@ public class TxnReceipt implements SelfSerializable {
 		serdes.writeNullableSerializable(fileId, out);
 		serdes.writeNullableSerializable(contractId, out);
 		serdes.writeNullableSerializable(topicId, out);
+		serdes.writeNullableSerializable(tokenId, out);
 		if (topicRunningHash == MISSING_RUNNING_HASH) {
 			out.writeBoolean(false);
 		} else {
@@ -206,6 +214,9 @@ public class TxnReceipt implements SelfSerializable {
 		fileId = serdes.readNullableSerializable(in);
 		contractId = serdes.readNullableSerializable(in);
 		topicId = serdes.readNullableSerializable(in);
+		if (version > RELEASE_070_VERSION) {
+			tokenId = serdes.readNullableSerializable(in);
+		}
 		var isSubmitMessageReceipt = in.readBoolean();
 		if (isSubmitMessageReceipt) {
 			topicSequenceNumber = in.readLong();
@@ -242,6 +253,10 @@ public class TxnReceipt implements SelfSerializable {
 		return topicId;
 	}
 
+	public EntityId getTokenId() {
+		return tokenId;
+	}
+
 	public long getTopicSequenceNumber() {
 		return topicSequenceNumber;
 	}
@@ -267,6 +282,7 @@ public class TxnReceipt implements SelfSerializable {
 				Objects.equals(fileId, that.fileId) &&
 				Objects.equals(contractId, that.contractId) &&
 				Objects.equals(topicId, that.topicId) &&
+				Objects.equals(tokenId, that.tokenId) &&
 				Objects.equals(topicSequenceNumber, that.topicSequenceNumber) &&
 				Arrays.equals(topicRunningHash, that.topicRunningHash);
 	}
@@ -274,8 +290,9 @@ public class TxnReceipt implements SelfSerializable {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-				runningHashVersion, status, accountId, fileId, contractId, topicId, topicSequenceNumber,
-				topicRunningHash);
+				runningHashVersion, status,
+				accountId, fileId, contractId, topicId, tokenId,
+				topicSequenceNumber, Arrays.hashCode(topicRunningHash));
 	}
 
 	@Override
@@ -288,6 +305,9 @@ public class TxnReceipt implements SelfSerializable {
 		}
 		if (fileId != null) {
 			helper.add("fileCreated", fileId);
+		}
+		if (tokenId != null) {
+			helper.add("tokenCreated", tokenId);
 		}
 		if (contractId != null) {
 			helper.add("contractCreated", contractId);
@@ -313,12 +333,14 @@ public class TxnReceipt implements SelfSerializable {
 		EntityId jContractID =
 				grpc.hasContractID() ? EntityId.ofNullableContractId(grpc.getContractID()) : null;
 		EntityId topicId = grpc.hasTopicID() ? EntityId.ofNullableTopicId(grpc.getTopicID()) : null;
+		EntityId tokenId = grpc.hasTokenId() ? EntityId.ofNullableTokenId(grpc.getTokenId()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
 		return new TxnReceipt(
 				status,
 				accountId,
 				jFileID,
 				jContractID,
+				tokenId,
 				ExchangeRates.fromGrpc(grpc.getExchangeRate()),
 				topicId,
 				grpc.getTopicSequenceNumber(),
@@ -350,6 +372,9 @@ public class TxnReceipt implements SelfSerializable {
 					txReceipt.getContractId().num(),
 					txReceipt.getContractId().realm(),
 					txReceipt.getContractId().shard()));
+		}
+		if (txReceipt.getTokenId() != null) {
+			builder.setTokenId(txReceipt.getTokenId().toGrpcTokenId());
 		}
 		if (txReceipt.getExchangeRates() != null) {
 			builder.setExchangeRate(txReceipt.exchangeRates.toGrpc());

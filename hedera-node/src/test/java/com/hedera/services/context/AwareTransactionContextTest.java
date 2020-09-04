@@ -36,6 +36,8 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,17 +49,20 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
+import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
+import java.util.List;
 
 import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,6 +94,11 @@ public class AwareTransactionContextTest {
 	private AccountID created = asAccount("1.0.2");
 	private AccountID another = asAccount("1.0.300");
 	private TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private TokenID tokenCreated = asToken("3.0.2");
+	private TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
+			.setToken(tokenCreated)
+			.addAllTransfers(withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
+			.build();
 	private FileID fileCreated = asFile("2.0.1");
 	private ContractID contractCreated = asContract("0.1.2");
 	private TopicID topicCreated = asTopic("5.4.3");
@@ -127,6 +137,7 @@ public class AwareTransactionContextTest {
 
 		ledger = mock(HederaLedger.class);
 		given(ledger.netTransfersInTxn()).willReturn(transfers);
+		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		exchange = mock(HbarCentExchange.class);
 		given(exchange.activeRates()).willReturn(ratesNow);
@@ -336,6 +347,15 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
+	public void usesTokenTransfersToSetApropos() {
+		// when:
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(tokenTransfers, record.getTokenTransferLists(0));
+	}
+
+	@Test
 	public void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
@@ -409,6 +429,17 @@ public class AwareTransactionContextTest {
 		// then:
 		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
 		assertEquals(created, record.getReceipt().getAccountID());
+	}
+
+	@Test
+	public void getsExpectedReceiptForTokenCreation() {
+		// when:
+		subject.setCreated(tokenCreated);
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
+		assertEquals(tokenCreated, record.getReceipt().getTokenId());
 	}
 
 	@Test

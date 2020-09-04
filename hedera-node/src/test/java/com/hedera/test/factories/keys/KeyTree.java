@@ -20,6 +20,7 @@ package com.hedera.test.factories.keys;
  * ‍
  */
 
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 
@@ -55,6 +56,9 @@ public class KeyTree {
 
 	public JKey asJKey() throws Exception {
 		return JKey.mapKey(asKey());
+	}
+	public JKey asJKeyUnchecked() {
+		return MiscUtils.asFcKeyUnchecked(asKey());
 	}
 	public Key asKey() {
 		return asKey(KeyFactory.getDefaultInstance());

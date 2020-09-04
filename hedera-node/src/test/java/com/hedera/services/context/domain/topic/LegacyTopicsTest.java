@@ -31,6 +31,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.fcmap.FCMap;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -43,6 +44,7 @@ import java.time.Instant;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled
 @RunWith(JUnitPlatform.class)
 public class LegacyTopicsTest {
 	@Test

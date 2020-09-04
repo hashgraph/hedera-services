@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSIONINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
@@ -92,6 +93,7 @@ public class MiscUtils {
 		queryFunctions.put(FILEGETINFO, FileGetInfo);
 		queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
+		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
@@ -149,6 +151,18 @@ public class MiscUtils {
 		}
 	}
 
+	public static Optional<JKey> asUsableFcKey(Key key) {
+		try {
+			var fcKey = JKey.mapKey(key);
+			if (!fcKey.isValid()) {
+				return Optional.empty();
+			}
+			return Optional.of(fcKey);
+		} catch (Exception ignore) {
+			return Optional.empty();
+		}
+	}
+
 	public static Key asKeyUnchecked(JKey fcKey) {
 		try {
 			return mapJKey(fcKey);
@@ -170,6 +184,8 @@ public class MiscUtils {
 
 	public static Optional<QueryHeader> activeHeaderFrom(Query query) {
 		switch (query.getQueryCase()) {
+			case TOKENGETINFO:
+				return Optional.of(query.getTokenGetInfo().getHeader());
 			case CONSENSUSGETTOPICINFO:
 				return Optional.of(query.getConsensusGetTopicInfo().getHeader());
 			case GETBYSOLIDITYID:
@@ -252,6 +268,10 @@ public class MiscUtils {
 			return "deleteTopic";
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return "submitMessage";
+		} else if (txn.hasTokenCreation()) {
+			return "tokenCreate";
+		} else if (txn.hasTokenTransfers()) {
+			return "tokenTransact";
 		} else {
 			return "NotImplemented";
 		}
@@ -300,6 +320,10 @@ public class MiscUtils {
 			return ConsensusDeleteTopic;
 		} else if (txn.hasConsensusSubmitMessage()) {
 			return ConsensusSubmitMessage;
+		} else if (txn.hasTokenCreation()) {
+			return TokenCreate;
+		} else if (txn.hasTokenTransfers()) {
+			return TokenTransact;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

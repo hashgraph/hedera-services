@@ -21,11 +21,14 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBalance;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -34,15 +37,22 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
@@ -52,6 +62,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	Optional<Long> expected = Optional.empty();
 	Optional<Supplier<String>> entityFn = Optional.empty();
 	Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
+
+	List<Map.Entry<String, Long>> expectedTokenBalances = Collections.EMPTY_LIST;
 
 	public HapiGetAccountBalance(String entity) {
 		this.entity = entity;
@@ -69,6 +81,13 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 		expectedCondition = Optional.of(condition);
 		return this;
 	}
+	public HapiGetAccountBalance hasTokenBalance(String token, long amount) {
+		if (expectedTokenBalances.isEmpty()) {
+			expectedTokenBalances = new ArrayList<>();
+		}
+		expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount));
+		return this;
+	}
 
 	@Override
 	public HederaFunctionality type() {
@@ -83,6 +102,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		long actual = response.getCryptogetAccountBalance().getBalance();
+		if (verboseLoggingOn) {
+			log.info("Explicit token balances: " + response.getCryptogetAccountBalance().getTokenBalancesList());
+		}
 		if (expectedCondition.isPresent()) {
 			Function<Long, Optional<String>> condition = expectedCondition.get().apply(spec);
 			Optional<String> failure = condition.apply(actual);
@@ -91,6 +113,19 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 			}
 		} else if (expected.isPresent()) {
 			Assert.assertEquals("Wrong balance!", expected.get().longValue(), actual);
+		}
+
+		if (expectedTokenBalances.size() > 0) {
+			Map<TokenID, Long> actualTokenBalances = response.getCryptogetAccountBalance().getTokenBalancesList()
+					.stream()
+					.collect(Collectors.toMap(TokenBalance::getTokenId, TokenBalance::getBalance));
+			for (Map.Entry<String, Long> tokenBalance : expectedTokenBalances) {
+				var tokenId = asTokenId(tokenBalance.getKey(), spec);
+				var expected = tokenBalance.getValue();
+				Assert.assertEquals(String.format(
+						"Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)),
+						expected, actualTokenBalances.getOrDefault(tokenId, 0L));
+			}
 		}
 	}
 

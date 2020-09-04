@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -169,6 +170,13 @@ public interface TransactionContext {
 	 * @param id the created topic.
 	 */
 	void setCreated(TopicID id);
+
+	/**
+	 * Record that the current transaction created a token.
+	 *
+	 * @param id the created token.
+	 */
+	void setCreated(TokenID id);
 
 	/**
 	 * Record that the current transaction called a smart contract with

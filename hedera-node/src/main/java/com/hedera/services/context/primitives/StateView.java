@@ -22,10 +22,14 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.tokens.ExceptionalTokenStore;
+import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -39,6 +43,8 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,18 +55,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
 	private static final Logger log = LogManager.getLogger(StateView.class);
 
 	private static final byte[] EMPTY_BYTES = new byte[0];
-
 	public static final JKey EMPTY_WACL = new JKeyList();
 
 	public static final FCMap<MerkleEntityId, MerkleTopic> EMPTY_TOPICS =
@@ -78,12 +86,16 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
 			() -> EMPTY_STORAGE;
 
-	public static final StateView EMPTY_VIEW = new StateView(EMPTY_TOPICS_SUPPLIER, EMPTY_ACCOUNTS_SUPPLIER, null);
+	public static final StateView EMPTY_VIEW = new StateView(
+			EMPTY_TOPICS_SUPPLIER,
+			EMPTY_ACCOUNTS_SUPPLIER,
+			null);
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
+	private final TokenStore tokenStore;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
@@ -94,10 +106,20 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties
 	) {
-		this(topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
 	}
 
 	public StateView(
+			TokenStore tokenStore,
+			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			PropertySource properties
+	) {
+		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+	}
+
+	public StateView(
+			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
@@ -105,6 +127,7 @@ public class StateView {
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
+		this.tokenStore = tokenStore;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -129,6 +152,39 @@ public class StateView {
 
 	public Optional<byte[]> storageOf(ContractID id) {
 		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
+	}
+
+	public Optional<TokenInfo> infoForToken(TokenRef ref) {
+		try {
+			var id = tokenStore.resolve(ref);
+			if (id == MISSING_TOKEN) {
+				return Optional.empty();
+			}
+			var token = tokenStore.get(id);
+			var info = TokenInfo.newBuilder()
+					.setTokenId(id)
+					.setSymbol(token.symbol())
+					.setTreasury(token.treasury().toGrpcAccountId())
+					.setCurrentFloat(token.tokenFloat())
+					.setDivisibility(token.divisibility())
+					.setAdminKey(asKeyUnchecked(token.adminKey()));
+			var freezeCandidate = token.freezeKey();
+			freezeCandidate.ifPresent(k -> {
+				info.setFreezeDefault(token.accountsAreFrozenByDefault());
+				info.setFreezeKey(asKeyUnchecked(k));
+			});
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token {}!",
+					ref.hasTokenId() ? readableId(ref.getTokenId()) : ref.getSymbol(),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
+	public boolean tokenExists(TokenRef ref) {
+		return tokenStore.resolve(ref) != MISSING_TOKEN;
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
@@ -156,7 +212,9 @@ public class StateView {
 		return Optional.empty();
 	}
 
-	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) throws com.swirlds.blob.BinaryObjectNotFoundException, Exception {
+	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(
+			FileID id
+	) throws com.swirlds.blob.BinaryObjectNotFoundException, Exception {
 		var attr = fileAttrs.get(id);
 		if (attr == null) {
 			return Optional.empty();

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+
+/*
+Create a new token, returning its id in the receipt.
+ */
+message TokenCreation {
+    uint64 float = 1; // The total number of tokens to put into circulation
+    uint32 divisibility = 2; // The number of unit into which each token may be subdivided
+    AccountID treasury = 3; // The treasury account which should receive the initial float
+    Key adminKey = 4; // The key which must sign to modify this token's properties
+    Key freezeKey = 5; // The key which must sign to freeze or unfreeze an account for token transactions
+    bool freezeDefault = 6; // The default status (frozen or unfrozen) of Hedera accounts relative to this token
+    string symbol = 7; // The case-insensitive UTF-8 alphanumeric string identifying the token
+}

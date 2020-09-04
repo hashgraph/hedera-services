@@ -20,7 +20,6 @@ package com.hedera.services.legacy.services.state.export;
  * ‍
  */
 
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.export.AccountBalanceExport;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.ServicesState;
@@ -38,7 +37,7 @@ public class DefaultBalancesExporter implements BalancesExporter {
 	}
 
 	@Override
-	public void toCsvFile(ServicesState signedState, Instant when) throws InvalidTotalAccountBalanceException {
+	public void toCsvFile(ServicesState signedState, Instant when) {
 		String file = delegate.exportAccountsBalanceCSVFormat(signedState, when);
 		if (file != null) {
 			delegate.signAccountBalanceFile(platform, file);

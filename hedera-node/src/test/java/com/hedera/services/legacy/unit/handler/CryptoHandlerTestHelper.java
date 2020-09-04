@@ -36,8 +36,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InsufficientBalanceException;
-import com.hedera.services.legacy.exception.InvalidTransactionException;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 
 import java.time.Instant;

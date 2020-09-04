@@ -42,6 +42,13 @@ public class SigningOrderResult<T> {
 	private final List<JKey> orderedKeys;
 	private final Optional<T> errorReport;
 
+	private static final SigningOrderResult<?> NO_KNOWN_KEYS = new SigningOrderResult<>(EMPTY_LIST);
+
+	@SuppressWarnings("unchecked")
+	public static <T> SigningOrderResult<T> noKnownKeys() {
+		return (SigningOrderResult<T>)NO_KNOWN_KEYS;
+	}
+
 	public SigningOrderResult(List<JKey> orderedKeys) {
 		this(orderedKeys, Optional.empty());
 	}
