@@ -209,7 +209,7 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
 		var adminKey = asUsableFcKey(request.getAdminKey());
-		if (adminKey.isEmpty())	{
+		if (adminKey.isEmpty()) {
 			return failure(INVALID_ADMIN_KEY);
 		}
 
@@ -233,11 +233,12 @@ public class HederaTokenStore implements TokenStore {
 
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
-			request.getFloat(),
-			request.getDivisibility(),
-			adminKey.get(),
+				request.getFloat(),
+				request.getDivisibility(),
+				adminKey.get(),
 				request.getSymbol(),
 				request.getFreezeDefault(),
+				false,
 				EntityId.ofNullableAccountId(request.getTreasury()));
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 
@@ -282,7 +283,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum treasuryCheck(AccountID id) {
-		if (!ledger.exists(id) || (boolean)ledger.get(id, AccountProperty.IS_DELETED)) {
+		if (!ledger.exists(id) || (boolean) ledger.get(id, AccountProperty.IS_DELETED)) {
 			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 		}
 		return OK;

@@ -229,6 +229,10 @@ enum HederaFunctionality {
     TokenCreate = 56;
     TokenTransact = 57;
     TokenGetInfo = 58;
+    TokenFreezeAccount = 59;
+    TokenUnfreezeAccount = 60;
+    TokenGrantKycToAccount = 61;
+    TokenRevokeKycFromAccount = 62;
 }
 
 /*

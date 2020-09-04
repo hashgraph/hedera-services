@@ -24,11 +24,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -162,6 +164,34 @@ public interface TxnHandlingScenario {
 		return topics;
 	}
 
+	default TokenStore tokenStore() {
+		var tokenStore = mock(TokenStore.class);
+
+		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
+
+		var unfrozenToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"UnfrozenToken", false, false,
+				new EntityId(1, 2, 3));
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_FREEZE))).willReturn(KNOWN_TOKEN_NO_FREEZE);
+		given(tokenStore.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
+
+		var frozenToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"FrozenToken", true, true,
+				new EntityId(1, 2, 4));
+		frozenToken.setFreezeKey(optionalFreezeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
+				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE))
+				.willReturn(frozenToken);
+
+		return tokenStore;
+	}
+
 	default FCMap<MerkleEntityId, MerkleToken> tokens() {
 		var tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
@@ -170,14 +200,14 @@ public interface TxnHandlingScenario {
 		var unfrozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false,
+				"UnfrozenToken", false, false,
 				new EntityId(1, 2, 3));
 		given(tokens.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
 
 		var frozenToken = new MerkleToken(
 						100, 1,
 						adminKey,
-						"FrozenToken", true,
+						"FrozenToken", true, true,
 						new EntityId(1, 2, 4));
 		frozenToken.setFreezeKey(optionalFreezeKey);
 
@@ -298,6 +328,7 @@ public interface TxnHandlingScenario {
 	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree TOKEN_ADMIN_KT = withRoot(ed25519());
 	KeyTree TOKEN_FREEZE_KT = withRoot(ed25519());
+	KeyTree TOKEN_KYC_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
 	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());

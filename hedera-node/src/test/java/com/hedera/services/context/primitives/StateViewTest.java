@@ -139,7 +139,7 @@ class StateViewTest {
 		token = new MerkleToken(
 				100, 1,
 				TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
-				"UnfrozenToken", true,
+				"UnfrozenToken", true, true,
 				new EntityId(1, 2, 3));
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		given(tokenStore.resolve(foundToken)).willReturn(tokenId);

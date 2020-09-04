@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcqueue.FCQueue;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -137,14 +136,14 @@ public class MerkleAccountPropertyTest {
 		var unfrozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false,
+				"UnfrozenToken", false, false,
 				new EntityId(1, 2, 3));
 		var unfrozenTokenScope = TokenScope.scopeOf(unfrozenTokenId, unfrozenToken);
 		var tokenBalance = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, newTokenBalance);
 		var frozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"FrozenToken", true,
+				"FrozenToken", true, true,
 				new EntityId(1, 2, 3));
 		frozenToken.setFreezeKey(adminKey);
 		var frozenTokenScope = TokenScope.scopeOf(frozenTokenId, frozenToken);

@@ -32,6 +32,7 @@ import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -57,6 +58,7 @@ import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -88,6 +90,8 @@ import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -190,6 +194,7 @@ public class HederaSigningOrderTest {
 	);
 
 	private HederaFs hfs;
+	private TokenStore tokenStore;
 	private TransactionBody txn;
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -1151,6 +1156,34 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
+	@Test
+	public void getsTokenFreezeWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_FREEZE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_FREEZE_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenUnfreezeWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_FREEZE_KT.asKey()));
+	}
+
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
@@ -1190,10 +1223,16 @@ public class HederaSigningOrderTest {
 		accounts = scenario.accounts();
 		topics = scenario.topics();
 		tokens = scenario.tokens();
+		tokenStore = scenario.tokenStore();
 
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics, () -> tokens)),
+				sigMetaLookup.orElse(
+						defaultLookupsFor(
+								hfs,
+								() -> accounts,
+								() -> topics,
+								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore))),
 				updateAccountSigns,
 				waclSigns);
 	}
@@ -1219,7 +1258,6 @@ public class HederaSigningOrderTest {
 				}),
 				id -> { throw new Exception(); },
 				TopicAdapter.withSafe(id -> {
-					System.out.println("Called with " + id);
 					if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
 						return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));
 					} else {

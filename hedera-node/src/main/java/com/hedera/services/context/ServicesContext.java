@@ -51,6 +51,7 @@ import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -142,6 +143,7 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
@@ -720,7 +722,7 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, this::tokens);
+			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -728,7 +730,12 @@ public class ServicesContext {
 
 	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
-			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts, this::tokens);
+			var lookups = backedLookupsFor(
+					hfs(),
+					backingAccounts(),
+					this::topics,
+					this::accounts,
+					REF_LOOKUP_FACTORY.apply(tokenStore()));
 			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
@@ -737,7 +744,7 @@ public class ServicesContext {
 	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
-					hfs(), properties(), stats(), this::accounts, this::topics, this::tokens);
+					hfs(), properties(), stats(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;

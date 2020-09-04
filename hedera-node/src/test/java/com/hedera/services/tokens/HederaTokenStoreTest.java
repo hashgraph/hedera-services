@@ -83,6 +83,7 @@ class HederaTokenStoreTest {
 	int divisibility = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
 	boolean freezeDefault = true;
+	boolean kycDefault = true;
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
@@ -454,6 +455,7 @@ class HederaTokenStoreTest {
 				TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked(),
 				symbol,
 				freezeDefault,
+				kycDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setFreezeKey(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
 

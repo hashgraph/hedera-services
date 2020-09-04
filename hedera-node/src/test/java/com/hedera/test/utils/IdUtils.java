@@ -81,6 +81,14 @@ public class IdUtils {
 				.build();
 	}
 
+	public static TokenRef asIdRef(String v) {
+		return TokenRef.newBuilder().setTokenId(asToken(v)).build();
+	}
+
+	public static TokenRef asIdRef(TokenID id) {
+		return TokenRef.newBuilder().setTokenId(id).build();
+	}
+
 	public static TokenID asToken(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TokenID.newBuilder()

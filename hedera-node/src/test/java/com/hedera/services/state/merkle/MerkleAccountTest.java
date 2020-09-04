@@ -105,7 +105,7 @@ public class MerkleAccountTest {
 	MerkleToken unfrozenToken = new MerkleToken(
 			100, 1,
 			adminKey,
-			"UnfrozenToken", false,
+			"UnfrozenToken", false, false,
 			new EntityId(1, 2, 3));
 
 	MerkleAccountState state;

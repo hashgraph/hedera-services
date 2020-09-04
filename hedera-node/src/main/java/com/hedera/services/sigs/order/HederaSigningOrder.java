@@ -34,7 +34,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -229,6 +228,10 @@ public class HederaSigningOrder {
 			return Optional.of(tokenCreate(txn.getTokenCreation(), factory));
 		} else if (txn.hasTokenTransfers()) {
 			return Optional.of(tokenTransact(txn.getTransactionID(), txn.getTokenTransfers(), factory));
+		} else if (txn.hasTokenFreeze()) {
+			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory));
+		} else if (txn.hasTokenUnfreeze()) {
+			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -514,6 +517,28 @@ public class HederaSigningOrder {
 		addToMutableReqIfPresent(op, TokenCreation::hasAdminKey, TokenCreation::getAdminKey, required);
 		addToMutableReqIfPresent(op, TokenCreation::hasFreezeKey, TokenCreation::getFreezeKey, required);
 
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> tokenFreezing(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		if (result.succeeded()) {
+			var freezeKey = result.metadata().optionalFreezeKey();
+			if (freezeKey.isPresent()) {
+				required = mutable(required);
+				required.add(freezeKey.get());
+			} else {
+				throw new AssertionError("Not implemented");
+			}
+		} else {
+			throw new AssertionError("Not implemented");
+		}
 		return factory.forValidOrder(required);
 	}
 

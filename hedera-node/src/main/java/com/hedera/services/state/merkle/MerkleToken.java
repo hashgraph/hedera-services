@@ -54,9 +54,11 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private int divisibility;
 	private long tokenFloat;
 	private JKey adminKey;
+	private JKey kycKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
 	private boolean accountsFrozenByDefault;
+	private boolean accountKycGrantedByDefault;
 	private EntityId treasury;
 
 	@Deprecated
@@ -75,6 +77,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 			JKey adminKey,
 			String symbol,
 			boolean accountsFrozenByDefault,
+			boolean accountKycGrantedByDefault,
 			EntityId treasury
 	) {
 		this.tokenFloat = tokenFloat;
@@ -82,6 +85,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.adminKey = adminKey;
 		this.symbol = symbol;
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
+		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
 		this.treasury = treasury;
 	}
 
@@ -99,10 +103,12 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return this.tokenFloat == that.tokenFloat &&
 				this.divisibility == that.divisibility &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
+				this.accountKycGrantedByDefault == that.accountKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.treasury, that.treasury) &&
 				equalUpToDecodability(this.adminKey, that.adminKey) &&
-				equalUpToDecodability(this.freezeKey, that.freezeKey);
+				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
+				equalUpToDecodability(this.kycKey, that.kycKey);
 	}
 
 	@Override
@@ -112,8 +118,10 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				divisibility,
 				adminKey,
 				freezeKey,
+				kycKey,
 				symbol,
 				accountsFrozenByDefault,
+				accountKycGrantedByDefault,
 				treasury);
 	}
 
@@ -126,7 +134,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				.add("float", tokenFloat)
 				.add("divisibility", divisibility)
 				.add("adminKey", describe(adminKey))
+				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
+				.add("accountKycGrantedByDefault", accountKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
 				.toString();
 	}
@@ -150,7 +160,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		tokenFloat = in.readLong();
 		divisibility = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
+		accountKycGrantedByDefault = in.readBoolean();
 		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
+		kycKey = serdes.readNullable(in, serdes::deserializeKey);
 	}
 
 	@Override
@@ -161,7 +173,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		out.writeLong(tokenFloat);
 		out.writeInt(divisibility);
 		out.writeBoolean(accountsFrozenByDefault);
+		out.writeBoolean(accountKycGrantedByDefault);
 		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
+		serdes.writeNullable(kycKey, out, serdes::serializeKey);
 	}
 
 	/* --- FastCopyable --- */
@@ -173,9 +187,13 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 			adminKey,
 			symbol,
 			accountsFrozenByDefault,
+			accountKycGrantedByDefault,
 			treasury);
 		if (freezeKey != UNUSED_KEY) {
 			fc.setFreezeKey(freezeKey);
+		}
+		if (kycKey != UNUSED_KEY) {
+			fc.setKycKey(kycKey);
 		}
 		return fc;
 	}
@@ -205,6 +223,10 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.freezeKey = freezeKey;
 	}
 
+	public void setKycKey(JKey kycKey) {
+		this.kycKey = kycKey;
+	}
+
 	public String symbol() {
 		return symbol;
 	}
@@ -213,7 +235,19 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return accountsFrozenByDefault;
 	}
 
+	public boolean accountKycGrantedByDefault() {
+		return accountKycGrantedByDefault;
+	}
+
 	public EntityId treasury() {
 		return treasury;
+	}
+
+	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+		this.accountsFrozenByDefault = accountsFrozenByDefault;
+	}
+
+	public void setAccountKycGrantedByDefault(boolean accountKycGrantedByDefault) {
+		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
 	}
 }
