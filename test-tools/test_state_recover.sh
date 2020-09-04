@@ -198,7 +198,7 @@ function delete_event_files() {
     print_banner "Running ${FUNCNAME[0]}"
     event_files_amount=`ls -tr data/eventStream/events_0.0.3/*evts | sort -n| wc -l `
     echo "There are $event_files_amount event files"
-    random_num=$(( ( RANDOM % ($state_delete_num )/2 ) ))
+    random_num=$(( ( RANDOM % ($state_delete_num ) * 2 ) + 2 ))
 
     echo "Deleting $random_num event files"
     ls -1a data/eventStream/events_0.0.3/*evts | sort -n| tail -$random_num | xargs rm 
