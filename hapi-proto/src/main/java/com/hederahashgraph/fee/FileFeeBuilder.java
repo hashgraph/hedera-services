@@ -225,7 +225,7 @@ public class FileFeeBuilder extends FeeBuilder {
 
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
      */
 
     bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
@@ -233,7 +233,7 @@ public class FileFeeBuilder extends FeeBuilder {
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
      *
-     * FileInfo FileID fileID - BASIC_ENTITYID_SIZE int64 size - LONG_SIZE Timestamp expirationTime = 3;
+     * FileInfo FileID fileID - BASIC_ENTITY_ID_SIZE int64 size - LONG_SIZE Timestamp expirationTime = 3;
      * // the current time at which this account is set to expire bool deleted = 4; // true if
      * deleted but not yet expired KeyList keys = 5; // one of these keys must sign in order to
      * modify or delete the file
@@ -279,7 +279,7 @@ public class FileFeeBuilder extends FeeBuilder {
 
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
      */
 
     bpt =  BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
@@ -287,7 +287,7 @@ public class FileFeeBuilder extends FeeBuilder {
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
      *
-     * FileContents FileID fileID - BASIC_ENTITYID_SIZE bytes content - calculated value (size of the
+     * FileContents FileID fileID - BASIC_ENTITY_ID_SIZE bytes content - calculated value (size of the
      * content)
      *
      */
