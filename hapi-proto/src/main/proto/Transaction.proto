@@ -36,7 +36,7 @@ import "TransactionBody.proto";
  * The SignatureList field is deprecated and succeeded by SignatureMap.
  */
 message Transaction {
-    bytes SignedTransactionBytes = 5; // SignedTransaction serialized into bytes
+    bytes signedTransactionBytes = 5; // SignedTransaction serialized into bytes
     bytes bodyBytes = 4 [deprecated = true]; // TransactionBody serialized into bytes, which needs to be signed
     SignatureMap sigMap = 3 [deprecated = true]; // The signatures on the body with the new format, to authorize the transaction
 }
