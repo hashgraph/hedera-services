@@ -50,34 +50,10 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	FULL_PAYER_SIGS_VIA_LIST_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedSystemDelete()
-							.useSigList()
-							.payer(DILIGENT_SIGNING_PAYER_ID)
-							.payerKt(DILIGENT_SIGNING_PAYER_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT)
-							.file(MISC_FILE_ID).get()
-			));
-		}
-	},
 	MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedSystemDelete()
-							.payer(CARELESS_SIGNING_PAYER_ID)
-							.payerKt(CARELESS_SIGNING_PAYER_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT)
-							.file(MISC_FILE_ID).get()
-			));
-		}
-	},
-	MISSING_PAYER_SIGS_VIA_LIST_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedSystemDelete()
-							.useSigList()
 							.payer(CARELESS_SIGNING_PAYER_ID)
 							.payerKt(CARELESS_SIGNING_PAYER_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
