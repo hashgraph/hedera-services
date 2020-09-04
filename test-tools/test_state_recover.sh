@@ -243,7 +243,6 @@ function step3_recover()
     rm -rf data/accountBalances/*
 
     echo "signedStateFreq, 1" >> settings.txt
-    echo "recoverEventsPerRound, 250" >> settings.txt
     # launch HGCApp in recover mode
     ret=0
     java -Djava.awt.headless=true -Xmx14g -Xms12g -cp 'data/lib/*' com.swirlds.platform.Browser -local 0 || ret=$?
