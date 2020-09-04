@@ -75,7 +75,6 @@ public class UmbrellaRedux extends HapiApiSuite {
 				.withProperties(Map.of(
 						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())))
 				.given(
-						UtilVerbs.sleepFor(new Random().nextInt(1000)),
 						cryptoCreate(UNIQUE_PAYER_ACCOUNT)
 								.balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
 								.withRecharging()
