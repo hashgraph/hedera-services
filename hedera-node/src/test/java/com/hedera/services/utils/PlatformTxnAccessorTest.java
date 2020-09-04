@@ -203,7 +203,6 @@ public class PlatformTxnAccessorTest {
 				.build();
 
 		// then:
-		assertEquals(ByteString.EMPTY, signedTxn4Log.getBodyBytes());
 		assertEquals(someTxn, CommonUtils.extractTransactionBody(signedTxn4Log));
 		assertEquals(signedTxnWithBody, asBodyBytes);
 	}
