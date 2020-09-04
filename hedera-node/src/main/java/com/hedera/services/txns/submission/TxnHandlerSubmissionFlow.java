@@ -73,9 +73,10 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 		try {
 			SignedTxnAccessor accessor = new SignedTxnAccessor(signedTxn);
 
-//			if (!accessor.getSignedTxn().hasBody() && accessor.getSignedTxn().getBodyBytes().isEmpty()) {
-//				return responseWith(INVALID_TRANSACTION_BODY);
-//			}
+			if (accessor.getSignedTxn().getSignedTransactionBytes().isEmpty()
+					&& accessor.getSignedTxn().getBodyBytes().isEmpty()) {
+				return responseWith(INVALID_TRANSACTION_BODY);
+			}
 
 			TxnValidityAndFeeReq metaValidity = metaValidityOf(accessor);
 			if (metaValidity.getValidity() != OK) {
