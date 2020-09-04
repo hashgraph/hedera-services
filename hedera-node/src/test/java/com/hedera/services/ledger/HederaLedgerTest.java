@@ -575,6 +575,21 @@ public class HederaLedgerTest {
 	}
 
 	@Test
+	public void delegatesKnowingOps() {
+		// when:
+		subject.grantKyc(misc, frozenId);
+
+		// then:
+		verify(tokenStore).grantKyc(misc, frozenId);
+
+		// and when:
+		subject.revokeKyc(misc, frozenId);
+
+		// then:
+		verify(tokenStore).revokeKyc(misc, frozenId);
+	}
+
+	@Test
 	public void delegatesFreezeOps() {
 		// when:
 		subject.freeze(misc, frozenId);

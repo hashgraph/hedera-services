@@ -43,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
@@ -169,10 +170,10 @@ public class StateView {
 					.setDivisibility(token.divisibility())
 					.setAdminKey(asKeyUnchecked(token.adminKey()));
 			var freezeCandidate = token.freezeKey();
-			freezeCandidate.ifPresent(k -> {
-				info.setFreezeDefault(token.accountsAreFrozenByDefault());
+			freezeCandidate.ifPresentOrElse(k -> {
+				info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
 				info.setFreezeKey(asKeyUnchecked(k));
-			});
+			}, () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
 			log.warn(
@@ -181,6 +182,10 @@ public class StateView {
 					unexpected);
 			return Optional.empty();
 		}
+	}
+
+	TokenFreezeStatus tfsFor(boolean flag) {
+		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
 
 	public boolean tokenExists(TokenRef ref) {

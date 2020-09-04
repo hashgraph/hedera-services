@@ -168,12 +168,13 @@ public interface TxnHandlingScenario {
 		var tokenStore = mock(TokenStore.class);
 
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
 
 		var unfrozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false, false,
+				"UnfrozenToken", false, true,
 				new EntityId(1, 2, 3));
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_FREEZE))).willReturn(KNOWN_TOKEN_NO_FREEZE);
 		given(tokenStore.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
@@ -184,39 +185,21 @@ public interface TxnHandlingScenario {
 				"FrozenToken", true, true,
 				new EntityId(1, 2, 4));
 		frozenToken.setFreezeKey(optionalFreezeKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
-				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
-		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE))
-				.willReturn(frozenToken);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE))).willReturn(KNOWN_TOKEN_WITH_FREEZE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
 
-		return tokenStore;
-	}
-
-	default FCMap<MerkleEntityId, MerkleToken> tokens() {
-		var tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
-		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
-		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
-
-		var unfrozenToken = new MerkleToken(
+		var kycToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false, false,
-				new EntityId(1, 2, 3));
-		given(tokens.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
+				"FrozenToken", true, true,
+				new EntityId(1, 2, 4));
+		kycToken.setKycKey(optionalKycKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_KYC))).willReturn(KNOWN_TOKEN_WITH_KYC);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
 
-		var frozenToken = new MerkleToken(
-						100, 1,
-						adminKey,
-						"FrozenToken", true, true,
-						new EntityId(1, 2, 4));
-		frozenToken.setFreezeKey(optionalFreezeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(UNKNOWN_TOKEN))).willReturn(TokenStore.MISSING_TOKEN);
 
-		given(tokens.get(fromTokenId(KNOWN_TOKEN_NO_FREEZE)))
-				.willReturn(unfrozenToken);
-		given(tokens.get(fromTokenId(KNOWN_TOKEN_WITH_FREEZE)))
-				.willReturn(frozenToken);
-
-		return tokens;
+		return tokenStore;
 	}
 
 	String MISSING_ACCOUNT_ID = "1.2.3";
@@ -314,6 +297,8 @@ public interface TxnHandlingScenario {
 	TokenID KNOWN_TOKEN_NO_FREEZE = asToken(KNOWN_TOKEN_NO_FREEZE_ID);
 	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";
 	TokenID KNOWN_TOKEN_WITH_FREEZE = asToken(KNOWN_TOKEN_WITH_FREEZE_ID);
+	String KNOWN_TOKEN_WITH_KYC_ID = "0.0.776";
+	TokenID KNOWN_TOKEN_WITH_KYC = asToken(KNOWN_TOKEN_WITH_KYC_ID);
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
 	String SECOND_TOKEN_SENDER_ID = "0.0.999";

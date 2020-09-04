@@ -48,6 +48,8 @@ public interface TokenStore {
 
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
+	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor);

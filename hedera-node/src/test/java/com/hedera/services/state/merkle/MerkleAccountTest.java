@@ -115,6 +115,7 @@ public class MerkleAccountTest {
 	DomainSerdes serdes;
 
 	MerkleAccount subject;
+	MerkleAccountState delegate;
 
 	public static void offerRecordsInOrder(MerkleAccount account, List<ExpirableTxnRecord> _records) {
 		List<ExpirableTxnRecord> recordList = new ArrayList<>(_records);
@@ -136,6 +137,8 @@ public class MerkleAccountTest {
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
+
+		delegate = mock(MerkleAccountState.class);
 
 		state = new MerkleAccountState(
 				key,
@@ -268,13 +271,35 @@ public class MerkleAccountTest {
 		var id = IdUtils.tokenWith(secondToken);
 		var token = mock(MerkleToken.class);
 
-		given(token.accountsAreFrozenByDefault()).willReturn(false);
+		// and:
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
 
 		// when:
 		subject.adjustTokenBalance(id, token, secondBalance + 1);
 
 		// expect:
-		assertEquals(2 * secondBalance + 1, subject.getTokenBalance(id));
+		verify(delegate).adjustTokenBalance(id, token, secondBalance + 1);
+	}
+
+	@Test
+	public void kycCallsDelegate() {
+		// setup:
+		var id = IdUtils.tokenWith(secondToken);
+		var token = mock(MerkleToken.class);
+
+		given(delegate.isKycGranted(id, token)).willReturn(true);
+		// and:
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+
+		// when:
+		var granted = subject.isKycGranted(id, token);
+		subject.grantKyc(id, token);
+		subject.revokeKyc(id, token);
+
+		// expect:
+		assertTrue(granted);
+		verify(delegate).grantKyc(id, token);
+		verify(delegate).revokeKyc(id, token);
 	}
 
 	@Test
@@ -323,9 +348,10 @@ public class MerkleAccountTest {
 		var id = IdUtils.tokenWith(secondToken);
 		var token = mock(MerkleToken.class);
 
-		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
+		given(delegate.validityOfAdjustment(id, token, 123))
+				.willReturn(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
 		// and:
-		state.freeze(id, token);
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
 
 		// when:
 		var validity = subject.validityOfAdjustment(id, token, 123);
@@ -336,6 +362,9 @@ public class MerkleAccountTest {
 
 	@Test
 	public void settersDelegate() throws NegativeAccountBalanceException {
+		// given:
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+
 		// when:
 		subject.setExpiry(otherExpiry);
 		subject.setBalance(otherBalance);
@@ -348,15 +377,19 @@ public class MerkleAccountTest {
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
-		subject.adjustTokenBalance(
-				IdUtils.tokenWith(firstToken), unfrozenToken, otherFirstBalance - firstBalance);
-		subject.adjustTokenBalance(
-				IdUtils.tokenWith(secondToken), unfrozenToken, otherSecondBalance - secondBalance);
-		subject.adjustTokenBalance(
-				IdUtils.tokenWith(thirdToken), unfrozenToken, otherThirdBalance - thirdBalance);
 
 		// then:
-		assertEquals(otherState, subject.state());
+		verify(delegate).setExpiry(otherExpiry);
+		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
+		verify(delegate).setSenderThreshold(otherSenderThreshold);
+		verify(delegate).setReceiverThreshold(otherReceiverThreshold);
+		verify(delegate).setDeleted(otherDeleted);
+		verify(delegate).setSmartContract(otherSmartContract);
+		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
+		verify(delegate).setMemo(otherMemo);
+		verify(delegate).setProxy(otherProxy);
+		verify(delegate).setKey(otherKey);
+		verify(delegate).setHbarBalance(otherBalance);
 	}
 
 	@Test

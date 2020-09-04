@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.forNumber;
 
 /**
  * Provides the state transition for token creation.
@@ -80,10 +81,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		var treasury = op.getTreasury();
 		var scaledInitialFloat = initialTinyFloat(op.getFloat(), op.getDivisibility());
 
-		var status = ledger.unfreeze(op.getTreasury(), created);
+		var status = OK;
+		if (op.hasFreezeKey()) {
+			status = ledger.unfreeze(treasury, created);
+		}
+		if (status == OK && op.hasKycKey()) {
+			status = ledger.grantKyc(treasury, created);
+		}
 		if (status == OK) {
 			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
 		}
+
 		if (status != OK) {
 			abortWith(status);
 			return;

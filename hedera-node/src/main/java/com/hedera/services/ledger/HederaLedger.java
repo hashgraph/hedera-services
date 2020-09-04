@@ -241,6 +241,14 @@ public class HederaLedger {
 		return validity;
 	}
 
+	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+		return tokenStore.grantKyc(aId, tId);
+	}
+
+	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+		return tokenStore.revokeKyc(aId, tId);
+	}
+
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		return tokenStore.freeze(aId, tId);
 	}

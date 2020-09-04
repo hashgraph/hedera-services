@@ -51,6 +51,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIV
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_SENT_RECORD_THRESHOLD;
 import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
@@ -136,23 +137,30 @@ public class MerkleAccountPropertyTest {
 		var unfrozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false, false,
+				"UnfrozenToken", false, true,
 				new EntityId(1, 2, 3));
+		unfrozenToken.setFreezeKey(adminKey);
+		unfrozenToken.setKycKey(adminKey);
 		var unfrozenTokenScope = TokenScope.scopeOf(unfrozenTokenId, unfrozenToken);
 		var tokenBalance = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, newTokenBalance);
 		var frozenToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"FrozenToken", true, true,
+				"FrozenToken", true, false,
 				new EntityId(1, 2, 3));
 		frozenToken.setFreezeKey(adminKey);
+		frozenToken.setKycKey(adminKey);
 		var frozenTokenScope = TokenScope.scopeOf(frozenTokenId, frozenToken);
 		var tokenFreeze = new TokenScopedPropertyValue(frozenTokenId, frozenToken, true);
 		var tokenUnfreeze = new TokenScopedPropertyValue(frozenTokenId, frozenToken, false);
+		var tokenGrantKyc = new TokenScopedPropertyValue(frozenTokenId, frozenToken, true);
+		var tokenRevokeKyc = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, false);
 
 		// expect:
 		assertFalse((boolean)IS_FROZEN.scopedGetter().apply(account, unfrozenTokenScope));
 		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		assertTrue((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
+		assertFalse((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
 		// and when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
@@ -170,6 +178,8 @@ public class MerkleAccountPropertyTest {
 		// and:
 		BALANCE.setter().accept(account, tokenBalance);
 		IS_FROZEN.setter().accept(account, tokenUnfreeze);
+		IS_KYC_GRANTED.setter().accept(account, tokenGrantKyc);
+		IS_KYC_GRANTED.setter().accept(account, tokenRevokeKyc);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -192,6 +202,8 @@ public class MerkleAccountPropertyTest {
 		IS_FROZEN.setter().accept(account, tokenFreeze);
 		// then:
 		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		assertFalse((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
+		assertTrue((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {

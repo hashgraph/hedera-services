@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
@@ -203,7 +204,7 @@ class StateViewTest {
 		assertEquals(token.tokenFloat(), info.getCurrentFloat());
 		assertEquals(token.divisibility(), info.getDivisibility());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
-		assertEquals(false, info.getFreezeDefault());
+		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
 	}
 
@@ -220,7 +221,7 @@ class StateViewTest {
 		assertEquals(token.divisibility(), info.getDivisibility());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
-		assertEquals(token.accountsAreFrozenByDefault(), info.getFreezeDefault());
+		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 	}
 
 	@Test

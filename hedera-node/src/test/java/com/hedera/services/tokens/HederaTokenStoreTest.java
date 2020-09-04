@@ -77,7 +77,7 @@ class HederaTokenStoreTest {
 	MerkleToken token;
 	MerkleAccount account;
 
-	Key adminKey, freezeKey;
+	Key adminKey, kycKey, freezeKey;
 	String symbol = "NotHbar";
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
@@ -95,6 +95,7 @@ class HederaTokenStoreTest {
 
 	@BeforeEach
 	public void setup() {
+		kycKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
 		adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		freezeKey = CARELESS_SIGNING_PAYER_KT.asKey();
 
@@ -211,6 +212,28 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void grantingKycRejectsMissingAccount() {
+		given(ledger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.grantKyc(sponsor, misc);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void revokingKycRejectsMissingAccount() {
+		given(ledger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.revokeKyc(sponsor, misc);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
 	public void adjustingRejectsMissingAccount() {
 		given(ledger.exists(sponsor)).willReturn(false);
 
@@ -256,7 +279,31 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void freezingRejectsSaturatedAccountIfExplicitFreezeRequired() {
+	public void grantingRejectsUnknowableToken() {
+		given(token.kycKey()).willReturn(Optional.empty());
+
+		// when:
+		var status = subject.grantKyc(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
+	}
+
+	@Test
+	public void grantingRejectsSaturatedAccountIfExplicitGrantRequired() {
+		givenTokenWithKycKey(false);
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(account.hasRelationshipWith(misc)).willReturn(false);
+
+		// when:
+		var status = subject.grantKyc(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+	}
+
+	@Test
+	public void freezingPermitsSaturatedAccountIfNoExplicitFreezeRequired() {
 		givenTokenWithFreezeKey(true);
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(account.hasRelationshipWith(misc)).willReturn(false);
@@ -329,6 +376,11 @@ class HederaTokenStoreTest {
 	private void givenTokenWithFreezeKey(boolean freezeDefault) {
 		given(token.freezeKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
 		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
+	}
+
+	private void givenTokenWithKycKey(boolean kycDefault) {
+		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
+		given(token.accountKycGrantedByDefault()).willReturn(kycDefault);
 	}
 
 	@Test
@@ -458,6 +510,7 @@ class HederaTokenStoreTest {
 				kycDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setFreezeKey(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
+		expected.setKycKey(TxnHandlingScenario.MISC_FILE_WACL_KT.asJKeyUnchecked());
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -673,14 +726,32 @@ class HederaTokenStoreTest {
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
+	@Test
+	public void forcesToTrueKycDefaultWithoutKycKey() {
+		// given:
+		var req = fullyValidAttempt()
+				.clearKycKey()
+				.setKycDefault(false)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+		assertTrue(subject.pendingCreation.accountKycGrantedByDefault());
+	}
+
 	TokenCreation.Builder fullyValidAttempt() {
 		return TokenCreation.newBuilder()
 				.setAdminKey(adminKey)
+				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)
 				.setSymbol(symbol)
 				.setFloat(tokenFloat)
 				.setTreasury(treasury)
 				.setDivisibility(divisibility)
-				.setFreezeDefault(freezeDefault);
+				.setFreezeDefault(freezeDefault)
+				.setKycDefault(kycDefault);
 	}
 }

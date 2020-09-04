@@ -40,10 +40,13 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_KYC_GRANTED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
@@ -60,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static java.util.stream.IntStream.range;
@@ -131,6 +135,16 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+		return setHasKyc(aId, tId, true);
+	}
+
+	@Override
+	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+		return setHasKyc(aId, tId, false);
+	}
+
+	@Override
 	public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
 		return setIsFrozen(aId, tId, false);
 	}
@@ -140,10 +154,44 @@ public class HederaTokenStore implements TokenStore {
 		return setIsFrozen(aId, tId, true);
 	}
 
+	private ResponseCodeEnum setHasKyc(
+			AccountID aId,
+			TokenID tId,
+			boolean value
+	) {
+		return manageFlag(
+				aId,
+				tId,
+				value,
+				TOKEN_HAS_NO_KYC_KEY,
+				IS_KYC_GRANTED,
+				MerkleToken::accountKycGrantedByDefault,
+				MerkleToken::kycKey);
+	}
+
 	private ResponseCodeEnum setIsFrozen(
 			AccountID aId,
 			TokenID tId,
 			boolean value
+	) {
+		return manageFlag(
+				aId,
+				tId,
+				value,
+				TOKEN_HAS_NO_FREEZE_KEY,
+				IS_FROZEN,
+				MerkleToken::accountsAreFrozenByDefault,
+				MerkleToken::freezeKey);
+	}
+
+	private ResponseCodeEnum manageFlag(
+			AccountID aId,
+			TokenID tId,
+			boolean value,
+			ResponseCodeEnum keyFailure,
+			AccountProperty flagProperty,
+			Predicate<MerkleToken> defaultValueCheck,
+			Function<MerkleToken, Optional<JKey>> controlKeyFn
 	) {
 		var validity = checkExistence(aId, tId);
 		if (validity != OK) {
@@ -151,19 +199,17 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
-		if (token.freezeKey().isEmpty()) {
-			return value ? TOKEN_HAS_NO_FREEZE_KEY : OK;
+		if (controlKeyFn.apply(token).isEmpty()) {
+			return value ? keyFailure : OK;
 		}
 
 		var account = ledger.getTokenRef(aId);
-		if (!account.hasRelationshipWith(tId)
-				&& saturated(account)
-				&& token.accountsAreFrozenByDefault() != value) {
+		if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
 			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 		}
 
 		var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
-		ledger.set(aId, IS_FROZEN, scopedFreeze);
+		ledger.set(aId, flagProperty, scopedFreeze);
 		return OK;
 	}
 
@@ -230,6 +276,7 @@ public class HederaTokenStore implements TokenStore {
 		if (validity != OK) {
 			return failure(validity);
 		}
+		var kycKey = asUsableFcKey(request.getKycKey());
 
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
@@ -238,9 +285,10 @@ public class HederaTokenStore implements TokenStore {
 				adminKey.get(),
 				request.getSymbol(),
 				request.getFreezeDefault(),
-				false,
+				kycKey.isEmpty() || request.getKycDefault(),
 				EntityId.ofNullableAccountId(request.getTreasury()));
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
+		kycKey.ifPresent(pendingCreation::setKycKey);
 
 		return success(pendingId);
 	}

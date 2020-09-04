@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
@@ -56,6 +56,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
+	static final long NOOP_MASK = -1L;
 	static final long[] NO_TOKEN_BALANCES = new long[0];
 	static final int NUM_TOKEN_PROPS = 3;
 	static final int BALANCE_OFFSET = 1;
@@ -255,6 +256,9 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			if (isFrozen(i)) {
 				sb.append(",FROZEN");
 			}
+			if (isKycGranted(i)) {
+				sb.append(",KYC");
+			}
 			sb.append(")");
 			if (i < n - 1) {
 				sb.append(", ");
@@ -394,34 +398,52 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return (i < 0) ? token.accountsAreFrozenByDefault() : isFrozen(i);
 	}
 
+	public boolean isKycGranted(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return true;
+		}
+		int i = logicalIndexOf(id);
+		return (i < 0) ? token.accountKycGrantedByDefault() : isKycGranted(i);
+	}
+
 	public void freeze(TokenID id, MerkleToken token) {
 		if (token.freezeKey().isEmpty()) {
 			return;
 		}
-		int i = logicalIndexOf(id), at = i;
-		if (i < 0) {
-			if (token.accountsAreFrozenByDefault()) {
-				return;
-			}
-			at = -i - 1;
-			insertNewRelationship(id, at, token.accountKycGrantedByDefault());
-		}
-		set(FREEZE_MASK, at);
+		long defaultForNewRel = token.accountsAreFrozenByDefault()
+				? NOOP_MASK
+				: FREEZE_MASK | defaultKycMaskFor(token);
+		updateFlag(FREEZE_MASK, defaultForNewRel, id, this::set);
 	}
 
 	public void unfreeze(TokenID id, MerkleToken token) {
 		if (token.freezeKey().isEmpty()) {
 			return;
 		}
-		int i = logicalIndexOf(id), at = i;
-		if (i < 0) {
-			if (!token.accountsAreFrozenByDefault()) {
-				return;
-			}
-			at = -i - 1;
-			insertNewRelationship(id, at, token.accountKycGrantedByDefault());
+		long defaultForNewRel = !token.accountsAreFrozenByDefault()
+				? NOOP_MASK
+				: defaultKycMaskFor(token);
+		updateFlag(FREEZE_MASK, defaultForNewRel, id, this::unset);
+	}
+
+	public void grantKyc(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return;
 		}
-		unset(FREEZE_MASK, at);
+		long defaultForNewRel = token.accountKycGrantedByDefault()
+				? NOOP_MASK
+				: KYC_MASK | defaultFreezeMaskFor(token);
+		updateFlag(KYC_MASK, defaultForNewRel, id, this::set);
+	}
+
+	public void revokeKyc(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return;
+		}
+		long defaultForNewRel = !token.accountKycGrantedByDefault()
+				? NOOP_MASK
+				: defaultFreezeMaskFor(token);
+		updateFlag(KYC_MASK, defaultForNewRel, id, this::unset);
 	}
 
 	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
@@ -463,7 +485,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				throwFrozenIse(id);
 			}
 			at = -i - 1;
-			insertNewRelationship(id, at, !token.accountKycGrantedByDefault());
+			insertNewRelationship(id, at, KYC_MASK);
 		} else {
 			if (!isKycGranted(at)) {
 				throwNoKycIse(id);
@@ -478,6 +500,52 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			throwBalanceIse(id, newBalance);
 		}
 		tokenRels[pos] = newBalance;
+	}
+
+	/* --- Helpers --- */
+	private void insertNewRelationship(TokenID id, int at, long flags) {
+		int newNumTokens = tokenRels.length / NUM_TOKEN_PROPS + 1;
+
+		long[] newTokenRels = new long[newNumTokens * NUM_TOKEN_PROPS];
+		if (at != 0) {
+			System.arraycopy(tokenRels, 0, newTokenRels, 0, at * NUM_TOKEN_PROPS);
+		}
+
+		newTokenRels[num(at)] = id.getTokenNum();
+		newTokenRels[flags(at)] = flags;
+
+		if (at != newNumTokens) {
+			System.arraycopy(
+					tokenRels,
+					at * NUM_TOKEN_PROPS,
+					newTokenRels,
+					(at + 1) * NUM_TOKEN_PROPS,
+					(newNumTokens - at - 1) * NUM_TOKEN_PROPS);
+		}
+		tokenRels = newTokenRels;
+	}
+
+	@FunctionalInterface
+	private interface FlagMutator {
+		void apply(long mask, int at);
+	}
+
+	private void updateFlag(
+			long mask,
+			long defaultForNewRel,
+			TokenID id,
+			FlagMutator flagMutator
+	) {
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (defaultForNewRel == NOOP_MASK) {
+				return;
+			}
+			at = -i - 1;
+			insertNewRelationship(id, at, defaultForNewRel);
+		} else {
+			flagMutator.apply(mask, at);
+		}
 	}
 
 	private void throwFrozenIse(TokenID id) {
@@ -495,30 +563,17 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				"Account cannot have balance %d for token '%s'!", balance, readableId(id)));
 	}
 
-	/* --- Helpers --- */
-	private void insertNewRelationship(TokenID id, int at, boolean withKycGranted) {
-		int newNumTokens = tokenRels.length / NUM_TOKEN_PROPS + 1;
 
-		long[] newTokenRels = new long[newNumTokens * NUM_TOKEN_PROPS];
-		if (at != 0) {
-			System.arraycopy(tokenRels, 0, newTokenRels, 0, at * NUM_TOKEN_PROPS);
-		}
-
-		newTokenRels[num(at)] = id.getTokenNum();
-		if (withKycGranted) {
-			newTokenRels[flags(at)] |= KYC_MASK;
-		}
-
-		if (at != newNumTokens) {
-			System.arraycopy(
-					tokenRels,
-					at * NUM_TOKEN_PROPS,
-					newTokenRels,
-					(at + 1) * NUM_TOKEN_PROPS,
-					(newNumTokens - at - 1) * NUM_TOKEN_PROPS);
-		}
-		tokenRels = newTokenRels;
+	private long defaultKycMaskFor(MerkleToken token) {
+		var flag = !token.hasKycKey() || token.accountKycGrantedByDefault();
+		return flag ? KYC_MASK : 0;
 	}
+
+	private long defaultFreezeMaskFor(MerkleToken token) {
+		var flag = token.hasFreezeKey() && token.accountsAreFrozenByDefault();
+		return flag ? FREEZE_MASK : 0;
+	}
+
 
 	private void set(long mask, int i) {
 		tokenRels[flags(i)] |= mask;

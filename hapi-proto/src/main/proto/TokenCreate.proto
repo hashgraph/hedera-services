@@ -35,7 +35,9 @@ message TokenCreation {
     uint32 divisibility = 2; // The number of unit into which each token may be subdivided
     AccountID treasury = 3; // The treasury account which should receive the initial float
     Key adminKey = 4; // The key which must sign to modify this token's properties
-    Key freezeKey = 5; // The key which must sign to freeze or unfreeze an account for token transactions
-    bool freezeDefault = 6; // The default status (frozen or unfrozen) of Hedera accounts relative to this token
-    string symbol = 7; // The case-insensitive UTF-8 alphanumeric string identifying the token
+    Key kycKey = 5; // The key which must sign to grant or revoke KYC of an account for token transactions
+    Key freezeKey = 6; // The key which must sign to freeze or unfreeze an account for token transactions
+    bool freezeDefault = 7; // The default status (frozen or unfrozen) of Hedera accounts relative to this token
+    bool kycDefault = 8; // The default KYC status (granted or revoked) of Hedera accounts relative to this token
+    string symbol = 9; // The case-insensitive UTF-8 alphanumeric string identifying the token
 }

@@ -219,6 +219,18 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return Optional.ofNullable(freezeKey);
 	}
 
+	public boolean hasFreezeKey() {
+		return freezeKey != UNUSED_KEY;
+	}
+
+	public Optional<JKey> kycKey() {
+		return Optional.ofNullable(kycKey);
+	}
+
+	public boolean hasKycKey() {
+		return kycKey != UNUSED_KEY;
+	}
+
 	public void setFreezeKey(JKey freezeKey) {
 		this.freezeKey = freezeKey;
 	}

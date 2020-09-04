@@ -263,6 +263,18 @@ public class MerkleAccount extends AbstractMerkleInternal
 		return state().validityOfAdjustment(id, token, adjustment);
 	}
 
+	public void grantKyc(TokenID id, MerkleToken token) {
+		state().grantKyc(id, token);
+	}
+
+	public void revokeKyc(TokenID id, MerkleToken token) {
+		state().revokeKyc(id, token);
+	}
+
+	public boolean isKycGranted(TokenID id, MerkleToken token) {
+		return state().isKycGranted(id, token);
+	}
+
 	public void freeze(TokenID id, MerkleToken token) {
 		state().freeze(id, token);
 	}

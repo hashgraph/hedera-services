@@ -22,6 +22,7 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
@@ -232,6 +233,10 @@ public class HederaSigningOrder {
 			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory));
 		} else if (txn.hasTokenUnfreeze()) {
 			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenUnfreeze().getToken(), factory));
+		} else if (txn.hasTokenGrantKyc()) {
+			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory));
+		} else if (txn.hasTokenRevokeKyc()) {
+			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -525,19 +530,36 @@ public class HederaSigningOrder {
 			TokenRef ref,
 			SigningOrderResultFactory<T> factory
 	) {
+		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalFreezeKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenKnowing(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory
+	) {
+		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalKycKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenAdjusts(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory,
+			Function<TokenSigningMetadata, Optional<JKey>> optionalKeyLookup
+	) {
 		List<JKey> required = EMPTY_LIST;
 
 		var result = sigMetaLookup.tokenSigningMetaFor(ref);
 		if (result.succeeded()) {
-			var freezeKey = result.metadata().optionalFreezeKey();
-			if (freezeKey.isPresent()) {
+			var optionalKey = optionalKeyLookup.apply(result.metadata());
+			if (optionalKey.isPresent()) {
 				required = mutable(required);
-				required.add(freezeKey.get());
+				required.add(optionalKey.get());
 			} else {
-				throw new AssertionError("Not implemented");
+				return SigningOrderResult.noKnownKeys();
 			}
 		} else {
-			throw new AssertionError("Not implemented");
+			return factory.forMissingToken(ref, txnId);
 		}
 		return factory.forValidOrder(required);
 	}

@@ -355,6 +355,134 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	public void grantKycIsNoopForTokenWithoutKey() {
+		// setup:
+		subject.tokenRels[2] = 0;
+
+		// when:
+		subject.grantKyc(tokenWith(firstToken), alwaysUsable);
+
+		// then:
+		assertEquals(0, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void revokesKycIsNoopForTokenWithoutKey() {
+		// when:
+		subject.revokeKyc(tokenWith(firstToken), alwaysUsable);
+
+		// then:
+		assertEquals(KYC_MASK, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void grantsKycForTokenWithKey() {
+		// setup:
+		subject.tokenRels[2] = 0;
+
+		// when:
+		subject.grantKyc(tokenWith(firstToken), unusableAtFirst);
+
+		// then:
+		assertEquals(KYC_MASK, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void grantKycIsNoopForNewRelWithDefaultKycToken() {
+		// given:
+		unusableAtFirst.setAccountKycGrantedByDefault(true);
+
+		// when:
+		subject.grantKyc(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(9, subject.tokenRels.length);
+	}
+
+	@Test
+	public void unfreezeForDefaultFrozenUsesCorrectKycStatusSafely() {
+		// given:
+		unusableAtFirst.setAccountKycGrantedByDefault(false);
+		unusableAtFirst.setKycKey(MerkleToken.UNUSED_KEY);
+
+		// when:
+		subject.unfreeze(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(KYC_MASK, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void freezeForDefaultUnfrozenUsesCorrectKycStatusSafely() {
+		// given:
+		unusableAtFirst.setAccountsFrozenByDefault(false);
+		unusableAtFirst.setAccountKycGrantedByDefault(false);
+		unusableAtFirst.setKycKey(MerkleToken.UNUSED_KEY);
+
+		// when:
+		subject.freeze(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(FREEZE_MASK | KYC_MASK, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void revokeKycForDefaultGrantedUsesCorrectFreezeStatus() {
+		// given:
+		unusableAtFirst.setAccountKycGrantedByDefault(true);
+
+		// when:
+		subject.revokeKyc(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(FREEZE_MASK, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void revokeKycForDefaultGrantedUsesCorrectFreezeStatusWithSafety() {
+		// given:
+		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setFreezeKey(MerkleToken.UNUSED_KEY);
+
+		// when:
+		subject.revokeKyc(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(0, subject.tokenRels[2]);
+	}
+
+	@Test
+	public void revokeKycIsNoopForNewRelWithDefaultNoKycToken() {
+		// when:
+		subject.revokeKyc(tokenWith(firstToken - 1), unusableAtFirst);
+
+		// then:
+		assertEquals(9, tokenRels.length);
+	}
+
+	@Test
+	public void revokesKycForExistingRelationshipWithKycToken() {
+		// when:
+		subject.revokeKyc(tokenWith(firstToken), unusableAtFirst);
+
+		// then:
+		assertEquals(0, tokenRels[2]);
+	}
+
+	@Test
+	public void recognizesKycStatus() {
+		// when:
+		subject.revokeKyc(tokenWith(thirdToken), unusableAtFirst);
+
+		// expect:
+		assertFalse(subject.isKycGranted(tokenWith(thirdToken), unusableAtFirst));
+		assertTrue(subject.isKycGranted(tokenWith(secondToken), unusableAtFirst));
+		// and:
+		assertFalse(subject.isKycGranted(tokenWith(thirdToken - 1), unusableAtFirst));
+		assertTrue(subject.isKycGranted(tokenWith(thirdToken - 1), alwaysUsable));
+	}
+
+	@Test
 	public void recognizesFreezeStatus() {
 		// expect:
 		assertTrue(subject.isFrozen(tokenWith(thirdToken), unusableAtFirst));
@@ -803,7 +931,10 @@ class MerkleAccountStateTest {
 	@Test
 	public void tokenRelDescribesAsExpected() {
 		// setup:
-		var expected = "[0.0.555(balance=123), 0.0.666(balance=234), 0.0.777(balance=345,FROZEN)]";
+		subject.revokeKyc(tokenWith(firstToken), unusableAtFirst);
+
+		// given:
+		var expected = "[0.0.555(balance=123), 0.0.666(balance=234,KYC), 0.0.777(balance=345,FROZEN,KYC)]";
 
 		// expect:
 		assertEquals(subject.readableTokenRels(), expected);

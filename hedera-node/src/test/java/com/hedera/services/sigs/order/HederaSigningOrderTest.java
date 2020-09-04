@@ -21,6 +21,7 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
@@ -68,6 +69,7 @@ import static com.hedera.test.factories.txns.ContractCreateFactory.*;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -92,6 +94,8 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -199,7 +203,6 @@ public class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
@@ -1184,6 +1187,59 @@ public class HederaSigningOrderTest {
 				contains(TOKEN_FREEZE_KT.asKey()));
 	}
 
+	@Test
+	public void getsTokenGrantKycWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_GRANT_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_KYC_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_REVOKE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_KYC_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithMissingToken() throws Throwable {
+		// given:
+		setupFor(REVOKE_WITH_MISSING_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithoutKyc() throws Throwable {
+		// given:
+		setupFor(REVOKE_FOR_TOKEN_WITHOUT_KYC);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
@@ -1222,7 +1278,6 @@ public class HederaSigningOrderTest {
 		hfs = scenario.hfs();
 		accounts = scenario.accounts();
 		topics = scenario.topics();
-		tokens = scenario.tokens();
 		tokenStore = scenario.tokenStore();
 
 		subject = new HederaSigningOrder(

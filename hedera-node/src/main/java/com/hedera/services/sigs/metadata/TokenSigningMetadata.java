@@ -32,15 +32,21 @@ import java.util.Optional;
  */
 public class TokenSigningMetadata {
 	private final JKey adminKey;
+	private final Optional<JKey> kycKey;
 	private final Optional<JKey> freezeKey;
 
-	private TokenSigningMetadata(JKey adminKey, Optional<JKey> freezeKey) {
+	private TokenSigningMetadata(
+			JKey adminKey,
+			Optional<JKey> kycKey,
+			Optional<JKey> freezeKey
+	) {
 		this.adminKey = adminKey;
+		this.kycKey = kycKey;
 		this.freezeKey = freezeKey;
 	}
 
 	public static TokenSigningMetadata from(MerkleToken token) {
-		return new TokenSigningMetadata(token.adminKey(), token.freezeKey());
+		return new TokenSigningMetadata(token.adminKey(), token.kycKey(), token.freezeKey());
 	}
 
 	public JKey adminKey() {
@@ -49,5 +55,9 @@ public class TokenSigningMetadata {
 
 	public Optional<JKey> optionalFreezeKey() {
 		return freezeKey;
+	}
+
+	public Optional<JKey> optionalKycKey() {
+		return kycKey;
 	}
 }
