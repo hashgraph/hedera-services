@@ -100,5 +100,18 @@ public enum ExceptionalTokenStore implements TokenStore {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public ResponseCodeEnum burn(TokenID tId, long amount) {
+		throw new UnsupportedOperationException();
+	}
 
+	@Override
+	public ResponseCodeEnum mint(TokenID tId, long amount) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum delete(TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
 }

@@ -31,10 +31,12 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import org.bouncycastle.asn1.cms.OtherKeyAttribute;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -54,9 +56,11 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
@@ -64,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static java.util.stream.IntStream.range;
@@ -184,35 +189,6 @@ public class HederaTokenStore implements TokenStore {
 				MerkleToken::freezeKey);
 	}
 
-	private ResponseCodeEnum manageFlag(
-			AccountID aId,
-			TokenID tId,
-			boolean value,
-			ResponseCodeEnum keyFailure,
-			AccountProperty flagProperty,
-			Predicate<MerkleToken> defaultValueCheck,
-			Function<MerkleToken, Optional<JKey>> controlKeyFn
-	) {
-		var validity = checkExistence(aId, tId);
-		if (validity != OK) {
-			return validity;
-		}
-
-		var token = get(tId);
-		if (controlKeyFn.apply(token).isEmpty()) {
-			return keyFailure;
-		}
-
-		var account = ledger.getTokenRef(aId);
-		if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
-			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-		}
-
-		var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
-		ledger.set(aId, flagProperty, scopedFreeze);
-		return OK;
-	}
-
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		var validity = checkExistence(aId, tId);
@@ -236,20 +212,49 @@ public class HederaTokenStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
-		var validity = ledger.exists(aId) ? OK : INVALID_ACCOUNT_ID;
-		if (validity != OK) {
-			return validity;
+	@Override
+	public ResponseCodeEnum burn(TokenID tId, long amount) {
+		return changeSupply(tId, amount, -1, INVALID_TOKEN_BURN_AMOUNT);
+	}
+
+	@Override
+	public ResponseCodeEnum mint(TokenID tId, long amount) {
+		return changeSupply(tId, amount, +1, INVALID_TOKEN_MINT_AMOUNT);
+	}
+
+	private ResponseCodeEnum changeSupply(
+			TokenID tId,
+			long amount,
+			long sign,
+			ResponseCodeEnum failure
+	) {
+		if (amount < 0) {
+			return failure;
 		}
-		return exists(tId) ? OK : INVALID_TOKEN_ID;
+		if (!exists(tId)) {
+			return INVALID_TOKEN_ID;
+		}
+		var token = get(tId);
+		if (!token.hasSupplyKey()) {
+			return TOKEN_HAS_NO_SUPPLY_KEY;
+		}
+		var change = sign * amount;
+		var divisibility = token.divisibility();
+		var proposedFloat = token.tokenFloat() + change;
+		var validity = floatAndDivisibilityCheck(proposedFloat, divisibility);
+		if (validity != OK) {
+			return failure;
+		}
+
+		long tinyAdjustment = BigInteger.valueOf(change)
+				.multiply(BigInteger.valueOf(10).pow(divisibility))
+				.longValueExact();
+		return adjustBalance(token.treasury().toGrpcAccountId(), tId, tinyAdjustment);
 	}
 
-	private boolean unsaturated(MerkleAccount account) {
-		return account.numTokenRelationships() < properties.maxTokensPerAccount();
-	}
-
-	private boolean saturated(MerkleAccount account) {
-		return account.numTokenRelationships() >= properties.maxTokensPerAccount();
+	@Override
+	public ResponseCodeEnum delete(TokenID tId) {
+		throw new AssertionError("Not implemented");
 	}
 
 	@Override
@@ -277,6 +282,8 @@ public class HederaTokenStore implements TokenStore {
 			return failure(validity);
 		}
 		var kycKey = asUsableFcKey(request.getKycKey());
+		var wipeKey = asUsableFcKey(request.getWipeKey());
+		var supplyKey = asUsableFcKey(request.getSupplyKey());
 
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
@@ -287,10 +294,53 @@ public class HederaTokenStore implements TokenStore {
 				request.getFreezeDefault(),
 				kycKey.isEmpty() || request.getKycDefault(),
 				EntityId.ofNullableAccountId(request.getTreasury()));
-		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
+		wipeKey.ifPresent(pendingCreation::setWipeKey);
+		freezeKey.ifPresent(pendingCreation::setFreezeKey);
+		supplyKey.ifPresent(pendingCreation::setSupplyKey);
 
 		return success(pendingId);
+	}
+
+	@Override
+	public void commitCreation() {
+		throwIfNoCreationPending();
+
+		tokens.get().put(fromTokenId(pendingId), pendingCreation);
+		symbolKeyedIds.put(pendingCreation.symbol(), pendingId);
+
+		resetPendingCreation();
+	}
+
+	@Override
+	public void rollbackCreation() {
+		throwIfNoCreationPending();
+
+		ids.reclaimLastId();
+		resetPendingCreation();
+	}
+
+	private void resetPendingCreation() {
+		pendingId = NO_PENDING_ID;
+		pendingCreation = null;
+	}
+
+	private void throwIfNoCreationPending() {
+		if (pendingId == NO_PENDING_ID) {
+			throw new IllegalStateException("No pending token creation!");
+		}
+	}
+
+	private void throwIfMissing(TokenID id) {
+		if (!exists(id)) {
+			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
+		}
+	}
+
+	private void throwIfSymbolMissing(String symbol) {
+		if (!symbolExists(symbol)) {
+			throw new IllegalArgumentException(String.format("No such symbol '%s'!", symbol));
+		}
 	}
 
 	private ResponseCodeEnum freezeSemanticsCheck(Optional<JKey> candidate, boolean freezeDefault) {
@@ -337,44 +387,49 @@ public class HederaTokenStore implements TokenStore {
 		return OK;
 	}
 
-	@Override
-	public void commitCreation() {
-		throwIfNoCreationPending();
-
-		tokens.get().put(fromTokenId(pendingId), pendingCreation);
-		symbolKeyedIds.put(pendingCreation.symbol(), pendingId);
-
-		resetPendingCreation();
-	}
-
-	@Override
-	public void rollbackCreation() {
-		throwIfNoCreationPending();
-
-		ids.reclaimLastId();
-		resetPendingCreation();
-	}
-
-	private void resetPendingCreation() {
-		pendingId = NO_PENDING_ID;
-		pendingCreation = null;
-	}
-
-	private void throwIfNoCreationPending() {
-		if (pendingId == NO_PENDING_ID) {
-			throw new IllegalStateException("No pending token creation!");
+	private ResponseCodeEnum manageFlag(
+			AccountID aId,
+			TokenID tId,
+			boolean value,
+			ResponseCodeEnum keyFailure,
+			AccountProperty flagProperty,
+			Predicate<MerkleToken> defaultValueCheck,
+			Function<MerkleToken, Optional<JKey>> controlKeyFn
+	) {
+		var validity = checkExistence(aId, tId);
+		if (validity != OK) {
+			return validity;
 		}
+
+		var token = get(tId);
+		if (controlKeyFn.apply(token).isEmpty()) {
+			return keyFailure;
+		}
+
+		var account = ledger.getTokenRef(aId);
+		if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
+			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+		}
+
+		var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
+		ledger.set(aId, flagProperty, scopedFreeze);
+		return OK;
 	}
 
-	private void throwIfMissing(TokenID id) {
-		if (!exists(id)) {
-			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
+
+	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
+		var validity = ledger.exists(aId) ? OK : INVALID_ACCOUNT_ID;
+		if (validity != OK) {
+			return validity;
 		}
+		return exists(tId) ? OK : INVALID_TOKEN_ID;
 	}
 
-	private void throwIfSymbolMissing(String symbol) {
-		if (!symbolExists(symbol)) {
-			throw new IllegalArgumentException(String.format("No such symbol '%s'!", symbol));
-		}
+	private boolean unsaturated(MerkleAccount account) {
+		return account.numTokenRelationships() < properties.maxTokensPerAccount();
+	}
+
+	private boolean saturated(MerkleAccount account) {
+		return account.numTokenRelationships() >= properties.maxTokensPerAccount();
 	}
 }

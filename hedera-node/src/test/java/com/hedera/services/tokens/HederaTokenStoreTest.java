@@ -52,6 +52,11 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -78,7 +83,7 @@ class HederaTokenStoreTest {
 	MerkleToken token;
 	MerkleAccount account;
 
-	Key adminKey, kycKey, freezeKey;
+	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
 	String symbol = "NotHbar";
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
@@ -96,9 +101,11 @@ class HederaTokenStoreTest {
 
 	@BeforeEach
 	public void setup() {
-		kycKey = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
-		adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-		freezeKey = CARELESS_SIGNING_PAYER_KT.asKey();
+		adminKey = TOKEN_ADMIN_KT.asKey();
+		kycKey = TOKEN_KYC_KT.asKey();
+		freezeKey = TOKEN_FREEZE_KT.asKey();
+		wipeKey = MISC_ACCOUNT_KT.asKey();
+		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 
 		token = mock(MerkleToken.class);
 		given(token.symbol()).willReturn(symbol);
@@ -288,6 +295,158 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
+	}
+
+	@Test
+	public void mintingRejectsInvalidToken() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.mint(misc, 1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
+	}
+
+	@Test
+	public void burningRejectsInvalidToken() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.burn(misc, 1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
+	}
+
+	@Test
+	public void mintingRejectsFixedSupplyToken() {
+		given(token.hasSupplyKey()).willReturn(false);
+
+		// when:
+		var status = subject.mint(misc, 1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, status);
+	}
+
+	@Test
+	public void burningRejectsFixedSupplyToken() {
+		given(token.hasSupplyKey()).willReturn(false);
+
+		// when:
+		var status = subject.burn(misc, 1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, status);
+	}
+
+	@Test
+	public void mintingRejectsNegativeMintAmount() {
+		given(token.hasSupplyKey()).willReturn(true);
+
+		// when:
+		var status = subject.mint(misc, -1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
+	}
+
+	@Test
+	public void burningRejectsNegativeAmount() {
+		given(token.hasSupplyKey()).willReturn(true);
+
+		// when:
+		var status = subject.burn(misc, -1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
+	}
+
+	@Test
+	public void mintingRejectsInvalidNewSupply() {
+		long halfwayToOverflow = (1L << 62) / 2;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.tokenFloat()).willReturn(halfwayToOverflow);
+		given(token.divisibility()).willReturn(1);
+
+		// when:
+		var status = subject.mint(misc, halfwayToOverflow);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
+	}
+
+	@Test
+	public void validBurnChangesTokenSupplyAndAdjustsTreasury() {
+		// setup:
+		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
+		long oldSupply = 123;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.tokenFloat()).willReturn(oldSupply);
+		given(token.divisibility()).willReturn(1);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, -oldSupply * 10)).willReturn(OK);
+
+		// when:
+		var status = subject.burn(misc, oldSupply);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		// and:
+		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		// and:
+		assertEquals(misc, captor.getValue().id());
+		assertSame(token, captor.getValue().token());
+		assertEquals(-oldSupply * 10, (long)captor.getValue().value());
+	}
+
+	@Test
+	public void validMintChangesTokenSupplyAndAdjustsTreasury() {
+		// setup:
+		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
+		long oldSupply = 123;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.tokenFloat()).willReturn(oldSupply);
+		given(token.divisibility()).willReturn(1);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, oldSupply * 10)).willReturn(OK);
+
+		// when:
+		var status = subject.mint(misc, oldSupply);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, status);
+		// and:
+		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		// and:
+		assertEquals(misc, captor.getValue().id());
+		assertSame(token, captor.getValue().token());
+		assertEquals(oldSupply * 10, (long)captor.getValue().value());
+	}
+
+	@Test
+	public void burningRejectsInvalidNewSupply() {
+		long halfwayToOverflow = (1L << 62) / 2;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.tokenFloat()).willReturn(halfwayToOverflow);
+		given(token.divisibility()).willReturn(1);
+
+		// when:
+		var status = subject.burn(misc, halfwayToOverflow + 1);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
 	}
 
 	@Test
@@ -505,13 +664,15 @@ class HederaTokenStoreTest {
 		var expected = new MerkleToken(
 				tokenFloat,
 				divisibility,
-				TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked(),
+				TOKEN_ADMIN_KT.asJKeyUnchecked(),
 				symbol,
 				freezeDefault,
 				kycDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
-		expected.setFreezeKey(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked());
-		expected.setKycKey(TxnHandlingScenario.MISC_FILE_WACL_KT.asJKeyUnchecked());
+		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
+		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
+		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -748,6 +909,8 @@ class HederaTokenStoreTest {
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
 				.setFreezeKey(freezeKey)
+				.setWipeKey(wipeKey)
+				.setSupplyKey(supplyKey)
 				.setSymbol(symbol)
 				.setFloat(tokenFloat)
 				.setTreasury(treasury)

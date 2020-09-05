@@ -55,8 +55,11 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private long tokenFloat;
 	private JKey adminKey;
 	private JKey kycKey = UNUSED_KEY;
+	private JKey wipeKey = UNUSED_KEY;
+	private JKey supplyKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
+	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountKycGrantedByDefault;
 	private EntityId treasury;
@@ -100,12 +103,15 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		}
 
 		var that = (MerkleToken)o;
-		return this.tokenFloat == that.tokenFloat &&
+		return this.deleted == that.deleted &&
+				this.tokenFloat == that.tokenFloat &&
 				this.divisibility == that.divisibility &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountKycGrantedByDefault == that.accountKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.treasury, that.treasury) &&
+				equalUpToDecodability(this.wipeKey, that.wipeKey) &&
+				equalUpToDecodability(this.supplyKey, that.supplyKey) &&
 				equalUpToDecodability(this.adminKey, that.adminKey) &&
 				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
 				equalUpToDecodability(this.kycKey, that.kycKey);
@@ -114,11 +120,14 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Override
 	public int hashCode() {
 		return Objects.hash(
+				deleted,
 				tokenFloat,
 				divisibility,
 				adminKey,
 				freezeKey,
 				kycKey,
+				wipeKey,
+				supplyKey,
 				symbol,
 				accountsFrozenByDefault,
 				accountKycGrantedByDefault,
@@ -129,12 +138,15 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
+				.add("deleted", deleted)
 				.add("symbol", symbol)
 				.add("treasury", treasury.toAbbrevString())
 				.add("float", tokenFloat)
 				.add("divisibility", divisibility)
 				.add("adminKey", describe(adminKey))
 				.add("kycKey", describe(kycKey))
+				.add("wipeKey", describe(wipeKey))
+				.add("supplyKey", describe(supplyKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("accountKycGrantedByDefault", accountKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
@@ -154,6 +166,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		deleted = in .readBoolean();
 		adminKey = serdes.deserializeKey(in);
 		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_LENGTH);
 		treasury = in.readSerializable();
@@ -163,10 +176,13 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		accountKycGrantedByDefault = in.readBoolean();
 		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
+		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
+		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeBoolean(deleted);
 		serdes.serializeKey(adminKey, out);
 		out.writeNormalisedString(symbol);
 		out.writeSerializable(treasury, true);
@@ -176,6 +192,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		out.writeBoolean(accountKycGrantedByDefault);
 		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
+		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
+		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
 	}
 
 	/* --- FastCopyable --- */
@@ -189,11 +207,18 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 			accountsFrozenByDefault,
 			accountKycGrantedByDefault,
 			treasury);
+		fc.setDeleted(deleted);
 		if (freezeKey != UNUSED_KEY) {
 			fc.setFreezeKey(freezeKey);
 		}
 		if (kycKey != UNUSED_KEY) {
 			fc.setKycKey(kycKey);
+		}
+		if (wipeKey != UNUSED_KEY) {
+			fc.setWipeKey(wipeKey);
+		}
+		if (supplyKey != UNUSED_KEY) {
+			fc.setSupplyKey(supplyKey);
 		}
 		return fc;
 	}
@@ -237,6 +262,38 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	public void setKycKey(JKey kycKey) {
 		this.kycKey = kycKey;
+	}
+
+	public Optional<JKey> supplyKey() {
+		return Optional.ofNullable(supplyKey);
+	}
+
+	public boolean hasSupplyKey() {
+		return supplyKey != UNUSED_KEY;
+	}
+
+	public void setSupplyKey(JKey supplyKey) {
+		this.supplyKey = supplyKey;
+	}
+
+	public Optional<JKey> wipeKey() {
+		return Optional.ofNullable(wipeKey);
+	}
+
+	public boolean hasWipeKey() {
+		return wipeKey != UNUSED_KEY;
+	}
+
+	public void setWipeKey(JKey wipeKey) {
+		this.wipeKey = wipeKey;
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
+
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
 	}
 
 	public String symbol() {
