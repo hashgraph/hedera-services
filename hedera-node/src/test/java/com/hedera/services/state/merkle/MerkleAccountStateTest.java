@@ -26,6 +26,7 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -47,17 +48,19 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
 import static com.hedera.services.state.merkle.MerkleAccountState.FREEZE_MASK;
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
-import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELATIONSHIPS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.IdUtils.tokenWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
@@ -153,7 +156,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				NO_TOKEN_BALANCES);
+				NO_TOKEN_RELATIONSHIPS);
 		subject = new MerkleAccountState(
 				key,
 				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
@@ -169,6 +172,23 @@ class MerkleAccountStateTest {
 	@AfterEach
 	public void cleanup() {
 		MerkleAccountState.serdes = new DomainSerdes();
+	}
+
+	@Test
+	public void returnsExplicitRelationships() {
+		// given:
+		subject.revokeKyc(tokenWith(secondToken), usableAtFirst);
+
+		// when:
+		var explicitly = subject.explicitTokenRels();
+
+		// expect:
+		assertEquals(
+				List.of(
+						new RawTokenRelationship(firstBalance, firstToken, false, true),
+						new RawTokenRelationship(secondBalance, secondToken, false, false),
+						new RawTokenRelationship(thirdBalance, thirdToken, true, true)),
+				explicitly);
 	}
 
 	@Test
@@ -523,6 +543,76 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	public void wipesFirstRelationship() {
+		// when:
+		var outcome = subject.wipeTokenRelationship(tokenWith(firstToken));
+
+		// expect:
+		assertEquals(OK, outcome);
+		// and:
+		assertArrayEquals(
+				Arrays.copyOfRange(tokenRels, 3, tokenRels.length),
+				subject.tokenRels);
+	}
+
+	@Test
+	public void refusesToWipeImaginaryRelationships() {
+		// when:
+		var outcome = subject.wipeTokenRelationship(tokenWith(firstToken - 1));
+
+		// expect:
+		assertEquals(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP, outcome);
+		// and:
+		assertEquals(tokenRels, subject.tokenRels);
+	}
+
+	@Test
+	public void wipesAllRelationships() {
+		// when:
+		var outcome = subject.wipeTokenRelationship(tokenWith(firstToken));
+		outcome = subject.wipeTokenRelationship(tokenWith(secondToken));
+		outcome = subject.wipeTokenRelationship(tokenWith(thirdToken));
+
+		// expect:
+		assertEquals(OK, outcome);
+		// and:
+		assertSame(NO_TOKEN_RELATIONSHIPS, subject.tokenRels);
+	}
+
+	@Test
+	public void wipesThirdRelationship() {
+		// when:
+		var outcome = subject.wipeTokenRelationship(tokenWith(thirdToken));
+
+		// expect:
+		assertEquals(OK, outcome);
+		// and:
+		assertArrayEquals(
+				Arrays.copyOfRange(tokenRels, 0, 6),
+				Arrays.copyOfRange(subject.tokenRels, 0, 6));
+		// and:
+		assertEquals(6, subject.tokenRels.length);
+	}
+
+	@Test
+	public void wipesSecondRelationship() {
+		// when:
+		var outcome = subject.wipeTokenRelationship(tokenWith(secondToken));
+
+		// expect:
+		assertEquals(OK, outcome);
+		// and:
+		assertArrayEquals(
+				Arrays.copyOfRange(tokenRels, 0, 3),
+				Arrays.copyOfRange(subject.tokenRels, 0, 3));
+		assertArrayEquals(
+				Arrays.copyOfRange(tokenRels, 6, 8),
+				Arrays.copyOfRange(subject.tokenRels, 3, 5));
+		// and:
+		assertEquals(6, subject.tokenRels.length);
+	}
+
+	@Test
 	public void adjustsUnfrozenTokenDownBalanceIfPresent() {
 		// given:
 		assertEquals(OK, subject.validityOfAdjustment(
@@ -581,7 +671,7 @@ class MerkleAccountStateTest {
 	public void refusesToInitializeBalanceToNegative() {
 		// expect:
 		assertEquals(
-				SETTING_NEGATIVE_ACCOUNT_BALANCE,
+				INSUFFICIENT_TOKEN_BALANCE,
 				subject.validityOfAdjustment(tokenWith(firstToken - 1), alwaysUsable, -1));
 		// and:
 		assertThrows(
@@ -593,7 +683,7 @@ class MerkleAccountStateTest {
 	public void refusesToAdjustBalanceToNegative() {
 		// expect:
 		assertEquals(
-				SETTING_NEGATIVE_ACCOUNT_BALANCE,
+				INSUFFICIENT_TOKEN_BALANCE,
 				subject.validityOfAdjustment(tokenWith(firstToken), alwaysUsable, -(firstBalance + 1)));
 		// and:
 		assertThrows(

@@ -40,7 +40,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -58,6 +60,12 @@ import static java.util.stream.Collectors.toList;
 public abstract class HapiApiSuite {
 	protected abstract Logger getResultsLogger();
 	protected abstract List<HapiApiSpec> getSpecsInSuite();
+
+	private static final Random r = new Random();
+
+	protected String salted(String symbol) {
+		return symbol + r.nextInt(1_234_567);
+	}
 
 	public static final long ONE_HBAR = 100_000_000L;
 	public static final long A_HUNDRED_HBARS = 100 * ONE_HBAR;

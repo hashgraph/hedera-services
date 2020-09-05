@@ -61,6 +61,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKeyName = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
+	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -98,6 +99,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate symbol(String symbol) {
 		this.symbol = Optional.of(symbol);
+		return this;
+	}
+
+	public HapiTokenCreate symbol(Function<HapiApiSpec, String> symbolFn) {
+		this.symbolFn = Optional.of(symbolFn);
 		return this;
 	}
 
@@ -142,7 +148,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		adminKey = netOf(spec, adminKeyName, Optional.empty(), Optional.empty(), Optional.of(this::effectiveKeyGen));
-		String usableSymbol = symbol.orElse(token);
+		String usableSymbol = symbolFn.map(fn -> fn.apply(spec)).orElse(symbol.orElse(token));
 		TokenCreation opBody = spec
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(

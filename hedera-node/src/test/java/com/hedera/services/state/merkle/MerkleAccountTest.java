@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcqueue.FCQueue;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELATIONSHIPS;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -266,6 +267,38 @@ public class MerkleAccountTest {
 	}
 
 	@Test
+	public void delegatesWipe() {
+		// setup:
+		var id = IdUtils.tokenWith(firstToken);
+
+		// given:
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+
+		// when:
+		subject.wipeTokenRelationship(id);
+
+		// expect:
+		verify(delegate).wipeTokenRelationship(id);
+	}
+
+	@Test
+	public void explicitRelsDelegates() {
+		// setup:
+		List<RawTokenRelationship> l = (List<RawTokenRelationship>) mock(List.class);
+
+		given(delegate.explicitTokenRels()).willReturn(l);
+
+		// and:
+		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+
+		// when:
+		var a = subject.explicitTokenRels();
+
+		// expect:
+		assertSame(l, a);
+	}
+
+	@Test
 	public void tokenSettersDelegate() {
 		// setup:
 		var id = IdUtils.tokenWith(secondToken);
@@ -472,7 +505,7 @@ public class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy,
-				NO_TOKEN_BALANCES);
+				NO_TOKEN_RELATIONSHIPS);
 		// and:
 		var in = mock(DataInputStream.class);
 

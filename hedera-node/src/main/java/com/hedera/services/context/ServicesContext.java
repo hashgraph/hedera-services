@@ -618,7 +618,7 @@ public class ServicesContext {
 			cryptoAnswers = new CryptoAnswers(
 					new GetLiveHashAnswer(),
 					new GetStakersAnswer(),
-					new GetAccountInfoAnswer(validator()),
+					new GetAccountInfoAnswer(tokenStore(), validator()),
 					new GetAccountBalanceAnswer(validator()),
 					new GetAccountRecordsAnswer(answerFunctions(), validator())
 			);
