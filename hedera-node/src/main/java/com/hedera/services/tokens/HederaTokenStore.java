@@ -200,7 +200,7 @@ public class HederaTokenStore implements TokenStore {
 
 		var token = get(tId);
 		if (controlKeyFn.apply(token).isEmpty()) {
-			return value ? keyFailure : OK;
+			return keyFailure;
 		}
 
 		var account = ledger.getTokenRef(aId);

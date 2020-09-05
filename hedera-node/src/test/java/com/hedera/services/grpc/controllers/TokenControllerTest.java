@@ -82,6 +82,42 @@ class TokenControllerTest {
 	}
 
 	@Test
+	public void forwardTokenFreezeAsExpected() {
+		// when:
+		subject.freezeTokenAccount(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_FREEZE_METRIC);
+	}
+
+	@Test
+	public void forwardTokenUnfreezeAsExpected() {
+		// when:
+		subject.unfreezeTokenAccount(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_UNFREEZE_METRIC);
+	}
+
+	@Test
+	public void forwardGrantKyc() {
+		// when:
+		subject.grantKycToTokenAccount(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_GRANT_KYC_METRIC);
+	}
+
+	@Test
+	public void forwardRevokeKyc() {
+		// when:
+		subject.revokeKycFromTokenAccount(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_REVOKE_KYC_METRIC);
+	}
+
+	@Test
 	public void forwardsTokenInfoAsExpected() {
 		// when:
 		subject.getTokenInfo(query, queryObserver);

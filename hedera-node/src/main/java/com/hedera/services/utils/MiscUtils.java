@@ -272,6 +272,14 @@ public class MiscUtils {
 			return "tokenCreate";
 		} else if (txn.hasTokenTransfers()) {
 			return "tokenTransact";
+		} else if (txn.hasTokenFreeze()) {
+			return "tokenFreeze";
+		} else if (txn.hasTokenUnfreeze()) {
+			return "tokenUnfreeze";
+		} else if (txn.hasTokenGrantKyc()) {
+			return "tokenGrantKyc";
+		} else if (txn.hasTokenRevokeKyc()) {
+			return "tokenRevokeKyc";
 		} else {
 			return "NotImplemented";
 		}
@@ -324,6 +332,14 @@ public class MiscUtils {
 			return TokenCreate;
 		} else if (txn.hasTokenTransfers()) {
 			return TokenTransact;
+		} else if (txn.hasTokenFreeze()) {
+			return TokenFreezeAccount;
+		} else if (txn.hasTokenUnfreeze()) {
+			return TokenUnfreezeAccount;
+		} else if (txn.hasTokenGrantKyc()) {
+			return TokenGrantKycToAccount;
+		} else if (txn.hasTokenRevokeKyc()) {
+			return TokenRevokeKycFromAccount;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

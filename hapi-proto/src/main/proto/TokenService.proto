@@ -33,5 +33,9 @@ import "Transaction.proto";
 service TokenService {
     rpc createToken (Transaction) returns (TransactionResponse);
     rpc transferTokens (Transaction) returns (TransactionResponse);
+    rpc freezeTokenAccount (Transaction) returns (TransactionResponse);
+    rpc unfreezeTokenAccount (Transaction) returns (TransactionResponse);
+    rpc grantKycToTokenAccount (Transaction) returns (TransactionResponse);
+    rpc revokeKycFromTokenAccount (Transaction) returns (TransactionResponse);
     rpc getTokenInfo (Query) returns (Response);
 }

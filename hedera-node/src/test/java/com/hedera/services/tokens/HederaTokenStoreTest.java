@@ -54,6 +54,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -317,12 +318,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void unfreezingIsNoopWithoutFreezeKey() {
+	public void unfreezingInvalidWithoutFreezeKey() {
 		// when:
 		var status = subject.unfreeze(treasury, misc);
 
 		// then:
-		assertEquals(OK, status);
+		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, status);
 	}
 
 
