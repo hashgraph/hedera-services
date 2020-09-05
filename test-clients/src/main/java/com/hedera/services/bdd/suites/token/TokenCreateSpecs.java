@@ -57,12 +57,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						creationValidatesSymbol(),
-//						treasuryHasCorrectBalance(),
-//						creationRequiresAppropriateSigs(),
-//						initialFloatMustBeSane(),
+						creationValidatesSymbol(),
+						treasuryHasCorrectBalance(),
+						creationRequiresAppropriateSigs(),
+						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
-//						creationYieldsExpectedToken(),
+						creationYieldsExpectedToken(),
 				}
 		);
 	}
@@ -203,7 +203,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec treasuryHasCorrectBalance() {
-		String token = "myToken";
+		String token = salted("myToken");
 
 		int divisibility = 1;
 		long tokenFloat = 100_000;
@@ -213,7 +213,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(A_HUNDRED_HBARS)
 				).when(
-						tokenCreate(salted(token))
+						tokenCreate(token)
 								.treasury(TOKEN_TREASURY)
 								.divisibility(divisibility)
 								.initialFloat(tokenFloat)
