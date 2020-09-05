@@ -45,6 +45,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
@@ -164,16 +165,30 @@ public class StateView {
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
 					.setTokenId(id)
+					.setIsDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setCurrentFloat(token.tokenFloat())
 					.setDivisibility(token.divisibility())
 					.setAdminKey(asKeyUnchecked(token.adminKey()));
+
 			var freezeCandidate = token.freezeKey();
 			freezeCandidate.ifPresentOrElse(k -> {
 				info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
 				info.setFreezeKey(asKeyUnchecked(k));
 			}, () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
+
+			var kycCandidate = token.kycKey();
+			kycCandidate.ifPresentOrElse(k -> {
+				info.setDefaultKycStatus(tksFor(token.accountKycGrantedByDefault()));
+				info.setKycKey(asKeyUnchecked(k));
+			}, () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
+
+			var supplyCandidate = token.supplyKey();
+			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
+			var wipeCandidate = token.wipeKey();
+			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
 			log.warn(
@@ -186,6 +201,10 @@ public class StateView {
 
 	TokenFreezeStatus tfsFor(boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
+	}
+
+	TokenKycStatus tksFor(boolean flag) {
+		return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
 	}
 
 	public boolean tokenExists(TokenRef ref) {

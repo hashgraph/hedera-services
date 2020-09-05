@@ -158,6 +158,10 @@ public class TxnUtils {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}
 
+	public static TokenRef asRef(TokenID id) {
+		return TokenRef.newBuilder().setTokenId(id).build();
+	}
+
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asTopic(s) : lookupSpec.registry().getTopicID(s);
 	}

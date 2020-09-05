@@ -44,7 +44,9 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenUnfreeze;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -117,6 +119,14 @@ public class TxnFactory {
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
 		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
 		return (T)opBuilder.build();
+	}
+
+	public Consumer<TokenFreeze.Builder> defaultDef_TokenFreeze() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenUnfreeze.Builder> defaultDef_TokenUnfreeze() {
+		return builder -> {};
 	}
 
 	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {

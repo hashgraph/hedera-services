@@ -43,8 +43,11 @@ message TokenInfo {
     Key adminKey = 6;
     Key kycKey = 7;
     Key freezeKey = 8;
-    TokenFreezeStatus defaultFreezeStatus = 9;
-    TokenKycStatus defaultKycStatus = 10;
+    Key wipeKey = 9;
+    Key supplyKey = 10;
+    TokenFreezeStatus defaultFreezeStatus = 11;
+    TokenKycStatus defaultKycStatus = 12;
+    bool isDeleted = 13;
 }
 
 message TokenGetInfoResponse {
