@@ -96,6 +96,11 @@ import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenMintScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenBurnScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenWipeScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -1238,6 +1243,145 @@ public class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	public void getsTokenMintWithValidRef() throws Throwable {
+		// given:
+		setupFor(MINT_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_SUPPLY_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenBurnWithValidRef() throws Throwable {
+		// given:
+		setupFor(BURN_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_SUPPLY_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenDeletionWithValidRef() throws Throwable {
+		// given:
+		setupFor(DELETE_WITH_KNOWN_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenDeletionWithMissing() throws Throwable {
+		// given:
+		setupFor(DELETE_WITH_MISSING_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenWipeWithRelevantKey() throws Throwable {
+		// given:
+		setupFor(VALID_WIPE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_WIPE_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateNoSpecialKeys() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithWipe() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_WIPE_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithSupply() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_SUPPLY_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithKyc() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_KYC_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithFreeze() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {

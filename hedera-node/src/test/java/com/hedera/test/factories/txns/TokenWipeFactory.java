@@ -1,4 +1,4 @@
-package com.hedera.test.factories.scenarios;
+package com.hedera.test.factories.txns;
 
 /*-
  * ‌
@@ -20,35 +20,30 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactory> {
-	private TokenRevokeKycFactory() {}
+public class TokenWipeFactory extends SignedTxnFactory<TokenWipeFactory> {
+	private TokenWipeFactory() {}
 
-	private AccountID to;
 	private TokenRef ref;
+	private AccountID target;
 
-	public static TokenRevokeKycFactory newSignedTokenRevokeKyc() {
-		return new TokenRevokeKycFactory();
+	public static TokenWipeFactory newSignedTokenWipe() {
+		return new TokenWipeFactory();
 	}
 
-	public TokenRevokeKycFactory revoking(TokenRef ref, AccountID to) {
-		this.to = to;
+	public TokenWipeFactory wiping(TokenRef ref, AccountID to) {
+		this.target = to;
 		this.ref = ref;
 		return this;
 	}
 
 	@Override
-	protected TokenRevokeKycFactory self() {
+	protected TokenWipeFactory self() {
 		return this;
 	}
 
@@ -59,9 +54,9 @@ public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactor
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenRevokeKyc.newBuilder()
-				.setToken(ref)
-				.setAccount(to);
-		txn.setTokenRevokeKyc(op);
+		var op = TokenWipeAccount.newBuilder()
+				.setAccount(target)
+				.setToken(ref);
+		txn.setTokenWipe(op);
 	}
 }

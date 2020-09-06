@@ -22,40 +22,27 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.TokenRevokeKycFactory.newSignedTokenRevokeKyc;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.TokenDeleteFactory.newSignedTokenDelete;
 import static com.hedera.test.utils.IdUtils.asIdRef;
 
-public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
-	VALID_REVOKE_WITH_EXTANT_TOKEN {
+public enum TokenDeleteScenarios implements TxnHandlingScenario {
+	DELETE_WITH_KNOWN_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_KYC), MISC_ACCOUNT)
-							.nonPayerKts(TOKEN_KYC_KT)
+					newSignedTokenDelete()
+							.deleting(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
 							.get()
 			));
 		}
 	},
-	REVOKE_WITH_MISSING_TOKEN {
+	DELETE_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(UNKNOWN_TOKEN), MISC_ACCOUNT)
-							.nonPayerKts(TOKEN_KYC_KT)
-							.get()
-			));
-		}
-	},
-	REVOKE_FOR_TOKEN_WITHOUT_KYC {
-		@Override
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_FREEZE), MISC_ACCOUNT)
-							.nonPayerKts(TOKEN_KYC_KT)
+					newSignedTokenDelete()
+							.deleting(asIdRef(UNKNOWN_TOKEN))
 							.get()
 			));
 		}

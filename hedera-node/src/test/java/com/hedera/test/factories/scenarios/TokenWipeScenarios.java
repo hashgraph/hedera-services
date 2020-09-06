@@ -22,39 +22,38 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.TokenRevokeKycFactory.newSignedTokenRevokeKyc;
+import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.utils.IdUtils.asIdRef;
 
-public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
-	VALID_REVOKE_WITH_EXTANT_TOKEN {
+public enum TokenWipeScenarios implements TxnHandlingScenario {
+	VALID_WIPE_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_KYC), MISC_ACCOUNT)
-							.nonPayerKts(TOKEN_KYC_KT)
+					newSignedTokenWipe()
+							.wiping(asIdRef(KNOWN_TOKEN_WITH_WIPE), MISC_ACCOUNT)
+							.nonPayerKts(TOKEN_WIPE_KT)
 							.get()
 			));
 		}
 	},
-	REVOKE_WITH_MISSING_TOKEN {
+	WIPE_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(UNKNOWN_TOKEN), MISC_ACCOUNT)
-							.nonPayerKts(TOKEN_KYC_KT)
+					newSignedTokenWipe()
+							.wiping(asIdRef(UNKNOWN_TOKEN), MISC_ACCOUNT)
 							.get()
 			));
 		}
 	},
-	REVOKE_FOR_TOKEN_WITHOUT_KYC {
+	WIPE_FOR_TOKEN_WITHOUT_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_FREEZE), MISC_ACCOUNT)
+					newSignedTokenWipe()
+							.wiping(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS), MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));

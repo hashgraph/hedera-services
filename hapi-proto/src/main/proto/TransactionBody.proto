@@ -111,7 +111,7 @@ message TransactionBody {
     TokenGrantKyc tokenGrantKyc = 33;
     TokenRevokeKyc tokenRevokeKyc = 34;
     TokenDeletion tokenDeletion = 35;
-    TokenManagement tokenManagement = 36;
+    TokenManagement tokenUpdate = 36;
     TokenMintCoins tokenMint = 37;
     TokenBurnCoins tokenBurn = 38;
     TokenWipeAccount tokenWipe = 39;

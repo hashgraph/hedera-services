@@ -42,7 +42,6 @@ enum ResponseCodeEnum {
   BUSY = 12; //If API is throttled out
   NOT_SUPPORTED = 13; //The API is not currently supported
 
-
   INVALID_FILE_ID = 14; //The file id is invalid or does not exist
   INVALID_ACCOUNT_ID = 15; //The account id is invalid or does not exist
   INVALID_CONTRACT_ID = 16; //The contract id is invalid or does not exist

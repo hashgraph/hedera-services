@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -237,6 +238,16 @@ public class HederaSigningOrder {
 			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenGrantKyc().getToken(), factory));
 		} else if (txn.hasTokenRevokeKyc()) {
 			return Optional.of(tokenKnowing(txn.getTransactionID(), txn.getTokenRevokeKyc().getToken(), factory));
+		} else if (txn.hasTokenMint()) {
+			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenMint().getToken(), factory));
+		} else if (txn.hasTokenBurn()) {
+			return Optional.of(tokenRefloating(txn.getTransactionID(), txn.getTokenBurn().getToken(), factory));
+		} else if (txn.hasTokenWipe()) {
+			return Optional.of(tokenWiping(txn.getTransactionID(), txn.getTokenWipe().getToken(), factory));
+		} else if (txn.hasTokenDeletion()) {
+			return Optional.of(tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory));
+		} else if (txn.hasTokenUpdate()) {
+			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -539,6 +550,73 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalKycKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenRefloating(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory
+	) {
+		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalSupplyKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenWiping(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory
+	) {
+		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalWipeKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenUpdates(
+			TransactionID txnId,
+			TokenManagement op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = new ArrayList<>();
+		if (op.hasWipeKey()) {
+			nonAdminReqs.add(TokenSigningMetadata::optionalWipeKey);
+		}
+		if (op.hasSupplyKey()) {
+			nonAdminReqs.add(TokenSigningMetadata::optionalSupplyKey);
+		}
+		if (op.hasKycKey()) {
+			nonAdminReqs.add(TokenSigningMetadata::optionalKycKey);
+		}
+		if (op.hasFreezeKey()) {
+			nonAdminReqs.add(TokenSigningMetadata::optionalFreezeKey);
+		}
+		return tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
+	}
+
+	private <T> SigningOrderResult<T> tokenMutates(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory
+	) {
+		return tokenMutates(txnId, ref, factory, Collections.emptyList());
+	}
+
+	private <T> SigningOrderResult<T> tokenMutates(
+			TransactionID txnId,
+			TokenRef ref,
+			SigningOrderResultFactory<T> factory,
+			List<Function<TokenSigningMetadata, Optional<JKey>>> optionalKeyLookups
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			required.add(meta.adminKey());
+			optionalKeyLookups.forEach(lookup -> {
+				var candidate = lookup.apply(meta);
+				candidate.ifPresent(required::add);
+			});
+		} else {
+			return factory.forMissingToken(ref, txnId);
+		}
+		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenAdjusts(

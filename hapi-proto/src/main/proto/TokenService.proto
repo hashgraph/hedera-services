@@ -31,11 +31,17 @@ import "Transaction.proto";
 
 /* The requests and responses for different network services. */
 service TokenService {
+    rpc mintToken (Transaction) returns (TransactionResponse);
+    rpc burnToken (Transaction) returns (TransactionResponse);
     rpc createToken (Transaction) returns (TransactionResponse);
+    rpc updateToken (Transaction) returns (TransactionResponse);
+    rpc deleteToken (Transaction) returns (TransactionResponse);
     rpc transferTokens (Transaction) returns (TransactionResponse);
+    rpc wipeTokenAccount (Transaction) returns (TransactionResponse);
     rpc freezeTokenAccount (Transaction) returns (TransactionResponse);
     rpc unfreezeTokenAccount (Transaction) returns (TransactionResponse);
     rpc grantKycToTokenAccount (Transaction) returns (TransactionResponse);
     rpc revokeKycFromTokenAccount (Transaction) returns (TransactionResponse);
+
     rpc getTokenInfo (Query) returns (Response);
 }
