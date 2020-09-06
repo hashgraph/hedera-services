@@ -257,6 +257,7 @@ enum HederaFunctionality {
     TokenUpdate = 64;
     TokenMint = 65;
     TokenBurn = 66;
+    TokenAccountWipe = 67;
 }
 
 /*
