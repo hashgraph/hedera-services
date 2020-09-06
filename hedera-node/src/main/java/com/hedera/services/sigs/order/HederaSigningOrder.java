@@ -573,20 +573,10 @@ public class HederaSigningOrder {
 			TokenManagement op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = new ArrayList<>();
-		if (op.hasWipeKey()) {
-			nonAdminReqs.add(TokenSigningMetadata::optionalWipeKey);
-		}
-		if (op.hasSupplyKey()) {
-			nonAdminReqs.add(TokenSigningMetadata::optionalSupplyKey);
-		}
-		if (op.hasKycKey()) {
-			nonAdminReqs.add(TokenSigningMetadata::optionalKycKey);
-		}
-		if (op.hasFreezeKey()) {
-			nonAdminReqs.add(TokenSigningMetadata::optionalFreezeKey);
-		}
-		return tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
+		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
+		var basic = tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
+		addToMutableReqIfPresent(op, TokenManagement::hasAdminKey, TokenManagement::getAdminKey, basic.getOrderedKeys());
+		return basic;
 	}
 
 	private <T> SigningOrderResult<T> tokenMutates(

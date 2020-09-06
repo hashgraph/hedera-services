@@ -36,6 +36,7 @@ import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResource
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
@@ -177,6 +178,7 @@ import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
+import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
@@ -707,6 +709,7 @@ public class ServicesContext {
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
 				entry(TokenRevokeKycFromAccount, List.of(new TokenRevokeKycResourceUsage())),
+				entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -930,6 +933,8 @@ public class ServicesContext {
 						List.of(new TokenGrantKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenRevokeKycFromAccount,
 						List.of(new TokenRevokeKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenDelete,
+						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),

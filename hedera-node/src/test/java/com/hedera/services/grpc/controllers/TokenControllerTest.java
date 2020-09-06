@@ -118,6 +118,51 @@ class TokenControllerTest {
 	}
 
 	@Test
+	public void forwardDelete() {
+		// when:
+		subject.deleteToken(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_DELETE_METRIC);
+	}
+
+	@Test
+	public void forwardUpdate() {
+		// when:
+		subject.updateToken(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_UPDATE_METRIC);
+	}
+
+	@Test
+	public void forwardMint() {
+		// when:
+		subject.mintToken(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_MINT_METRIC);
+	}
+
+	@Test
+	public void forwardBurn() {
+		// when:
+		subject.burnToken(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_BURN_METRIC);
+	}
+
+	@Test
+	public void forwardWipe() {
+		// when:
+		subject.wipeTokenAccount(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_WIPE_ACCOUNT_METRIC);
+	}
+
+	@Test
 	public void forwardsTokenInfoAsExpected() {
 		// when:
 		subject.getTokenInfo(query, queryObserver);

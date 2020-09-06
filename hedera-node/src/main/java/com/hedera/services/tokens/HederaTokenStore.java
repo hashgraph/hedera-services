@@ -42,6 +42,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -71,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static java.util.stream.IntStream.range;
 
 /**
@@ -140,6 +142,16 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
+	public void apply(TokenID id, Consumer<MerkleToken> change) {
+		throwIfMissing(id);
+
+		var key = fromTokenId(id);
+		var token = tokens.get().getForModify(key);
+		change.accept(token);
+		tokens.get().replace(key, token);
+	}
+
+	@Override
 	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
 		return setHasKyc(aId, tId, true);
 	}
@@ -196,12 +208,16 @@ public class HederaTokenStore implements TokenStore {
 			return validity;
 		}
 
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
+
 		var account = ledger.getTokenRef(aId);
 		if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
 			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 		}
 
-		var token = get(tId);
 		validity = account.validityOfAdjustment(tId, token, adjustment);
 		if (validity != OK) {
 			return validity;
@@ -235,6 +251,9 @@ public class HederaTokenStore implements TokenStore {
 			return INVALID_TOKEN_ID;
 		}
 		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
 		if (!token.hasSupplyKey()) {
 			return TOKEN_HAS_NO_SUPPLY_KEY;
 		}
@@ -250,11 +269,6 @@ public class HederaTokenStore implements TokenStore {
 				.multiply(BigInteger.valueOf(10).pow(divisibility))
 				.longValueExact();
 		return adjustBalance(token.treasury().toGrpcAccountId(), tId, tinyAdjustment);
-	}
-
-	@Override
-	public ResponseCodeEnum delete(TokenID tId) {
-		throw new AssertionError("Not implemented");
 	}
 
 	@Override
@@ -402,6 +416,9 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
 		if (controlKeyFn.apply(token).isEmpty()) {
 			return keyFailure;
 		}

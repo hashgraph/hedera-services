@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 
+import java.util.function.Consumer;
+
 public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
 
@@ -81,6 +83,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
 
 	@Override
+	public void apply(TokenID id, Consumer<MerkleToken> change) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean exists(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
@@ -107,11 +114,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum mint(TokenID tId, long amount) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum delete(TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 }

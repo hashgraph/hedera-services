@@ -1339,7 +1339,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_WIPE_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1353,7 +1353,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_SUPPLY_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1367,7 +1367,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_KYC_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1381,7 +1381,21 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateReplacingAdmin() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_ADMIN_KEY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {

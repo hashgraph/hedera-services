@@ -35,12 +35,17 @@ import org.apache.logging.log4j.Logger;
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	private static final Logger log = LogManager.getLogger(TokenController.class);
 
+	public static final String TOKEN_MINT_METRIC = "mintToken";
+	public static final String TOKEN_BURN_METRIC = "burnToken";
 	public static final String TOKEN_CREATE_METRIC = "createToken";
+	public static final String TOKEN_DELETE_METRIC = "deleteToken";
+	public static final String TOKEN_UPDATE_METRIC = "updateToken";
 	public static final String TOKEN_TRANSACT_METRIC = "transferTokens";
 	public static final String TOKEN_FREEZE_METRIC = "freezeTokenAccount";
 	public static final String TOKEN_UNFREEZE_METRIC = "unfreezeTokenAccount";
 	public static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
 	public static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
+	public static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
 
 	public static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 
@@ -61,6 +66,31 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void createToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.respondToToken(signedTxn, observer, TOKEN_CREATE_METRIC);
+	}
+
+	@Override
+	public void deleteToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_DELETE_METRIC);
+	}
+
+	@Override
+	public void mintToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_MINT_METRIC);
+	}
+
+	@Override
+	public void burnToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_BURN_METRIC);
+	}
+
+	@Override
+	public void updateToken(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_UPDATE_METRIC);
+	}
+
+	@Override
+	public void wipeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_WIPE_ACCOUNT_METRIC);
 	}
 
 	@Override

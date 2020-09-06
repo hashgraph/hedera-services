@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -96,7 +97,9 @@ public class GetAccountInfoAnswer implements AnswerService {
 						.setGenerateReceiveRecordThreshold(account.getReceiverThreshold());
 				List<TokenRelationship> relationships = account.explicitTokenRels()
 						.stream()
-						.map(raw -> raw.asGrpcFor(tokenStore.get(raw.id())))
+						.map(raw -> new AbstractMap.SimpleEntry<>(raw, tokenStore.get(raw.id())))
+						.filter(entry -> !entry.getValue().isDeleted())
+						.map(entry -> entry.getKey().asGrpcFor(entry.getValue()))
 						.collect(toList());
 				if (!relationships.isEmpty()) {
 					info.addAllTokenRelationships(relationships);

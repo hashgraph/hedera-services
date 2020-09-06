@@ -36,14 +36,18 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -57,6 +61,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -67,11 +72,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 @RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
@@ -81,6 +88,7 @@ class HederaTokenStoreTest {
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	MerkleToken token;
+	MerkleToken modifiableToken;
 	MerkleAccount account;
 
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
@@ -88,6 +96,7 @@ class HederaTokenStoreTest {
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
+	TokenRef miscRef = IdUtils.asIdRef(misc);
 	boolean freezeDefault = true;
 	boolean kycDefault = true;
 	AccountID treasury = IdUtils.asAccount("1.2.3");
@@ -125,6 +134,7 @@ class HederaTokenStoreTest {
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -132,6 +142,74 @@ class HederaTokenStoreTest {
 
 		subject = new HederaTokenStore(ids, properties, () -> tokens);
 		subject.setLedger(ledger);
+	}
+
+	@Test
+	public void applicationRejectsMissing() {
+		// setup:
+		var change = mock(Consumer.class);
+
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
+	}
+
+	@Test
+	public void applicationWorks() {
+		// setup:
+		var change = mock(Consumer.class);
+		// and:
+		InOrder inOrder = Mockito.inOrder(change, tokens);
+
+		// when:
+		subject.apply(misc, change);
+
+		// then:
+		inOrder.verify(tokens).getForModify(fromTokenId(misc));
+		inOrder.verify(change).accept(modifiableToken);
+		inOrder.verify(tokens).replace(fromTokenId(misc), modifiableToken);
+	}
+
+	@Test
+	public void deletionWorksAsExpected() {
+		// when:
+		TokenStore.DELETION.accept(token);
+
+		// then:
+		verify(token).setDeleted(true);
+	}
+
+	@Test
+	public void deletesAsExpected() {
+		// given:
+		var mockSubject = mock(TokenStore.class);
+
+		given(mockSubject.resolve(miscRef)).willReturn(misc);
+		willCallRealMethod().given(mockSubject).delete(miscRef);
+
+		// when:
+		var outcome = mockSubject.delete(miscRef);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(mockSubject).apply(misc, TokenStore.DELETION);
+	}
+
+	@Test
+	public void rejectsMissingDeletion() {
+		// given:
+		var mockSubject = mock(TokenStore.class);
+
+		given(mockSubject.resolve(miscRef)).willReturn(TokenStore.MISSING_TOKEN);
+		willCallRealMethod().given(mockSubject).delete(miscRef);
+
+		// when:
+		var outcome = mockSubject.delete(miscRef);
+
+		// then:
+		assertEquals(INVALID_TOKEN_REF, outcome);
+		verify(mockSubject, never()).apply(any(), any());
 	}
 
 	@Test
@@ -379,6 +457,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void mintingRejectsDeletedToken() {
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.mint(misc, 1L);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
 	public void validBurnChangesTokenSupplyAndAdjustsTreasury() {
 		// setup:
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
@@ -463,6 +552,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void freezingRejectsDeletedToken() {
+		givenTokenWithFreezeKey(true);
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.freeze(treasury, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
 	public void freezingPermitsSaturatedAccountIfNoExplicitFreezeRequired() {
 		givenTokenWithFreezeKey(true);
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -541,6 +642,17 @@ class HederaTokenStoreTest {
 	private void givenTokenWithKycKey(boolean kycDefault) {
 		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
 		given(token.accountKycGrantedByDefault()).willReturn(kycDefault);
+	}
+
+	@Test
+	public void adjustingRejectsDeletedToken() {
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.adjustBalance(treasury, misc, 1);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
 	}
 
 	@Test

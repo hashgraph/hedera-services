@@ -30,6 +30,11 @@ import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
+import java.util.function.Consumer;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -38,9 +43,11 @@ import com.hederahashgraph.api.proto.java.TokenRef;
  */
 public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
 
+	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
 	boolean symbolExists(String symbol);
 	TokenID lookup(String symbol);
@@ -48,7 +55,6 @@ public interface TokenStore {
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);
-	ResponseCodeEnum delete(TokenID tId);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
@@ -68,5 +74,14 @@ public interface TokenStore {
 		} else {
 			return symbolExists(symbol = ref.getSymbol()) ? lookup(symbol) : MISSING_TOKEN;
 		}
+	}
+
+	default ResponseCodeEnum delete(TokenRef ref) {
+		var id = resolve(ref);
+		if (id == MISSING_TOKEN) {
+			return INVALID_TOKEN_REF;
+		}
+		apply(id, DELETION);
+		return OK;
 	}
 }

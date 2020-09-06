@@ -37,6 +37,17 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	UPDATE_REPLACING_ADMIN_KEY {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.newAdmin(TOKEN_REPLACE_KT)
+							.get()
+			));
+		}
+	},
 	UPDATE_WITH_SUPPLY_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {

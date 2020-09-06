@@ -78,9 +78,11 @@ class GetAccountInfoAnswerTest {
 	private MerkleAccount payerAccount;
 	private String target = payer;
 	private MerkleToken token;
+	private MerkleToken deletedToken;
 	TokenID firstToken = tokenWith(555),
 			secondToken = tokenWith(666),
-			thirdToken = tokenWith(777);
+			thirdToken = tokenWith(777),
+			fourthToken = tokenWith(888);
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
 
 	private long fee = 1_234L;
@@ -97,9 +99,14 @@ class GetAccountInfoAnswerTest {
 		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("freeze".getBytes())));
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
+		deletedToken = mock(MerkleToken.class);
+		given(deletedToken.isDeleted()).willReturn(true);
 
 		tokenStore = mock(TokenStore.class);
-		given(tokenStore.get(any())).willReturn(token);
+		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
+		given(tokenStore.get(firstToken)).willReturn(token);
+		given(tokenStore.get(secondToken)).willReturn(token);
+		given(tokenStore.get(thirdToken)).willReturn(token);
 
 		payerAccount = MapValueFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
@@ -114,6 +121,7 @@ class GetAccountInfoAnswerTest {
 		payerAccount.grantKyc(firstToken, token);
 		payerAccount.grantKyc(secondToken, token);
 		payerAccount.grantKyc(thirdToken, token);
+		payerAccount.grantKyc(fourthToken, token);
 		payerAccount.adjustTokenBalance(firstToken, token, firstBalance);
 		payerAccount.adjustTokenBalance(secondToken, token, secondBalance);
 		payerAccount.adjustTokenBalance(thirdToken, token, thirdBalance);
