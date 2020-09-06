@@ -280,6 +280,16 @@ public class MiscUtils {
 			return "tokenGrantKyc";
 		} else if (txn.hasTokenRevokeKyc()) {
 			return "tokenRevokeKyc";
+		} else if (txn.hasTokenDeletion()) {
+			return "tokenDelete";
+		} else if (txn.hasTokenUpdate()) {
+			return "tokenUpdate";
+		} else if (txn.hasTokenMint()) {
+			return "tokenMint";
+		} else if (txn.hasTokenBurn()) {
+			return "tokenBurn";
+		} else if (txn.hasTokenWipe()) {
+			return "tokenAccountWipe";
 		} else {
 			return "NotImplemented";
 		}
@@ -340,6 +350,16 @@ public class MiscUtils {
 			return TokenGrantKycToAccount;
 		} else if (txn.hasTokenRevokeKyc()) {
 			return TokenRevokeKycFromAccount;
+		} else if (txn.hasTokenDeletion()) {
+			return TokenDelete;
+		} else if (txn.hasTokenUpdate()) {
+			return TokenUpdate;
+		} else if (txn.hasTokenMint()) {
+			return TokenMint;
+		} else if (txn.hasTokenBurn()) {
+			return TokenBurn;
+		} else if (txn.hasTokenWipe()) {
+			return TokenAccountWipe;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

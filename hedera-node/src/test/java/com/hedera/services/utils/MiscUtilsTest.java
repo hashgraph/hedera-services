@@ -68,13 +68,18 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnCoins;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenMintCoins;
 import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -317,6 +322,11 @@ public class MiscUtilsTest {
 			put("tokenUnfreeze", new BodySetter<>(TokenUnfreeze.class));
 			put("tokenGrantKyc", new BodySetter<>(TokenGrantKyc.class));
 			put("tokenRevokeKyc", new BodySetter<>(TokenRevokeKyc.class));
+			put("tokenDelete", new BodySetter<>(TokenDeletion.class));
+			put("tokenUpdate", new BodySetter<>(TokenManagement.class));
+			put("tokenMint", new BodySetter<>(TokenMintCoins.class));
+			put("tokenBurn", new BodySetter<>(TokenBurnCoins.class));
+			put("tokenAccountWipe", new BodySetter<>(TokenWipeAccount.class));
 		}};
 
 		// expect:
@@ -567,6 +577,11 @@ public class MiscUtilsTest {
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreeze.class));
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKyc.class));
 			put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKyc.class));
+			put(TokenDelete, new BodySetter<>(TokenDeletion.class));
+			put(TokenUpdate, new BodySetter<>(TokenManagement.class));
+			put(TokenMint, new BodySetter<>(TokenMintCoins.class));
+			put(TokenBurn, new BodySetter<>(TokenBurnCoins.class));
+			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccount.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
