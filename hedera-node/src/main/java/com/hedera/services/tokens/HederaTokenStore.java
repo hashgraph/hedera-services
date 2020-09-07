@@ -230,7 +230,11 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
-		throw new AssertionError("Not implemented");
+		return sanityChecked(aId, tId, ignore -> {
+			var account = ledger.getTokenRef(aId);
+			var validity = account.wipeTokenRelationship(tId);
+			return OK;
+		});
 	}
 
 	@Override
@@ -394,7 +398,7 @@ public class HederaTokenStore implements TokenStore {
 		if (symbol.length() > properties.maxTokenSymbolLength()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
-		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isLetterOrDigit)
+		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
 				? OK
 				: INVALID_TOKEN_SYMBOL;
 	}
@@ -436,6 +440,24 @@ public class HederaTokenStore implements TokenStore {
 		var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
 		ledger.set(aId, flagProperty, scopedFreeze);
 		return OK;
+	}
+
+	private ResponseCodeEnum sanityChecked(
+			AccountID aId,
+			TokenID tId,
+			Function<MerkleToken, ResponseCodeEnum> action
+	) {
+		var validity = checkExistence(aId, tId);
+		if (validity != OK) {
+			return validity;
+		}
+
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
+
+		return action.apply(token);
 	}
 
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {

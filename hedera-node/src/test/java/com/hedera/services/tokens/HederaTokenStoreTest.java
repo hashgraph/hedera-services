@@ -90,7 +90,7 @@ class HederaTokenStoreTest {
 	MerkleAccount account;
 
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
-	String symbol = "NotHbar";
+	String symbol = "NOTHBAR";
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
@@ -318,6 +318,30 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void wipingRejectsMissingAccount() {
+		given(ledger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void wipingUpdatesTokenRefAsExpected() {
+		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(account.wipeTokenRelationship(misc)).willReturn(OK);
+
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// expect:
+		assertEquals(OK, status);
+		verify(account).wipeTokenRelationship(misc);
+	}
+
+	@Test
 	public void adjustingRejectsMissingAccount() {
 		given(ledger.exists(sponsor)).willReturn(false);
 
@@ -452,6 +476,17 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
+	}
+
+	@Test
+	public void wipingRejectsDeletedToken() {
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
 	}
 
 	@Test
