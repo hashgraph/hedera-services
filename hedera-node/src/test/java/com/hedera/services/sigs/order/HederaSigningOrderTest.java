@@ -25,7 +25,6 @@ import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -1123,7 +1122,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test

@@ -150,29 +150,15 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						newKeyNamed("adminKey"),
-						newKeyNamed("treasuryKey"),
-						newKeyNamed("randomWrongKey")
+						newKeyNamed("adminKey")
 				).when(
 						tokenCreate("shouldntWork")
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenCreate("shouldntWork")
-								.payingWith("payer")
-								.adminKey("adminKey")
-								.freezeKey("treasuryKey")
-								.signedBy("payer", "adminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenCreate("shouldntWork")
-								.payingWith("payer")
-								.adminKey("adminKey")
-								.freezeKey("treasuryKey")
-								.signedBy("payer", "adminKey", "randomWrongKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
 				).then(
-						tokenCreate(salted("frozenToken"))
+						tokenCreate("frozenToken")
 								.treasury(TOKEN_TREASURY)
 								.freezeKey("treasuryKey")
 								.freezeDefault(true)

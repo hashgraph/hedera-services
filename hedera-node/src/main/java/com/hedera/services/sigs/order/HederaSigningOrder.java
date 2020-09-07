@@ -531,7 +531,6 @@ public class HederaSigningOrder {
 		List<JKey> required = new ArrayList<>();
 
 		addToMutableReqIfPresent(op, TokenCreation::hasAdminKey, TokenCreation::getAdminKey, required);
-		addToMutableReqIfPresent(op, TokenCreation::hasFreezeKey, TokenCreation::getFreezeKey, required);
 
 		return factory.forValidOrder(required);
 	}
