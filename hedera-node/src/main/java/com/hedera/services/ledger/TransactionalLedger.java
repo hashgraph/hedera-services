@@ -246,6 +246,10 @@ public class TransactionalLedger<
 		return tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
 	}
 
+	public void markForMerge(K id) {
+		changes.computeIfAbsent(id, changeFactory);
+	}
+
 	@Override
 	public Object get(K id, P property) {
 		throwIfMissing(id);

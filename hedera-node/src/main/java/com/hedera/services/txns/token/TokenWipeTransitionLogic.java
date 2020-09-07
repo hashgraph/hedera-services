@@ -30,7 +30,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -39,13 +38,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  *
  * @author Michael Tinker
  */
-public class TokenMintTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenMintTransitionLogic.class);
+public class TokenWipeTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(TokenWipeTransitionLogic.class);
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
 
-	public TokenMintTransitionLogic(
+	public TokenWipeTransitionLogic(
 			TokenStore store,
 			TransactionContext txnCtx
 	) {
@@ -56,14 +55,9 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var op = txnCtx.accessor().getTxn().getTokenMint();
-			var id = store.resolve(op.getToken());
-			if (id == TokenStore.MISSING_TOKEN) {
-				txnCtx.setStatus(INVALID_TOKEN_REF);
-			} else {
-				var outcome = store.mint(id, op.getAmount());
-				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-			}
+			var op = txnCtx.accessor().getTxn().getTokenWipe();
+			var outcome = store.wipe(op.getAccount(), store.resolve(op.getToken()));
+			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -73,6 +67,6 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenMint;
+		return TransactionBody::hasTokenWipe;
 	}
 }

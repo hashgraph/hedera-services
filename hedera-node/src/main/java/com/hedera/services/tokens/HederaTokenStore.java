@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -51,10 +52,12 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_KYC_GRANTED;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -70,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -203,37 +207,40 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		var validity = checkExistence(aId, tId);
-		if (validity != OK) {
-			return validity;
-		}
+		return sanityChecked(aId, tId, token -> {
+			var account = ledger.getTokenRef(aId);
+			if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
+				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+			}
 
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
-
-		var account = ledger.getTokenRef(aId);
-		if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
-			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-		}
-
-		validity = account.validityOfAdjustment(tId, token, adjustment);
-		if (validity != OK) {
-			return validity;
-		}
-
-		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, adjustment);
-		ledger.set(aId, BALANCE, scopedAdjustment);
-		return OK;
+			var validity = account.validityOfAdjustment(tId, token, adjustment);
+			if (validity != OK) {
+				return validity;
+			}
+			adjustUnchecked(aId, tId, token, adjustment);
+			return OK;
+		});
 	}
 
 	@Override
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
-		return sanityChecked(aId, tId, ignore -> {
+		return sanityChecked(aId, tId, token -> {
+			if (!token.hasWipeKey()) {
+				return TOKEN_HAS_NO_WIPE_KEY;
+			}
+			if (ofNullableAccountId(aId).equals(token.treasury())) {
+				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+			}
 			var account = ledger.getTokenRef(aId);
-			var validity = account.wipeTokenRelationship(tId);
-			return OK;
+			var balance = account.getTokenBalance(tId);
+			var outcome = account.wipeTokenRelationship(tId);
+			if (outcome == OK) {
+				ledger.markForMerge(aId);
+				if (balance > 0) {
+					adjustUnchecked(token.treasury().toGrpcAccountId(), tId, token, balance);
+				}
+			}
+			return outcome;
 		});
 	}
 
@@ -245,6 +252,11 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public ResponseCodeEnum mint(TokenID tId, long amount) {
 		return changeSupply(tId, amount, +1, INVALID_TOKEN_MINT_AMOUNT);
+	}
+
+	private void adjustUnchecked(AccountID aId, TokenID tId, MerkleToken token, long amount) {
+		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, amount);
+		ledger.set(aId, BALANCE, scopedAdjustment);
 	}
 
 	private ResponseCodeEnum changeSupply(
@@ -316,7 +328,7 @@ public class HederaTokenStore implements TokenStore {
 				request.getSymbol(),
 				request.getFreezeDefault(),
 				kycKey.isEmpty() || request.getKycDefault(),
-				EntityId.ofNullableAccountId(request.getTreasury()));
+				ofNullableAccountId(request.getTreasury()));
 		kycKey.ifPresent(pendingCreation::setKycKey);
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
@@ -419,27 +431,20 @@ public class HederaTokenStore implements TokenStore {
 			Predicate<MerkleToken> defaultValueCheck,
 			Function<MerkleToken, Optional<JKey>> controlKeyFn
 	) {
-		var validity = checkExistence(aId, tId);
-		if (validity != OK) {
-			return validity;
-		}
+		return sanityChecked(aId, tId, token -> {
+			if (controlKeyFn.apply(token).isEmpty()) {
+				return keyFailure;
+			}
 
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
-		if (controlKeyFn.apply(token).isEmpty()) {
-			return keyFailure;
-		}
+			var account = ledger.getTokenRef(aId);
+			if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
+				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+			}
 
-		var account = ledger.getTokenRef(aId);
-		if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
-			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-		}
-
-		var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
-		ledger.set(aId, flagProperty, scopedFreeze);
-		return OK;
+			var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
+			ledger.set(aId, flagProperty, scopedFreeze);
+			return OK;
+		});
 	}
 
 	private ResponseCodeEnum sanityChecked(

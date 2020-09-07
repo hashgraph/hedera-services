@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,10 +41,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -51,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -68,8 +73,69 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						kycMgmtSuccessCasesWork(),
 						supplyMgmtSuccessCasesWork(),
 						supplyMgmtFailureCasesWork(),
+						wipeAccountFailureCasesWork(),
+						wipeAccountSuccessCasesWork(),
 				}
 		);
+	}
+
+	public HapiApiSpec wipeAccountSuccessCasesWork() {
+		var wipeableToken = "with";
+
+		return defaultHapiSpec("WipeAccountSuccessCasesWork")
+				.given(
+						newKeyNamed("wipeKey"),
+						cryptoCreate("misc"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate(wipeableToken)
+								.treasury(TOKEN_TREASURY)
+								.initialFloat(1_000)
+								.wipeKey("wipeKey"),
+						tokenTransact(
+								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
+						getAccountBalance("misc")
+								.hasTokenBalance(wipeableToken, 500),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(wipeableToken, 500),
+						getAccountInfo("misc").logged(),
+						wipeTokenAccount(wipeableToken, "misc"),
+						getAccountInfo("misc").logged()
+				).then(
+						getAccountBalance("misc")
+								.hasTokenBalance(wipeableToken, 0),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(wipeableToken, 1_000)
+				);
+	}
+
+	public HapiApiSpec wipeAccountFailureCasesWork() {
+		var unwipeableToken = "without";
+		var wipeableToken = "with";
+
+		return defaultHapiSpec("WipeAccountFailureCasesWork")
+				.given(
+						newKeyNamed("wipeKey"),
+						cryptoCreate("misc"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate(unwipeableToken)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(wipeableToken)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey("wipeKey")
+				).then(
+						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY)
+								.signedBy(GENESIS)
+								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
+						wipeTokenAccount(wipeableToken, "misc")
+								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
+								.signedBy(GENESIS)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
+								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT)
+				);
 	}
 
 	public HapiApiSpec kycMgmtFailureCasesWork() {

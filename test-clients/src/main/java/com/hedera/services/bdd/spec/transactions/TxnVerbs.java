@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -129,6 +130,9 @@ public class TxnVerbs {
 	}
 	public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {
 		return new HapiTokenKycRevoke(token, account);
+	}
+	public static HapiTokenWipe wipeTokenAccount(String token, String account) {
+		return new HapiTokenWipe(token, account);
 	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);

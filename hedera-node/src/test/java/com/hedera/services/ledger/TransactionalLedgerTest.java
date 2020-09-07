@@ -77,6 +77,15 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
+	public void markForMergeEnsuresPendingChange() {
+		// when:
+		subject.markForMerge(1L);
+
+		// then:
+		assertTrue(subject.changes.containsKey(1L));
+	}
+
+	@Test
 	public void getsTokenScopedPropertyFromNormalRefIfNoDetachedCopy() {
 		// expect:
 		assertEquals(1L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));

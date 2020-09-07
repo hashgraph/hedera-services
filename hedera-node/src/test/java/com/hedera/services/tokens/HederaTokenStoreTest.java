@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -60,10 +61,13 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -329,9 +333,39 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void wipingRejectsTokenWithNoWipeKey() {
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// expect:
+		assertEquals(TOKEN_HAS_NO_WIPE_KEY, status);
+		verify(account, never()).wipeTokenRelationship(misc);
+	}
+
+	@Test
+	public void wipingRejectsTokenTreasury() {
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(sponsor));
+
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// expect:
+		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, status);
+		verify(account, never()).wipeTokenRelationship(misc);
+	}
+
+	@Test
 	public void wipingUpdatesTokenRefAsExpected() {
+		// setup:
+		long balance = 1_234L;
+
+		given(token.hasWipeKey()).willReturn(true);
 		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
 		given(account.wipeTokenRelationship(misc)).willReturn(OK);
+		given(account.getTokenBalance(misc)).willReturn(balance);
 
 		// when:
 		var status = subject.wipe(sponsor, misc);
@@ -339,6 +373,29 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		verify(account).wipeTokenRelationship(misc);
+		// and:
+		verify(ledger).markForMerge(sponsor);
+		verify(ledger).set(
+				argThat(treasury::equals),
+				argThat(BALANCE::equals),
+				argThat((TokenScopedPropertyValue sv) ->
+						sv.token() == token && (long)sv.value() == balance));
+	}
+
+	@Test
+	public void wipingPropagatesError() {
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(account.wipeTokenRelationship(misc)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+
+		// when:
+		var status = subject.wipe(sponsor, misc);
+
+		// expect:
+		assertEquals(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP, status);
+		verify(account).wipeTokenRelationship(misc);
+		verify(ledger, never()).markForMerge(sponsor);
 	}
 
 	@Test

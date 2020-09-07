@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.TokenMintCoins;
 import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -122,6 +123,10 @@ public class TxnFactory {
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
 		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
 		return (T)opBuilder.build();
+	}
+
+	public Consumer<TokenWipeAccount.Builder> defaultDef_TokenWipeAccount() {
+		return builder -> {};
 	}
 
 	public Consumer<TokenRevokeKyc.Builder> defaultDef_TokenRevokeKyc() {

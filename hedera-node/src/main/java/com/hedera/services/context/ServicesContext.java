@@ -44,6 +44,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -188,6 +189,7 @@ import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenTransactTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
+import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -716,6 +718,7 @@ public class ServicesContext {
 				entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
 				entry(TokenMint, List.of(new TokenMintResourceUsage())),
 				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
+				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -945,6 +948,8 @@ public class ServicesContext {
 						List.of(new TokenMintTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenBurn,
 						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenAccountWipe,
+						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
