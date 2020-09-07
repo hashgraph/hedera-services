@@ -24,9 +24,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenBurnCoins;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,28 +35,31 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 @RunWith(JUnitPlatform.class)
-class TokenDeleteTransitionLogicTest {
-	private TokenID tokenId = IdUtils.asToken("0.0.12345");
+class TokenBurnTransitionLogicTest {
+	long amount = 123L;
+	private TokenID id = IdUtils.asToken("1.2.3");
 	private TokenRef token = IdUtils.asIdRef("0.0.12345");
-	private AccountID account = IdUtils.asAccount("0.0.54321");
 
 	private TokenStore tokenStore;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 
-	private TransactionBody tokenDeleteTxn;
-	private TokenDeleteTransitionLogic subject;
+	private TransactionBody tokenBurnTxn;
+	private TokenBurnTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -65,19 +68,33 @@ class TokenDeleteTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenDeleteTransitionLogic(tokenStore, txnCtx);
+		subject = new TokenBurnTransitionLogic(tokenStore, txnCtx);
 	}
 
 	@Test
-	public void capturesInvalidDelete() {
+	public void capturesInvalidBurn() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.delete(token)).willReturn(INVALID_TOKEN_REF);
+		given(tokenStore.burn(id, amount)).willReturn(INVALID_TOKEN_BURN_AMOUNT);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
+		verify(txnCtx).setStatus(INVALID_TOKEN_BURN_AMOUNT);
+	}
+
+	@Test
+	public void rejectsBadRefForSafety() {
+		givenValidTxnCtx();
+		// and:
+		given(tokenStore.resolve(token)).willReturn(TokenStore.MISSING_TOKEN);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(tokenStore, never()).burn(id, amount);
 		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
 	}
 
@@ -85,13 +102,13 @@ class TokenDeleteTransitionLogicTest {
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.delete(token)).willReturn(OK);
+		given(tokenStore.burn(id, amount)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).delete(token);
+		verify(tokenStore).burn(id, amount);
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -100,7 +117,7 @@ class TokenDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertTrue(subject.applicability().test(tokenDeleteTxn));
+		assertTrue(subject.applicability().test(tokenBurnTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
@@ -108,7 +125,8 @@ class TokenDeleteTransitionLogicTest {
 	public void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.delete(any())).willThrow(IllegalArgumentException.class);
+		given(tokenStore.burn(any(), anyLong()))
+				.willThrow(IllegalArgumentException.class);
 
 		// when:
 		subject.doStateTransition();
@@ -118,11 +136,13 @@ class TokenDeleteTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		tokenDeleteTxn = TransactionBody.newBuilder()
-				.setTokenDeletion(TokenDeletion.newBuilder()
-						.setToken(token))
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(TokenBurnCoins.newBuilder()
+						.setToken(token)
+						.setAmount(amount))
 				.build();
-		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
+		given(accessor.getTxn()).willReturn(tokenBurnTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(tokenStore.resolve(token)).willReturn(id);
 	}
 }

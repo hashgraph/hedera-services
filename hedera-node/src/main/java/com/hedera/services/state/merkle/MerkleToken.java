@@ -312,6 +312,14 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return treasury;
 	}
 
+	public void adjustFloatBy(long amount) {
+		var newFloat = tokenFloat + amount;
+		if (newFloat < 0) {
+			throw new IllegalArgumentException(String.format("Cannot set token float to %d!", newFloat));
+		}
+		tokenFloat += amount;
+	}
+
 	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}

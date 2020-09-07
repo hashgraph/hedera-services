@@ -68,6 +68,8 @@ import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
+import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
+import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -111,6 +113,7 @@ public class SuiteRunner {
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
+/*
 		put("CiConsensusAndCryptoJob", aof(
 				new DuplicateManagementTest(),
 				new TopicCreateSuite(),
@@ -126,7 +129,10 @@ public class SuiteRunner {
 				new CryptoRecordsSanityCheckSuite(),
 				new Issue2144Spec()));
 		put("CiTokenJob", aof(
-				new TokenCreateSpecs()));
+				new TokenCreateSpecs(),
+				new TokenDeleteSpecs(),
+				new TokenManagementSpecs(),
+				new TokenTransactSpecs()));
 		put("CiFileJob", aof(
 				new FileRecordsSanityCheckSuite(),
 				new VersionInfoSpec(),
@@ -141,6 +147,7 @@ public class SuiteRunner {
 				new DeprecatedContractKeySuite(),
 				new ThresholdRecordCreationSuite(),
 				new ContractRecordsSanityCheckSuite()));
+*/
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
@@ -165,7 +172,9 @@ public class SuiteRunner {
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
+		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
+		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		/* Functional tests - CRYPTO */
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));

@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -40,34 +40,34 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class HapiUnfreezeAccount extends HapiTxnOp<HapiUnfreezeAccount> {
-	static final Logger log = LogManager.getLogger(HapiUnfreezeAccount.class);
+public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
+	static final Logger log = LogManager.getLogger(HapiTokenFreeze.class);
 
 	private String token;
 	private String account;
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.TokenUnfreezeAccount;
+		return HederaFunctionality.TokenFreezeAccount;
 	}
 
-	public HapiUnfreezeAccount(String token, String account) {
+	public HapiTokenFreeze(String token, String account) {
 		this.token = token;
 		this.account = account;
 	}
 
 	@Override
-	protected HapiUnfreezeAccount self() {
+	protected HapiTokenFreeze self() {
 		return this;
 	}
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenUnfreezeAccount, this::mockUnfreezeAccountUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenFreezeAccount, this::mockFreezeAccountUsage, txn, numPayerKeys);
 	}
 
-	private FeeData mockUnfreezeAccountUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
+	private FeeData mockFreezeAccountUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
 		return TxnUtils.defaultPartitioning(
 				FeeComponents.newBuilder()
 						.setMin(1)
@@ -88,14 +88,14 @@ public class HapiUnfreezeAccount extends HapiTxnOp<HapiUnfreezeAccount> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenUnfreeze opBody = spec
+		TokenFreeze opBody = spec
 				.txns()
-				.<TokenUnfreeze, TokenUnfreeze.Builder>body(
-						TokenUnfreeze.class, b -> {
+				.<TokenFreeze, TokenFreeze.Builder>body(
+						TokenFreeze.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});
-		return b -> b.setTokenUnfreeze(opBody);
+		return b -> b.setTokenFreeze(opBody);
 	}
 
 	@Override
@@ -107,7 +107,7 @@ public class HapiUnfreezeAccount extends HapiTxnOp<HapiUnfreezeAccount> {
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::unfreezeTokenAccount;
+		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::freezeTokenAccount;
 	}
 
 	@Override

@@ -154,7 +154,7 @@ public class TransactionalLedger<
 		}
 	}
 
-	String changeSetSoFar() {
+	public String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {

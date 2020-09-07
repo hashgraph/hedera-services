@@ -35,10 +35,12 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
@@ -177,10 +179,12 @@ import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
+import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenTransactTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
@@ -710,6 +714,8 @@ public class ServicesContext {
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
 				entry(TokenRevokeKycFromAccount, List.of(new TokenRevokeKycResourceUsage())),
 				entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
+				entry(TokenMint, List.of(new TokenMintResourceUsage())),
+				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -935,6 +941,10 @@ public class ServicesContext {
 						List.of(new TokenRevokeKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenMint,
+						List.of(new TokenMintTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenBurn,
+						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),

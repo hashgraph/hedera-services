@@ -1527,7 +1527,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - fixed-float-token-service
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -2839,6 +2838,10 @@ jobs:
     steps:
       - run-eet-suites:
           dsl-args: "TokenCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenDeleteSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenManagementSpecs"
       - run-eet-suites:
           dsl-args: "TokenTransactSpecs"
   run-file-scenarios:

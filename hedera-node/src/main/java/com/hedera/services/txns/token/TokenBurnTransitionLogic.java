@@ -30,21 +30,22 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
- * Provides the state transition for token deletion.
+ * Provides the state transition for token burning.
  *
  * @author Michael Tinker
  */
-public class TokenDeleteTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenDeleteTransitionLogic.class);
+public class TokenBurnTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(TokenBurnTransitionLogic.class);
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
 
-	public TokenDeleteTransitionLogic(
+	public TokenBurnTransitionLogic(
 			TokenStore store,
 			TransactionContext txnCtx
 	) {
@@ -55,9 +56,14 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var op = txnCtx.accessor().getTxn().getTokenDeletion();
-			var outcome = store.delete(op.getToken());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+			var op = txnCtx.accessor().getTxn().getTokenBurn();
+			var id = store.resolve(op.getToken());
+			if (id == TokenStore.MISSING_TOKEN) {
+				txnCtx.setStatus(INVALID_TOKEN_REF);
+			} else {
+				var outcome = store.burn(id, op.getAmount());
+				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+			}
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -67,6 +73,6 @@ public class TokenDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenDeletion;
+		return TransactionBody::hasTokenBurn;
 	}
 }

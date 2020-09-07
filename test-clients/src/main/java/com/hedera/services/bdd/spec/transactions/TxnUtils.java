@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -306,6 +307,16 @@ public class TxnUtils {
 		}
 		return data;
 	}
+
+	public static String randomUppercase(int l) {
+		var sb = new StringBuilder();
+		for (int i = 0, n = CANDIDATES.length; i < l; i++) {
+			sb.append(CANDIDATES[r.nextInt(n)]);
+		}
+		return sb.toString();
+	}
+	private static final SplittableRandom r = new SplittableRandom();
+	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
 	public static String readableTokenTransferList(TokenTransfers xfers) {
 		Map<TokenRef, List<AccountAmount>> inter = xfers.getTransfersList()

@@ -264,7 +264,7 @@ public class HederaTokenStore implements TokenStore {
 		if (validity != OK) {
 			return failure;
 		}
-
+		apply(tId, t -> t.adjustFloatBy(change));
 		long tinyAdjustment = BigInteger.valueOf(change)
 				.multiply(BigInteger.valueOf(10).pow(divisibility))
 				.longValueExact();

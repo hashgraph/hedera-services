@@ -107,6 +107,7 @@ class GetAccountInfoAnswerTest {
 		given(tokenStore.get(firstToken)).willReturn(token);
 		given(tokenStore.get(secondToken)).willReturn(token);
 		given(tokenStore.get(thirdToken)).willReturn(token);
+		given(token.symbol()).willReturn("HEYMA");
 
 		payerAccount = MapValueFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)

@@ -56,6 +56,7 @@ public class RawTokenRelationship {
 	public TokenRelationship asGrpcFor(MerkleToken token) {
 		return TokenRelationship.newBuilder()
 				.setBalance(balance)
+				.setSymbol(token.symbol())
 				.setTokenId(TokenID.newBuilder().setTokenNum(tokenNum))
 				.setFreezeStatus(freezeStatusFor(token))
 				.setKycStatus(kycStatusFor(token))

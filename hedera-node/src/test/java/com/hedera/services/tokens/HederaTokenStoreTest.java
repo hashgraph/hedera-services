@@ -29,7 +29,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -65,7 +64,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -499,19 +497,22 @@ class HederaTokenStoreTest {
 	public void validMintChangesTokenSupplyAndAdjustsTreasury() {
 		// setup:
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
-		long oldSupply = 123;
+		long oldFloat = 1_000;
+		long adjustment = 500;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.tokenFloat()).willReturn(oldSupply);
+		given(token.tokenFloat()).willReturn(oldFloat);
 		given(token.divisibility()).willReturn(1);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(account.hasRelationshipWith(misc)).willReturn(true);
-		given(account.validityOfAdjustment(misc, token, oldSupply * 10)).willReturn(OK);
+		given(account.validityOfAdjustment(misc, token, adjustment * 10)).willReturn(OK);
+		// and:
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
-		var status = subject.mint(misc, oldSupply);
+		var status = subject.mint(misc, adjustment);
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, status);
@@ -520,8 +521,13 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(oldSupply * 10, (long)captor.getValue().value());
+		assertEquals(adjustment * 10, (long)captor.getValue().value());
+		// and:
+		verify(tokens).getForModify(fromTokenId(misc));
+		verify(token).adjustFloatBy(adjustment);
+		verify(tokens).replace(fromTokenId(misc), token);
 	}
+
 
 	@Test
 	public void burningRejectsInvalidNewSupply() {

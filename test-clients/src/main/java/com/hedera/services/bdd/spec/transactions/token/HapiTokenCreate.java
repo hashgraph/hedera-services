@@ -171,13 +171,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		adminKey = netOf(spec, adminKeyName, Optional.empty(), Optional.empty(), Optional.of(this::effectiveKeyGen));
-		String usableSymbol = symbolFn.map(fn -> fn.apply(spec)).orElse(symbol.orElse(token));
+		if (symbolFn.isPresent()) {
+			symbol = Optional.of(symbolFn.get().apply(spec));
+		}
 		TokenCreation opBody = spec
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(
 						TokenCreation.class, b -> {
 							b.setAdminKey(adminKey);
-							b.setSymbol(usableSymbol);
+							symbol.ifPresent(b::setSymbol);
 							initialFloat.ifPresent(b::setFloat);
 							divisibility.ifPresent(b::setDivisibility);
 							freezeDefault.ifPresent(b::setFreezeDefault);

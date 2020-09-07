@@ -135,6 +135,7 @@ class RawTokenRelationshipTest {
 		subject = new RawTokenRelationship(subject.getBalance(), subject.getTokenNum(), false, true);
 
 		given(token.hasKycKey()).willReturn(true);
+		given(token.symbol()).willReturn("HEYMA");
 
 		// when:
 		var desc = subject.asGrpcFor(token);
@@ -144,6 +145,7 @@ class RawTokenRelationshipTest {
 		assertEquals(IdUtils.tokenWith(num), desc.getTokenId());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, desc.getFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, desc.getKycStatus());
+		assertEquals("HEYMA", desc.getSymbol());
 	}
 
 	@Test

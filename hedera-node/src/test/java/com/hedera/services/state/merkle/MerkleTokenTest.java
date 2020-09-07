@@ -420,4 +420,19 @@ class MerkleTokenTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> MerkleToken.LEGACY_PROVIDER.deserialize(null));
 	}
+
+	@Test
+	public void adjustsFloatWhenValid() {
+		// when:
+		subject.adjustFloatBy(500_000);
+
+		// then:
+		assertEquals(1_500_000, subject.tokenFloat());
+	}
+
+	@Test
+	public void throwsIaeIfFloatGoesNegative() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.adjustFloatBy(-1_500_000));
+	}
 }

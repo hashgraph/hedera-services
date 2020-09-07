@@ -28,8 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenCreation;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenBurnCoins;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -37,45 +36,38 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
+	static final Logger log = LogManager.getLogger(HapiTokenBurn.class);
 
-public class HapiFreezeAccount extends HapiTxnOp<HapiFreezeAccount> {
-	static final Logger log = LogManager.getLogger(HapiFreezeAccount.class);
-
+	private long amount;
 	private String token;
-	private String account;
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.TokenFreezeAccount;
+		return HederaFunctionality.TokenBurn;
 	}
 
-	public HapiFreezeAccount(String token, String account) {
+	public HapiTokenBurn(String token, long amount) {
 		this.token = token;
-		this.account = account;
+		this.amount = amount;
 	}
 
 	@Override
-	protected HapiFreezeAccount self() {
+	protected HapiTokenBurn self() {
 		return this;
 	}
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenFreezeAccount, this::mockFreezeAccountUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenBurn, this::mockTokenBurnUsage, txn, numPayerKeys);
 	}
 
-	private FeeData mockFreezeAccountUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
+	private FeeData mockTokenBurnUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
 		return TxnUtils.defaultPartitioning(
 				FeeComponents.newBuilder()
 						.setMin(1)
@@ -94,28 +86,27 @@ public class HapiFreezeAccount extends HapiTxnOp<HapiFreezeAccount> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenFreeze opBody = spec
+		TokenBurnCoins opBody = spec
 				.txns()
-				.<TokenFreeze, TokenFreeze.Builder>body(
-						TokenFreeze.class, b -> {
-							b.setAccount(aId);
+				.<TokenBurnCoins, TokenBurnCoins.Builder>body(
+						TokenBurnCoins.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
+							b.setAmount(amount);
 						});
-		return b -> b.setTokenFreeze(opBody);
+		return b -> b.setTokenBurn(opBody);
 	}
 
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		return List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getFreezeKey(token));
+				spec -> spec.registry().getSupplyKey(token));
 	}
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::freezeTokenAccount;
+		return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::burnToken;
 	}
 
 	@Override
@@ -126,7 +117,7 @@ public class HapiFreezeAccount extends HapiTxnOp<HapiFreezeAccount> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
-				.add("account", account);
+				.add("amount", amount);
 		return helper;
 	}
 }
