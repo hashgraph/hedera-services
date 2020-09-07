@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +76,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("freeze")
 				).when(
 						tokenCreate("primary")
-								.symbol(salted("Primary"))
 								.initialFloat(123)
 								.divisibility(4)
 								.freezeDefault(true)
@@ -115,7 +115,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec creationValidatesSymbol() {
-		int salt = Instant.now().getNano();
+		String hopefullyUnique = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
@@ -132,15 +132,15 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasKnownStatus(MISSING_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
-								.symbol("abcde0abcde1abcde2abcde3abcde4abcde5")
+								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
 								.hasKnownStatus(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
+								.symbol(hopefullyUnique)
 								.payingWith("payer")
-								.symbol(salted("POPULAR"))
 				).then(
 						tokenCreate("tooLate")
 								.payingWith("payer")
-								.symbol(spec -> spec.registry().getSymbol("firstMoverAdvantage"))
+								.symbol(hopefullyUnique)
 								.hasKnownStatus(TOKEN_SYMBOL_ALREADY_IN_USE)
 				);
 	}
@@ -151,18 +151,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						newKeyNamed("adminKey")
-				).when(
+				).when( ).then(
 						tokenCreate("shouldntWork")
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_SIGNATURE)
-				).then(
-						tokenCreate("frozenToken")
-								.treasury(TOKEN_TREASURY)
-								.freezeKey("treasuryKey")
-								.freezeDefault(true)
-								.payingWith("payer")
 				);
 	}
 

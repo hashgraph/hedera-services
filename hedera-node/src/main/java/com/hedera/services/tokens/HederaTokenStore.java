@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.swirlds.fcmap.FCMap;
 import org.bouncycastle.asn1.cms.OtherKeyAttribute;
 
@@ -56,6 +57,7 @@ import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
 import static com.hedera.services.tokens.TokenCreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -65,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
@@ -151,8 +154,16 @@ public class HederaTokenStore implements TokenStore {
 
 		var key = fromTokenId(id);
 		var token = tokens.get().getForModify(key);
-		change.accept(token);
+		Exception thrown = null;
+		try {
+			change.accept(token);
+		} catch (Exception e) {
+			thrown = e;
+		}
 		tokens.get().replace(key, token);
+		if (thrown != null) {
+			throw new IllegalArgumentException("Token change failed unexpectedly!", thrown);
+		}
 	}
 
 	@Override
@@ -223,9 +234,9 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
 		return sanityChecked(aId, tId, token -> {
-			if (!token.hasWipeKey()) {
+			if (!skipKeyCheck && !token.hasWipeKey()) {
 				return TOKEN_HAS_NO_WIPE_KEY;
 			}
 			if (ofNullableAccountId(aId).equals(token.treasury())) {
@@ -353,6 +364,48 @@ public class HederaTokenStore implements TokenStore {
 
 		ids.reclaimLastId();
 		resetPendingCreation();
+	}
+
+	@Override
+	public ResponseCodeEnum update(TokenManagement changes) {
+		var tId = resolve(changes.getToken());
+		if (tId == MISSING_TOKEN) {
+			return INVALID_TOKEN_REF;
+		}
+		var hasNewSymbol = changes.getSymbol().length() > 0;
+		if (hasNewSymbol) {
+			var validity = symbolCheck(changes.getSymbol());
+			if (validity != OK) {
+				return validity;
+			}
+		}
+		apply(tId, token -> {
+			if (hasNewSymbol) {
+				token.setSymbol(changes.getSymbol());
+			}
+
+			if (changes.hasTreasury()) {
+				var treasuryId = EntityId.ofNullableAccountId(changes.getTreasury());
+				token.setTreasury(treasuryId);
+			}
+
+			if (changes.hasAdminKey()) {
+				token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
+			}
+			if (changes.hasFreezeKey()) {
+				token.setFreezeKey(asFcKeyUnchecked(changes.getFreezeKey()));
+			}
+			if (changes.hasKycKey()) {
+				token.setKycKey(asFcKeyUnchecked(changes.getKycKey()));
+			}
+			if (changes.hasSupplyKey()) {
+				token.setSupplyKey(asFcKeyUnchecked(changes.getSupplyKey()));
+			}
+			if (changes.hasWipeKey()) {
+				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
+			}
+		});
+		return OK;
 	}
 
 	private void resetPendingCreation() {

@@ -25,17 +25,20 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -64,6 +68,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -81,6 +86,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.BDDMockito.willThrow;
 
 @RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
@@ -93,8 +99,11 @@ class HederaTokenStoreTest {
 	MerkleToken modifiableToken;
 	MerkleAccount account;
 
+	Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
+	JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
 	String symbol = "NOTHBAR";
+	String newSymbol = "REALLYSOM";
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
@@ -102,6 +111,7 @@ class HederaTokenStoreTest {
 	boolean freezeDefault = true;
 	boolean kycDefault = true;
 	AccountID treasury = IdUtils.asAccount("1.2.3");
+	AccountID newTreasury = IdUtils.asAccount("3.2.1");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	TokenID created = IdUtils.asToken("1.2.666666");
 	TokenID pending = IdUtils.asToken("1.2.555555");
@@ -155,6 +165,23 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
+	}
+
+	@Test
+	public void applicationAlwaysReplacesModifiableToken() {
+		// setup:
+		var change = mock(Consumer.class);
+		var key = fromTokenId(misc);
+
+		given(tokens.getForModify(key)).willReturn(token);
+
+		willThrow(IllegalStateException.class).given(change).accept(any());
+
+		// when:
+		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
+
+		// then:
+		verify(tokens).replace(key, token);
 	}
 
 	@Test
@@ -326,7 +353,7 @@ class HederaTokenStoreTest {
 		given(ledger.exists(sponsor)).willReturn(false);
 
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
@@ -335,7 +362,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void wipingRejectsTokenWithNoWipeKey() {
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// expect:
 		assertEquals(TOKEN_HAS_NO_WIPE_KEY, status);
@@ -348,11 +375,38 @@ class HederaTokenStoreTest {
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(sponsor));
 
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// expect:
 		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, status);
 		verify(account, never()).wipeTokenRelationship(misc);
+	}
+
+	@Test
+	public void wipingWorksWithoutWipeKeyIfCheckSkipped() {
+		// setup:
+		long balance = 1_234L;
+
+		given(token.hasWipeKey()).willReturn(false);
+		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
+		given(account.wipeTokenRelationship(misc)).willReturn(OK);
+		given(account.getTokenBalance(misc)).willReturn(balance);
+
+		// when:
+		var status = subject.wipe(sponsor, misc, true);
+
+		// expect:
+		assertEquals(OK, status);
+		verify(account).wipeTokenRelationship(misc);
+		// and:
+		verify(ledger).markForMerge(sponsor);
+		verify(ledger).set(
+				argThat(treasury::equals),
+				argThat(BALANCE::equals),
+				argThat((TokenScopedPropertyValue sv) ->
+						sv.token() == token && (long)sv.value() == balance));
 	}
 
 	@Test
@@ -368,7 +422,7 @@ class HederaTokenStoreTest {
 		given(account.getTokenBalance(misc)).willReturn(balance);
 
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// expect:
 		assertEquals(OK, status);
@@ -390,7 +444,7 @@ class HederaTokenStoreTest {
 		given(account.wipeTokenRelationship(misc)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
 
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// expect:
 		assertEquals(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP, status);
@@ -407,6 +461,113 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void updateRejectsInvalidSymbol() {
+		// given:
+		var op = updateWith(NO_KEYS, true, false);
+		op = op.toBuilder().setSymbol("notok").build();
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_TOKEN_SYMBOL, outcome);
+	}
+
+	@Test
+	public void updateRejectsMissingToken() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		// and:
+		givenUpdateTarget(ALL_KEYS);
+		// and:
+		var op = updateWith(ALL_KEYS, true, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_TOKEN_REF, outcome);
+	}
+
+	@Test
+	public void updateHappyPathWorksForEverything() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(ALL_KEYS);
+		// and:
+		var op = updateWith(ALL_KEYS, true, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(token).setSymbol(newSymbol);
+		verify(token).setTreasury(EntityId.ofNullableAccountId(newTreasury));
+		verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+	}
+
+	enum KeyType {
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN
+	}
+
+	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
+	private static EnumSet<KeyType> ALL_KEYS = EnumSet.allOf(KeyType.class);
+
+	private TokenManagement updateWith(
+			EnumSet<KeyType> keys,
+			boolean useNewSymbol,
+			boolean useNewTreasury
+	) {
+		var op = TokenManagement.newBuilder()
+				.setToken(miscRef);
+		if (useNewSymbol) {
+			op.setSymbol(newSymbol);
+		}
+		if (useNewTreasury) {
+			op.setTreasury(newTreasury);
+		}
+		for (KeyType key : keys) {
+			switch (key) {
+				case WIPE:
+					op.setWipeKey(newKey);
+					break;
+				case FREEZE:
+					op.setFreezeKey(newKey);
+					break;
+				case SUPPLY:
+					op.setSupplyKey(newKey);
+					break;
+				case KYC:
+					op.setKycKey(newKey);
+					break;
+				case ADMIN:
+					op.setAdminKey(newKey);
+					break;
+			}
+		}
+		return op.build();
+	}
+
+	private void givenUpdateTarget(EnumSet<KeyType> keys) {
+		if (keys.contains(KeyType.WIPE)) {
+			given(token.hasWipeKey()).willReturn(true);
+		}
+		if (keys.contains(KeyType.FREEZE)) {
+			given(token.hasFreezeKey()).willReturn(true);
+		}
+		if (keys.contains(KeyType.SUPPLY)) {
+			given(token.hasSupplyKey()).willReturn(true);
+		}
+		if (keys.contains(KeyType.KYC)) {
+			given(token.hasKycKey()).willReturn(true);
+		}
 	}
 
 	@Test
@@ -540,7 +701,7 @@ class HederaTokenStoreTest {
 		given(token.isDeleted()).willReturn(true);
 
 		// when:
-		var status = subject.wipe(sponsor, misc);
+		var status = subject.wipe(sponsor, misc, false);
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);

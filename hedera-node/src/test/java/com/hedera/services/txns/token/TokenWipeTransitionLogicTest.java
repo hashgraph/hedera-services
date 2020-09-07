@@ -40,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -72,7 +73,7 @@ class TokenWipeTransitionLogicTest {
 	public void capturesInvalidWipe() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.wipe(account, id)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+		given(tokenStore.wipe(account, id, false)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
 
 		// when:
 		subject.doStateTransition();
@@ -85,13 +86,13 @@ class TokenWipeTransitionLogicTest {
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.wipe(account, id)).willReturn(OK);
+		given(tokenStore.wipe(account, id, false)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).wipe(account, id);
+		verify(tokenStore).wipe(account, id, false);
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -108,7 +109,7 @@ class TokenWipeTransitionLogicTest {
 	public void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.wipe(any(), any()))
+		given(tokenStore.wipe(any(), any(), anyBoolean()))
 				.willThrow(IllegalArgumentException.class);
 
 		// when:

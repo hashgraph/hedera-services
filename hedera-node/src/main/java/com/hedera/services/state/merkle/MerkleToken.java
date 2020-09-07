@@ -300,6 +300,18 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return symbol;
 	}
 
+	public void setSymbol(String symbol) {
+		this.symbol = symbol;
+	}
+
+	public void setTreasury(EntityId treasury) {
+		this.treasury = treasury;
+	}
+
+	public void setAdminKey(JKey adminKey) {
+		this.adminKey = adminKey;
+	}
+
 	public boolean accountsAreFrozenByDefault() {
 		return accountsFrozenByDefault;
 	}
@@ -320,11 +332,11 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		tokenFloat += amount;
 	}
 
-	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+	void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
-	public void setAccountKycGrantedByDefault(boolean accountKycGrantedByDefault) {
+	void setAccountKycGrantedByDefault(boolean accountKycGrantedByDefault) {
 		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
 	}
 }

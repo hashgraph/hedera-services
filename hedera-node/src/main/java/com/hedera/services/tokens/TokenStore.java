@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
 import java.util.function.Consumer;
@@ -55,8 +56,9 @@ public interface TokenStore {
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);
-	ResponseCodeEnum wipe(AccountID aId, TokenID tId);
+	ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
+	ResponseCodeEnum update(TokenManagement changes);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);

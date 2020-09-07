@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenManagement;
 
 import java.util.function.Consumer;
 
@@ -51,6 +52,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum update(TokenManagement changes) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -118,7 +124,9 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
+
+
 }
