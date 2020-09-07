@@ -55,6 +55,7 @@ public interface TokenStore {
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);
+	ResponseCodeEnum wipe(AccountID aId, TokenID tId);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);

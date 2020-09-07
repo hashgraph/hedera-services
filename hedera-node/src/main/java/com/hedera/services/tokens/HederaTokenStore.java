@@ -229,6 +229,11 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
+		throw new AssertionError("Not implemented");
+	}
+
+	@Override
 	public ResponseCodeEnum burn(TokenID tId, long amount) {
 		return changeSupply(tId, amount, -1, INVALID_TOKEN_BURN_AMOUNT);
 	}
@@ -432,7 +437,6 @@ public class HederaTokenStore implements TokenStore {
 		ledger.set(aId, flagProperty, scopedFreeze);
 		return OK;
 	}
-
 
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
 		var validity = ledger.exists(aId) ? OK : INVALID_ACCOUNT_ID;

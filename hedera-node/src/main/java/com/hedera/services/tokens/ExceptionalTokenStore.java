@@ -116,4 +116,9 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public ResponseCodeEnum mint(TokenID tId, long amount) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
 }
