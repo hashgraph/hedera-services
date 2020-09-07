@@ -86,6 +86,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(TokenBurn, "tokenBurn");
 		permissionKeys.put(TokenAccountWipe, "tokenAccountWipe");
 		permissionKeys.put(TokenUpdate, "tokenUpdate");
+		permissionKeys.put(SystemDelete, "systemDelete");
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");
 		permissionKeys.put(UncheckedSubmit, "uncheckedSubmit");

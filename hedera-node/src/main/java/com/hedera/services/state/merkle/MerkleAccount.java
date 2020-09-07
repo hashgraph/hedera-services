@@ -170,7 +170,7 @@ public class MerkleAccount extends AbstractMerkleInternal
 	}
 
 	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
-		throw new AssertionError("Not implemented");
+		return state().wipeTokenRelationship(id);
 	}
 
 	/* ---- Object ---- */

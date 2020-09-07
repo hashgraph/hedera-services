@@ -20,6 +20,8 @@ package com.hedera.services.context.domain.security;
  * ‍
  */
 
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;

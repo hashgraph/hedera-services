@@ -479,6 +479,8 @@ class HederaTokenStoreTest {
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(account.hasRelationshipWith(misc)).willReturn(true);
 		given(account.validityOfAdjustment(misc, token, -oldSupply * 10)).willReturn(OK);
+		// and:
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
 		var status = subject.burn(misc, oldSupply);
@@ -491,6 +493,8 @@ class HederaTokenStoreTest {
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
 		assertEquals(-oldSupply * 10, (long)captor.getValue().value());
+		// and:
+		verify(token).adjustFloatBy(-oldSupply);
 	}
 
 	@Test

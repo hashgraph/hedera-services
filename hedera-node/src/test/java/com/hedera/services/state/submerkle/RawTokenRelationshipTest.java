@@ -46,6 +46,7 @@ class RawTokenRelationshipTest {
 	@BeforeEach
 	void setUp() {
 		token = mock(MerkleToken.class);
+		given(token.symbol()).willReturn("HEYMA");
 	}
 
 	@Test
@@ -135,7 +136,6 @@ class RawTokenRelationshipTest {
 		subject = new RawTokenRelationship(subject.getBalance(), subject.getTokenNum(), false, true);
 
 		given(token.hasKycKey()).willReturn(true);
-		given(token.symbol()).willReturn("HEYMA");
 
 		// when:
 		var desc = subject.asGrpcFor(token);
