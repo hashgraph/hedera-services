@@ -2839,6 +2839,8 @@ jobs:
       - run-eet-suites:
           dsl-args: "TokenCreateSpecs"
       - run-eet-suites:
+          dsl-args: "TokenUpdateSpecs"
+      - run-eet-suites:
           dsl-args: "TokenDeleteSpecs"
       - run-eet-suites:
           dsl-args: "TokenManagementSpecs"
