@@ -49,11 +49,11 @@ public class ProtectedAccountUpdateTests extends ProtectedEntityTests {
     ProtectedAccountUpdateTests tester = new ProtectedAccountUpdateTests(testConfigFilePath);
     long[] sysAccountToFund = {3, 49, 50, 51, 55, 56, 57, 58, 59, 60, 80, 81, 100, 45, 46};
     tester.init(sysAccountToFund);
-    TransactionSigner.TX_BODY_FORMAT = "Body";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureList";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.Body;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
     tester.runTests();
-    TransactionSigner.TX_BODY_FORMAT = "BodyBytes";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.BodyBytes;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     tester.runTests();
   }
 

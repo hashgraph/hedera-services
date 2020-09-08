@@ -84,7 +84,7 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	int opBytes(FileUpdateTransactionBody op) {
-		return BASIC_ACCTID_SIZE
+		return BASIC_ENTITY_ID_SIZE
 				+ keyBytes(op.getKeys().getKeysList())
 				+ (op.hasExpirationTime() ? LONG_SIZE : 0)
 				+ op.getContents().size();

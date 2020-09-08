@@ -169,7 +169,7 @@ public class HederaToPlatformSigOps {
 		public SignatureStatus execute() {
 			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 			var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if (!SUCCESS.name().equals(payerStatus.getStatusCode().name())) {
+			if ( SUCCESS != payerStatus.getStatusCode() ) {
 				if (log.isDebugEnabled()) {
 					log.debug(
 							"Failed expanding Hedera payer sigs for txn {}: {}",
@@ -179,7 +179,7 @@ public class HederaToPlatformSigOps {
 				return payerStatus;
 			}
 			var otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if (!SUCCESS.name().equals( otherStatus.getStatusCode().name())) {
+			if ( SUCCESS != otherStatus.getStatusCode() ) {
 				if (log.isDebugEnabled()) {
 					log.debug(
 							"Failed expanding other Hedera sigs for txn {}: {}",
