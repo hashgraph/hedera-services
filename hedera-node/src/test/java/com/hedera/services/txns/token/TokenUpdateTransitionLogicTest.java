@@ -144,6 +144,38 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void abortsOnMissingNewTreasury() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.exists(newTreasury)).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any());
+		// and:
+		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+	}
+
+	@Test
+	public void abortsOnDeletedNewTreasury() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.isDeleted(newTreasury)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any());
+		// and:
+		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+	}
+
+	@Test
 	public void abortsOnInvalidNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
@@ -158,6 +190,41 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).unfreeze(newTreasury, target);
 		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	public void rollsBackIfWipeFails() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any())).willReturn(OK);
+		given(store.wipe(oldTreasury, target, true))
+				.willReturn(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).dropPendingTokenChanges();
+		// and:
+		verify(txnCtx).setStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+	}
+
+	@Test
+	public void doesntReplaceIdenticalTreasury() {
+		givenValidTxnCtx(true, true);
+		givenToken(true, true);
+		given(store.update(any())).willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).wipe(oldTreasury, target, true);
+		// and:
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -219,14 +286,23 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(boolean withNewTreasury) {
+		givenValidTxnCtx(withNewTreasury, false);
+	}
+
+	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
 		var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenManagement.newBuilder()
 						.setToken(targetRef));
 		if (withNewTreasury) {
-			builder.getTokenUpdateBuilder().setTreasury(newTreasury);
+			builder.getTokenUpdateBuilder()
+					.setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
 		}
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledger.exists(newTreasury)).willReturn(true);
+		given(ledger.isDeleted(newTreasury)).willReturn(false);
+		given(ledger.exists(oldTreasury)).willReturn(true);
+		given(ledger.isDeleted(oldTreasury)).willReturn(false);
 	}
 }

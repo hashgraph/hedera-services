@@ -71,6 +71,7 @@ import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
+import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -172,6 +173,7 @@ public class SuiteRunner {
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
 		/* Functional tests - TOKEN */
 		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
+		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
 		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));

@@ -98,7 +98,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedId = Optional.of(token);
 		return this;
 	}
-	public HapiGetTokenInfo hasRegisteredSymbol(String token) {
+	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
@@ -130,10 +130,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
-		if (expectedId.isPresent()) {
-			var expected = spec.registry().getTokenID(expectedId.get());
-			Assert.assertEquals("Wrong TokenID", expected, actualInfo.getTokenId());
+
+		if (expectedSymbol.isPresent()) {
+			Assert.assertEquals("Wrong symbol!", expectedSymbol.get(), actualInfo.getSymbol());
 		}
+
 		var registry = spec.registry();
 		assertFor(
 				actualInfo.getTokenId(),

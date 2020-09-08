@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -172,7 +171,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).then(
 						getTokenInfo(unknowableToken)
 								.hasRegisteredId(unknowableToken)
-								.hasRegisteredSymbol(unknowableToken)
 								.logged()
 				);
 	}
@@ -211,7 +209,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).then(
 						getTokenInfo(unfreezableToken)
 								.hasRegisteredId(unfreezableToken)
-								.hasRegisteredSymbol(unfreezableToken)
 								.logged()
 				);
 	}

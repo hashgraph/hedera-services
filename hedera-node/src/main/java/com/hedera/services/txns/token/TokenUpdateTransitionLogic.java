@@ -22,9 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.AccountCustomizer;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.tokens.TokenScope;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,6 +39,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -87,34 +86,41 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		MerkleToken token = store.get(id);
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
-			outcome = prepNewTreasury(id, token, op.getTreasury());
-			if (outcome != OK) {
-				txnCtx.setStatus(outcome);
+			var newTreasury = op.getTreasury();
+			if (!ledger.exists(newTreasury) || ledger.isDeleted(newTreasury)) {
+				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
 			}
-			replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
+			var existingTreasury = token.treasury().toGrpcAccountId();
+			if (!newTreasury.equals(existingTreasury)) {
+				outcome = prepNewTreasury(id, token, newTreasury);
+				if (outcome != OK) {
+					abortWith(outcome);
+					return;
+				}
+				replacedTreasury = Optional.of(token.treasury().toGrpcAccountId());
+			}
 		}
 
 		outcome = store.update(op);
+		if (outcome == OK && replacedTreasury.isPresent()) {
+			outcome = store.wipe(replacedTreasury.get(), id, true);
+		}
 		if (outcome != OK) {
 			abortWith(outcome);
 			return;
 		}
 
-		if (replacedTreasury.isPresent()) {
-			outcome = store.wipe(replacedTreasury.get(), id, true);
-		}
-
-		txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+		txnCtx.setStatus(SUCCESS);
 	}
 
-	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID treasury) {
+	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
 		var status = OK;
 		if (token.hasFreezeKey()) {
-			status = ledger.unfreeze(treasury, id);
+			status = ledger.unfreeze(newTreasury, id);
 		}
 		if (status == OK && token.hasKycKey()) {
-			status = ledger.grantKyc(treasury, id);
+			status = ledger.grantKyc(newTreasury, id);
 		}
 		return status;
 	}

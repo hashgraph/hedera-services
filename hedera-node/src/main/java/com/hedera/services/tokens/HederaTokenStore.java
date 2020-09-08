@@ -31,8 +31,10 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCode;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -44,6 +46,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -62,6 +65,9 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
@@ -70,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -379,16 +386,34 @@ public class HederaTokenStore implements TokenStore {
 				return validity;
 			}
 		}
+
+		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
+		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
+		Optional<JKey> newAdminKey = changes.hasAdminKey() ? asUsableFcKey(changes.getAdminKey()) : Optional.empty();
+		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
+		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+
+		var keyValidity = keyValidity(changes, newKycKey, newAdminKey, newWipeKey, newSupplyKey, newFreezeKey);
+		if (keyValidity != OK) {
+			return keyValidity;
+		}
+		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
-			if (hasNewSymbol) {
-				token.setSymbol(changes.getSymbol());
+			if (!token.hasKycKey() && newKycKey.isPresent()) {
+				appliedValidity.set(TOKEN_HAS_NO_KYC_KEY);
 			}
-
-			if (changes.hasTreasury()) {
-				var treasuryId = EntityId.ofNullableAccountId(changes.getTreasury());
-				token.setTreasury(treasuryId);
+			if (!token.hasFreezeKey() && newFreezeKey.isPresent()) {
+				appliedValidity.set(TOKEN_HAS_NO_FREEZE_KEY);
 			}
-
+			if (!token.hasWipeKey() && newWipeKey.isPresent()) {
+				appliedValidity.set(TOKEN_HAS_NO_WIPE_KEY);
+			}
+			if (!token.hasSupplyKey() && newSupplyKey.isPresent()) {
+				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
+			}
+			if (OK != appliedValidity.get()) {
+				return;
+			}
 			if (changes.hasAdminKey()) {
 				token.setAdminKey(asFcKeyUnchecked(changes.getAdminKey()));
 			}
@@ -404,7 +429,40 @@ public class HederaTokenStore implements TokenStore {
 			if (changes.hasWipeKey()) {
 				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
 			}
+			if (hasNewSymbol) {
+				token.setSymbol(changes.getSymbol());
+			}
+			if (changes.hasTreasury()) {
+				var treasuryId = EntityId.ofNullableAccountId(changes.getTreasury());
+				token.setTreasury(treasuryId);
+			}
 		});
+		return appliedValidity.get();
+	}
+
+	private ResponseCodeEnum keyValidity(
+			TokenManagement op,
+			Optional<JKey> newKycKey,
+			Optional<JKey> newAdminKey,
+			Optional<JKey> newWipeKey,
+			Optional<JKey> newSupplyKey,
+			Optional<JKey> newFreezeKey
+	) {
+		if (op.hasAdminKey() && newAdminKey.isEmpty()) {
+			return INVALID_ADMIN_KEY;
+		}
+		if (op.hasKycKey() && newKycKey.isEmpty()) {
+			return INVALID_KYC_KEY;
+		}
+		if (op.hasWipeKey() && newWipeKey.isEmpty()) {
+			return INVALID_WIPE_KEY;
+		}
+		if (op.hasSupplyKey() && newSupplyKey.isEmpty()) {
+			return INVALID_SUPPLY_KEY;
+		}
+		if (op.hasFreezeKey() && newFreezeKey.isEmpty()) {
+			return INVALID_FREEZE_KEY;
+		}
 		return OK;
 	}
 
@@ -519,7 +577,9 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
-		var validity = ledger.exists(aId) ? OK : INVALID_ACCOUNT_ID;
+		var validity = ledger.exists(aId)
+				? OK
+				: INVALID_ACCOUNT_ID;
 		if (validity != OK) {
 			return validity;
 		}

@@ -44,6 +44,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.TokenController;
@@ -189,6 +190,7 @@ import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenTransactTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
+import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.BasicPrecheck;
@@ -710,6 +712,7 @@ public class ServicesContext {
 				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
+				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
 				entry(TokenTransact, List.of(new TokenTransactResourceUsage())),
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
@@ -932,6 +935,8 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate,
 						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenUpdate,
+						List.of(new TokenUpdateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenTransact,
 						List.of(new TokenTransactTransitionLogic(ledger(), txnCtx()))),
 				entry(TokenFreezeAccount,

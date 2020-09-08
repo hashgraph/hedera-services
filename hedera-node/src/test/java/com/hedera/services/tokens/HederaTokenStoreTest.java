@@ -67,11 +67,19 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,7 +144,7 @@ class HederaTokenStoreTest {
 
 		account = mock(MerkleAccount.class);
 
-		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>)mock(TransactionalLedger.class);
+		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(ledger.exists(treasury)).willReturn(true);
 		given(ledger.exists(sponsor)).willReturn(true);
 		given(ledger.get(treasury, IS_DELETED)).willReturn(false);
@@ -406,7 +414,7 @@ class HederaTokenStoreTest {
 				argThat(treasury::equals),
 				argThat(BALANCE::equals),
 				argThat((TokenScopedPropertyValue sv) ->
-						sv.token() == token && (long)sv.value() == balance));
+						sv.token() == token && (long) sv.value() == balance));
 	}
 
 	@Test
@@ -433,7 +441,7 @@ class HederaTokenStoreTest {
 				argThat(treasury::equals),
 				argThat(BALANCE::equals),
 				argThat((TokenScopedPropertyValue sv) ->
-						sv.token() == token && (long)sv.value() == balance));
+						sv.token() == token && (long) sv.value() == balance));
 	}
 
 	@Test
@@ -492,6 +500,131 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void updateRejectsBadAdminKey() {
+		givenUpdateTarget(NO_KEYS);
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.ADMIN), false, false, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_ADMIN_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsBadKycKey() {
+		givenUpdateTarget(EnumSet.of(KeyType.KYC));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.KYC), false, false, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_KYC_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsInappropriateKycKey() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(NO_KEYS);
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.KYC), false, false);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(TOKEN_HAS_NO_KYC_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsInappropriateFreezeKey() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(NO_KEYS);
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsInappropriateWipeKey() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(NO_KEYS);
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.WIPE), false, false);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(TOKEN_HAS_NO_WIPE_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsInappropriateSupplyKey() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(NO_KEYS);
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsBadWipeKey() {
+		givenUpdateTarget(EnumSet.of(KeyType.WIPE));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_WIPE_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsBadSupplyKey() {
+		givenUpdateTarget(EnumSet.of(KeyType.SUPPLY));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_SUPPLY_KEY, outcome);
+	}
+
+	@Test
+	public void updateRejectsBadFreezeKey() {
+		givenUpdateTarget(EnumSet.of(KeyType.FREEZE));
+		// and:
+		var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, true);
+
+		// when:
+		var outcome = subject.update(op);
+
+		// then:
+		assertEquals(INVALID_FREEZE_KEY, outcome);
+	}
+
+	@Test
 	public void updateHappyPathWorksForEverything() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -520,11 +653,22 @@ class HederaTokenStoreTest {
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
 	private static EnumSet<KeyType> ALL_KEYS = EnumSet.allOf(KeyType.class);
 
+
 	private TokenManagement updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
 			boolean useNewTreasury
 	) {
+		return updateWith(keys, useNewSymbol, useNewTreasury, false);
+	}
+
+	private TokenManagement updateWith(
+			EnumSet<KeyType> keys,
+			boolean useNewSymbol,
+			boolean useNewTreasury,
+			boolean setInvalidKeys
+	) {
+		var invalidKey = Key.getDefaultInstance();
 		var op = TokenManagement.newBuilder()
 				.setToken(miscRef);
 		if (useNewSymbol) {
@@ -536,19 +680,19 @@ class HederaTokenStoreTest {
 		for (KeyType key : keys) {
 			switch (key) {
 				case WIPE:
-					op.setWipeKey(newKey);
+					op.setWipeKey(setInvalidKeys ? invalidKey : newKey);
 					break;
 				case FREEZE:
-					op.setFreezeKey(newKey);
+					op.setFreezeKey(setInvalidKeys ? invalidKey : newKey);
 					break;
 				case SUPPLY:
-					op.setSupplyKey(newKey);
+					op.setSupplyKey(setInvalidKeys ? invalidKey : newKey);
 					break;
 				case KYC:
-					op.setKycKey(newKey);
+					op.setKycKey(setInvalidKeys ? invalidKey : newKey);
 					break;
 				case ADMIN:
-					op.setAdminKey(newKey);
+					op.setAdminKey(setInvalidKeys ? invalidKey : newKey);
 					break;
 			}
 		}
@@ -569,6 +713,7 @@ class HederaTokenStoreTest {
 			given(token.hasKycKey()).willReturn(true);
 		}
 	}
+
 
 	@Test
 	public void understandsPendingCreation() {
@@ -745,7 +890,7 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(-oldSupply * 10, (long)captor.getValue().value());
+		assertEquals(-oldSupply * 10, (long) captor.getValue().value());
 		// and:
 		verify(token).adjustFloatBy(-oldSupply);
 	}
@@ -778,7 +923,7 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(adjustment * 10, (long)captor.getValue().value());
+		assertEquals(adjustment * 10, (long) captor.getValue().value());
 		// and:
 		verify(tokens).getForModify(fromTokenId(misc));
 		verify(token).adjustFloatBy(adjustment);
@@ -894,7 +1039,7 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(true, (boolean)captor.getValue().value());
+		assertEquals(true, (boolean) captor.getValue().value());
 	}
 
 	private void givenTokenWithFreezeKey(boolean freezeDefault) {
@@ -987,7 +1132,7 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(-1, (long)captor.getValue().value());
+		assertEquals(-1, (long) captor.getValue().value());
 	}
 
 	@Test
@@ -1074,7 +1219,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_ADMIN_KEY, result.getStatus());
+		assertEquals(INVALID_ADMIN_KEY, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
@@ -1089,7 +1234,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_ADMIN_KEY, result.getStatus());
+		assertEquals(INVALID_ADMIN_KEY, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
