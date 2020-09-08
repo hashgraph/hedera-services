@@ -254,77 +254,75 @@ public class SmartContractRequestHandlerMiscTest {
     fcMap.put(mk, mv);
   }
 
-//  private byte[] createFile(String filePath, FileID fileId) {
-//    InputStream fis = SmartContractRequestHandlerMiscTest.class.getResourceAsStream(filePath);
-//    byte[] fileBytes = null;
-//    try {
-//      fileBytes = fis.readAllBytes();
-//    } catch (IOException e) {
-//      Assert.fail("Error creating file: reading contract file " + filePath);
-//    }
-//    ByteString fileData = ByteString.copyFrom(fileBytes);
-//
-//    Timestamp startTime = RequestBuilder
-//        .getTimestamp(Instant.now(Clock.systemUTC()));
-//    Timestamp expTime = RequestBuilder
-//        .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
-//    Duration transactionDuration = RequestBuilder.getDuration(100);
-//    boolean generateRecord = true;
-//    String memo = "SmartContractFile";
-//    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
-//
-//    Transaction txn = RequestBuilder.getFileCreateBuilder(payerAccount, 0L, 0L,
-//        nodeAccount, 0L, 0L,
-//        100L, startTime, transactionDuration, generateRecord,
-//        memo, signatures, fileData, expTime, Collections.emptyList());
-//
-//    TransactionBody body = null;
-//    try {
-//      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
-//    } catch (InvalidProtocolBufferException e) {
-//      Assert.fail("Error creating file: parsing transaction body");
-//    }
-//
-//    Instant consensusTime = new Date().toInstant();
-//    TransactionRecord record = fsHandler.createFile(body, consensusTime, fileId, selfID);
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
-//    return fileBytes;
-//  }
+  private byte[] createFile(String filePath, FileID fileId) {
+    InputStream fis = SmartContractRequestHandlerMiscTest.class.getResourceAsStream(filePath);
+    byte[] fileBytes = null;
+    try {
+      fileBytes = fis.readAllBytes();
+    } catch (IOException e) {
+      Assert.fail("Error creating file: reading contract file " + filePath);
+    }
+    ByteString fileData = ByteString.copyFrom(fileBytes);
+
+    Timestamp startTime = RequestBuilder
+        .getTimestamp(Instant.now(Clock.systemUTC()));
+    Timestamp expTime = RequestBuilder
+        .getTimestamp(Instant.now(Clock.systemUTC()).plusSeconds(130));
+    Duration transactionDuration = RequestBuilder.getDuration(100);
+    boolean generateRecord = true;
+    String memo = "SmartContractFile";
+
+    Transaction txn = RequestBuilder.getFileCreateBuilder(payerAccount, 0L, 0L,
+        nodeAccount, 0L, 0L,
+        100L, startTime, transactionDuration, generateRecord,
+        memo, fileData, expTime, Collections.emptyList());
+
+    TransactionBody body = null;
+    try {
+      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
+    } catch (InvalidProtocolBufferException e) {
+      Assert.fail("Error creating file: parsing transaction body");
+    }
+
+    Instant consensusTime = new Date().toInstant();
+    TransactionRecord record = fsHandler.createFile(body, consensusTime, fileId, selfID);
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(fileId.getFileNum(), record.getReceipt().getFileID().getFileNum());
+    return fileBytes;
+  }
 
 
-//  private TransactionBody getCreateTransactionBody() {
-//    return getCreateTransactionBody(0L, 250000L, null);
-//  }
+  private TransactionBody getCreateTransactionBody() {
+    return getCreateTransactionBody(0L, 250000L, null);
+  }
 
-//  private TransactionBody getCreateTransactionBody(long initialBalance, long gas, Key adminKey) {
-//    Timestamp startTime = RequestBuilder
-//        .getTimestamp(Instant.now(Clock.systemUTC()));
-//    Duration transactionDuration = RequestBuilder.getDuration(100);
-//    Duration renewalDuration = RequestBuilder.getDuration(3600 * 24);
-//    boolean generateRecord = true;
-//    String memo = "SmartContract";
-//    String sCMemo = "SmartContractMemo";
-//    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
-//
-//    Transaction txn = RequestBuilder.getCreateContractRequest(payerAccount, 0L, 0L,
-//        nodeAccount, 0L, 0L,
-//        100L, startTime, transactionDuration, generateRecord,
-//        memo, gas, contractFileId, ByteString.EMPTY, initialBalance,
-//        renewalDuration, signatures, sCMemo, adminKey);
-//
-//    TransactionBody body = null;
-//    try {
-//      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
-//    } catch (InvalidProtocolBufferException e) {
-//      Assert.fail("Error creating contract: parsing transaction body");
-//    }
-//    return body;
-//  }
+  private TransactionBody getCreateTransactionBody(long initialBalance, long gas, Key adminKey) {
+    Timestamp startTime = RequestBuilder
+        .getTimestamp(Instant.now(Clock.systemUTC()));
+    Duration transactionDuration = RequestBuilder.getDuration(100);
+    Duration renewalDuration = RequestBuilder.getDuration(3600 * 24);
+    boolean generateRecord = true;
+    String memo = "SmartContract";
+    String sCMemo = "SmartContractMemo";
+
+    Transaction txn = RequestBuilder.getCreateContractRequest(payerAccount, 0L, 0L,
+        nodeAccount, 0L, 0L,
+        100L, startTime, transactionDuration, generateRecord,
+        memo, gas, contractFileId, ByteString.EMPTY, initialBalance,
+        renewalDuration, sCMemo, adminKey);
+
+    TransactionBody body = null;
+    try {
+      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
+    } catch (InvalidProtocolBufferException e) {
+      Assert.fail("Error creating contract: parsing transaction body");
+    }
+    return body;
+  }
 
   private void checkContractArtifactsExist(ContractID contractId) {
     MerkleEntityId mk = new MerkleEntityId();
@@ -344,716 +342,715 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(storageWrapper.fileExists(bytesPath));
   }
 
-//  @Test
-//  @DisplayName("aa createMapContract: Success")
-//  public void aa_createMapContract() {
-//    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody(0L, 250000L, null);
-//
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//    Assert.assertTrue(record.hasContractCreateResult());
-//
-//    ContractID newContractId = record.getReceipt().getContractID();
-//    checkContractArtifactsExist(newContractId);
-//  }
+  @Test
+  @DisplayName("aa createMapContract: Success")
+  public void aa_createMapContract() {
+    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody(0L, 250000L, null);
+
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assert.assertTrue(record.hasContractCreateResult());
+
+    ContractID newContractId = record.getReceipt().getContractID();
+    checkContractArtifactsExist(newContractId);
+  }
 
 
-//  private TransactionBody getCallTransactionBody(ContractID newContractId,
-//      ByteString functionData, long gas, long value) {
-//    Timestamp startTime = RequestBuilder
-//        .getTimestamp(Instant.now(Clock.systemUTC()));
-//    Duration transactionDuration = RequestBuilder.getDuration(100);
-//    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
-//
-//    Transaction txn = RequestBuilder.getContractCallRequest(payerAccount, 0L, 0L,
-//        nodeAccount, 0L, 0L,
-//        100L /* fee */, startTime,
-//        transactionDuration, gas, newContractId,
-//        functionData, value, signatures);
-//
-//    TransactionBody body = null;
-//    try {
-//      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
-//    } catch (InvalidProtocolBufferException e) {
-//      Assert.fail("Error calling contract: parsing transaction body");
-//    }
-//    return body;
-//  }
+  private TransactionBody getCallTransactionBody(ContractID newContractId,
+      ByteString functionData, long gas, long value) {
+    Timestamp startTime = RequestBuilder
+        .getTimestamp(Instant.now(Clock.systemUTC()));
+    Duration transactionDuration = RequestBuilder.getDuration(100);
 
-//  @Test
-//  @DisplayName("ab MapContractSetCall: Success")
-//  public void ab_mapContractSetCall() {
-//    // Create the contract
-//    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to store a map entry
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert
-//        .assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//  }
+    Transaction txn = RequestBuilder.getContractCallRequest(payerAccount, 0L, 0L,
+        nodeAccount, 0L, 0L,
+        100L /* fee */, startTime,
+        transactionDuration, gas, newContractId,
+        functionData, value);
 
-//  private Query getCallLocalQuery(ContractID newContractId,
-//      ByteString functionData, long gas, long maxResultSize) {
-//
-//    Transaction transferTransaction = TestHelper.createTransferUnsigned(payerAccountId,
-//        feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
-//
-//    return RequestBuilder.getContractCallLocalQuery(newContractId, gas,
-//        functionData, 0L /* value */, maxResultSize,
-//        transferTransaction, ResponseType.ANSWER_ONLY);
-//  }
+    TransactionBody body = null;
+    try {
+      body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(txn);
+    } catch (InvalidProtocolBufferException e) {
+      Assert.fail("Error calling contract: parsing transaction body");
+    }
+    return body;
+  }
 
-//  @Test
-//  @DisplayName("ac MapContractGetCall: Success")
-//  public void ac_mapContractGetCall() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to store a map entry
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to store another map entry
-//    dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(2, 200));
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to store another map entry
-//    dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(3, 300));
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to get the entry back
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeMapGet(2));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeGetValueResult(callResults);
-//    Assert.assertEquals(200, retVal);
-//  }
+  @Test
+  @DisplayName("ab MapContractSetCall: Success")
+  public void ab_mapContractSetCall() {
+    // Create the contract
+    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
 
-//  @Test
-//  @DisplayName("ba create CreateTrivial contract: Success")
-//  public void ba_createCTContract() throws StorageKeyNotFoundException {
-//    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//    Assert.assertTrue(record.hasContractCreateResult());
-//
-//    ContractID newContractId = record.getReceipt().getContractID();
-//    checkContractArtifactsExist(newContractId);
-//  }
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
 
-//  @Test
-//  @DisplayName("bb CreateTrivial create call: Success")
-//  public void bb_CTCreateCall() {
-//    // Create the contract
-//    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to create another contract
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//  }
+    // Call the contract to store a map entry
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
 
-//  @Test
-//  @DisplayName("bc CreateTrivial get value from created contract: Success")
-//  public void bc_CTGetIndirectCall() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to create another contract
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to get a value from the created contract.  The created contract
-//    // is  hard-coded to return uint 7.
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetIndirect());
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeCreateTrivialGetResult(callResults);
-//    Assert.assertEquals(CREATED_TRIVIAL_CONTRACT_RETURNS, retVal);
-//  }
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert
+        .assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+  }
 
-//  @Test
-//  @DisplayName("bd CreateTrivial get address of created contract: Success")
-//  public void bd_CTGetAddressCall() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to create another contract
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to get the address of the created contract.
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] retVal = SCEncoding.decodeCreateTrivialGetAddress(callResults);
-//
-//    // Validate that the artifacts are there for the created contract
-//    ContractID createdContractId = asContract(accountParsedFromSolidityAddress(retVal));
-//    System.out.println("Created contract is: " + createdContractId);
-//
-//    checkContractArtifactsExist(createdContractId);
-//    // Data storage should have been created for both contracts
-//    checkContractDataArtifactExists(newContractId);
-//    checkContractDataArtifactExists(createdContractId);
-//
-//    System.out.println("FCMap and FCFS artifacts exist for the contract-created contract");
-//  }
+  private Query getCallLocalQuery(ContractID newContractId,
+      ByteString functionData, long gas, long maxResultSize) {
 
-//  @Test
-//  @DisplayName("ca Call to invalid function: fails")
-//  public void ca_InvalidFunctionCall() {
-//    // Create the contract
-//    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Try to call the get function from simpleStorage.bin
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    //validate that contruct function results are empty in case of a failure
-//    assert (record.hasContractCallResult());
-//    assert (record.getContractCallResult().getContractCallResult().isEmpty());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-//    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//  }
+    Transaction transferTransaction = TestHelper.createTransferUnsigned(payerAccountId,
+        feeCollAccountId, payerAccountId, nodeAccountId, 100000L /* amount */);
 
-//  @Test
-//  @DisplayName("cb Call to invalid function: fallback")
-//  public void cb_FallbackFunctionCall() {
-//    // Create the contract
-//    byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Try to call the get function from simpleStorage.bin.  This will succeed because
-//    // the contract has a fallback function.
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    Assert.assertNotNull(record);
-//    Assert.assertNotNull(record.getTransactionID());
-//    Assert.assertNotNull(record.getReceipt());
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
-//  }
+    return RequestBuilder.getContractCallLocalQuery(newContractId, gas,
+        functionData, 0L /* value */, maxResultSize,
+        transferTransaction, ResponseType.ANSWER_ONLY);
+  }
 
-//  @Test
-//  @DisplayName("cc Create with invalid initial value: fails")
-//  public void cc_InvalidInitialBalance() throws NoFeeScheduleExistsException {
-//    long payerBefore = getBalance(payerAccountId);
-//    long totalBefore = getTotalBalance();
-//
-//    // Create the contract
-//    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody(INITIAL_BALANCE_OFFERED, 250000L, null);
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    long payerAfter = getBalance(payerAccountId);
-//    long totalAfter = getTotalBalance();
-//
-//    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
-//    Assert.assertEquals(totalBefore, totalAfter);
-//    // In unit testing, no fees, just gas used.  The offered value was not taken from the payer.
-//    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
-//    long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
-//    Assert.assertEquals(
-//            record.getContractCreateResult().getGasUsed() * gasPrice, payerBefore - payerAfter);
-//  }
+  @Test
+  @DisplayName("ac MapContractGetCall: Success")
+  public void ac_mapContractGetCall() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
 
-//  @Test
-//  @DisplayName("cd Create with valid initial value: succeeds")
-//  public void cd_ValidInitialBalance() throws NoFeeScheduleExistsException {
-//    long payerBefore = getBalance(payerAccountId);
-//    long totalBefore = getTotalBalance();
-//
-//    // Create the contract
-//    byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody(INITIAL_BALANCE_OFFERED, 250000L, null);
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//
-//    long payerAfter = getBalance(payerAccountId);
-//    long totalAfter = getTotalBalance();
-//
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertEquals(totalBefore, totalAfter);
-//    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond())
-//        .build();
-//    long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
-//    // In unit testing, no fees, just gas used.  The offered value was taken from the payer.
-//    Assert.assertEquals(
-//        record.getContractCreateResult().getGasUsed() * gasPrice + INITIAL_BALANCE_OFFERED,
-//        payerBefore - payerAfter);
-//  }
+    // Call the contract to store a map entry
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(1, 100));
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
 
-//  @Test
-//  @DisplayName("da Opcode shl: Success")
-//  public void da_OpcodeShl() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to exercise SHL
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeOpShl(callResults);
-//    Assert.assertEquals(16, retVal);
-//  }
+    // Call the contract to store another map entry
+    dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(2, 200));
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
 
-//  @Test
-//  @DisplayName("db Opcode shr: Success")
-//  public void db_OpcodeShr() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to exercise SHR
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShr(2, 4));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeOpShr(callResults);
-//    Assert.assertEquals(1, retVal);
-//  }
+    // Call the contract to store another map entry
+    dataToSet = ByteString.copyFrom(SCEncoding.encodeMapPut(3, 300));
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
 
-//  @Test
-//  @DisplayName("dc Opcode sar: Success")
-//  public void dc_OpcodeSar() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to exercise SAR
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpSar(2, 4));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeOpSar(callResults);
-//    Assert.assertEquals(1, retVal);
-//  }
+    // Call the contract to get the entry back
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeMapGet(2));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
 
-//  @Test
-//  @DisplayName("dd Opcode extcodehash: Success")
-//  public void dd_OpcodeExtCodeHash() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//    String contractSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
-//        0, 0, newContractId.getContractNum()));
-//
-//    // Call the contract to exercise EXTCODEHASH
-//    ByteString dataToGet = ByteString
-//        .copyFrom(SCEncoding.encodeOpExtCodeHash(contractSolidityAddress));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
-//    // Test the local convention of returning the address, not a Keccak256 hash
-//    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
-//    Assert.assertEquals(contractSolidityAddress, returnedLast20Bytes);
-//  }
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeGetValueResult(callResults);
+    Assert.assertEquals(200, retVal);
+  }
 
-//  @Test
-//  @DisplayName("de Opcode extcodehash: Account")
-//  public void de_OpcodeExtCodeHashAccount() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//    String accountSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
-//        0, 0, payerAccount));
-//
-//    // Call the contract to exercise EXTCODEHASH
-//    ByteString dataToGet = ByteString
-//        .copyFrom(SCEncoding.encodeOpExtCodeHash(accountSolidityAddress));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
-//    // Test the local convention of returning the empty hash for a regular account
-//    String returned = ByteUtil.toHexString(retVal);
-//    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
-//    Assert.assertEquals(expected, returned);
-//  }
+  @Test
+  @DisplayName("ba create CreateTrivial contract: Success")
+  public void ba_createCTContract() throws StorageKeyNotFoundException {
+    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+    Assert.assertTrue(record.hasContractCreateResult());
+
+    ContractID newContractId = record.getReceipt().getContractID();
+    checkContractArtifactsExist(newContractId);
+  }
+
+  @Test
+  @DisplayName("bb CreateTrivial create call: Success")
+  public void bb_CTCreateCall() {
+    // Create the contract
+    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to create another contract
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+  }
+
+  @Test
+  @DisplayName("bc CreateTrivial get value from created contract: Success")
+  public void bc_CTGetIndirectCall() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to create another contract
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
+
+    // Call the contract to get a value from the created contract.  The created contract
+    // is  hard-coded to return uint 7.
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetIndirect());
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeCreateTrivialGetResult(callResults);
+    Assert.assertEquals(CREATED_TRIVIAL_CONTRACT_RETURNS, retVal);
+  }
+
+  @Test
+  @DisplayName("bd CreateTrivial get address of created contract: Success")
+  public void bd_CTGetAddressCall() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to create another contract
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
+
+    // Call the contract to get the address of the created contract.
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] retVal = SCEncoding.decodeCreateTrivialGetAddress(callResults);
+
+    // Validate that the artifacts are there for the created contract
+    ContractID createdContractId = asContract(accountParsedFromSolidityAddress(retVal));
+    System.out.println("Created contract is: " + createdContractId);
+
+    checkContractArtifactsExist(createdContractId);
+    // Data storage should have been created for both contracts
+    checkContractDataArtifactExists(newContractId);
+    checkContractDataArtifactExists(createdContractId);
+
+    System.out.println("FCMap and FCFS artifacts exist for the contract-created contract");
+  }
+
+  @Test
+  @DisplayName("ca Call to invalid function: fails")
+  public void ca_InvalidFunctionCall() {
+    // Create the contract
+    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Try to call the get function from simpleStorage.bin
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    //validate that contruct function results are empty in case of a failure
+    assert (record.hasContractCallResult());
+    assert (record.getContractCallResult().getContractCallResult().isEmpty());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+  }
+
+  @Test
+  @DisplayName("cb Call to invalid function: fallback")
+  public void cb_FallbackFunctionCall() {
+    // Create the contract
+    byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Try to call the get function from simpleStorage.bin.  This will succeed because
+    // the contract has a fallback function.
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeGetValue());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
+
+    Assert.assertNotNull(record);
+    Assert.assertNotNull(record.getTransactionID());
+    Assert.assertNotNull(record.getReceipt());
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(contractSequenceNumber, record.getReceipt().getContractID().getContractNum());
+  }
+
+  @Test
+  @DisplayName("cc Create with invalid initial value: fails")
+  public void cc_InvalidInitialBalance() throws NoFeeScheduleExistsException {
+    long payerBefore = getBalance(payerAccountId);
+    long totalBefore = getTotalBalance();
+
+    // Create the contract
+    byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody(INITIAL_BALANCE_OFFERED, 250000L, null);
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    long payerAfter = getBalance(payerAccountId);
+    long totalAfter = getTotalBalance();
+
+    Assert.assertEquals(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, record.getReceipt().getStatus());
+    Assert.assertEquals(totalBefore, totalAfter);
+    // In unit testing, no fees, just gas used.  The offered value was not taken from the payer.
+    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()).build();
+    long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
+    Assert.assertEquals(
+            record.getContractCreateResult().getGasUsed() * gasPrice, payerBefore - payerAfter);
+  }
+
+  @Test
+  @DisplayName("cd Create with valid initial value: succeeds")
+  public void cd_ValidInitialBalance() throws NoFeeScheduleExistsException {
+    long payerBefore = getBalance(payerAccountId);
+    long totalBefore = getTotalBalance();
+
+    // Create the contract
+    byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody(INITIAL_BALANCE_OFFERED, 250000L, null);
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+
+    long payerAfter = getBalance(payerAccountId);
+    long totalAfter = getTotalBalance();
+
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertEquals(totalBefore, totalAfter);
+    Timestamp consensusTimeStamp = Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond())
+        .build();
+    long gasPrice = getContractCreateGasPriceInTinyBars(consensusTimeStamp);
+    // In unit testing, no fees, just gas used.  The offered value was taken from the payer.
+    Assert.assertEquals(
+        record.getContractCreateResult().getGasUsed() * gasPrice + INITIAL_BALANCE_OFFERED,
+        payerBefore - payerAfter);
+  }
+
+  @Test
+  @DisplayName("da Opcode shl: Success")
+  public void da_OpcodeShl() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to exercise SHL
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeOpShl(callResults);
+    Assert.assertEquals(16, retVal);
+  }
+
+  @Test
+  @DisplayName("db Opcode shr: Success")
+  public void db_OpcodeShr() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to exercise SHR
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShr(2, 4));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeOpShr(callResults);
+    Assert.assertEquals(1, retVal);
+  }
+
+  @Test
+  @DisplayName("dc Opcode sar: Success")
+  public void dc_OpcodeSar() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to exercise SAR
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpSar(2, 4));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeOpSar(callResults);
+    Assert.assertEquals(1, retVal);
+  }
+
+  @Test
+  @DisplayName("dd Opcode extcodehash: Success")
+  public void dd_OpcodeExtCodeHash() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+    String contractSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+        0, 0, newContractId.getContractNum()));
+
+    // Call the contract to exercise EXTCODEHASH
+    ByteString dataToGet = ByteString
+        .copyFrom(SCEncoding.encodeOpExtCodeHash(contractSolidityAddress));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
+    // Test the local convention of returning the address, not a Keccak256 hash
+    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    Assert.assertEquals(contractSolidityAddress, returnedLast20Bytes);
+  }
+
+  @Test
+  @DisplayName("de Opcode extcodehash: Account")
+  public void de_OpcodeExtCodeHashAccount() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+    String accountSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+        0, 0, payerAccount));
+
+    // Call the contract to exercise EXTCODEHASH
+    ByteString dataToGet = ByteString
+        .copyFrom(SCEncoding.encodeOpExtCodeHash(accountSolidityAddress));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
+    // Test the local convention of returning the empty hash for a regular account
+    String returned = ByteUtil.toHexString(retVal);
+    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    Assert.assertEquals(expected, returned);
+  }
 
   // Test a contract created by another contract
-//  @Test
-//  @DisplayName("df Opcode extcodehash: Contract-created contract")
-//  public void df_OpcodeExtCodeHashCreated() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to create another contract
-//    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
-//    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
-//    consensusTime = new Date().toInstant();
-//    seqNumber.getAndIncrement();
-//    ledger.begin();
-//    record = smartHandler.contractCall(body, consensusTime, seqNumber);
-//    ledger.commit();
-//
-//    // Call the contract to get the address of the created contract.
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] bytesSolidityAddress = SCEncoding.decodeCreateTrivialGetAddress(callResults);
-//    String innerContractSolidityAddress = ByteUtil.toHexString(bytesSolidityAddress);
-//
-//    // Create the opcode contract with EXTCODEHASH
-//    contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    body = getCreateTransactionBody();
-//    consensusTime = new Date().toInstant();
-//    seqNumber = new SequenceNumber(secondContractSequenceNumber);
-//    ledger.begin();
-//    record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID opcodeContractId = record.getReceipt().getContractID();
-//
-//    // Call the opcode contract to exercise EXTCODEHASH
-//    dataToGet = ByteString
-//        .copyFrom(SCEncoding.encodeOpExtCodeHash(innerContractSolidityAddress));
-//    cCLQuery = getCallLocalQuery(opcodeContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
-//    // Test the local convention of returning the address, not a Keccak256 hash
-//    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
-//    Assert.assertEquals(innerContractSolidityAddress, returnedLast20Bytes);
-//  }
+  @Test
+  @DisplayName("df Opcode extcodehash: Contract-created contract")
+  public void df_OpcodeExtCodeHashCreated() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
 
-//  @Test
-//  @DisplayName("dg Opcode extcodehash: Precompiled contract")
-//  public void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//    String precompiledSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, 3));
-//
-//    // Call the contract to exercise EXTCODEHASH
-//    ByteString dataToGet = ByteString
-//        .copyFrom(SCEncoding.encodeOpExtCodeHash(precompiledSolidityAddress));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
-//    // Finds existing account and returns not-contract, correct because there is no code at that address.
-//    String returned = ByteUtil.toHexString(retVal);
-//    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
-//    Assert.assertEquals(expected, returned);
-//  }
+    // Call the contract to create another contract
+    ByteString dataToSet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialCreate());
+    body = getCallTransactionBody(newContractId, dataToSet, 250000L, 0L);
+    consensusTime = new Date().toInstant();
+    seqNumber.getAndIncrement();
+    ledger.begin();
+    record = smartHandler.contractCall(body, consensusTime, seqNumber);
+    ledger.commit();
 
-//  @Test
-//  @DisplayName("ea maxResultSize success")
-//  public void ea_MaxResultSizeSuccess() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to exercise SHL
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 1200)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertTrue(callResults.length > 0);
-//    int retVal = SCEncoding.decodeOpShl(callResults);
-//    Assert.assertEquals(16, retVal);
-//  }
+    // Call the contract to get the address of the created contract.
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeCreateTrivialGetAddress());
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
 
-//  @Test
-//  @DisplayName("eb maxResultSize failure")
-//  public void eb_MaxResultSizeFailure() throws Exception {
-//    // Create the contract
-//    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    ContractID newContractId = record.getReceipt().getContractID();
-//
-//    // Call the contract to exercise SHL
-//    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
-//    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 12)
-//        .getContractCallLocal();
-//    ContractCallLocalResponse response = smartHandler
-//        .contractCallLocal(cCLQuery, System.currentTimeMillis());
-//    Assert.assertNotNull(response);
-//    Assert.assertEquals(ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED,
-//        response.getHeader().getNodeTransactionPrecheckCode());
-//    Assert.assertNotNull(response.getFunctionResult().getErrorMessage());
-//    Assert.assertTrue(response.getFunctionResult().getErrorMessage().length() > 0);
-//
-//    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
-//    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
-//    Assert.assertNotNull(callResults);
-//    Assert.assertEquals(0, callResults.length);
-//  }
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] bytesSolidityAddress = SCEncoding.decodeCreateTrivialGetAddress(callResults);
+    String innerContractSolidityAddress = ByteUtil.toHexString(bytesSolidityAddress);
+
+    // Create the opcode contract with EXTCODEHASH
+    contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    body = getCreateTransactionBody();
+    consensusTime = new Date().toInstant();
+    seqNumber = new SequenceNumber(secondContractSequenceNumber);
+    ledger.begin();
+    record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID opcodeContractId = record.getReceipt().getContractID();
+
+    // Call the opcode contract to exercise EXTCODEHASH
+    dataToGet = ByteString
+        .copyFrom(SCEncoding.encodeOpExtCodeHash(innerContractSolidityAddress));
+    cCLQuery = getCallLocalQuery(opcodeContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    response = smartHandler.contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
+    // Test the local convention of returning the address, not a Keccak256 hash
+    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    Assert.assertEquals(innerContractSolidityAddress, returnedLast20Bytes);
+  }
+
+  @Test
+  @DisplayName("dg Opcode extcodehash: Precompiled contract")
+  public void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+    String precompiledSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, 3));
+
+    // Call the contract to exercise EXTCODEHASH
+    ByteString dataToGet = ByteString
+        .copyFrom(SCEncoding.encodeOpExtCodeHash(precompiledSolidityAddress));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 0)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
+    // Finds existing account and returns not-contract, correct because there is no code at that address.
+    String returned = ByteUtil.toHexString(retVal);
+    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    Assert.assertEquals(expected, returned);
+  }
+
+  @Test
+  @DisplayName("ea maxResultSize success")
+  public void ea_MaxResultSizeSuccess() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to exercise SHL
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 1200)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertTrue(callResults.length > 0);
+    int retVal = SCEncoding.decodeOpShl(callResults);
+    Assert.assertEquals(16, retVal);
+  }
+
+  @Test
+  @DisplayName("eb maxResultSize failure")
+  public void eb_MaxResultSizeFailure() throws Exception {
+    // Create the contract
+    byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    ContractID newContractId = record.getReceipt().getContractID();
+
+    // Call the contract to exercise SHL
+    ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeOpShl(2, 4));
+    ContractCallLocalQuery cCLQuery = getCallLocalQuery(newContractId, dataToGet, 250000L, 12)
+        .getContractCallLocal();
+    ContractCallLocalResponse response = smartHandler
+        .contractCallLocal(cCLQuery, System.currentTimeMillis());
+    Assert.assertNotNull(response);
+    Assert.assertEquals(ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED,
+        response.getHeader().getNodeTransactionPrecheckCode());
+    Assert.assertNotNull(response.getFunctionResult().getErrorMessage());
+    Assert.assertTrue(response.getFunctionResult().getErrorMessage().length() > 0);
+
+    Assert.assertNotNull(response.getFunctionResult().getContractCallResult());
+    byte[] callResults = response.getFunctionResult().getContractCallResult().toByteArray();
+    Assert.assertNotNull(callResults);
+    Assert.assertEquals(0, callResults.length);
+  }
 
   @AfterEach
   public void tearDown() throws Exception {
@@ -1097,18 +1094,18 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
 
-//  @Test
-//  @DisplayName("cr Create In Constructor")
-//  public void cr_CreateInConstructor() {
-//    // Create the contract
-//    byte[] contractBytes = createFile(CREATE_IN_CONSTRUCTOR_BIN, contractFileId);
-//    TransactionBody body = getCreateTransactionBody();
-//    Instant consensusTime = new Date().toInstant();
-//    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
-//    ledger.begin();
-//    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
-//    ledger.commit();
-//    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
-//    Assert.assertNotEquals(0, record.getContractCreateResult().getContractID().getContractNum());
-//  }
+  @Test
+  @DisplayName("cr Create In Constructor")
+  public void cr_CreateInConstructor() {
+    // Create the contract
+    byte[] contractBytes = createFile(CREATE_IN_CONSTRUCTOR_BIN, contractFileId);
+    TransactionBody body = getCreateTransactionBody();
+    Instant consensusTime = new Date().toInstant();
+    SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
+    ledger.begin();
+    TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
+    ledger.commit();
+    Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
+    Assert.assertNotEquals(0, record.getContractCreateResult().getContractID().getContractNum());
+  }
 }

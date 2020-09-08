@@ -97,22 +97,21 @@ public class TestHelper {
 //  }
 
 
-//  public static Transaction createTransferUnsigned(AccountID fromAccount,
-//                                                   AccountID toAccount, AccountID payerAccount,  AccountID nodeAccount,
-//                                                   long amount) {
-//    Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-//    Duration transactionDuration = RequestBuilder.getDuration(30);
-//
-//    SignatureList sigList = SignatureList.getDefaultInstance();
-//    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
-//            payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-//            nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50, timestamp, transactionDuration,
-//            false,
-//            "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
-//            amount);
-//
-//    return transferTx;
-//  }
+  public static Transaction createTransferUnsigned(AccountID fromAccount,
+                                                   AccountID toAccount, AccountID payerAccount,  AccountID nodeAccount,
+                                                   long amount) {
+    Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
+    Duration transactionDuration = RequestBuilder.getDuration(30);
+
+    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
+            payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
+            nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50, timestamp, transactionDuration,
+            false,
+            "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+            amount);
+
+    return transferTx;
+  }
 
   /**
    * Generates a random long within a given range
