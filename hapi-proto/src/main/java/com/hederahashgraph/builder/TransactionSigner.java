@@ -63,14 +63,15 @@ public class TransactionSigner {
    * Signature algorithm
    */
   static final String ECDSA_SIGNATURE_ALGORITHM = "SHA384withECDSA";
-  public static String SIGNATURE_FORMAT = "SignatureMap";
-  private static enum SIGNATURE_FORMAT_ENUM {
+  public static enum SIGNATURE_FORMAT_ENUM {
     SignatureList,SignatureMap,Random
   }
-  public static String TX_BODY_FORMAT = "BodyBytes";
-  private static enum TX_BODY_FORMAT_ENUM {
+  public static SIGNATURE_FORMAT_ENUM SIGNATURE_FORMAT = SIGNATURE_FORMAT_ENUM.SignatureMap;
+
+  public static enum TX_BODY_FORMAT_ENUM {
     Body,BodyBytes,Random
   }
+  public static TX_BODY_FORMAT_ENUM TX_BODY_FORMAT = TX_BODY_FORMAT_ENUM.BodyBytes;
   private static Random rand = new Random();
 
   /**

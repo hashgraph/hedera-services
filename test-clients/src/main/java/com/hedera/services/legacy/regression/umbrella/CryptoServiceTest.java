@@ -294,8 +294,10 @@ public class CryptoServiceTest extends TestHelperComplex {
     accountKeyTypes = testProps.getString("accountKeyType", "single")
         .split(CONFIG_LIST_SEPARATOR);
     changeGenesisKey = Boolean.parseBoolean(testProps.getString("changeGenesisKey", "false"));
-    TransactionSigner.SIGNATURE_FORMAT = testProps.getString("signatureFormat", "SignatureMap");
-    TransactionSigner.TX_BODY_FORMAT = testProps.getString("transactionBodyFormat", "BodyBytes");
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.valueOf(
+            testProps.getString("signatureFormat", "SignatureMap"));
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.valueOf(
+            testProps.getString("transactionBodyFormat", "BodyBytes"));
     NUM_WACL_KEYS = testProps.getInt("numWaclKeys", 1);
 
     getReceipt = Boolean.parseBoolean(testProps.getString("getReceipt", "true"));

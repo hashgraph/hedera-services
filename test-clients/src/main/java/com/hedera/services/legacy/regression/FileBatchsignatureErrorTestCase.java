@@ -107,9 +107,9 @@ public class FileBatchsignatureErrorTestCase extends BaseFeeTests {
     }
 
     if(responseCodeEnum == ResponseCodeEnum.KEY_PREFIX_MISMATCH) {
-      TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+      TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     } else if(responseCodeEnum == ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY) {
-      TransactionSigner.SIGNATURE_FORMAT = "SignatureList";
+      TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
     }
 
     Transaction fileUpdateRequest = fit.updateFile(fid, newAccountID, nodeID,

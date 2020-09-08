@@ -106,7 +106,7 @@ public class FreezeServiceTest extends TestHelperComplex {
     if (host == null) {
       this.host = properties.getProperty("host","localhost");
     }
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     nodeID = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
     readGenesisInfo();
     createStubs();
