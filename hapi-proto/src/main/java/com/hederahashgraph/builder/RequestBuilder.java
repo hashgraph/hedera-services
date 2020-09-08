@@ -94,7 +94,7 @@ public class RequestBuilder {
       Duration transactionDuration, boolean generateRecord, String memo, int thresholdValue,
       List<Key> keyList,
       long initBal, long sendRecordThreshold, long receiveRecordThreshold, boolean receiverSign,
-      Duration autoRenew, SignatureList signatures) {
+      Duration autoRenew) {
     Key keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyList).build())
         .build();
     return getCreateAccountBuilder(payerAccountNum, payerRealmNum, payerShardNum,
@@ -174,8 +174,7 @@ public class RequestBuilder {
       Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
       long transactionFee,
-      Timestamp startTime, Duration transactionDuration, boolean generateRecord, String memo,
-      SignatureList signatures) {
+      Timestamp startTime, Duration transactionDuration, boolean generateRecord, String memo) {
     CryptoDeleteTransactionBody cryptoDelete = CryptoDeleteTransactionBody.newBuilder()
         .setDeleteAccountID(accountID).setTransferAccountID(trasferAccountID).build();
     TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
@@ -578,7 +577,7 @@ public class RequestBuilder {
       long transactionFee, Timestamp timestamp, Duration txDuration,
       boolean generateRecord, String txMemo, long gas, FileID fileId,
       ByteString constructorParameters, long initialBalance,
-      Duration autoRenewalPeriod, SignatureList signatures, String contractMemo) {
+      Duration autoRenewalPeriod, String contractMemo) {
     return getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum, nodeRealmNum, nodeShardNum,
         transactionFee, timestamp, txDuration,
@@ -703,8 +702,7 @@ public class RequestBuilder {
       Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
       long transactionFee, Timestamp timestamp,
       Duration txDuration, long gas, ContractID contractId,
-      ByteString functionData, long value,
-      SignatureList signatures) {
+      ByteString functionData, long value) {
     ContractCallTransactionBody.Builder contractCall = ContractCallTransactionBody.newBuilder()
         .setContractID(contractId).setGas(gas).setFunctionParameters(functionData).setAmount(value);
 
