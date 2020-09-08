@@ -143,8 +143,8 @@ public class FeeBuilder {
    * Common fields in all transaction:
    * <p>
    * <ul>
-   *     <li>TransactionID transactionID - BASIC_ENTITYID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
-   *     <li>AccountID nodeAccountID - BASIC_ENTITYID_SIZE</li>
+   *     <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
+   *     <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE</li>
    *     <li>uint64 transactionFee - LONG_SIZE</li>
    *     <li>Duration transactionValidDuration - (LONG_SIZE)</li>
    *     <li>bool generateRecord - BOOL_SIZE</li>
@@ -284,7 +284,7 @@ public class FeeBuilder {
 
     /*
      * Query QueryHeader Transaction - CryptoTransfer - (will be taken care in Transaction
-     * processing) ResponseType - INT_SIZE ID - BASIC_ENTITYID_SIZE
+     * processing) ResponseType - INT_SIZE ID - BASIC_ENTITY_ID_SIZE
      *
      */
 

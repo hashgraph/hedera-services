@@ -105,8 +105,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
    */
   private int getContractCreateTransactionBodySize(TransactionBody txBody) {
     /*
-     * FileID fileID - BASIC_ENTITYID_SIZE Key adminKey - calculated value int64 gas - LONG_SIZE uint64
-     * initialBalance - LONG_SIZE AccountID proxyAccountID - BASIC_ENTITYID_SIZE bytes
+     * FileID fileID - BASIC_ENTITY_ID_SIZE Key adminKey - calculated value int64 gas - LONG_SIZE uint64
+     * initialBalance - LONG_SIZE AccountID proxyAccountID - BASIC_ENTITY_ID_SIZE bytes
      * constructorParameters - calculated value Duration autoRenewPeriod - (LONG_SIZE + INT_SIZE)
      * ShardID shardID - LONG_SIZE RealmID realmID - LONG_SIZE Key newRealmAdminKey - calculated
      * value string memo - calculated value
@@ -249,7 +249,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * QueryHeader header Transaction - CryptoTransfer - (will be taken care in Transaction
-     * processing) ResponseType - INT_SIZE ContractID contractID - BASIC_ENTITYID_SIZE int64 gas -
+     * processing) ResponseType - INT_SIZE ContractID contractID - BASIC_ENTITY_ID_SIZE int64 gas -
      * LONG_SIZE bytes functionParameters - calculated value int64 maxResultSize - LONG_SIZE
      */
 
@@ -257,9 +257,9 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
-     * ContractFunctionResult ContractID contractID - BASIC_ENTITYID_SIZE bytes contractCallResult -
+     * ContractFunctionResult ContractID contractID - BASIC_ENTITY_ID_SIZE bytes contractCallResult -
      * Calculated Value string errorMessage - Calculated value bytes bloom - Calculated value uint64
-     * gasUsed - LONG_SIZE repeated ContractLoginfo ContractID contractID - BASIC_ENTITYID_SIZE bytes
+     * gasUsed - LONG_SIZE repeated ContractLoginfo ContractID contractID - BASIC_ENTITY_ID_SIZE bytes
      * bloom - Calculated Value repeated bytes - Calculated Value bytes data - Calculated Value
      *
      */
@@ -306,7 +306,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * ContractCallLocalQuery QueryHeader header Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE ContractID contractID - BASIC_ENTITYID_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE ContractID contractID - BASIC_ENTITY_ID_SIZE
      * int64 gas - LONG_SIZE bytes functionParameters - calculated value int64 maxResultSize -
      * LONG_SIZE
      */
@@ -330,9 +330,9 @@ public class SmartContractFeeBuilder extends FeeBuilder {
    */
   private int getContractUpdateBodyTxSize(TransactionBody txBody) {
     /*
-     * ContractID contractID - BASIC_ENTITYID_SIZE Timestamp expirationTime - LONG_SIZE + INT_SIZE
-     * AccountID proxyAccountID - BASIC_ENTITYID_SIZE Duration autoRenewPeriod - LONG_SIZE + INT_SIZE
-     * FileID fileID - BASIC_ENTITYID_SIZE Key adminKey - calculated value string memo - calculated value
+     * ContractID contractID - BASIC_ENTITY_ID_SIZE Timestamp expirationTime - LONG_SIZE + INT_SIZE
+     * AccountID proxyAccountID - BASIC_ENTITY_ID_SIZE Duration autoRenewPeriod - LONG_SIZE + INT_SIZE
+     * FileID fileID - BASIC_ENTITY_ID_SIZE Key adminKey - calculated value string memo - calculated value
      */
 
     int contractUpdateBodySize = BASIC_ENTITY_ID_SIZE;
@@ -372,7 +372,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
    */
   private int getContractCallBodyTxSize(TransactionBody txBody) {
     /*
-     * ContractID contractID - BASIC_ENTITYID_SIZE int64 gas - LONG_SIZE int64 amount - LONG_SIZE bytes
+     * ContractID contractID - BASIC_ENTITY_ID_SIZE int64 gas - LONG_SIZE int64 amount - LONG_SIZE bytes
      * functionParameters - calculated value
      *
      */
@@ -411,7 +411,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * ContractInfoQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
      */
 
     bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
@@ -419,7 +419,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
      *
-     * ContractInfo ContractID contractID - BASIC_ENTITYID_SIZE AccountID accountID - BASIC_ENTITYID_SIZE string
+     * ContractInfo ContractID contractID - BASIC_ENTITY_ID_SIZE AccountID accountID - BASIC_ENTITY_ID_SIZE string
      * contractAccountID - SOLIDITY_ADDRESS Key adminKey - calculated value Timestamp expirationTime
      * - (LONG_SIZE) Duration autoRenewPeriod - (LONG_SIZE) int64 storage - LONG_SIZE
      *
@@ -461,7 +461,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * ContractGetBytecodeQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
      */
 
     bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
@@ -539,7 +539,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * ContractGetRecordsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
      *
      */
 
@@ -590,8 +590,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     /*
      * long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long senderThreshold - LONG_SIZE
-     * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - BASIC_ENTITYID_SIZE AccountID
-     * proxyAccount - BASIC_ENTITYID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
+     * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - BASIC_ENTITY_ID_SIZE AccountID
+     * proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
      */
 
     rbs = (7 * LONG_SIZE + 2 * BOOL_SIZE + BASIC_ENTITY_ID_SIZE) * autoRenewal;
@@ -646,8 +646,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     int txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
     /*
-     * ContractID contractID = BASIC_ENTITYID_SIZE oneof obtainers { AccountID transferAccountID = BASIC_ENTITYID_SIZE
-     * ContractID transferContractID = BASIC_ENTITYID_SIZE }
+     * ContractID contractID = BASIC_ENTITY_ID_SIZE oneof obtainers { AccountID transferAccountID = BASIC_ENTITY_ID_SIZE
+     * ContractID transferContractID = BASIC_ENTITY_ID_SIZE }
      */
 
     bpt = txBodySize + BASIC_ENTITY_ID_SIZE + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();

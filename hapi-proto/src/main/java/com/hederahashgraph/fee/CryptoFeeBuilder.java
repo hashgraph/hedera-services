@@ -239,8 +239,8 @@ public class CryptoFeeBuilder extends FeeBuilder {
    */
   private int getCryptoUpdateBodyTxSize(TransactionBody txBody) {
     /*
-     * AccountID accountIDToUpdate - BASIC_ENTITYID_SIZE Key - calculated bytes AccountID proxyAccountID -
-     * BASIC_ENTITYID_SIZE google.protobuf.UInt64Value sendRecordThreshold - LONG_SIZE
+     * AccountID accountIDToUpdate - BASIC_ENTITY_ID_SIZE Key - calculated bytes AccountID proxyAccountID -
+     * BASIC_ENTITY_ID_SIZE google.protobuf.UInt64Value sendRecordThreshold - LONG_SIZE
      * google.protobuf.UInt64Value receiveRecordThreshold - LONG_SIZE Duration autoRenewPeriod -
      * (LONG_SIZE + INT_SIZE) Timestamp expirationTime - (LONG_SIZE + INT_SIZE) bytes
      * google.protobuf.BoolValue receiverSigRequired - BOOL_VALUE
@@ -293,7 +293,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     /*
      * AccountID => 3 LONG_SIZE long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long
      * senderThreshold - LONG_SIZE boolean receiverSigRequired - BOOL_SIZE Key accountKeys -
-     * calculated size AccountID proxyAccount - BASIC_ENTITYID_SIZE long autoRenewPeriod - LONG_SIZE
+     * calculated size AccountID proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE
      * boolean deleted - BOOL_SIZE
      */
 
@@ -339,7 +339,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getCryptoTransferBodyTxSize(TransactionBody txBody) {
 
     /*
-     * TransferList transfers repeated AccountAmount AccountID - (BASIC_ENTITYID_SIZE) sint64 amount -
+     * TransferList transfers repeated AccountAmount AccountID - (BASIC_ENTITY_ID_SIZE) sint64 amount -
      * LONG_SIZE
      */
     int accountAmountCount = txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount();
@@ -375,7 +375,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetAccountBalanceQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITYID_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
      */
     bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
@@ -411,7 +411,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CostTransactionGetRecordQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITYID_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITY_ID_SIZE
      * bytes Timestamp transactionValidStart - (LONG_SIZE + INT_SIZE) bytes
      */
 
@@ -454,7 +454,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * TransactionGetRecordQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITYID_SIZE
+     * Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITY_ID_SIZE
      * bytes Timestamp transactionValidStart - (LONG_SIZE) bytes
      */
 
@@ -496,7 +496,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetInfoQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE AccountID accountID - BASIC_ENTITYID_SIZE bytes
+     * Transaction processing) ResponseType - INT_SIZE AccountID accountID - BASIC_ENTITY_ID_SIZE bytes
      *
      */
 
@@ -536,7 +536,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetAccountRecordsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITYID_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
      *
      */
 
@@ -583,12 +583,12 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getAccountInfoSize(Key accountKey, List<LiveHash> liveHashes) {
 
     /*
-     * AccountID accountID - BASIC_ENTITYID_SIZE string contractAccountID - SOLIDITY_ADDRESS bool deleted
-     * - BOOL_SIZE AccountID proxyAccountID - BASIC_ENTITYID_SIZE int32 proxyFraction - INT_SIZE int64
+     * AccountID accountID - BASIC_ENTITY_ID_SIZE string contractAccountID - SOLIDITY_ADDRESS bool deleted
+     * - BOOL_SIZE AccountID proxyAccountID - BASIC_ENTITY_ID_SIZE int32 proxyFraction - INT_SIZE int64
      * proxyReceived - INT_SIZE Key key - calculated value uint64 balance - LONG_SIZE uint64
      * generateSendRecordThreshold - LONG_SIZE uint64 generateReceiveRecordThreshold - LONG_SIZE
      * bool receiverSigRequired - BOOL_SIZE Timestamp expirationTime - LONG_SIZE Duration
-     * autoRenewPeriod - LONG_SIZE repeated LiveHash claims - calculated value AccountID accountID - BASIC_ENTITYID_SIZE
+     * autoRenewPeriod - LONG_SIZE repeated LiveHash claims - calculated value AccountID accountID - BASIC_ENTITY_ID_SIZE
      * bytes hash - 48 byte SHA-384 hash (presumably of some kind of credential or
      * certificate) KeyList keys - calculated value
      *
@@ -607,7 +607,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getAccountTransactionRecordSize(TransactionRecord transRecord) {
 
     /*
-     * TransactionReceipt - 4 bytes + BASIC_ENTITYID_SIZE bytes transactionHash - 96 bytes Timestamp
+     * TransactionReceipt - 4 bytes + BASIC_ENTITY_ID_SIZE bytes transactionHash - 96 bytes Timestamp
      * consensusTimestamp - 8 bytes TransactionID - 32 bytes (AccountID - 24 + Timestamp - 8) string
      * memo - get from the record uint64 transactionFee - 8 bytes TransferList transferList - get
      * from actual transaction record
@@ -799,7 +799,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     /*
      * long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long senderThreshold - LONG_SIZE
      * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - calculated size AccountID
-     * proxyAccount - BASIC_ENTITYID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
+     * proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
      */
 
     rbs = (BASIC_ACCOUNT_SIZE + getAccountKeyStorageSize(key)) * autoRenewal;
