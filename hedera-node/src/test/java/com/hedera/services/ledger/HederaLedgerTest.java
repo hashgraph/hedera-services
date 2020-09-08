@@ -240,7 +240,14 @@ public class HederaLedgerTest {
 
 	@Test
 	public void requiresAllNetZeroTransfers() {
-		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+		given(tokenStore.adjustBalance(any(), any(), anyLong()))
+				.willAnswer(invocationOnMock -> {
+					AccountID aId = invocationOnMock.getArgument(0);
+					TokenID tId = invocationOnMock.getArgument(1);
+					long amount = invocationOnMock.getArgument(2);
+					subject.updateTokenXfers(tId, aId, amount);
+					return OK;
+				});
 
 		// when:
 		var outcome = subject.doAtomicZeroSumTokenTransfers(unmatchedTokenTransfers);
@@ -285,7 +292,14 @@ public class HederaLedgerTest {
 
 	@Test
 	public void happyPathTransfers() {
-		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
+		given(tokenStore.adjustBalance(any(), any(), anyLong()))
+				.willAnswer(invocationOnMock -> {
+					AccountID aId = invocationOnMock.getArgument(0);
+					TokenID tId = invocationOnMock.getArgument(1);
+					long amount = invocationOnMock.getArgument(2);
+					subject.updateTokenXfers(tId, aId, amount);
+					return OK;
+				});
 
 		// when:
 		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfers);
@@ -330,7 +344,14 @@ public class HederaLedgerTest {
 
 	@Test
 	public void adjustsIfValid() {
-		given(tokenStore.adjustBalance(misc, tokenId, 555)).willReturn(OK);
+		given(tokenStore.adjustBalance(any(), any(), anyLong()))
+				.willAnswer(invocationOnMock -> {
+					AccountID aId = invocationOnMock.getArgument(0);
+					TokenID tId = invocationOnMock.getArgument(1);
+					long amount = invocationOnMock.getArgument(2);
+					subject.updateTokenXfers(tId, aId, amount);
+					return OK;
+				});
 
 		// given:
 		var status = subject.adjustTokenBalance(misc, tokenId, 555);
@@ -814,7 +835,7 @@ public class HederaLedgerTest {
 				.setAdminKey(key)
 				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.setSymbol(symbol)
-				.setFloat(1_000_000)
+				.setFloat(0)
 				.setTreasury(account)
 				.setDivisibility(0)
 				.setFreezeDefault(false)

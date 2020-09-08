@@ -57,8 +57,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
-//						keysChange(),
-//						treasuryEvolves(),
+						keysChange(),
+						treasuryEvolves(),
 				}
 		);
 	}

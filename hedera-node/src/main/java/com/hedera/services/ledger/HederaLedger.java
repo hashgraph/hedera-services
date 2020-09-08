@@ -235,11 +235,7 @@ public class HederaLedger {
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
-		var validity = tokenStore.adjustBalance(aId, tId, adjustment);
-		if (validity == OK) {
-			updateTokenXfers(tId, aId, adjustment);
-		}
-		return validity;
+		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
 
 	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {

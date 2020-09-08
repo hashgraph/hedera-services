@@ -61,8 +61,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						txnsAreAtomic(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 						senderSigsAreChecked(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 				}
 		);
 	}
