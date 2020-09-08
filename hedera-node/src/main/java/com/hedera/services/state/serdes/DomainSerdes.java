@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 public class DomainSerdes {
 	private static final Logger log = LogManager.getLogger(DomainSerdes.class);

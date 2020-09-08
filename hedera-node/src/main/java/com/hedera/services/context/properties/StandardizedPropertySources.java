@@ -21,7 +21,6 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.legacy.config.PropertiesLoader;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
@@ -61,6 +60,8 @@ import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACIT
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
 
+	public static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+
 	public static final String RESPECT_LEGACY_THROTTLING_PROPERTY = API_THROTTLING_CONFIG_PREFIX + ".useLegacyProps";
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
@@ -77,6 +78,7 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
+	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final Map<String, Object> throttlePropsFromSysFile = new HashMap<>();
 
 	public StandardizedPropertySources(
@@ -86,10 +88,12 @@ public class StandardizedPropertySources implements PropertySources {
 		this.bootstrapProps = bootstrapProps;
 		this.fileSourceExists = fileSourceExists;
 
+		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
+
 		throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
 	}
 
-	public void updateThrottlePropsFrom(ServicesConfigurationList config) {
+	public void reloadFrom(ServicesConfigurationList config) {
 		log.info("Updating throttle props from {} candidates", config.getNameValueCount());
 		throttlePropsFromSysFile.clear();
 		for (Setting setting : config.getNameValueList())  {
@@ -108,6 +112,8 @@ public class StandardizedPropertySources implements PropertySources {
 		if (!throttlePropsFromSysFile.containsKey(RESPECT_LEGACY_THROTTLING_PROPERTY)) {
 			throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
 		}
+
+		dynamicGlobalProps.screenNew(config);
 	}
 
 	private void putBoolean(String name, String literal) {
@@ -154,9 +160,9 @@ public class StandardizedPropertySources implements PropertySources {
 
 	@Override
 	public PropertySource asResolvingSource() {
-		var prioritySource = new SupplierMapPropertySource(sourceMap());
-
-		return new DeferringPropertySource(prioritySource, throttlePropsFromSysFile);
+		var bootstrap = new SupplierMapPropertySource(sourceMap());
+		var bootstrapPlusThrottleProps = new DeferringPropertySource(bootstrap, throttlePropsFromSysFile);
+		return new ChainedSources(dynamicGlobalProps, bootstrapPlusThrottleProps);
 	}
 
 	private Map<String, Supplier<Object>> sourceMap() {
@@ -165,15 +171,13 @@ public class StandardizedPropertySources implements PropertySources {
 
 		Map<String, Supplier<Object>> source = new HashMap<>();
 
-		/* Bootstrap properties, which include all global/static properties. */
+		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
 
 		/* Global/dynamic properties. */
 		source.put("cache.records.ttl", PropertiesLoader::getTxReceiptTTL);
 		source.put("contracts.maxStorageKb", PropertiesLoader::getMaxContractStateSize);
-		source.put("contracts.defaultSendThreshold", PropertiesLoader::getDefaultContractSenderThreshold);
-		source.put("contracts.defaultReceiveThreshold", PropertiesLoader::getDefaultContractReceiverThreshold);
 		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
 		source.put("files.maxSizeKb", PropertiesLoader::getMaxFileSize);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
@@ -182,7 +186,6 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("hedera.transaction.minValidityBufferSecs", PropertiesLoader::getTxMinRemaining);
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
-		source.put("ledger.maxAccountNum", PropertiesLoader::getConfigAccountNum);
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
 		source.put("ledger.transfers.maxLen", PropertiesLoader::getTransferAccountListSize);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);

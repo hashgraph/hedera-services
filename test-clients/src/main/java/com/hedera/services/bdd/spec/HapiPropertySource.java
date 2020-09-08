@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -132,6 +133,18 @@ public interface HapiPropertySource {
 						: ((s instanceof Map) ? new MapPropertySource((Map)s)
 						: new JutilPropertySource((String)s)))
 				.toArray(n -> new HapiPropertySource[n]);
+	}
+
+	static TokenID asToken(String v) {
+		long[] nativeParts = asDotDelimitedLongArray(v);
+		return TokenID.newBuilder()
+				.setShardNum(nativeParts[0])
+				.setRealmNum(nativeParts[1])
+				.setTokenNum(nativeParts[2])
+				.build();
+	}
+	static String asTokenString(TokenID account) {
+		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getTokenNum());
 	}
 
 	static AccountID asAccount(String v) {

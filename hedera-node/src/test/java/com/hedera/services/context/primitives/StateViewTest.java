@@ -24,15 +24,21 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -41,6 +47,8 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,10 +70,12 @@ class StateViewTest {
 	JFileInfo metadata;
 	JFileInfo immutableMetadata;
 	FileID target = asFile("0.0.123");
+	TokenID tokenId = asToken("2.4.5");
+	TokenRef foundToken = TokenRef.newBuilder().setSymbol("FOUND").build();
+	TokenRef missingToken = TokenRef.newBuilder().setSymbol("MISSING").build();
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
-	byte[] notCidAddress = asSolidityAddress((int) notCid.getShardNum(), notCid.getRealmNum(), notCid.getContractNum());
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -76,7 +86,9 @@ class StateViewTest {
 	Map<FileID, JFileInfo> attrs;
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	TokenStore tokenStore;
 
+	MerkleToken token;
 	MerkleAccount contract;
 	MerkleAccount notContract;
 	PropertySource propertySource;
@@ -123,6 +135,17 @@ class StateViewTest {
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
 
+		tokenStore = mock(TokenStore.class);
+		token = new MerkleToken(
+				100, 1,
+				TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
+				"UnfrozenToken", true,
+				new EntityId(1, 2, 3));
+		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+		given(tokenStore.resolve(foundToken)).willReturn(tokenId);
+		given(tokenStore.resolve(missingToken)).willReturn(TokenStore.MISSING_TOKEN);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
 		contents = mock(Map.class);
 		attrs = mock(Map.class);
 		storage = mock(Map.class);
@@ -131,11 +154,73 @@ class StateViewTest {
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
 
-		subject = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource);
+		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
 		subject.contractStorage = storage;
+	}
+
+	@Test
+	public void tokenExistsWorks() {
+		// expect:
+		assertTrue(subject.tokenExists(foundToken));
+		assertFalse(subject.tokenExists(missingToken));
+	}
+
+	@Test
+	public void recognizesMissingToken() {
+		// when:
+		var info = subject.infoForToken(missingToken);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void failsGracefully() {
+		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
+
+		// when:
+		var info = subject.infoForToken(foundToken);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsTokenInfoMinusFreezeIfMissing() {
+		// setup:
+		token.setFreezeKey(MerkleToken.UNUSED_KEY);
+
+		// when:
+		var info = subject.infoForToken(foundToken).get();
+
+		// then:
+		assertEquals(tokenId, info.getTokenId());
+		assertEquals(token.symbol(), info.getSymbol());
+		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
+		assertEquals(token.tokenFloat(), info.getCurrentFloat());
+		assertEquals(token.divisibility(), info.getDivisibility());
+		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
+		assertEquals(false, info.getFreezeDefault());
+		assertFalse(info.hasFreezeKey());
+	}
+
+	@Test
+	public void getsTokenInfo() {
+		// when:
+		var info = subject.infoForToken(foundToken).get();
+
+		// then:
+		assertEquals(tokenId, info.getTokenId());
+		assertEquals(token.symbol(), info.getSymbol());
+		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
+		assertEquals(token.tokenFloat(), info.getCurrentFloat());
+		assertEquals(token.divisibility(), info.getDivisibility());
+		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
+		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
+		assertEquals(token.accountsAreFrozenByDefault(), info.getFreezeDefault());
 	}
 
 	@Test

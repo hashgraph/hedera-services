@@ -75,6 +75,19 @@ class PureFCMapBackingAccountsTest {
 	}
 
 	@Test
+	public void delegatesGetTokenCopy() {
+		// setup:
+		var account = mock(MerkleAccount.class);
+		var expected = mock(MerkleAccount.class);
+
+		given(account.tokenCopy()).willReturn(expected);
+		given(map.get(aKey)).willReturn(account);
+
+		// then:
+		assertSame(expected, subject.getTokenCopy(a));
+	}
+
+	@Test
 	public void delegatesContains() {
 		given(map.containsKey(aKey)).willReturn(false);
 		given(map.containsKey(bKey)).willReturn(true);

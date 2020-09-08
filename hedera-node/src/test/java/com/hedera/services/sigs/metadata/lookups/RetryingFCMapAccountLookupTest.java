@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
+import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.test.factories.keys.KeyTree;
@@ -86,7 +87,7 @@ public class RetryingFCMapAccountLookupTest {
 		subject = new RetryingFCMapAccountLookup(pause, properties, stats, () -> accounts);
 
 		// when:
-		AccountSigningMetadata meta = subject.lookup(account);
+		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
 		verifyZeroInteractions(stats, pause);
@@ -104,7 +105,7 @@ public class RetryingFCMapAccountLookupTest {
 		InOrder inOrder = inOrder(pause, stats);
 
 		// when:
-		AccountSigningMetadata meta = subject.lookup(account);
+		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);
@@ -125,7 +126,7 @@ public class RetryingFCMapAccountLookupTest {
 		InOrder inOrder = inOrder(stats);
 
 		// when:
-		AccountSigningMetadata meta = subject.lookup(account);
+		AccountSigningMetadata meta = subject.safeLookup(account).metadata();
 
 		// then:
 		ArgumentCaptor<Integer> captor = forClass(Integer.class);
@@ -145,7 +146,7 @@ public class RetryingFCMapAccountLookupTest {
 		InOrder inOrder = inOrder(pause, stats);
 
 		// when:
-		assertThrows(InvalidAccountIDException.class, () -> subject.lookup(account));
+		assertEquals(KeyOrderingFailure.MISSING_ACCOUNT, subject.safeLookup(account).failureIfAny());
 
 		// then:
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);
@@ -165,7 +166,7 @@ public class RetryingFCMapAccountLookupTest {
 		InOrder inOrder = inOrder(pause, stats);
 
 		// when:
-		assertThrows(InvalidAccountIDException.class, () -> subject.lookup(account));
+		assertEquals(KeyOrderingFailure.MISSING_ACCOUNT, subject.safeLookup(account).failureIfAny());
 
 		// then:
 		inOrder.verify(pause).forMs(RETRY_WAIT_MS);

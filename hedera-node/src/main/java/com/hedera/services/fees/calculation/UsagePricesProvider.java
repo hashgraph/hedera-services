@@ -23,7 +23,6 @@ package com.hedera.services.fees.calculation;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 
 /**
  * Defines a type able to provide the prices (in tinyCents) that must
@@ -36,9 +35,9 @@ public interface UsagePricesProvider {
 	 * Called during startup to give the type an opportunity to
 	 * materialize its price schedules.
 	 *
-	 * @throws NoFeeScheduleExistsException if the schedules are not loaded
+	 * @throws IllegalStateException if the schedules are not loaded
 	 */
-	void loadPriceSchedules() throws NoFeeScheduleExistsException;
+	void loadPriceSchedules();
 
 	/**
 	 * Returns the prices in tinyCents that must be paid to

@@ -39,7 +39,6 @@ import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -139,7 +138,7 @@ class UsageBasedFeeCalculatorTest {
 
 	@Test
 	public void throwsIseOnBadScheduleInFcfs() throws Exception {
-		willThrow(NoFeeScheduleExistsException.class).given(usagePrices).loadPriceSchedules();
+		willThrow(IllegalStateException.class).given(usagePrices).loadPriceSchedules();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.init());

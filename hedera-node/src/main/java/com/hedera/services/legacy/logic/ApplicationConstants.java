@@ -67,11 +67,6 @@ public class ApplicationConstants {
 
 	public static int TRANSFER_LST_LIMIT = 10;
 
-	public static long DEF_CONT_SEND_THRESHOLD = 1000000000000000000L;
-	public static long DEF_CONT_RECEIVE_THRESHOLD = 1000000000000000000L;
-
-	public static long CONFIG_ACCT_NUM = 100_000_000;
-
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;
 	public static int MAX_CONTRACT_STATE_SIZE = 1024;

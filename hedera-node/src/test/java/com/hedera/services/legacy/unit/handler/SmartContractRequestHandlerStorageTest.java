@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.ledger.HederaLedger;
@@ -36,6 +37,7 @@ import com.hedera.services.legacy.util.SCEncoding;
 import static com.hedera.services.legacy.util.SCEncoding.*;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -46,7 +48,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -155,11 +156,12 @@ public class SmartContractRequestHandlerStorageTest {
             new FCMapBackingAccounts(() -> contracts),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
+            mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));

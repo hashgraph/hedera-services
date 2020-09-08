@@ -29,7 +29,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -570,7 +569,7 @@ public class ServicesMainTest {
 
 		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
-		willThrow(InvalidTotalAccountBalanceException.class).given(balancesExporter).toCsvFile(signedState, when);
+		willThrow(IllegalStateException.class).given(balancesExporter).toCsvFile(signedState, when);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);

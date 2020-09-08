@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -29,12 +30,12 @@ import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -68,7 +69,6 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
@@ -170,11 +170,12 @@ public class SmartContractRequestHandlerMiscTest {
             new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
+            mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
@@ -685,7 +686,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cc Create with invalid initial value: fails")
-  public void cc_InvalidInitialBalance() throws NoFeeScheduleExistsException {
+  public void cc_InvalidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 
@@ -711,7 +712,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cd Create with valid initial value: succeeds")
-  public void cd_ValidInitialBalance() throws NoFeeScheduleExistsException {
+  public void cd_ValidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 

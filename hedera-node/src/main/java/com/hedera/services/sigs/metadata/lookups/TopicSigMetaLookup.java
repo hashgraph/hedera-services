@@ -28,4 +28,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
  */
 public interface TopicSigMetaLookup {
 	TopicSigningMetadata lookup(TopicID topic) throws Exception;
+
+	SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id);
 }

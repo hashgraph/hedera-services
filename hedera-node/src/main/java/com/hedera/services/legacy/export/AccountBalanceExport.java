@@ -24,7 +24,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.state.exports.AccountBalance;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.swirlds.common.Address;
@@ -40,7 +39,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +115,10 @@ public class AccountBalanceExport {
   /**
    * This method is invoked during start up and executed based upon the configuration settings. It exports all the existing accounts balance and write it in a file
    */
-  public String exportAccountsBalanceCSVFormat(ServicesState servicesState, Instant consensusTimestamp) throws InvalidTotalAccountBalanceException {
+  public String exportAccountsBalanceCSVFormat(
+          ServicesState servicesState,
+          Instant consensusTimestamp
+  ) {
     // get the export path from Properties
     log.debug("exportAccountsBalanceCSVFormat called. {}", consensusTimestamp);
     FCMap<MerkleEntityId, MerkleAccount> accountMap = servicesState.accounts();
@@ -163,7 +164,7 @@ public class AccountBalanceExport {
     //validate that total node balance is equal to initial money supply
     if(totalBalance != initialGenesisCoins) {
       String  errorMessage = "Total balance " + totalBalance + " is different from " + initialGenesisCoins;
-      throw new InvalidTotalAccountBalanceException(errorMessage);
+      throw new IllegalStateException(errorMessage);
     }
     Collections.sort(acctObjList);
     try (FileWriter file = new FileWriter(fileName)) {

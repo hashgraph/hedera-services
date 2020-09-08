@@ -43,6 +43,11 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 	}
 
 	@Override
+	public MerkleAccount getTokenCopy(AccountID id) {
+		return getRef(id).tokenCopy();
+	}
+
+	@Override
 	public void flushMutableRefs() { }
 
 	@Override

@@ -20,13 +20,12 @@ package com.hedera.services.properties;
  * ‍
  */
 
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.context.properties.ScreenedSysFileProps;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -43,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
-import static com.hedera.services.context.properties.StandardizedPropertySources.*;
 
 @RunWith(JUnitPlatform.class)
 public class StandardizedPropertySourcesTest {
@@ -70,13 +68,51 @@ public class StandardizedPropertySourcesTest {
 	}
 
 	@Test
+	void usesDynamicGlobalAsPriority() {
+		// setup:
+		ScreenedSysFileProps source = mock(ScreenedSysFileProps.class);
+		given(source.containsProperty("testProp")).willReturn(true);
+		given(source.getProperty("testProp")).willReturn("perfectAnswer");
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
+
+		givenImpliedSubject();
+
+		// when:
+		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+
+		// expect:
+		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
+
+		// cleanup:
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+	}
+
+	@Test
+	void propagatesReloadToDynamicGlobalProps() {
+		// setup:
+		ScreenedSysFileProps source = mock(ScreenedSysFileProps.class);
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
+
+		givenImpliedSubject();
+
+		// when:
+		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+
+		// expect:
+		verify(source).screenNew(ServicesConfigurationList.getDefaultInstance());
+
+		// cleanup:
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+	}
+
+	@Test
 	void restoresLegacyPropsFlagToTrueIfMissing() {
 		givenImpliedSubject();
 
 		// given:
 		var properties = subject.asResolvingSource();
 		// and:
-		subject.updateThrottlePropsFrom(ServicesConfigurationList.getDefaultInstance());
+		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
 
 		// expect:
 		assertTrue(properties.getBooleanProperty(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY));
@@ -89,7 +125,7 @@ public class StandardizedPropertySourcesTest {
 		var function = HederaFunctionality.ContractGetRecords;
 		var config = ServicesConfigurationList.newBuilder()
 				.addNameValue(from("random", "no-throttle-relation"))
-				.addNameValue(from(RESPECT_LEGACY_THROTTLING_PROPERTY, "false"))
+				.addNameValue(from(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY, "false"))
 				.addNameValue(from(DEFAULT_BURST_PROPERTY, "1.23"))
 				.addNameValue(from(DEFAULT_CAPACITY_PROPERTY, "1.23"))
 				.addNameValue(from(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY, "1.23"))
@@ -105,10 +141,10 @@ public class StandardizedPropertySourcesTest {
 		var props = subject.asResolvingSource();
 
 		// when:
-		subject.updateThrottlePropsFrom(config);
+		subject.reloadFrom(config);
 
 		// then:
-		assertFalse(props.getBooleanProperty(RESPECT_LEGACY_THROTTLING_PROPERTY));
+		assertFalse(props.getBooleanProperty(StandardizedPropertySources.RESPECT_LEGACY_THROTTLING_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_BURST_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_CAPACITY_PROPERTY));
 		assertEquals(1.23, props.getDoubleProperty(DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY));
@@ -133,7 +169,7 @@ public class StandardizedPropertySourcesTest {
 		var props = subject.asResolvingSource();
 
 		// when:
-		subject.updateThrottlePropsFrom(config);
+		subject.reloadFrom(config);
 
 		// then:
 		assertFalse(props.containsProperty(DEFAULT_BURST_PROPERTY));
@@ -182,7 +218,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
 		assertTrue(properties.containsProperty("ledger.funding.account"));
-		assertTrue(properties.containsProperty("ledger.maxAccountNum"));
 		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
