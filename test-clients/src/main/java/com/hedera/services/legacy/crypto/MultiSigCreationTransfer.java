@@ -291,14 +291,13 @@ public class MultiSigCreationTransfer {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
@@ -317,7 +316,7 @@ public class MultiSigCreationTransfer {
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
@@ -332,14 +331,13 @@ public class MultiSigCreationTransfer {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
@@ -357,7 +355,7 @@ public class MultiSigCreationTransfer {
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);

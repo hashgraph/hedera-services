@@ -121,8 +121,6 @@ public class FileServiceIT {
   protected static TransactionID txId = null;
   protected static FileID fid = null;
   protected static Duration transactionDuration = Duration.newBuilder().setSeconds(TX_DURATION_SEC).build();
-  protected static SignatureList signatures = SignatureList.newBuilder()
-      .getDefaultInstanceForType();
   public static Map<String, List<AccountKeyListObj>> hederaAccounts = null;
   public static Map<String, KeyPair> accountKeyPairHolder = new HashMap<String, KeyPair>();
   protected static List<AccountKeyListObj> genesisAccountList;
@@ -242,7 +240,6 @@ public class FileServiceIT {
     log.info("@@@ upload file at: " + localPath + "; file size in byte = " + fileData.size());
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
     List<Key> waclPubKeyList = new ArrayList<>();
     waclPrivKeyList = new ArrayList<>();
     genWacl(NUM_WACL_KEYS, waclPubKeyList, waclPrivKeyList);
@@ -258,11 +255,11 @@ public class FileServiceIT {
     }
     Transaction FileCreateRequest = RequestBuilder
         .getFileCreateBuilder(payerSeq, 0l, 0l, nodeAccountNumber, 0l, 0l, MAX_TX_FEE,
-            timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp,
+            timestamp, transactionDuration, true, "FileCreate", fileData, fileExp,
             waclPubKeyList);
     TransactionBody body = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
     txId = body.getTransactionID();
-    Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, privKeys);
+    Transaction filesignedByPayer = TransactionSigner.signTransactionW(FileCreateRequest, privKeys);
 
     // append wacl sigs
     Transaction filesigned = appendSignature(filesignedByPayer, waclPrivKeyList);
@@ -414,7 +411,7 @@ public class FileServiceIT {
     }
     Transaction fileAppendRequest = RequestBuilder
         .getFileAppendBuilder(payerSeq, 0l, 0l, nodeAccountNumber, 0l, 0l, MAX_TX_FEE,
-            timestamp, transactionDuration, true, "FileAppend", signatures, fileData, fid);
+            timestamp, transactionDuration, true, "FileAppend", fileData, fid);
 
     TransactionBody body = TransactionBody.parseFrom(fileAppendRequest.getBodyBytes());
     txId = body.getTransactionID();
@@ -455,7 +452,7 @@ public class FileServiceIT {
     }
     Transaction FileUpdateRequest = RequestBuilder
         .getFileUpdateBuilder(payerSeq, 0l, 0l, nodeAccountNumber, 0l, 0l, MAX_TX_FEE,
-            timestamp, fileExp, transactionDuration, true, "FileUpdate", signatures, fileData, fid,
+            timestamp, fileExp, transactionDuration, true, "FileUpdate", fileData, fid,
             wacl);
 
     List<PrivateKey> privKey = getPayerPrivateKey(payerSeq);
@@ -491,7 +488,7 @@ public class FileServiceIT {
     }
     Transaction FileDeleteRequest = RequestBuilder
         .getFileDeleteBuilder(payerSeq, 0l, 0l, nodeAccountNumber, 0l, 0l, MAX_TX_FEE,
-            timestamp, transactionDuration, true, "FileDelete", signatures, fid);
+            timestamp, transactionDuration, true, "FileDelete", fid);
     List<PrivateKey> privKey = getPayerPrivateKey(payerSeq);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(FileDeleteRequest, privKey);
     Transaction txSigned = appendSignature(txSignedByPayer, newWaclPrivKeyList);
@@ -867,7 +864,7 @@ public class FileServiceIT {
         payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
         nodeAccountID.getRealmNum(), nodeAccountID.getShardNum(), TestHelper.getCryptoMaxFee(), timestamp,
         transactionDuration, true,
-        memo, signatures, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
+        memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
         amount);
     List<List<PrivateKey>> privKeysList = new ArrayList<>();
     privKeysList.add(payerPrivKeys);
@@ -880,7 +877,7 @@ public class FileServiceIT {
         payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
         nodeAccountID.getRealmNum(), nodeAccountID.getShardNum(), transferFee, timestamp,
         transactionDuration, true,
-        memo, signatures, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
+        memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
         amount);
     paymentTxSigned = TransactionSigner.signTransactionNew(paymentTx, privKeysList);
 

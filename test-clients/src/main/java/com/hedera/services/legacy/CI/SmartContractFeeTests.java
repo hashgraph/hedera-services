@@ -887,23 +887,17 @@ public class SmartContractFeeTests extends BaseFeeTests {
             nodeRealmNum, nodeShardNum, transactionFee, timestamp,
             txDuration, generateRecord, txMemo, gas, fileId, constructorParameters,
             initialBalance,
-            autoRenewalPeriod, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), contractMemo, adminKey);
+            autoRenewalPeriod, contractMemo, adminKey);
 
-    transaction = TransactionSigner.signTransactionComplex(transaction, keyList, keys);
+    transaction = TransactionSigner.signTransactionComplexWithSigMap(transaction, keyList, keys);
     transactionFee = FeeClient.getContractCreateFee(transaction, keys.size());
     transaction = RequestBuilder
         .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
             nodeRealmNum, nodeShardNum, transactionFee, timestamp,
             txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-            autoRenewalPeriod, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), contractMemo, adminKey);
+            autoRenewalPeriod, contractMemo, adminKey);
 
-    transaction = TransactionSigner.signTransactionComplex(transaction, keyList, keys);
+    transaction = TransactionSigner.signTransactionComplexWithSigMap(transaction, keyList, keys);
     return transaction;
   }
 

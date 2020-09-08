@@ -298,42 +298,6 @@ public class DuplicateTransactionTest {
 
   }
 
-
-  public static Transaction createTransferOLD(Timestamp timestamp, AccountID fromAccount,
-      PrivateKey fromKey, AccountID toAccount,
-      AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
-      long amount) {
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-    SignatureList sigList = SignatureList.getDefaultInstance();
-    Transaction transferTx =
-        RequestBuilder
-            .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-                payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-                nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
-                timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
-                -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString bodyBytes =  transferTx.getBodyBytes();
-
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) fromKey);
-
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
-
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(newsigList).build();
-  }
-
   public static Transaction createTransfer(Timestamp timestamp, AccountID fromAccount,
       KeyPair fromKeyPair, AccountID toAccount,
       AccountID payerAccount, KeyPair payerKeyPair, AccountID nodeAccount,
@@ -387,8 +351,7 @@ public class DuplicateTransactionTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
 
     transaction = TransactionSigner.signTransaction(transaction, privKey);
     transactionFee = FeeClient.getCreateAccountFee(transaction,privKey.size());
@@ -399,8 +362,7 @@ public class DuplicateTransactionTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
     transaction = TransactionSigner.signTransaction(transaction, privKey);
     return transaction;
 

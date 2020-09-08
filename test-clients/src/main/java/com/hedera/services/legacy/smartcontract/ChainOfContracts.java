@@ -228,24 +228,9 @@ public class ChainOfContracts {
 	  }
 
 	  private static Transaction createQueryHeaderTransfer(AccountID payer) throws Exception {
-	    Timestamp timestamp = RequestBuilder
-	        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-	    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-	    //KeyPair pair = new KeyPairGenerator().generateKeyPair();
-	    //byte[] pubKeyBytes = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-	    //String pubKey = HexUtils.bytes2Hex(pubKeyBytes);
-	    //Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey.getBytes())).build(); // used later
-	    SignatureList sigList = SignatureList.getDefaultInstance();
-			 /* Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
-						 payer.getAccountNum(), payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-						 50, timestamp, transactionDuration, false, "test", sigList,
-						 payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);*/
-
 	    Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
 	        nodeAccount, payer,
 	        accountKeys.get(payer).get(0), nodeAccount, TestHelper.getCryptoMaxFee());
-	    //transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
 	    return transferTx;
 
 	  }
@@ -324,8 +309,6 @@ public class ChainOfContracts {
 	    Timestamp fileExp = RequestBuilder.getTimestamp(Instant.now());
 	    Duration transactionDuration = RequestBuilder.getDuration(30);
 
-	    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
-
 	    List<Key> waclKeyList = new ArrayList<>();
 	    KeyPair pair = new KeyPairGenerator().generateKeyPair();
 	    Key waclKey = Key.newBuilder()
@@ -343,7 +326,7 @@ public class ChainOfContracts {
 	        .getFileCreateBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
 	            payerAccount.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
 	            nodeAccount.getShardNum(), 100l, timestamp,
-	            transactionDuration, true, "FileCreate", signatures, fileData, fileExp, waclKeyList);
+	            transactionDuration, true, "FileCreate", fileData, fileExp, waclKeyList);
 	    FileCreateRequest = TransactionSigner
 	        .signTransaction(FileCreateRequest, accountKeys.get(payerAccount));
 
@@ -425,8 +408,6 @@ public class ChainOfContracts {
 	    Timestamp fileExp = RequestBuilder.getTimestamp(Instant.now());
 	    Duration transactionDuration = RequestBuilder.getDuration(30);
 
-	    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
-
 	    List<Key> waclKeyList = new ArrayList<>();
 	    KeyPair pair = new KeyPairGenerator().generateKeyPair();
 	    Key waclKey = Key.newBuilder()
@@ -443,7 +424,7 @@ public class ChainOfContracts {
 	        .getFileCreateBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
 	            payerAccount.getShardNum(), Utilities.getDefaultNodeAccount(), 0l, 0l,
 	            TestHelper.getFileMaxFee(), timestamp,
-	            transactionDuration, true, "FileCreate", signatures, fileData, fileExp, waclKeyList);
+	            transactionDuration, true, "FileCreate", fileData, fileExp, waclKeyList);
 	    TransactionBody fileCreateBody = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
 	    TransactionID txId = fileCreateBody.getTransactionID();
 	    TransactionResponse response = stub.createFile(FileCreateRequest);
@@ -483,7 +464,6 @@ public class ChainOfContracts {
 	    Timestamp timestamp = RequestBuilder
 	        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
 	    Duration transactionDuration = RequestBuilder.getDuration(30);
-	    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
 	    ByteString dataBstr = ByteString.EMPTY;
 	    if (data != null) {
 	      dataBstr = ByteString.copyFrom(data);

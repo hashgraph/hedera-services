@@ -303,12 +303,11 @@ public class CryptoTransferCheckBalance extends Thread {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), MAX_TX_FEE, timestamp,
         transactionDuration,
-        generateRecord, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+        generateRecord, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
     List<List<PrivateKey>> privKeysList = new ArrayList<>();

@@ -270,7 +270,6 @@ public class SmartContractNegativeCalls {
     Timestamp timestamp = RequestBuilder
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(-1 * TestHelper.DEFAULT_WIND_SEC));
     Duration transactionDuration = RequestBuilder.getDuration(TestHelper.TX_DURATION);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);

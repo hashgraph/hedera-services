@@ -191,7 +191,6 @@ public class CryptoFileAutoRenewDurationCheck {
     // check for create and update file
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC);
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
     List<Key> waclPubKeyList = new ArrayList<>();
     List<PrivateKey> waclPrivKeyList = new ArrayList<>();
     genWacl(3, waclPubKeyList, waclPrivKeyList);
@@ -203,7 +202,7 @@ public class CryptoFileAutoRenewDurationCheck {
     Transaction FileCreateRequest = RequestBuilder
         .getFileCreateBuilder(payerAccount.getAccountNum(), 0l, 0l, nodeAccountNumber, 0l, 0l,
             MAX_TX_FEE,
-            timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp,
+            timestamp, transactionDuration, true, "FileCreate", fileData, fileExp,
             waclPubKeyList);
     body = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
     Transaction filesignedByPayer = TransactionSigner
@@ -224,7 +223,6 @@ public class CryptoFileAutoRenewDurationCheck {
     // actually create a file now
     timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC_ACTUAL);
-    signatures = SignatureList.newBuilder().getDefaultInstanceForType();
     transactionDuration = RequestBuilder.getDuration(5);
 
     // fetching private key of payer account
@@ -233,7 +231,7 @@ public class CryptoFileAutoRenewDurationCheck {
     FileCreateRequest = RequestBuilder
         .getFileCreateBuilder(payerAccount.getAccountNum(), 0l, 0l, nodeAccountNumber, 0l, 0l,
             MAX_TX_FEE,
-            timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp,
+            timestamp, transactionDuration, true, "FileCreate", fileData, fileExp,
             waclPubKeyList);
     body = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
     filesignedByPayer = TransactionSigner
@@ -274,7 +272,7 @@ public class CryptoFileAutoRenewDurationCheck {
     Transaction FileUpdateRequest = RequestBuilder
         .getFileUpdateBuilder(payerAccount.getAccountNum(), 0l, 0l, nodeAccountNumber, 0l, 0l,
             MAX_TX_FEE,
-            timestamp, fileExp, transactionDuration, true, "FileUpdate", signatures, fileData, fid,
+            timestamp, fileExp, transactionDuration, true, "FileUpdate", fileData, fid,
             wacl);
 
     Transaction txSignedByPayer = TransactionSigner

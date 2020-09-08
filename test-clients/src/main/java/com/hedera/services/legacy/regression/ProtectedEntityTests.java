@@ -203,7 +203,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
 
     Transaction signUpdate = TransactionSigner
-        .signTransactionComplex(updateTx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(updateTx, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
     TransactionResponse response = cstub.updateAccount(signUpdate);
@@ -494,8 +494,8 @@ public class ProtectedEntityTests extends BaseClient {
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
-        nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true, "FileDelete",
-        signatures, fid);
+        nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp,
+        transactionDuration, true, "FileDelete", fid);
   
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key waclKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(waclKeyList)).build();
@@ -503,7 +503,7 @@ public class ProtectedEntityTests extends BaseClient {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction txSigned =
-        TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
@@ -598,7 +598,7 @@ public class ProtectedEntityTests extends BaseClient {
     keys.add(payerKey);
     keys.add(accKey);
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
 
     TransactionResponse response = cstub.cryptoDelete(signTx);
     log.info("cryptoDelete Response :: " + response.getNodeTransactionPrecheckCodeValue());
@@ -688,7 +688,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
     
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
     if(entityID instanceof FileID)
@@ -783,7 +783,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
 
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
     if(entityID instanceof FileID)
@@ -854,7 +854,7 @@ public class ProtectedEntityTests extends BaseClient {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     FreezeServiceBlockingStub frstub = FreezeServiceGrpc.newBlockingStub(channel);
     TransactionResponse response = frstub.freeze(signTx);
@@ -939,7 +939,7 @@ public class ProtectedEntityTests extends BaseClient {
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), fee , timestamp, fileExp, transactionDuration, true,
         "FileUpdate",
-        signatures, fileData , fid, wacl);
+        fileData , fid, wacl);
   
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     List<Key> keys = new ArrayList<Key>();
@@ -957,7 +957,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
     
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(FileUpdateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileUpdateRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info(
@@ -1130,7 +1130,7 @@ public class ProtectedEntityTests extends BaseClient {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), fee, timestamp, transactionDuration, true,
-        "FileAppend", signatures, fileData,
+        "FileAppend", fileData,
         fid);
   
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
@@ -1145,7 +1145,7 @@ public class ProtectedEntityTests extends BaseClient {
       keys.add(waclKey);
     }
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(fileAppendRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(fileAppendRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);
@@ -1449,7 +1449,7 @@ public class ProtectedEntityTests extends BaseClient {
       Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
       long transactionFee, Timestamp timestamp, Timestamp fileExpTime,
       Duration transactionDuration, boolean generateRecord, String memo,
-      SignatureList signatures, ByteString data, FileID fid, KeyList keys) {
+      ByteString data, FileID fid, KeyList keys) {
     FileUpdateTransactionBody.Builder builder = FileUpdateTransactionBody.newBuilder()
         .setContents(data)
         .setFileID(fid);
@@ -1467,7 +1467,7 @@ public class ProtectedEntityTests extends BaseClient {
     body.setFileUpdate(builder);
     byte[] bodyBytesArr = body.build().toByteArray();
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(signatures).build();
+    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
 
   private static TransactionBody.Builder getTransactionBody(Long payerAccountNum,

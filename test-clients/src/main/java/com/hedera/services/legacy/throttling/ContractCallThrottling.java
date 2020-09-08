@@ -144,7 +144,6 @@ public class ContractCallThrottling {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp,
         CustomPropertiesSingleton.getInstance().getContractDuration());
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     List<PrivateKey> keyList = new ArrayList<>();
     keyList.add(genesisPrivateKey);
@@ -157,7 +156,7 @@ public class ContractCallThrottling {
         .getFileCreateBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount2.getAccountNum(), nodeAccount2.getRealmNum(), nodeAccount2.getShardNum(),
-                TestHelper.getContractMaxFee(), timestamp, transactionDuration, true, "FileCreate", signatures,
+                TestHelper.getContractMaxFee(), timestamp, transactionDuration, true, "FileCreate",
             fileData, fileExp, waclPubKeyList);
     Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs

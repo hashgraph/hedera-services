@@ -117,7 +117,7 @@ public class CryptoUpdateKeysOrderTests extends BaseClient {
     Key toKey = acc2ComplexKeyMap.get(toID);
     keys.add(toKey);
     Transaction transferTxSigned = TransactionSigner
-        .signTransactionComplex(paymentTx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(paymentTx, keys, pubKey2privKeyMap);
     TransactionReceipt receipt = transfer(transferTxSigned);
     // TransactionReceipt receipt = transfer(payerID, nodeID, accID, toID, amount);
 
@@ -198,7 +198,7 @@ public class CryptoUpdateKeysOrderTests extends BaseClient {
     Key toKey = acc2ComplexKeyMap.get(toID);
     keys.add(toKey);
     Transaction transferTxSigned = TransactionSigner
-        .signTransactionComplex(paymentTx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(paymentTx, keys, pubKey2privKeyMap);
     TransactionReceipt receipt = transfer(transferTxSigned);
     // TransactionReceipt receipt = transfer(payerID, nodeID, accID, toID, amount);
 

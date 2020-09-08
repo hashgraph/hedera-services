@@ -340,10 +340,9 @@ public class MaxFileSizeTest {
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
 		Duration transactionDuration = RequestBuilder.getDuration(120);
 		ByteString fileData = ByteString.copyFrom(fileContent);
-		SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 		Transaction fileCreateRequest = RequestBuilder.getFileCreateBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
-				timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp, waclPubKeyList);
+				timestamp, transactionDuration, true, "FileCreate", fileData, fileExp, waclPubKeyList);
 		
 		List<Key> keyList = new ArrayList<>();
         Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
@@ -379,10 +378,9 @@ public class MaxFileSizeTest {
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
 		Duration transactionDuration = RequestBuilder.getDuration(120);
 		ByteString fileData = ByteString.copyFrom(fileContent);
-		SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 		Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
-				timestamp, transactionDuration, true, "fileAppend", signatures, fileData, fileToAppend);
+				timestamp, transactionDuration, true, "fileAppend", fileData, fileToAppend);
 		
 		List<Key> keyList = new ArrayList<>();
         Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();

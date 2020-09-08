@@ -564,12 +564,11 @@ public class MultiAccountTransferSeqThread implements Runnable  {
             .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), maxTransfee, timestamp,
             transactionDuration,
-            generateRecord, "PTestxTransfer", sigList, fromAccount.getAccountNum(), -amount,
+            generateRecord, "PTestxTransfer", fromAccount.getAccountNum(), -amount,
             toAccount.getAccountNum(), amount);
     // sign the tx
     List<List<PrivateKey>> privKeysList = new ArrayList<>();

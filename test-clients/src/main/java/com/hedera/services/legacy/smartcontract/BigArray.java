@@ -348,7 +348,6 @@ public class BigArray {
 
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();;
     Duration transactionDuration = RequestBuilder.getDuration(TestHelper.TX_DURATION);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);

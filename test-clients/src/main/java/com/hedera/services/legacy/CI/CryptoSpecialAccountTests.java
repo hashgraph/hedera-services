@@ -256,7 +256,7 @@ public class CryptoSpecialAccountTests extends BaseClient {
     Key toKey = TestHelperComplex.acc2ComplexKeyMap.get(CryptoServiceTest.genesisAccountID); // Account from 1 to 100 has same key
     keys.add(toKey);
     Transaction transferTxSigned = TransactionSigner
-        .signTransactionComplex(paymentTx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(paymentTx, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionReceipt receipt = transfer(transferTxSigned);
     Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
 
@@ -330,7 +330,7 @@ public class CryptoSpecialAccountTests extends BaseClient {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     Transaction signDelete = TransactionSigner
-        .signTransactionComplex(tx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, TestHelperComplex.pubKey2privKeyMap);
 
     TransactionResponse response1 = CryptoServiceTest.cstub.cryptoDelete(signDelete);
     log.info(response1.getNodeTransactionPrecheckCode());
@@ -381,7 +381,7 @@ public class CryptoSpecialAccountTests extends BaseClient {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     Transaction signDelete = TransactionSigner
-        .signTransactionComplex(tx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, TestHelperComplex.pubKey2privKeyMap);
 
     TransactionResponse response1 = CryptoServiceTest.cstub.cryptoDelete(signDelete);
     log.info(response1.getNodeTransactionPrecheckCode());

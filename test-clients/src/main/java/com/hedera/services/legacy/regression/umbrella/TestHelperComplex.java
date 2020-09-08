@@ -88,8 +88,7 @@ public class TestHelperComplex extends TestHelper {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
             transactionDuration,
             generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-            receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiverSigRequired, autoRenewPeriod);
     List<Key> keys = new ArrayList<Key>();
     Key payerKey = acc2ComplexKeyMap.get(payerAccount);
     keys.add(payerKey);
@@ -100,7 +99,7 @@ public class TestHelperComplex extends TestHelper {
     Transaction transaction = null;
     try {
       transaction = TransactionSigner
-          .signTransactionComplex(createAccountRequest, keys, pubKey2privKeyMap);
+          .signTransactionComplexWithSigMap(createAccountRequest, keys, pubKey2privKeyMap);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -127,14 +126,13 @@ public class TestHelperComplex extends TestHelper {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
             transactionDuration,
             generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-            receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiverSigRequired, autoRenewPeriod);
     List<Key> keys = new ArrayList<>();
     keys.add(payerKey);
     if (receiverSigRequired) {
       keys.add(key);
     }
-    Transaction txFirstSigned = TransactionSigner.signTransactionComplex(createAccountRequest, keys,
+    Transaction txFirstSigned = TransactionSigner.signTransactionComplexWithSigMap(createAccountRequest, keys,
         pubKey2privKeyMap);
     TransactionBody transferBody = TransactionBody.parseFrom(txFirstSigned.getBodyBytes());
     if (transferBody.getTransactionID() == null || !transferBody.hasTransactionID()) {
@@ -161,14 +159,13 @@ public class TestHelperComplex extends TestHelper {
 	            nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
 	            transactionDuration,
 	            generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-	            receiverSigRequired, autoRenewPeriod,
-	            SignatureList.newBuilder().getDefaultInstanceForType());
+	            receiverSigRequired, autoRenewPeriod);
 	    List<Key> keys = new ArrayList<>();
 	    keys.add(payerKey);
 	    if (receiverSigRequired) {
 	      keys.add(key);
 	    }
-	    Transaction txFirstSigned = TransactionSigner.signTransactionComplex(createAccountRequest, keys,
+	    Transaction txFirstSigned = TransactionSigner.signTransactionComplexWithSigMap(createAccountRequest, keys,
 	        pubKey2privKeyMap);
 	    TransactionBody transferBody = TransactionBody.parseFrom(txFirstSigned.getBodyBytes());
 	    if (transferBody.getTransactionID() == null || !transferBody.hasTransactionID()) {
@@ -198,8 +195,7 @@ public class TestHelperComplex extends TestHelper {
     return RequestBuilder
         .getAccountUpdateRequest(accountID, payerAccountNum, 0l, 0l, nodeAccountNum, 0l, 0l,
             TestHelper.getCryptoMaxFee(),
-            startTime, transactionDuration, true, "Update Account", cryptoUpdate,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            startTime, transactionDuration, true, "Update Account", cryptoUpdate);
 
   }
 
@@ -226,8 +222,7 @@ public class TestHelperComplex extends TestHelper {
     return RequestBuilder
         .getAccountUpdateRequest(accountID, payerAccountNum, 0l, 0l, nodeAccountNum, 0l, 0l,
             TestHelper.getCryptoMaxFee(),
-            startTime, transactionDuration, true, "Update Account", 100l, 100l, autoRenew,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            startTime, transactionDuration, true, "Update Account", autoRenew);
 
   }
 
@@ -242,8 +237,7 @@ public class TestHelperComplex extends TestHelper {
     return RequestBuilder
         .getAccountUpdateRequest(accountID, payerAccountNum, 0l, 0l, nodeAccountNum, 0l, 0l,
             TestHelper.getCryptoMaxFee(),
-            startTime, transactionDuration, true, memo, 100l, 100l, autoRenew,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            startTime, transactionDuration, true, memo, autoRenew);
 
   }
 }

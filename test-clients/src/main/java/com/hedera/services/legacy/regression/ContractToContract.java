@@ -152,28 +152,8 @@ public class ContractToContract {
 	}
 
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
-		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-		Duration transactionDuration = RequestBuilder.getDuration(30);
-
-		// KeyPair pair = new KeyPairGenerator().generateKeyPair();
-		// byte[] pubKeyBytes = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		// String pubKey = HexUtils.bytes2Hex(pubKeyBytes);
-		// Key key =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey.getBytes())).build();
-		// // used later
-		SignatureList sigList = SignatureList.getDefaultInstance();
-		/*
-		 * Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
-		 * payer.getAccountNum(), payer.getRealmNum(), payer.getShardNum(),
-		 * nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
-		 * nodeAccount.getShardNum(), 50, timestamp, transactionDuration, false, "test",
-		 * sigList, payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
-		 */
-
 		Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-		// transferTx = TransactionSigner.signTransaction(transferTx,
-		// accountKeys.get(payer));
 		return transferTx;
 
 	}
@@ -425,11 +405,8 @@ public class ContractToContract {
 		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
 		Duration transactionDuration = RequestBuilder.getDuration(30);
 		Transaction updateContractRequest = RequestBuilder.getContractUpdateRequest(payerAccount, nodeAccount, 100L,
-				timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null, expirationTime,
-				SignatureList.newBuilder()
-						.addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-						.build(),
-				"");
+				timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod,
+				null, null, expirationTime, "");
 
 		updateContractRequest = TransactionSigner.signTransaction(updateContractRequest, accountKeys.get(payerAccount));
 		TransactionResponse response = stub.updateContract(updateContractRequest);

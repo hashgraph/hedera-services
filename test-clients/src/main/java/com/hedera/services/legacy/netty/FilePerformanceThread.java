@@ -339,11 +339,10 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
         RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), MAX_TX_FEE, timestamp,
-        transactionDuration, generateRecord, "Test Transfer", sigList, fromAccount.getAccountNum(),
+        transactionDuration, generateRecord, "Test Transfer", fromAccount.getAccountNum(),
         -amount, toAccount.getAccountNum(), amount);
     // sign the tx
     List<List<PrivateKey>> privKeysList = new ArrayList<>();
@@ -393,12 +392,11 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
     log.debug("@@@ upload file: file size in byte = " + fileData.size());
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(CryptoServiceTest.DAY_SEC);
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, CryptoServiceTest.transactionDuration, true,
-        "FileCreate", signatures, fileData, fileExp, waclKeyList);
+        "FileCreate", fileData, fileExp, waclKeyList);
     TransactionBody body =
         com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(FileCreateRequest);
     body.getTransactionID();
@@ -409,7 +407,7 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction filesigned =
-        TransactionSigner.signTransactionComplex(FileCreateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileCreateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     log.debug("\n-----------------------------------");
     log.debug("FileCreate: request = " + filesigned);

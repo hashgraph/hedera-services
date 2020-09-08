@@ -359,19 +359,18 @@ public class CryptoDuplicatedTransaction extends Thread {
             .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), CRYPTO_TRANSFER_TX_FEE, timestamp,
             transactionDuration,
-            generateRecord, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+            generateRecord, "Test Transfer", fromAccount.getAccountNum(), -amount,
             toAccount.getAccountNum(), amount);
 
     Transaction transferTx2 = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), secondNodeAccount.getAccountNum(),
             secondNodeAccount.getRealmNum(), secondNodeAccount.getShardNum(), CRYPTO_TRANSFER_TX_FEE, timestamp,
             transactionDuration,
-            generateRecord, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+            generateRecord, "Test Transfer", fromAccount.getAccountNum(), -amount,
             toAccount.getAccountNum(), amount);
 
     // sign the tx

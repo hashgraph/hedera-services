@@ -519,11 +519,10 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
             RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(90);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), maxTransfee, timestamp,
-            transactionDuration, generateRecord, "PTestxTransfer", sigList, fromAccount.getAccountNum(),
+            transactionDuration, generateRecord, "PTestxTransfer", fromAccount.getAccountNum(),
             -amount, toAccount.getAccountNum(), amount);
     // sign the tx
     List<List<PrivateKey>> privKeysList = new ArrayList<>();

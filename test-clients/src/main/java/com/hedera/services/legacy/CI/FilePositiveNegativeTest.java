@@ -187,12 +187,11 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     log.debug("@@@ upload file: file size in byte = " + fileData.size());
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
   Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(fileDuration);
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), MAX_TX_FEE, timestamp, transactionDuration, true, "FileCreate",
-        signatures, fileData, fileExp, waclKeyList);
+        fileData, fileExp, waclKeyList);
     TransactionBody body = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
     TransactionID txId = body.getTransactionID();
 
@@ -249,7 +248,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       keys.add(waclKey);
     }
     Transaction filesigned =
-        TransactionSigner.signTransactionComplex(FileCreateRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileCreateRequest, keys, pubKey2privKeyMap);
 
     if (scenario.equals(EXTRA_SIG)) {
       if (filesigned.hasSigs()) {
@@ -335,7 +334,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), MAX_TX_FEE, timestamp, transactionDuration, true, "FileAppend",
-        signatures, fileData, fid);
+        fileData, fid);
     TransactionBody body = TransactionBody.parseFrom(fileAppendRequest.getBodyBytes());
     TransactionID txId = body.getTransactionID();
 
@@ -349,7 +348,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       keys.add(waclKey);
     }
     Transaction txSigned =
-        TransactionSigner.signTransactionComplex(fileAppendRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keys, pubKey2privKeyMap);
 
     if (txHolder != null)
       txHolder[0] = txSigned;
@@ -520,7 +519,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     Transaction FileUpdateRequest = RequestBuilder.getFileUpdateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), MAX_TX_FEE, timestamp, fileExp, transactionDuration, true,
-        "FileUpdate", signatures, fileData, fid, wacl);
+        "FileUpdate", fileData, fid, wacl);
 
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key existingWaclKey =
@@ -536,7 +535,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       keys.add(newWaclKey);
     }
     Transaction txSigned =
-        TransactionSigner.signTransactionComplex(FileUpdateRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileUpdateRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileUpdate: input data = " + fileData + "\nexpirationTime = " + fileExp
@@ -616,8 +615,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
-        nodeID.getShardNum(), MAX_TX_FEE, timestamp, transactionDuration, true, "FileDelete",
-        signatures, fid);
+        nodeID.getShardNum(), MAX_TX_FEE, timestamp, transactionDuration, true, "FileDelete", fid);
 
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key waclKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(waclKeyList)).build();
@@ -629,7 +627,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       keys.add(waclKey);
     }
     Transaction txSigned =
-        TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
