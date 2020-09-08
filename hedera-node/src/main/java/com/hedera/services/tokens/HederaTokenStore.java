@@ -21,6 +21,7 @@ package com.hedera.services.tokens;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -101,6 +102,7 @@ public class HederaTokenStore implements TokenStore {
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
+	private HederaLedger hederaLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
@@ -124,6 +126,11 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public boolean isCreationPending() {
 		return pendingId != NO_PENDING_ID;
+	}
+
+	@Override
+	public void setHederaLedger(HederaLedger hederaLedger) {
+		this.hederaLedger = hederaLedger;
 	}
 
 	@Override
@@ -236,6 +243,7 @@ public class HederaTokenStore implements TokenStore {
 				return validity;
 			}
 			adjustUnchecked(aId, tId, token, adjustment);
+			hederaLedger.updateTokenXfers(tId, aId, adjustment);
 			return OK;
 		});
 	}
@@ -255,7 +263,10 @@ public class HederaTokenStore implements TokenStore {
 			if (outcome == OK) {
 				ledger.markForMerge(aId);
 				if (balance > 0) {
-					adjustUnchecked(token.treasury().toGrpcAccountId(), tId, token, balance);
+					var treasury = token.treasury().toGrpcAccountId();
+					adjustUnchecked(treasury, tId, token, balance);
+					hederaLedger.updateTokenXfers(tId, aId, -balance);
+					hederaLedger.updateTokenXfers(tId, treasury, balance);
 				}
 			}
 			return outcome;

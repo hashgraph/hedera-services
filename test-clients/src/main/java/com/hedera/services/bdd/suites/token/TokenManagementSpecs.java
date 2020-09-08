@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
@@ -98,13 +99,15 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getAccountInfo("misc").logged(),
-						wipeTokenAccount(wipeableToken, "misc"),
+						wipeTokenAccount(wipeableToken, "misc")
+								.via("wipeTxn"),
 						getAccountInfo("misc").logged()
 				).then(
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(wipeableToken, 1_000)
+								.hasTokenBalance(wipeableToken, 1_000),
+						getTxnRecord("wipeTxn").logged()
 				);
 	}
 
@@ -300,11 +303,13 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).when(
 						getTokenInfo("supple").logged(),
 						getAccountBalance(TOKEN_TREASURY).logged(),
-						mintToken("supple", 100),
-						burnToken("supple", 50)
+						mintToken("supple", 100).via("mintTxn"),
+						burnToken("supple", 50).via("burnTxn")
 				).then(
 						getAccountInfo(TOKEN_TREASURY).logged(),
-						getTokenInfo("supple").logged()
+						getTokenInfo("supple").logged(),
+						getTxnRecord("mintTxn").logged(),
+						getTxnRecord("burnTxn").logged()
 				);
 	}
 

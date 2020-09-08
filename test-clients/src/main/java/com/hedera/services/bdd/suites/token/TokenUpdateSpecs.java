@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
@@ -59,8 +60,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
-						treasuryEvolves(),
 						keysChange(),
+						treasuryEvolves(),
 				}
 		);
 	}
@@ -129,9 +130,11 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getAccountInfo("newTreasury").logged(),
 						tokenUpdate("tbu")
 								.treasury("newTreasury")
+								.via("treasuryUpdateTxn")
 				).then(
 						getAccountInfo("oldTreasury").logged(),
-						getAccountInfo("newTreasury").logged()
+						getAccountInfo("newTreasury").logged(),
+						getTxnRecord("treasuryUpdateTxn").logged()
 				);
 	}
 

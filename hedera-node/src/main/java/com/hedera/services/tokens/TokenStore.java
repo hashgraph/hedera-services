@@ -20,6 +20,7 @@ package com.hedera.services.tokens;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -47,6 +48,7 @@ public interface TokenStore {
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+	void setHederaLedger(HederaLedger ledger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);

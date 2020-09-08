@@ -135,6 +135,7 @@ public class HederaLedger {
 		historian.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setLedger(ledger);
+		tokenStore.setHederaLedger(this);
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -469,7 +470,7 @@ public class HederaLedger {
 		ledger.set(id, BALANCE, newBalance);
 	}
 
-	private void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
+	public void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
 		tokensTouched[numTouches++] = tId;
 		var xfers = netTokenTransfers.computeIfAbsent(tId, ignore -> TransferList.newBuilder());
 		updateXfers(aId, amount, xfers);

@@ -21,6 +21,7 @@ package com.hedera.services.tokens;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -102,6 +103,7 @@ class HederaTokenStoreTest {
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+	HederaLedger hederaLedger;
 
 	MerkleToken token;
 	MerkleToken modifiableToken;
@@ -144,6 +146,8 @@ class HederaTokenStoreTest {
 
 		account = mock(MerkleAccount.class);
 
+		hederaLedger = mock(HederaLedger.class);
+
 		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(ledger.exists(treasury)).willReturn(true);
 		given(ledger.exists(sponsor)).willReturn(true);
@@ -162,6 +166,7 @@ class HederaTokenStoreTest {
 
 		subject = new HederaTokenStore(ids, properties, () -> tokens);
 		subject.setLedger(ledger);
+		subject.setHederaLedger(hederaLedger);
 	}
 
 	@Test
@@ -415,6 +420,8 @@ class HederaTokenStoreTest {
 				argThat(BALANCE::equals),
 				argThat((TokenScopedPropertyValue sv) ->
 						sv.token() == token && (long) sv.value() == balance));
+		verify(hederaLedger).updateTokenXfers(misc, sponsor, -balance);
+		verify(hederaLedger).updateTokenXfers(misc, treasury, balance);
 	}
 
 	@Test
@@ -893,6 +900,8 @@ class HederaTokenStoreTest {
 		assertEquals(-oldSupply * 10, (long) captor.getValue().value());
 		// and:
 		verify(token).adjustFloatBy(-oldSupply);
+		// and:
+		verify(hederaLedger).updateTokenXfers(misc, treasury, -oldSupply * 10);
 	}
 
 	@Test
@@ -928,6 +937,8 @@ class HederaTokenStoreTest {
 		verify(tokens).getForModify(fromTokenId(misc));
 		verify(token).adjustFloatBy(adjustment);
 		verify(tokens).replace(fromTokenId(misc), token);
+		// and:
+		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment * 10);
 	}
 
 

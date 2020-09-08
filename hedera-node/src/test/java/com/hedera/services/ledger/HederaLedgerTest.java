@@ -347,6 +347,7 @@ public class HederaLedgerTest {
 	public void injectsLedgerToTokenStore() {
 		// expect:
 		verify(tokenStore).setLedger(ledger);
+		verify(tokenStore).setHederaLedger(subject);
 	}
 
 	private void setupWithLiveLedger() {

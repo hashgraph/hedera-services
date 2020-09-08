@@ -20,6 +20,7 @@ package com.hedera.services.tokens;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -70,6 +71,8 @@ public enum ExceptionalTokenStore implements TokenStore {
 		throw new UnsupportedOperationException();
 	}
 
+
+
 	@Override
 	public void commitCreation() {
 		throw new UnsupportedOperationException();
@@ -87,6 +90,9 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
+
+	@Override
+	public void setHederaLedger(HederaLedger ledger) { }
 
 	@Override
 	public void apply(TokenID id, Consumer<MerkleToken> change) {
