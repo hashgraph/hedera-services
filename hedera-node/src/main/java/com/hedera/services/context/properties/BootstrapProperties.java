@@ -25,6 +25,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,14 +57,17 @@ public class BootstrapProperties implements PropertySource {
 		}
 		return in;
 	};
+	static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
 	String BOOTSTRAP_PROPS_RESOURCE = "bootstrap.properties";
+	String BOOTSTRAP_OVERRIDE_PROPS_LOC = "data/config/bootstrap.properties";
 
 	Map<String, Object> bootstrapProps = MISSING_PROPS;
 
 	void initPropsFromResource() {
 		var resourceProps = new Properties();
 		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
+		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps);
 
 		Set<String> unrecognizedProps = new HashSet<>(resourceProps.stringPropertyNames());
 		unrecognizedProps.removeAll(BOOTSTRAP_PROP_NAMES);
@@ -90,10 +95,10 @@ public class BootstrapProperties implements PropertySource {
 				.stream()
 				.forEach(prop -> bootstrapProps.put(
 						prop,
-						BOOTSTRAP_PROP_TRANSFORMS.getOrDefault(prop, s -> s)
+						PROP_TRANSFORMS.getOrDefault(prop, s -> s)
 								.apply(resourceProps.getProperty(prop))));
 
-		var msg = "Resolved bootstrap and global/static properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
+		var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
 				.map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
 				.collect(Collectors.joining("\n  "));
@@ -109,6 +114,16 @@ public class BootstrapProperties implements PropertySource {
 			throw new IllegalStateException(
 					String.format("'%s' could not be loaded!", resource),
 					e);
+		}
+	}
+
+	private void loadOverride(String loc, Properties intoProps) {
+		InputStream fin;
+		try {
+			fin = fileStreamProvider.newInputStream(loc);
+			intoProps.load(fin);
+		} catch (IOException ignore) {
+			log.info("No overrides present at {}.", BOOTSTRAP_OVERRIDE_PROPS_LOC);
 		}
 	}
 
@@ -138,7 +153,7 @@ public class BootstrapProperties implements PropertySource {
 		return BOOTSTRAP_PROP_NAMES;
 	}
 
-	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
+	static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
 			"bootstrap.genesisB64Keystore.keyName",
 			"bootstrap.genesisB64Keystore.path",
@@ -158,7 +173,7 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.system.entityExpiry"
 	);
 
-	private static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
+	static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
 			"accounts.addressBookAdmin",
 			"accounts.exchangeRatesAdmin",
 			"accounts.feeSchedulesAdmin",
@@ -182,12 +197,20 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.totalTinyBarFloat"
 	);
 
+	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"contracts.defaultReceiveThreshold",
+			"contracts.defaultSendThreshold",
+			"ledger.maxAccountNum",
+			"tokens.maxPerAccount",
+			"tokens.maxSymbolLength"
+	);
+
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
-			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS)
+			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS)
 					.flatMap(Set::stream)
 					.collect(toSet()));
 
-	private static final Map<String, Function<String, Object>> BOOTSTRAP_PROP_TRANSFORMS = Map.ofEntries(
+	static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
 			entry("accounts.exchangeRatesAdmin", AS_LONG),
 			entry("accounts.feeSchedulesAdmin", AS_LONG),
@@ -217,7 +240,12 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.rates.nextCentEquiv", AS_INT),
 			entry("bootstrap.rates.nextExpiry", AS_LONG),
 			entry("bootstrap.system.entityExpiry", AS_LONG),
+			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
-			entry("ledger.totalTinyBarFloat", AS_LONG)
+			entry("ledger.totalTinyBarFloat", AS_LONG),
+			entry("tokens.maxPerAccount", AS_INT),
+			entry("tokens.maxSymbolLength", AS_INT),
+			entry("contracts.defaultReceiveThreshold", AS_LONG),
+			entry("contracts.defaultSendThreshold", AS_LONG)
 	);
 }

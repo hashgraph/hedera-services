@@ -78,8 +78,10 @@ public class GetAccountBalanceAnswer implements AnswerService {
 				.setAccountID(id);
 
 		if (validity == OK) {
-			MerkleEntityId key = MerkleEntityId.fromAccountId(id);
-			opAnswer.setBalance(accounts.get(key).getBalance());
+			var key = MerkleEntityId.fromAccountId(id);
+			var account = accounts.get(key);
+			opAnswer.setBalance(account.getBalance());
+			opAnswer.addAllTokenBalances(account.getAllExplicitTokenBalances());
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

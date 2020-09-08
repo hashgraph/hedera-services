@@ -38,6 +38,10 @@ public class SequenceNumber {
 		return i++;
 	}
 
+	public synchronized void decrement() {
+		i--;
+	}
+
 	public long current() {
 		return i;
 	}

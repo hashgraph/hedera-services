@@ -20,16 +20,8 @@ package com.hedera.services.fees.calculation.contract.queries;
  * ‍
  */
 
-import com.hedera.services.context.AwareTransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
-import com.hedera.services.queries.meta.GetTxnRecordAnswer;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.test.factories.accounts.MapValueFactory;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -37,7 +29,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +39,10 @@ import java.util.HashMap;
 import java.util.Optional;
 
 import static com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage.MISSING_KEY_STANDIN;
-import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;

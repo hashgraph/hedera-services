@@ -24,18 +24,22 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.StandardExemptions;
+import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -74,6 +78,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.throttling.BucketThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
+import com.hedera.services.tokens.HederaTokenStore;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
@@ -97,7 +102,6 @@ import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
 import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
@@ -122,6 +126,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -147,12 +152,14 @@ public class ServicesContextTest {
 	PropertySource properties;
 	PropertySources propertySources;
 	FCMap<MerkleEntityId, MerkleTopic> topics;
+	FCMap<MerkleEntityId, MerkleToken> tokens;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 
 	@BeforeEach
 	void setup() {
 		topics = mock(FCMap.class);
+		tokens = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		seqNo = mock(SequenceNumber.class);
@@ -163,6 +170,7 @@ public class ServicesContextTest {
 		given(state.accounts()).willReturn(accounts);
 		given(state.storage()).willReturn(storage);
 		given(state.topics()).willReturn(topics);
+		given(state.tokens()).willReturn(tokens);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getCryptography()).willReturn(crypto);
@@ -178,9 +186,11 @@ public class ServicesContextTest {
 		var newAccounts = mock(FCMap.class);
 		var newTopics = mock(FCMap.class);
 		var newStorage = mock(FCMap.class);
+		var newTokens = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
+		given(newState.tokens()).willReturn(newTokens);
 		given(newState.storage()).willReturn(newStorage);
 		// given:
 		var subject = new ServicesContext(id, platform, state, propertySources);
@@ -188,6 +198,7 @@ public class ServicesContextTest {
 		var accountsRef = subject.queryableAccounts();
 		var topicsRef = subject.queryableTopics();
 		var storageRef = subject.queryableStorage();
+		var tokensRef = subject.queryableTokens();
 
 		// when:
 		subject.update(newState);
@@ -197,10 +208,12 @@ public class ServicesContextTest {
 		assertSame(accountsRef, subject.queryableAccounts());
 		assertSame(topicsRef, subject.queryableTopics());
 		assertSame(storageRef, subject.queryableStorage());
+		assertSame(tokensRef, subject.queryableTokens());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
 		assertSame(newStorage, subject.queryableStorage().get());
+		assertSame(newTokens, subject.queryableTokens().get());
 	}
 
 	@Test
@@ -372,6 +385,7 @@ public class ServicesContextTest {
 		assertThat(ctx.accountSource(), instanceOf(LedgerAccountsSource.class));
 		assertThat(ctx.bytecodeDb(), instanceOf(BlobStorageSource.class));
 		assertThat(ctx.cryptoAnswers(), instanceOf(CryptoAnswers.class));
+		assertThat(ctx.tokenAnswers(), instanceOf(TokenAnswers.class));
 		assertThat(ctx.consensusGrpc(), instanceOf(ConsensusController.class));
 		assertThat(ctx.storagePersistence(), instanceOf(BlobStoragePersistence.class));
 		assertThat(ctx.filesGrpc(), instanceOf(FileController.class));
@@ -413,6 +427,10 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
+		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
+		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
+		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
+		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
 		assertThat(ctx.exchange(), instanceOf(DefaultHbarCentExchange.class));

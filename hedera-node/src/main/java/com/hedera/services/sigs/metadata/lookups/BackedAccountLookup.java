@@ -26,6 +26,8 @@ import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+
 public class BackedAccountLookup implements AccountSigMetaLookup {
 	private final BackingAccounts<AccountID, MerkleAccount> accounts;
 
@@ -41,5 +43,17 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 		} else {
 			throw new InvalidAccountIDException("Invalid account!", id);
 		}
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+		if (!accounts.contains(id)) {
+			return SafeLookupResult.failure(MISSING_ACCOUNT);
+		}
+		var account = accounts.getRef(id);
+		return new SafeLookupResult<>(
+				new AccountSigningMetadata(
+						account.getKey(),
+						account.isReceiverSigRequired()));
 	}
 }

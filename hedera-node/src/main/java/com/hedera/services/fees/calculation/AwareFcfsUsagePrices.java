@@ -24,7 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -82,17 +81,17 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public void loadPriceSchedules() throws NoFeeScheduleExistsException {
+	public void loadPriceSchedules() {
 		var feeSchedules_fileID = fileNumbers.toFid(fileNumbers.feeSchedules());
 		if (!hfs.exists(feeSchedules_fileID)) {
-			throw new NoFeeScheduleExistsException(
+			throw new IllegalStateException(
 					String.format( "No fee schedule available at %s!", readableId(feeSchedules)));
 		}
 		try {
 			setFeeSchedules(CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedules_fileID)));
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(feeSchedules), e);
-			throw new NoFeeScheduleExistsException(
+			throw new IllegalStateException(
 					String.format( "Fee schedule %s is corrupt!", readableId(feeSchedules)));
 		}
 	}

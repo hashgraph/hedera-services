@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static java.util.Map.entry;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -43,6 +44,8 @@ class BootstrapPropertiesTest {
 	private String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
 	private String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
 	private String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
+
+	private String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
 			entry("bootstrap.feeSchedulesJson.resource", "FeeSchedule.json"),
@@ -72,6 +75,8 @@ class BootstrapPropertiesTest {
 			entry("accounts.systemDeleteAdmin", 59L),
 			entry("accounts.systemUndeleteAdmin", 60L),
 			entry("accounts.treasury", 2L),
+			entry("contracts.defaultSendThreshold", 5000000000000000000L),
+			entry("contracts.defaultReceiveThreshold", 5000000000000000000L),
 			entry("files.addressBook", 101L),
 			entry("files.networkProperties", 121L),
 			entry("files.exchangeRates", 112L),
@@ -81,8 +86,11 @@ class BootstrapPropertiesTest {
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.realm", 0L),
 			entry("hedera.shard", 0L),
+			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
-			entry("ledger.totalTinyBarFloat", 5000000000000000000L)
+			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
+			entry("tokens.maxPerAccount", 1_000),
+			entry("tokens.maxSymbolLength", 32)
 	);
 
 	@Test
@@ -137,6 +145,29 @@ class BootstrapPropertiesTest {
 	}
 
 	@Test
+	public void includesOverrides() {
+		// given:
+		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = OVERRIDE_PROPS_LOC;
+
+		// when:
+		subject.ensureProps();
+
+		// then:
+		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
+	}
+
+	@Test
+	public void doesntThrowOnMissingOverridesFile() {
+		// given:
+		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
+		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = "im-not-here";
+
+		// expect:
+		assertDoesNotThrow(subject::ensureProps);
+	}
+
+	@Test
 	public void throwsIaeOnMissingPropRequest() {
 		// given:
 		subject.BOOTSTRAP_PROPS_RESOURCE = STD_PROPS_RESOURCE;
@@ -168,7 +199,7 @@ class BootstrapPropertiesTest {
 
 		// expect:
 		verify(BootstrapProperties.log).info(
-				argThat((String s) -> s.startsWith("Resolved bootstrap and global/static")));
+				argThat((String s) -> s.startsWith("Resolved bootstrap")));
 		// cleanup:
 		BootstrapProperties.log = LogManager.getLogger(BootstrapProperties.class);
 	}

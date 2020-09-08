@@ -24,7 +24,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.swirlds.common.Platform;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.Level;
@@ -253,9 +252,8 @@ public class AccountBalanceExportTest {
     try {
       exportedFilename =
           accountBalanceExport.exportAccountsBalanceCSVFormat(mockState, consensusTimestamp);
-    } catch (InvalidTotalAccountBalanceException e) {
+    } catch (IllegalStateException e) {
       exceptionCaught = true;
-
     }
 
     if (exportedFilename != null) {

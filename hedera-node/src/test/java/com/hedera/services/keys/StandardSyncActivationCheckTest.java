@@ -70,7 +70,7 @@ class StandardSyncActivationCheckTest {
 	@BeforeEach
 	private void setup() throws Exception {
 		sigs = mock(List.class);
-		key = TxnHandlingScenario.MISC_TOPIC_ADMIN_KEY.asJKey();
+		key = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKey();
 		sigBytes = mock(PubKeyToSigBytes.class);
 		signedTxn = mock(Transaction.class);
 

@@ -24,6 +24,11 @@ import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
+import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.tokens.TokenScope;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -37,6 +42,7 @@ import java.util.stream.LongStream;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
@@ -51,18 +57,148 @@ public class TransactionalLedgerTest {
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
+	TokenID tid = IdUtils.tokenWith(666L);
 	Object[] things = { "a", "b", "c", "d" };
-	TestAccount account1 = new TestAccount(1L, things[1], false);
+	MerkleToken token;
+	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
+	TestAccount account1TokenCopy = new TestAccount(1L, things[1], false, 667L);
 
 	@BeforeEach
 	private void setup() {
+		token = mock(MerkleToken.class);
+
 		backingAccounts = mock(BackingAccounts.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
-
+		given(backingAccounts.getTokenCopy(1L)).willReturn(account1TokenCopy);
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
+	}
+
+	@Test
+	public void getsTokenScopedPropertyFromNormalRefIfNoDetachedCopy() {
+		// expect:
+		assertEquals(1L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
+		// and:
+		assertTrue(subject.tokenRefs.isEmpty());
+	}
+
+	@Test
+	public void returnsNewDetachedCopyIfNonePresent() {
+		// expect:
+		assertSame(account1TokenCopy, subject.getTokenRef(1L));
+		// and:
+		assertEquals(1, subject.tokenRefs.size());
+	}
+
+	@Test
+	public void clearsDetachedCopiesOnDrop() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+		// and:
+		subject.dropPendingTokenChanges();
+
+		// then:
+		assertTrue(subject.tokenRefs.isEmpty());
+	}
+
+	@Test
+	public void clearsDetachedCopiesOnCommit() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+		// and:
+		subject.commit();
+
+		// then:
+		assertTrue(subject.tokenRefs.isEmpty());
+	}
+
+	@Test
+	public void clearsDetachedCopiesOnRollback() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+		// and:
+		subject.rollback();
+
+		// then:
+		assertTrue(subject.tokenRefs.isEmpty());
+	}
+
+	@Test
+	public void returnsCurrentDetachedCopy() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+
+		// then:
+		assertSame(account1TokenCopy, subject.getTokenRef(1L));
+	}
+
+	@Test
+	public void gettingMergesDetachedTokenViews() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+		// and:
+		var newAccount = subject.get(1L);
+
+		// then:
+		assertEquals(668L, newAccount.tokenThing);
+	}
+
+	@Test
+	public void settingTokenPropertyEnsuresPendingChange() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+
+		// then:
+		assertTrue(subject.changes.containsKey(1L));
+	}
+
+	@Test
+	public void settingTokenPropertyCreatesDetachedCopy() {
+		// given:
+		subject.begin();
+		// and:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+
+		// when:
+		subject.set(1L, TOKEN, newSv);
+
+		// then:
+		assertTrue(subject.tokenRefs.containsKey(1L));
+		assertEquals(668L, subject.tokenRefs.get(1L).tokenThing);
+		// and:
+		assertEquals(2L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
 	}
 
 	@Test
@@ -71,7 +207,7 @@ public class TransactionalLedgerTest {
 		subject.begin();
 
 		// when:
-		var obj = subject.get(1L, OBJ);
+		subject.get(1L, OBJ);
 		// and:
 		subject.rollback();
 
@@ -82,7 +218,7 @@ public class TransactionalLedgerTest {
 	@Test
 	public void getUsesMutableRefIfPendingChanges() {
 		// given:
-		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag);
+		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing);
 		// and:
 		subject.begin();
 		subject.set(1L, FLAG, !account1.flag);
@@ -242,6 +378,18 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
+	public void throwsOnGettingMissingScopedProperty() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, TOKEN, TokenScope.idScopeOf(tid)));
+	}
+
+	@Test
+	public void throwsOnGettingMissingDetachedRef() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.getTokenRef(2L));
+	}
+
+	@Test
 	public void throwsOnCreationWithExistingAccountId() {
 		// given:
 		subject.begin();
@@ -321,7 +469,7 @@ public class TransactionalLedgerTest {
 		subject.set(1L, OBJ, things[0]);
 
 		// expect:
-		assertEquals(new TestAccount(account1.value, things[0], account1.flag), subject.get(1L));
+		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.get(1L));
 	}
 
 	@Test
@@ -365,6 +513,9 @@ public class TransactionalLedgerTest {
 
 	@Test
 	public void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
+		// setup:
+		var expected2 = new TestAccount(2L, things[2], false);
+
 		// given:
 		subject.begin();
 
@@ -383,22 +534,30 @@ public class TransactionalLedgerTest {
 		assertFalse(subject.isInTransaction());
 		assertEquals("{}", subject.changeSetSoFar());
 		// and:
-		verify(backingAccounts).put(2L, new TestAccount(2L, things[2], false));
-		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false));
+		verify(backingAccounts).put(2L, expected2);
+		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false, 667L));
 		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
 		verify(backingAccounts).remove(3L);
 	}
 
 	@Test
 	public void describesChangesAsExpected() {
+		// setup:
+		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
+		var otherNewSv = new TokenScopedPropertyValue(tid, token, 34L);
+
 		// given:
 		subject.begin();
 		subject.set(1L, OBJ, things[0]);
 		subject.create(2L);
 		subject.set(2L, OBJ, things[2]);
 		subject.set(2L, LONG, 2L);
+		subject.set(1L, TOKEN, newSv);
+		subject.create(3L);
+		subject.set(3L, TOKEN, otherNewSv);
 		// and:
-		String expectedDescription = "{1: [OBJ -> a], *NEW* 2: [LONG -> 2, OBJ -> c]}";
+		String expectedDescription = "{1: [OBJ -> a, TOKENS -> OK(668)], *NEW* 2: [LONG -> 2, OBJ -> c], " +
+				"*NEW* 3: [TOKENS -> OK(700)]}";
 
 		// expect:
 		assertEquals(expectedDescription, subject.changeSetSoFar());

@@ -176,4 +176,18 @@ enum ResponseCodeEnum {
   TOPIC_EXPIRED = 162;
   INVALID_CHUNK_NUMBER = 163; // chunk number must be from 1 to total (chunks) inclusive.
   INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
+
+  ACCOUNT_FROZEN_FOR_TOKEN = 165;
+  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166;
+  INVALID_TOKEN_ID = 167;
+  INVALID_TOKEN_DIVISIBILITY = 168;
+  INVALID_TOKEN_FLOAT = 169;
+  INVALID_TREASURY_ACCOUNT_FOR_TOKEN = 170;
+  INVALID_TOKEN_SYMBOL = 171;
+  TOKEN_HAS_NO_FREEZE_KEY = 172;
+  TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN = 173;
+  MISSING_TOKEN_SYMBOL = 174;
+  TOKEN_SYMBOL_TOO_LONG = 175;
+  TOKEN_SYMBOL_ALREADY_IN_USE = 176;
+  INVALID_TOKEN_REF = 177;
 }

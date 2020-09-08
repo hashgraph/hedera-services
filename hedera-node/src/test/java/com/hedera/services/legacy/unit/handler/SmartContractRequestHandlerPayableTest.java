@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -33,6 +34,7 @@ import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.util.SCEncoding;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -66,7 +68,7 @@ import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
-import com.hedera.services.legacy.config.PropertiesLoader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -148,11 +150,12 @@ public class SmartContractRequestHandlerPayableTest {
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
+            mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             mock(AccountRecordsHistorian.class),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     return repository;

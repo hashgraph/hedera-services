@@ -93,7 +93,19 @@ public class TxnResponseHelper {
 				signedTxn,
 				observer,
 				() -> stats.networkTxnReceived(metric),
-				() -> stats.networkTxnSubmited(metric));
+				() -> stats.networkTxnSubmitted(metric));
+	}
+
+	public void respondToToken(
+			Transaction signedTxn,
+			StreamObserver<TransactionResponse> observer,
+			String metric
+	) {
+		respondWithMetrics(
+				signedTxn,
+				observer,
+				() -> stats.tokenTxnReceived(metric),
+				() -> stats.tokenTxnSubmitted(metric));
 	}
 
 	private void respondWithMetrics(

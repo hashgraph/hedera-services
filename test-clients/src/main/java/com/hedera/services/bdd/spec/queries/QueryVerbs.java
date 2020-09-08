@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.queries;
 
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -45,7 +46,6 @@ public class QueryVerbs {
 	public static HapiGetReceipt getReceipt(String txn) {
 		return new HapiGetReceipt(txn);
 	}
-
 	public static HapiGetReceipt getReceipt(TransactionID txnId) {
 		return new HapiGetReceipt(txnId);
 	}
@@ -56,7 +56,6 @@ public class QueryVerbs {
 	public static HapiGetFileInfo getFileInfo(Supplier<String> supplier) {
 		return new HapiGetFileInfo(supplier);
 	}
-
 	public static HapiGetFileContents getFileContents(String file) {
 		return new HapiGetFileContents(file);
 	}
@@ -64,11 +63,13 @@ public class QueryVerbs {
 	public static HapiGetAccountInfo getAccountInfo(String account) {
 		return new HapiGetAccountInfo(account);
 	}
+	public static HapiGetAccountRecords getAccountRecords(String account) {
+		return new HapiGetAccountRecords(account);
+	}
 
 	public static HapiGetTxnRecord getTxnRecord(String txn) {
 		return new HapiGetTxnRecord(txn);
 	}
-
 	public static HapiGetTxnRecord getTxnRecord(TransactionID txnId) {
 		return new HapiGetTxnRecord(txnId);
 	}
@@ -76,23 +77,15 @@ public class QueryVerbs {
 	public static HapiGetContractInfo getContractInfo(String contract) {
 		return new HapiGetContractInfo(contract);
 	}
-
 	public static HapiGetContractInfo getContractInfo(String contract, boolean idPredefined) {
 		return new HapiGetContractInfo(contract, idPredefined);
 	}
-
-	public static HapiGetAccountRecords getAccountRecords(String account) {
-		return new HapiGetAccountRecords(account);
-	}
-
 	public static HapiGetContractBytecode getContractBytecode(String contract) {
 		return new HapiGetContractBytecode(contract);
 	}
-
 	public static HapiGetContractRecords getContractRecords(String contract) {
 		return new HapiGetContractRecords(contract);
 	}
-
 	public static HapiContractCallLocal callContractLocal(String contract) {
 		return new HapiContractCallLocal(contract);
 	}
@@ -100,12 +93,9 @@ public class QueryVerbs {
 	public static HapiContractCallLocal contractCallLocal(String contract, String abi, Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
-
 	public static HapiContractCallLocal contractCallLocalFrom(String details) {
 		return fromDetails(details);
 	}
-
-
 	public static HapiContractCallLocal contractCallLocal(
 			String contract, String abi, Function<HapiApiSpec, Object[]> fn
 	) {
@@ -115,7 +105,6 @@ public class QueryVerbs {
 	public static HapiGetAccountBalance getAccountBalance(String account) {
 		return new HapiGetAccountBalance(account);
 	}
-
 	public static HapiGetAccountBalance getAccountBalance(Supplier<String> supplier) {
 		return new HapiGetAccountBalance(supplier);
 	}
@@ -126,5 +115,9 @@ public class QueryVerbs {
 
 	public static HapiGetVersionInfo getVersionInfo() {
 		return new HapiGetVersionInfo();
+	}
+
+	public static HapiGetTokenInfo getTokenInfo(String token) {
+		return new HapiGetTokenInfo(token);
 	}
 }

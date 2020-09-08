@@ -71,7 +71,6 @@ public class ContextOptionValidator implements OptionValidator {
 			mapKey(key);
 			return true;
 		} catch (Exception ignore) {
-			log.warn(ignore.getMessage());
 			return false;
 		}
 	}
