@@ -636,56 +636,47 @@ public class RequestBuilder {
 //    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(signatures).build();
 //  }
 
-//  public static Transaction getCryptoTransferRequest(Long payerAccountNum, Long payerRealmNum,
-//      Long payerShardNum,
-//      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-//      long transactionFee, Timestamp timestamp,
-//      Duration transactionDuration, boolean generateRecord, String memo,
-//      SignatureList signatures, Long senderActNum, Long amountSend,
-//      Long receiverAcctNum, Long amountRecieved) {
-//
-//    AccountAmount a1 = AccountAmount.newBuilder()
-//        .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-//        .setAmount(amountSend).build();
-//    AccountAmount a2 = AccountAmount.newBuilder()
-//        .setAccountID(getAccountIdBuild(receiverAcctNum, 0l, 0l))
-//        .setAmount(amountRecieved).build();
-//    TransferList transferList = TransferList.newBuilder().addAccountAmounts(a1)
-//        .addAccountAmounts(a2).build();
-//    CryptoTransferTransactionBody cryptoTransferTransaction = CryptoTransferTransactionBody
-//        .newBuilder()
-//        .setTransfers(transferList).build();
-//
-//    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
-//        nodeAccountNum,
-//        nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-//        transactionDuration, generateRecord, memo);
-//    body.setCryptoTransfer(cryptoTransferTransaction);
-//    byte[] bodyBytesArr = body.build().toByteArray();
-//    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-//    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(signatures).build();
-//
-//  }
+  public static Transaction getCryptoTransferRequest(Long payerAccountNum, Long payerRealmNum,
+      Long payerShardNum,
+      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
+      long transactionFee, Timestamp timestamp,
+      Duration transactionDuration, boolean generateRecord, String memo,
+      SignatureList signatures, Long senderActNum, Long amountSend,
+      Long receiverAcctNum, Long amountRecieved) {
 
-//  public static Transaction getCryptoTransferRequest(Long payerAccountNum, Long payerRealmNum,
-//          Long payerShardNum,
-//          Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-//          long transactionFee, Timestamp timestamp,
-//          Duration transactionDuration, boolean generateRecord, String memo,
-//          SignatureList signatures, TransferList transferList) {
-//    CryptoTransferTransactionBody cryptoTransferTransaction = CryptoTransferTransactionBody
-//            .newBuilder()
-//            .setTransfers(transferList).build();
-//
-//    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
-//            nodeAccountNum,
-//            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-//            transactionDuration, generateRecord, memo);
-//    body.setCryptoTransfer(cryptoTransferTransaction);
-//    byte[] bodyBytesArr = body.build().toByteArray();
-//    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-//    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(signatures).build();
-//  }
+    AccountAmount a1 = AccountAmount.newBuilder()
+        .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+        .setAmount(amountSend).build();
+    AccountAmount a2 = AccountAmount.newBuilder()
+        .setAccountID(getAccountIdBuild(receiverAcctNum, 0l, 0l))
+        .setAmount(amountRecieved).build();
+    TransferList transferList = TransferList.newBuilder().addAccountAmounts(a1)
+        .addAccountAmounts(a2).build();
+    return getCryptoTransferRequest(payerAccountNum, payerRealmNum, payerShardNum,
+            nodeAccountNum, nodeRealmNum, nodeShardNum,
+            transactionFee, timestamp, transactionDuration, generateRecord, memo,
+            signatures, transferList);
+  }
+
+  public static Transaction getCryptoTransferRequest(Long payerAccountNum, Long payerRealmNum,
+          Long payerShardNum,
+          Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
+          long transactionFee, Timestamp timestamp,
+          Duration transactionDuration, boolean generateRecord, String memo,
+          SignatureList signatures, TransferList transferList) {
+    CryptoTransferTransactionBody cryptoTransferTransaction = CryptoTransferTransactionBody
+            .newBuilder()
+            .setTransfers(transferList).build();
+
+    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
+            nodeAccountNum,
+            nodeRealmNum, nodeShardNum, transactionFee, timestamp,
+            transactionDuration, generateRecord, memo);
+    body.setCryptoTransfer(cryptoTransferTransaction);
+    byte[] bodyBytesArr = body.build().toByteArray();
+    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
+    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+  }
 
   public static TransactionGetReceiptQuery getTransactionGetReceiptQuery(
       TransactionID transactionID,
