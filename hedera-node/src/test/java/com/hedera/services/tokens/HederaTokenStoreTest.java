@@ -1359,21 +1359,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsToCreateTokenWithAmountBiggerThanLong() {
-		// given:
-		var req = fullyValidAttempt()
-				.setFloat(10)
-				.setDivisibility(18)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
-	}
-
-	@Test
 	public void rejectsJustOverflowingFloat() {
 		int divisibility = 1;
 		long initialFloat = 1L << 62;
