@@ -37,14 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -130,6 +123,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.symbol("")
 								.hasKnownStatus(MISSING_TOKEN_SYMBOL),
+						tokenCreate("whiteSpaces")
+								.payingWith("payer")
+								.symbol(" ")
+								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
 								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
@@ -178,6 +175,16 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.divisibility(1)
 								.initialFloat(1L << 62)
+								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+						tokenCreate("toobigdivisibility")
+								.payingWith("payer")
+								.initialFloat(0)
+								.divisibility(19)
+								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+						tokenCreate("toobigdivisibility")
+								.payingWith("payer")
+								.initialFloat(10)
+								.divisibility(18)
 								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY)
 				);
 	}
