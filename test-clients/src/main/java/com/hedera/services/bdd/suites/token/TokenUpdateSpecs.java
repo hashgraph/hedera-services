@@ -22,8 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -60,8 +57,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
-						keysChange(),
-						treasuryEvolves(),
+//						keysChange(),
+//						treasuryEvolves(),
 				}
 		);
 	}
@@ -143,12 +140,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("SymbolChanges")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
+						cryptoCreate(TOKEN_TREASURY)
 				).when(
-						tokenCreate("tbu"),
+						tokenCreate("tbu").treasury(TOKEN_TREASURY),
 						tokenUpdate("tbu").symbol(hopefullyUnique)
 				).then(
-						getTokenInfo("tbu").hasSymbol(hopefullyUnique)
+						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
+						tokenTransact(
+								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
 				);
 	}
 

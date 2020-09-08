@@ -441,7 +441,10 @@ public class HederaTokenStore implements TokenStore {
 				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
 			}
 			if (hasNewSymbol) {
-				token.setSymbol(changes.getSymbol());
+				var newSymbol = changes.getSymbol();
+				symbolKeyedIds.remove(token.symbol());
+				token.setSymbol(newSymbol);
+				symbolKeyedIds.put(newSymbol, tId);
 			}
 			if (changes.hasTreasury()) {
 				var treasuryId = EntityId.ofNullableAccountId(changes.getTreasury());

@@ -633,6 +633,9 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void updateHappyPathWorksForEverything() {
+		// setup:
+		subject.symbolKeyedIds.put(symbol, misc);
+
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		givenUpdateTarget(ALL_KEYS);
@@ -651,6 +654,9 @@ class HederaTokenStoreTest {
 		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		// and:
+		assertFalse(subject.symbolKeyedIds.containsKey(symbol));
+		assertEquals(subject.symbolKeyedIds.get(newSymbol), misc);
 	}
 
 	enum KeyType {
