@@ -487,6 +487,10 @@ public class TransactionHandler {
 
     if (returnCode == OK) {
       returnCode = recordCache.isReceiptPresent(txn.getTransactionID()) ? DUPLICATE_TRANSACTION : OK;
+      if(returnCode == DUPLICATE_TRANSACTION) {
+        log.warn("Transaction being processed : {}", txn.getTransactionID());
+        log.warn("Already present receipt : {}",  recordCache.getDuplicateReceipts(txn.getTransactionID()));
+      }
     }
 
     if (returnCode == OK) {

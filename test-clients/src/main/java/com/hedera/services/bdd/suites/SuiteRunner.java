@@ -104,8 +104,10 @@ public class SuiteRunner {
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
+	private static final int DEFAULT_GENESIS_PAYER_ID = 2;
 
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
+	public static int instanceID = 0;
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
@@ -207,6 +209,8 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
+	/* The instance id of the suiteRunner running on the client. */
+	private static final String INSTANCE_ID_ARG = "-INSTANCE";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -220,9 +224,15 @@ public class SuiteRunner {
 			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+			instanceID = Integer.parseInt(overrideOrDefault(effArgs,
+					INSTANCE_ID_ARG, "0").split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
+
+			int payer = DEFAULT_GENESIS_PAYER_ID + instanceID + 1;
+			String payer_id = "0.0." + payer;
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
+					payer_id,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),

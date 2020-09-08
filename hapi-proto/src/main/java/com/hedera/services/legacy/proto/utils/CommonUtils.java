@@ -248,6 +248,25 @@ public class CommonUtils {
     return rv;
   }
 
+  /**
+   * Generates a short human readable string for grpc transaction ID.
+   *
+   * @return generated readable string
+   */
+  public static String toReadableStringShortTxnID(
+          Transaction grpcTransaction) throws InvalidProtocolBufferException {
+    String rv = null;
+    TransactionBody body;
+    if (grpcTransaction.hasBody()) {
+      body = grpcTransaction.getBody();
+    } else {
+      body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
+    }
+    rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
+    return rv;
+  }
+
+
   public static TransactionBody extractTransactionBody(Transaction transaction)
       throws InvalidProtocolBufferException {
     TransactionBody bodyToReturn;

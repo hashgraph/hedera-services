@@ -90,7 +90,12 @@ public class RandomTransfer implements OpProvider {
 	public List<HapiSpecOperation> suggestedInitializers() {
 		return stableAccounts(numStableAccounts).stream()
 						.map(account ->
-								cryptoCreate(my(account)).noLogging().balance(INITIAL_BALANCE).deferStatusResolution())
+								cryptoCreate(my(account))
+										.noLogging()
+										.balance(INITIAL_BALANCE)
+										.deferStatusResolution()
+										.payingWith(UNIQUE_PAYER_ACCOUNT)
+						)
 						.collect(toList());
 	}
 
