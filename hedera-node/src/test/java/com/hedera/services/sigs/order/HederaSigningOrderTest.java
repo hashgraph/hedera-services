@@ -21,6 +21,10 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
+import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
+import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -32,16 +36,14 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
-import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -84,12 +86,86 @@ import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
 @RunWith(JUnitPlatform.class)
 public class HederaSigningOrderTest {
+	private static class TopicAdapter {
+		public static TopicSigMetaLookup with(ThrowingTopicLookup delegate) {
+			return new TopicSigMetaLookup() {
+				@Override
+				public TopicSigningMetadata lookup(TopicID id) throws Exception {
+					return delegate.lookup(id);
+				}
+
+				@Override
+				public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+
+		public static TopicSigMetaLookup withSafe(
+				Function<TopicID, SafeLookupResult<TopicSigningMetadata>> fn
+		) {
+			return new TopicSigMetaLookup() {
+				@Override
+				public TopicSigningMetadata lookup(TopicID id) throws Exception {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
+					return fn.apply(id);
+				}
+			};
+		}
+	}
+
+	private static class AccountAdapter {
+		public static AccountSigMetaLookup with(ThrowingAccountLookup delegate) {
+			return new AccountSigMetaLookup() {
+				@Override
+				public AccountSigningMetadata lookup(AccountID account) throws Exception {
+					return delegate.lookup(account);
+				}
+
+				@Override
+				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+
+		public static AccountSigMetaLookup withSafe(
+				Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn
+		) {
+			return new AccountSigMetaLookup() {
+				@Override
+				public AccountSigningMetadata lookup(AccountID account) throws Exception {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+					return fn.apply(id);
+				}
+			};
+		}
+	}
+
+	@FunctionalInterface
+	private interface ThrowingAccountLookup {
+		AccountSigningMetadata lookup(AccountID id) throws Exception;
+	}
+	@FunctionalInterface
+	private interface ThrowingTopicLookup {
+		TopicSigningMetadata lookup(TopicID id) throws Exception;
+	}
+
 	private static final boolean IN_HANDLE_TXN_DYNAMIC_CTX = false;
 	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_NEVER_SIGNS = (txn, f) -> false;
 	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_ALWAYS_SIGNS = (txn, f) -> true;
@@ -97,9 +173,10 @@ public class HederaSigningOrderTest {
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 		new DelegatingSigMetadataLookup(
 				id -> { throw new Exception(); },
-				id -> { throw new Exception(); },
+				AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 				contractSigMetaLookup,
-				id -> { throw new Exception(); });
+				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+				id -> null);
 	private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			id -> { throw new Exception(); }
 	);
@@ -117,6 +194,7 @@ public class HederaSigningOrderTest {
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
@@ -203,6 +281,11 @@ public class HederaSigningOrderTest {
 		// given:
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingAccount(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -218,19 +301,16 @@ public class HederaSigningOrderTest {
 				CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
 				new DelegatingSigMetadataLookup(
 						id -> { throw new Exception(); },
-						id -> {
-							if (id.equals(asAccount(DEFAULT_PAYER_ID))) {
-								return new AccountSigningMetadata(DEFAULT_PAYER_KT.asJKey(), false);
-							} else {
-								/* Throw an exception for any account other than the default payer. */
-								throw new Exception();
-							}
-						},
+						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 						id -> { throw new Exception(); },
-						id -> { throw new Exception(); }
-				)
-		);
+						TopicAdapter.with(id -> { throw new Exception(); }),
+						id -> null ));
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forGeneralError(any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -313,10 +393,14 @@ public class HederaSigningOrderTest {
 
 	@Test
 	public void reportsCryptoUpdateMissingAccount() throws Throwable {
-		// given:
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingAccount(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -457,7 +541,7 @@ public class HederaSigningOrderTest {
 		subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
-		verify(mockSummaryFactory).forMissingFile(MISSING_FILE, txn.getTransactionID());
+		verify(mockSummaryFactory).forMissingFile(TxnHandlingScenario.MISSING_FILE, txn.getTransactionID());
 	}
 
 	@Test
@@ -801,6 +885,11 @@ public class HederaSigningOrderTest {
 		setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -824,13 +913,13 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusSubmitMessageWithSubmitKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KEY.asJKey()));
+		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KT.asKey()));
 	}
 
 	@Test
@@ -839,6 +928,11 @@ public class HederaSigningOrderTest {
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingTopic(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -862,13 +956,13 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -877,6 +971,11 @@ public class HederaSigningOrderTest {
 		setupFor(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingTopic(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -900,20 +999,20 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusUpdateTopicWithExistingAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
-	public void getsConsensusUpdateTopicExpiratyOnly() throws Throwable {
+	public void getsConsensusUpdateTopicExpiryOnly() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO,
-				hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -924,9 +1023,14 @@ public class HederaSigningOrderTest {
 
 	@Test
 	public void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
-		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
+		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingTopic(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -941,6 +1045,11 @@ public class HederaSigningOrderTest {
 		setupFor(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingAutoRenewAccount(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -952,28 +1061,94 @@ public class HederaSigningOrderTest {
 	@Test
 	public void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
-		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey(),
-				UPDATE_TOPIC_ADMIN_KEY.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
+				UPDATE_TOPIC_ADMIN_KT.asKey()));
 	}
 
 	@Test
 	public void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccount() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO,
-				hcsMetadataLookup(MISC_TOPIC_ADMIN_KEY.asJKey(), null));
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KEY.asKey(),
-				UPDATE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_ADMIN_KT.asKey(),
+				UPDATE_TOPIC_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateAdminKeyOnly() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateAdminAndFreeze() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateMissingAdmin() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_MISSING_ADMIN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	public void getsTokenTransactAllSenders() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenTransactMissingSenders() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
@@ -1004,7 +1179,6 @@ public class HederaSigningOrderTest {
 	) throws Throwable {
 		setupFor(scenario, waclSigns, updateAccountSigns, Optional.empty());
 	}
-
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
@@ -1015,10 +1189,11 @@ public class HederaSigningOrderTest {
 		hfs = scenario.hfs();
 		accounts = scenario.accounts();
 		topics = scenario.topics();
+		tokens = scenario.tokens();
 
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics)),
+				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics, () -> tokens)),
 				updateAccountSigns,
 				waclSigns);
 	}
@@ -1030,23 +1205,28 @@ public class HederaSigningOrderTest {
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
 				id -> { throw new Exception(); },
-				id -> {
+				AccountAdapter.withSafe(id -> {
 					if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
-						return new AccountSigningMetadata(MISC_ACCOUNT_KT.asJKey(), false);
+						try {
+							return new SafeLookupResult<>(
+									new AccountSigningMetadata(MISC_ACCOUNT_KT.asJKey(), false));
+						} catch (Exception e) {
+							throw new IllegalArgumentException(e);
+						}
 					} else {
-						/* Throw an exception for any account other than the default payer. */
-						throw new InvalidAccountIDException("invalid account", id);
+						return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
 					}
-				},
+				}),
 				id -> { throw new Exception(); },
-				id -> {
+				TopicAdapter.withSafe(id -> {
+					System.out.println("Called with " + id);
 					if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
-						return new TopicSigningMetadata(adminKey, submitKey);
+						return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));
 					} else {
-						/* Throw an exception for any account other than the default payer. */
-						throw new InvalidTopicIDException("invalid topic", id);
+						return SafeLookupResult.failure(KeyOrderingFailure.INVALID_TOPIC);
 					}
-				}
+				}),
+				id -> null
 		);
 	}
 

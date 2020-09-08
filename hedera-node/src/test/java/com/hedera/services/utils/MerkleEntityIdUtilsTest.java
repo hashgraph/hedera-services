@@ -26,6 +26,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -145,6 +146,15 @@ class MerkleEntityIdUtilsTest {
 		for (String literal : validLiterals) {
 			assertEquals(asAccount(literal), accountParsedFromString(literal));
 		}
+	}
+
+	@Test
+	public void prettyPrintsTokenIds() {
+		// given:
+		TokenID id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
+
+		// expect:
+		assertEquals("1.2.3", EntityIdUtils.readableId(id));
 	}
 
 	@Test

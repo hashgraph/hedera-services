@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -51,7 +50,7 @@ class BackedAccountLookupTest {
 
 	@BeforeEach
 	public void setup() throws Exception {
-		aKey = TxnHandlingScenario.MISC_TOPIC_ADMIN_KEY.asJKey();
+		aKey = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKey();
 		accounts = mock(FCMapBackingAccounts.class);
 
 		aAccount = mock(MerkleAccount.class);

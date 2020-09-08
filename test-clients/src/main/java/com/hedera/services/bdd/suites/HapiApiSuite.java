@@ -59,6 +59,9 @@ public abstract class HapiApiSuite {
 	protected abstract Logger getResultsLogger();
 	protected abstract List<HapiApiSpec> getSpecsInSuite();
 
+	public static final long ONE_HBAR = 100_000_000L;
+	public static final long A_HUNDRED_HBARS = 100 * ONE_HBAR;
+
 	private List<HapiApiSpec> finalSpecs = Collections.EMPTY_LIST;
 
 	public List<HapiApiSpec> getFinalSpecs() {

@@ -20,8 +20,6 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.HbarAdjustments;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
-class HbarAdjustmentsTest {
+class CurrencyAdjustmentsTest {
 	AccountID a = IdUtils.asAccount("0.0.13257");
 	EntityId aEntity = EntityId.ofNullableAccountId(a);
 	AccountID b = IdUtils.asAccount("0.0.13258");
@@ -61,30 +59,30 @@ class HbarAdjustmentsTest {
 	DataInputStream din;
 	EntityId.Provider idProvider;
 
-	HbarAdjustments subject;
+	CurrencyAdjustments subject;
 
 	@BeforeEach
 	public void setup() {
 		din = mock(DataInputStream.class);
 		idProvider = mock(EntityId.Provider.class);
 
-		HbarAdjustments.legacyIdProvider = idProvider;
+		CurrencyAdjustments.legacyIdProvider = idProvider;
 
-		subject = new HbarAdjustments();
+		subject = new CurrencyAdjustments();
 		subject.accountIds = List.of(ofNullableAccountId(a), ofNullableAccountId(b), ofNullableAccountId(c));
 		subject.hbars = new long[] { aAmount, bAmount, cAmount };
 	}
 
 	@AfterEach
 	public void cleanup() {
-		HbarAdjustments.legacyIdProvider = EntityId.LEGACY_PROVIDER;
+		CurrencyAdjustments.legacyIdProvider = EntityId.LEGACY_PROVIDER;
 	}
 
 	@Test
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
-				"HbarAdjustments{readable=" + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]" + "}",
+				"CurrencyAdjustments{readable=" + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]" + "}",
 				subject.toString());
 	}
 
@@ -92,8 +90,8 @@ class HbarAdjustmentsTest {
 	public void objectContractWorks() {
 		// given:
 		var one = subject;
-		var two = HbarAdjustments.fromGrpc(otherGrpcAdjustments);
-		var three = HbarAdjustments.fromGrpc(grpcAdjustments);
+		var two = CurrencyAdjustments.fromGrpc(otherGrpcAdjustments);
+		var three = CurrencyAdjustments.fromGrpc(grpcAdjustments);
 
 		// when:
 		assertEquals(one, one);
@@ -120,7 +118,7 @@ class HbarAdjustmentsTest {
 				.willReturn(cEntity);
 
 		// when:
-		var subjectRead = HbarAdjustments.LEGACY_PROVIDER.deserialize(din);
+		var subjectRead = CurrencyAdjustments.LEGACY_PROVIDER.deserialize(din);
 
 		// then:
 		assertEquals(subject, subjectRead);
@@ -135,14 +133,14 @@ class HbarAdjustmentsTest {
 	@Test
 	public void factoryWorks() {
 		// expect:
-		assertEquals(subject, HbarAdjustments.fromGrpc(grpcAdjustments));
+		assertEquals(subject, CurrencyAdjustments.fromGrpc(grpcAdjustments));
 	}
 
 	@Test
 	public void serializableDetWorks() {
 		// expect;
-		assertEquals(HbarAdjustments.MERKLE_VERSION, subject.getVersion());
-		assertEquals(HbarAdjustments.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(CurrencyAdjustments.MERKLE_VERSION, subject.getVersion());
+		assertEquals(CurrencyAdjustments.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
@@ -151,15 +149,15 @@ class HbarAdjustmentsTest {
 		var in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializableList(
-						intThat(i -> i == HbarAdjustments.MAX_NUM_ADJUSTMENTS),
+						intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
 						booleanThat(Boolean.TRUE::equals),
 						(Supplier<EntityId>)any())).willReturn(subject.accountIds);
-		given(in.readLongArray(HbarAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
+		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
 
 		// when:
-		var readSubject = new HbarAdjustments();
+		var readSubject = new CurrencyAdjustments();
 		// and:
-		readSubject.deserialize(in, HbarAdjustments.MERKLE_VERSION);
+		readSubject.deserialize(in, CurrencyAdjustments.MERKLE_VERSION);
 
 		// expect:
 		assertEquals(readSubject, subject);

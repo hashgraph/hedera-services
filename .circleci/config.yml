@@ -917,7 +917,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "15 17,4 * * *"
           filters:
             branches:
               only:
@@ -937,7 +937,7 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "30 17,4 * * *"
           filters:
             branches:
               only:
@@ -957,7 +957,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "45 17,4 * * *"
           filters:
             branches:
               only:
@@ -977,7 +977,7 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "0 18,5 * * *"
           filters:
             branches:
               only:
@@ -998,7 +998,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "0 23,8 * * *"
+              cron: "15 18,5 * * *"
               filters:
                 branches:
                   only:
@@ -1041,7 +1041,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "0 23,8 * * *"
+          cron: "30 18,5 * * *"
           filters:
             branches:
               only:
@@ -1534,10 +1534,21 @@ workflows:
             - build-artifact
           workflow-name: "Continuous integration"
           infra-branch: services-with-platform070
-      - run-file-scenarios:
+      - run-token-scenarios:
           context: Slack
           requires:
             - start-singlejob-testnet
+          pre-steps:
+            - attach_workspace:
+                at: /
+            - ensure-testnet-for-reruns
+          post-steps:
+            - cleanup-rerun-testnet-if-present
+          workflow-name: "Continuous integration"
+      - run-file-scenarios:
+          context: Slack
+          requires:
+            - run-token-scenarios
           pre-steps:
             - attach_workspace:
                 at: /
@@ -1932,7 +1943,7 @@ jobs:
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
-            cd /swirlds-platform/regression;   git checkout 00438-D-migration-test-for-mainnet;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
@@ -2813,6 +2824,22 @@ jobs:
           dsl-args: "CryptoRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "SuperusersAreNeverThrottled"
+  run-token-scenarios:
+    parameters:
+      runner:
+        type: executor
+        default: ci-test-executor
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: ci-test-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run-eet-suites:
+          dsl-args: "TokenCreateSpecs"
+      - run-eet-suites:
+          dsl-args: "TokenTransactSpecs"
   run-file-scenarios:
     parameters:
       runner:

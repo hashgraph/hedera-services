@@ -22,7 +22,6 @@ package com.hedera.services;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -119,8 +118,8 @@ public class ServicesMain implements SwirldMain {
 				ctx.balancesExporter().isTimeToExport(when)) {
 			try {
 				ctx.balancesExporter().toCsvFile((ServicesState) signedState, when);
-			} catch (InvalidTotalAccountBalanceException itabe) {
-				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), itabe);
+			} catch (IllegalStateException ise) {
+				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), ise);
 				systemExits.fail(1);
 			}
 		}

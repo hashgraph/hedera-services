@@ -41,22 +41,22 @@ import java.util.stream.IntStream;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static java.util.stream.Collectors.toList;
 
-public class HbarAdjustments implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(HbarAdjustments.class);
+public class CurrencyAdjustments implements SelfSerializable {
+	private static final Logger log = LogManager.getLogger(CurrencyAdjustments.class);
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
-	static final long[] NO_HBARS = new long[0];
+	static final long[] NO_ADJUSTMENTS = new long[0];
 	static EntityId.Provider legacyIdProvider = EntityId.LEGACY_PROVIDER;
 
 	public static final int MAX_NUM_ADJUSTMENTS = 25;
-	public static final HbarAdjustments.Provider LEGACY_PROVIDER = new Provider();
+	public static final CurrencyAdjustments.Provider LEGACY_PROVIDER = new Provider();
 
 	@Deprecated
 	public static class Provider {
-		public HbarAdjustments deserialize(DataInputStream in) throws IOException {
-			var pojo = new HbarAdjustments();
+		public CurrencyAdjustments deserialize(DataInputStream in) throws IOException {
+			var pojo = new CurrencyAdjustments();
 
 			in.readLong();
 			in.readLong();
@@ -77,10 +77,10 @@ public class HbarAdjustments implements SelfSerializable {
 		}
 	}
 
-	long[] hbars = NO_HBARS;
+	long[] hbars = NO_ADJUSTMENTS;
 	List<EntityId> accountIds = Collections.emptyList();
 
-	public HbarAdjustments() { }
+	public CurrencyAdjustments() { }
 
 	/* --- SelfSerializable --- */
 
@@ -113,11 +113,11 @@ public class HbarAdjustments implements SelfSerializable {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || HbarAdjustments.class != o.getClass()) {
+		if (o == null || CurrencyAdjustments.class != o.getClass()) {
 			return false;
 		}
 
-		HbarAdjustments that = (HbarAdjustments) o;
+		CurrencyAdjustments that = (CurrencyAdjustments) o;
 		return accountIds.equals(that.accountIds) && Arrays.equals(hbars, that.hbars);
 	}
 
@@ -148,15 +148,19 @@ public class HbarAdjustments implements SelfSerializable {
 		return grpc.build();
 	}
 
-	public static HbarAdjustments fromGrpc(TransferList grpc) {
-		var pojo = new HbarAdjustments();
-		pojo.hbars = grpc.getAccountAmountsList().stream()
+	public static CurrencyAdjustments fromGrpc(TransferList grpc) {
+		return fromGrpc(grpc.getAccountAmountsList());
+	}
+
+	public static CurrencyAdjustments fromGrpc(List<AccountAmount> grpc) {
+		var pojo = new CurrencyAdjustments();
+		pojo.hbars = grpc.stream()
 				.mapToLong(AccountAmount::getAmount)
 				.toArray();
-		pojo.accountIds = grpc.getAccountAmountsList().stream()
-						.map(AccountAmount::getAccountID)
-						.map(EntityId::ofNullableAccountId)
-						.collect(toList());
+		pojo.accountIds = grpc.stream()
+				.map(AccountAmount::getAccountID)
+				.map(EntityId::ofNullableAccountId)
+				.collect(toList());
 		return pojo;
 	}
 }

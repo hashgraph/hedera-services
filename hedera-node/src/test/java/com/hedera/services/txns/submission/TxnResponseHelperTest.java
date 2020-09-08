@@ -59,6 +59,24 @@ class TxnResponseHelperTest {
 	}
 
 	@Test
+	public void helpsWithTokenHappyPath() {
+		// setup:
+		InOrder inOrder = inOrder(submissionFlow, stats, observer);
+
+		given(submissionFlow.submit(txn)).willReturn(okResponse);
+
+		// when:
+		subject.respondToToken(txn, observer, metric);
+
+		// then:
+		inOrder.verify(stats).tokenTxnReceived(metric);
+		inOrder.verify(submissionFlow).submit(txn);
+		inOrder.verify(observer).onNext(okResponse);
+		inOrder.verify(observer).onCompleted();
+		inOrder.verify(stats).tokenTxnSubmitted(metric);
+	}
+
+	@Test
 	public void helpsWithNetworkHappyPath() {
 		// setup:
 		InOrder inOrder = inOrder(submissionFlow, stats, observer);
@@ -73,7 +91,7 @@ class TxnResponseHelperTest {
 		inOrder.verify(submissionFlow).submit(txn);
 		inOrder.verify(observer).onNext(okResponse);
 		inOrder.verify(observer).onCompleted();
-		inOrder.verify(stats).networkTxnSubmited(metric);
+		inOrder.verify(stats).networkTxnSubmitted(metric);
 	}
 
 	@Test

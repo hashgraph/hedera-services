@@ -29,6 +29,7 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 /**
@@ -58,5 +59,16 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 			throw new InvalidAccountIDException("Invalid account!", id);
 		}
 		return new AccountSigningMetadata(account.getKey(), account.isReceiverSigRequired());
+	}
+
+	@Override
+	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+		var account = accounts.get().get(fromAccountId(id));
+		return (account == null)
+				? SafeLookupResult.failure(MISSING_ACCOUNT)
+				: new SafeLookupResult<>(
+						new AccountSigningMetadata(
+								account.getKey(),
+								account.isReceiverSigRequired()));
 	}
 }

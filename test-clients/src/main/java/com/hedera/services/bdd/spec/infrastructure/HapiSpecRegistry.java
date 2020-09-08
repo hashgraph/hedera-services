@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.HexUtils;
@@ -56,6 +57,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
 import static java.util.stream.Collectors.*;
 
@@ -238,6 +240,14 @@ public class HapiSpecRegistry {
 		put(name, key, Key.class);
 	}
 
+	public void saveSymbol(String token, String symbol) {
+		put(token + "Symbol", symbol, String.class);
+	}
+
+	public String getSymbol(String token) {
+		return get(token + "Symbol", String.class);
+	}
+
 	public Key getKey(String name) {
 		return get(name, Key.class);
 	}
@@ -356,6 +366,11 @@ public class HapiSpecRegistry {
 		put(asAccountString(id), name);
 	}
 
+	public void saveTokenId(String name, TokenID id) {
+		put(name, id);
+		put(asTokenString(id), name);
+	}
+
 	public void setRecharging(String account, long amount) {
 		put(account, Boolean.TRUE);
 		put(account + "Recharge", amount);
@@ -421,6 +436,10 @@ public class HapiSpecRegistry {
 
 	public TopicID getTopicID(String name) {
 		return get(name, TopicID.class);
+	}
+
+	public TokenID getTokenID(String name) {
+		return get(name, TokenID.class);
 	}
 
 	public boolean hasFileId(String name) {

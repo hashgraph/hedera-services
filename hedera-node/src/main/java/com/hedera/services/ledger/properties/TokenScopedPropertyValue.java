@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.ledger.properties;
 
 /*-
  * ‌
@@ -20,10 +20,29 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class PlatformTransactionCreationException extends Exception {
-	private static final long serialVersionUID = 1L;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-	public PlatformTransactionCreationException(String message) {
-		super(message);
+public class TokenScopedPropertyValue {
+	private final Object value;
+	private final TokenID id;
+	private final MerkleToken token;
+
+	public TokenScopedPropertyValue(TokenID id, MerkleToken token, Object value) {
+		this.value = value;
+		this.id = id;
+		this.token = token;
+	}
+
+	public TokenID id() {
+		return id;
+	}
+
+	public Object value() {
+		return value;
+	}
+
+	public MerkleToken token() {
+		return token;
 	}
 }

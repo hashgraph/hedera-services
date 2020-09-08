@@ -62,11 +62,15 @@ import com.hederahashgraph.api.proto.java.GetByKeyQuery;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -78,6 +82,7 @@ import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.UncheckedSubmit;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -119,7 +124,38 @@ public class MiscUtilsTest {
 	@Test
 	public void asFcKeyUncheckedTranslatesExceptions() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> MiscUtils.asFcKeyUnchecked(null));
+		assertThrows(IllegalArgumentException.class,
+				() -> MiscUtils.asFcKeyUnchecked(Key.getDefaultInstance()));
+	}
+
+	@Test
+	public void asFcKeyReturnsEmptyOnUnparseableKey() {
+		// expect:
+		assertTrue(asUsableFcKey(Key.getDefaultInstance()).isEmpty());
+	}
+
+	@Test
+	public void asFcKeyReturnsEmptyOnEmptyKey() {
+		// expect:
+		assertTrue(asUsableFcKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()).isEmpty());
+	}
+
+	@Test
+	public void asFcKeyReturnsEmptyOnInvalidKey() {
+		// expect:
+		assertTrue(asUsableFcKey(Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes())).build()).isEmpty());
+	}
+
+	@Test
+	public void asFcKeyReturnsExpected() {
+		// given:
+		var key = Key.newBuilder().setEd25519(ByteString.copyFrom(
+				"01234567890123456789012345678901".getBytes())).build();
+
+		// expect:
+		assertTrue(JKey.equalUpToDecodability(
+				asUsableFcKey(key).get(),
+				MiscUtils.asFcKeyUnchecked(key)));
 	}
 
 	@Test
@@ -271,6 +307,8 @@ public class MiscUtilsTest {
 			put("updateTopic", new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put("deleteTopic", new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put("submitMessage", new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put("tokenCreate", new BodySetter<>(TokenCreation.class));
+			put("tokenTransact", new BodySetter<>(TokenTransfers.class));
 		}};
 
 		// expect:
@@ -309,6 +347,7 @@ public class MiscUtilsTest {
 			put(FileGetInfo, new BodySetter<>(FileGetInfoQuery.class));
 			put(TransactionGetReceipt, new BodySetter<>(TransactionGetReceiptQuery.class));
 			put(TransactionGetRecord, new BodySetter<>(TransactionGetRecordQuery.class));
+			put(TokenGetInfo, new BodySetter<>(TokenGetInfoQuery.class));
 		}};
 
 		// expect:
@@ -317,6 +356,16 @@ public class MiscUtilsTest {
 			setter.setDefaultInstanceOnQuery(query);
 			assertEquals(function, functionalityOfQuery(query.build()).get());
 		});
+	}
+
+	@Test
+	public void worksForGetTokenInfo() {
+		var op = TokenGetInfoQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}
 
 	@Test
@@ -504,6 +553,8 @@ public class MiscUtilsTest {
 			put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
+			put(TokenCreate, new BodySetter<>(TokenCreation.class));
+			put(TokenTransact, new BodySetter<>(TokenTransfers.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

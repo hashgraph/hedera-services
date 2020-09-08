@@ -21,16 +21,18 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.TokenViewMergeable;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.swirlds.common.FCMElement;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBalance;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -47,9 +49,18 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.P;
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
 
-public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, MerkleInternal {
+public class MerkleAccount extends AbstractMerkleInternal
+		implements FCMValue, MerkleInternal, TokenViewMergeable<MerkleAccount> {
+
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
+
+	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ =
+			new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+	static {
+		IMMUTABLE_EMPTY_FCQ.copy();
+	}
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
@@ -78,7 +89,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	/* --- MerkleInternal --- */
-
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -95,7 +105,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public boolean isImmutable() {
 		return records().isImmutable() || payerRecords().isImmutable();
@@ -136,8 +145,22 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		throw new UnsupportedOperationException();
 	}
 
-	/* ---- Object ---- */
+	/* --- Token support --- */
+	public MerkleAccount tokenCopy() {
+		return new MerkleAccount(List.of(state().copy(), IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+	}
 
+	@Override
+	public String readableTokenRelationships() {
+		return state().readableTokenRels();
+	}
+
+	@Override
+	public void mergeTokenPropertiesFrom(MerkleAccount viewSoFar) {
+		state().setTokenRels(viewSoFar.state().getTokenRels());
+	}
+
+	/* ---- Object ---- */
 	@Override
 	public boolean equals(Object o) {
 		if (o == this) {
@@ -189,7 +212,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	/* ----  Bean  ---- */
-
 	public String getMemo() {
 		return state().memo();
 	}
@@ -214,7 +236,43 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		if (balance < 0) {
 			throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
 		}
-		state().setBalance(balance);
+		state().setHbarBalance(balance);
+	}
+
+	public int numTokenRelationships() {
+		return state().numTokenRelationships();
+	}
+
+	public boolean hasRelationshipWith(TokenID id) {
+		return state().hasRelationshipWith(id);
+	}
+
+	public long getTokenBalance(TokenID token) {
+		return state().getTokenBalance(token);
+	}
+
+	public void adjustTokenBalance(TokenID id, MerkleToken token, long adjustment) {
+		state().adjustTokenBalance(id, token, adjustment);
+	}
+
+	public List<TokenBalance> getAllExplicitTokenBalances() {
+		return state().getAllExplicitTokenBalances();
+	}
+
+	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
+		return state().validityOfAdjustment(id, token, adjustment);
+	}
+
+	public void freeze(TokenID id, MerkleToken token) {
+		state().freeze(id, token);
+	}
+
+	public void unfreeze(TokenID id, MerkleToken token) {
+		state().unfreeze(id, token);
+	}
+
+	public boolean isFrozen(TokenID id, MerkleToken token) {
+		return state().isFrozen(id, token);
 	}
 
 	public long getReceiverThreshold() {
@@ -324,7 +382,8 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 					expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 					memo,
 					deleted, smartContract, receiverSigRequired,
-					proxy);
+					proxy,
+					NO_TOKEN_BALANCES);
 
 			var records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 			serdes.deserializeIntoRecords(in, records);

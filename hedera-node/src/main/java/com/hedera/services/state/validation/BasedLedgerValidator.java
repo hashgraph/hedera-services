@@ -21,24 +21,31 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 public class BasedLedgerValidator implements LedgerValidator {
-	private final HederaNumbers hederaNums;
-	private final PropertySource properties;
+	private final long expectedFloat;
 
-	public BasedLedgerValidator(HederaNumbers hederaNums, PropertySource properties) {
+	private final HederaNumbers hederaNums;
+	private final GlobalDynamicProperties dynamicProperties;
+
+	public BasedLedgerValidator(
+			HederaNumbers hederaNums,
+			PropertySource properties,
+			GlobalDynamicProperties dynamicProperties
+	) {
+		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
+
 		this.hederaNums = hederaNums;
-		this.properties = properties;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
 	public void assertIdsAreValid(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		long maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
-
 		for (MerkleEntityId id : accounts.keySet()) {
 			if (id.getRealm() != hederaNums.realm()) {
 				throw new IllegalStateException(String.format("Invalid realm in account %s", id.toAbbrevString()));
@@ -46,7 +53,7 @@ public class BasedLedgerValidator implements LedgerValidator {
 			if (id.getShard() != hederaNums.shard()) {
 				throw new IllegalStateException(String.format("Invalid shard in account %s", id.toAbbrevString()));
 			}
-			if (id.getNum() < 1 || id.getNum() > maxAccountNum) {
+			if (id.getNum() < 1 || id.getNum() > dynamicProperties.maxAccountNum()) {
 				throw new IllegalStateException(String.format("Invalid num in account %s", id.toAbbrevString()));
 			}
 		}
@@ -54,9 +61,6 @@ public class BasedLedgerValidator implements LedgerValidator {
 
 	@Override
 	public boolean hasExpectedTotalBalance(FCMap<MerkleEntityId, MerkleAccount> accounts) {
-		long actualFloat = accounts.values().stream().mapToLong(MerkleAccount::getBalance).sum();
-		long expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
-
-		return expectedFloat == actualFloat;
+		return expectedFloat == accounts.values().stream().mapToLong(MerkleAccount::getBalance).sum();
 	}
 }

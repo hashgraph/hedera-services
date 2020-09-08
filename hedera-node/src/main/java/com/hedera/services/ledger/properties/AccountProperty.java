@@ -25,9 +25,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.tokens.TokenScope;
 import com.swirlds.fcqueue.FCQueue;
 
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -71,14 +73,44 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::isSmartContract;
 		}
 	},
-	BALANCE {
+	IS_FROZEN {
 		@Override
+		@SuppressWarnings("unchecked")
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, v) -> {
-				try {
-					a.setBalance((long)v);
-				} catch (NegativeAccountBalanceException nabe) {
-					throw new IllegalArgumentException("Account balances must be nonnegative!");
+				var scopedV = (TokenScopedPropertyValue)v;
+				if ((boolean)scopedV.value()) {
+					a.freeze(scopedV.id(), scopedV.token());
+				} else {
+					a.unfreeze(scopedV.id(), scopedV.token());
+				}
+			};
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public BiFunction<MerkleAccount, TokenScope, Object> scopedGetter() {
+			return (a, s) -> a.isFrozen(s.id(), s.token());
+		}
+	},
+	BALANCE {
+		@Override
+		@SuppressWarnings("unchecked")
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, v) -> {
+				if (v instanceof TokenScopedPropertyValue) {
+					var scopedV = (TokenScopedPropertyValue)v;
+					a.adjustTokenBalance(scopedV.id(), scopedV.token(), (long)scopedV.value());
+				} else {
+					try {
+						a.setBalance((long)v);
+					} catch (NegativeAccountBalanceException nabe) {
+						throw new IllegalArgumentException("Account balances must be nonnegative!");
+					}
 				}
 			};
 		}
@@ -86,6 +118,11 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getBalance;
+		}
+
+		@Override
+		public BiFunction<MerkleAccount, TokenScope, Object> scopedGetter() {
+			return (a, s) -> a.getTokenBalance(s.id());
 		}
 	},
 	FUNDS_RECEIVED_RECORD_THRESHOLD {

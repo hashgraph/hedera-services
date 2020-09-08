@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -236,7 +235,7 @@ class AwareFcfsUsagePricesTest {
 		given(hfs.exists(schedules)).willReturn(false);
 
 		// expect:
-		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+		assertThrows(IllegalStateException.class, () -> subject.loadPriceSchedules());
 	}
 
 	@Test
@@ -245,7 +244,7 @@ class AwareFcfsUsagePricesTest {
 		given(hfs.cat(any())).willReturn("NONSENSE".getBytes());
 
 		// expect:
-		assertThrows(NoFeeScheduleExistsException.class, () -> subject.loadPriceSchedules());
+		assertThrows(IllegalStateException.class, () -> subject.loadPriceSchedules());
 	}
 
 	@Test

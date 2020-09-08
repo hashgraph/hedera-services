@@ -151,7 +151,8 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionID(accessor.getTxnId())
 				.setTransactionFee(amount)
 				.setTransactionHash(hash)
-				.setConsensusTimestamp(consensusTimestamp);
+				.setConsensusTimestamp(consensusTimestamp)
+				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
@@ -224,6 +225,11 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(AccountID id) {
 		receiptConfig = receipt -> receipt.setAccountID(id);
+	}
+
+	@Override
+	public void setCreated(TokenID id) {
+		receiptConfig = receipt -> receipt.setTokenId(id);
 	}
 
 	@Override

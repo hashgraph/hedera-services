@@ -20,6 +20,7 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -27,7 +28,12 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.TokenID;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class MapValueFactory {
@@ -43,6 +49,7 @@ public class MapValueFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
+	private List<Map.Entry<TokenID, Long>> tokenBalances = new ArrayList<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -57,6 +64,10 @@ public class MapValueFactory {
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
 		receiverThreshold.ifPresent(l -> value.setReceiverThreshold(l));
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
+		tokenBalances.forEach(entry -> {
+			var token = new MerkleToken();
+			value.adjustTokenBalance(entry.getKey(), token, entry.getValue());
+		});
 		return value;
 	}
 
@@ -75,6 +86,10 @@ public class MapValueFactory {
 
 	public MapValueFactory balance(long amount) {
 		balance = Optional.of(amount);
+		return this;
+	}
+	public MapValueFactory tokenBalance(TokenID token, long amount) {
+		tokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount));
 		return this;
 	}
 	public MapValueFactory receiverThreshold(long v) {

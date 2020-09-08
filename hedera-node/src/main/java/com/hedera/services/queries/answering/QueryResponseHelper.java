@@ -47,6 +47,20 @@ public class QueryResponseHelper {
 		this.stats = stats;
 	}
 
+	public void respondToToken(
+			Query query,
+			StreamObserver<Response> observer,
+			AnswerService answer,
+			String metric
+	) {
+		respondWithMetrics(
+				query,
+				observer,
+				answer,
+				() -> stats.tokenQueryReceived(metric),
+				() -> stats.tokenQueryAnswered(metric));
+	}
+
 	public void respondToNetwork(
 			Query query,
 			StreamObserver<Response> observer,

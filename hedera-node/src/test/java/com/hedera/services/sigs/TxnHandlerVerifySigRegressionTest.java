@@ -343,13 +343,15 @@ public class TxnHandlerVerifySigRegressionTest {
 		stats = mock(HederaNodeStats.class);
 		keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, () -> accounts, () -> null),
+				defaultLookupsFor(null, () -> accounts, () -> null, () -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 		retryingKeyOrder =
 				new HederaSigningOrder(
 						new MockEntityNumbers(),
-						defaultLookupsPlusAccountRetriesFor( null, () -> accounts, () -> null, MN, MN, stats),
+						defaultLookupsPlusAccountRetriesFor(
+								null, () -> accounts, () -> null, () -> null,
+								MN, MN, stats),
 						updateAccountSigns,
 						targetWaclSigns);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
