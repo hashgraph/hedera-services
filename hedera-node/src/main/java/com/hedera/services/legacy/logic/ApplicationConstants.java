@@ -49,7 +49,6 @@ public class ApplicationConstants {
 
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
-	public static int TX_RECEIPT_TTL = 180;
 	public static int THRESH_REC_TTL = 90000;
 	public static int TX_MIN_DUR = 5;
 	public static int TX_MAX_DUR = 180;
@@ -57,7 +56,6 @@ public class ApplicationConstants {
 
 	public static long INITIAL_GENESIS_COINS = 5000000000000000000l;
 
-	public static String DEFAULT_FEE_COLLECTION_ACCOUNT = "0.0.98";
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 
 	public static long MINIMUM_AUTORENEW_DURATION = 1l;

@@ -120,10 +120,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getKeyExpansionDepth();
 	}
 
-	public static int getTxReceiptTTL() {
-		return SyncPropertiesObject.getTxReceiptTTL();
-	}
-
 	public static int getThresholdTxRecordTTL() {
 		return SyncPropertiesObject.getThresholdTxRecordTTL();
 	}
@@ -142,10 +138,6 @@ public class PropertiesLoader {
 
 	public static int getQueriesTps() {
 		return AsyncPropertiesObject.getQueriesTps();
-	}
-
-	public static String getFeeCollectionAccount() {
-		return SyncPropertiesObject.getDefaultFeeCollectionAccount();
 	}
 
 	public static long getMinimumAutorenewDuration() {

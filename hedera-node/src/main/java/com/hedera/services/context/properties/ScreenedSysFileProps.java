@@ -1,6 +1,5 @@
 package com.hedera.services.context.properties;
 
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +29,8 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("defaultContractReceiverThreshold", "contracts.defaultReceiveThreshold"),
 			entry("defaultContractSenderThreshold", "contracts.defaultSendThreshold"),
 			entry("maxFileSize", "files.maxSizeKb"),
-			entry("defaultFeeCollectionAccount", "ledger.fundingAccount")
+			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
+			entry("txReceiptTTL", "cache.records.ttl")
 	);
 	static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())

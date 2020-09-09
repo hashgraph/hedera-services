@@ -46,4 +46,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public AccountID fundingAccount() {
 		return AccountID.newBuilder().setAccountNum(98L).build();
 	}
+
+	@Override
+	public int cacheRecordsTtl() {
+		return 180;
+	}
 }

@@ -31,7 +31,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
  */
 public class SyncPropertiesObject {
 	// Tx record & receipt ttl setting in seconds
-	private static int txReceiptTTL = ApplicationConstants.TX_RECEIPT_TTL;
 	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
 	private static int txMinDuration = ApplicationConstants.TX_MIN_DUR;
 	private static int txMaxDuration = ApplicationConstants.TX_MAX_DUR;
@@ -40,7 +39,6 @@ public class SyncPropertiesObject {
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
 	private static long initialGenesisCoins = ApplicationConstants.INITIAL_GENESIS_COINS;
-	private static String defaultFeeCollectionAccount = ApplicationConstants.DEFAULT_FEE_COLLECTION_ACCOUNT;
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
 
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
@@ -73,14 +71,12 @@ public class SyncPropertiesObject {
 	public static void loadSynchProperties(CustomProperties appConfig) {
 		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
 		// Tx record & receipt ttl setting in seconds
-		txReceiptTTL = appConfig.getInt("txReceiptTTL", ApplicationConstants.TX_RECEIPT_TTL);
 		thresholdTxRecordTTL = appConfig.getInt("thresholdTxRecordTTL", ApplicationConstants.THRESH_REC_TTL);
 		txMinDuration = appConfig.getInt("txMinimumDuration", ApplicationConstants.TX_MIN_DUR);
 		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
 		initialGenesisCoins = appConfig.getLong("initialGenesisCoins", ApplicationConstants.INITIAL_GENESIS_COINS);
-		defaultFeeCollectionAccount = appConfig.getString("defaultFeeCollectionAccount", ApplicationConstants.DEFAULT_FEE_COLLECTION_ACCOUNT);
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
 
@@ -110,10 +106,6 @@ public class SyncPropertiesObject {
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
 	}
 
-	static int getTxReceiptTTL() {
-		return txReceiptTTL;
-	}
-
 	static int getThresholdTxRecordTTL() {
 		return thresholdTxRecordTTL;
 	}
@@ -136,10 +128,6 @@ public class SyncPropertiesObject {
 
 	static long getInitialGenesisCoins() {
 		return initialGenesisCoins;
-	}
-
-	static String getDefaultFeeCollectionAccount() {
-		return defaultFeeCollectionAccount;
 	}
 
 	static long getDefaultContractDurationSec() {

@@ -9,7 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.services.context.properties.BootstrapProperties.NODE_PROPS;
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Map.entry;
@@ -35,6 +37,12 @@ public class ScreenedNodeFileProps implements PropertySource {
 	public ScreenedNodeFileProps() {
 		loadFrom(LEGACY_NODE_PROPS_LOC, false);
 		loadFrom(NODE_PROPS_LOC, true);
+		var msg = "Node-local properties overridden on disk are:\n " + NODE_PROPS.stream()
+				.filter(fromFile::containsKey)
+				.sorted()
+				.map(name -> String.format("%s=%s", name, fromFile.get(name)))
+				.collect(Collectors.joining("\n  "));
+		log.info(msg);
 	}
 
 	private void loadFrom(String loc, boolean warnOnMisplacedProp) {
@@ -51,8 +59,10 @@ public class ScreenedNodeFileProps implements PropertySource {
 			log.warn(String.format(DEPRECATED_PROP_TPL, name, standardName, NODE_PROPS_LOC));
 			name = standardName;
 		}
-		if (warnOnMisplacedProp && !NODE_PROPS.contains(name)) {
-			log.warn(String.format(MISPLACED_PROP_TPL, name));
+		if (!NODE_PROPS.contains(name)) {
+			if (warnOnMisplacedProp) {
+				log.warn(String.format(MISPLACED_PROP_TPL, name));
+			}
 			return;
 		}
 		try {

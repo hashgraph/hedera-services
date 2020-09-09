@@ -30,6 +30,7 @@ public class GlobalDynamicProperties {
 	private int maxTokensPerAccount;
 	private int maxTokensSymbolLength;
 	private int maxFileSizeKb;
+	private int cacheRecordsTtl;
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
@@ -57,6 +58,7 @@ public class GlobalDynamicProperties {
 				.setRealmNum(hederaNums.realm())
 				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
 				.build();
+		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -85,5 +87,9 @@ public class GlobalDynamicProperties {
 
 	public AccountID fundingAccount() {
 		return fundingAccount;
+	}
+
+	public int cacheRecordsTtl() {
+		return cacheRecordsTtl;
 	}
 }

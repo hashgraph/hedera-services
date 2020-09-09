@@ -61,6 +61,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(5L, subject.defaultContractReceiveThreshold());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
+		assertEquals(8, subject.cacheRecordsTtl());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -86,6 +87,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(6L, subject.defaultContractReceiveThreshold());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
+		assertEquals(9, subject.cacheRecordsTtl());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -96,5 +98,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long)i + 4);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
 		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
+		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
 	}
 }

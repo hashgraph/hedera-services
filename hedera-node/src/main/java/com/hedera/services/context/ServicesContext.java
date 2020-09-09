@@ -661,6 +661,7 @@ public class ServicesContext {
 					properties(),
 					exchange(),
 					usagePrices(),
+					globalDynamicProperties(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -1081,7 +1082,7 @@ public class ServicesContext {
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), properties());
+			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
 		}
 		return creator;
 	}

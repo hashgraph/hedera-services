@@ -21,6 +21,7 @@ package com.hedera.test.mocks;
  */
 
 import com.google.common.cache.CacheBuilder;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
@@ -112,6 +113,7 @@ public enum TestFeesFactory {
 				properties,
 				exchange,
 				TEST_USAGE_PRICES,
+				new MockGlobalDynamicProps(),
 				List.of(
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),
