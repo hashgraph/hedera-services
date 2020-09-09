@@ -23,6 +23,7 @@ public class ScreenedSysFileProps implements PropertySource {
 	static String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
 	static String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' instead!";
 	static String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
+	static String UNTRANSFORMABLE_PROP_TPL = "Value '%s' is untransformable for deprecated '%s' (%s), being ignored!";
 
 	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("configAccountNum", "ledger.maxAccountNum"),
@@ -71,7 +72,16 @@ public class ScreenedSysFileProps implements PropertySource {
 		}
 		var builder = rawProp.toBuilder().setName(standardizedName);
 		if (STANDARDIZED_FORMATS.containsKey(rawName)) {
-			builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
+			try {
+				builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
+			} catch (Exception reason) {
+				log.warn(String.format(
+						UNTRANSFORMABLE_PROP_TPL,
+						rawProp.getValue(),
+						rawName,
+						reason.getClass().getSimpleName()));
+				return rawProp;
+			}
 		}
 		return builder.build();
 	}

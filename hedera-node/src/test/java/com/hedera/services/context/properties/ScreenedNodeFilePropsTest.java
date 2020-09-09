@@ -23,11 +23,14 @@ class ScreenedNodeFilePropsTest {
 	ScreenedNodeFileProps subject;
 
 	private String STD_NODE_PROPS_LOC = "src/test/resources/bootstrap/node.properties";
+	private String EMPTY_NODE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
+	private String BROKEN_NODE_PROPS_LOC = "src/test/resources/bootstrap/broken-node.properties";
 	private String LEGACY_NODE_PROPS_LOC = "src/test/resources/bootstrap/legacy-node.properties";
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
 			entry("grpc.port", 60211),
-			entry("grpc.tlsPort", 40212)
+			entry("grpc.tlsPort", 40212),
+			entry("hedera.profiles.active", Profile.TEST)
 	);
 
 	@BeforeEach
@@ -38,6 +41,25 @@ class ScreenedNodeFilePropsTest {
 		ScreenedNodeFileProps.LEGACY_NODE_PROPS_LOC = LEGACY_NODE_PROPS_LOC;
 
 		subject = new ScreenedNodeFileProps();
+	}
+
+	@Test
+	public void warnsOfFailedTransform() {
+		// setup:
+		ScreenedNodeFileProps.NODE_PROPS_LOC = BROKEN_NODE_PROPS_LOC;
+		ScreenedNodeFileProps.LEGACY_NODE_PROPS_LOC = EMPTY_NODE_PROPS_LOC;
+
+		// given:
+		subject = new ScreenedNodeFileProps();
+
+		// expect:
+		verify(log).warn(String.format(
+				ScreenedNodeFileProps.UNTRANSFORMABLE_PROP_TPL,
+				"asdf",
+				"environment",
+				"NumberFormatException"));
+		// and:
+		assertTrue(subject.fromFile.isEmpty());
 	}
 
 	@Test

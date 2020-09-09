@@ -219,10 +219,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getApiPermission();
 	}
 
-	public static int getEnvironment() {
-		return AsyncPropertiesObject.getEnvironment();
-	}
-
 	public static String getDefaultListeningNodeAccount() {
 		return AsyncPropertiesObject.getDefaultListeningNodeAccount();
 	}

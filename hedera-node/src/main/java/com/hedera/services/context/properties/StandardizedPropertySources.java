@@ -33,10 +33,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static com.hedera.services.context.properties.Profile.DEV;
-import static com.hedera.services.context.properties.Profile.PROD;
-import static com.hedera.services.context.properties.Profile.TEST;
-import static com.hedera.services.legacy.config.PropertiesLoader.getEnvironment;
 import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
 import static com.hedera.services.legacy.config.PropertiesLoader.getUniqueListeningPortFlag;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_CONFIG_PREFIX;
@@ -67,13 +63,8 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
 	private static final int ISS_ROUNDS_TO_DUMP = 5;
-	public static final String VERSION_INFO_PROPERTIES_FILE = "semantic-version.properties";
-	public static final String VERSION_INFO_PROPERTIES_PROTO_KEY = "hapi.proto.version";
-	public static final String VERSION_INFO_PROPERTIES_SERVICES_KEY = "hedera.services.version";
 	public static final int MAX_MEMO_UTF8_BYTES = 100;
 	public static final long LONG_MASK = 0xffffffffL;
-
-	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
@@ -210,7 +201,6 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
 		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
-		source.put("hedera.profiles.active", () -> LEGACY_ENV_ORDER[getEnvironment()]);
 		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 

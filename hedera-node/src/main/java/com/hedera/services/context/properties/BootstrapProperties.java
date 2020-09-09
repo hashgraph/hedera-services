@@ -202,6 +202,7 @@ public class BootstrapProperties implements PropertySource {
 	static final Set<String> NODE_PROPS = Set.of(
 			"grpc.port",
 			"grpc.tlsPort",
+			"hedera.profiles.active",
 			"precheck.account.maxLookupRetries",
 			"precheck.account.lookupRetryBackoffIncrementMs"
 	);
@@ -232,6 +233,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("grpc.port", AS_INT),
 			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
+			entry("hedera.profiles.active", AS_PROFILE),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.shard", AS_LONG),
 			entry("precheck.account.maxLookupRetries", AS_INT),

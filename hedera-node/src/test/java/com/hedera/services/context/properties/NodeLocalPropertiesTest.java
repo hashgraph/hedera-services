@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import static com.hedera.services.context.properties.Profile.DEV;
+import static com.hedera.services.context.properties.Profile.PROD;
+import static com.hedera.services.context.properties.Profile.TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -34,6 +37,8 @@ class NodeLocalPropertiesTest {
 	PropertySource properties;
 
 	NodeLocalProperties subject;
+
+	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	@BeforeEach
 	public void setup() {
@@ -52,6 +57,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(2, subject.tlsPort());
 		assertEquals(3, subject.precheckLookupRetries());
 		assertEquals(4, subject.precheckLookupRetryBackoffMs());
+		assertEquals(TEST, subject.activeProfile());
 	}
 
 	@Test
@@ -66,6 +72,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(3, subject.tlsPort());
 		assertEquals(4, subject.precheckLookupRetries());
 		assertEquals(5, subject.precheckLookupRetryBackoffMs());
+		assertEquals(DEV, subject.activeProfile());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -73,5 +80,6 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("grpc.tlsPort")).willReturn(i + 1);
 		given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
 		given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs")).willReturn(i + 3);
+		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
 	}
 }

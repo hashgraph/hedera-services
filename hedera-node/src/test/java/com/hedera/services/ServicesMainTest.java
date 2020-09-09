@@ -288,7 +288,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void runsOnDefaultPortInProduction() {
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.PROD);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.PROD);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -302,7 +302,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
@@ -320,7 +320,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
@@ -338,7 +338,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
@@ -357,7 +357,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);

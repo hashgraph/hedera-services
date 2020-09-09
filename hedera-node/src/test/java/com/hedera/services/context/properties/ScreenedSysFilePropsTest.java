@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(JUnitPlatform.class)
 class ScreenedSysFilePropsTest {
@@ -147,6 +148,21 @@ class ScreenedSysFilePropsTest {
 				ScreenedSysFileProps.DEPRECATED_PROP_TPL,
 				"defaultFeeCollectionAccount",
 				"ledger.fundingAccount"));
+	}
+
+	@Test
+	public void warnsOfUntransformableGlobalDynamic() {
+		// when:
+		subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNTRANSFORMABLE_PROP_TPL,
+				"abc",
+				"defaultFeeCollectionAccount",
+				"IllegalArgumentException"));
 	}
 
 	private ServicesConfigurationList withJust(String name, String value) {

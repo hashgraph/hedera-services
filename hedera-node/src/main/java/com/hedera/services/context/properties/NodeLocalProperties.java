@@ -27,6 +27,7 @@ public class NodeLocalProperties {
 	private int tlsPort;
 	private int precheckLookupRetries;
 	private int precheckLookupRetryBackoffMs;
+	private Profile activeProfile;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -39,6 +40,7 @@ public class NodeLocalProperties {
 		tlsPort = properties.getIntProperty("grpc.tlsPort");
 		precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
 		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
+		activeProfile = properties.getProfileProperty("hedera.profiles.active");
 	}
 
 	public int port() {
@@ -55,5 +57,9 @@ public class NodeLocalProperties {
 
 	public int precheckLookupRetryBackoffMs() {
 		return precheckLookupRetryBackoffMs;
+	}
+
+	public Profile activeProfile() {
+		return activeProfile;
 	}
 }
