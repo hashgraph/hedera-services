@@ -22,25 +22,19 @@ package com.hedera.services.legacy.regression.umbrella;
 
 import com.google.common.base.Strings;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hedera.services.legacy.core.TestHelper;
-import java.security.PrivateKey;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,9 +45,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class TestHelperComplex extends TestHelper {
 
-  protected static Map<AccountID, Key> acc2ComplexKeyMap = new LinkedHashMap<>();
-  protected static Map<ContractID, Key> contract2ComplexKeyMap = new LinkedHashMap<>();
-  protected static Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
   public static long TX_DURATION_SEC = 2 * 60; // 2 minutes for tx dedup
   private static final Logger log = LogManager.getLogger(TestHelperComplex.class);
 

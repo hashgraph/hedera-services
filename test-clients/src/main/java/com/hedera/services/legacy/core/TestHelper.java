@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -86,6 +85,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -103,6 +103,9 @@ public class TestHelper {
   public static long DEFAULT_WIND_SEC = -30; // seconds to wind back the UTC clock
   public static long TX_DURATION = 180;
   private static volatile long lastNano = 0;
+  protected static Map<AccountID, Key> acc2ComplexKeyMap = new LinkedHashMap<>();
+  protected static Map<ContractID, Key> contract2ComplexKeyMap = new LinkedHashMap<>();
+  protected static Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
   protected static int MAX_RECEIPT_RETRIES = 108000;
   protected static long RETRY_FREQ_MILLIS = 50;
   protected static long MAX_RETRY_FREQ_MILLIS = 200;
