@@ -109,32 +109,32 @@ public class CryptoTxRecordTransferListTest {
 
 	}
 	
-//	    @Test
-//		public void testTxRecordForCryptoDelete() throws Exception {
-//			long nodeBalance = 7000000;
-//			long payerBalance = LARGE_BALANCE;
-//			long deleteAcctBalance = 100000l;
-//			long transferAccountBalance = 200000l;
-//			deleteAccountID = RequestBuilder.getAccountIdBuild(1020l, 0l, 0l);
-//			transferAccountID = RequestBuilder.getAccountIdBuild(1021l, 0l, 0l);
-//			createAccount(payerAccountId, payerBalance, keys);
-//			createAccount(nodeAccountId, nodeBalance, keys);
-//			createAccount(feeAccount, 1000l, keys);
-//			createAccount(deleteAccountID, deleteAcctBalance, keys);
-//			createAccount(transferAccountID, transferAccountBalance, keys);
-//			Instant consensusTimestamp = Instant.now(Clock.systemUTC()).plusSeconds(20);
-//			TransactionBody txBody = getDeleteTransactionBody();
-//			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap, null);
-//			TransactionRecord trRecord = crHandler.cryptoDelete(txBody, consensusTimestamp);
-//			for(AccountAmount accountAmount : trRecord.getTransferList().getAccountAmountsList()) {
-//				if(accountAmount.getAccountID().equals(deleteAccountID)) {
-//					Assert.assertEquals(-deleteAcctBalance, accountAmount.getAmount());
-//				}else if(accountAmount.getAccountID().equals(transferAccountID)) {
-//					Assert.assertEquals(deleteAcctBalance, accountAmount.getAmount());
-//				}
-//
-//			}
-//		}
+	    @Test
+		public void testTxRecordForCryptoDelete() throws Exception {
+			long nodeBalance = 7000000;
+			long payerBalance = LARGE_BALANCE;
+			long deleteAcctBalance = 100000l;
+			long transferAccountBalance = 200000l;
+			deleteAccountID = RequestBuilder.getAccountIdBuild(1020l, 0l, 0l);
+			transferAccountID = RequestBuilder.getAccountIdBuild(1021l, 0l, 0l);
+			createAccount(payerAccountId, payerBalance, keys);
+			createAccount(nodeAccountId, nodeBalance, keys);
+			createAccount(feeAccount, 1000l, keys);
+			createAccount(deleteAccountID, deleteAcctBalance, keys);
+			createAccount(transferAccountID, transferAccountBalance, keys);
+			Instant consensusTimestamp = Instant.now(Clock.systemUTC()).plusSeconds(20);
+			TransactionBody txBody = getDeleteTransactionBody();
+			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap, null);
+			TransactionRecord trRecord = crHandler.cryptoDelete(txBody, consensusTimestamp);
+			for(AccountAmount accountAmount : trRecord.getTransferList().getAccountAmountsList()) {
+				if(accountAmount.getAccountID().equals(deleteAccountID)) {
+					Assert.assertEquals(-deleteAcctBalance, accountAmount.getAmount());
+				}else if(accountAmount.getAccountID().equals(transferAccountID)) {
+					Assert.assertEquals(deleteAcctBalance, accountAmount.getAmount());
+				}
+
+			}
+		}
 	    
 		@Test
 		public void testTransferTxTransferList() throws Exception {
@@ -208,29 +208,28 @@ public class CryptoTxRecordTransferListTest {
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 	}
 
-//	private TransactionBody getDeleteTransactionBody() {
-//
-//
-//		Instant startTimeInstant = Instant.now(Clock.systemUTC()).minusSeconds(-10);
-//		Timestamp startTime = RequestBuilder.getTimestamp(startTimeInstant);
-//		Duration transactionDuration = RequestBuilder.getDuration(100);
-//
-//
-//
-//		Transaction deleteTx = RequestBuilder.getAccountDeleteRequest(deleteAccountID, transferAccountID,
-//			       payerAccount,  0l, 0l,  nodeAccount, 0l, 0l, 1000000l,
-//			       startTime,  transactionDuration, false, "Delete Account Test",
-//			       SignatureList.getDefaultInstance());
-//		TransactionBody txBody = null;
-//		 try {
-//			txBody =
-//			            com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(deleteTx);
-//		} catch (InvalidProtocolBufferException e) {
-//			e.printStackTrace();
-//		}
-//		 return txBody;
-//
-//	}
+	private TransactionBody getDeleteTransactionBody() {
+
+
+		Instant startTimeInstant = Instant.now(Clock.systemUTC()).minusSeconds(-10);
+		Timestamp startTime = RequestBuilder.getTimestamp(startTimeInstant);
+		Duration transactionDuration = RequestBuilder.getDuration(100);
+
+
+
+		Transaction deleteTx = RequestBuilder.getAccountDeleteRequest(deleteAccountID, transferAccountID,
+			       payerAccount,  0l, 0l,  nodeAccount, 0l, 0l, 1000000l,
+			       startTime,  transactionDuration, false, "Delete Account Test");
+		TransactionBody txBody = null;
+		 try {
+			txBody =
+			            com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(deleteTx);
+		} catch (InvalidProtocolBufferException e) {
+			e.printStackTrace();
+		}
+		 return txBody;
+
+	}
 		
 
 	private void createAccount(AccountID payerAccount, long balance, Key key) throws Exception {

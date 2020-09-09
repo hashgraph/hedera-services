@@ -66,6 +66,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
@@ -124,23 +125,23 @@ class PreCheckValidationTest {
 	private TransactionHandler transactionHandler;
 	private FileServiceHandler fileServiceHandler;
 
-//	private long getCalculatedTransactionFee(Transaction tr, List<PrivateKey> keys, TransactionHandler trHandler) {
-//		long feeToreturn = 0L;
-//		Transaction signedTransaction = TransactionSigner.signTransaction(tr, keys);
-//
-//		try {
-//			TransactionBody txBody = CommonUtils.extractTransactionBody(signedTransaction);
-//			int totalSignatureCount = FeeBuilder.getSignatureCount(signedTransaction);
-//			int signatureSize = FeeBuilder.getSignatureSize(signedTransaction);
-//			int payerAcctSigCount = keys.size();
-//			SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-//					signatureSize);
-//			feeToreturn = getTransactionFee(txBody, sigValueObj);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		return feeToreturn;
-//	}
+	private long getCalculatedTransactionFee(Transaction tr, List<PrivateKey> keys, List<PublicKey> publicKeys,
+			TransactionHandler trHandler) {
+		long feeToreturn = 0L;
+		try {
+			Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(tr, keys, publicKeys);
+			TransactionBody txBody = CommonUtils.extractTransactionBody(signedTransaction);
+			int totalSignatureCount = FeeBuilder.getSignatureCount(signedTransaction);
+			int signatureSize = FeeBuilder.getSignatureSize(signedTransaction);
+			int payerAcctSigCount = keys.size();
+			SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
+					signatureSize);
+			feeToreturn = getTransactionFee(txBody, sigValueObj);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return feeToreturn;
+	}
 
 	public long getTransactionFee(TransactionBody txn, SigValueObj sigValueObj) throws Exception {
 		HederaFunctionality function = MiscUtils.functionOf(txn);
@@ -152,18 +153,19 @@ class PreCheckValidationTest {
 		return FeeBuilder.getTotalFeeforRequest(prices, usageMetrics, TEST_EXCHANGE.rate(at));
 	}
 
-//	private Transaction createPossibleTransaction() throws Exception {
-//		KeyPair keyGenerated = new KeyPairGenerator().generateKeyPair();
-//		Transaction transaction = TestHelper.createAccount(payerAccount, nodeAccount, keyGenerated, 30);
-//
-//		// calculate fee required
-//		long correctFee = getCalculatedTransactionFee(transaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()), transactionHandler);
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(transaction);
-//		trBody = trBody.toBuilder().setTransactionFee(correctFee).build();
-//		transaction = transaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//		return transaction;
-//	}
+	private Transaction createPossibleTransaction() throws Exception {
+		KeyPair keyGenerated = new KeyPairGenerator().generateKeyPair();
+		Transaction transaction = TestHelper.createAccount(payerAccount, nodeAccount, keyGenerated, 30);
+
+		// calculate fee required
+		long correctFee = getCalculatedTransactionFee(transaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()), transactionHandler);
+		TransactionBody trBody = CommonUtils.extractTransactionBody(transaction);
+		trBody = trBody.toBuilder().setTransactionFee(correctFee).build();
+		transaction = transaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+		return transaction;
+	}
 
 	@BeforeAll
 	void initializeState() throws Exception {
@@ -182,7 +184,8 @@ class PreCheckValidationTest {
 				precheckVerifier,
 				TEST_USAGE_PRICES,
 				TEST_EXCHANGE,
-				TestFeesFactory.FEES_FACTORY.get(), () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -208,428 +211,447 @@ class PreCheckValidationTest {
 		);
 	}
 
-//	@Test
-//	void testCreateAccountPreCheckPositive() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		Assertions.assertEquals(OK, result.getValidity());
-//		assert (result.getRequiredFee() == 0L);
-//	}
+	@Test
+	void testCreateAccountPreCheckPositive() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
 
-//	@Test
-//	void testCreateAccountPreCheckPayerAccountNotFound() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//
-//		TransactionID trId = trBody.getTransactionID();
-//		AccountID acctId = trId.getAccountID();
-//		// change account Id to non existent account number
-//		acctId = acctId.toBuilder().setAccountNum(90001).build();
-//		trId = trId.toBuilder().setAccountID(acctId).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
 
-//	@Test
-//	void testNodeAccountNotFound() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		AccountID wrongNodeAccountID =
-//				AccountID.newBuilder().setAccountNum(92300).setRealmNum(0).setShardNum(0).build();
-//		trBody = trBody.toBuilder().setNodeAccountID(wrongNodeAccountID).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_NODE_ACCOUNT);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		Assertions.assertEquals(OK, result.getValidity());
+		assert (result.getRequiredFee() == 0L);
+	}
 
-//	@Test
-//	void testInvalidTransactionStart() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		TransactionID trId = trBody.getTransactionID();
-//		Timestamp trValidStart = trId.getTransactionValidStart();
-//		// put validstart into future time
-//		trValidStart = trValidStart.toBuilder().setSeconds(trValidStart.getSeconds() + 3600).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
-//	}
+	@Test
+	void testCreateAccountPreCheckPayerAccountNotFound() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
 
-//	@Test
-//	void testInvalidTransactionDuration() throws Exception {
-//		// send duration more than 5sec
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		Duration validDuration = trBody.getTransactionValidDuration();
-//		validDuration = validDuration.toBuilder().setSeconds(6000).build();
-//		trBody = trBody.toBuilder().setTransactionValidDuration(validDuration).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// send duration less than 5sec
-//		origTransaction = createPossibleTransaction();
-//		trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		validDuration = trBody.getTransactionValidDuration();
-//		validDuration = validDuration.toBuilder().setSeconds(3).build();
-//		trBody = trBody.toBuilder().setTransactionValidDuration(validDuration).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		TransactionID trId = trBody.getTransactionID();
+		AccountID acctId = trId.getAccountID();
+		// change account Id to non existent account number
+		acctId = acctId.toBuilder().setAccountNum(90001).build();
+		trId = trId.toBuilder().setAccountID(acctId).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
-//	@Test
-//	void testInvalidSignature() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		// sign transaction with key that is different
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(new KeyPairGenerator().generateKeyPair().getPrivate()));
-//		assert (signedTransaction != null);
-//		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(false);
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_SIGNATURE);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
 
-//	@Test
-//	void testInvalidMemoTooLong() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		trBody = trBody.toBuilder().setMemo(StringUtils.repeat("*", 101)).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.MEMO_TOO_LONG);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
+		assert (result.getRequiredFee() == 0L);
+	}
 
-//	@Test
-//	void testInsufficientTransactionFee() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		long correctFee = trBody.getTransactionFee();
-//		trBody = trBody.toBuilder().setTransactionFee(correctFee - 1).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-//		assert (result.getRequiredFee() == correctFee);
-//	}
+	@Test
+	void testNodeAccountNotFound() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		AccountID wrongNodeAccountID =
+				AccountID.newBuilder().setAccountNum(92300).setRealmNum(0).setShardNum(0).build();
+		trBody = trBody.toBuilder().setNodeAccountID(wrongNodeAccountID).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
-//	@Test
-//	void testInsufficientPayerBalance() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		TransactionID trId = trBody.getTransactionID();
-//		AccountID acctId = trId.getAccountID();
-//		// change account Id to non existent account number
-//		acctId = acctId.toBuilder().setAccountNum(900089).build();
-//		trId = trId.toBuilder().setAccountID(acctId).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//		long correctFee = trBody.getTransactionFee();
-//
-//		// onboard account with balance less than fee
-//		KeyPair accountKey = new KeyPairGenerator().generateKeyPair();
-//		byte[] pubKey = ((EdDSAPublicKey) accountKey.getPublic()).getAbyte();
-//
-//		onboardAccount(acctId, pubKey, (correctFee - 1) / 100);
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(accountKey.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
 
-//	@Test
-//	void testThrottled() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
-//		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-//		var policies = new SystemOpPolicies(new MockEntityNumbers());
-//		var platformStatus = new ContextPlatformStatus();
-//		platformStatus.set(PlatformStatus.ACTIVE);
-//		PropertySource propertySource = mock(PropertySource.class);
-//		TransactionHandler localTransactionHandler = new TransactionHandler(
-//				recordCache,
-//				() -> accountFCMap,
-//				nodeAccount,
-//				precheckVerifier,
-//				TEST_USAGE_PRICES,
-//				TEST_EXCHANGE,
-//				TestFeesFactory.FEES_FACTORY.get(),
-//				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
-//				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-//				new QueryFeeCheck(() -> accountFCMap),
-//				new MockAccountNumbers(),
-//				policies,
-//				new StandardExemptions(new MockAccountNumbers(), policies),
-//				platformStatus);
-//		localTransactionHandler.setThrottling(function -> true);
-//		TxnValidityAndFeeReq result =
-//				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.BUSY);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_NODE_ACCOUNT);
+		assert (result.getRequiredFee() == 0L);
+	}
 
-//	@Test
-//	void testCreateDuplicate() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//		TransactionBody body = CommonUtils.extractTransactionBody(origTransaction);
-//		TransactionID trId = body.getTransactionID();
-//		RecordCache localRecordCache = new RecordCache(
-//				null,
-//				CacheBuilder.newBuilder().build(),
-//				new HashMap<>());
-//		TransactionReceipt txReceipt = RequestBuilder.getTransactionReceipt(OK);
-//		TransactionRecord transactionRecord =
-//				TransactionRecord.newBuilder().setReceipt(txReceipt).build();
-//		localRecordCache.setPostConsensus(
-//				trId,
-//				transactionRecord.getReceipt().getStatus(),
-//				ExpirableTxnRecord.fromGprc(transactionRecord));
-//		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
-//		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-//		var policies = new SystemOpPolicies(new MockEntityNumbers());
-//		var platformStatus = new ContextPlatformStatus();
-//		platformStatus.set(PlatformStatus.ACTIVE);
-//		PropertySource propertySource = mock(PropertySource.class);
-//		TransactionHandler localTransactionHandler = new TransactionHandler(
-//				localRecordCache,
-//				() -> accountFCMap,
-//				nodeAccount,
-//				precheckVerifier,
-//				TEST_USAGE_PRICES,
-//				TEST_EXCHANGE,
-//				TestFeesFactory.FEES_FACTORY.get(),
-//				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
-//				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-//				new QueryFeeCheck(() -> accountFCMap),
-//				new MockAccountNumbers(),
-//				policies,
-//				new StandardExemptions(new MockAccountNumbers(), policies),
-//				platformStatus);
-//
-//		TxnValidityAndFeeReq result =
-//				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.DUPLICATE_TRANSACTION);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+	@Test
+	void testInvalidTransactionStart() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		TransactionID trId = trBody.getTransactionID();
+		Timestamp trValidStart = trId.getTransactionValidStart();
+		// put validstart into future time
+		trValidStart = trValidStart.toBuilder().setSeconds(trValidStart.getSeconds() + 3600).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
 
-//	@Test
-//	void testInvalidTransactionStartOutOfRange() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		TransactionID trId = trBody.getTransactionID();
-//		Timestamp trValidStart = trId.getTransactionValidStart();
-//		// put validstart into future time
-//		trValidStart = trValidStart.toBuilder().setSeconds(Instant.MAX.getEpochSecond() - 1).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		Assertions.assertEquals(ResponseCodeEnum.INVALID_TRANSACTION_START, result.getValidity());
-//		assert (result.getRequiredFee() == 0L);
-//
-//		trValidStart = trValidStart.toBuilder().setSeconds(Instant.MAX.getEpochSecond() + 1).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
 
-//	@Test
-//	void testInvalidTransactionStartTime() throws Exception {
-//		Transaction origTransaction = createPossibleTransaction();
-//		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
-//		TransactionID trId = trBody.getTransactionID();
-//		Timestamp trValidStart = trId.getTransactionValidStart();
-//		// put validstart into future time
-//		Instant startTime = Instant.now(Clock.systemUTC()).plusSeconds(60);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		trBody = trBody.toBuilder().setTransactionID(trId).build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		Transaction signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		TxnValidityAndFeeReq result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// 1. Negative : test start + duration should be less than node time
-//		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-11);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		Duration duration = RequestBuilder.getDuration(20);
-//		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
-//				.build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		Assertions.assertEquals(ResponseCodeEnum.TRANSACTION_EXPIRED, result.getValidity());
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// 2. Positive : test start + duration should be less than node time
-//		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-9);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		duration = RequestBuilder.getDuration(20);
-//		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
-//				.build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == OK);
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// 3. Positive : test start + duration should be less than node time
-//		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		duration = RequestBuilder.getDuration(20);
-//		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
-//				.build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == OK);
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// 4. Positive : test start + duration should be less than node time
-//		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		duration = RequestBuilder.getDuration(120);
-//		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
-//				.build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == OK);
-//		assert (result.getRequiredFee() == 0L);
-//
-//		// 5. Positive : test start + duration should be less than node time
-//		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
-//		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
-//		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
-//		duration = RequestBuilder.getDuration(15);
-//		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
-//				.build();
-//		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
-//
-//		signedTransaction = TransactionSigner.signTransaction(origTransaction,
-//				Collections.singletonList(payerKeyGenerated.getPrivate()));
-//		assert (signedTransaction != null);
-//
-//		result =
-//				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
-//		assert (result.getValidity() == OK);
-//		assert (result.getRequiredFee() == 0L);
-//	}
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
+	}
 
+	@Test
+	void testInvalidTransactionDuration() throws Exception {
+		// send duration more than 5sec
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		Duration validDuration = trBody.getTransactionValidDuration();
+		validDuration = validDuration.toBuilder().setSeconds(6000).build();
+		trBody = trBody.toBuilder().setTransactionValidDuration(validDuration).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
+		assert (result.getRequiredFee() == 0L);
+
+		// send duration less than 5sec
+		origTransaction = createPossibleTransaction();
+		trBody = CommonUtils.extractTransactionBody(origTransaction);
+		validDuration = trBody.getTransactionValidDuration();
+		validDuration = validDuration.toBuilder().setSeconds(3).build();
+		trBody = trBody.toBuilder().setTransactionValidDuration(validDuration).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_DURATION);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testInvalidSignature() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		// sign transaction with key that is different
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(new KeyPairGenerator().generateKeyPair().getPrivate()),
+				Collections.singletonList(new KeyPairGenerator().generateKeyPair().getPublic()));
+		assert (signedTransaction != null);
+		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(false);
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_SIGNATURE);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testInvalidMemoTooLong() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		trBody = trBody.toBuilder().setMemo(StringUtils.repeat("*", 101)).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.MEMO_TOO_LONG);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testInsufficientTransactionFee() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		long correctFee = trBody.getTransactionFee();
+		trBody = trBody.toBuilder().setTransactionFee(correctFee - 1).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_TX_FEE);
+		assert (result.getRequiredFee() == correctFee);
+	}
+
+	@Test
+	void testInsufficientPayerBalance() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		TransactionID trId = trBody.getTransactionID();
+		AccountID acctId = trId.getAccountID();
+		// change account Id to non existent account number
+		acctId = acctId.toBuilder().setAccountNum(900089).build();
+		trId = trId.toBuilder().setAccountID(acctId).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+		long correctFee = trBody.getTransactionFee();
+
+		// onboard account with balance less than fee
+		KeyPair accountKey = new KeyPairGenerator().generateKeyPair();
+		byte[] pubKey = ((EdDSAPublicKey) accountKey.getPublic()).getAbyte();
+
+		onboardAccount(acctId, pubKey, (correctFee - 1) / 100);
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(accountKey.getPrivate()),
+				Collections.singletonList(accountKey.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testThrottled() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
+		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
+		TransactionHandler localTransactionHandler = new TransactionHandler(
+				recordCache,
+				() -> accountFCMap,
+				nodeAccount,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				TEST_EXCHANGE,
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
+		localTransactionHandler.setThrottling(function -> true);
+		TxnValidityAndFeeReq result =
+				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.BUSY);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testCreateDuplicate() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+		TransactionBody body = CommonUtils.extractTransactionBody(origTransaction);
+		TransactionID trId = body.getTransactionID();
+		RecordCache localRecordCache = new RecordCache(
+				null,
+				CacheBuilder.newBuilder().build(),
+				new HashMap<>());
+		TransactionReceipt txReceipt = RequestBuilder.getTransactionReceipt(OK);
+		TransactionRecord transactionRecord =
+				TransactionRecord.newBuilder().setReceipt(txReceipt).build();
+		localRecordCache.setPostConsensus(
+				trId,
+				transactionRecord.getReceipt().getStatus(),
+				ExpirableTxnRecord.fromGprc(transactionRecord));
+		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
+		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
+		TransactionHandler localTransactionHandler = new TransactionHandler(
+				localRecordCache,
+				() -> accountFCMap,
+				nodeAccount,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				TEST_EXCHANGE,
+				TestFeesFactory.FEES_FACTORY.get(),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
+
+		TxnValidityAndFeeReq result =
+				localTransactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.DUPLICATE_TRANSACTION);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testInvalidTransactionStartOutOfRange() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		TransactionID trId = trBody.getTransactionID();
+		Timestamp trValidStart = trId.getTransactionValidStart();
+		// put validstart into future time
+		trValidStart = trValidStart.toBuilder().setSeconds(Instant.MAX.getEpochSecond() - 1).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		Assertions.assertEquals(ResponseCodeEnum.INVALID_TRANSACTION_START, result.getValidity());
+		assert (result.getRequiredFee() == 0L);
+
+		trValidStart = trValidStart.toBuilder().setSeconds(Instant.MAX.getEpochSecond() + 1).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
+		assert (result.getRequiredFee() == 0L);
+	}
+
+	@Test
+	void testInvalidTransactionStartTime() throws Exception {
+		Transaction origTransaction = createPossibleTransaction();
+		TransactionBody trBody = CommonUtils.extractTransactionBody(origTransaction);
+		TransactionID trId = trBody.getTransactionID();
+		Timestamp trValidStart = trId.getTransactionValidStart();
+		// put validstart into future time
+		Instant startTime = Instant.now(Clock.systemUTC()).plusSeconds(60);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		trBody = trBody.toBuilder().setTransactionID(trId).build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		Transaction signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		TxnValidityAndFeeReq result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == ResponseCodeEnum.INVALID_TRANSACTION_START);
+		assert (result.getRequiredFee() == 0L);
+
+		// 1. Negative : test start + duration should be less than node time
+		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-11);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		Duration duration = RequestBuilder.getDuration(20);
+		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
+				.build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		Assertions.assertEquals(ResponseCodeEnum.TRANSACTION_EXPIRED, result.getValidity());
+		assert (result.getRequiredFee() == 0L);
+
+		// 2. Positive : test start + duration should be less than node time
+		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-9);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		duration = RequestBuilder.getDuration(20);
+		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
+				.build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == OK);
+		assert (result.getRequiredFee() == 0L);
+
+		// 3. Positive : test start + duration should be less than node time
+		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		duration = RequestBuilder.getDuration(20);
+		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
+				.build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == OK);
+		assert (result.getRequiredFee() == 0L);
+
+		// 4. Positive : test start + duration should be less than node time
+		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		duration = RequestBuilder.getDuration(120);
+		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
+				.build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == OK);
+		assert (result.getRequiredFee() == 0L);
+
+		// 5. Positive : test start + duration should be less than node time
+		startTime = Instant.now(Clock.systemUTC()).plusSeconds(-1);
+		trValidStart = trValidStart.toBuilder().setSeconds(startTime.getEpochSecond()).build();
+		trId = trId.toBuilder().setTransactionValidStart(trValidStart).build();
+		duration = RequestBuilder.getDuration(15);
+		trBody = trBody.toBuilder().setTransactionID(trId).setTransactionValidDuration(duration)
+				.build();
+		origTransaction = origTransaction.toBuilder().setBodyBytes(trBody.toByteString()).build();
+
+		signedTransaction = TransactionSigner.signTransactionWithSignatureMap(origTransaction,
+				Collections.singletonList(payerKeyGenerated.getPrivate()),
+				Collections.singletonList(payerKeyGenerated.getPublic()));
+		assert (signedTransaction != null);
+
+		result =
+				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
+		assert (result.getValidity() == OK);
+		assert (result.getRequiredFee() == 0L);
+	}
 }

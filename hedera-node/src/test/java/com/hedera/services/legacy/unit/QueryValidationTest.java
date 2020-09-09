@@ -55,6 +55,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,22 +94,26 @@ class QueryValidationTest {
   private KeyPair payerKeyGenerated = new KeyPairGenerator().generateKeyPair();
   private TransactionHandler transactionHandler;
 
-//  private Transaction createQueryHeaderTransfer(AccountID payer) throws Exception {
-//    Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now());
-//    Duration transactionDuration = RequestBuilder.getDuration(30);
-//
-//    SignatureList sigList = SignatureList.getDefaultInstance();
-//    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payer.getAccountNum(),
-//        payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(),
-//        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 100, timestamp, transactionDuration,
-//        false, "test", sigList, payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
-//    List<PrivateKey> keyList = new ArrayList<>();
-//    PrivateKey genPrivKey = payerKeyGenerated.getPrivate();
-//    keyList.add(genPrivKey);
-//    keyList.add(genPrivKey);
-//    transferTx = TransactionSigner.signTransaction(transferTx, keyList);
-//    return transferTx;
-//  }
+  private Transaction createQueryHeaderTransfer(AccountID payer) throws Exception {
+    Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now());
+    Duration transactionDuration = RequestBuilder.getDuration(30);
+
+    SignatureList sigList = SignatureList.getDefaultInstance();
+    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payer.getAccountNum(),
+        payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(),
+        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 100, timestamp, transactionDuration,
+        false, "test", payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
+    List<PrivateKey> privateKeyList = new ArrayList<>();
+    List<PublicKey> pubKeyList = new ArrayList<>();
+    PrivateKey genPrivKey = payerKeyGenerated.getPrivate();
+    PublicKey genPubKey = payerKeyGenerated.getPublic();
+    privateKeyList.add(genPrivKey);
+    privateKeyList.add(genPrivKey);
+    pubKeyList.add(genPubKey);
+    pubKeyList.add(genPubKey);
+    transferTx = TransactionSigner.signTransactionWithSignatureMap(transferTx, privateKeyList, pubKeyList);
+    return transferTx;
+  }
 
   @BeforeAll
   void initializeState() throws Exception {
@@ -149,33 +154,33 @@ class QueryValidationTest {
     );
   }
 
-//  @Test
-//  void testValidateGetInfoQuery_validateQuery() throws Exception {
-//    Transaction transferTransaction = createQueryHeaderTransfer(payerAccount);
-//    Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(payerAccount,
-//        transferTransaction, ResponseType.ANSWER_ONLY);
-//
-//    ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
-//    assert (result == ResponseCodeEnum.OK);
-//  }
+  @Test
+  void testValidateGetInfoQuery_validateQuery() throws Exception {
+    Transaction transferTransaction = createQueryHeaderTransfer(payerAccount);
+    Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(payerAccount,
+        transferTransaction, ResponseType.ANSWER_ONLY);
 
-//  @Test
-//  void testValidateGetInfoQuery_validateQuery_negetive() throws Exception {
-//    Transaction transferTransaction = createQueryHeaderTransfer(negetiveAccountNo);
-//    Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(negetiveAccountNo,
-//        transferTransaction, ResponseType.ANSWER_ONLY);
-//
-//    ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
-//    assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
-//  }
+    ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
+    assert (result == ResponseCodeEnum.OK);
+  }
+
+  @Test
+  void testValidateGetInfoQuery_validateQuery_negetive() throws Exception {
+    Transaction transferTransaction = createQueryHeaderTransfer(negetiveAccountNo);
+    Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(negetiveAccountNo,
+        transferTransaction, ResponseType.ANSWER_ONLY);
+
+    ResponseCodeEnum result = transactionHandler.validateQuery(cryptoGetInfoQuery, true);
+    assertEquals(result, ResponseCodeEnum.NOT_SUPPORTED);
+  }
 
 
-//  @Test
-//  void testValidateGetInfoQuery_validateFee_inSufficientTxFee() throws Exception {
-//    Transaction transaction = createQueryHeaderTransfer(lowBalanceAccount);
-//    ResponseCodeEnum result =
-//            transactionHandler.validateScheduledFee(HederaFunctionality.CryptoGetInfo, transaction, 100);
-//    assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result);
-//
-//  }
+  @Test
+  void testValidateGetInfoQuery_validateFee_inSufficientTxFee() throws Exception {
+    Transaction transaction = createQueryHeaderTransfer(lowBalanceAccount);
+    ResponseCodeEnum result =
+            transactionHandler.validateScheduledFee(HederaFunctionality.CryptoGetInfo, transaction, 100);
+    assertEquals(ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE, result);
+
+  }
 }

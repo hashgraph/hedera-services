@@ -70,31 +70,30 @@ public class TestHelper {
     return rv;
   }
 
-//  public static Transaction createAccount(AccountID payerAccount, AccountID nodeAccount,
-//                                          KeyPair pair, long initialBalance) {
-//    Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-//    Duration transactionDuration = RequestBuilder.getDuration(30);
-//    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-//    String pubKeyStr = Hex.encodeHexString(pubKey);
-//    Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
-//    List<Key> keyList = Collections.singletonList(key);
-//
-//    long transactionFee = 100;
-//    boolean generateRecord = true;
-//    String memo = "Create Account Test";
-//    long sendRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
-//    long receiveRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
-//    boolean receiverSigRequired = false;
-//    Duration autoRenewPeriod = RequestBuilder.getDuration(5000);
-//    return RequestBuilder
-//            .getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-//                    payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-//                    nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-//                    transactionFee, timestamp, transactionDuration, generateRecord,
-//                    memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-//                    receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-//                    SignatureList.newBuilder().getDefaultInstanceForType());
-//  }
+  public static Transaction createAccount(AccountID payerAccount, AccountID nodeAccount,
+                                          KeyPair pair, long initialBalance) {
+    Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
+    Duration transactionDuration = RequestBuilder.getDuration(30);
+    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+    String pubKeyStr = Hex.encodeHexString(pubKey);
+    Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
+    List<Key> keyList = Collections.singletonList(key);
+
+    long transactionFee = 100;
+    boolean generateRecord = true;
+    String memo = "Create Account Test";
+    long sendRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
+    long receiveRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
+    boolean receiverSigRequired = false;
+    Duration autoRenewPeriod = RequestBuilder.getDuration(5000);
+    return RequestBuilder
+            .getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
+                    payerAccount.getShardNum(), nodeAccount.getAccountNum(),
+                    nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
+                    transactionFee, timestamp, transactionDuration, generateRecord,
+                    memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
+                    receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
+  }
 
 
   public static Transaction createTransferUnsigned(AccountID fromAccount,
