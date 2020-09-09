@@ -339,98 +339,94 @@ public class SmartContractServiceImplTest {
 	/**
 	 * Prepares a test case specific transaction & returns it
 	 */
-//	public Transaction getDummyTransaction(String action) {
-//
-//		// Long payerAccountNum = 111l;
-//		Long payerRealmNum = 0l;
-//		Long payerShardNum = 0l;
-//		// Long nodeAccountNum=123l;
-//		Long nodeRealmNum = 0l;
-//		Long nodeShardNum = 0l;
-//		long transactionFee = 0l;
-//		Timestamp startTime =
-//				RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-//		Duration transactionDuration = RequestBuilder.getDuration(100);
-//		boolean generateRecord = false;
-//		String memo = "UnitTesting";
-//		int thresholdValue = 10;
-//		List<Key> keyList = new ArrayList<>();
-//		KeyPair pair = new KeyPairGenerator().generateKeyPair();
-//		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-//		Key akey =
-//				Key.newBuilder().setEd25519(ByteString.copyFromUtf8((MiscUtils.commonsBytesToHex(pubKey)))).build();
-//		PrivateKey priv = pair.getPrivate();
-//		keyList.add(akey);
-//		long initBal = 100;
-//		long sendRecordThreshold = 5;
-//		long receiveRecordThreshold = 5;
-//		boolean receiverSign = false;
-//		Duration autoRenew = RequestBuilder.getDuration(100);
-//		;
-//		long proxyAccountNum = 12345l;
-//		long proxyRealmNum = 0l;
-//		long proxyShardNum = 0l;
-//		int proxyFraction = 10;
-//		int maxReceiveProxyFraction = 10;
-//		long shardID = 0l;
-//		long realmID = 0l;
-//
-//		Transaction trx = null;
-//		SignatureList sigList = SignatureList.getDefaultInstance();
-//		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-//
-//		/**
-//		 * SignatureList sigList = SignatureList.getDefaultInstance(); Transaction transferTx =
-//		 * RequestBuilder.getCryptoTransferRequest( payer.getAccountNum(), payer.getRealmNum(),
-//		 * payer.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
-//		 * nodeAccount.getShardNum(), 800, timestamp, transactionDuration, false, "test", sigList,
-//		 * payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l); transferTx =
-//		 * TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
-//		 */
-//
-//		if ("SolidityIDQuery".equalsIgnoreCase(action)) {
-//			trx = RequestBuilder.getCryptoTransferRequest(payerAccountId.getAccountNum(),
-//					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
-//					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 800, timestamp,
-//					transactionDuration, false, "test", sigList, payerAccountId.getAccountNum(), -100l,
-//					nodeAccountId.getAccountNum(), 100l);
-//			// trx = TransactionSigner.signTransaction(trx, account2keyMap.get(payerAccountId));
-//		}
-//
-//		if ("createContract".equalsIgnoreCase(action)) {
-//			FileID fileID = FileID.newBuilder().setFileNum(9999l).setRealmNum(1l).setShardNum(2l).build();
-//
-//			trx = RequestBuilder.getCreateContractRequest(payerAccountId.getAccountNum(),
-//					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
-//					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 50000000000l, timestamp,
-//					transactionDuration, true, "createContract", DEFAULT_CONTRACT_OP_GAS, fileID,
-//					ByteString.EMPTY, 0, transactionDuration,
-//					SignatureList.newBuilder().addSigs(
-//							Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-//							.build(),
-//					"");
-//		}
-//
-//		// if("SolidityIDQuery".equalsIgnoreCase(action)) {
-//		// long durationInSeconds = DAY_SEC * 30;
-//		// * Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
-//		// * Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-//		// * Duration transactionDuration = RequestBuilder.getDuration(30, 0);
-//		// * Transaction createContractRequest =
-//		// RequestBuilder.getCreateContractRequest(payerAccountId.getAccountNum(),
-//		// * payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
-//		// * nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 100l, timestamp,
-//		// transactionDuration, true, "createContract",
-//		// * DEFAULT_CONTRACT_OP_GAS, contractFile, ByteString.EMPTY, 0, contractAutoRenew,
-//		// * SignatureList.newBuilder()
-//		// *
-//		// .addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-//		// * .build());
-//		// }
-//
-//		return trx;
-//
-//	}
+	public Transaction getDummyTransaction(String action) {
+
+		// Long payerAccountNum = 111l;
+		Long payerRealmNum = 0l;
+		Long payerShardNum = 0l;
+		// Long nodeAccountNum=123l;
+		Long nodeRealmNum = 0l;
+		Long nodeShardNum = 0l;
+		long transactionFee = 0l;
+		Timestamp startTime =
+				RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
+		Duration transactionDuration = RequestBuilder.getDuration(100);
+		boolean generateRecord = false;
+		String memo = "UnitTesting";
+		int thresholdValue = 10;
+		List<Key> keyList = new ArrayList<>();
+		KeyPair pair = new KeyPairGenerator().generateKeyPair();
+		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		Key akey =
+				Key.newBuilder().setEd25519(ByteString.copyFromUtf8((MiscUtils.commonsBytesToHex(pubKey)))).build();
+		PrivateKey priv = pair.getPrivate();
+		keyList.add(akey);
+		long initBal = 100;
+		long sendRecordThreshold = 5;
+		long receiveRecordThreshold = 5;
+		boolean receiverSign = false;
+		Duration autoRenew = RequestBuilder.getDuration(100);
+		;
+		long proxyAccountNum = 12345l;
+		long proxyRealmNum = 0l;
+		long proxyShardNum = 0l;
+		int proxyFraction = 10;
+		int maxReceiveProxyFraction = 10;
+		long shardID = 0l;
+		long realmID = 0l;
+
+		Transaction trx = null;
+		SignatureList sigList = SignatureList.getDefaultInstance();
+		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
+
+		/**
+		 * SignatureList sigList = SignatureList.getDefaultInstance(); Transaction transferTx =
+		 * RequestBuilder.getCryptoTransferRequest( payer.getAccountNum(), payer.getRealmNum(),
+		 * payer.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
+		 * nodeAccount.getShardNum(), 800, timestamp, transactionDuration, false, "test", sigList,
+		 * payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l); transferTx =
+		 * TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
+		 */
+
+		if ("SolidityIDQuery".equalsIgnoreCase(action)) {
+			trx = RequestBuilder.getCryptoTransferRequest(payerAccountId.getAccountNum(),
+					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
+					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 800, timestamp,
+					transactionDuration, false, "test", payerAccountId.getAccountNum(), -100l,
+					nodeAccountId.getAccountNum(), 100l);
+			// trx = TransactionSigner.signTransaction(trx, account2keyMap.get(payerAccountId));
+		}
+
+		if ("createContract".equalsIgnoreCase(action)) {
+			FileID fileID = FileID.newBuilder().setFileNum(9999l).setRealmNum(1l).setShardNum(2l).build();
+
+			trx = RequestBuilder.getCreateContractRequest(payerAccountId.getAccountNum(),
+					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
+					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 50000000000l, timestamp,
+					transactionDuration, true, "createContract", DEFAULT_CONTRACT_OP_GAS, fileID,
+					ByteString.EMPTY, 0, transactionDuration, "");
+		}
+
+		// if("SolidityIDQuery".equalsIgnoreCase(action)) {
+		// long durationInSeconds = DAY_SEC * 30;
+		// * Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
+		// * Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
+		// * Duration transactionDuration = RequestBuilder.getDuration(30, 0);
+		// * Transaction createContractRequest =
+		// RequestBuilder.getCreateContractRequest(payerAccountId.getAccountNum(),
+		// * payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
+		// * nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 100l, timestamp,
+		// transactionDuration, true, "createContract",
+		// * DEFAULT_CONTRACT_OP_GAS, contractFile, ByteString.EMPTY, 0, contractAutoRenew,
+		// * SignatureList.newBuilder()
+		// *
+		// .addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
+		// * .build());
+		// }
+
+		return trx;
+
+	}
 
 	/**
 	 *
@@ -465,31 +461,31 @@ public class SmartContractServiceImplTest {
 		return Mockito.mock(field.getType(), mockSettings);
 	}
 
-//	@Test
-//	@Disabled
-//	@DisplayName("1A Creates Contract & tests")
-//	public void aa_createContract() {
-//
-//		Transaction trx = getDummyTransaction("createContract");
-//
-//		MockSettings mockSettings =
-//				new MockSettingsImpl<>().defaultAnswer(RETURNS_SMART_NULLS).stubOnly();
-//
-//		Platform platform = Mockito.mock(Platform.class);
-//		when(platform.createTransaction(new com.swirlds.common.Transaction(trx.toByteArray())))
-//				.thenReturn(true);
-//		PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
-//		given(submissionManager.trySubmission(any())).willReturn(OK);
-//
-//		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-//				smartContractHandler, hederaNodeStats,
-//				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-//				submissionManager, null, null);
-//		smartContractImpl.createContract(trx, responseObserver);
-//
-//		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
-//		verify(hederaNodeStats, times(1)).smartContractTransactionSubmitted("createContract");
-//	}
+	@Test
+	@Disabled
+	@DisplayName("1A Creates Contract & tests")
+	public void aa_createContract() {
+
+		Transaction trx = getDummyTransaction("createContract");
+
+		MockSettings mockSettings =
+				new MockSettingsImpl<>().defaultAnswer(RETURNS_SMART_NULLS).stubOnly();
+
+		Platform platform = Mockito.mock(Platform.class);
+		when(platform.createTransaction(new com.swirlds.common.Transaction(trx.toByteArray())))
+				.thenReturn(true);
+		PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
+
+		smartContractImpl = new SmartContractServiceImpl(transactionHandler,
+				smartContractHandler, hederaNodeStats,
+				TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
+				submissionManager, null, null);
+		smartContractImpl.createContract(trx, responseObserver);
+
+		verify(hederaNodeStats, times(1)).smartContractTransactionReceived("createContract");
+		verify(hederaNodeStats, times(1)).smartContractTransactionSubmitted("createContract");
+	}
 
 	@AfterAll
 	public void tearDown() throws Exception {
@@ -502,52 +498,52 @@ public class SmartContractServiceImplTest {
 		}
 	}
 
-//	@Nested
-//	@DisplayName("2.Get the Smart Contract Details")
-//	class OnceCreatedGetSolidityDetails {
-//		@Test
-//		public void aa_getSolidityIdTesNotSupported() {
-//			Transaction trx = getDummyTransaction("SolidityIDQuery");
-//			String solidityId =
-//					"f1876d5ecde2da7f0e4dd1b34e850ce24133f01e83dac3aba9db7af508007f8ee482a610055ccaf5b3bfbe50a7c7ece5";
-//			Query getBySolidityIdQuery = getDummyQuery("SolidityIDQuery", trx, solidityId);
-//			MockSettings mockSettings = new MockSettingsImpl<>().defaultAnswer(RETURNS_SMART_NULLS).stubOnly();
-//
-//			PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
-//			given(submissionManager.trySubmission(any())).willReturn(OK);
-//
-//			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
-//					smartContractHandler, hederaNodeStats,
-//					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
-//					submissionManager, null, null);
-//
-//			StreamObserver<Response> respOb = new StreamObserver<Response>() {
-//
-//				@Override
-//				public void onNext(Response response) {
-//					if (response != null) {
-//						GetBySolidityIDResponse res = response.getGetBySolidityID();
-//						Assert.assertEquals(ResponseCodeEnum.NOT_SUPPORTED,
-//								res.getHeader().getNodeTransactionPrecheckCode());
-//						System.out.println("***RESPONSE***" + res);
-//					} else {
-//						System.out.println("***RESPONSE***" + response);
-//					}
-//				}
-//
-//				@Override
-//				public void onError(Throwable t) {
-//					System.out.println("Error Happened " + t.getMessage());
-//				}
-//
-//				@Override
-//				public void onCompleted() {
-//					System.out.println("Completed");
-//				}
-//
-//			};
-//
-//			smartContractImpl.getBySolidityID(getBySolidityIdQuery, respOb);
-//		}
-//	}
+	@Nested
+	@DisplayName("2.Get the Smart Contract Details")
+	class OnceCreatedGetSolidityDetails {
+		@Test
+		public void aa_getSolidityIdTesNotSupported() {
+			Transaction trx = getDummyTransaction("SolidityIDQuery");
+			String solidityId =
+					"f1876d5ecde2da7f0e4dd1b34e850ce24133f01e83dac3aba9db7af508007f8ee482a610055ccaf5b3bfbe50a7c7ece5";
+			Query getBySolidityIdQuery = getDummyQuery("SolidityIDQuery", trx, solidityId);
+			MockSettings mockSettings = new MockSettingsImpl<>().defaultAnswer(RETURNS_SMART_NULLS).stubOnly();
+
+			PlatformSubmissionManager submissionManager = mock(PlatformSubmissionManager.class);
+			given(submissionManager.trySubmission(any())).willReturn(OK);
+
+			smartContractImpl = new SmartContractServiceImpl(transactionHandler,
+					smartContractHandler, hederaNodeStats,
+					TEST_USAGE_PRICES, TEST_EXCHANGE, STAKED_NODE,
+					submissionManager, null, null);
+
+			StreamObserver<Response> respOb = new StreamObserver<Response>() {
+
+				@Override
+				public void onNext(Response response) {
+					if (response != null) {
+						GetBySolidityIDResponse res = response.getGetBySolidityID();
+						Assert.assertEquals(ResponseCodeEnum.NOT_SUPPORTED,
+								res.getHeader().getNodeTransactionPrecheckCode());
+						System.out.println("***RESPONSE***" + res);
+					} else {
+						System.out.println("***RESPONSE***" + response);
+					}
+				}
+
+				@Override
+				public void onError(Throwable t) {
+					System.out.println("Error Happened " + t.getMessage());
+				}
+
+				@Override
+				public void onCompleted() {
+					System.out.println("Completed");
+				}
+
+			};
+
+			smartContractImpl.getBySolidityID(getBySolidityIdQuery, respOb);
+		}
+	}
 }

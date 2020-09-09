@@ -249,8 +249,8 @@ public class TransferListSizeTest {
    * Makes a transfer.
    */
   public TransactionReceipt transfer(Transaction transaction) throws Throwable {
-//    log.info("\n-----------------------------------\ntransfer: request = " +
-//            com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transaction));
+    log.info("\n-----------------------------------\ntransfer: request = " +
+            com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transaction));
     TransactionBody txBody =
         com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     Instant consensusTime = new Date().toInstant();
