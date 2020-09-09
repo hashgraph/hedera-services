@@ -25,6 +25,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenCreationResult;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreation;
@@ -135,7 +136,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	public void abortsIfUnfreezeFails() {
-		givenValidTxnCtx();
+		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
 				.willReturn(TokenCreationResult.success(created));
@@ -154,8 +155,55 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx();
+	public void followsHappyPathWithAllKeys() {
+		givenValidTxnCtx(true, true);
+		// and:
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+				.willReturn(TokenCreationResult.success(created));
+		given(ledger.unfreeze(treasury, created)).willReturn(OK);
+		given(ledger.grantKyc(treasury, created)).willReturn(OK);
+		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).unfreeze(treasury, created);
+		verify(ledger).grantKyc(treasury, created);
+		// and:
+		verify(txnCtx).setCreated(created);
+		verify(txnCtx).setStatus(SUCCESS);
+		// and:
+		verify(store).commitCreation();
+	}
+
+	@Test
+	public void doesntUnfreezeIfNoKeyIsPresent() {
+		givenValidTxnCtx(true, false);
+		// and:
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+				.willReturn(TokenCreationResult.success(created));
+		given(ledger.grantKyc(treasury, created)).willReturn(OK);
+		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger, never()).unfreeze(treasury, created);
+		verify(ledger).grantKyc(treasury, created);
+		// and:
+		verify(txnCtx).setCreated(created);
+		verify(txnCtx).setStatus(SUCCESS);
+		// and:
+		verify(store).commitCreation();
+	}
+
+	@Test
+	public void doesntGrantKycIfNoKeyIsPresent() {
+		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
 				.willReturn(TokenCreationResult.success(created));
@@ -167,6 +215,9 @@ class TokenCreateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(ledger).unfreeze(treasury, created);
+		verify(ledger, never()).grantKyc(treasury, created);
+		// and:
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
@@ -183,12 +234,22 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		tokenCreateTxn = TransactionBody.newBuilder()
+		givenValidTxnCtx(false, false);
+	}
+
+	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
+		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreation.newBuilder()
 						.setFloat(initialFloat)
 						.setDivisibility(divisibility)
-						.setTreasury(treasury))
-				.build();
+						.setTreasury(treasury));
+		if (withFreeze) {
+			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
+		}
+		if (withKyc) {
+			builder.getTokenCreationBuilder().setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey());
+		}
+		tokenCreateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(store.isCreationPending()).willReturn(true);

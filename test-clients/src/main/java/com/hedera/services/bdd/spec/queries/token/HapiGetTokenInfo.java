@@ -22,14 +22,16 @@ package com.hedera.services.bdd.spec.queries.token;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +39,10 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -50,7 +56,17 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
+	OptionalInt expectedDivisibility = OptionalInt.empty();
+	OptionalLong expectedFloat = OptionalLong.empty();
 	Optional<String> expectedId = Optional.empty();
+	Optional<String> expectedSymbol = Optional.empty();
+	Optional<String> expectedAdminKey = Optional.empty();
+	Optional<String> expectedKycKey = Optional.empty();
+	Optional<String> expectedFreezeKey = Optional.empty();
+	Optional<String> expectedSupplyKey = Optional.empty();
+	Optional<Boolean> expectedDeletion = Optional.empty();
+	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
+	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -62,17 +78,82 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
-	public HapiGetTokenInfo hasTokenId(String token) {
+	public HapiGetTokenInfo hasFreezeDefault(TokenFreezeStatus s) {
+		expectedFreezeDefault = Optional.of(s);
+		return this;
+	}
+	public HapiGetTokenInfo hasKycDefault(TokenKycStatus s) {
+		expectedKycDefault = Optional.of(s);
+		return this;
+	}
+	public HapiGetTokenInfo hasDivisibility(int d) {
+		expectedDivisibility = OptionalInt.of(d);
+		return this;
+	}
+	public HapiGetTokenInfo hasFloat(long amount) {
+		expectedFloat = OptionalLong.of(amount);
+		return this;
+	}
+	public HapiGetTokenInfo hasRegisteredId(String token) {
 		expectedId = Optional.of(token);
+		return this;
+	}
+	public HapiGetTokenInfo hasSymbol(String token) {
+		expectedSymbol = Optional.of(token);
+		return this;
+	}
+	public HapiGetTokenInfo hasFreezeKey(String name) {
+		expectedFreezeKey = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasAdminKey(String name) {
+		expectedAdminKey = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasKycKey(String name) {
+		expectedKycKey = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasSupplyKey(String name) {
+		expectedSupplyKey = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo isDeleted() {
+		expectedDeletion = Optional.of(Boolean.TRUE);
+		return this;
+	}
+	public HapiGetTokenInfo isNotDeleted() {
+		expectedDeletion = Optional.of(Boolean.FALSE);
 		return this;
 	}
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
-		if (expectedId.isPresent()) {
-			var expected = spec.registry().getTokenID(expectedId.get());
-			Assert.assertEquals("Wrong TokenID", expected, actualInfo.getTokenId());
+
+		if (expectedSymbol.isPresent()) {
+			Assert.assertEquals("Wrong symbol!", expectedSymbol.get(), actualInfo.getSymbol());
+		}
+
+		var registry = spec.registry();
+		assertFor(
+				actualInfo.getTokenId(),
+				expectedId,
+				(n, r) -> r.getTokenID(n),
+				"Wrong token id!",
+				registry);
+	}
+
+	private <T, R> void assertFor(
+			R actual,
+			Optional<T> possible,
+			BiFunction<T, HapiSpecRegistry, R> expectedFn,
+			String error,
+			HapiSpecRegistry registry
+	) {
+		if (possible.isPresent()) {
+			var expected = expectedFn.apply(possible.get(), registry);
+			Assert.assertEquals(error, expected, actual);
 		}
 	}
 

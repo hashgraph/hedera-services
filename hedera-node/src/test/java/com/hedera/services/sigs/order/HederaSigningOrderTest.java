@@ -21,10 +21,10 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
@@ -32,6 +32,7 @@ import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.ContractSigMetaLookup;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -57,6 +58,7 @@ import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -66,6 +68,7 @@ import static com.hedera.test.factories.txns.ContractCreateFactory.*;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.test.utils.IdUtils.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -88,6 +91,15 @@ import static com.hedera.test.factories.scenarios.SystemUndeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenTransactScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenMintScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenBurnScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenWipeScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -190,11 +202,11 @@ public class HederaSigningOrderTest {
 	);
 
 	private HederaFs hfs;
+	private TokenStore tokenStore;
 	private TransactionBody txn;
 	private HederaSigningOrder subject;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
-	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private SigStatusOrderResultFactory summaryFactory = new SigStatusOrderResultFactory(IN_HANDLE_TXN_DYNAMIC_CTX);
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
@@ -1110,7 +1122,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_FREEZE_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1151,6 +1163,240 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
+	@Test
+	public void getsTokenFreezeWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_FREEZE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_FREEZE_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenUnfreezeWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_FREEZE_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenGrantKycWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_GRANT_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_KYC_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithExtantFreezable() throws Throwable {
+		// given:
+		setupFor(VALID_REVOKE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_KYC_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithMissingToken() throws Throwable {
+		// given:
+		setupFor(REVOKE_WITH_MISSING_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenRevokeKycWithoutKyc() throws Throwable {
+		// given:
+		setupFor(REVOKE_FOR_TOKEN_WITHOUT_KYC);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	public void getsTokenMintWithValidRef() throws Throwable {
+		// given:
+		setupFor(MINT_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_SUPPLY_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenBurnWithValidRef() throws Throwable {
+		// given:
+		setupFor(BURN_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_SUPPLY_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenDeletionWithValidRef() throws Throwable {
+		// given:
+		setupFor(DELETE_WITH_KNOWN_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenDeletionWithMissing() throws Throwable {
+		// given:
+		setupFor(DELETE_WITH_MISSING_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenWipeWithRelevantKey() throws Throwable {
+		// given:
+		setupFor(VALID_WIPE_WITH_EXTANT_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_WIPE_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateNoSpecialKeys() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithWipe() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithSupply() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithKyc() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateWithFreeze() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	public void getsUpdateReplacingAdmin() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_ADMIN_KEY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
+	}
+
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
@@ -1189,11 +1435,16 @@ public class HederaSigningOrderTest {
 		hfs = scenario.hfs();
 		accounts = scenario.accounts();
 		topics = scenario.topics();
-		tokens = scenario.tokens();
+		tokenStore = scenario.tokenStore();
 
 		subject = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				sigMetaLookup.orElse(defaultLookupsFor(hfs, () -> accounts, () -> topics, () -> tokens)),
+				sigMetaLookup.orElse(
+						defaultLookupsFor(
+								hfs,
+								() -> accounts,
+								() -> topics,
+								SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore))),
 				updateAccountSigns,
 				waclSigns);
 	}
@@ -1219,7 +1470,6 @@ public class HederaSigningOrderTest {
 				}),
 				id -> { throw new Exception(); },
 				TopicAdapter.withSafe(id -> {
-					System.out.println("Called with " + id);
 					if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
 						return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));
 					} else {

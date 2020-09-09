@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 
 public class TokenTransactSpecs extends HapiApiSuite {
@@ -60,15 +61,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						txnsAreAtomic(),
+						senderSigsAreChecked(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 				}
 		);
 	}
 
 	public HapiApiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
-		int salt = Instant.now().getNano();
-
-		return defaultHapiSpec("IfFreezeIsDefaultTokensMustBeUnfrozen")
+		return defaultHapiSpec("AccountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue")
 				.given(
 						cryptoCreate("randomBeneficiary"),
 						cryptoCreate("treasury"),
@@ -78,8 +78,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(A_TOKEN)
 								.treasury("treasury")
 								.freezeKey("freezeKey")
-								.freezeDefault(true)
-								.symbol("frozenByDefault" + salt),
+								.freezeDefault(true),
 						tokenTransact(
 								moving(100, A_TOKEN)
 										.between("treasury", "randomBeneficiary")
@@ -87,8 +86,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						/* and */
 						tokenCreate(B_TOKEN)
 								.treasury("treasury")
-								.freezeDefault(false)
-								.symbol("unfrozenByDefault" + salt),
+								.freezeDefault(false),
 						tokenTransact(
 								moving(100, B_TOKEN)
 										.between("treasury", "randomBeneficiary")
@@ -101,11 +99,33 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec senderSigsAreChecked() {
+		return defaultHapiSpec("SenderSigsAreChecked")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("secondTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialFloat(123)
+								.treasury("firstTreasury"),
+						tokenCreate(B_TOKEN)
+								.initialFloat(234)
+								.treasury("secondTreasury")
+				).then(
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury")
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
 	public HapiApiSpec txnsAreAtomic() {
 		final int MONOGAMOUS_NETWORK = 1;
 		final int ADVENTUROUS_NETWORK = 1_000;
-		int salt = Instant.now().getNano();
-
 		return defaultHapiSpec("TxnsAreAtomic")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
@@ -117,11 +137,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
 						)),
 						tokenCreate(A_TOKEN)
-								.symbol("firstly" + salt)
 								.initialFloat(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.symbol("secondly" + salt)
 								.initialFloat(234)
 								.treasury("secondTreasury"),
 						tokenTransact(

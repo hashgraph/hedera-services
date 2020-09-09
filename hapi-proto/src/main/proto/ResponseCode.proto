@@ -42,7 +42,6 @@ enum ResponseCodeEnum {
   BUSY = 12; //If API is throttled out
   NOT_SUPPORTED = 13; //The API is not currently supported
 
-
   INVALID_FILE_ID = 14; //The file id is invalid or does not exist
   INVALID_ACCOUNT_ID = 15; //The account id is invalid or does not exist
   INVALID_CONTRACT_ID = 16; //The contract id is invalid or does not exist
@@ -190,4 +189,18 @@ enum ResponseCodeEnum {
   TOKEN_SYMBOL_TOO_LONG = 175;
   TOKEN_SYMBOL_ALREADY_IN_USE = 176;
   INVALID_TOKEN_REF = 177;
+  ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN = 178;
+  TOKEN_HAS_NO_KYC_KEY = 179;
+  INSUFFICIENT_TOKEN_BALANCE = 180;
+  TOKEN_WAS_DELETED = 181;
+  TOKEN_HAS_NO_SUPPLY_KEY = 182;
+  TOKEN_HAS_NO_WIPE_KEY = 183;
+  INVALID_TOKEN_MINT_AMOUNT = 184;
+  INVALID_TOKEN_BURN_AMOUNT = 185;
+  ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP = 186;
+  CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 187;
+  INVALID_KYC_KEY = 188;
+  INVALID_WIPE_KEY = 189;
+  INVALID_FREEZE_KEY = 190;
+  INVALID_SUPPLY_KEY = 191;
 }

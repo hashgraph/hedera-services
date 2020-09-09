@@ -37,7 +37,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -57,10 +56,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private OptionalInt divisibility = OptionalInt.empty();
 	private OptionalLong initialFloat = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
+	private Optional<String> kycKey = Optional.empty();
+	private Optional<String> wipeKey = Optional.empty();
+	private Optional<String> supplyKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKeyName = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
+	private Optional<Boolean> kycDefault = Optional.empty();
+	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -86,6 +90,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate kycDefault(boolean knownByDefault) {
+		kycDefault = Optional.of(knownByDefault);
+		return this;
+	}
+
 	public HapiTokenCreate freezeDefault(boolean frozenByDefault) {
 		freezeDefault = Optional.of(frozenByDefault);
 		return this;
@@ -96,8 +105,28 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate kycKey(String name) {
+		kycKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenCreate wipeKey(String name) {
+		wipeKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenCreate supplyKey(String name) {
+		supplyKey = Optional.of(name);
+		return this;
+	}
+
 	public HapiTokenCreate symbol(String symbol) {
 		this.symbol = Optional.of(symbol);
+		return this;
+	}
+
+	public HapiTokenCreate symbol(Function<HapiApiSpec, String> symbolFn) {
+		this.symbolFn = Optional.of(symbolFn);
 		return this;
 	}
 
@@ -142,18 +171,24 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		adminKey = netOf(spec, adminKeyName, Optional.empty(), Optional.empty(), Optional.of(this::effectiveKeyGen));
-		String usableSymbol = symbol.orElse(token);
+		if (symbolFn.isPresent()) {
+			symbol = Optional.of(symbolFn.get().apply(spec));
+		}
 		TokenCreation opBody = spec
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(
 						TokenCreation.class, b -> {
 							b.setAdminKey(adminKey);
-							b.setSymbol(usableSymbol);
-							initialFloat.ifPresent(a -> b.setFloat(a));
-							divisibility.ifPresent(d -> b.setDivisibility(d));
+							symbol.ifPresent(b::setSymbol);
+							initialFloat.ifPresent(b::setFloat);
+							divisibility.ifPresent(b::setDivisibility);
+							freezeDefault.ifPresent(b::setFreezeDefault);
+							kycDefault.ifPresent(b::setKycDefault);
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
+							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
+							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
+							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
-							freezeDefault.ifPresent(f -> b.setFreezeDefault(f));
 						});
 		return b -> b.setTokenCreation(opBody);
 	}
@@ -177,9 +212,14 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		if (actualStatus != SUCCESS) {
 			return;
 		}
-		spec.registry().saveKey(token, adminKey);
-		spec.registry().saveSymbol(token, symbol.orElse(token));
-		spec.registry().saveTokenId(token, lastReceipt.getTokenId());
+		var registry = spec.registry();
+		registry.saveKey(token, adminKey);
+		registry.saveSymbol(token, symbol.orElse(token));
+		registry.saveTokenId(token, lastReceipt.getTokenId());
+		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));
+		wipeKey.ifPresent(k -> registry.saveWipeKey(token, registry.getKey(k)));
+		supplyKey.ifPresent(k -> registry.saveSupplyKey(token, registry.getKey(k)));
+		freezeKey.ifPresent(k -> registry.saveFreezeKey(token, registry.getKey(k)));
 	}
 
 	@Override

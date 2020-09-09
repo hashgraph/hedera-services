@@ -24,11 +24,12 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -44,7 +45,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.swirlds.fcmap.FCMap;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -162,31 +162,68 @@ public interface TxnHandlingScenario {
 		return topics;
 	}
 
-	default FCMap<MerkleEntityId, MerkleToken> tokens() {
-		var tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
+	default TokenStore tokenStore() {
+		var tokenStore = mock(TokenStore.class);
+
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
+		var optionalWipeKey = TOKEN_WIPE_KT.asJKeyUnchecked();
+		var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
 
-		var unfrozenToken = new MerkleToken(
+		var vanillaToken = new MerkleToken(
 				100, 1,
 				adminKey,
-				"UnfrozenToken", false,
+				"VanillaToken", false, false,
 				new EntityId(1, 2, 3));
-		given(tokens.get(KNOWN_TOKEN_NO_FREEZE)).willReturn(unfrozenToken);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS)))
+				.willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
+		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
 
 		var frozenToken = new MerkleToken(
-						100, 1,
-						adminKey,
-						"FrozenToken", true,
-						new EntityId(1, 2, 4));
+				100, 1,
+				adminKey,
+				"FrozenToken", true, false,
+				new EntityId(1, 2, 4));
 		frozenToken.setFreezeKey(optionalFreezeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
+				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
 
-		given(tokens.get(fromTokenId(KNOWN_TOKEN_NO_FREEZE)))
-				.willReturn(unfrozenToken);
-		given(tokens.get(fromTokenId(KNOWN_TOKEN_WITH_FREEZE)))
-				.willReturn(frozenToken);
+		var kycToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"KycToken", false, true,
+				new EntityId(1, 2, 4));
+		kycToken.setKycKey(optionalKycKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_KYC)))
+				.willReturn(KNOWN_TOKEN_WITH_KYC);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
 
-		return tokens;
+		var supplyToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"SupplyToken", false, false,
+				new EntityId(1, 2, 4));
+		supplyToken.setSupplyKey(optionalSupplyKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_SUPPLY)))
+				.willReturn(KNOWN_TOKEN_WITH_SUPPLY);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(supplyToken);
+
+		var wipeToken = new MerkleToken(
+				100, 1,
+				adminKey,
+				"WipeToken", false, false,
+				new EntityId(1, 2, 4));
+		wipeToken.setWipeKey(optionalWipeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_WIPE)))
+				.willReturn(KNOWN_TOKEN_WITH_WIPE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).willReturn(wipeToken);
+
+		given(tokenStore.resolve(IdUtils.asIdRef(UNKNOWN_TOKEN)))
+				.willReturn(TokenStore.MISSING_TOKEN);
+
+		return tokenStore;
 	}
 
 	String MISSING_ACCOUNT_ID = "1.2.3";
@@ -280,10 +317,17 @@ public interface TxnHandlingScenario {
 	String MISSING_TOPIC_ID = "0.0.12121";
 	TopicID MISSING_TOPIC = asTopic(MISSING_TOPIC_ID);
 
-	String KNOWN_TOKEN_NO_FREEZE_ID = "0.0.666";
-	TokenID KNOWN_TOKEN_NO_FREEZE = asToken(KNOWN_TOKEN_NO_FREEZE_ID);
+	String KNOWN_TOKEN_NO_SPECIAL_KEYS_ID = "0.0.535";
+	TokenID KNOWN_TOKEN_NO_SPECIAL_KEYS = asToken(KNOWN_TOKEN_NO_SPECIAL_KEYS_ID);
 	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";
 	TokenID KNOWN_TOKEN_WITH_FREEZE = asToken(KNOWN_TOKEN_WITH_FREEZE_ID);
+	String KNOWN_TOKEN_WITH_KYC_ID = "0.0.776";
+	TokenID KNOWN_TOKEN_WITH_KYC = asToken(KNOWN_TOKEN_WITH_KYC_ID);
+	String KNOWN_TOKEN_WITH_SUPPLY_ID = "0.0.775";
+	TokenID KNOWN_TOKEN_WITH_SUPPLY = asToken(KNOWN_TOKEN_WITH_SUPPLY_ID);
+	String KNOWN_TOKEN_WITH_WIPE_ID = "0.0.774";
+	TokenID KNOWN_TOKEN_WITH_WIPE = asToken(KNOWN_TOKEN_WITH_WIPE_ID);
+
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
 	String SECOND_TOKEN_SENDER_ID = "0.0.999";
@@ -298,6 +342,10 @@ public interface TxnHandlingScenario {
 	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree TOKEN_ADMIN_KT = withRoot(ed25519());
 	KeyTree TOKEN_FREEZE_KT = withRoot(ed25519());
+	KeyTree TOKEN_SUPPLY_KT = withRoot(ed25519());
+	KeyTree TOKEN_WIPE_KT = withRoot(ed25519());
+	KeyTree TOKEN_KYC_KT = withRoot(ed25519());
+	KeyTree TOKEN_REPLACE_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
 	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
 	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());

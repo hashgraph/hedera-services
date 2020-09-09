@@ -22,7 +22,6 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -368,7 +367,7 @@ public class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new Signature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(null, () -> accounts, () -> null, () -> null),
+				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 
@@ -380,7 +379,7 @@ public class SigOpsRegressionTest {
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new Signature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, () -> accounts, null, () -> null),
+				defaultLookupsFor(hfs, () -> accounts, null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 
@@ -391,7 +390,7 @@ public class SigOpsRegressionTest {
 		int MAGIC_NUMBER = 10;
 		SigMetadataLookup sigMetaLookups =
 				defaultLookupsPlusAccountRetriesFor(
-						hfs, () -> accounts, () -> null, () -> null, MAGIC_NUMBER, MAGIC_NUMBER, stats);
+						hfs, () -> accounts, () -> null, ref -> null, MAGIC_NUMBER, MAGIC_NUMBER, stats);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				sigMetaLookups,
@@ -403,7 +402,7 @@ public class SigOpsRegressionTest {
 
 	private SignatureStatus invokeRationalizationScenario() throws Exception {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
-		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, () -> null);
+		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				sigMetaLookups,
@@ -423,7 +422,7 @@ public class SigOpsRegressionTest {
 
 		signingOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
-				defaultLookupsFor(hfs, () -> accounts, () -> null, () -> null),
+				defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns);
 		SigningOrderResult<SignatureStatus> payerKeys =

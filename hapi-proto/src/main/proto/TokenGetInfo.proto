@@ -41,8 +41,13 @@ message TokenInfo {
     uint64 currentFloat = 4;
     uint32 divisibility = 5;
     Key adminKey = 6;
-    Key freezeKey = 7;
-    bool freezeDefault = 8;
+    Key kycKey = 7;
+    Key freezeKey = 8;
+    Key wipeKey = 9;
+    Key supplyKey = 10;
+    TokenFreezeStatus defaultFreezeStatus = 11;
+    TokenKycStatus defaultKycStatus = 12;
+    bool isDeleted = 13;
 }
 
 message TokenGetInfoResponse {

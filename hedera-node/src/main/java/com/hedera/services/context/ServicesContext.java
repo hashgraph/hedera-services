@@ -35,8 +35,17 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -51,6 +60,7 @@ import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -142,6 +152,7 @@ import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
+import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.throttling.bucket.BucketConfig.bucketsIn;
 import static com.hedera.services.throttling.bucket.BucketConfig.namedIn;
@@ -170,8 +181,17 @@ import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
+import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
+import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
+import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
+import com.hedera.services.txns.token.TokenMintTransitionLogic;
+import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenTransactTransitionLogic;
+import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
+import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
+import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -608,7 +628,7 @@ public class ServicesContext {
 			cryptoAnswers = new CryptoAnswers(
 					new GetLiveHashAnswer(),
 					new GetStakersAnswer(),
-					new GetAccountInfoAnswer(validator()),
+					new GetAccountInfoAnswer(tokenStore(), validator()),
 					new GetAccountBalanceAnswer(validator()),
 					new GetAccountRecordsAnswer(answerFunctions(), validator())
 			);
@@ -692,7 +712,16 @@ public class ServicesContext {
 				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
+				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
 				entry(TokenTransact, List.of(new TokenTransactResourceUsage())),
+				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
+				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
+				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
+				entry(TokenRevokeKycFromAccount, List.of(new TokenRevokeKycResourceUsage())),
+				entry(TokenDelete, List.of(new TokenDeleteResourceUsage())),
+				entry(TokenMint, List.of(new TokenMintResourceUsage())),
+				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
+				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -720,7 +749,7 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, this::tokens);
+			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -728,7 +757,12 @@ public class ServicesContext {
 
 	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
-			var lookups = backedLookupsFor(hfs(), backingAccounts(), this::topics, this::accounts, this::tokens);
+			var lookups = backedLookupsFor(
+					hfs(),
+					backingAccounts(),
+					this::topics,
+					this::accounts,
+					REF_LOOKUP_FACTORY.apply(tokenStore()));
 			backedKeyOrder = keyOrderWith(lookups);
 		}
 		return backedKeyOrder;
@@ -737,7 +771,7 @@ public class ServicesContext {
 	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
-					hfs(), properties(), stats(), this::accounts, this::topics, this::tokens);
+					hfs(), properties(), stats(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -901,8 +935,26 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate,
 						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenUpdate,
+						List.of(new TokenUpdateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenTransact,
 						List.of(new TokenTransactTransitionLogic(ledger(), txnCtx()))),
+				entry(TokenFreezeAccount,
+						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenUnfreezeAccount,
+						List.of(new TokenUnfreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenGrantKycToAccount,
+						List.of(new TokenGrantKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenRevokeKycFromAccount,
+						List.of(new TokenRevokeKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+				entry(TokenDelete,
+						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenMint,
+						List.of(new TokenMintTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenBurn,
+						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenAccountWipe,
+						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
