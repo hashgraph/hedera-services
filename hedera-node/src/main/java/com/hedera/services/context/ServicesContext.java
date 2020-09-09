@@ -30,6 +30,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
@@ -60,7 +61,6 @@ import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -221,13 +221,13 @@ import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.exports.AccountsExporter;
-import com.hedera.services.utils.EntityIdUtils;
 
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 
 import com.hedera.services.utils.Pause;
@@ -385,6 +385,7 @@ public class ServicesContext {
 	private FeeSchedulesManager feeSchedulesManager;
 	private Map<String, byte[]> blobStore;
 	private Map<EntityId, Long> entityExpiries;
+	private NodeLocalProperties nodeLocalProperties;
 	private TxnFeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private LedgerAccountsSource accountSource;
@@ -543,7 +544,7 @@ public class ServicesContext {
 
 	public ItemizableFeeCharging charging() {
 		if (itemizableFeeCharging == null) {
-			itemizableFeeCharging = new ItemizableFeeCharging(exemptions(), properties());
+			itemizableFeeCharging = new ItemizableFeeCharging(exemptions(), globalDynamicProperties());
 		}
 		return itemizableFeeCharging;
 	}
@@ -600,7 +601,7 @@ public class ServicesContext {
 			metaAnswers = new MetaAnswers(
 					new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
 					new GetTxnReceiptAnswer(recordCache()),
-					new GetVersionInfoAnswer(properties()),
+					new GetVersionInfoAnswer(),
 					new GetFastTxnRecordAnswer()
 			);
 		}
@@ -771,7 +772,12 @@ public class ServicesContext {
 	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
-					hfs(), properties(), stats(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
+					hfs(),
+					nodeLocalProperties(),
+					stats(),
+					this::accounts,
+					this::topics,
+					REF_LOOKUP_FACTORY.apply(tokenStore()));
 			lookupRetryingKeyOrder = keyOrderWith(lookups);
 		}
 		return lookupRetryingKeyOrder;
@@ -838,7 +844,7 @@ public class ServicesContext {
 		if (hfs == null) {
 			hfs = new TieredHederaFs(
 					ids(),
-					properties(),
+					globalDynamicProperties(),
 					txnCtx()::consensusTime,
 					DataMapFactory.dataMapFrom(blobStore()),
 					MetadataMapFactory.metaMapFrom(blobStore()));
@@ -1032,9 +1038,16 @@ public class ServicesContext {
 		return backingAccounts;
 	}
 
+	public NodeLocalProperties nodeLocalProperties() {
+		if (nodeLocalProperties == null) {
+			nodeLocalProperties = new NodeLocalProperties(properties());
+		}
+		return nodeLocalProperties;
+	}
+
 	public GlobalDynamicProperties globalDynamicProperties() {
 		if (globalDynamicProperties == null) {
-			globalDynamicProperties = new GlobalDynamicProperties(properties());
+			globalDynamicProperties = new GlobalDynamicProperties(hederaNums(), properties());
 		}
 		return globalDynamicProperties;
 	}
@@ -1246,7 +1259,7 @@ public class ServicesContext {
 		if (contracts == null) {
 			contracts = new SmartContractRequestHandler(
 					repository(),
-					fundingAccount(),
+					globalDynamicProperties().fundingAccount(),
 					ledger(),
 					this::accounts,
 					this::storage,
@@ -1406,19 +1419,11 @@ public class ServicesContext {
 		if (accountId == null) {
 			try {
 				String memoOfAccountId = address().getMemo();
-				accountId = EntityIdUtils.accountParsedFromString(memoOfAccountId);
+				accountId = accountParsedFromString(memoOfAccountId);
 			} catch (Exception ignore) {
 			}
 		}
 		return accountId;
-	}
-
-	public AccountID fundingAccount() {
-		try {
-			return EntityIdUtils.accountParsedFromString(properties().getStringProperty("ledger.funding.account"));
-		} catch (Exception ignore) {
-		}
-		return null;
 	}
 
 	public Address address() {

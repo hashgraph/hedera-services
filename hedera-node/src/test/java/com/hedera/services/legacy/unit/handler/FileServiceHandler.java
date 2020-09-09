@@ -252,10 +252,10 @@ public class FileServiceHandler {
 	  	fileSize = fileData.length;
 	  }
 	  // compare size to allowable size
-	  if (PropertiesLoader.getMaxFileSize() * 1024L < fileSize) {
+	  if (1024 * 1024L < fileSize) {
 	  	throw new MaxFileSizeExceeded(
 				String.format("The file size %d (bytes) is greater than allowed %d (bytes) ", fileSize,
-	  					PropertiesLoader.getMaxFileSize() * 1024L));
+	  					1024 * 1024L));
 	  }
       String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
       long expireTimeSec =
@@ -428,8 +428,10 @@ public class FileServiceHandler {
   	      //compare size to allowable size
           long fileSize = 	fileData.toByteArray().length;
           System.out.println("Going to update with " + fileSize + " bytes");
-  	      if(PropertiesLoader.getMaxFileSize()*1024L < fileSize) {
-  	        throw new MaxFileSizeExceeded(String.format("The file size %d (bytes) is greater than allowed %d (bytes) ", fileSize,PropertiesLoader.getMaxFileSize()*1024L));
+  	      if(1024*1024L < fileSize) {
+  	        throw new MaxFileSizeExceeded(String.format("The file size %d (bytes) is greater than allowed %d (bytes) ",
+                    fileSize,
+                    1024*1024L));
   	      }	
           validateCode = validateSystemFile(fid, gtx, fileData.toByteArray(), false);
   	      System.out.println("ValidateCode = " + validateCode);

@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
@@ -107,6 +108,7 @@ public class ServicesMainTest {
 	StateMigrations stateMigrations;
 	HederaNodeStats stats;
 	GrpcServerManager grpc;
+	NodeLocalProperties nodeLocalProps;
 	SystemFilesManager systemFilesManager;
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
@@ -132,6 +134,7 @@ public class ServicesMainTest {
 		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
+		nodeLocalProps = mock(NodeLocalProperties.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
 		ledgerValidator = mock(LedgerValidator.class);
 		accountsExporter = mock(AccountsExporter.class);
@@ -146,10 +149,13 @@ public class ServicesMainTest {
 
 		ServicesMain.log = mockLog;
 
+		given(nodeLocalProps.port()).willReturn(50211);
+		given(nodeLocalProps.tlsPort()).willReturn(50212);
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.pause()).willReturn(pause);
+		given(ctx.nodeLocalProperties()).willReturn(nodeLocalProps);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.id()).willReturn(new NodeId(false, NODE_ID));
 		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
@@ -282,8 +288,6 @@ public class ServicesMainTest {
 
 	@Test
 	public void runsOnDefaultPortInProduction() {
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.PROD);
 
 		// when:
@@ -298,8 +302,6 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
@@ -318,7 +320,6 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
@@ -337,8 +338,6 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
@@ -358,8 +357,6 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);

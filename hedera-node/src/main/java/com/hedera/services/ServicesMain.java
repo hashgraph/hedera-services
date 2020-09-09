@@ -210,9 +210,9 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void startNettyIfAppropriate() {
-		int port = ctx.properties().getIntProperty("grpc.port");
+		int port = ctx.nodeLocalProperties().port();
 		final int PORT_MODULUS = 1000;
-		int tlsPort = ctx.properties().getIntProperty("grpc.tlsPort");
+		int tlsPort = ctx.nodeLocalProperties().tlsPort();
 		log.info("TLS is turned on by default on node {}", ctx.id());
 		Profile activeProfile = ctx.properties().getProfileProperty("hedera.profiles.active");
 		log.info("Active profile: {}", activeProfile);

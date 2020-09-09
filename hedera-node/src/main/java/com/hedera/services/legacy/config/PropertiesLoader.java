@@ -227,14 +227,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getApiPermission();
 	}
 
-	public static int getPort() {
-		return AsyncPropertiesObject.getPort();
-	}
-
-	public static int getTlsPort() {
-		return AsyncPropertiesObject.getTlsPort();
-	}
-
 	public static int getEnvironment() {
 		return AsyncPropertiesObject.getEnvironment();
 	}
@@ -289,10 +281,6 @@ public class PropertiesLoader {
 
 	public static int getMaxGasLimit() {
 		return SyncPropertiesObject.getMaxGasLimit();
-	}
-
-	public static int getMaxFileSize() {
-		return SyncPropertiesObject.getMaxFileSize();
 	}
 
 	public static boolean getStartStatsDumpTimer() {

@@ -1,4 +1,4 @@
-package com.hedera.services.properties;
+package com.hedera.services.context.properties;
 
 /*-
  * ‌
@@ -20,9 +20,6 @@ package com.hedera.services.properties;
  * ‍
  */
 
-import com.hedera.services.context.properties.ScreenedSysFileProps;
-import com.hedera.services.context.properties.StandardizedPropertySources;
-import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -85,6 +82,34 @@ public class StandardizedPropertySourcesTest {
 
 		// cleanup:
 		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+	}
+
+	@Test
+	void usesNodeAsSecondPriority() {
+		// setup:
+		var localSource = mock(ScreenedNodeFileProps.class);
+		given(localSource.containsProperty("testProp")).willReturn(true);
+		given(localSource.getProperty("testProp")).willReturn("imperfectAnswer");
+		given(localSource.containsProperty("testProp2")).willReturn(true);
+		given(localSource.getProperty("testProp2")).willReturn("goodEnoughForMe");
+		var source = mock(ScreenedSysFileProps.class);
+		given(source.containsProperty("testProp")).willReturn(true);
+		given(source.getProperty("testProp")).willReturn("perfectAnswer");
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = () -> source;
+		StandardizedPropertySources.nodePropertiesSupplier = () -> localSource;
+
+		givenImpliedSubject();
+
+		// when:
+		subject.reloadFrom(ServicesConfigurationList.getDefaultInstance());
+
+		// expect:
+		assertEquals("perfectAnswer", subject.asResolvingSource().getStringProperty("testProp"));
+		assertEquals("goodEnoughForMe", subject.asResolvingSource().getStringProperty("testProp2"));
+
+		// cleanup:
+		StandardizedPropertySources.dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
+		StandardizedPropertySources.nodePropertiesSupplier = ScreenedNodeFileProps::new;
 	}
 
 	@Test
@@ -210,14 +235,10 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("hedera.transaction.maxValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidDuration"));
 		assertTrue(properties.containsProperty("hedera.transaction.minValidityBufferSecs"));
-		assertTrue(properties.containsProperty("hedera.versionInfo.resource"));
-		assertTrue(properties.containsProperty("hedera.versionInfo.protoKey"));
-		assertTrue(properties.containsProperty("hedera.versionInfo.servicesKey"));
 		assertTrue(properties.containsProperty("iss.reset.periodSecs"));
 		assertTrue(properties.containsProperty("iss.roundsToDump"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.maxDuration"));
 		assertTrue(properties.containsProperty("ledger.autoRenewPeriod.minDuration"));
-		assertTrue(properties.containsProperty("ledger.funding.account"));
 		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
@@ -231,13 +252,15 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("throttling.hcs.submitMessage.burstPeriod"));
 		assertTrue(properties.containsProperty("throttling.hcs.getTopicInfo.tps"));
 		assertTrue(properties.containsProperty("throttling.hcs.getTopicInfo.burstPeriod"));
-		assertTrue(properties.containsProperty("validation.preConsensus.accountKey.maxLookupRetries"));
-		assertTrue(properties.containsProperty("validation.preConsensus.accountKey.retryBackoffIncrementMs"));
+		assertTrue(properties.containsProperty("precheck.account.maxLookupRetries"));
+		assertTrue(properties.containsProperty("precheck.account.lookupRetryBackoffIncrementMs"));
 	}
 
 	@Test
 	public void usesBootstrapSourceAsApropos() {
 		givenImpliedSubject();
+		// and:
+		subject.nodeProps.fromFile.clear();
 
 		// when:
 		PropertySource properties = subject.asResolvingSource();
@@ -248,21 +271,6 @@ public class StandardizedPropertySourcesTest {
 		for (String bootstrapProp : BOOTSTRAP_PROP_NAMES) {
 			verify(bootstrapProps).getProperty(bootstrapProp);
 		}
-	}
-
-	@Test
-	public void selectedSuppliersWork() {
-		given(fileSourceExists.test(any())).willReturn(true);
-		givenImpliedSubject();
-
-		// when:
-		PropertySource properties = subject.asResolvingSource();
-
-		// then:
-		assertDoesNotThrow(() ->
-				properties.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"));
-		assertDoesNotThrow(() ->
-				properties.getIntProperty("validation.preConsensus.accountKey.retryBackoffIncrementMs"));
 	}
 
 	@Test

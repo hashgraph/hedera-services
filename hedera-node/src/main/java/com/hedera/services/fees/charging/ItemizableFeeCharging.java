@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
@@ -56,7 +57,8 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	private HederaLedger ledger;
 	private final FeeExemptions exemptions;
-	private final PropertySource properties;
+
+	private final GlobalDynamicProperties properties;
 
 	AccountID node;
 	AccountID funding;
@@ -67,7 +69,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	public ItemizableFeeCharging(
 			FeeExemptions exemptions,
-			PropertySource properties
+			GlobalDynamicProperties properties
 	) {
 		super(exemptions);
 		this.exemptions = exemptions;
@@ -99,7 +101,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		super.resetFor(accessor);
 
 		node = accessor.getTxn().getNodeAccountID();
-		funding = properties.getAccountProperty("ledger.funding.account");
+		funding = properties.fundingAccount();
 		this.submittingNode = submittingNode;
 
 		payerFeesCharged.clear();

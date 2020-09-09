@@ -20,12 +20,8 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.config.MockHederaNumbers;
-import com.hedera.services.throttling.ThrottlingPropsBuilder;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
-import org.apache.commons.lang3.builder.ToStringExclude;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class ScreenedSysFilePropsTest {
@@ -134,6 +132,21 @@ class ScreenedSysFilePropsTest {
 				ScreenedSysFileProps.DEPRECATED_PROP_TPL,
 				"configAccountNum",
 				"ledger.maxAccountNum"));
+	}
+
+	@Test
+	public void incorporatesLegacyGlobalDynamicWithTransform() {
+		// when:
+		subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
+
+		// then:
+		assertEquals(1, subject.from121.size());
+		assertEquals(98L, subject.from121.get("ledger.fundingAccount"));
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.DEPRECATED_PROP_TPL,
+				"defaultFeeCollectionAccount",
+				"ledger.fundingAccount"));
 	}
 
 	private ServicesConfigurationList withJust(String name, String value) {

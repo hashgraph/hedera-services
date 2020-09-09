@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Set.of;
 import static java.util.Map.entry;
@@ -67,7 +68,7 @@ public class BootstrapProperties implements PropertySource {
 	void initPropsFromResource() {
 		var resourceProps = new Properties();
 		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
-		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps);
+		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps, fileStreamProvider, log);
 
 		Set<String> unrecognizedProps = new HashSet<>(resourceProps.stringPropertyNames());
 		unrecognizedProps.removeAll(BOOTSTRAP_PROP_NAMES);
@@ -114,16 +115,6 @@ public class BootstrapProperties implements PropertySource {
 			throw new IllegalStateException(
 					String.format("'%s' could not be loaded!", resource),
 					e);
-		}
-	}
-
-	private void loadOverride(String loc, Properties intoProps) {
-		InputStream fin;
-		try {
-			fin = fileStreamProvider.newInputStream(loc);
-			intoProps.load(fin);
-		} catch (IOException ignore) {
-			log.info("No overrides present at {}.", BOOTSTRAP_OVERRIDE_PROPS_LOC);
 		}
 	}
 
@@ -200,13 +191,22 @@ public class BootstrapProperties implements PropertySource {
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
 			"contracts.defaultReceiveThreshold",
 			"contracts.defaultSendThreshold",
+			"files.maxSizeKb",
+			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolLength"
 	);
 
+	static final Set<String> NODE_PROPS = Set.of(
+			"grpc.port",
+			"grpc.tlsPort",
+			"precheck.account.maxLookupRetries",
+			"precheck.account.lookupRetryBackoffIncrementMs"
+	);
+
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
-			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS)
+			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS, NODE_PROPS)
 					.flatMap(Set::stream)
 					.collect(toSet()));
 
@@ -227,9 +227,13 @@ public class BootstrapProperties implements PropertySource {
 			entry("files.feeSchedules", AS_LONG),
 			entry("files.hapiPermissions", AS_LONG),
 			entry("files.nodeDetails", AS_LONG),
+			entry("grpc.port", AS_INT),
+			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.shard", AS_LONG),
+			entry("precheck.account.maxLookupRetries", AS_INT),
+			entry("precheck.account.lookupRetryBackoffIncrementMs", AS_INT),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
 			entry("bootstrap.ledger.systemAccounts.initialBalance", AS_LONG),
 			entry("bootstrap.ledger.systemAccounts.recordThresholds", AS_LONG),
@@ -240,6 +244,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.rates.nextCentEquiv", AS_INT),
 			entry("bootstrap.rates.nextExpiry", AS_LONG),
 			entry("bootstrap.system.entityExpiry", AS_LONG),
+			entry("files.maxSizeKb", AS_INT),
+			entry("ledger.fundingAccount", AS_LONG),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
 			entry("ledger.totalTinyBarFloat", AS_LONG),

@@ -25,6 +25,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -135,6 +136,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -241,26 +243,6 @@ public class ServicesContextTest {
 		inOrder.verify(state).topics();
 		inOrder.verify(state).storage();
 		inOrder.verify(state).accounts();
-	}
-
-	@Test
-	public void hasExpectedFundingAccount() {
-		given(properties.getStringProperty("ledger.funding.account")).willReturn("0.0.98");
-
-		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
-
-		// then:
-		assertEquals(AccountID.newBuilder().setAccountNum(98L).build(), ctx.fundingAccount());
-	}
-
-	@Test
-	public void returnsMissingValueWithoutFundingAccountProp() {
-		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
-
-		// then:
-		assertNull(ctx.fundingAccount());
 	}
 
 	@Test
@@ -430,6 +412,7 @@ public class ServicesContextTest {
 		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
+		assertThat(ctx.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

@@ -21,7 +21,6 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
@@ -46,15 +45,19 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 public class GetVersionInfoAnswer extends AbstractAnswer {
 	private static final Logger log = LogManager.getLogger(GetVersionInfoAnswer.class);
 
+	static String HAPI_VERSION_KEY = "hapi.proto.version";
+	static String HEDERA_VERSION_KEY = "hedera.services.version";
+	static String VERSION_INFO_RESOURCE = "semantic-version.properties";
+
 	static AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
 
-	public GetVersionInfoAnswer(final PropertySource properties) {
+	public GetVersionInfoAnswer() {
 		super(
 				GetVersionInfo,
 				query -> query.getNetworkGetVersionInfo().getHeader().getPayment(),
 				query -> query.getNetworkGetVersionInfo().getHeader().getResponseType(),
 				response -> response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode(),
-				(query, view) -> invariantValidityCheck(properties));
+				(query, view) -> invariantValidityCheck());
 	}
 
 	@Override
@@ -80,13 +83,12 @@ public class GetVersionInfoAnswer extends AbstractAnswer {
 				.build();
 	}
 
-	static ResponseCodeEnum invariantValidityCheck(PropertySource properties) {
+	static ResponseCodeEnum invariantValidityCheck() {
 		Optional<ActiveVersions> active = Optional.ofNullable(knownActive.get())
-				.or(() -> Optional.ofNullable(
-						fromResource(
-								properties.getStringProperty("hedera.versionInfo.resource"),
-								properties.getStringProperty("hedera.versionInfo.protoKey"),
-								properties.getStringProperty("hedera.versionInfo.servicesKey"))));
+				.or(() -> Optional.ofNullable(fromResource(
+						VERSION_INFO_RESOURCE,
+						HAPI_VERSION_KEY,
+						HEDERA_VERSION_KEY)));
 		return active.map(any -> OK).orElse(FAIL_INVALID);
 	}
 

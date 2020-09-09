@@ -68,7 +68,6 @@ public class SyncPropertiesObject {
 	private static int exchangeRateAllowedPercentage = ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE;
 	
 	private static int maxGasLimit = ApplicationConstants.MAX_GAS_LIMIT;
-	private static int maxFileSize  = 	ApplicationConstants.MAX_FILE_SIZE;
 
 	// load Synch Properties
 	public static void loadSynchProperties(CustomProperties appConfig) {
@@ -109,8 +108,6 @@ public class SyncPropertiesObject {
 		exchangeRateAllowedPercentage = appConfig.getInt("exchangeRateAllowedPercentage",
 				ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE);
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
-		
-		maxFileSize = appConfig.getInt("maxFileSize", ApplicationConstants.MAX_FILE_SIZE);
 	}
 
 	static int getTxReceiptTTL() {
@@ -187,9 +184,5 @@ public class SyncPropertiesObject {
 	
 	static int getMaxGasLimit() {
 	    return maxGasLimit;
-	}
-	
-	static int getMaxFileSize() {
-		return maxFileSize;
 	}
 }

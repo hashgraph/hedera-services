@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
@@ -51,7 +52,7 @@ import static com.hedera.test.factories.accounts.MapValueFactory.*;
 
 @RunWith(JUnitPlatform.class)
 public class RetryingFCMapAccountLookupTest {
-	private PropertySource properties;
+	private NodeLocalProperties properties;
 	private HederaNodeStats stats;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private RetryingFCMapAccountLookup subject;
@@ -73,11 +74,9 @@ public class RetryingFCMapAccountLookupTest {
 		stats = mock(HederaNodeStats.class);
 		pause = mock(Pause.class);
 		accounts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"))
-				.willReturn(2);
-		given(properties.getIntProperty("validation.preConsensus.accountKey.retryBackoffIncrementMs"))
-				.willReturn(RETRY_WAIT_MS);
+		properties = mock(NodeLocalProperties.class);
+		given(properties.precheckLookupRetries()).willReturn(2);
+		given(properties.precheckLookupRetryBackoffMs()).willReturn(RETRY_WAIT_MS);
 	}
 
 	@Test

@@ -20,6 +20,8 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.config.HederaNumbers;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -33,10 +35,14 @@ import static org.mockito.Mockito.mock;
 class GlobalDynamicPropertiesTest {
 	PropertySource properties;
 
+	HederaNumbers numbers;
 	GlobalDynamicProperties subject;
 
 	@BeforeEach
 	public void setup() {
+		numbers = mock(HederaNumbers.class);
+		given(numbers.shard()).willReturn(1L);
+		given(numbers.realm()).willReturn(2L);
 		properties = mock(PropertySource.class);
 	}
 
@@ -45,7 +51,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(1);
 
 		// when:
-		subject = new GlobalDynamicProperties(properties);
+		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
 		assertEquals(1, subject.maxTokensPerAccount());
@@ -53,6 +59,16 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(3L, subject.maxAccountNum());
 		assertEquals(4L, subject.defaultContractSendThreshold());
 		assertEquals(5L, subject.defaultContractReceiveThreshold());
+		assertEquals(6, subject.maxFileSizeKb());
+		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
+	}
+
+	private AccountID accountWith(long shard, long realm, long num) {
+		return AccountID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setAccountNum(num)
+				.build();
 	}
 
 	@Test
@@ -60,7 +76,7 @@ class GlobalDynamicPropertiesTest {
 		givenPropsWithSeed(2);
 
 		// when:
-		subject = new GlobalDynamicProperties(properties);
+		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
 		assertEquals(2, subject.maxTokensPerAccount());
@@ -68,6 +84,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(4L, subject.maxAccountNum());
 		assertEquals(5L, subject.defaultContractSendThreshold());
 		assertEquals(6L, subject.defaultContractReceiveThreshold());
+		assertEquals(7, subject.maxFileSizeKb());
+		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -76,5 +94,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
 		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long)i + 3);
 		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long)i + 4);
+		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
+		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
 	}
 }
