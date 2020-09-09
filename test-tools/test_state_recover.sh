@@ -189,7 +189,7 @@ function step2_delete_old_state()
     echo "Deleting $state_delete_num signed states"
 
     # remove most of states only leaving one
-    for ((i=1;i<=random_num;i++)); do
+    for ((i=1;i<=state_delete_num;i++)); do
         delete_last_round
     done 
 }
