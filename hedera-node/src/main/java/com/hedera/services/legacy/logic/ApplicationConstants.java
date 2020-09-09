@@ -65,7 +65,6 @@ public class ApplicationConstants {
 
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;
-	public static int MAX_CONTRACT_STATE_SIZE = 1024;
 	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
 
 	public static long KEEP_ALIVE_TIME = 20;

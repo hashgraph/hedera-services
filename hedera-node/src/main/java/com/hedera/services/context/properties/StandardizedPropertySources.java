@@ -68,9 +68,9 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
-	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final Map<String, Object> throttlePropsFromSysFile = new HashMap<>();
 
+	final ScreenedSysFileProps dynamicGlobalProps;
 	final ScreenedNodeFileProps nodeProps;
 
 	public StandardizedPropertySources(
@@ -166,7 +166,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Global/dynamic properties. */
-		source.put("contracts.maxStorageKb", PropertiesLoader::getMaxContractStateSize);
 		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);

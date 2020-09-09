@@ -79,6 +79,7 @@ class BootstrapPropertiesTest {
 			entry("accounts.treasury", 2L),
 			entry("contracts.defaultSendThreshold", 5000000000000000000L),
 			entry("contracts.defaultReceiveThreshold", 5000000000000000000L),
+			entry("contracts.maxStorageKb", 1024),
 			entry("files.addressBook", 101L),
 			entry("files.networkProperties", 121L),
 			entry("files.exchangeRates", 112L),

@@ -51,4 +51,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int cacheRecordsTtl() {
 		return 180;
 	}
+
+	@Override
+	public int maxContractStorageKb() {
+		return 1024;
+	}
 }

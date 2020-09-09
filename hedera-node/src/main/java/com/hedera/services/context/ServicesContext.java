@@ -1279,7 +1279,7 @@ public class ServicesContext {
 
 	public SolidityLifecycle solidityLifecycle() {
 		if (solidityLifecycle == null) {
-			solidityLifecycle = new SolidityLifecycle(properties());
+			solidityLifecycle = new SolidityLifecycle(globalDynamicProperties());
 		}
 		return solidityLifecycle;
 	}

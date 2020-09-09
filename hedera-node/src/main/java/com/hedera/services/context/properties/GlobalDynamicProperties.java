@@ -31,6 +31,7 @@ public class GlobalDynamicProperties {
 	private int maxTokensSymbolLength;
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
+	private int maxContractStorageKb;
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
@@ -59,6 +60,7 @@ public class GlobalDynamicProperties {
 				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
 				.build();
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
+		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -91,5 +93,9 @@ public class GlobalDynamicProperties {
 
 	public int cacheRecordsTtl() {
 		return cacheRecordsTtl;
+	}
+
+	public int maxContractStorageKb() {
+		return maxContractStorageKb;
 	}
 }

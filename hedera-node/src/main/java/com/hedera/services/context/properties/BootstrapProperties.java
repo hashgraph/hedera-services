@@ -192,6 +192,7 @@ public class BootstrapProperties implements PropertySource {
 			"cache.records.ttl",
 			"contracts.defaultReceiveThreshold",
 			"contracts.defaultSendThreshold",
+			"contracts.maxStorageKb",
 			"files.maxSizeKb",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
@@ -256,6 +257,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolLength", AS_INT),
 			entry("contracts.defaultReceiveThreshold", AS_LONG),
-			entry("contracts.defaultSendThreshold", AS_LONG)
+			entry("contracts.defaultSendThreshold", AS_LONG),
+			entry("contracts.maxStorageKb", AS_INT)
 	);
 }

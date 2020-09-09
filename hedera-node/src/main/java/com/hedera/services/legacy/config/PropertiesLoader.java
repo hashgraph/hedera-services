@@ -196,10 +196,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTxMaxDuration();
 	}
 
-	public static int getMaxContractStateSize() {
-		return SyncPropertiesObject.getMaxContractStateSize();
-	}
-
 	/**
 	 * If Exchange_Rate_Allowed_Percentage in application.properties is invalid,
 	 * i.e. <=0, we set it to be DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE, and

@@ -53,9 +53,6 @@ public class SyncPropertiesObject {
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
 
-	// Max storage allowed to a contract, in KiB
-	private static int maxContractStateSize = ApplicationConstants.MAX_CONTRACT_STATE_SIZE;
-
 	/**
 	 * This percentage setting means you can increase or decrease Exchange Rate by
 	 * this many percent. Suppose its value is p, then you can increase Exchange
@@ -91,8 +88,6 @@ public class SyncPropertiesObject {
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
-
-		maxContractStateSize = appConfig.getInt("maxContractStateSize", ApplicationConstants.MAX_CONTRACT_STATE_SIZE);
 
 		/**
 		 * This percentage setting means you can increase or decrease Exchange Rate by
@@ -152,10 +147,6 @@ public class SyncPropertiesObject {
 
 	static int getLocalCallEstReturnBytes() {
 		return localCallEstReturnBytes;
-	}
-
-	static int getMaxContractStateSize() {
-		return maxContractStateSize;
 	}
 
 	static int getExchangeRateAllowedPercentage() {
