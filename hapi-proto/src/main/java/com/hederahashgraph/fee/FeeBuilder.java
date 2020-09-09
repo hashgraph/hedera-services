@@ -415,29 +415,6 @@ public class FeeBuilder {
   public static long getDefaultRBHNetworkSize() {
     return (BASIC_RECEIPT_SIZE) * (RECIEPT_STORAGE_TIME_SEC);
   }
-  
- /* public FeeData getCreateTransactionRecordFeeMatrices(int txRecordSize, int time) {
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    
-    rbs = (txRecordSize) * time;
-    // sbs - Stoarge bytes seconds
-    sbs = 0; // Transaction Record fee is charged when they are saved!, so no fee is required at
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, DEFAULT_PAYER_ACC_SIG_COUNT);
-
-  }*/
 
   // does not account for transferlist due to threshold record generation
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {
@@ -455,7 +432,9 @@ public class FeeBuilder {
   }
 
   public static long getTxRecordUsageRBH(TransactionRecord txRecord, int timeInSeconds) {
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	long txRecordSize = getTransactionRecordSize(txRecord);    
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
@@ -468,7 +447,9 @@ public class FeeBuilder {
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
 	
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
@@ -516,7 +497,9 @@ public class FeeBuilder {
   
   
   public static long getTransactionRecordFeeInTinyCents(TransactionRecord txRecord,long feeCoeffRBH, int timeInSec) {
-	  if(txRecord == null) return 0;
+	  if(txRecord == null) {
+        return 0;
+      }
 	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
 	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  

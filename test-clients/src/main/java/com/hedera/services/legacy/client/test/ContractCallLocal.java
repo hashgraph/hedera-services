@@ -168,7 +168,9 @@ public class ContractCallLocal extends ClientBaseThread {
 
           }
         } catch (StatusRuntimeException e) {
-          if(!tryReconnect(e)) return;
+          if(!tryReconnect(e)) {
+			  return;
+		  }
         }
 
         accumulatedTransferCount++;

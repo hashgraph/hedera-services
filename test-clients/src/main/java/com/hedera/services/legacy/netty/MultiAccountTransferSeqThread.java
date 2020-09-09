@@ -201,7 +201,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if(! channel.isShutdown()) channel.shutdownNow();
+    if(! channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     channelShutdowns++;
 
     return channel.isShutdown();
@@ -354,7 +356,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
           if(transferRes.getNodeTransactionPrecheckCode() == ResponseCodeEnum.TRANSACTION_OVERSIZE){
             badTransList.add(transfer1);
           }
-          else totalBadReceipts++;
+          else {
+			  totalBadReceipts++;
+		  }
          // totalBadReceipts++;
         }
         te = System.currentTimeMillis();
@@ -420,7 +424,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       }
     }
     else {
-      if(badTransList.size() > 0) badTransList.clear();
+      if(badTransList.size() > 0) {
+		  badTransList.clear();
+	  }
     }
 
 // Get Records Now

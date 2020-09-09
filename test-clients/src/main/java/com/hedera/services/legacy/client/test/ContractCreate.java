@@ -157,7 +157,9 @@ public class ContractCreate extends ClientBaseThread {
       contractFileId = result.getRight();
       for(Transaction item : result.getLeft()){
         txIdQueue.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
-        if(isBackupTxIDRecord) this.submittedTxID.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
+        if(isBackupTxIDRecord) {
+			this.submittedTxID.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
+		}
       }
 
       long accumulatedTransferCount = 0;
@@ -172,9 +174,13 @@ public class ContractCreate extends ClientBaseThread {
           if (txId != null) {
             txIdQueue.add(txId);
           }
-          if (isBackupTxIDRecord) submittedTxID.add(txId);
+          if (isBackupTxIDRecord) {
+			  submittedTxID.add(txId);
+		  }
         } catch (io.grpc.StatusRuntimeException e) {
-          if (!tryReconnect(e)) return;
+          if (!tryReconnect(e)) {
+			  return;
+		  }
         }
 
         accumulatedTransferCount++;
@@ -186,7 +192,9 @@ public class ContractCreate extends ClientBaseThread {
 
       }
     }finally {
-      while(txIdQueue.size()>0); //wait query thread to finish
+      while(txIdQueue.size()>0) {
+		  ; //wait query thread to finish
+	  }
       sleep(1000);         //wait check thread done query
       log.info("{} query queue empty", getName());
       channel.shutdown();

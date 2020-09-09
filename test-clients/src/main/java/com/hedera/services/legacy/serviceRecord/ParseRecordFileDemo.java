@@ -206,8 +206,9 @@ public class ParseRecordFileDemo {
 			log.info(MARKER, "Parsing Error");
 		} finally {
 			try {
-				if (stream != null)
+				if (stream != null) {
 					stream.close();
+				}
 			} catch (IOException ex) {
 				log.error("Exception in close the stream {}", ex);
 			}

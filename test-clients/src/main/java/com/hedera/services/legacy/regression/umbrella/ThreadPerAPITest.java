@@ -76,13 +76,17 @@ public class ThreadPerAPITest extends UmbrellaTest {
         int markerWindow, long retryFreq, boolean isExponentialBackoff) throws Throwable {
 
     if(op_batchStr != null) // use command line to config test
-      initTest(op_batchStr, threadCounts, maxTpsDesiredPerThread);
-    else // use umbrellaTest.properties to config
-      initTest();
+	{
+		initTest(op_batchStr, threadCounts, maxTpsDesiredPerThread);
+	} else // use umbrellaTest.properties to config
+	{
+		initTest();
+	}
     SmartContractServiceTest rt = new SmartContractServiceTest(null);
     int apiCnt = UmbrellaServiceRunnable.activeAPIs.size(); // non get receipt apis
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.getTxReceipt.name()))
-        apiCnt -= 1;
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.getTxReceipt.name())) {
+		apiCnt -= 1;
+	}
     log.info("Creating Executor Service with a thread pool of Size " + NUM_THREADS);
     ExecutorService executorService = Executors.newFixedThreadPool(NUM_THREADS * apiCnt + 1);
 
@@ -96,21 +100,27 @@ public class ThreadPerAPITest extends UmbrellaTest {
     }      
 
     int numTestFiles = 0; // test files for file ops other than creation
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileAppend.name()))
-      numTestFiles++;
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileUpdate.name()))
-      numTestFiles++;
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileGetContent.name()))
-      numTestFiles++;
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileGetInfo.name()))
-      numTestFiles++;
-    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileDelete.name()))
-      numTestFiles += UmbrellaServiceRunnable.allLimitMap.get(UmbrellaServiceRunnable.ops.fileDelete.name()); // create enough files for delete API calls
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileAppend.name())) {
+		numTestFiles++;
+	}
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileUpdate.name())) {
+		numTestFiles++;
+	}
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileGetContent.name())) {
+		numTestFiles++;
+	}
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileGetInfo.name())) {
+		numTestFiles++;
+	}
+    if(UmbrellaServiceRunnable.activeAPIs.contains(UmbrellaServiceRunnable.ops.fileDelete.name())) {
+		numTestFiles += UmbrellaServiceRunnable.allLimitMap.get(UmbrellaServiceRunnable.ops.fileDelete.name()); // create enough files for delete API calls
+	}
     
     numTestFiles *= NUM_THREADS;
       
-    if(numTestFiles > 0)
-      rt.fileCreateBatch(numTestFiles, UmbrellaServiceRunnable.FILE_CREATE_SIZE);
+    if(numTestFiles > 0) {
+		rt.fileCreateBatch(numTestFiles, UmbrellaServiceRunnable.FILE_CREATE_SIZE);
+	}
 
     String[] iter = UmbrellaServiceRunnable.activeAPIs.toArray(new String[1]);
 
@@ -124,11 +134,13 @@ public class ThreadPerAPITest extends UmbrellaTest {
         UmbrellaServiceRunnable.ops op = UmbrellaServiceRunnable.ops.valueOf(opstr);
         int limit = UmbrellaServiceRunnable.allLimitMap.get(opstr);
 
-        if(op.equals(UmbrellaServiceRunnable.ops.getTxReceipt))
-          continue;
+        if(op.equals(UmbrellaServiceRunnable.ops.getTxReceipt)) {
+			continue;
+		}
         
-        if(isTransactionAPI(op))
-          txCnts += limit;
+        if(isTransactionAPI(op)) {
+			txCnts += limit;
+		}
         requestCnts += limit;
         Runnable task = new ThreadPerAPIRunnable(op, limit, ++thdId, rt);
         executorService.submit(task);
@@ -160,8 +172,9 @@ public class ThreadPerAPITest extends UmbrellaTest {
     double tps = (requestCnts * 1.0D / totalTime) * 1000;
 
     long clientSubmissionEndTime = endTime;
-    if(lastTxID != null)
-      clientSubmissionEndTime = rt.cache.getLastTxIDSubmitTimeMillis();
+    if(lastTxID != null) {
+		clientSubmissionEndTime = rt.cache.getLastTxIDSubmitTimeMillis();
+	}
     totalTime = clientSubmissionEndTime - startTime;
     double clientTps = (requestCnts * 1.0D / totalTime) * 1000;
     log.info("****** Server TPS = " + tps + "; client actual TPS = " + clientTps + "; target TPS = " + REQ_PER_SEC * NUM_THREADS * apiCnt);
@@ -184,10 +197,11 @@ public class ThreadPerAPITest extends UmbrellaTest {
         || op.equals(UmbrellaServiceRunnable.ops.createContract)
         || op.equals(UmbrellaServiceRunnable.ops.updateContract)
         || op.equals(UmbrellaServiceRunnable.ops.contractCallMethod)
-        )
-        return true;
-    else
-      return false;
+        ) {
+		return true;
+	} else {
+		return false;
+	}
   }
 
   /**

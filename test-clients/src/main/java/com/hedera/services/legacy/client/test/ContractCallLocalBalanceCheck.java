@@ -108,7 +108,9 @@ public class ContractCallLocalBalanceCheck extends ClientBaseThread {
     // extra payer account
     KeyPair payerKeyPair = new KeyPairGenerator().generateKeyPair();
     TransactionID createTxID = callCreateAccount(genesisAccount, payerKeyPair, 500000L);
-    if (isBackupTxIDRecord) submittedTxID.add(createTxID); // used by parent thread for checking event files & record files
+    if (isBackupTxIDRecord) {
+		submittedTxID.add(createTxID); // used by parent thread for checking event files & record files
+	}
     AccountID payerAccount = Common.getAccountIDfromReceipt(stub, createTxID);
     Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
     accountKeys.put(payerAccount, Collections.singletonList(payerKeyPair.getPrivate()));
@@ -193,7 +195,9 @@ public class ContractCallLocalBalanceCheck extends ClientBaseThread {
 
           }
         } catch (StatusRuntimeException e) {
-          if(!tryReconnect(e)) return;
+          if(!tryReconnect(e)) {
+			  return;
+		  }
         }
 
         accumulatedTransferCount++;

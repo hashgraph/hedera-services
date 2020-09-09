@@ -152,13 +152,15 @@ public class BaseClient extends SmartContractServiceTest {
     Assert.assertNotNull(response);
 
     if (ResponseCodeEnum.OK == response.getNodeTransactionPrecheckCode()) {
-      if (goodResponseCounter != null)
+      if (goodResponseCounter != null) {
         goodResponseCounter.increment();
+      }
       log.debug("PreCheck response for creating account :: "
           + response.getNodeTransactionPrecheckCode().name());
     } else {
-      if (badResponseCounter != null)
+      if (badResponseCounter != null) {
         badResponseCounter.increment();
+      }
       log.warn("Got a bad PreCheck response " + response.getNodeTransactionPrecheckCode());
     }
 
@@ -185,11 +187,13 @@ public class BaseClient extends SmartContractServiceTest {
       Response transactionReceipts = fetchReceipts(query, cstub);
       if (!ResponseCodeEnum.SUCCESS.name()
           .equals(transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().name())) {
-        if (badReceiptCounter != null)
+        if (badReceiptCounter != null) {
           badReceiptCounter.increment();
+        }
       } else {
-        if (goodReceiptCounter != null)
+        if (goodReceiptCounter != null) {
           goodReceiptCounter.increment();
+        }
       }
 
       accountID = transactionReceipts.getTransactionGetReceipt().getReceipt().getAccountID();
@@ -247,13 +251,15 @@ public class BaseClient extends SmartContractServiceTest {
     Assert.assertNotNull(response);
 
     if (ResponseCodeEnum.OK == response.getNodeTransactionPrecheckCode()) {
-      if (goodResponseCounter != null)
+      if (goodResponseCounter != null) {
         goodResponseCounter.increment();
+      }
       log.debug("PreCheck response for creating account :: "
           + response.getNodeTransactionPrecheckCode().name());
     } else {
-      if (badResponseCounter != null)
+      if (badResponseCounter != null) {
         badResponseCounter.increment();
+      }
       log.warn("Got a bad PreCheck response " + response.getNodeTransactionPrecheckCode());
     }
 
@@ -266,11 +272,13 @@ public class BaseClient extends SmartContractServiceTest {
       receipt = getTxReceipt(txId);
 
       if (!ResponseCodeEnum.SUCCESS.name().equals(receipt.getStatus().name())) {
-        if (badReceiptCounter != null)
+        if (badReceiptCounter != null) {
           badReceiptCounter.increment();
+        }
       } else {
-        if (goodReceiptCounter != null)
+        if (goodReceiptCounter != null) {
           goodReceiptCounter.increment();
+        }
       }
     }
     

@@ -216,7 +216,9 @@ public class CryptoCreatePerformance implements Runnable {
 
         //System.out.println("BODY: " + body);
 
-        if(i!=0 && (i % 20 ==0)) getReceiptRecords(20, i);
+        if(i!=0 && (i % 20 ==0)) {
+			getReceiptRecords(20, i);
+		}
 
         if(variableTPS)
         { Thread.sleep((long)(Math.random() * 100)); }
@@ -282,7 +284,9 @@ public class CryptoCreatePerformance implements Runnable {
               log.error("Fetch Records Failed.", ex);
             }
 
-            if((itr + 50) > this.BATCH_SIZE) log.warn(itr + " Acct= " + newlyCreateAccountId1);
+            if((itr + 50) > this.BATCH_SIZE) {
+				log.warn(itr + " Acct= " + newlyCreateAccountId1);
+			}
           }
 
         }

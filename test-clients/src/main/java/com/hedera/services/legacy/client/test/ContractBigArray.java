@@ -151,7 +151,9 @@ public class ContractBigArray extends ClientBaseThread {
                 Thread.sleep(50);
               }
             } catch (io.grpc.StatusRuntimeException e) {
-              if(!tryReconnect(e)) break;
+              if(!tryReconnect(e)) {
+                break;
+              }
             } catch (Exception e){
               log.error("{} Exception ", getName(), e);
             }
@@ -188,7 +190,9 @@ public class ContractBigArray extends ClientBaseThread {
                   BA_CHANGEARRAY_ABI);
           txnIdList.add(txnId);
         } catch (io.grpc.StatusRuntimeException e) {
-          if(!tryReconnect(e)) return;
+          if(!tryReconnect(e)) {
+            return;
+          }
         }
 
         accumulatedTransferCount++;
@@ -199,7 +203,9 @@ public class ContractBigArray extends ClientBaseThread {
         }
       }
     }finally {
-      while(txnIdList.size()>0); //wait query thread to finish
+      while(txnIdList.size()>0) {
+        ; //wait query thread to finish
+      }
       sleep(1000);         //wait check thread done query
       log.info("{} query queue empty", getName());
       channel.shutdown();

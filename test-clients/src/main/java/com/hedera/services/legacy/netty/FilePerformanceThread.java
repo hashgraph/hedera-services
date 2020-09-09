@@ -145,8 +145,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if (!channel.isShutdown())
-      channel.shutdownNow();
+    if (!channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     return channel.isShutdown();
   }
 
@@ -217,8 +218,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
                 .getNodeTransactionPrecheckCode() == ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED) {
               log.error("T Not Created ** " + transferRes.getNodeTransactionPrecheckCode());
               platformNotAccepted++;
-            } else
-              totalBadReceipts++;
+            } else {
+				totalBadReceipts++;
+			}
           }
           te = System.currentTimeMillis();
           tm = te - ts;
@@ -529,10 +531,11 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
   
     TransactionReceipt rv;
     Response transactionReceipts = null;
-    if(isExponentialBackoff)
-      transactionReceipts = fetchReceiptsWithExponentialBackoff(query, stub, log);
-    else
-      transactionReceipts = fetchReceiptsConstant(query, stub, log);
+    if(isExponentialBackoff) {
+		transactionReceipts = fetchReceiptsWithExponentialBackoff(query, stub, log);
+	} else {
+		transactionReceipts = fetchReceiptsConstant(query, stub, log);
+	}
     rv = transactionReceipts.getTransactionGetReceipt().getReceipt();
     return rv;
   }
@@ -597,8 +600,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
     long rv = 0;
     rv = (long) (Math.pow(2, retries) * RETRY_FREQUENCY_MILLIS);
     
-    if(rv > maxWaitMillis)
-      rv = maxWaitMillis;
+    if(rv > maxWaitMillis) {
+		rv = maxWaitMillis;
+	}
     
     return rv;
   }

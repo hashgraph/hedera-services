@@ -294,8 +294,9 @@ public class UmbrellaServiceRunnable implements Runnable {
 //          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoCreate");
           AccountID accountId = fit.createAccount(payerID, nodeID, true);
 //          stopWatch.stop();
-          if(CryptoServiceTest.getReceipt)
-            log.info("account created: account = {}", accountId);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("account created: account = {}", accountId);
+		  }
         } catch (Throwable e) {
           log.warn("cryptoCreate error!", e);
           incFailCountIfClientProbablyNotToBlameFor(opn, e);
@@ -448,8 +449,9 @@ public class UmbrellaServiceRunnable implements Runnable {
 //		        }
 
 //          stopWatch.stop();
-          if(CryptoServiceTest.getReceipt)
-            log.info("cryptoUpdate: updated account info = {}", accInfo);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("cryptoUpdate: updated account info = {}", accInfo);
+		  }
         } catch (Throwable e) {
           log.warn("cryptoUpdate error!", e);
           incFailCountIfClientProbablyNotToBlameFor(opn, e);
@@ -487,8 +489,9 @@ public class UmbrellaServiceRunnable implements Runnable {
 
           ContractID contractID = fit.createContract(contractFid, fileName, payerID, nodeID, true);
 //          stopWatch.stop();
-          if(CryptoServiceTest.getReceipt)
-            log.info("createContract: contractID={}", contractID);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("createContract: contractID={}", contractID);
+		  }
         } catch (Throwable e) {
           log.warn("createContract error! contract file name={}", fileName, e);
           incFailCountIfClientProbablyNotToBlameFor(opn, e);
@@ -506,8 +509,9 @@ public class UmbrellaServiceRunnable implements Runnable {
 //          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:updateContract");
           TransactionReceipt receipt = fit.updateContract(payerID, contractId, nodeID);
 //          stopWatch.stop();
-          if(CryptoServiceTest.getReceipt)
-            log.info("updateContract: receipt = {}", receipt);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("updateContract: receipt = {}", receipt);
+		  }
         } catch (Throwable e) {
           log.warn("updateContract error! contractId={}", contractId, e);
           incFailCountIfClientProbablyNotToBlameFor(opn, e);

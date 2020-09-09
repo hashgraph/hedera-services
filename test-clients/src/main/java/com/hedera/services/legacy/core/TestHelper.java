@@ -117,7 +117,9 @@ public class TestHelper {
     if(tempFile==null || !tempFile.exists()) {
       try {
         int index = strPath.lastIndexOf("\\");
-        if (index <= 0) index =  strPath.lastIndexOf("/");
+        if (index <= 0) {
+			index =  strPath.lastIndexOf("/");
+		}
         String localStartUpFile = strPath.substring(index+1);
         path = Paths.get(TestHelper.class.getClassLoader().getResource(localStartUpFile).toURI());
       }catch (Exception e) {

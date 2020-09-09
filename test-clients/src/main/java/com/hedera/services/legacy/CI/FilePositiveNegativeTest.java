@@ -230,8 +230,9 @@ public class FilePositiveNegativeTest extends FileServiceTest {
           List<Key> oneKeyLess = new ArrayList<>();
           oneKeyLess.addAll(existingKeys);
           int threshold = payerKey.getThresholdKey().getThreshold();
-          for (int i = 0; i < (existingKeys.size() - threshold + 1); i++)
-            oneKeyLess.remove(0);
+          for (int i = 0; i < (existingKeys.size() - threshold + 1); i++) {
+			  oneKeyLess.remove(0);
+		  }
           KeyList newKeyList = KeyList.newBuilder().addAllKeys(oneKeyLess).build();
           payerKey = Key.newBuilder().setThresholdKey(ThresholdKey.newBuilder().setKeys(newKeyList)
               .setThreshold(payerKey.getThresholdKey().getThreshold())).build();
@@ -351,8 +352,9 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     Transaction txSigned =
         TransactionSigner.signTransactionComplex(fileAppendRequest, keys, pubKey2privKeyMap);
 
-    if (txHolder != null)
-      txHolder[0] = txSigned;
+    if (txHolder != null) {
+		txHolder[0] = txSigned;
+	}
 
     log.info("\n-----------------------------------");
     log.info("  -- FileID: " + fid.getFileNum());

@@ -347,14 +347,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return cryptoTransfertBodySize;
   }
 
-  /*
-   * private long getTV(TransactionBody txBody) { long amount = 0; TransferList transferList =
-   * txBody.getCryptoTransfer().getTransfers(); List<AccountAmount> accountAmounts =
-   * transferList.getAccountAmountsList(); for (AccountAmount actAmt : accountAmounts) { if
-   * (actAmt.getAmount() > 0) { amount = amount + actAmt.getAmount(); } } return Math.round(amount /
-   * 1000); }
-   */
-
   ////////////////////////////////////////////////////////////////////////// Query Fee
   ////////////////////////////////////////////////////////////////////////// //////////////////////////////////////////////////////////////////////////
 
@@ -384,12 +376,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
      * long value)
      */
-
     bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
-
-   /* FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-    return getQueryFeeDataMatrices(feeMatrices);*/
     
     return FeeData.getDefaultInstance();
   }
@@ -428,7 +415,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-   /* return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
 
   }
@@ -744,13 +730,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     long storageSize = (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
         + +txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
-    // get expiration time storage
-    // Instant expirationTime = RequestBuilder
-    // .convertProtoTimeStampSeconds(txBody.getCryptoAddLiveHash().getLiveHash().getLiveHashExpiration());
-    // Timestamp txValidStartTimestamp = txBody.getTransactionID()
-    // .getTransactionValidStart();
-    // Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-    // Duration duration = Duration.between(txValidStartTime, expirationTime);
     long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
     storageSize = storageSize * seconds;
     return storageSize;

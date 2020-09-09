@@ -640,7 +640,9 @@ public class KeyExpansion {
         int i = 0;
         for (Key aKey : tKeys) {
           if(i++ >= thd) // if threshold is reached, stop expanding keys
-            break;
+		  {
+			  break;
+		  }
           expandKeyMinimum4Signing(aKey, depth, expandedKeys);
         }
       }
@@ -670,8 +672,9 @@ public class KeyExpansion {
       byte[] pubKeyBytes = key.getEd25519().toByteArray();
       String pubKeyHex = Hex.encodeHexString(pubKeyBytes);
       byte[] prefixBytes = pubKeyBytes;
-      if(prefixLen != -1)
-        prefixBytes = CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
+      if(prefixLen != -1) {
+		  prefixBytes = CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
+	  }
       PrivateKey privKey = pubKey2privKeyMap.get(pubKeyHex);
       String sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
       rv = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(prefixBytes))

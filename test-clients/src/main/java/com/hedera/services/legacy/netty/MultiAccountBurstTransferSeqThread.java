@@ -189,8 +189,9 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if (!channel.isShutdown())
-      channel.shutdownNow();
+    if (!channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     return channel.isShutdown();
   }
 
@@ -266,8 +267,9 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
 
       } while (newAccountId1 == null);
 
-      if (newAccountId1 != null)
-        this.accountMap.put(newAccountId1, firstPair);
+      if (newAccountId1 != null) {
+		  this.accountMap.put(newAccountId1, firstPair);
+	  }
 
 //      if (_acItr + 5 > _totals)
       String pKeyHex =
@@ -302,8 +304,9 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
       // Assert.assertNotNull(response);
       log.info("createAccount response :: " + response);
 
-      if(response != null && ResponseCodeEnum.OK != response.getNodeTransactionPrecheckCode())
-        return null;
+      if(response != null && ResponseCodeEnum.OK != response.getNodeTransactionPrecheckCode()) {
+		  return null;
+	  }
 
       stub = CryptoServiceGrpc.newBlockingStub(channel);
       Thread.sleep(100);
