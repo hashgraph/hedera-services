@@ -23,6 +23,7 @@ package com.hedera.test.factories.accounts;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -66,6 +67,8 @@ public class MapValueFactory {
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
 		tokenBalances.forEach(entry -> {
 			var token = new MerkleToken();
+			token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked());
+			value.grantKyc(entry.getKey(), token);
 			value.adjustTokenBalance(entry.getKey(), token, entry.getValue());
 		});
 		return value;

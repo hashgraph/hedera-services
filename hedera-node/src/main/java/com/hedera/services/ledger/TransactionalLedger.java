@@ -154,7 +154,7 @@ public class TransactionalLedger<
 		}
 	}
 
-	String changeSetSoFar() {
+	public String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {
@@ -212,7 +212,7 @@ public class TransactionalLedger<
 		assertIsSettable(id);
 
 		if (value instanceof TokenScopedPropertyValue) {
-			var viewSoFar = tokenRefs.computeIfAbsent(id, ignore -> toDetachedTarget(id));
+			var viewSoFar = tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
 			property.setter().accept(viewSoFar, value);
 			changes.computeIfAbsent(id, changeFactory);
 		} else {
@@ -243,7 +243,11 @@ public class TransactionalLedger<
 	public A getTokenRef(K id) {
 		throwIfMissing(id);
 
-		return tokenRefs.computeIfAbsent(id, ignore -> toDetachedTarget(id));
+		return tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
+	}
+
+	public void markForMerge(K id) {
+		changes.computeIfAbsent(id, changeFactory);
 	}
 
 	@Override
@@ -289,7 +293,7 @@ public class TransactionalLedger<
 		return isPendingCreation(id) ? newAccount.get() : accounts.getRef(id);
 	}
 
-	private A toDetachedTarget(K id) {
+	private A toTokenTarget(K id) {
 		return isPendingCreation(id) ? newAccount.get() : accounts.getTokenCopy(id);
 	}
 

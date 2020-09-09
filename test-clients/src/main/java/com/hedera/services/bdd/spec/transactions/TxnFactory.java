@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -43,8 +42,17 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnCoins;
 import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -59,7 +67,6 @@ import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.SplittableRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -119,7 +126,43 @@ public class TxnFactory {
 		return (T)opBuilder.build();
 	}
 
+	public Consumer<TokenWipeAccount.Builder> defaultDef_TokenWipeAccount() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenRevokeKyc.Builder> defaultDef_TokenRevokeKyc() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenGrantKyc.Builder> defaultDef_TokenGrantKyc() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenBurnCoins.Builder> defaultDef_TokenBurnCoins() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenMintCoins.Builder> defaultDef_TokenMintCoins() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenDeletion.Builder> defaultDef_TokenDeletion() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenFreeze.Builder> defaultDef_TokenFreeze() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenUnfreeze.Builder> defaultDef_TokenUnfreeze() {
+		return builder -> {};
+	}
+
 	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenManagement.Builder> defaultDef_TokenManagement() {
 		return builder -> {};
 	}
 
@@ -128,6 +171,7 @@ public class TxnFactory {
 			builder.setTreasury(setup.defaultPayer());
 			builder.setDivisibility(setup.defaultTokenDivisibility());
 			builder.setFloat(setup.defaultTokenFloat());
+			builder.setSymbol(TxnUtils.randomUppercase(8));
 		};
 	}
 

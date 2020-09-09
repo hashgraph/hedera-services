@@ -22,6 +22,11 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import static com.hedera.services.grpc.controllers.CryptoController.*;
+import static com.hedera.services.grpc.controllers.ConsensusController.*;
+import static com.hedera.services.grpc.controllers.TokenController.*;
+import static com.hedera.services.grpc.controllers.FileController.*;
+
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -227,13 +232,13 @@ public class MiscUtils {
 
 	public static String getTxnStat(TransactionBody txn) {
 		if (txn.hasCryptoCreateAccount()) {
-			return "createAccount";
+			return CRYPTO_CREATE_METRIC;
 		} else if (txn.hasCryptoUpdateAccount()) {
-			return "updateAccount";
+			return CRYPTO_UPDATE_METRIC;
 		} else if (txn.hasCryptoTransfer()) {
-			return "cryptoTransfer";
+			return CRYPTO_TRANSFER_METRIC;
 		} else if (txn.hasCryptoDelete()) {
-			return "cryptoDelete";
+			return CRYPTO_DELETE_METRIC;
 		} else if (txn.hasContractCreateInstance()) {
 			return "createContract";
 		} else if (txn.hasContractCall()) {
@@ -247,13 +252,13 @@ public class MiscUtils {
 		} else if (txn.hasCryptoDeleteLiveHash()) {
 			return "deleteLiveHash";
 		} else if (txn.hasFileCreate()) {
-			return "createFile";
+			return CREATE_FILE_METRIC;
 		} else if (txn.hasFileAppend()) {
-			return "appendContent";
+			return FILE_APPEND_METRIC;
 		} else if (txn.hasFileUpdate()) {
-			return "updateFile";
+			return UPDATE_FILE_METRIC;
 		} else if (txn.hasFileDelete()) {
-			return "deleteFile";
+			return DELETE_FILE_METRIC;
 		} else if (txn.hasSystemDelete()) {
 			return "systemDelete";
 		} else if (txn.hasSystemUndelete()) {
@@ -261,17 +266,35 @@ public class MiscUtils {
 		} else if (txn.hasFreeze()) {
 			return "freeze";
 		} else if (txn.hasConsensusCreateTopic()) {
-			return "createTopic";
+			return CREATE_TOPIC_METRIC;
 		} else if (txn.hasConsensusUpdateTopic()) {
-			return "updateTopic";
+			return UPDATE_TOPIC_METRIC;
 		} else if (txn.hasConsensusDeleteTopic()) {
-			return "deleteTopic";
+			return DELETE_TOPIC_METRIC;
 		} else if (txn.hasConsensusSubmitMessage()) {
-			return "submitMessage";
+			return SUBMIT_MESSAGE_METRIC;
 		} else if (txn.hasTokenCreation()) {
-			return "tokenCreate";
+			return TOKEN_CREATE_METRIC;
 		} else if (txn.hasTokenTransfers()) {
-			return "tokenTransact";
+			return TOKEN_TRANSACT_METRIC;
+		} else if (txn.hasTokenFreeze()) {
+			return TOKEN_FREEZE_METRIC;
+		} else if (txn.hasTokenUnfreeze()) {
+			return TOKEN_UNFREEZE_METRIC;
+		} else if (txn.hasTokenGrantKyc()) {
+			return TOKEN_GRANT_KYC_METRIC;
+		} else if (txn.hasTokenRevokeKyc()) {
+			return TOKEN_REVOKE_KYC_METRIC;
+		} else if (txn.hasTokenDeletion()) {
+			return TOKEN_DELETE_METRIC;
+		} else if (txn.hasTokenUpdate()) {
+			return TOKEN_UPDATE_METRIC;
+		} else if (txn.hasTokenMint()) {
+			return TOKEN_MINT_METRIC;
+		} else if (txn.hasTokenBurn()) {
+			return TOKEN_BURN_METRIC;
+		} else if (txn.hasTokenWipe()) {
+			return TOKEN_WIPE_ACCOUNT_METRIC;
 		} else {
 			return "NotImplemented";
 		}
@@ -324,6 +347,24 @@ public class MiscUtils {
 			return TokenCreate;
 		} else if (txn.hasTokenTransfers()) {
 			return TokenTransact;
+		} else if (txn.hasTokenFreeze()) {
+			return TokenFreezeAccount;
+		} else if (txn.hasTokenUnfreeze()) {
+			return TokenUnfreezeAccount;
+		} else if (txn.hasTokenGrantKyc()) {
+			return TokenGrantKycToAccount;
+		} else if (txn.hasTokenRevokeKyc()) {
+			return TokenRevokeKycFromAccount;
+		} else if (txn.hasTokenDeletion()) {
+			return TokenDelete;
+		} else if (txn.hasTokenUpdate()) {
+			return TokenUpdate;
+		} else if (txn.hasTokenMint()) {
+			return TokenMint;
+		} else if (txn.hasTokenBurn()) {
+			return TokenBurn;
+		} else if (txn.hasTokenWipe()) {
+			return TokenAccountWipe;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

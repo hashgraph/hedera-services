@@ -23,6 +23,8 @@ package com.hedera.services.sigs.order;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -105,6 +107,15 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingAccount(AccountID account, TransactionID txnId);
+
+	/**
+	 * Report a missing token encountered when listing signing keys for some txn.
+	 *
+	 * @param ref the missing token.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
+	 * @return the error summary.
+	 */
+	SigningOrderResult<T> forMissingToken(TokenRef ref, TransactionID txnId);
 
 	/**
 	 * Report a non-specific payer error that occurred when listing signing keys for some txn.

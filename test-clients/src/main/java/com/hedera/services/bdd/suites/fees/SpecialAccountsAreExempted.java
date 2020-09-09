@@ -104,7 +104,11 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
 						fileAppend(FEE_SCHEDULE)
 								.hasKnownStatusFrom(acceptable)
 								.payingWith(FEE_SCHEDULE_CONTROL)
-								.path(Path.of("./", "part2-feeSchedule.bin").toString())
+								.path(Path.of("./", "part2-feeSchedule.bin").toString()),
+						fileAppend(FEE_SCHEDULE)
+								.hasKnownStatusFrom(acceptable)
+								.payingWith(FEE_SCHEDULE_CONTROL)
+								.path(Path.of("./", "part3-feeSchedule.bin").toString())
 				).then(
 						getAccountBalance(FEE_SCHEDULE_CONTROL)
 								.hasTinyBars(changeFromSnapshot("pre", 0))

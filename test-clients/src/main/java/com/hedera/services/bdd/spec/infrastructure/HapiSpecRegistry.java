@@ -240,6 +240,22 @@ public class HapiSpecRegistry {
 		put(name, key, Key.class);
 	}
 
+	public void saveFreezeKey(String name, Key key) {
+		put(name + "Freeze", key, Key.class);
+	}
+
+	public void saveSupplyKey(String name, Key key) {
+		put(name + "Supply", key, Key.class);
+	}
+
+	public void saveWipeKey(String name, Key key) {
+		put(name + "Wipe", key, Key.class);
+	}
+
+	public void saveKycKey(String name, Key key) {
+		put(name + "Kyc", key, Key.class);
+	}
+
 	public void saveSymbol(String token, String symbol) {
 		put(token + "Symbol", symbol, String.class);
 	}
@@ -250,6 +266,22 @@ public class HapiSpecRegistry {
 
 	public Key getKey(String name) {
 		return get(name, Key.class);
+	}
+
+	public Key getFreezeKey(String name) {
+		return get(name + "Freeze", Key.class);
+	}
+
+	public Key getSupplyKey(String name) {
+		return get(name + "Supply", Key.class);
+	}
+
+	public Key getWipeKey(String name) {
+		return get(name + "Wipe", Key.class);
+	}
+
+	public Key getKycKey(String name) {
+		return get(name + "Kyc", Key.class);
 	}
 
 	public boolean hasKey(String name) {

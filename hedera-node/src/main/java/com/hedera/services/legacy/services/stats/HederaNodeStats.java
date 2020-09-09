@@ -93,7 +93,7 @@ public class HederaNodeStats {
 			FileController.CREATE_FILE_METRIC,
 			FileController.UPDATE_FILE_METRIC,
 			FileController.DELETE_FILE_METRIC,
-			FileController.APPEND_METRIC,
+			FileController.FILE_APPEND_METRIC,
 			FileController.FILE_SYSDEL_METRIC,
 			FileController.FILE_SYSUNDEL_METRIC
 	);

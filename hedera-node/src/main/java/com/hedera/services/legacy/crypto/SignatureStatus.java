@@ -24,9 +24,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.ArrayList;
+
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class SignatureStatus {
   private SignatureStatusCode statusCode;
@@ -37,6 +40,7 @@ public class SignatureStatus {
   private FileID fileId;
   private ContractID contractId;
   private TopicID topicId;
+  private TokenRef tokenRef;
 
   public SignatureStatus(final SignatureStatusCode statusCode, final ResponseCodeEnum responseCode,
       final boolean handlingTransaction, final TransactionID transactionID,
@@ -50,6 +54,16 @@ public class SignatureStatus {
     this.fileId = fileId;
     this.contractId = contractId;
     this.topicId = topicId;
+  }
+
+  public SignatureStatus(final SignatureStatusCode statusCode, final ResponseCodeEnum responseCode,
+          final boolean handlingTransaction, final TransactionID transactionID,
+          final TokenRef tokenRef) {
+    this.statusCode = statusCode;
+    this.responseCode = responseCode;
+    this.handlingTransaction = handlingTransaction;
+    this.transactionId = transactionID;
+    this.tokenRef = tokenRef;
   }
 
   public ResponseCodeEnum getResponseCode() {
@@ -92,16 +106,16 @@ public class SignatureStatus {
       case INVALID_ACCOUNT_ID:
       case INVALID_AUTO_RENEW_ACCOUNT_ID:
         formatArguments.add(format(transactionId));
-        formatArguments.add(format(accountId));
+        formatArguments.add(readableId(accountId));
         break;
       case INVALID_FILE_ID:
         formatArguments.add(format(transactionId));
-        formatArguments.add(format(fileId));
+        formatArguments.add(readableId(fileId));
         break;
       case INVALID_CONTRACT_ID:
       case IMMUTABLE_CONTRACT:
         formatArguments.add(format(transactionId));
-        formatArguments.add(format(contractId));
+        formatArguments.add(readableId(contractId));
         break;
       case GENERAL_PAYER_ERROR:
       case GENERAL_TRANSACTION_ERROR:
@@ -117,7 +131,11 @@ public class SignatureStatus {
         break;
       case INVALID_TOPIC_ID:
         formatArguments.add(format(transactionId));
-        formatArguments.add(format(topicId));
+        formatArguments.add(readableId(topicId));
+        break;
+      case INVALID_TOKEN_REF:
+        formatArguments.add(format(transactionId));
+        formatArguments.add(tokenRef.hasTokenId() ? readableId(tokenRef.getTokenId()) : tokenRef.getSymbol());
         break;
       case SUCCESS:
       case INVALID_PROTOCOL_BUFFER:
@@ -130,28 +148,8 @@ public class SignatureStatus {
   }
 
   private static String format(final TransactionID transactionId) {
-    return String.format("(%s, %d.%d)", format(transactionId.getAccountID()),
+    return String.format("(%s, %d.%d)", readableId(transactionId.getAccountID()),
         transactionId.getTransactionValidStart().getSeconds(),
         transactionId.getTransactionValidStart().getNanos());
-  }
-
-  private static String format(final AccountID accountId) {
-    return String.format("%d.%d.%d ", accountId.getShardNum(), accountId.getRealmNum(),
-        accountId.getAccountNum());
-  }
-
-  private static String format(final FileID fileId) {
-    return String
-        .format("%d.%d.%d ", fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum());
-  }
-
-  private static String format(final ContractID contractId) {
-    return String.format("%d.%d.%d ", contractId.getShardNum(), contractId.getRealmNum(),
-        contractId.getContractNum());
-  }
-
-  private static String format(final TopicID topicId) {
-    return String.format("%d.%d.%d ", topicId.getShardNum(), topicId.getRealmNum(),
-            topicId.getTopicNum());
   }
 }

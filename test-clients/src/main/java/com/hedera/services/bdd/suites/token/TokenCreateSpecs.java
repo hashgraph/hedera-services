@@ -21,7 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -37,16 +36,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -71,8 +62,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec creationYieldsExpectedToken() {
-		int salt = Instant.now().getNano();
-
 		return defaultHapiSpec("CreationYieldsExpectedToken")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
@@ -80,7 +69,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("freeze")
 				).when(
 						tokenCreate("primary")
-								.symbol("UniquelyMaybe" + salt)
 								.initialFloat(123)
 								.divisibility(4)
 								.freezeDefault(true)
@@ -89,7 +77,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).then(
 						getTokenInfo("primary")
 								.logged()
-								.hasTokenId("primary")
+								.hasRegisteredId("primary")
 				);
 	}
 
@@ -97,7 +85,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		final int MONOGAMOUS_NETWORK = 1;
 		final int ADVENTUROUS_NETWORK = 1_000;
 
-		return defaultHapiSpec("CreationValidatesSymbol")
+		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY)
@@ -105,22 +93,22 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
 						)),
-						tokenCreate("primary")
+						tokenCreate(salted("primary"))
 								.treasury(TOKEN_TREASURY),
-						tokenCreate("secondary")
+						tokenCreate(salted("secondary"))
 								.treasury(TOKEN_TREASURY)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 				).then(
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 						)),
-						tokenCreate("secondary")
+						tokenCreate(salted("secondary"))
 								.treasury(TOKEN_TREASURY)
 				);
 	}
 
 	public HapiApiSpec creationValidatesSymbol() {
-		int salt = Instant.now().getNano();
+		String hopefullyUnique = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
@@ -135,55 +123,37 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.symbol("")
 								.hasKnownStatus(MISSING_TOKEN_SYMBOL),
+						tokenCreate("whiteSpaces")
+								.payingWith("payer")
+								.symbol(" ")
+								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
-								.symbol("abcde0abcde1abcde2abcde3abcde4abcde5")
+								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
 								.hasKnownStatus(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
+								.symbol(hopefullyUnique)
 								.payingWith("payer")
-								.symbol("POPULAR" + salt)
 				).then(
 						tokenCreate("tooLate")
 								.payingWith("payer")
-								.symbol("POPULAR" + salt)
+								.symbol(hopefullyUnique)
 								.hasKnownStatus(TOKEN_SYMBOL_ALREADY_IN_USE)
 				);
 	}
 
 	public HapiApiSpec creationRequiresAppropriateSigs() {
-		int salt = Instant.now().getNano();
-
 		return defaultHapiSpec("CreationRequiresAppropriateSigs")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						newKeyNamed("adminKey"),
-						newKeyNamed("treasuryKey"),
-						newKeyNamed("randomWrongKey")
-				).when(
+						newKeyNamed("adminKey")
+				).when( ).then(
 						tokenCreate("shouldntWork")
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenCreate("shouldntWork")
-								.payingWith("payer")
-								.adminKey("adminKey")
-								.freezeKey("treasuryKey")
-								.signedBy("payer", "adminKey")
-								.hasKnownStatus(INVALID_SIGNATURE),
-						tokenCreate("shouldntWork")
-								.payingWith("payer")
-								.adminKey("adminKey")
-								.freezeKey("treasuryKey")
-								.signedBy("payer", "adminKey", "randomWrongKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
-				).then(
-						tokenCreate("frozenToken" + salt)
-								.treasury(TOKEN_TREASURY)
-								.freezeKey("treasuryKey")
-								.freezeDefault(true)
-								.payingWith("payer")
 				);
 	}
 
@@ -205,12 +175,22 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.divisibility(1)
 								.initialFloat(1L << 62)
+								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+						tokenCreate("toobigdivisibility")
+								.payingWith("payer")
+								.initialFloat(0)
+								.divisibility(19)
+								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+						tokenCreate("toobigdivisibility")
+								.payingWith("payer")
+								.initialFloat(10)
+								.divisibility(18)
 								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY)
 				);
 	}
 
 	public HapiApiSpec treasuryHasCorrectBalance() {
-		String token = "myToken";
+		String token = salted("myToken");
 
 		int divisibility = 1;
 		long tokenFloat = 100_000;

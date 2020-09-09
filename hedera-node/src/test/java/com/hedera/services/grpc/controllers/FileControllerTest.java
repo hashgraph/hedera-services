@@ -92,7 +92,7 @@ public class FileControllerTest {
 		subject.appendContent(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).respondToFile(txn, txnObserver, APPEND_METRIC);
+		verify(txnResponseHelper).respondToFile(txn, txnObserver, FILE_APPEND_METRIC);
 	}
 
 	@Test

@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.queries.AnswerService;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,9 +37,13 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 
+import java.util.AbstractMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -46,11 +51,14 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static java.util.stream.Collectors.toList;
 
 public class GetAccountInfoAnswer implements AnswerService {
+	private final TokenStore tokenStore;
 	private final OptionValidator optionValidator;
 
-	public GetAccountInfoAnswer(OptionValidator optionValidator) {
+	public GetAccountInfoAnswer(TokenStore tokenStore, OptionValidator optionValidator) {
+		this.tokenStore = tokenStore;
 		this.optionValidator = optionValidator;
 	}
 
@@ -87,6 +95,15 @@ public class GetAccountInfoAnswer implements AnswerService {
 						.setReceiverSigRequired(account.isReceiverSigRequired())
 						.setGenerateSendRecordThreshold(account.getSenderThreshold())
 						.setGenerateReceiveRecordThreshold(account.getReceiverThreshold());
+				List<TokenRelationship> relationships = account.explicitTokenRels()
+						.stream()
+						.map(raw -> new AbstractMap.SimpleEntry<>(raw, tokenStore.get(raw.id())))
+						.filter(entry -> !entry.getValue().isDeleted())
+						.map(entry -> entry.getKey().asGrpcFor(entry.getValue()))
+						.collect(toList());
+				if (!relationships.isEmpty()) {
+					info.addAllTokenRelationships(relationships);
+				}
 				response.setHeader(answerOnlyHeader(OK));
 				response.setAccountInfo(info);
 			}

@@ -73,6 +73,30 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::isSmartContract;
 		}
 	},
+	IS_KYC_GRANTED {
+		@Override
+		@SuppressWarnings("unchecked")
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, v) -> {
+				var scopedV = (TokenScopedPropertyValue)v;
+				if ((boolean)scopedV.value()) {
+					a.grantKyc(scopedV.id(), scopedV.token());
+				} else {
+					a.revokeKyc(scopedV.id(), scopedV.token());
+				}
+			};
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public BiFunction<MerkleAccount, TokenScope, Object> scopedGetter() {
+			return (a, s) -> a.isKycGranted(s.id(), s.token());
+		}
+	},
 	IS_FROZEN {
 		@Override
 		@SuppressWarnings("unchecked")

@@ -20,6 +20,7 @@ package com.hedera.services.tokens;
  * ‍
  */
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -28,6 +29,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenManagement;
+
+import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
 	NOOP_TOKEN_STORE;
@@ -38,7 +42,22 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum update(TokenManagement changes) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -51,6 +70,8 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
 		throw new UnsupportedOperationException();
 	}
+
+
 
 	@Override
 	public void commitCreation() {
@@ -71,6 +92,14 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
 
 	@Override
+	public void setHederaLedger(HederaLedger ledger) { }
+
+	@Override
+	public void apply(TokenID id, Consumer<MerkleToken> change) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean exists(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
@@ -89,4 +118,21 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public ResponseCodeEnum burn(TokenID tId, long amount) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum mint(TokenID tId, long amount) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
+		throw new UnsupportedOperationException();
+	}
+
+
 }

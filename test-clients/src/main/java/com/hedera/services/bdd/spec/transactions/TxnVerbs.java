@@ -27,8 +27,17 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -105,8 +114,35 @@ public class TxnVerbs {
 	public static HapiTokenCreate tokenCreate(String token) {
 		return new HapiTokenCreate(token);
 	}
+	public static HapiTokenUpdate tokenUpdate(String token) {
+		return new HapiTokenUpdate(token);
+	}
+	public static HapiTokenDelete tokenDelete(String token) {
+		return new HapiTokenDelete(token);
+	}
 	public static HapiTokenTransact tokenTransact(HapiTokenTransact.TokenMovement... sources) {
 		return new HapiTokenTransact(sources);
+	}
+	public static HapiTokenFreeze tokenFreeze(String token, String account) {
+		return new HapiTokenFreeze(token, account);
+	}
+	public static HapiTokenUnfreeze tokenUnfreeze(String token, String account) {
+		return new HapiTokenUnfreeze(token, account);
+	}
+	public static HapiTokenKycGrant grantTokenKyc(String token, String account) {
+		return new HapiTokenKycGrant(token, account);
+	}
+	public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {
+		return new HapiTokenKycRevoke(token, account);
+	}
+	public static HapiTokenWipe wipeTokenAccount(String token, String account) {
+		return new HapiTokenWipe(token, account);
+	}
+	public static HapiTokenMint mintToken(String token, long amount) {
+		return new HapiTokenMint(token, amount);
+	}
+	public static HapiTokenBurn burnToken(String token, long amount) {
+		return new HapiTokenBurn(token, amount);
 	}
 
 	/* SYSTEM */

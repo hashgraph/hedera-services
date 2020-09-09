@@ -87,6 +87,26 @@ message TokenRef {
     }
 }
 
+enum TokenFreezeStatus {
+    FreezeNotApplicable = 0;
+    Frozen = 1;
+    Unfrozen = 2;
+}
+
+enum TokenKycStatus {
+    KycNotApplicable = 0;
+    Granted = 1;
+    Revoked = 2;
+}
+
+message TokenRelationship {
+    TokenID tokenId = 1;
+    uint64 balance = 2;
+    string symbol = 3;
+    TokenKycStatus kycStatus = 4;
+    TokenFreezeStatus freezeStatus = 5;
+}
+
 /* A Key can be a public key from one of the three supported systems (ed25519, RSA-3072,  ECDSA with p384). Or, it can be the ID of a smart contract instance, which is authorized to act as if it had a key. If an account has an ed25519 key associated with it, then the corresponding private key must sign any transaction to transfer cryptocurrency out of it. And similarly for RSA and ECDSA.
  *
  * A Key can be a smart contract ID, which means that smart contract is to authorize operations as if it had signed with a key that it owned. The smart contract doesn't actually have a key, and  doesn't actually sign a transaction. But it's as if a virtual transaction were created, and the smart contract signed it with a private key.
@@ -229,6 +249,15 @@ enum HederaFunctionality {
     TokenCreate = 56;
     TokenTransact = 57;
     TokenGetInfo = 58;
+    TokenFreezeAccount = 59;
+    TokenUnfreezeAccount = 60;
+    TokenGrantKycToAccount = 61;
+    TokenRevokeKycFromAccount = 62;
+    TokenDelete = 63;
+    TokenUpdate = 64;
+    TokenMint = 65;
+    TokenBurn = 66;
+    TokenAccountWipe = 67;
 }
 
 /*

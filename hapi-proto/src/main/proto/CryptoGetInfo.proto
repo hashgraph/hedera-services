@@ -58,6 +58,7 @@ message CryptoGetInfoResponse {
         Timestamp expirationTime = 12; // The TimeStamp time at which this account is set to expire
         Duration autoRenewPeriod = 13; // The duration for expiration time will extend every this many seconds. If there are insufficient funds, then it extends as long as possible. If it is empty when it expires, then it is deleted.
         repeated LiveHash liveHashes = 14; // All of the livehashes attached to the account (each of which is a hash along with the keys that authorized it and can delete it)
+        repeated TokenRelationship tokenRelationships = 15;
     }
     AccountInfo accountInfo = 2; // Info about the account (a state proof can be generated for this)
 }
