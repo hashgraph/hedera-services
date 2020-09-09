@@ -77,7 +77,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -227,16 +226,16 @@ public class TxnUtils {
 	}
 
 	private static int NANOS_IN_A_SECOND = 1_000_000_000;
-	private static AtomicInteger nextNano = new AtomicInteger(0);
-	private static int nanoOffset = (int) System.currentTimeMillis() % 1_000;
+	private static AtomicInteger NEXT_NANO = new AtomicInteger(0);
+	private static int NANO_OFFSET = (int) System.currentTimeMillis() % 1_000;
 
 	public static synchronized Timestamp getUniqueTimestampPlusSecs(long offsetSecs) {
 		Instant instant = Instant.now(Clock.systemUTC());
 
-		int candidateNano = nextNano.getAndIncrement() + nanoOffset;
+		int candidateNano = NEXT_NANO.getAndIncrement() + NANO_OFFSET;
 		if( candidateNano >= NANOS_IN_A_SECOND ) {
 			candidateNano = 0;
-			nextNano.set(1);
+			NEXT_NANO.set(1);
 		}
 
 		Timestamp uniqueTS = Timestamp.newBuilder()

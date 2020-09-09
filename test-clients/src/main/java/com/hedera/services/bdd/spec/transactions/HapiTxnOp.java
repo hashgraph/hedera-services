@@ -36,7 +36,6 @@ import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getTxnIDandType;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -212,7 +211,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	}
 
 	private TransactionResponse timedCall(HapiApiSpec spec, Transaction txn) {
-		log.info("Transaction ID : {}", getTxnIDandType(txn));
 		submitTime = System.currentTimeMillis();
 		TransactionResponse response = callToUse(spec).apply(txn);
 		long after = System.currentTimeMillis();
