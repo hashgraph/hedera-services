@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -60,16 +59,6 @@ public class TransactionSigner {
    * Signature algorithm
    */
   static final String ECDSA_SIGNATURE_ALGORITHM = "SHA384withECDSA";
-  public static enum SIGNATURE_FORMAT_ENUM {
-    SignatureList,SignatureMap,Random
-  }
-  public static SIGNATURE_FORMAT_ENUM SIGNATURE_FORMAT = SIGNATURE_FORMAT_ENUM.SignatureMap;
-
-  public static enum TX_BODY_FORMAT_ENUM {
-    Body,BodyBytes,Random
-  }
-  public static TX_BODY_FORMAT_ENUM TX_BODY_FORMAT = TX_BODY_FORMAT_ENUM.BodyBytes;
-  private static Random rand = new Random();
 
   /**
    * Generates ED25519 or ECDSA signature depending on the type of private key provided.
