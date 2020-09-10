@@ -21,17 +21,12 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.common.io.Files;
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
-import com.hederahashgraph.api.proto.java.ThresholdSignature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
@@ -64,7 +59,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.toList;
@@ -196,59 +190,6 @@ public class KeyFactory implements Serializable {
 		return txn.build();
 	}
 
-	public Transaction listSign(
-			Transaction.Builder txn,
-			List<Key> keys,
-			Map<Key, SigControl> overrides) throws Throwable {
-		return listSign(txn, authorsFor(keys, overrides));
-	}
-	private Transaction listSign(
-			Transaction.Builder txn,
-			List<Entry<Key, SigControl>> authors) throws Throwable {
-		byte[] data = txn.getBodyBytes().toByteArray();
-		SignatureList wrapper = SignatureList.newBuilder()
-				.addAllSigs(authors.stream().map(a -> legacySigFor(data, a.getKey(), a.getValue())).collect(toList()))
-				.build();
-		txn.setSigs(wrapper);
-		return txn.build();
-	}
-	private Signature legacySigFor(byte[] data, Key key, SigControl control) {
-		if (control == ON) {
-			try {
-				PrivateKey signer = pkMap.get(HexUtils.bytes2Hex(key.getEd25519().toByteArray()));
-				byte[] sig = HexUtils.hexToBytes(SignatureGenerator.signBytes(data, signer));
-				return Signature.newBuilder().setEd25519(ByteString.copyFrom(sig)).build();
-			} catch (Throwable t) {
-				log.warn("Signature failed!", t);
-			}
-		} else if (control != OFF) {
-			List<Key> composite = getCompositeList(key).getKeysList();
-			SigControl[] controls = control.getChildControls();
-			if (key.hasThresholdKey()) {
-				ThresholdSignature threshSig = ThresholdSignature.newBuilder()
-						.setSigs(asSigListFor(data, composite, controls))
-						.build();
-				return Signature.newBuilder()
-						.setThresholdSignature(threshSig)
-						.build();
-			} else {
-				return Signature.newBuilder()
-						.setSignatureList(asSigListFor(data, composite, controls))
-						.build();
-			}
-		}
-		return Signature.getDefaultInstance();
-	}
-	private SignatureList asSigListFor(byte[] data, List<Key> keys, SigControl[] controls) {
-		return SignatureList.newBuilder()
-				.addAllSigs(
-					IntStream
-						.range(0, controls.length)
-						.mapToObj(i -> legacySigFor(data, keys.get(i), controls[i]))
-						.collect(toList())
-				).build();
-	}
-
 	class Ed25519Signing {
 		private Set<String> used = new HashSet<>();
 		private List<Entry<byte[], byte[]>> keySigs = new ArrayList<>();
@@ -315,12 +256,6 @@ public class KeyFactory implements Serializable {
 	}
 
 	private static KeyPairObj firstKpFrom(Object keyStore, String name) {
-//		var tmpAcklo = ((Map<String, List<com.opencrowd.core.AccountKeyListObj>>)keyStore)
-//				.get(name)
-//				.get(0);
-//		System.out.println(HapiPropertySource.asAccountString(tmpAcklo.getAccountId()));
-//		var tmp = tmpAcklo.getKeyPairList().get(0);
-//		return new KeyPairObj(tmp.getPublicKeyStr(), tmp.getPrivateKeyStr());
 		return ((Map<String, List<AccountKeyListObj>>)keyStore)
 				.get(name)
 				.get(0)

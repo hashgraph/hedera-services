@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.keys.SigStyle;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -306,10 +305,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
 		sigMapGen = Optional.of(nature);
-		return self();
-	}
-	public T sigStyle(SigStyle style) {
-		useLegacySignature = (style == SigStyle.LIST);
 		return self();
 	}
 	public T sigControl(ControlForKey... overrides) {
