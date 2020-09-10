@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -205,6 +206,35 @@ public class PlatformTxnAccessorTest {
 		// then:
 		assertEquals(someTxn, CommonUtils.extractTransactionBody(signedTxn4Log));
 		assertEquals(signedTxnWithBody, asBodyBytes);
+	}
+
+	@Test
+	public void getsCorrectLoggableFormWithSignedTransactionBytes() throws Exception {
+		SignedTransaction signedTxn = SignedTransaction.newBuilder().
+				setBodyBytes(someTxn.toByteString()).
+				setSigMap(SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
+						.setEd25519(ByteString.copyFrom("FAKE".getBytes())).build())).build();
+
+		Transaction txn = Transaction.newBuilder().
+				setSignedTransactionBytes(signedTxn.toByteString()).build();
+
+		com.swirlds.common.Transaction platformTxn =
+				new com.swirlds.common.Transaction(txn.toByteArray());
+
+		// when:
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+
+		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
+		Transaction asBodyBytes = signedTxn4Log
+				.toBuilder()
+				.setSignedTransactionBytes(CommonUtils.extractTransactionBodyBytes(signedTxn4Log))
+				.build();
+
+		// then:
+		assertEquals(signedTxnBytes, txn.getSignedTransactionBytes());
+		assertEquals(signedTxn.getBodyBytes(), asBodyBytes.getSignedTransactionBytes());
 	}
 
 	@Test
