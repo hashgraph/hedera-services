@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -47,20 +48,24 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountState.class);
 
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
-	static final long[] NO_TOKEN_BALANCES = new long[0];
+	static final long NOOP_MASK = -1L;
+	static final long[] NO_TOKEN_RELATIONSHIPS = new long[0];
 	static final int NUM_TOKEN_PROPS = 3;
 	static final int BALANCE_OFFSET = 1;
 	static final int FLAGS_OFFSET = 2;
 
 	public static long FREEZE_MASK = 1L;
+	public static long KYC_MASK = 1L << 1;
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
@@ -83,10 +88,9 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private boolean receiverSigRequired;
 	private EntityId proxy;
 
-	long[] tokenRels = NO_TOKEN_BALANCES;
+	long[] tokenRels = NO_TOKEN_RELATIONSHIPS;
 
-	public MerkleAccountState() {
-	}
+	public MerkleAccountState() { }
 
 	public MerkleAccountState(
 			JKey key,
@@ -243,6 +247,16 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.toString();
 	}
 
+	public List<RawTokenRelationship> explicitTokenRels() {
+		return IntStream.range(0, numTokenRelationships())
+				.mapToObj(i -> new RawTokenRelationship(
+						tokenRels[balance(i)],
+						tokenRels[num(i)],
+						isFrozen(i),
+						isKycGranted(i)))
+				.collect(toList());
+	}
+
 	public String readableTokenRels() {
 		var sb = new StringBuilder("[");
 		for (int i = 0, n = numTokenRelationships(); i < n; i++) {
@@ -253,6 +267,9 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			if (isFrozen(i)) {
 				sb.append(",FROZEN");
 			}
+			if (isKycGranted(i)) {
+				sb.append(",KYC");
+			}
 			sb.append(")");
 			if (i < n - 1) {
 				sb.append(", ");
@@ -261,6 +278,16 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		sb.append("]");
 
 		return sb.toString();
+	}
+
+	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
+		int at = logicalIndexOf(id);
+		if (at < 0) {
+			return ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+		} else {
+			removeRelationship(at);
+		}
+		return OK;
 	}
 
 	public JKey key() {
@@ -392,36 +419,79 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return (i < 0) ? token.accountsAreFrozenByDefault() : isFrozen(i);
 	}
 
+	public boolean isKycGranted(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return true;
+		}
+		int i = logicalIndexOf(id);
+		return (i < 0) ? token.accountKycGrantedByDefault() : isKycGranted(i);
+	}
+
 	public void freeze(TokenID id, MerkleToken token) {
 		if (token.freezeKey().isEmpty()) {
 			return;
 		}
-		int i = logicalIndexOf(id), at = i;
-		if (i < 0) {
-			if (token.accountsAreFrozenByDefault()) {
-				return;
-			}
-			at = -i - 1;
-			insertNewRelationship(id, at);
-		}
-		set(FREEZE_MASK, at);
+		long defaultForNewRel = token.accountsAreFrozenByDefault()
+				? NOOP_MASK
+				: FREEZE_MASK | defaultKycMaskFor(token);
+		updateFlag(FREEZE_MASK, defaultForNewRel, id, this::set);
 	}
 
 	public void unfreeze(TokenID id, MerkleToken token) {
 		if (token.freezeKey().isEmpty()) {
 			return;
 		}
-		int i = logicalIndexOf(id), at = i;
-		if (i < 0) {
-			if (!token.accountsAreFrozenByDefault()) {
-				return;
-			}
-			at = -i - 1;
-			insertNewRelationship(id, at);
-		}
-		unset(FREEZE_MASK, at);
+		long defaultForNewRel = !token.accountsAreFrozenByDefault()
+				? NOOP_MASK
+				: defaultKycMaskFor(token);
+		updateFlag(FREEZE_MASK, defaultForNewRel, id, this::unset);
 	}
 
+	public void grantKyc(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return;
+		}
+		long defaultForNewRel = token.accountKycGrantedByDefault()
+				? NOOP_MASK
+				: KYC_MASK | defaultFreezeMaskFor(token);
+		updateFlag(KYC_MASK, defaultForNewRel, id, this::set);
+	}
+
+	public void revokeKyc(TokenID id, MerkleToken token) {
+		if (token.kycKey().isEmpty()) {
+			return;
+		}
+		long defaultForNewRel = !token.accountKycGrantedByDefault()
+				? NOOP_MASK
+				: defaultFreezeMaskFor(token);
+		updateFlag(KYC_MASK, defaultForNewRel, id, this::unset);
+	}
+
+	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (!token.accountKycGrantedByDefault()) {
+				return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+			}
+			if (token.accountsAreFrozenByDefault()) {
+				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+			if (adjustment < 0) {
+				return INSUFFICIENT_TOKEN_BALANCE;
+			}
+		} else {
+			if (!isKycGranted(at)) {
+				return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+			}
+			if (isFrozen(at)) {
+				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+			if (tokenRels[balance(at)] + adjustment < 0) {
+				return INSUFFICIENT_TOKEN_BALANCE;
+			}
+		}
+		return OK;
+	}
 
 	public void adjustTokenBalance(TokenID id, MerkleToken token, long adjustment) {
 		int i = logicalIndexOf(id), at = i;
@@ -429,12 +499,18 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			if (adjustment < 0) {
 				throwBalanceIse(id, adjustment);
 			}
+			if (!token.accountKycGrantedByDefault()) {
+				throwNoKycIse(id);
+			}
 			if (token.accountsAreFrozenByDefault()) {
 				throwFrozenIse(id);
 			}
 			at = -i - 1;
-			insertNewRelationship(id, at);
+			insertNewRelationship(id, at, KYC_MASK);
 		} else {
+			if (!isKycGranted(at)) {
+				throwNoKycIse(id);
+			}
 			if (isFrozen(at)) {
 				throwFrozenIse(id);
 			}
@@ -447,38 +523,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		tokenRels[pos] = newBalance;
 	}
 
-	private void throwFrozenIse(TokenID id) {
-		throw new IllegalStateException(String.format(
-				"Account frozen for token '%s'!", readableId(id)));
-	}
-
-	private void throwBalanceIse(TokenID id, long balance) {
-		throw new IllegalArgumentException(String.format(
-				"Account cannot have balance %d for token '%s'!", balance, readableId(id)));
-	}
-
-	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
-		int i = logicalIndexOf(id), at = i;
-		if (i < 0) {
-			if (token.accountsAreFrozenByDefault()) {
-				return ACCOUNT_FROZEN_FOR_TOKEN;
-			}
-			if (adjustment < 0) {
-				return SETTING_NEGATIVE_ACCOUNT_BALANCE;
-			}
-		} else {
-			if (isFrozen(at)) {
-				return ACCOUNT_FROZEN_FOR_TOKEN;
-			}
-			if (tokenRels[balance(at)] + adjustment < 0) {
-				return SETTING_NEGATIVE_ACCOUNT_BALANCE;
-			}
-		}
-		return OK;
-	}
-
 	/* --- Helpers --- */
-	private void insertNewRelationship(TokenID id, int at) {
+	private void insertNewRelationship(TokenID id, int at, long flags) {
 		int newNumTokens = tokenRels.length / NUM_TOKEN_PROPS + 1;
 
 		long[] newTokenRels = new long[newNumTokens * NUM_TOKEN_PROPS];
@@ -487,6 +533,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		}
 
 		newTokenRels[num(at)] = id.getTokenNum();
+		newTokenRels[flags(at)] = flags;
 
 		if (at != newNumTokens) {
 			System.arraycopy(
@@ -499,6 +546,75 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		tokenRels = newTokenRels;
 	}
 
+	private void removeRelationship(int at) {
+		int n;
+		if ((n = numTokenRelationships()) == 1) {
+			tokenRels = NO_TOKEN_RELATIONSHIPS;
+			return;
+		}
+		long[] newTokenRels = new long[(n - 1) * NUM_TOKEN_PROPS];
+		if (at != 0) {
+			System.arraycopy(tokenRels, 0, newTokenRels, 0, at * NUM_TOKEN_PROPS);
+		}
+		if (at < (n - 1)) {
+			System.arraycopy(
+					tokenRels,
+					(at + 1) * NUM_TOKEN_PROPS,
+					newTokenRels,
+					at * NUM_TOKEN_PROPS,
+					(n - at - 1) * NUM_TOKEN_PROPS);
+		}
+		tokenRels = newTokenRels;
+	}
+
+	@FunctionalInterface
+	private interface FlagMutator {
+		void apply(long mask, int at);
+	}
+
+	private void updateFlag(
+			long mask,
+			long defaultForNewRel,
+			TokenID id,
+			FlagMutator flagMutator
+	) {
+		int i = logicalIndexOf(id), at = i;
+		if (i < 0) {
+			if (defaultForNewRel == NOOP_MASK) {
+				return;
+			}
+			at = -i - 1;
+			insertNewRelationship(id, at, defaultForNewRel);
+		} else {
+			flagMutator.apply(mask, at);
+		}
+	}
+
+	private void throwFrozenIse(TokenID id) {
+		throw new IllegalStateException(String.format(
+				"Account frozen for token '%s'!", readableId(id)));
+	}
+
+	private void throwNoKycIse(TokenID id) {
+		throw new IllegalStateException(String.format(
+				"Account KYC has not been granted for token '%s'!", readableId(id)));
+	}
+
+	private void throwBalanceIse(TokenID id, long balance) {
+		throw new IllegalArgumentException(String.format(
+				"Account cannot have balance %d for token '%s'!", balance, readableId(id)));
+	}
+
+	private long defaultKycMaskFor(MerkleToken token) {
+		var flag = !token.hasKycKey() || token.accountKycGrantedByDefault();
+		return flag ? KYC_MASK : 0;
+	}
+
+	private long defaultFreezeMaskFor(MerkleToken token) {
+		var flag = token.hasFreezeKey() && token.accountsAreFrozenByDefault();
+		return flag ? FREEZE_MASK : 0;
+	}
+
 	private void set(long mask, int i) {
 		tokenRels[flags(i)] |= mask;
 	}
@@ -509,6 +625,10 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	private boolean isFrozen(int i) {
 		return (tokenRels[flags(i)] & FREEZE_MASK) == FREEZE_MASK;
+	}
+
+	private boolean isKycGranted(int i) {
+		return (tokenRels[flags(i)] & KYC_MASK) == KYC_MASK;
 	}
 
 	private int num(int i) {
@@ -539,4 +659,5 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		}
 		return -(lo + 1);
 	}
+
 }

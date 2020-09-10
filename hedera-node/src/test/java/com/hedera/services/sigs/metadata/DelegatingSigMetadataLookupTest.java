@@ -21,55 +21,24 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.sigs.factories.PlatformSigFactory;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
-import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
-import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
-import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.txns.PlatformTxnFactory;
-import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
-import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.BeforeAll;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
-import static com.hedera.test.factories.keys.NodeFactory.ed25519;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.*;
-import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-
-import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
-import static com.hedera.test.factories.sigs.SigWrappers.asValid;
-import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class DelegatingSigMetadataLookupTest {
@@ -79,32 +48,33 @@ class DelegatingSigMetadataLookupTest {
 	int divisibility = 2;
 	long tokenFloat = 1_000_000;
 	boolean freezeDefault = true;
+	boolean kycDefault = true;
 	EntityId treasury = new EntityId(1,2, 3);
-	TokenID target = IdUtils.asToken("1.2.666");
+	TokenRef ref = IdUtils.asIdRef("1.2.666");
 
-	FCMap<MerkleEntityId, MerkleToken> tokens;
 	MerkleToken token;
+	TokenStore tokenStore;
 
-	Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
+	Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> subject;
 
 	@BeforeEach
 	public void setup() {
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
-		token = new MerkleToken(tokenFloat, divisibility, adminKey, symbol, freezeDefault, treasury);
+		token = new MerkleToken(tokenFloat, divisibility, adminKey, symbol, freezeDefault, kycDefault, treasury);
 
-		tokens = mock(FCMap.class);
+		tokenStore = mock(TokenStore.class);
 
-		subject = DelegatingSigMetadataLookup.DEFAULT_TOKEN_LOOKUP_FACTORY.apply(() -> tokens);
+		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
 	}
 
 	@Test
 	public void returnsExpectedFailIfMissing() {
-		given(tokens.get(fromTokenId(target))).willReturn(null);
+		given(tokenStore.resolve(ref)).willReturn(TokenStore.MISSING_TOKEN);
 
 		// when:
-		var result = subject.apply(target);
+		var result = subject.apply(ref);
 
 		// then:
 		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
@@ -116,10 +86,11 @@ class DelegatingSigMetadataLookupTest {
 		token.setFreezeKey(freezeKey);
 		var expected = TokenSigningMetadata.from(token);
 
-		given(tokens.get(fromTokenId(target))).willReturn(token);
+		given(tokenStore.resolve(ref)).willReturn(ref.getTokenId());
+		given(tokenStore.get(ref.getTokenId())).willReturn(token);
 
 		// when:
-		var result = subject.apply(target);
+		var result = subject.apply(ref);
 
 		// then:
 		assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());

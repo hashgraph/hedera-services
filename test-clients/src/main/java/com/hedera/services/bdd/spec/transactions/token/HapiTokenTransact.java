@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
@@ -43,31 +44,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 	static final Logger log = LogManager.getLogger(HapiTokenTransact.class);
 
 	public static class TokenMovement {
+		private final long amount;
 		private final String token;
 		private final String sender;
-		private final long amount;
+		private final boolean useSymbols;
 		private final Optional<String> receiver;
 
-		TokenMovement(String token, String sender, long amount, Optional<String> receiver) {
+		TokenMovement(
+				String token,
+				String sender,
+				long amount,
+				Optional<String> receiver,
+				boolean useSymbols
+		) {
 			this.token = token;
 			this.sender = sender;
 			this.amount = amount;
 			this.receiver = receiver;
+			this.useSymbols = useSymbols;
 		}
 
 		public List<Map.Entry<String, Long>> generallyInvolved() {
@@ -78,18 +84,33 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		}
 
 		public List<TokenTransfer> specializedFor(HapiApiSpec spec) {
-			var symbol = spec.registry().getSymbol(token);
-
 			List<TokenTransfer> transfers = new ArrayList<>();
-			transfers.add(tt(sender, symbol, -amount, spec));
-			if (receiver.isPresent()) {
-				transfers.add(tt(receiver.get(), symbol, +amount, spec));
+			if (useSymbols)	 {
+				var symbol = spec.registry().getSymbol(token);
+				transfers.add(symbolicTransfer(sender, symbol, -amount, spec));
+				if (receiver.isPresent()) {
+					transfers.add(symbolicTransfer(receiver.get(), symbol, +amount, spec));
+				}
+			} else {
+				var id = spec.registry().getTokenID(token);
+				transfers.add(idTransfer(sender, id, -amount, spec));
+				if (receiver.isPresent()) {
+					transfers.add(idTransfer(receiver.get(), id, +amount, spec));
+				}
 			}
 
 			return transfers;
 		}
 
-		private TokenTransfer tt(String name, String symbol, long value, HapiApiSpec spec) {
+		private TokenTransfer idTransfer(String name, TokenID id, long value, HapiApiSpec spec) {
+			return TokenTransfer.newBuilder()
+					.setAccount(spec.registry().getAccountID(name))
+					.setToken(TokenRef.newBuilder().setTokenId(id))
+					.setAmount(value)
+					.build();
+		}
+
+		private TokenTransfer symbolicTransfer(String name, String symbol, long value, HapiApiSpec spec) {
 			return TokenTransfer.newBuilder()
 					.setAccount(spec.registry().getAccountID(name))
 					.setToken(TokenRef.newBuilder().setSymbol(symbol))
@@ -107,11 +128,15 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 			}
 
 			public TokenMovement between(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver));
+				return new TokenMovement(token, sender, amount, Optional.of(receiver), false);
+			}
+
+			public TokenMovement symbolicallyBetween(String sender, String receiver) {
+				return new TokenMovement(token, sender, amount, Optional.of(receiver), true);
 			}
 
 			public TokenMovement from(String magician) {
-				return new TokenMovement(token, magician, amount, Optional.empty());
+				return new TokenMovement(token, magician, amount, Optional.empty(), false);
 			}
 		}
 

@@ -40,7 +40,7 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 	public static final String UPDATE_FILE_METRIC = "updateFile";
 	public static final String CREATE_FILE_METRIC = "createFile";
 	public static final String DELETE_FILE_METRIC = "deleteFile";
-	public static final String APPEND_METRIC = "appendContent";
+	public static final String FILE_APPEND_METRIC = "appendContent";
 	public static final String FILE_SYSDEL_METRIC = "fileSystemDelete";
 	public static final String FILE_SYSUNDEL_METRIC = "fileSystemUndelete";
 
@@ -71,7 +71,7 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
 
 	@Override
 	public void appendContent(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
-		txnHelper.respondToFile(signedTxn, observer, APPEND_METRIC);
+		txnHelper.respondToFile(signedTxn, observer, FILE_APPEND_METRIC);
 	}
 
 	@Override

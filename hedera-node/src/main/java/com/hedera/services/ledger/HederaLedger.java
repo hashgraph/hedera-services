@@ -135,6 +135,7 @@ public class HederaLedger {
 		historian.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setLedger(ledger);
+		tokenStore.setHederaLedger(this);
 	}
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
@@ -234,11 +235,15 @@ public class HederaLedger {
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
-		var validity = tokenStore.adjustBalance(aId, tId, adjustment);
-		if (validity == OK) {
-			updateTokenXfers(tId, aId, adjustment);
-		}
-		return validity;
+		return tokenStore.adjustBalance(aId, tId, adjustment);
+	}
+
+	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+		return tokenStore.grantKyc(aId, tId);
+	}
+
+	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+		return tokenStore.revokeKyc(aId, tId);
 	}
 
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
@@ -461,7 +466,7 @@ public class HederaLedger {
 		ledger.set(id, BALANCE, newBalance);
 	}
 
-	private void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
+	public void updateTokenXfers(TokenID tId, AccountID aId, long amount) {
 		tokensTouched[numTouches++] = tId;
 		var xfers = netTokenTransfers.computeIfAbsent(tId, ignore -> TransferList.newBuilder());
 		updateXfers(aId, amount, xfers);

@@ -24,6 +24,9 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
+
+import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenWipeAccount;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UncheckedSubmit;
 
@@ -74,6 +77,15 @@ public class PermissionFileUtils {
 		permissionKeys.put(ConsensusSubmitMessage, "submitMessage");
 		permissionKeys.put(TokenCreate, "tokenCreate");
 		permissionKeys.put(TokenTransact, "tokenTransact");
+		permissionKeys.put(TokenFreezeAccount, "tokenFreezeAccount");
+		permissionKeys.put(TokenUnfreezeAccount, "tokenUnfreezeAccount");
+		permissionKeys.put(TokenGrantKycToAccount, "tokenGrantKycToAccount");
+		permissionKeys.put(TokenRevokeKycFromAccount, "tokenRevokeKycFromAccount");
+		permissionKeys.put(TokenDelete, "tokenDelete");
+		permissionKeys.put(TokenMint, "tokenMint");
+		permissionKeys.put(TokenBurn, "tokenBurn");
+		permissionKeys.put(TokenAccountWipe, "tokenAccountWipe");
+		permissionKeys.put(TokenUpdate, "tokenUpdate");
 		permissionKeys.put(SystemDelete, "systemDelete");
 		permissionKeys.put(SystemUndelete, "systemUndelete");
 		permissionKeys.put(Freeze, "freeze");

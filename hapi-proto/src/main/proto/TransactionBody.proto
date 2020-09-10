@@ -55,8 +55,18 @@ import "ConsensusDeleteTopic.proto";
 import "ConsensusSubmitMessage.proto";
 
 import "UncheckedSubmit.proto";
+
 import "TokenCreate.proto";
 import "TokenTransact.proto";
+import "TokenFreeze.proto";
+import "TokenUnfreeze.proto";
+import "TokenGrantKyc.proto";
+import "TokenRevokeKyc.proto";
+import "TokenDelete.proto";
+import "TokenManagement.proto";
+import "TokenMintCoins.proto";
+import "TokenBurnCoins.proto";
+import "TokenWipeAccount.proto";
 
 /* A single transaction. All transaction types are possible here. */
 message TransactionBody {
@@ -93,7 +103,17 @@ message TransactionBody {
     ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27;
 
     UncheckedSubmitBody uncheckedSubmit = 28;
+
     TokenCreation tokenCreation = 29;
     TokenTransfers tokenTransfers = 30;
+    TokenFreeze tokenFreeze = 31;
+    TokenUnfreeze tokenUnfreeze = 32;
+    TokenGrantKyc tokenGrantKyc = 33;
+    TokenRevokeKyc tokenRevokeKyc = 34;
+    TokenDeletion tokenDeletion = 35;
+    TokenManagement tokenUpdate = 36;
+    TokenMintCoins tokenMint = 37;
+    TokenBurnCoins tokenBurn = 38;
+    TokenWipeAccount tokenWipe = 39;
   }
 }

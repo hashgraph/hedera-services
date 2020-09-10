@@ -24,8 +24,10 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -47,7 +49,9 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,9 +143,13 @@ class StateViewTest {
 		token = new MerkleToken(
 				100, 1,
 				TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
-				"UnfrozenToken", true,
+				"UnfrozenToken", true, true,
 				new EntityId(1, 2, 3));
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
+		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
+		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
+		token.setDeleted(true);
 		given(tokenStore.resolve(foundToken)).willReturn(tokenId);
 		given(tokenStore.resolve(missingToken)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
@@ -203,7 +211,7 @@ class StateViewTest {
 		assertEquals(token.tokenFloat(), info.getCurrentFloat());
 		assertEquals(token.divisibility(), info.getDivisibility());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
-		assertEquals(false, info.getFreezeDefault());
+		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
 	}
 
@@ -213,6 +221,7 @@ class StateViewTest {
 		var info = subject.infoForToken(foundToken).get();
 
 		// then:
+		assertTrue(info.getIsDeleted());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
@@ -220,7 +229,10 @@ class StateViewTest {
 		assertEquals(token.divisibility(), info.getDivisibility());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
-		assertEquals(token.accountsAreFrozenByDefault(), info.getFreezeDefault());
+		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
+		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
+		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
+		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
 	}
 
 	@Test

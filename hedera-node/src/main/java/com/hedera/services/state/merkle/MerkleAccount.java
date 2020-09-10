@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -47,9 +48,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.P;
-import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_BALANCES;
+import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELATIONSHIPS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.stream.Collectors.toList;
 
 public class MerkleAccount extends AbstractMerkleInternal
 		implements FCMValue, MerkleInternal, TokenViewMergeable<MerkleAccount> {
@@ -160,6 +165,14 @@ public class MerkleAccount extends AbstractMerkleInternal
 		state().setTokenRels(viewSoFar.state().getTokenRels());
 	}
 
+	public List<RawTokenRelationship> explicitTokenRels() {
+		return state().explicitTokenRels();
+	}
+
+	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
+		return state().wipeTokenRelationship(id);
+	}
+
 	/* ---- Object ---- */
 	@Override
 	public boolean equals(Object o) {
@@ -261,6 +274,18 @@ public class MerkleAccount extends AbstractMerkleInternal
 
 	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
 		return state().validityOfAdjustment(id, token, adjustment);
+	}
+
+	public void grantKyc(TokenID id, MerkleToken token) {
+		state().grantKyc(id, token);
+	}
+
+	public void revokeKyc(TokenID id, MerkleToken token) {
+		state().revokeKyc(id, token);
+	}
+
+	public boolean isKycGranted(TokenID id, MerkleToken token) {
+		return state().isKycGranted(id, token);
 	}
 
 	public void freeze(TokenID id, MerkleToken token) {
@@ -383,7 +408,7 @@ public class MerkleAccount extends AbstractMerkleInternal
 					memo,
 					deleted, smartContract, receiverSigRequired,
 					proxy,
-					NO_TOKEN_BALANCES);
+					NO_TOKEN_RELATIONSHIPS);
 
 			var records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 			serdes.deserializeIntoRecords(in, records);

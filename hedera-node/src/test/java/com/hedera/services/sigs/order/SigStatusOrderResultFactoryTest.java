@@ -20,10 +20,13 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -165,6 +168,23 @@ public class SigStatusOrderResultFactoryTest {
 		// given:
 		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
 		SigningOrderResult<SignatureStatus> summary = subject.forImmutableContract(immutable, txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	public void reportsMissingToken() {
+		// setup:
+		TokenRef missing = IdUtils.asIdRef("1.2.3");
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.INVALID_TOKEN_REF, ResponseCodeEnum.INVALID_TOKEN_ID,
+				inHandleTxnDynamicContext, txnId, missing);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		SigningOrderResult<SignatureStatus> summary = subject.forMissingToken(missing, txnId);
 		SignatureStatus error = summary.getErrorReport();
 
 		// expect:

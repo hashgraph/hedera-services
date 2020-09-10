@@ -80,10 +80,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		var treasury = op.getTreasury();
 		var scaledInitialFloat = initialTinyFloat(op.getFloat(), op.getDivisibility());
 
-		var status = ledger.unfreeze(op.getTreasury(), created);
+		var status = OK;
+		if (op.hasFreezeKey()) {
+			status = ledger.unfreeze(treasury, created);
+		}
+		if (status == OK && op.hasKycKey()) {
+			status = ledger.grantKyc(treasury, created);
+		}
 		if (status == OK) {
 			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
 		}
+
 		if (status != OK) {
 			abortWith(status);
 			return;

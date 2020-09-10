@@ -44,6 +44,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.throttling.bucket.BucketConfig.*;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
@@ -142,12 +143,14 @@ class BucketThrottlingTest {
 		var oldDisplay = BucketThrottling.displayFn;
 		BucketThrottling.displayFn = System.out::println;
 		subject.functions = new HederaFunctionality[] { FileAppend, ConsensusGetTopicInfo };
+		var oldCapacities = subject.capacities;
 
 		// given:
 		subject.rebuild();
 
 		// then:
 		assertEquals(2, subject.capacities.size());
+		assertNotSame(oldCapacities, subject.capacities);
 
 		// cleanup:
 		BucketThrottling.displayFn = oldDisplay;
