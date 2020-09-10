@@ -52,7 +52,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	private String token;
 
-	private Key adminKey;
 	private OptionalInt divisibility = OptionalInt.empty();
 	private OptionalLong initialFloat = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
@@ -61,7 +60,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> supplyKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
-	private Optional<String> adminKeyName = Optional.empty();
+	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<Boolean> kycDefault = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
@@ -69,11 +68,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.TokenCreate;
-	}
-
-	@Override
-	protected Key lookupKey(HapiApiSpec spec, String name) {
-		return name.equals(token) ? adminKey : spec.registry().getKey(name);
 	}
 
 	public HapiTokenCreate(String token) {
@@ -131,7 +125,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	}
 
 	public HapiTokenCreate adminKey(String adminKeyName) {
-		this.adminKeyName = Optional.of(adminKeyName);
+		this.adminKey = Optional.of(adminKeyName);
 		return this;
 	}
 
@@ -170,7 +164,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		adminKey = netOf(spec, adminKeyName, Optional.empty(), Optional.empty(), Optional.of(this::effectiveKeyGen));
 		if (symbolFn.isPresent()) {
 			symbol = Optional.of(symbolFn.get().apply(spec));
 		}
@@ -178,12 +171,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(
 						TokenCreation.class, b -> {
-							b.setAdminKey(adminKey);
 							symbol.ifPresent(b::setSymbol);
 							initialFloat.ifPresent(b::setFloat);
 							divisibility.ifPresent(b::setDivisibility);
 							freezeDefault.ifPresent(b::setFreezeDefault);
 							kycDefault.ifPresent(b::setKycDefault);
+							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
@@ -196,8 +189,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec)),
-				ignore -> adminKey));
+				spec -> spec.registry().getKey(effectivePayer(spec))));
+		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		return signers;
 	}
@@ -213,9 +206,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			return;
 		}
 		var registry = spec.registry();
-		registry.saveKey(token, adminKey);
 		registry.saveSymbol(token, symbol.orElse(token));
 		registry.saveTokenId(token, lastReceipt.getTokenId());
+		adminKey.ifPresent(k -> registry.saveAdminKey(token, registry.getKey(k)));
 		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));
 		wipeKey.ifPresent(k -> registry.saveWipeKey(token, registry.getKey(k)));
 		supplyKey.ifPresent(k -> registry.saveSupplyKey(token, registry.getKey(k)));

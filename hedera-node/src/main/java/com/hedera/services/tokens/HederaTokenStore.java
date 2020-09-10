@@ -323,11 +323,6 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
-		var adminKey = asUsableFcKey(request.getAdminKey());
-		if (adminKey.isEmpty()) {
-			return failure(INVALID_ADMIN_KEY);
-		}
-
 		var validity = symbolCheck(request.getSymbol());
 		if (validity != OK) {
 			return failure(validity);
@@ -345,6 +340,7 @@ public class HederaTokenStore implements TokenStore {
 		if (validity != OK) {
 			return failure(validity);
 		}
+		var adminKey = asUsableFcKey(request.getAdminKey());
 		var kycKey = asUsableFcKey(request.getKycKey());
 		var wipeKey = asUsableFcKey(request.getWipeKey());
 		var supplyKey = asUsableFcKey(request.getSupplyKey());
@@ -353,11 +349,11 @@ public class HederaTokenStore implements TokenStore {
 		pendingCreation = new MerkleToken(
 				request.getFloat(),
 				request.getDivisibility(),
-				adminKey.get(),
 				request.getSymbol(),
 				request.getFreezeDefault(),
 				kycKey.isEmpty() || request.getKycDefault(),
 				ofNullableAccountId(request.getTreasury()));
+		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);

@@ -66,22 +66,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -140,6 +125,7 @@ class HederaTokenStoreTest {
 
 		token = mock(MerkleToken.class);
 		given(token.symbol()).willReturn(symbol);
+		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -225,17 +211,25 @@ class HederaTokenStoreTest {
 	@Test
 	public void deletesAsExpected() {
 		// given:
-		var mockSubject = mock(TokenStore.class);
-
-		given(mockSubject.resolve(miscRef)).willReturn(misc);
-		willCallRealMethod().given(mockSubject).delete(miscRef);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
-		var outcome = mockSubject.delete(miscRef);
+		var outcome = subject.delete(miscRef);
 
 		// then:
 		assertEquals(OK, outcome);
-		verify(mockSubject).apply(misc, TokenStore.DELETION);
+	}
+
+	@Test
+	public void rejectsDeletionMissingAdminKey() {
+		// given:
+		given(token.adminKey()).willReturn(Optional.empty());
+
+		// when:
+		var outcome = subject.delete(miscRef);
+
+		// then:
+		assertEquals(ResponseCodeEnum.UNAUTHORIZED, outcome);
 	}
 
 	@Test
@@ -1201,11 +1195,11 @@ class HederaTokenStoreTest {
 		var expected = new MerkleToken(
 				tokenFloat,
 				divisibility,
-				TOKEN_ADMIN_KT.asJKeyUnchecked(),
 				symbol,
 				freezeDefault,
 				kycDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
 		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
@@ -1223,36 +1217,6 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(created, subject.pendingId);
 		assertEquals(expected, subject.pendingCreation);
-	}
-
-	@Test
-	public void rejectsMissingAdminKey() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearAdminKey()
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor);
-
-		// then:
-		assertEquals(INVALID_ADMIN_KEY, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	public void rejectsInvalidAdminKey() {
-		// given:
-		var req = fullyValidAttempt()
-				.setAdminKey(Key.getDefaultInstance())
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor);
-
-		// then:
-		assertEquals(INVALID_ADMIN_KEY, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test

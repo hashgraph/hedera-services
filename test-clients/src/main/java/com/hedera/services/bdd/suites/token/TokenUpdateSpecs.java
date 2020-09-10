@@ -32,17 +32,11 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -59,13 +53,46 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						keysChange(),
 						treasuryEvolves(),
+						validatesMissingAdminKey(),
+						validatesMissingRef(),
 				}
 		);
+	}
+
+	private HapiApiSpec validatesMissingRef() {
+		return defaultHapiSpec("UpdateValidatesRef")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
+				).when( ).then(
+						tokenUpdate("1.2.3")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(INVALID_TOKEN_REF)
+				);
+	}
+
+	private HapiApiSpec validatesMissingAdminKey() {
+		return defaultHapiSpec("UpdateValidatesMissingAdminKey")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("payer")
+								.balance(A_HUNDRED_HBARS),
+						tokenCreate("tbd")
+								.freezeDefault(false)
+								.kycDefault(true)
+								.treasury(TOKEN_TREASURY)
+				).when( ).then(
+						tokenUpdate("tbd")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(UNAUTHORIZED)
+				);
 	}
 
 	public HapiApiSpec keysChange() {
 		return defaultHapiSpec("KeysChange")
 				.given(
+						newKeyNamed("adminKey"),
 						newKeyNamed("newAdminKey"),
 						newKeyNamed("kycThenFreezeKey"),
 						newKeyNamed("freezeThenKycKey"),
@@ -74,10 +101,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate("tbu")
+								.adminKey("adminKey")
 								.treasury(TOKEN_TREASURY)
 								.kycDefault(false)
 								.freezeDefault(true)
 								.initialFloat(10)
+								.adminKey("adminKey")
 								.kycKey("kycThenFreezeKey")
 								.freezeKey("freezeThenKycKey")
 								.supplyKey("supplyThenWipeKey")
@@ -112,11 +141,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	public HapiApiSpec treasuryEvolves() {
 		return defaultHapiSpec("TreasuryEvolves")
 				.given(
+						newKeyNamed("adminKey"),
 						newKeyNamed("kycKey"),
 						newKeyNamed("freezeKey"),
 						cryptoCreate("oldTreasury"),
 						cryptoCreate("newTreasury"),
 						tokenCreate("tbu")
+								.adminKey("adminKey")
 								.kycDefault(false)
 								.freezeDefault(true)
 								.kycKey("kycKey")
@@ -140,10 +171,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("SymbolChanges")
 				.given(
+						newKeyNamed("adminKey"),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
-						tokenCreate("tbu").treasury(TOKEN_TREASURY),
-						tokenUpdate("tbu").symbol(hopefullyUnique)
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenUpdate("tbu")
+								.symbol(hopefullyUnique)
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenTransact(
