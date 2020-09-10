@@ -148,11 +148,6 @@
 
   <repositories>
     <repository>
-      <id>ossrh-staging</id>
-      <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1169</url>
-    </repository>
-    <repository>
       <id>Ethereum</id>
       <name>Ethereum</name>
       <url>https://dl.bintray.com/ethereum/maven/</url>
