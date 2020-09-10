@@ -198,10 +198,7 @@ public class ContractCallThrottling {
             nodeAccount2.getAccountNum(), nodeAccount2.getRealmNum(), nodeAccount2.getShardNum(),
                 TestHelper.getContractMaxFee(), timestamp,
             txDuration, true, "", 250000L, contractFile, ByteString.EMPTY, 0L,
-            contractAutoRenew, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), "Contract Memo", null);
+            contractAutoRenew, "Contract Memo", null);
     transaction = TransactionSigner.signTransaction(transaction, keyList);
     TransactionResponse result = retryLoopTransaction(transaction,  "createContract");
     Assert.assertEquals(ResponseCodeEnum.OK, result.getNodeTransactionPrecheckCode());

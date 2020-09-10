@@ -40,11 +40,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
-import java.util.Collections;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import static com.hedera.services.legacy.client.util.Common.createAccountComplex;
 
 public class CryptoCreate extends ClientBaseThread {
 
@@ -67,10 +64,9 @@ public class CryptoCreate extends ClientBaseThread {
    *
    * Create a batch of account, then verify transaction success or not, then repeat
    */
-  public CryptoCreate(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index) {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
+  public CryptoCreate(String host, int port, long nodeAccountNumber, String [] args, int index) {
+    super(host, port, nodeAccountNumber, args, index);
     log.info("host {} nodeAccountNumber {}", host, nodeAccountNumber);
-    this.useSigMap = useSigMap;
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;
@@ -164,32 +160,18 @@ public class CryptoCreate extends ClientBaseThread {
     try {
       while (accumulatedTransferCount < numberOfIterations) {
         KeyPair newKeyPair = new KeyPairGenerator().generateKeyPair();
-        if (useSigMap) {
-          Common.addKeyMap(newKeyPair, pubKey2privKeyMap);
-        }
+        Common.addKeyMap(newKeyPair, pubKey2privKeyMap);
 
         // send create account transaction only, confirm later
         AccountID newAccount = RequestBuilder.getAccountIdBuild(nodeAccountNumber, 0l, 0l);
 
         try {
           Transaction transaction = Common.tranSubmit(() -> {
-            Transaction createRequest;
-            try {
-              if (useSigMap) {
-                byte[] pubKey = ((EdDSAPublicKey) newKeyPair.getPublic()).getAbyte();
-                Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-                Key payerKey = acc2ComplexKeyMap.get(payerAccount);
-                createRequest = Common.createAccountComplex(payerAccount, payerKey, newAccount, key, initialBalance,
-                        pubKey2privKeyMap);
-              } else {
-                createRequest = TestHelper
-                        .createAccountWithFee(payerAccount, newAccount, newKeyPair, initialBalance,
-                                Collections.singletonList(genesisPrivateKey));
-              }
-            } catch (Exception e) {
-              e.printStackTrace();
-              return null;
-            }
+            byte[] pubKey = ((EdDSAPublicKey) newKeyPair.getPublic()).getAbyte();
+            Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+            Key payerKey = acc2ComplexKeyMap.get(payerAccount);
+            Transaction createRequest = Common.createAccountComplex(payerAccount, payerKey, newAccount, key, initialBalance,
+                    pubKey2privKeyMap);
             return createRequest;
           }, stub::createAccount);
 

@@ -298,8 +298,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
   private static Transaction createAccountValidateTxTestCaseStartTimeValidation(
@@ -325,8 +324,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
 
@@ -354,8 +352,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
   private static Transaction createAccountValidateTxBodyThresholdTestCase(
@@ -383,8 +380,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, threshold, keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
 

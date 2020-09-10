@@ -231,9 +231,6 @@ public class MaxFileSizeTest {
 		Transaction updateContractRequest = RequestBuilder.getContractUpdateRequest(payerAccount, nodeAccount,
 				MAX_TX_FEE, timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
 				expirationTime,
-				SignatureList.newBuilder()
-						.addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-						.build(),
 				contractMemo);
 		updateContractRequest = TransactionSigner.signTransactionComplexWithSigMap(updateContractRequest, keyList,
 				pubKey2privKeyMap);

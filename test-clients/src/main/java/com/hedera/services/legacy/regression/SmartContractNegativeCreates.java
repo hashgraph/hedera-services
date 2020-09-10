@@ -211,10 +211,7 @@ public class SmartContractNegativeCreates {
               nodeRealmNum, nodeShardNum, transactionFee, timestamp,
               txDuration, generateRecord, txMemo, gas, fileId, constructorParameters,
               initialBalance,
-              autoRenewalPeriod, SignatureList.newBuilder()
-                  .addSigs(Signature.newBuilder()
-                      .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                  .build(), contractMemo, adminKey);
+              autoRenewalPeriod, contractMemo, adminKey);
 
       transaction = TransactionSigner.signTransactionComplexWithSigMap(
           transaction, keyList, pubKey2privKeyMap);
@@ -226,10 +223,7 @@ public class SmartContractNegativeCreates {
         .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
             nodeRealmNum, nodeShardNum, transactionFee, timestamp,
             txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-            autoRenewalPeriod, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), contractMemo, adminKey);
+            autoRenewalPeriod, contractMemo, adminKey);
 
     transaction = TransactionSigner.signTransactionComplexWithSigMap(
         transaction, keyList, pubKey2privKeyMap);

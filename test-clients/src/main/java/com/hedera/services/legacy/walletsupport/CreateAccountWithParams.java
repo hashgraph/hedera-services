@@ -177,6 +177,6 @@ public class CreateAccountWithParams {
 				nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, startTime,
 				transactionDuration, generateRecord, memo, keys,
 				initialBalance, sendRecordThreshold, receiveRecordThreshold, receiverSigRequired,
-				autoRenewPeriod, SignatureList.newBuilder().getDefaultInstanceForType());
+				autoRenewPeriod);
 	}
 }

@@ -72,10 +72,9 @@ public class ContractCallLocalBalanceCheck extends ClientBaseThread {
 
   private FileID contractFileId;
 
-  public ContractCallLocalBalanceCheck(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index)
+  public ContractCallLocalBalanceCheck(String host, int port, long nodeAccountNumber, String [] args, int index)
   {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
-    this.useSigMap = useSigMap;
+    super(host, port, nodeAccountNumber, args, index);
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;

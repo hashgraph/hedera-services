@@ -474,8 +474,7 @@ public class SmartContractNonexistent {
 	    Transaction updateContractRequest = RequestBuilder
 	        .getContractUpdateRequest(payerAccount, nodeAccount, MAX_TX_FEE, timestamp,
 	            transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-	            null, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-	                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), "");
+	            null, "");
 
 			List<Key> keyList = new ArrayList<>();
 			HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();

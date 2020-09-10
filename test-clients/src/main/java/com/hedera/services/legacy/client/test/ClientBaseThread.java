@@ -128,10 +128,10 @@ public class ClientBaseThread extends Thread {
 
 
 	public ClientBaseThread() {
-		this("localhost", 50211, 3, false, null, 0);
+		this("localhost", 50211, 3, null, 0);
 	}
 
-	public ClientBaseThread(String host, int port, long nodeAccountNumber, boolean useSigMap, String[] args,
+	public ClientBaseThread(String host, int port, long nodeAccountNumber, String[] args,
 			int index) {
 		grpcStub = new GrpcStub(host, port);
 	}

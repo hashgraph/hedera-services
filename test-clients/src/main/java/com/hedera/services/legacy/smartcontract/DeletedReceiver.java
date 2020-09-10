@@ -345,8 +345,7 @@ public class DeletedReceiver {
     Transaction updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, MAX_TX_FEE, timestamp,
             transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-            expirationTime, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), "");
+            expirationTime, "");
 
     updateContractRequest = TransactionSigner
         .signTransaction(updateContractRequest, accountKeys.get(payerAccount));

@@ -415,8 +415,7 @@ public class SizeLimit {
     Transaction updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, 100L, timestamp, transactionDuration,
             true, "", contractToUpdate, autoRenewPeriod, null, null, expirationTime,
-            SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), "");
+            "");
 
     updateContractRequest = TransactionSigner
         .signTransaction(updateContractRequest, accountKeys.get(payerAccount));
