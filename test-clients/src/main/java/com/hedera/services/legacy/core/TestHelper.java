@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -1288,8 +1287,7 @@ public class TestHelper {
     ByteString bodyBytes = ByteString.copyFrom(body.build().toByteArray());
 
     // step 1 : create tx
-    Transaction transaction = Transaction.newBuilder().setBodyBytes(bodyBytes)
-        .setSigs(SignatureList.getDefaultInstance()).build();
+    Transaction transaction = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     // step 2 : sign tx by payer account's private key
     Transaction signTransaction = TransactionSigner.signTransaction(transaction,
         Collections.singletonList(payerPrivateKey));
@@ -1301,7 +1299,7 @@ public class TestHelper {
     // step 5  sign again after fee calculation
     transaction = Transaction.newBuilder()
         .setBodyBytes(ByteString.copyFrom(body.build().toByteArray()))
-        .setSigs(SignatureList.getDefaultInstance()).build();
+        .build();
     signTransaction = TransactionSigner.signTransaction(transaction,
         Collections.singletonList(payerPrivateKey));
     return signTransaction;
@@ -1384,8 +1382,7 @@ public class TestHelper {
         .newBuilder().setLiveHash(claim).build();
     txBodyBuilder.setCryptoAddLiveHash(addLiveHashTransactionBody);
     ByteString bodyBytes = ByteString.copyFrom(txBodyBuilder.build().toByteArray());
-    Transaction addLiveHashTx = Transaction.newBuilder().setBodyBytes(bodyBytes)
-        .setSigs(SignatureList.newBuilder().getDefaultInstanceForType()).build();
+    Transaction addLiveHashTx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     Transaction signedAddLiveHashTx = TransactionSigner
         .signTransaction(addLiveHashTx, genesisPrivateKey);
     return stub.addLiveHash(signedAddLiveHashTx);

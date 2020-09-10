@@ -167,8 +167,7 @@ public class FastTxRecordTest {
     body = TransactionBody.parseFrom(transaction.getBodyBytes());
     TransactionBody.Builder txBody = body.toBuilder();
     txBody.setGenerateRecord(false);
-    Transaction transaction1 = Transaction.newBuilder().setBodyBytes(txBody.build().toByteString())
-        .setSigs(transaction.getSigs()).build();
+    Transaction transaction1 = transaction.toBuilder().setBodyBytes(txBody.build().toByteString()).build();
     signTransaction = TransactionSigner
         .signTransaction(transaction1, Collections.singletonList(genesisPrivateKey));
     response = stub.createAccount(signTransaction);
