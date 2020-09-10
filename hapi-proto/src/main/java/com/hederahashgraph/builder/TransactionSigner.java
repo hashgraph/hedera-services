@@ -39,13 +39,9 @@ import org.apache.commons.codec.DecoderException;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.SignatureList.Builder;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import net.i2p.crypto.eddsa.EdDSAEngine;
@@ -136,61 +132,6 @@ public class TransactionSigner {
     }
     return transaction;
   }
-
-  /**
-   * Signs transaction using SignatureList with provided private keys. The generated signatures are contained in a
-   * Signature object of type SignatureList. This Signature object becomes the single element in the
-   * signature list for the transaction.
-   *
-   * @param transaction transaction to be singed
-   * @param privKeyList private key list for signing
-   * @return transaction with signatures
-   */
-//  public static Transaction signTransactionNew(Transaction transaction,
-//      List<List<PrivateKey>> privKeysList) {
-//    Transaction rv = null;
-//
-//    byte[] bodyBytes;
-//    if(transaction.hasBody()) {
-//    	bodyBytes = transaction.getBody().toByteArray();
-//    }else {
-//    	bodyBytes = transaction.getBodyBytes().toByteArray();
-//    }
-//    Builder allSigsBuilder = SignatureList.newBuilder();
-//
-//    for (List<PrivateKey> privKeyList : privKeysList) {
-//      List<Signature> sigs = new ArrayList<>();
-//      for (PrivateKey priv : privKeyList) {
-//        com.hederahashgraph.api.proto.java.Signature.Builder sigBuilder = Signature.newBuilder();
-//        ByteString sigBytes = signBytes(bodyBytes, priv);
-//        if (priv instanceof EdDSAPrivateKey) {
-//          sigBuilder.setEd25519(sigBytes);
-//        } else {
-//          sigBuilder.setECDSA384(sigBytes);
-//        }
-//
-//        Signature sig = sigBuilder.build();
-//        sigs.add(sig);
-//      }
-//
-//      Signature sigEntry = null;
-////			if(privKeyList.size() == 1) {
-////				sigEntry = sigs.get(0);
-////			} else {
-//      sigEntry = Signature.newBuilder()
-//          .setSignatureList(SignatureList.newBuilder().addAllSigs(sigs)).build();
-////			}
-//
-//      allSigsBuilder.addSigs(sigEntry);
-//    }
-//    SignatureList sigs = allSigsBuilder.build();
-//    if(transaction.hasBody()) {
-//    	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigs).build();
-//    }else {
-//    	rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigs(sigs).build();
-//    }
-//    return rv;
-//  }
 
   /**
    * Signs transaction with provided key and public to private key map. The generated signatures are
