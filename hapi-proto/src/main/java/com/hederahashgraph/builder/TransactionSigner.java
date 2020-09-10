@@ -27,6 +27,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -107,22 +108,29 @@ public class TransactionSigner {
   }
 
   /**
-   * Signs a transaction using SignatureList format with provided private keys.
+   * Signs a transaction using SignatureMap format with provided private keys.
    * 
    * @param transaction
    * @param privKeyList
    * @return signed transaction
    */
-//  public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
-//    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-//    for (PrivateKey pk : privKeyList) {
-//      List<PrivateKey> aList = new ArrayList<>();
-//      aList.add(pk);
-//      privKeysList.add(aList);
-//    }
-//
-//    return signTransactionNew(transaction, privKeysList);
-//  }
+  public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
+    List<Key> keyList = new ArrayList<>();
+    HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
+    for (PrivateKey pk : privKeyList) {
+      byte[] pubKey = ((EdDSAPrivateKey) pk).getAbyte();
+      Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+      keyList.add(key);
+      String pubKeyHex = Hex.encodeHexString(pubKey);
+      pubKey2privKeyMap.put(pubKeyHex, pk);
+    }
+    try {
+      return signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
+    } catch (Exception ignore) {
+      ignore.printStackTrace();
+    }
+    return transaction;
+  }
 
   /**
    * Signs transaction using SignatureList with provided private keys. The generated signatures are contained in a
