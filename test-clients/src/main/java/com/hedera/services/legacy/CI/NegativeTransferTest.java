@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -336,23 +335,12 @@ public class NegativeTransferTest {
                 timestamp, transactionDuration, false,
                 "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
 
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
+    return TransactionSigner.signTransaction(transferTx, privKeysList);
   }
 
   public static Transaction createTransferNInvalidAccountsAmountsDifference(AccountID fromAccount,
@@ -404,23 +392,10 @@ public class NegativeTransferTest {
                 timestamp, transactionDuration, false,
                 "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
 
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(fromAccountSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(fromKey);
 
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
+    return TransactionSigner.signTransaction(transferTx, privKeysList);
   }
-
 }
