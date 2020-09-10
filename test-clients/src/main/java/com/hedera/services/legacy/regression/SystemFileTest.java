@@ -40,7 +40,6 @@ import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.regression.umbrella.FileServiceTest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
@@ -164,24 +163,12 @@ public class SystemFileTest {
 
     byte[] bodyBytesArr1 = transactionBody1.toByteArray();
     ByteString bodyBytes1 = ByteString.copyFrom(bodyBytesArr1);
-
     Transaction tx1 = Transaction.newBuilder().setBodyBytes(bodyBytes1).build();
-
     Transaction signedTransaction1 = TransactionSigner
         .signTransaction(tx1, Collections.singletonList(genesisPrivateKey));
-    // append the special account signature
-    Transaction signedTransactiontKeys1 = null;
-    try {
-      signedTransactiontKeys1 = FileServiceTest
-          .appendSignature(signedTransaction1, Collections.singletonList(genesisPrivateKey));
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    
-    log.info(signedTransactiontKeys1
-        + ":: is the transaction signed with the payer plus wacl");
+
     log.info("txBody=" + transactionBody1);
-    TransactionResponse response = fileServiceBlockingStub.updateFile(signedTransactiontKeys1);
+    TransactionResponse response = fileServiceBlockingStub.updateFile(signedTransaction1);
     log.info(response.getNodeTransactionPrecheckCode());
     log.info(response.getNodeTransactionPrecheckCode());
     Assert.assertEquals(expectedPrecheckCode, response.getNodeTransactionPrecheckCode());
