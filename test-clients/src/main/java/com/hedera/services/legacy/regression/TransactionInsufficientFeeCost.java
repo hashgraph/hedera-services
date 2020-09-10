@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -51,7 +49,6 @@ import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.FeeClient;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.file.LargeFileUploadIT;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import io.grpc.ManagedChannel;
@@ -700,7 +697,7 @@ public class TransactionInsufficientFeeCost {
             fileData, fileExp, waclPubKeyList);
     Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs
-    Transaction filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    Transaction filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.createFile(filesigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE, response.getNodeTransactionPrecheckCode());
@@ -719,7 +716,7 @@ public class TransactionInsufficientFeeCost {
             fileData, fileExp, waclPubKeyList);
     filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs
-    filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     response = stub.createFile(filesigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -751,7 +748,7 @@ public class TransactionInsufficientFeeCost {
             feeOffered, timestamp, transactionDuration, true, "FileAppend",
             fileData, fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE, response.getNodeTransactionPrecheckCode());
@@ -769,7 +766,7 @@ public class TransactionInsufficientFeeCost {
             feeOffered, timestamp, transactionDuration, true, "FileAppend",
             fileData, fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -802,7 +799,7 @@ public class TransactionInsufficientFeeCost {
             feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend",
             fileData, fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE,
@@ -821,7 +818,7 @@ public class TransactionInsufficientFeeCost {
             feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend",
             fileData, fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -851,7 +848,7 @@ public class TransactionInsufficientFeeCost {
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp, transactionDuration, true, "FileDelete", fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileDeleteRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE,
@@ -869,7 +866,7 @@ public class TransactionInsufficientFeeCost {
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp, transactionDuration, true, "FileDelete", fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileDeleteRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

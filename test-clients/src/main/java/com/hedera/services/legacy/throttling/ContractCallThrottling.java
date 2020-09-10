@@ -30,8 +30,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,7 +47,6 @@ import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -160,12 +157,7 @@ public class ContractCallThrottling {
             fileData, fileExp, waclPubKeyList);
     Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs
-    Transaction filesigned = null;
-    try {
-      filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    Transaction filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     return filesigned;
   }
 

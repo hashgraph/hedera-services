@@ -35,9 +35,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.SignatureList.Builder;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -259,10 +256,10 @@ public class FileServiceIT {
             waclPubKeyList);
     TransactionBody body = TransactionBody.parseFrom(FileCreateRequest.getBodyBytes());
     txId = body.getTransactionID();
-    Transaction filesignedByPayer = TransactionSigner.signTransactionW(FileCreateRequest, privKeys);
+    Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, privKeys);
 
     // append wacl sigs
-    Transaction filesigned = appendSignature(filesignedByPayer, waclPrivKeyList);
+    Transaction filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     log.info("\n-----------------------------------");
     log.info("FileCreate: request = " + filesigned);
 
@@ -417,7 +414,7 @@ public class FileServiceIT {
     txId = body.getTransactionID();
     List<PrivateKey> privKey = getPayerPrivateKey(payerSeq);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, privKey);
-    Transaction txSigned = appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);
 
@@ -458,10 +455,10 @@ public class FileServiceIT {
     List<PrivateKey> privKey = getPayerPrivateKey(payerSeq);
     Transaction txSignedByPayer = TransactionSigner
         .signTransaction(FileUpdateRequest, privKey); // sign with payer keys
-    Transaction txSignedByCreationWacl = appendSignature(txSignedByPayer,
-        waclPrivKeyList); // sign with creation wacl keys
-    Transaction txSigned = appendSignature(txSignedByCreationWacl,
-        newWaclPrivKeyList); // sign with new wacl keys
+    Transaction txSignedByCreationWacl = TransactionSigner.signTransaction(txSignedByPayer,
+        waclPrivKeyList, true); // sign with creation wacl keys
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByCreationWacl,
+        newWaclPrivKeyList, true); // sign with new wacl keys
 
     log.info("\n-----------------------------------");
     log.info(
@@ -491,7 +488,7 @@ public class FileServiceIT {
             timestamp, transactionDuration, true, "FileDelete", fid);
     List<PrivateKey> privKey = getPayerPrivateKey(payerSeq);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(FileDeleteRequest, privKey);
-    Transaction txSigned = appendSignature(txSignedByPayer, newWaclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, newWaclPrivKeyList, true);
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
 
@@ -677,67 +674,6 @@ public class FileServiceIT {
   }
 
   /**
-   * Append signatures to existing ones.
-   *
-   * @param transaction tx to append signatures.
-   * @param privKeys private keys
-   * @return transaction with appended sigs
-   */
-  public static Transaction appendSignature(Transaction transaction, List<PrivateKey> privKeys)
-      throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, DecoderException {
-   
-    byte[] txByteArray = transaction.getBodyBytes().toByteArray();
-
-    List<Signature> currSigs = transaction.getSigs().getSigsList();
-    Builder allSigListBuilder = SignatureList.newBuilder();
-    Builder waclSigListBuilder = SignatureList.newBuilder();
-    allSigListBuilder.addAllSigs(currSigs);
-    for (PrivateKey privKey : privKeys) {
-      String payerAcctSig = null;
-      payerAcctSig = HexUtils
-          .bytes2Hex(TransactionSigner.signBytes(txByteArray, privKey).toByteArray());
-      Signature signaturePayeeAcct = null;
-      signaturePayeeAcct = Signature.newBuilder()
-          .setEd25519(ByteString.copyFrom(HexUtils.hexToBytes(payerAcctSig))).build();
-      waclSigListBuilder.addSigs(signaturePayeeAcct);
-    }
-
-    Signature waclSigs = Signature.newBuilder().setSignatureList(waclSigListBuilder.build())
-        .build();
-    allSigListBuilder.addSigs(waclSigs);
-    Transaction txSigned = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes())
-        .setSigs(allSigListBuilder.build()).build();
-    return txSigned;
-  }
-
-  /**
-   * Creates a transaction signed by a single private key.
-   *
-   * @param transaction tx to be signed
-   * @param privatekey private key for signing
-   */
-  public static Transaction getSignedTransaction(Transaction transaction, PrivateKey privatekey) {
-   
-    byte[] txByteArray = transaction.getBodyBytes().toByteArray();
-    // Payer Account will sign this transaction
-    String payerAcctSig = null;
-    payerAcctSig = HexUtils
-        .bytes2Hex(TransactionSigner.signBytes(txByteArray, privatekey).toByteArray());
-    // get this signature and add to the Transaction with body.
-    Signature signaturePayeeAcct = null;
-    try {
-      signaturePayeeAcct = Signature.newBuilder()
-          .setEd25519(ByteString.copyFrom(HexUtils.hexToBytes(payerAcctSig))).build();
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
-
-    SignatureList sigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct).build();
-    Transaction txFirstSigned = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigs(sigList).build();
-    return txFirstSigned;
-  }
-
-  /**
    * Gets account info.
  * @throws Exception 
    */
@@ -866,10 +802,10 @@ public class FileServiceIT {
         transactionDuration, true,
         memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
         amount);
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    privKeysList.add(payerPrivKeys);
-    privKeysList.add(fromPrivKeys);
-    Transaction paymentTxSigned = TransactionSigner.signTransactionNew(paymentTx, privKeysList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.addAll(payerPrivKeys);
+    privKeysList.addAll(fromPrivKeys);
+    Transaction paymentTxSigned = TransactionSigner.signTransaction(paymentTx, privKeysList);
 
     long transferFee = TestHelper.getCryptoMaxFee();
 
@@ -879,7 +815,7 @@ public class FileServiceIT {
         transactionDuration, true,
         memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
         amount);
-    paymentTxSigned = TransactionSigner.signTransactionNew(paymentTx, privKeysList);
+    paymentTxSigned = TransactionSigner.signTransaction(paymentTx, privKeysList);
 
     return paymentTxSigned;
   }

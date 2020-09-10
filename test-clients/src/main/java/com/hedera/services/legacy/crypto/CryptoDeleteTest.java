@@ -38,12 +38,12 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 
+import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.FeeClient;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -175,7 +175,7 @@ public class CryptoDeleteTest {
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
     List<PrivateKey> list = new ArrayList<>();
     list.add(firstPair.getPrivate());
-    Transaction signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list);
+    Transaction signedTransaction1 = TransactionSigner.signTransaction(signedTransaction, list, true);
 
     TransactionResponse response1 = stub.cryptoDelete(signedTransaction1);
     log.info(response1.getNodeTransactionPrecheckCode());

@@ -49,16 +49,12 @@ import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.regression.Utilities;
-import com.hedera.services.legacy.regression.umbrella.FileServiceTest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -225,18 +221,7 @@ public class CryptoLiveHashTest {
         .signTransaction(tx, Collections.singletonList(firstPair.getPrivate()));
     log.info(signedTransaction + ":: is the signed transaction");
 //    Transaction signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction,fromPrivKeyList);
-    Transaction signedTransactiontKeys = null;
-    try {
-      signedTransactiontKeys = FileServiceTest.appendSignature(signedTransaction, waclPrivKeyList);
-    } catch (InvalidKeyException e) {
-      e.printStackTrace();
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    } catch (SignatureException e) {
-      e.printStackTrace();
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
+    Transaction signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction, waclPrivKeyList, true);
 //    signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction,Collections.singletonList(firstPair.getPrivate()));
     log.info(signedTransactiontKeys + ":: is the transaction signed with the payer plus wacl");
 //
@@ -307,22 +292,9 @@ public class CryptoLiveHashTest {
     Transaction transaction1 = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     Transaction signedTransaction1 = TransactionSigner
         .signTransaction(transaction1, Collections.singletonList(firstPair.getPrivate()));
-
-    Transaction signedTransactiontKeys1 = null;
-    try {
-      signedTransactiontKeys1 = FileServiceIT.appendSignature(signedTransaction1, waclPrivKeyList);
-    } catch (InvalidKeyException e) {
-      e.printStackTrace();
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    } catch (SignatureException e) {
-      e.printStackTrace();
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
+    Transaction signedTransactiontKeys1 = TransactionSigner.signTransaction(signedTransaction1, waclPrivKeyList, true);
 
     TransactionResponse response2 = stub.deleteLiveHash(signedTransactiontKeys1);
-
     log.info(response2.getNodeTransactionPrecheckCode());
 
     txReceipt = TestHelper.getTxReceipt(transactionID1, stub);

@@ -30,9 +30,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.SignatureList.Builder;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,20 +41,14 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -65,7 +56,6 @@ import java.util.Map;
 import java.util.Properties;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.junit.Assert;
 
 public class CryptoFileAutoRenewDurationCheck {
@@ -209,7 +199,7 @@ public class CryptoFileAutoRenewDurationCheck {
         .signTransaction(FileCreateRequest, Collections.singletonList(genesisPrivateKey));
 
     // append wacl sigs
-    Transaction filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    Transaction filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     log.info("\n-----------------------------------");
     log.info("FileCreate: request = " + filesigned);
 
@@ -238,7 +228,7 @@ public class CryptoFileAutoRenewDurationCheck {
         .signTransaction(FileCreateRequest, Collections.singletonList(genesisPrivateKey));
 
     // append wacl sigs
-    filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     log.info("\n-----------------------------------");
     log.info("FileCreate: request = " + filesigned);
 
@@ -278,10 +268,10 @@ public class CryptoFileAutoRenewDurationCheck {
     Transaction txSignedByPayer = TransactionSigner
         .signTransaction(FileUpdateRequest,
             Collections.singletonList(genesisPrivateKey)); // sign with payer keys
-    Transaction txSignedByCreationWacl = appendSignature(txSignedByPayer,
-        waclPrivKeyList); // sign with creation wacl keys
-    Transaction txSigned = appendSignature(txSignedByCreationWacl,
-        newWaclPrivKeyList); // sign with new wacl keys
+    Transaction txSignedByCreationWacl = TransactionSigner.signTransaction(txSignedByPayer,
+        waclPrivKeyList, true); // sign with creation wacl keys
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByCreationWacl,
+        newWaclPrivKeyList, true); // sign with new wacl keys
 
     log.info("\n-----------------------------------");
     log.info(
@@ -295,7 +285,6 @@ public class CryptoFileAutoRenewDurationCheck {
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE,
         response.getNodeTransactionPrecheckCode());
-
   }
 
   public void genWacl(int numKeys, List<Key> waclPubKeyList, List<PrivateKey> waclPrivKeyList) {
@@ -306,35 +295,5 @@ public class CryptoFileAutoRenewDurationCheck {
       waclPubKeyList.add(waclKey);
       waclPrivKeyList.add(pair.getPrivate());
     }
-
-
   }
-
-  public static Transaction appendSignature(Transaction transaction, List<PrivateKey> privKeys)
-      throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, DecoderException {
-
-    byte[] txByteArray = transaction.getBodyBytes().toByteArray();
-
-    List<Signature> currSigs = transaction.getSigs().getSigsList();
-    Builder allSigListBuilder = SignatureList.newBuilder();
-    Builder waclSigListBuilder = SignatureList.newBuilder();
-    allSigListBuilder.addAllSigs(currSigs);
-    for (PrivateKey privKey : privKeys) {
-      String payerAcctSig = null;
-      payerAcctSig = HexUtils
-          .bytes2Hex(TransactionSigner.signBytes(txByteArray, privKey).toByteArray());
-      Signature signaturePayeeAcct = null;
-      signaturePayeeAcct = Signature.newBuilder()
-          .setEd25519(ByteString.copyFrom(HexUtils.hexToBytes(payerAcctSig))).build();
-      waclSigListBuilder.addSigs(signaturePayeeAcct);
-    }
-
-    Signature waclSigs = Signature.newBuilder().setSignatureList(waclSigListBuilder.build())
-        .build();
-    allSigListBuilder.addSigs(waclSigs);
-    Transaction txSigned = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes())
-        .setSigs(allSigListBuilder.build()).build();
-    return txSigned;
-  }
-
 }
