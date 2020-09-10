@@ -101,7 +101,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate("tbu")
-								.adminKey("adminKey")
 								.treasury(TOKEN_TREASURY)
 								.kycDefault(false)
 								.freezeDefault(true)
