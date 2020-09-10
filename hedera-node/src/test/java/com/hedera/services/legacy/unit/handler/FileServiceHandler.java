@@ -613,11 +613,11 @@ public class FileServiceHandler {
    * Return true only when there is small change in both currentRate and nextRate
    */
   public boolean isSmallChange(ExchangeRateSet exchangeRateSet) {
-    return isSmallChange(PropertiesLoader.getExchangeRateAllowedPercentage(),
+    return isSmallChange(5,
         midnightRateSet.getCurrCentEquiv(), midnightRateSet.getCurrHbarEquiv(),
         exchangeRateSet.getCurrentRate().getCentEquiv(),
         exchangeRateSet.getCurrentRate().getHbarEquiv()) && isSmallChange(
-        PropertiesLoader.getExchangeRateAllowedPercentage(),
+        5,
         midnightRateSet.getNextCentEquiv(), midnightRateSet.getNextHbarEquiv(),
         exchangeRateSet.getNextRate().getCentEquiv(), exchangeRateSet.getNextRate().getHbarEquiv());
   }

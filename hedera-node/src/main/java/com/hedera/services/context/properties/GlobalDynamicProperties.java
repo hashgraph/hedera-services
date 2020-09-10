@@ -32,6 +32,7 @@ public class GlobalDynamicProperties {
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
 	private int maxContractStorageKb;
+	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
@@ -61,6 +62,7 @@ public class GlobalDynamicProperties {
 				.build();
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
 		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
+		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -97,5 +99,9 @@ public class GlobalDynamicProperties {
 
 	public int maxContractStorageKb() {
 		return maxContractStorageKb;
+	}
+
+	public int ratesIntradayChangeLimitPercent() {
+		return ratesIntradayChangeLimitPercent;
 	}
 }

@@ -166,7 +166,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Global/dynamic properties. */
-		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);

@@ -53,15 +53,6 @@ public class SyncPropertiesObject {
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
 
-	/**
-	 * This percentage setting means you can increase or decrease Exchange Rate by
-	 * this many percent. Suppose its value is p, then you can increase Exchange
-	 * Rate up to 1+p/100 times the original, or decrease by the inverse
-	 * (1/(1+p/100) times the original. The amount must always be a positive
-	 * integer, never 0 or negative or bigger than Integer.MAX.
-	 */
-	private static int exchangeRateAllowedPercentage = ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE;
-	
 	private static int maxGasLimit = ApplicationConstants.MAX_GAS_LIMIT;
 
 	// load Synch Properties
@@ -89,15 +80,6 @@ public class SyncPropertiesObject {
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
 
-		/**
-		 * This percentage setting means you can increase or decrease Exchange Rate by
-		 * this many percent. Suppose its value is p, then you can increase Exchange
-		 * Rate up to 1+p/100 times the original, or decrease by the inverse
-		 * (1/(1+p/100) times the original. The amount must always be a positive
-		 * integer, never 0 or negative or bigger than Integer.MAX.
-		 */
-		exchangeRateAllowedPercentage = appConfig.getInt("exchangeRateAllowedPercentage",
-				ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE);
 		maxGasLimit = appConfig.getInt("maxGasLimit", ApplicationConstants.MAX_GAS_LIMIT);
 	}
 
@@ -149,18 +131,6 @@ public class SyncPropertiesObject {
 		return localCallEstReturnBytes;
 	}
 
-	static int getExchangeRateAllowedPercentage() {
-		return exchangeRateAllowedPercentage;
-	}
-
-	static boolean validExchangeRateAllowedPercentage() {
-		if (exchangeRateAllowedPercentage <= 0) {
-			exchangeRateAllowedPercentage = ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE;
-			return false;
-		}
-		return true;
-	}
-	
 	static int getMaxGasLimit() {
 	    return maxGasLimit;
 	}

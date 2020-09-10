@@ -151,6 +151,20 @@ class ScreenedSysFilePropsTest {
 	}
 
 	@Test
+	public void warnsOfUnusableGlobalDynamic() {
+		// when:
+		subject.screenNew(withJust("rates.intradayChangeLimitPercent", "-1"));
+
+		// then:
+		assertTrue(subject.from121.isEmpty());
+		// and:
+		verify(log).warn(String.format(
+				ScreenedSysFileProps.UNUSABLE_PROP_TPL,
+				"-1",
+				"rates.intradayChangeLimitPercent"));
+	}
+
+	@Test
 	public void warnsOfUntransformableGlobalDynamic() {
 		// when:
 		subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));

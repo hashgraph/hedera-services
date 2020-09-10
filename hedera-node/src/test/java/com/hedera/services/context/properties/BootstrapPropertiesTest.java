@@ -101,7 +101,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolLength", 32),
 			entry("files.maxSizeKb", 1024),
-			entry("cache.records.ttl", 180)
+			entry("cache.records.ttl", 180),
+			entry("rates.intradayChangeLimitPercent", 25)
 	);
 
 	@BeforeEach

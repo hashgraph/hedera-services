@@ -7,7 +7,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -20,22 +22,27 @@ import static java.util.Map.entry;
 public class ScreenedSysFileProps implements PropertySource {
 	static Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
+	static String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
 	static String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
 	static String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' instead!";
 	static String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
 	static String UNTRANSFORMABLE_PROP_TPL = "Value '%s' is untransformable for deprecated '%s' (%s), being ignored!";
 
-	static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+	private static Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
 			entry("configAccountNum", "ledger.maxAccountNum"),
 			entry("defaultContractReceiverThreshold", "contracts.defaultReceiveThreshold"),
 			entry("defaultContractSenderThreshold", "contracts.defaultSendThreshold"),
 			entry("maxContractStateSize", "contracts.maxStorageKb"),
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
-			entry("txReceiptTTL", "cache.records.ttl")
+			entry("txReceiptTTL", "cache.records.ttl"),
+			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent")
 	);
-	static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
+	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())
+	);
+	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
+			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
 	);
 
 	Map<String, Object>	from121 = Collections.emptyMap();
@@ -46,6 +53,7 @@ public class ScreenedSysFileProps implements PropertySource {
 				.map(this::withStandardizedName)
 				.filter(this::isValidGlobalDynamic)
 				.filter(this::hasParseableValue)
+				.filter(this::isUsableGlobalDynamic)
 				.collect(Collectors.toMap(Setting::getName, this::asTypedValue));
 		var msg = "Global/dynamic properties overridden in system file are:\n " + GLOBAL_DYNAMIC_PROPS.stream()
 				.filter(from121::containsKey)
@@ -53,6 +61,21 @@ public class ScreenedSysFileProps implements PropertySource {
 				.map(name -> String.format("%s=%s", name, from121.get(name)))
 				.collect(Collectors.joining("\n  "));
 		log.info(msg);
+	}
+
+	private boolean isUsableGlobalDynamic(Setting prop) {
+		var name = prop.getName();
+		return Optional.ofNullable(VALUE_SCREENS.get(name))
+				.map(screen -> {
+					var usable = screen.test(asTypedValue(prop));
+					if (!usable) {
+						log.warn(String.format(
+								UNUSABLE_PROP_TPL,
+								prop.getValue(),
+								name));
+					}
+					return usable;
+				}).orElse(true);
 	}
 
 	private boolean isValidGlobalDynamic(Setting prop) {

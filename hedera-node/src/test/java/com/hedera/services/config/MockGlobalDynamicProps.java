@@ -56,4 +56,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int maxContractStorageKb() {
 		return 1024;
 	}
+
+	@Override
+	public int ratesIntradayChangeLimitPercent() {
+		return 5;
+	}
 }

@@ -104,7 +104,6 @@ public class ServicesMainTest {
 	AccountsExporter accountsExporter;
 	PropertySources propertySources;
 	BalancesExporter balancesExporter;
-	PropertySanitizer propertySanitizer;
 	StateMigrations stateMigrations;
 	HederaNodeStats stats;
 	GrpcServerManager grpc;
@@ -138,7 +137,6 @@ public class ServicesMainTest {
 		recordsHistorian = mock(AccountRecordsHistorian.class);
 		ledgerValidator = mock(LedgerValidator.class);
 		accountsExporter = mock(AccountsExporter.class);
-		propertySanitizer = mock(PropertySanitizer.class);
 		platformStatus = mock(CurrentPlatformStatus.class);
 		properties = mock(PropertySource.class);
 		propertySources = mock(PropertySources.class);
@@ -171,7 +169,6 @@ public class ServicesMainTest {
 		given(ctx.properties()).willReturn(properties);
 		given(ctx.recordStream()).willReturn(recordStream);
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
-		given(ctx.propertySanitizer()).willReturn(propertySanitizer);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
@@ -264,8 +261,7 @@ public class ServicesMainTest {
 				recordStreamThread,
 				recordsHistorian,
 				fees,
-				grpc,
-				propertySanitizer);
+				grpc);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -280,7 +276,6 @@ public class ServicesMainTest {
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
-		inOrder.verify(propertySanitizer).sanitize(propertySources);
 
 		// cleanup:
 		TimerUtils.stopStatsDumpTimer();
@@ -386,7 +381,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void createsSystemAccountsIfRequested() throws Exception {
+	public void createsSystemAccountsIfRequested() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 

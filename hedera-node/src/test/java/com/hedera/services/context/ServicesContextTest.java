@@ -104,7 +104,6 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
-import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
@@ -422,7 +421,6 @@ public class ServicesContextTest {
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeServiceImpl.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));
-		assertThat(ctx.propertySanitizer(), instanceOf(DefaultPropertySanitizer.class));
 		assertThat(ctx.stateMigrations(), instanceOf(DefaultStateMigrations.class));
 		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));

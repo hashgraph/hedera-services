@@ -196,6 +196,7 @@ public class BootstrapProperties implements PropertySource {
 			"files.maxSizeKb",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
+			"rates.intradayChangeLimitPercent",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolLength"
 	);
@@ -258,6 +259,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxSymbolLength", AS_INT),
 			entry("contracts.defaultReceiveThreshold", AS_LONG),
 			entry("contracts.defaultSendThreshold", AS_LONG),
-			entry("contracts.maxStorageKb", AS_INT)
+			entry("contracts.maxStorageKb", AS_INT),
+			entry("rates.intradayChangeLimitPercent", AS_INT)
 	);
 }

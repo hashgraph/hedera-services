@@ -26,7 +26,6 @@ public class ApplicationConstants {
 	public static String LEDGER_PATH = "/{0}/";
 	// Default values
 	public static long DEFAULT_FEE = 100000l;
-	public static int DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE = 1;
 
 	// Signature Algorithm Type Constants
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";

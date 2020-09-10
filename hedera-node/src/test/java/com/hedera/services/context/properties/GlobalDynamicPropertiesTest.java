@@ -63,6 +63,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
 		assertEquals(8, subject.cacheRecordsTtl());
 		assertEquals(9, subject.maxContractStorageKb());
+		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -90,6 +91,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
 		assertEquals(9, subject.cacheRecordsTtl());
 		assertEquals(10, subject.maxContractStorageKb());
+		assertEquals(11, subject.ratesIntradayChangeLimitPercent());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -102,5 +104,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
+		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
 	}
 }

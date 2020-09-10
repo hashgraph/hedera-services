@@ -221,7 +221,7 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("contracts.maxStorageKb"));
 		assertTrue(properties.containsProperty("dev.defaultListeningNodeAccount"));
 		assertTrue(properties.containsProperty("dev.onlyDefaultNodeListens"));
-		assertTrue(properties.containsProperty("exchangeRates.intradayChange.limitPercent"));
+		assertTrue(properties.containsProperty("rates.intradayChangeLimitPercent"));
 		assertTrue(properties.containsProperty("files.maxSizeKb"));
 		assertTrue(properties.containsProperty("grpc.port"));
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));

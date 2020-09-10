@@ -67,7 +67,6 @@ import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
@@ -255,7 +254,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.migration.DefaultStateMigrations;
-import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
@@ -417,7 +415,6 @@ public class ServicesContext {
 	private static Pause pause;
 	private static StateMigrations stateMigrations;
 	private static AccountsExporter accountsExporter;
-	private static PropertySanitizer propertySanitizer;
 	private static LegacyEd25519KeyReader b64KeyReader;
 
 	static {
@@ -425,7 +422,6 @@ public class ServicesContext {
 		b64KeyReader = new LegacyEd25519KeyReader();
 		stateMigrations = new DefaultStateMigrations(SleepingPause.INSTANCE);
 		accountsExporter = new DefaultAccountsExporter();
-		propertySanitizer = new DefaultPropertySanitizer();
 	}
 
 	public ServicesContext(
@@ -1146,7 +1142,7 @@ public class ServicesContext {
 			exchangeRatesManager = new TxnAwareRatesManager(
 					fileNums(),
 					accountNums(),
-					properties(),
+					globalDynamicProperties(),
 					txnCtx(),
 					this::midnightRates,
 					GlobalFlag.getInstance()::setExchangeRateSet,
@@ -1502,10 +1498,6 @@ public class ServicesContext {
 
 	public AccountsExporter accountsExporter() {
 		return accountsExporter;
-	}
-
-	public PropertySanitizer propertySanitizer() {
-		return propertySanitizer;
 	}
 
 	/* Injected dependencies. */

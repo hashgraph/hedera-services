@@ -180,10 +180,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getLocalCallEstReturnBytes();
 	}
 
-	public static int getExchangeRateAllowedPercentage() {
-		return SyncPropertiesObject.getExchangeRateAllowedPercentage();
-	}
-
 	public static int getTxMinRemaining() {
 		return SyncPropertiesObject.getTxMinRemaining();
 	}
@@ -194,17 +190,6 @@ public class PropertiesLoader {
 
 	public static int getTxMaxDuration() {
 		return SyncPropertiesObject.getTxMaxDuration();
-	}
-
-	/**
-	 * If Exchange_Rate_Allowed_Percentage in application.properties is invalid,
-	 * i.e. <=0, we set it to be DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE, and
-	 * return false; else return true;
-	 *
-	 * @return
-	 */
-	public static boolean validExchangeRateAllowedPercentage() {
-		return SyncPropertiesObject.validExchangeRateAllowedPercentage();
 	}
 
 	public static boolean isEnableRecordStreaming() {

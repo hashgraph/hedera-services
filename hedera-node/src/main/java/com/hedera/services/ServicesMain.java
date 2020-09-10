@@ -161,7 +161,7 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record expiration reviewed.");
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
-		sanitizeProperties();
+
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 
 		startTimerTasksIfNeeded();
@@ -242,10 +242,6 @@ public class ServicesMain implements SwirldMain {
 		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
 		String blessedNodeAccount = ctx.properties().getStringProperty("dev.defaultListeningNodeAccount");
 		return myNodeAccount.equals(blessedNodeAccount);
-	}
-
-	private void sanitizeProperties() {
-		ctx.propertySanitizer().sanitize(ctx.propertySources());
 	}
 
 	private void loadFeeSchedule() {
