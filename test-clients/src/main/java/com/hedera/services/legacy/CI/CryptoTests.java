@@ -149,9 +149,9 @@ public class CryptoTests extends BaseClient {
 
     TransactionReceipt receipt = transfer(payerID, nodeID, accID, toID, amount);
     Assert.assertEquals(true,
-        ResponseCodeEnum.INVALID_SIGNATURE.name().equals(receipt.getStatus().name())
-            || ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY.name()
-            .equals(receipt.getStatus().name()));
+        ResponseCodeEnum.INVALID_SIGNATURE.equals(receipt.getStatus())
+            || ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY
+            .equals(receipt.getStatus()));
     TestHelperComplex.acc2ComplexKeyMap.put(accID, accKey); // right the account key
 
     // sendRecordThreshold and recvRecordThreshold fields:

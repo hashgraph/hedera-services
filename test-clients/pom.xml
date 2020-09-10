@@ -150,7 +150,7 @@
     <repository>
       <id>ossrh-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1168</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1169</url>
     </repository>
     <repository>
       <id>Ethereum</id>

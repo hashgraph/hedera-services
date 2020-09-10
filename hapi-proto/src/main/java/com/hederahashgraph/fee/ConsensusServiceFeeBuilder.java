@@ -53,7 +53,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 variableSize + LONG_SIZE,  // For autoRenewPeriod
                 extraRbsServices,
-                BASIC_ACCTID_SIZE * RECIEPT_STORAGE_TIME_SEC);  // For topicID in receipt
+                BASIC_ENTITY_ID_SIZE * RECIEPT_STORAGE_TIME_SEC);  // For topicID in receipt
     }
 
     /**
@@ -76,7 +76,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
 
     private static int getConsensusUpdateTopicTransactionBodySize(
             ConsensusUpdateTopicTransactionBody updateTopicTxBody, int variableSize) {
-        variableSize += BASIC_ACCTID_SIZE; // topicID
+        variableSize += BASIC_ENTITY_ID_SIZE; // topicID
         if (updateTopicTxBody.hasExpirationTime()) {
             variableSize += LONG_SIZE;
         }
@@ -152,7 +152,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
         if (txBody == null || !txBody.hasConsensusDeleteTopic()) {
             throw new InvalidTxBodyException("consensusDeleteTopic field not available for Fee Calculation");
         }
-        return getTxFeeMatrices(txBody, sigValObj, BASIC_ACCTID_SIZE, 0, 0);
+        return getTxFeeMatrices(txBody, sigValObj, BASIC_ENTITY_ID_SIZE, 0, 0);
     }
 
     /**
@@ -207,7 +207,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @return Estimation of size (in bytes) used by Topic in memory.
      */
     public static int getTopicRamBytes(int variableSize) {
-        return BASIC_ACCTID_SIZE +  // topicID
+        return BASIC_ENTITY_ID_SIZE +  // topicID
                 3 * LONG_SIZE +  // expirationTime, sequenceNumber, autoRenewPeriod
                 BOOL_SIZE +  // deleted
                 TX_HASH_SIZE +  // runningHash
@@ -225,7 +225,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
         }
         size += getAccountKeyStorageSize(adminKey);
         size += getAccountKeyStorageSize(submitKey);
-        size += hasAutoRenewAccount ? BASIC_ACCTID_SIZE : 0;
+        size += hasAutoRenewAccount ? BASIC_ENTITY_ID_SIZE : 0;
         return size;
     }
 }

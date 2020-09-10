@@ -54,7 +54,7 @@ public class HederaKeyActivation {
 	public static final Signature INVALID_SIG = new InvalidSignature();
 
 	public static final BiPredicate<JKey, Signature> ONLY_IF_SIG_IS_VALID =
-			(ignoredKey, sig) -> VALID.name().equals( sig.getSignatureStatus().name() );
+			(ignoredKey, sig) -> VALID.equals( sig.getSignatureStatus() );
 
 	private HederaKeyActivation(){
 		throw new IllegalStateException("Utility Class");

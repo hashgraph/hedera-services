@@ -334,8 +334,8 @@ public class SmartContractAutoRenewCheck {
         .parseFrom(callContractRequest.getBodyBytes());
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(
         callContractBody.getTransactionID());
-    if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
-        .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
+    if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus()
+            .equals(ResponseCodeEnum.SUCCESS)) {
       TransactionRecord trRecord = getTransactionRecord(payerAccount,
           callContractBody.getTransactionID());
       if (trRecord != null && trRecord.hasContractCallResult()) {
