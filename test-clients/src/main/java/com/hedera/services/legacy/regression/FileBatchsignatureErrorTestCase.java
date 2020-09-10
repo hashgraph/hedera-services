@@ -22,7 +22,6 @@ package com.hedera.services.legacy.regression;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.builder.TransactionSigner;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -55,7 +54,6 @@ public class FileBatchsignatureErrorTestCase extends BaseFeeTests {
     tester.fileUpdateTest(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
     tester.fileUpdateTest(ResponseCodeEnum.INVALID_SIGNATURE);
     tester.fileUpdateTest(ResponseCodeEnum.KEY_PREFIX_MISMATCH);
-    tester.fileUpdateTest(ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY);
   }
 
   public void fileUpdateTest(ResponseCodeEnum responseCodeEnum) throws Throwable {
@@ -106,19 +104,11 @@ public class FileBatchsignatureErrorTestCase extends BaseFeeTests {
       acc2ComplexKeyMap.put(newAccountID, key);
     }
 
-    if(responseCodeEnum == ResponseCodeEnum.KEY_PREFIX_MISMATCH) {
-      TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
-    } else if(responseCodeEnum == ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY) {
-      TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
-    }
-
     Transaction fileUpdateRequest = fit.updateFile(fid, newAccountID, nodeID,
         waclPubKeyList, newWaclPubKeyList, fileData, memo, fileExp);
 
     if(responseCodeEnum == ResponseCodeEnum.KEY_PREFIX_MISMATCH) {
       fileUpdateRequest = removeSigPairFromTransaction(fileUpdateRequest);
-    } else if(responseCodeEnum == ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY) {
-      fileUpdateRequest = removeSignatureListFromTransaction(fileUpdateRequest);
     }
 
     response = stub.updateFile(fileUpdateRequest);
@@ -136,8 +126,7 @@ public class FileBatchsignatureErrorTestCase extends BaseFeeTests {
     log.info("txRecord = "+txRecord);
     if(responseCodeEnum == ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND
     || responseCodeEnum == ResponseCodeEnum.INVALID_SIGNATURE
-    || responseCodeEnum == ResponseCodeEnum.KEY_PREFIX_MISMATCH
-    || responseCodeEnum == ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY) {
+    || responseCodeEnum == ResponseCodeEnum.KEY_PREFIX_MISMATCH) {
       Assert.assertEquals(responseCodeEnum,response.getNodeTransactionPrecheckCode() );
     } else if(responseCodeEnum == txRecord.getReceipt().getStatus()){
       Assert.assertEquals(responseCodeEnum, txRecord.getReceipt().getStatus());
@@ -156,16 +145,6 @@ public class FileBatchsignatureErrorTestCase extends BaseFeeTests {
     }
     SignatureMap newSigMap = sigMap.toBuilder().addAllSigPair(newSigPairList).build();
     return transaction.toBuilder().setSigMap(newSigMap).build();
-  }
-
-  public static Transaction removeSignatureListFromTransaction(Transaction transaction) {
-    List<Signature> signatureList = transaction.getSigs().getSigsList();
-    List<Signature> newSigList = new ArrayList<>();
-    for(int i=1;i<signatureList.size();i++) {
-      newSigList.add(signatureList.get(i));
-    }
-    SignatureList tempSigList = SignatureList.newBuilder().addAllSigs(newSigList).build();
-    return transaction.toBuilder().setSigs(tempSigList).build();
   }
 
   public static void validateTransactionRecordForErrorCase(TransactionRecord txRecord) {

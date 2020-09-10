@@ -106,7 +106,6 @@ public class DynamicRestartTest extends TestHelperComplex {
         contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
         //   fit = new SmartContractServiceTest(testConfigFilePath);
         account55 = RequestBuilder.getAccountIdBuild(55l, 0l, 0l);
-        TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
         nodeID = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
         readGenesisInfo();
         createStubs();
