@@ -33,8 +33,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -53,7 +51,6 @@ import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
-//import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +73,6 @@ public class FilePositiveNegativeTest extends FileServiceTest {
   private String INVALID_SIGNATURE_TYPE_MISMATCHING_KEY = "INVALID_SIGNATURE_TYPE_MISMATCHING_KEY";
   private String INVALID_SIGNATURE_COUNT_MISMATCHING_KEY =
       "INVALID_SIGNATURE_COUNT_MISMATCHING_KEY";
-  private String EXTRA_SIG = "EXTRA_SIG";
   private static CustomProperties testProps;
   private static int QUERY_GET_FILE_INFO_FEE;
   private static int QUERY_GET_FILE_CONTENT_FEE;
@@ -139,15 +135,6 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       // Assert.assertEquals(1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       log.info(LOG_PREFIX + "Create file: Positive test passed! file ID = " + fid);
-      fid2waclMap.put(fid, waclPubKeyList);
-
-      // positive test with extra sigs when signing as sig list
-      receipt = createFile(EXTRA_SIG, payerID, nodeID, fileData, waclPubKeyList);
-      Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
-      fid = receipt.getFileID();
-      Assert.assertNotNull(fid);
-      Assert.assertTrue(fid.getFileNum() > 0);
-      log.info(LOG_PREFIX + "Create file: EXTRA_SIG test passed! file ID = " + fid);
       fid2waclMap.put(fid, waclPubKeyList);
 
       // negative test 1: incorrect signature for wacl keys
@@ -249,17 +236,6 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     }
     Transaction filesigned =
         TransactionSigner.signTransactionComplexWithSigMap(FileCreateRequest, keys, pubKey2privKeyMap);
-
-    if (scenario.equals(EXTRA_SIG)) {
-      if (filesigned.hasSigs()) {
-        List<Signature> sigs = filesigned.getSigs().getSigsList();
-        List<Signature> sigsWithExtra = new ArrayList<>(sigs);
-        sigsWithExtra.add(sigs.get(0)); // add payer sig as extra sig
-        SignatureList sigListWithExtra =
-            SignatureList.newBuilder().addAllSigs(sigsWithExtra).build();
-        filesigned = filesigned.toBuilder().setSigs(sigListWithExtra).build();
-      }
-    }
 
     log.debug("\n-----------------------------------");
     log.debug("FileCreate: request = " + filesigned);
