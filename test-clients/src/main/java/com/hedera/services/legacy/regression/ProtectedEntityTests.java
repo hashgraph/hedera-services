@@ -242,11 +242,11 @@ public class ProtectedEntityTests extends BaseClient {
     long[] sysAccountToFund = {3, 49, 50, 51, 55, 56, 57, 58, 59, 60, 80, 81, 100, 45, 46};
 //    long[] sysAccountToFund = {};
     tester.init(sysAccountToFund);
-    TransactionSigner.TX_BODY_FORMAT = "Body";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureList";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.Body;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
     tester.runTests();
-    TransactionSigner.TX_BODY_FORMAT = "BodyBytes";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.BodyBytes;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     tester.runTests();
   }
 
@@ -1197,9 +1197,9 @@ public class ProtectedEntityTests extends BaseClient {
             ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
 
         // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, false);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
         } 
@@ -1303,11 +1303,11 @@ public class ProtectedEntityTests extends BaseClient {
         updateFileWithFee(addressBook102, payer, nodeID, addressFileWacl, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
 
         // fails without wacl
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           //Tiru
           updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
           updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and address files share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
           updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
@@ -1394,9 +1394,9 @@ public class ProtectedEntityTests extends BaseClient {
         isSmallExchangeRateUpdate = true; // reset flag
 
         // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
         } 

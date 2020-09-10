@@ -74,9 +74,9 @@ public class FileFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
     
-    rbs =  (getBaseTransactionRecordSize(txBody) + BASIC_ACCTID_SIZE/* Added for File ID size*/) * RECIEPT_STORAGE_TIME_SEC;
+    rbs =  (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECIEPT_STORAGE_TIME_SEC;
 
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ACCTID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -225,15 +225,15 @@ public class FileFeeBuilder extends FeeBuilder {
 
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE FileID - 3 * LONG_SIZE
+     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE;
+    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
      *
-     * FileInfo FileID fileID - 3 * LONG_SIZE int64 size - LONG_SIZE Timestamp expirationTime = 3;
+     * FileInfo FileID fileID - BASIC_ENTITY_ID_SIZE int64 size - LONG_SIZE Timestamp expirationTime = 3;
      * // the current time at which this account is set to expire bool deleted = 4; // true if
      * deleted but not yet expired KeyList keys = 5; // one of these keys must sign in order to
      * modify or delete the file
@@ -279,22 +279,22 @@ public class FileFeeBuilder extends FeeBuilder {
 
     /*
      * FileGetContentsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE FileID - 3 * LONG_SIZE
+     * Transaction processing) ResponseType - INT_SIZE FileID - BASIC_ENTITY_ID_SIZE
      */
 
-    bpt =  BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE;
+    bpt =  BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
      *
-     * FileContents FileID fileID - 3 * LONG_SIZE bytes content - calculated value (size of the
+     * FileContents FileID fileID - BASIC_ENTITY_ID_SIZE bytes content - calculated value (size of the
      * content)
      *
      */
 
     bpr =  BASIC_QUERY_RES_HEADER  + getStateProofSize(responseType);
 
-    sbpr = BASIC_ACCTID_SIZE + contentSize;
+    sbpr = BASIC_ENTITY_ID_SIZE + contentSize;
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -332,7 +332,7 @@ public class FileFeeBuilder extends FeeBuilder {
       fileContentsSize = fileCreateTxBody.getContents().size();
     }
 
-    int cryptoFileCreateSize = (LONG_SIZE) + keySize + fileContentsSize + (3 * LONG_SIZE)   + newRealmAdminKeySize;
+    int cryptoFileCreateSize = (LONG_SIZE) + keySize + fileContentsSize + (BASIC_ENTITY_ID_SIZE)   + newRealmAdminKeySize;
 
     return cryptoFileCreateSize;
 
@@ -349,7 +349,7 @@ public class FileFeeBuilder extends FeeBuilder {
      * bytes in the old contents are discarded.
      */
 
-    int fileUpdateBodySize = BASIC_ACCTID_SIZE;
+    int fileUpdateBodySize = BASIC_ENTITY_ID_SIZE;
     FileUpdateTransactionBody fileUpdateTxBody = txBody.getFileUpdate();
 
     if (fileUpdateTxBody.hasKeys()) {
@@ -410,7 +410,7 @@ public class FileFeeBuilder extends FeeBuilder {
 
     // get the bytes per second
     bpt = getCommonTransactionBodyBytes(txBody);
-    bpt = bpt + 3 * LONG_SIZE + LONG_SIZE;
+    bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
     
     rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
@@ -443,7 +443,7 @@ public class FileFeeBuilder extends FeeBuilder {
 
     // get the bytes per second
     bpt = getCommonTransactionBodyBytes(txBody);
-    bpt = bpt + 3 * LONG_SIZE + LONG_SIZE;
+    bpt = bpt + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
     vpt = numSignatures.getTotalSigCount();
     rbs =  getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize();
@@ -475,7 +475,7 @@ public class FileFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + BASIC_ACCTID_SIZE + sigValObj.getSignatureSize();
+    bpt = txBodySize + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();

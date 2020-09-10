@@ -1361,6 +1361,21 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void allowsToCreateTokenWithTheBiggestAmountInLong() {
+		// given:
+		var req = fullyValidAttempt()
+				.setFloat(9)
+				.setDivisibility(18)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+	}
+
+	@Test
 	public void rejectsJustOverflowingFloat() {
 		int divisibility = 1;
 		long initialFloat = 1L << 62;
@@ -1402,6 +1417,36 @@ class HederaTokenStoreTest {
 		var req = fullyValidAttempt()
 				.setDivisibility(1 << 30)
 				.setFloat(1L << 34)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+	}
+
+	@Test
+	public void rejectsOverflowingDivisibility() {
+		// given:
+		var req = fullyValidAttempt()
+				.setDivisibility(19)
+				.setFloat(0L)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+	}
+
+	@Test
+	public void rejectsInvalidAmountForDivisibility() {
+		// given:
+		var req = fullyValidAttempt()
+				.setDivisibility(18)
+				.setFloat(10)
 				.build();
 
 		// when:

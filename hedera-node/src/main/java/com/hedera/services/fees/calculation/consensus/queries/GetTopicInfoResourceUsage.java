@@ -53,10 +53,10 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	    try {
 			MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 			int bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) +
-					BASIC_ACCTID_SIZE +  // topicID
+					BASIC_ENTITY_ID_SIZE +  // topicID
 					getTopicInfoSize(merkleTopic);
 			FeeComponents feeMatrices = FeeComponents.newBuilder()
-					.setBpt(BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE)
+					.setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
 					.setVpt(0)
 					.setRbh(0)
 					.setSbh(0)

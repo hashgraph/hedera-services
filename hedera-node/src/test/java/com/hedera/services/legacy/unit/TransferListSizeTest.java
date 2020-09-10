@@ -170,7 +170,7 @@ public class TransferListSizeTest {
     }
     receipt = transferWrapper(payerID, nodeID, transferList, amountsList);
     if (accountAmountListCount <= TRANSFER_ACCOUNTS_LIST_SIZE_LIMIT) {
-      Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
+      Assert.assertEquals(ResponseCodeEnum.SUCCESS, receipt.getStatus());
   
       long toAccBalPost[] = new long[toIDs.length];
       for (int i = 0; i < toAccBalPost.length; i++) {
@@ -185,8 +185,8 @@ public class TransferListSizeTest {
   
       log.info(LOG_PREFIX + "cryptoTransferTestsWithVariableAccountAmounts: PASSED! :)");
     } else {
-      Assert.assertEquals(ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED.name(),
-          receipt.getStatus().name());
+      Assert.assertEquals(ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
+          receipt.getStatus());
       log.info("receipt status = " + receipt.getStatus().name());
       log.info(LOG_PREFIX + "cryptoTransferTestsWithVariableAccountAmounts: PASSED! :)");
     }

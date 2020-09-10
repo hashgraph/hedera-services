@@ -516,8 +516,13 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		try {
-			var tinyTokenFloat = BigInteger.valueOf(10)
-					.pow(divisibility)
+			var divisibilityFloat = BigInteger.valueOf(10)
+					.pow(divisibility);
+			if (divisibilityFloat.longValue() < 0) {
+				return INVALID_TOKEN_DIVISIBILITY;
+			}
+
+			var tinyTokenFloat = divisibilityFloat
 					.multiply(BigInteger.valueOf(tokenFloat));
 			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DIVISIBILITY;
 		} catch (ArithmeticException ignore) {
