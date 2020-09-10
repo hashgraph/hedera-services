@@ -169,8 +169,10 @@ public class StateView {
 					.setSymbol(token.symbol())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setCurrentFloat(token.tokenFloat())
-					.setDivisibility(token.divisibility())
-					.setAdminKey(asKeyUnchecked(token.adminKey()));
+					.setDivisibility(token.divisibility());
+
+			var adminCandidate = token.adminKey();
+			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
 
 			var freezeCandidate = token.freezeKey();
 			freezeCandidate.ifPresentOrElse(k -> {

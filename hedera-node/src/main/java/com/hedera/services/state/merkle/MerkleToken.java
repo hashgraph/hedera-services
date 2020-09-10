@@ -53,7 +53,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	private int divisibility;
 	private long tokenFloat;
-	private JKey adminKey;
+	private JKey adminKey = UNUSED_KEY;
 	private JKey kycKey = UNUSED_KEY;
 	private JKey wipeKey = UNUSED_KEY;
 	private JKey supplyKey = UNUSED_KEY;
@@ -77,7 +77,6 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	public MerkleToken(
 			long tokenFloat,
 			int divisibility,
-			JKey adminKey,
 			String symbol,
 			boolean accountsFrozenByDefault,
 			boolean accountKycGrantedByDefault,
@@ -85,7 +84,6 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	) {
 		this.tokenFloat = tokenFloat;
 		this.divisibility = divisibility;
-		this.adminKey = adminKey;
 		this.symbol = symbol;
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
@@ -167,13 +165,13 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		deleted = in .readBoolean();
-		adminKey = serdes.deserializeKey(in);
 		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_LENGTH);
 		treasury = in.readSerializable();
 		tokenFloat = in.readLong();
 		divisibility = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountKycGrantedByDefault = in.readBoolean();
+		adminKey = serdes.readNullable(in, serdes::deserializeKey);
 		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
 		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
@@ -183,13 +181,13 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeBoolean(deleted);
-		serdes.serializeKey(adminKey, out);
 		out.writeNormalisedString(symbol);
 		out.writeSerializable(treasury, true);
 		out.writeLong(tokenFloat);
 		out.writeInt(divisibility);
 		out.writeBoolean(accountsFrozenByDefault);
 		out.writeBoolean(accountKycGrantedByDefault);
+		serdes.writeNullable(adminKey, out, serdes::serializeKey);
 		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
@@ -202,12 +200,14 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		var fc = new MerkleToken(
 			tokenFloat,
 			divisibility,
-			adminKey,
 			symbol,
 			accountsFrozenByDefault,
 			accountKycGrantedByDefault,
 			treasury);
 		fc.setDeleted(deleted);
+		if (adminKey != UNUSED_KEY) {
+			fc.setAdminKey(adminKey);
+		}
 		if (freezeKey != UNUSED_KEY) {
 			fc.setFreezeKey(freezeKey);
 		}
@@ -236,9 +236,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return divisibility;
 	}
 
-	public JKey adminKey() {
-		return adminKey;
-	}
+	public Optional<JKey> adminKey() { return Optional.ofNullable(adminKey); }
 
 	public Optional<JKey> freezeKey() {
 		return Optional.ofNullable(freezeKey);

@@ -46,8 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TokenDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
@@ -61,8 +60,29 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						deletionValidatesRef(),
 						deletionWorksAsExpected(),
+						deletionValidatesMissingAdminKey(),
 				}
 		);
+	}
+
+	private HapiApiSpec deletionValidatesMissingAdminKey() {
+		return defaultHapiSpec("DeletionValidatesMissingAdminKey")
+				.given(
+						newKeyNamed("multiKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("payer")
+								.balance(A_HUNDRED_HBARS),
+						tokenCreate("tbd")
+								.freezeDefault(false)
+								.kycDefault(true)
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+				).when( ).then(
+						tokenDelete("tbd")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(UNAUTHORIZED)
+				);
 	}
 
 	public HapiApiSpec deletionWorksAsExpected() {
@@ -73,6 +93,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						cryptoCreate("payer")
 								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
+								.adminKey("multiKey")
 								.freezeKey("multiKey")
 								.kycKey("multiKey")
 								.wipeKey("multiKey")

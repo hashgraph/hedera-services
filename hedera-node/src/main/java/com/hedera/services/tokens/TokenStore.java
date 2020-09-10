@@ -34,8 +34,7 @@ import com.hederahashgraph.api.proto.java.TokenRef;
 
 import java.util.function.Consumer;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 
 /**
@@ -86,6 +85,12 @@ public interface TokenStore {
 		if (id == MISSING_TOKEN) {
 			return INVALID_TOKEN_REF;
 		}
+
+		var token = get(id);
+		if (token.adminKey().isEmpty()) {
+			return UNAUTHORIZED;
+		}
+
 		apply(id, DELETION);
 		return OK;
 	}
