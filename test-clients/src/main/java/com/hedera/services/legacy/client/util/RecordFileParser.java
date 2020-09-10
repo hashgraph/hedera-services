@@ -23,8 +23,8 @@ package com.hedera.services.legacy.client.util;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import org.apache.commons.codec.binary.Hex;
@@ -295,23 +295,8 @@ public class RecordFileParser {
 	 */
 	public static String printTransaction(final Transaction transaction) throws InvalidProtocolBufferException {
 		StringBuilder stringBuilder = new StringBuilder();
-		if (transaction.hasSigs()) {
-			stringBuilder.append(TextFormat.shortDebugString(transaction.getSigs()) + "\n");
-		}
-		if (transaction.hasSigMap()) {
-			stringBuilder.append(TextFormat.shortDebugString(transaction.getSigMap()) + "\n");
-		}
-
-		stringBuilder.append(TextFormat.shortDebugString(
-				getTransactionBody(transaction)) + "\n");
+		stringBuilder.append(TextFormat.shortDebugString(CommonUtils.extractSignatureMap(transaction)) + "\n");
+		stringBuilder.append(TextFormat.shortDebugString(CommonUtils.extractTransactionBody(transaction)) + "\n");
 		return stringBuilder.toString();
-	}
-
-	public static TransactionBody getTransactionBody(final Transaction transaction)  throws InvalidProtocolBufferException {
-		if (transaction.hasBody()) {
-			return transaction.getBody();
-		} else {
-			return TransactionBody.parseFrom(transaction.getBodyBytes());
-		}
 	}
 }

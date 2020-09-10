@@ -333,7 +333,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				fileFees.getFileUpdateTxFeeMatrices(txBody, expiry, sigUsage);
 		var saferTxnBuilder = TransactionBody.parseFrom(txn.getBodyBytes()).toBuilder();
 		saferTxnBuilder.getFileUpdateBuilder().setContents(RANDOM_4K);
-		final var saferTxn = txn.toBuilder().setBody(saferTxnBuilder).build();
+		final var saferTxn = txn.toBuilder().setBodyBytes(saferTxnBuilder.build().toByteString()).build();
 		return spec.fees().forActivityBasedOp(HederaFunctionality.FileUpdate, metricsCalc, saferTxn, numPayerKeys);
 	}
 

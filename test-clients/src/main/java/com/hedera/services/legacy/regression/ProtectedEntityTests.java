@@ -194,11 +194,7 @@ public class ProtectedEntityTests extends BaseClient {
           .getCryptoUpdateAccountBuilder().setKey(newKey).build();
       TransactionBody newTxBody = builder.setCryptoUpdateAccount(newUpdateBody).build();
       log.info("\n-----------------------------------\nupdateAccount with new keys: tx body = " + newTxBody);
-      if(updateTx.hasBody()) {
-        updateTx = Transaction.newBuilder().setBody(newTxBody).build();
-      } else {
-        updateTx = Transaction.newBuilder().setBodyBytes(newTxBody.toByteString()).build();
-      }
+      updateTx = Transaction.newBuilder().setBodyBytes(newTxBody.toByteString()).build();
       keys.add(newKey);
     }
 
