@@ -36,6 +36,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -77,6 +78,17 @@ class TxnHandlerSubmissionFlowTest {
 
 	private TxnHandlerSubmissionFlow subject;
 
+	// Create second transaction using signedTransactionBytes
+	SignedTransaction newSignedTxn = SignedTransaction.newBuilder().
+			setBodyBytes(TransactionBody.newBuilder()
+					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance()).
+							setTransactionID(txnId).build().toByteString()).
+			build();
+
+	Transaction newTxn = Transaction.newBuilder()
+			.setSignedTransactionBytes(newSignedTxn.toByteString())
+			.build();
+
 	@BeforeEach
 	private void setup() throws Exception {
 		logic = mock(TransitionLogic.class);
@@ -88,6 +100,8 @@ class TxnHandlerSubmissionFlowTest {
 		submissionManager = mock(PlatformSubmissionManager.class);
 
 		subject = new TxnHandlerSubmissionFlow(STAKED_NODE, txnHandler, logicLookup, submissionManager);
+
+		given(logicLookup.lookupFor(CryptoTransfer, CommonUtils.extractTransactionBody(newTxn))).willReturn(Optional.of(logic));
 	}
 
 	@Test
@@ -188,5 +202,33 @@ class TxnHandlerSubmissionFlowTest {
 
 		// then:
 		assertEquals(NOT_SUPPORTED, response.getNodeTransactionPrecheckCode());
+	}
+
+	@Test
+	public void shortCircuitsSignedTxnOnInvalidMeta() {
+		// setup:
+		TxnValidityAndFeeReq metaValidity = new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE, feeRequired);
+
+		given(txnHandler.validateTransactionPreConsensus(newTxn, false)).willReturn(metaValidity);
+
+		// when:
+		TransactionResponse response = subject.submit(newTxn);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, response.getNodeTransactionPrecheckCode());
+		assertEquals(feeRequired, response.getCost());
+	}
+
+	@Test
+	public void followsSignedTxnHappyPathToOk() throws Exception {
+		given(txnHandler.validateTransactionPreConsensus(newTxn, false)).willReturn(okMeta);
+		given(syntaxCheck.apply(any())).willReturn(OK);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
+
+		// when:
+		TransactionResponse response = subject.submit(newTxn);
+
+		// then:
+		assertEquals(OK, response.getNodeTransactionPrecheckCode());
 	}
 }

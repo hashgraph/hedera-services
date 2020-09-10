@@ -22,6 +22,7 @@ package com.hedera.services.legacy.services.state;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Address;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import javax.annotation.Signed;
 import java.time.Instant;
 
 import static org.mockito.BDDMockito.*;
@@ -43,6 +45,7 @@ import static org.mockito.BDDMockito.*;
 class AwareProcessLogicTest {
 	Logger mockLog;
 	Transaction platformTxn;
+	Transaction platformSignedTxn;
 	AddressBook book;
 	ServicesContext ctx;
 
@@ -52,11 +55,11 @@ class AwareProcessLogicTest {
 	public void setup() {
 		ctx = mock(ServicesContext.class);
 		mockLog = mock(Logger.class);
+		TransactionBody txnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+								.setAccountID(IdUtils.asAccount("0.0.2"))).build();
 		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-				.setBodyBytes(TransactionBody.newBuilder()
-						.setTransactionID(TransactionID.newBuilder()
-								.setAccountID(IdUtils.asAccount("0.0.2")))
-						.build().toByteString())
+				.setBodyBytes(txnBody.toByteString())
 				.build().toByteArray());
 
 		AwareProcessLogic.log = mockLog;
@@ -71,6 +74,10 @@ class AwareProcessLogicTest {
 		given(ctx.addressBook()).willReturn(book);
 
 		subject = new AwareProcessLogic(ctx);
+
+		SignedTransaction signedTxn = SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+		platformSignedTxn =  new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder().
+				setSignedTransactionBytes(signedTxn.toByteString()).build().toByteArray());
 	}
 
 	@AfterEach
@@ -105,5 +112,20 @@ class AwareProcessLogicTest {
 
 		// then:
 		verify(mockLog).error(argThat((String s) -> s.startsWith("Catastrophic invariant failure!")));
+	}
+
+	@Test
+	public void shortCircuitsWithWarningOnZeroStakeSignedTxnSubmission() {
+		// setup:
+		var now = Instant.now();
+		var then = now.minusMillis(1L);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+
+		// when:
+		subject.incorporateConsensusTxn(platformSignedTxn, now, 666);
+
+		// then:
+		verify(mockLog).warn(argThat((String s) -> s.startsWith("Ignoring a transaction submitted by zero-stake")));
 	}
 }
