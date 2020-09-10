@@ -343,7 +343,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * LONG_SIZE
      */
     int accountAmountCount = txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount();
-    int cryptoTransfertBodySize = (BASIC_ACCT_AMT_SIZE) * accountAmountCount;
+    int cryptoTransfertBodySize = (BASIC_ACCOUNT_AMT_SIZE) * accountAmountCount;
     return cryptoTransfertBodySize;
   }
 
@@ -607,7 +607,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int acountAmountSize = 0;
     if (transRecord.hasTransferList()) {
       int accountAmountCount = transRecord.getTransferList().getAccountAmountsCount();
-      acountAmountSize = accountAmountCount * (BASIC_ACCT_AMT_SIZE); // (24 bytes AccountID and 8
+      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8
       // bytes Amount)
     }
 

@@ -50,7 +50,7 @@ public class FeeBuilder {
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
-  public static final int BASIC_ACCT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+  public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
   /**
@@ -426,7 +426,7 @@ public class FeeBuilder {
     if (txBody.hasCryptoTransfer()) {
       txRecordSize = txRecordSize
           + txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount()
-          * (BASIC_ACCT_AMT_SIZE);
+          * (BASIC_ACCOUNT_AMT_SIZE);
     }
     return txRecordSize;
   }
@@ -463,7 +463,7 @@ public class FeeBuilder {
     if (txRecord.hasTransferList()) {
       txRecordSize =
           txRecordSize
-              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCT_AMT_SIZE);
+              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCOUNT_AMT_SIZE);
     }
 
     int memoBytesSize = 0;
