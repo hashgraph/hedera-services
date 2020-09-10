@@ -355,41 +355,6 @@ public class NegativeTransferTest {
     return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
   }
 
-  public static Transaction createTransferNInvalidAccountsAmounts(AccountID fromAccount,
-      PrivateKey fromKey, AccountID toAccount,
-      AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
-      long amount) {
-    Timestamp timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-    Transaction transferTx =
-        RequestBuilder
-            .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-                payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-                nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 5000000000000000000L,
-                timestamp, transactionDuration, false,
-                "Test Transfer", fromAccount.getAccountNum(),
-                -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
-
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
-
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
-  }
-
   public static Transaction createTransferNInvalidAccountsAmountsDifference(AccountID fromAccount,
       PrivateKey fromKey, AccountID toAccount,
       AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
