@@ -78,7 +78,6 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -184,6 +183,15 @@ public class TxnUtils {
 		return null;
 	}
 
+	public static String getTxnIDandType(Transaction txn) {
+		try {
+			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShortTxnID(txn);
+		} catch (InvalidProtocolBufferException e) {
+			log.error("Got Grpc protocol buffer error: ", e);
+		}
+		return null;
+	}
+
 	public static boolean inConsensusOrder(Timestamp t1, Timestamp t2) {
 		if (t1.getSeconds() < t2.getSeconds()) {
 			return true;
@@ -212,7 +220,7 @@ public class TxnUtils {
 	}
 
 	public static Timestamp defaultTimestamp() {
-		return defaultTimestampPlusSecs(0L);
+		return getUniqueTimestampPlusSecs(0L);
 	}
 
 	public static Timestamp defaultTimestampPlusSecs(long offsetSecs) {
@@ -222,9 +230,30 @@ public class TxnUtils {
 				.setNanos(instant.getNano() - nanosBehind.addAndGet(1)).build();
 	}
 
+	private static int NANOS_IN_A_SECOND = 1_000_000_000;
+	private static AtomicInteger NEXT_NANO = new AtomicInteger(0);
+	private static int NANO_OFFSET = (int) System.currentTimeMillis() % 1_000;
+
+	public static synchronized Timestamp getUniqueTimestampPlusSecs(long offsetSecs) {
+		Instant instant = Instant.now(Clock.systemUTC());
+
+		int candidateNano = NEXT_NANO.getAndIncrement() + NANO_OFFSET;
+		if( candidateNano >= NANOS_IN_A_SECOND ) {
+			candidateNano = 0;
+			NEXT_NANO.set(1);
+		}
+
+		Timestamp uniqueTS = Timestamp.newBuilder()
+				.setSeconds(instant.getEpochSecond() + offsetSecs)
+				.setNanos(candidateNano).build();
+
+		log.info("timestamp : {}", uniqueTS);
+		return uniqueTS;
+	}
+
 	public static TransactionID asTransactionID(HapiApiSpec spec, Optional<String> payer) {
 		var payerID = spec.registry().getAccountID(payer.orElse(spec.setup().defaultPayerName()));
-		var validStart = defaultTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
+		var validStart = getUniqueTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
 		return TransactionID.newBuilder()
 				.setTransactionValidStart(validStart)
 				.setAccountID(payerID).build();
