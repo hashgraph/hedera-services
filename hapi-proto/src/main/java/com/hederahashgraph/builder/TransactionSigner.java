@@ -115,6 +115,11 @@ public class TransactionSigner {
    * @return signed transaction
    */
   public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
+    return signTransaction(transaction, privKeyList, false);
+  }
+
+  public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList,
+          boolean appendSigMap) {
     List<Key> keyList = new ArrayList<>();
     HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
     for (PrivateKey pk : privKeyList) {
@@ -125,7 +130,7 @@ public class TransactionSigner {
       pubKey2privKeyMap.put(pubKeyHex, pk);
     }
     try {
-      return signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
+      return signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap, appendSigMap);
     } catch (Exception ignore) {
       ignore.printStackTrace();
     }
@@ -199,8 +204,19 @@ public class TransactionSigner {
    */
   public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
+    return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap, false);
+  }
+
+  public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
+      Map<String, PrivateKey> pubKey2privKeyMap, boolean appendSigMap) throws Exception {
     byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction).toByteArray();
     SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
+
+    if (appendSigMap) {
+      SignatureMap currentSigMap = CommonUtils.extractSignatureMapOrUseDefault(transaction);
+      SignatureMap sigMapToSet = currentSigMap.toBuilder().addAllSigPair(sigsMap.getSigPairList()).build();
+      return transaction.toBuilder().setSigMap(sigMapToSet).build();
+    }
 
     return transaction.toBuilder().setSigMap(sigsMap).build();
   }
