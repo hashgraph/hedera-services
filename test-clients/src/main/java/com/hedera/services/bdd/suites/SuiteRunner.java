@@ -34,7 +34,6 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
@@ -109,9 +108,9 @@ public class SuiteRunner {
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
+	private static final String DEFAULT_PAYER_ID = "2";
 
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
-	public static String payerID = "16";
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
@@ -244,7 +243,7 @@ public class SuiteRunner {
 			var otherOverrides = arbitraryOverrides(effArgs);
 
 			String payer_id = "0.0." + overrideOrDefault(effArgs,
-					PAYER_ID_ARG, payerID).split("=")[1];
+					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
 
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
