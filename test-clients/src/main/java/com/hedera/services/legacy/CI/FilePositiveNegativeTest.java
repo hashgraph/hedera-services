@@ -247,32 +247,16 @@ public class FilePositiveNegativeTest extends FileServiceTest {
 
     TransactionReceipt receipt = null;
     if (scenario.equals(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY)) {
-      if (filesigned.hasSigs()) {
-        log.info(LOG_PREFIX
-            + "Create file using SignatureList: Negative test with payer sig TYPE mismatch: response="
-            + response);
-        Assert.assertEquals(ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY_VALUE,
-            response.getNodeTransactionPrecheckCodeValue());
-      } else {
-        // When create file using SignatureMap, this condition does not cause a problem
-        Assert.assertEquals(ResponseCodeEnum.OK_VALUE,
-            response.getNodeTransactionPrecheckCodeValue());
-      }
+      // When create file using SignatureMap, this condition does not cause a problem
+      Assert.assertEquals(ResponseCodeEnum.OK_VALUE,
+          response.getNodeTransactionPrecheckCodeValue());
     } else if (scenario.equals(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)) {
       if (payerKey.hasKeyList() || payerKey.hasThresholdKey()) {
-        if (filesigned.hasSigs()) {
-          log.info(LOG_PREFIX
-              + "Create file using SignatureList: Negative test with payer sig COUNT mismatch: response="
-              + response);
-          Assert.assertEquals(ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY_VALUE,
-              response.getNodeTransactionPrecheckCodeValue());
-        } else {
-          log.info(LOG_PREFIX
-              + "Create file using SignatureMap: Negative test with payer sig COUNT mismatch: response="
-              + response);
-          Assert.assertEquals(ResponseCodeEnum.INVALID_SIGNATURE_VALUE,
-              response.getNodeTransactionPrecheckCodeValue());
-        }
+        log.info(LOG_PREFIX
+            + "Create file using SignatureMap: Negative test with payer sig COUNT mismatch: response="
+            + response);
+        Assert.assertEquals(ResponseCodeEnum.INVALID_SIGNATURE_VALUE,
+            response.getNodeTransactionPrecheckCodeValue());
       }
     } else {
       Assert.assertEquals(ResponseCodeEnum.OK,
