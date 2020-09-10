@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -310,16 +309,11 @@ public class CryptoTransferCheckBalance extends Thread {
         generateRecord, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    List<PrivateKey> fromPrivKeyList = new ArrayList<>();
-    fromPrivKeyList.add(fromKey);
-    privKeysList.add(fromPrivKeyList);
-
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     return signedTx;
   }

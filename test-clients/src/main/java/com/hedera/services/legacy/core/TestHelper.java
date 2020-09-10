@@ -829,16 +829,11 @@ public class TestHelper {
         false, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    List<PrivateKey> fromPrivKeyList = new ArrayList<>();
-    fromPrivKeyList.add(fromKey);
-    privKeysList.add(fromPrivKeyList);
-
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transferFee = 0;
     try {
@@ -853,7 +848,7 @@ public class TestHelper {
         "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amount);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
     return signedTx;
   }
 

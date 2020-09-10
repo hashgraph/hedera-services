@@ -23,7 +23,6 @@ package com.hedera.services.legacy.crypto;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -301,13 +300,11 @@ public class MultiSigCreationTransfer {
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
-    privKeysList.add(fromKey);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.addAll(fromKey);
 
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transactionFee = FeeClient.getTransferFee(signedTx,privKeysList.size());
     transferTx =
@@ -319,7 +316,7 @@ public class MultiSigCreationTransfer {
                 "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
     return signedTx;
   }
 
@@ -341,11 +338,11 @@ public class MultiSigCreationTransfer {
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    privKeysList.add(payerPrivKeyList);
-    privKeysList.add(fromPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.addAll(payerPrivKeyList);
+    privKeysList.addAll(fromPrivKeyList);
 
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transactionFee = FeeClient.getTransferFee(signedTx,privKeysList.size()) * 2;
 
@@ -358,7 +355,7 @@ public class MultiSigCreationTransfer {
                 "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     return signedTx;
   }

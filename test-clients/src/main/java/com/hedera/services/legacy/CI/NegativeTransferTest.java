@@ -404,16 +404,11 @@ public class NegativeTransferTest {
         "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amountReceived);
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    List<PrivateKey> fromPrivKeyList = new ArrayList<>();
-    fromPrivKeyList.add(fromKey);
-    privKeysList.add(fromPrivKeyList);
-
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transferFee = FeeClient.getTransferFee(signedTx, privKeysList.size());
     transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
@@ -423,7 +418,7 @@ public class NegativeTransferTest {
         "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amountReceived);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
     return signedTx;
 
   }
