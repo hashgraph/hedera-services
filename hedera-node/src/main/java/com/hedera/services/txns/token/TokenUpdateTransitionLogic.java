@@ -37,11 +37,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * Provides the state transition for token updates.
@@ -84,6 +80,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		var outcome = OK;
 		MerkleToken token = store.get(id);
+
+		if (token.adminKey().isEmpty()) {
+			txnCtx.setStatus(UNAUTHORIZED);
+			return;
+		}
+
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();

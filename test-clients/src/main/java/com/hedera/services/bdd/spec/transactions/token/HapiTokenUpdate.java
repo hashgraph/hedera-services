@@ -150,6 +150,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 						TokenManagement.class, b -> {
 							b.setToken(TxnUtils.asRef(id));
 							newSymbol.ifPresent(b::setSymbol);
+							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
@@ -163,7 +164,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
 		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-		signers.add(spec -> spec.registry().getKey(token));
+		signers.add(spec -> spec.registry().getAdminKey(token));
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
 		return signers;
 	}

@@ -1287,7 +1287,7 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsTokenDeletionWithMissing() throws Throwable {
+	public void getsTokenDeletionWithMissingToken() throws Throwable {
 		// given:
 		setupFor(DELETE_WITH_MISSING_TOKEN);
 
@@ -1297,6 +1297,18 @@ public class HederaSigningOrderTest {
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenDeletionWithNoAdminKey() throws Throwable {
+		// given:
+		setupFor(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
 	@Test
@@ -1396,6 +1408,32 @@ public class HederaSigningOrderTest {
 				sanityRestored(summary.getOrderedKeys()),
 				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
 	}
+
+	@Test
+	public void getsTokenUpdateWithMissingToken() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_MISSING_TOKEN);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenUpdateWithNoAdminKey() throws Throwable {
+		// given:
+		setupFor(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
