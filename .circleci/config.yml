@@ -1079,6 +1079,13 @@ workflows:
           requires:
             - start-singlejob-testnet
   nightly-simulate-network-outage:
+    triggers:
+        - schedule:
+            cron: "0 0,12 * * *"
+            filters:
+              branches:
+                only:
+                  - master
     jobs:
       - fast-build-artifact:
           context: Slack
