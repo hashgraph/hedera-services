@@ -144,13 +144,6 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 			includeIfCharged(CACHE_RECORD, payer, payerFeesCharged, fees);
 		}
 
-		if (!thresholdFeePayers.isEmpty()) {
-			long thresholdRecordFee = feeAmounts.get(THRESHOLD_RECORD);
-			thresholdFeePayers.stream()
-					.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-					.forEach(id -> fees.addAllAccountAmounts(receiverFirst(id, funding, thresholdRecordFee)));
-		}
-
 		return fees.build();
 	}
 
