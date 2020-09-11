@@ -597,7 +597,9 @@ public class HederaSigningOrder {
 		var result = sigMetaLookup.tokenSigningMetaFor(ref);
 		if (result.succeeded()) {
 			var meta = result.metadata();
-			required.add(meta.adminKey());
+			if (meta.adminKey().isPresent()) {
+				required.add(meta.adminKey().get());
+			}
 			optionalKeyLookups.forEach(lookup -> {
 				var candidate = lookup.apply(meta);
 				candidate.ifPresent(required::add);

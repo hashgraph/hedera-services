@@ -34,7 +34,6 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
@@ -109,6 +108,7 @@ public class SuiteRunner {
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
+	private static final String DEFAULT_PAYER_ID = "2";
 
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
@@ -225,6 +225,8 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
+	/* The instance id of the suiteRunner running on the client. */
+	private static final String PAYER_ID_ARG = "-PAYER";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -239,8 +241,13 @@ public class SuiteRunner {
 					NETWORK_SIZE_ARG,
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
+
+			String payer_id = "0.0." + overrideOrDefault(effArgs,
+					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
+
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
+					payer_id,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
