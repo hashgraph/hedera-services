@@ -9,9 +9,9 @@ package com.hedera.services.legacy.export;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,7 @@ import com.swirlds.common.Platform;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -50,7 +51,7 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class AccountBalanceExport {
-  
+
   static final Logger log = LogManager.getLogger(AccountBalanceExport.class);
   static final String lineSperator = "line.separator";
 
@@ -142,12 +143,12 @@ public class AccountBalanceExport {
     if(log.isDebugEnabled()){
       log.debug("Size of accountMap :: {}", accountMap.size());
     }
-    long totalBalance = 0L;
+    BigInteger totalBalance = BigInteger.ZERO;
 
     for (Map.Entry<MerkleEntityId, MerkleAccount> item : accountMap.entrySet()) {
       MerkleEntityId currKey = item.getKey();
       MerkleAccount currMv = item.getValue();
-      totalBalance += currMv.getBalance();
+      totalBalance = totalBalance.add(BigInteger.valueOf(currMv.getBalance()));
       exAccObj = new AccountBalance(
               currKey.getShard(), currKey.getRealm(), currKey.getNum(), currMv.getBalance());
       acctObjList.add(exAccObj);
@@ -162,7 +163,7 @@ public class AccountBalanceExport {
       }
     }
     //validate that total node balance is equal to initial money supply
-    if(totalBalance != initialGenesisCoins) {
+    if(!totalBalance.equals(BigInteger.valueOf(initialGenesisCoins))) {
       String  errorMessage = "Total balance " + totalBalance + " is different from " + initialGenesisCoins;
       throw new IllegalStateException(errorMessage);
     }
