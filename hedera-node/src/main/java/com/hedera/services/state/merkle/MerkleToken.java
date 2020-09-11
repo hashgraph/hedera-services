@@ -358,6 +358,10 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return expiry;
 	}
 
+	public void setExpiry(long expiry) {
+		this.expiry = expiry;
+	}
+
 	public long autoRenewPeriod() {
 		return autoRenewPeriod;
 	}
@@ -368,6 +372,10 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	public EntityId autoRenewAccount() {
 		return autoRenewAccount;
+	}
+
+	public boolean hasAutoRenewAccount() {
+		return autoRenewAccount != UNUSED_AUTO_RENEW_ACCOUNT;
 	}
 
 	public void setAutoRenewAccount(EntityId autoRenewAccount) {

@@ -76,6 +76,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -103,8 +104,8 @@ class HederaTokenStoreTest {
 	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
 	String symbol = "NOTHBAR";
 	String newSymbol = "REALLYSOM";
-	long expiry = 1_234_567;
-	long newExpiry = 1_432_765;
+	long expiry = thisSecond + 1_234_567;
+	long newExpiry = thisSecond + 1_432_765;
 	long tokenFloat = 1_000_000;
 	int divisibility = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
@@ -134,7 +135,9 @@ class HederaTokenStoreTest {
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 
 		token = mock(MerkleToken.class);
+		given(token.expiry()).willReturn(expiry);
 		given(token.symbol()).willReturn(symbol);
+		given(token.hasAutoRenewAccount()).willReturn(true);
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 
 		ids = mock(EntityIdSource.class);
@@ -147,9 +150,11 @@ class HederaTokenStoreTest {
 		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(ledger.exists(treasury)).willReturn(true);
 		given(ledger.exists(autoRenewAccount)).willReturn(true);
+		given(ledger.exists(newAutoRenewAccount)).willReturn(true);
 		given(ledger.exists(sponsor)).willReturn(true);
 		given(ledger.get(treasury, IS_DELETED)).willReturn(false);
 		given(ledger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
+		given(ledger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 		given(ledger.getTokenRef(treasury)).willReturn(account);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
@@ -485,6 +490,20 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void updateRejectsInvalidExpiry() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// given:
+		var op = updateWith(NO_KEYS, true, false);
+		op = op.toBuilder().setExpiry(expiry - 1).build();
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(INVALID_EXPIRATION_TIME, outcome);
+	}
+
+	@Test
 	public void updateRejectsInvalidSymbol() {
 		// given:
 		var op = updateWith(NO_KEYS, true, false);
@@ -495,6 +514,33 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(INVALID_TOKEN_SYMBOL, outcome);
+	}
+
+	@Test
+	public void updateRejectsInvalidNewAutoRenew() {
+		given(ledger.exists(newAutoRenewAccount)).willReturn(false);
+		// and:
+		var op = updateWith(NO_KEYS, true, false, true, false);
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
+	}
+
+	@Test
+	public void updateRejectsInvalidNewAutoRenewPeriod() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		var op = updateWith(NO_KEYS, true, false, false, false);
+		op = op.toBuilder().setAutoRenewPeriod(-1L).build();
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(INVALID_RENEWAL_PERIOD, outcome);
 	}
 
 	@Test
@@ -638,7 +684,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateHappyPathWorksForEverythingWithExpiry() {
+	public void updateHappyPathIgnoresZeroExpiry() {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
 
@@ -647,6 +693,27 @@ class HederaTokenStoreTest {
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true);
+		op = op.toBuilder().setExpiry(0).build();
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(token, never()).setExpiry(anyLong());
+	}
+
+	@Test
+	public void updateHappyPathWorksForEverythingWithNewExpiry() {
+		// setup:
+		subject.symbolKeyedIds.put(symbol, misc);
+
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(ALL_KEYS);
+		// and:
+		var op = updateWith(ALL_KEYS, true, true);
+		op = op.toBuilder().setExpiry(newExpiry).build();
 
 		// when:
 		var outcome = subject.update(op, thisSecond);
@@ -654,6 +721,7 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(OK, outcome);
 		verify(token).setSymbol(newSymbol);
+		verify(token).setExpiry(newExpiry);
 		verify(token).setTreasury(EntityId.ofNullableAccountId(newTreasury));
 		verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
@@ -663,6 +731,26 @@ class HederaTokenStoreTest {
 		// and:
 		assertFalse(subject.symbolKeyedIds.containsKey(symbol));
 		assertEquals(subject.symbolKeyedIds.get(newSymbol), misc);
+	}
+
+	@Test
+	public void updateHappyPathWorksWithNewAutoRenewAccount() {
+		// setup:
+		subject.symbolKeyedIds.put(symbol, misc);
+
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// and:
+		givenUpdateTarget(ALL_KEYS);
+		// and:
+		var op = updateWith(ALL_KEYS, true, true, true, true);
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(token).setAutoRenewAccount(EntityId.ofNullableAccountId(newAutoRenewAccount));
+		verify(token).setAutoRenewPeriod(newAutoRenewPeriod);
 	}
 
 	enum KeyType {
@@ -758,6 +846,11 @@ class HederaTokenStoreTest {
 		}
 	}
 
+	private void givenUpdateTargetRenewal() {
+		given(token.hasAutoRenewAccount()).willReturn(true);
+		given(token.autoRenewAccount()).willReturn(EntityId.ofNullableAccountId(autoRenewAccount));
+		given(token.autoRenewPeriod()).willReturn(autoRenewPeriod);
+	}
 
 	@Test
 	public void understandsPendingCreation() {
@@ -1309,6 +1402,20 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, result.getStatus());
+	}
+
+	@Test
+	public void rejectsInvalidExpiry() {
+		// given:
+		var req = fullyValidAttempt()
+				.setExpiry(thisSecond - 1)
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
+
+		// then:
+		assertEquals(INVALID_EXPIRATION_TIME, result.getStatus());
 	}
 
 	@Test
