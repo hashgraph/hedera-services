@@ -104,7 +104,7 @@ public class MerkleAccountTest {
 	EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	JKey adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 	MerkleToken unfrozenToken = new MerkleToken(
-			100, 1,
+			Long.MAX_VALUE, 100, 1,
 			"UnfrozenToken", false, false,
 			new EntityId(1, 2, 3));
 

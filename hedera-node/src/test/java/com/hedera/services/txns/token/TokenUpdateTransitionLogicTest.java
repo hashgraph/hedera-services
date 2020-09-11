@@ -26,15 +26,10 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.tokens.TokenCreationResult;
-import com.hedera.services.tokens.TokenScope;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -44,16 +39,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Optional;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class TokenUpdateTransitionLogicTest {
+	long thisSecond = 1_234_567L;
+	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private TokenID target = IdUtils.asToken("1.2.666");
 	private TokenRef targetRef = IdUtils.asIdRef("1.2.666");
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
@@ -104,7 +114,7 @@ class TokenUpdateTransitionLogicTest {
 		givenToken(true, true);
 
 		// and:
-		given(store.update(any())).willThrow(IllegalStateException.class);
+		given(store.update(any(), anyLong())).willThrow(IllegalStateException.class);
 
 		// when:
 		subject.doStateTransition();
@@ -119,7 +129,7 @@ class TokenUpdateTransitionLogicTest {
 	public void abortsIfCreationFails() {
 		givenValidTxnCtx();
 		// and:
-		given(store.update(any())).willReturn(INVALID_TOKEN_SYMBOL);
+		given(store.update(any(), anyLong())).willReturn(INVALID_TOKEN_SYMBOL);
 
 		// when:
 		subject.doStateTransition();
@@ -137,7 +147,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any())).willReturn(INVALID_TOKEN_SYMBOL);
+		given(store.update(any(), anyLong())).willReturn(INVALID_TOKEN_SYMBOL);
 
 		// when:
 		subject.doStateTransition();
@@ -159,7 +169,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).update(any());
+		verify(store, never()).update(any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 	}
@@ -175,7 +185,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).update(any());
+		verify(store, never()).update(any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 	}
@@ -191,7 +201,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).update(any());
+		verify(store, never()).update(any(), anyLong());
 		verify(ledger).unfreeze(newTreasury, target);
 		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
@@ -217,7 +227,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any())).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
 		given(store.wipe(oldTreasury, target, true))
 				.willReturn(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 
@@ -234,7 +244,7 @@ class TokenUpdateTransitionLogicTest {
 	public void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
-		given(store.update(any())).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
@@ -252,7 +262,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any())).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
 		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
 
 		// when:
@@ -272,7 +282,7 @@ class TokenUpdateTransitionLogicTest {
 		// and:
 		givenToken(false, false);
 		// and:
-		given(store.update(any())).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
 		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
 
 		// when:
@@ -318,6 +328,7 @@ class TokenUpdateTransitionLogicTest {
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
 		given(ledger.exists(newTreasury)).willReturn(true);
 		given(ledger.isDeleted(newTreasury)).willReturn(false);
 		given(ledger.exists(oldTreasury)).willReturn(true);

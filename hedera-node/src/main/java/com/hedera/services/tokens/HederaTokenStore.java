@@ -31,17 +31,14 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCode;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.swirlds.fcmap.FCMap;
-import org.bouncycastle.asn1.cms.OtherKeyAttribute;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -66,8 +63,10 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
@@ -99,6 +98,7 @@ public class HederaTokenStore implements TokenStore {
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	private final EntityIdSource ids;
+	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 
@@ -112,11 +112,13 @@ public class HederaTokenStore implements TokenStore {
 
 	public HederaTokenStore(
 			EntityIdSource ids,
+			OptionValidator validator,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
 	) {
 		this.ids = ids;
 		this.tokens = tokens;
+		this.validator = validator;
 		this.properties = properties;
 
 		tokens.get().entrySet().forEach(entry ->
@@ -322,14 +324,25 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
+	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now) {
 		var validity = symbolCheck(request.getSymbol());
 		if (validity != OK) {
 			return failure(validity);
 		}
-		validity = treasuryCheck(request.getTreasury());
+		validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
+		}
+		if (request.hasAutoRenewAccount()) {
+			validity = accountCheck(request.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			if (validity == OK) {
+				validity = validator.isValidAutoRenewPeriod(Duration.newBuilder()
+						.setSeconds(request.getAutoRenewPeriod())
+						.build()) ? OK : INVALID_RENEWAL_PERIOD;
+			}
+			if (validity != OK) {
+				return failure(validity);
+			}
 		}
 		validity = floatAndDivisibilityCheck(request.getFloat(), request.getDivisibility());
 		if (validity != OK) {
@@ -345,8 +358,10 @@ public class HederaTokenStore implements TokenStore {
 		var wipeKey = asUsableFcKey(request.getWipeKey());
 		var supplyKey = asUsableFcKey(request.getSupplyKey());
 
+		var expiry = expiryOf(request, now);
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
+				expiry,
 				request.getFloat(),
 				request.getDivisibility(),
 				request.getSymbol(),
@@ -358,8 +373,18 @@ public class HederaTokenStore implements TokenStore {
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
+		if (request.hasAutoRenewAccount()) {
+			pendingCreation.setAutoRenewAccount(ofNullableAccountId(request.getAutoRenewAccount()));
+			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod());
+		}
 
 		return success(pendingId);
+	}
+
+	private long expiryOf(TokenCreation request, long now) {
+		return request.hasAutoRenewAccount()
+				? now + request.getAutoRenewPeriod()
+				: request.getExpiry();
 	}
 
 	@Override
@@ -381,7 +406,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenManagement changes) {
+	public ResponseCodeEnum update(TokenManagement changes, long now) {
 		var tId = resolve(changes.getToken());
 		if (tId == MISSING_TOKEN) {
 			return INVALID_TOKEN_REF;
@@ -443,7 +468,7 @@ public class HederaTokenStore implements TokenStore {
 				symbolKeyedIds.put(newSymbol, tId);
 			}
 			if (changes.hasTreasury()) {
-				var treasuryId = EntityId.ofNullableAccountId(changes.getTreasury());
+				var treasuryId = ofNullableAccountId(changes.getTreasury());
 				token.setTreasury(treasuryId);
 			}
 		});
@@ -541,9 +566,9 @@ public class HederaTokenStore implements TokenStore {
 				: INVALID_TOKEN_SYMBOL;
 	}
 
-	private ResponseCodeEnum treasuryCheck(AccountID id) {
+	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {
 		if (!ledger.exists(id) || (boolean) ledger.get(id, AccountProperty.IS_DELETED)) {
-			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+			return failure;
 		}
 		return OK;
 	}

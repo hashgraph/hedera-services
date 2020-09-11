@@ -1051,7 +1051,7 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			tokenStore = new HederaTokenStore(ids(), globalDynamicProperties(), this::tokens);
+			tokenStore = new HederaTokenStore(ids(), validator(), globalDynamicProperties(), this::tokens);
 		}
 		return tokenStore;
 	}

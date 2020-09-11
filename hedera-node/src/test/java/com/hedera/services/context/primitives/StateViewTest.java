@@ -141,7 +141,7 @@ class StateViewTest {
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", true, true,
 				new EntityId(1, 2, 3));
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());

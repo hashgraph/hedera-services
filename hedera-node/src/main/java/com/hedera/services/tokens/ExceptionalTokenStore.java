@@ -57,7 +57,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenManagement changes) {
+	public ResponseCodeEnum update(TokenManagement changes, long now) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -67,7 +67,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor) {
+	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}
 
