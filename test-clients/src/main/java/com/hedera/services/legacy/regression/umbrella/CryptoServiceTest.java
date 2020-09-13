@@ -1438,7 +1438,7 @@ public class CryptoServiceTest extends TestHelperComplex {
       String msg =
           "transactionMaxBytes (" + transactionMaxBytes + ") exceeded! requestSize=" + requestSize
               + ", txShortInfo=" + com.hedera.services.legacy.proto.utils.CommonUtils
-              .toReadableStringShort(txSigned);
+              .toReadableTransactionID(txSigned);
       log.warn(msg);
       throw new Exception(msg);
     } else {

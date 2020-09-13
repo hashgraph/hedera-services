@@ -117,17 +117,14 @@ class MerkleAccountStateTest {
 
 	MerkleToken alwaysUsable = new MerkleToken(
 			100, 1,
-			adminKey,
 			"UnfrozenToken", false, true,
 			new EntityId(1, 2, 3));
 	MerkleToken unusableAtFirst = new MerkleToken(
 			100, 1,
-			adminKey,
 			"FrozenToken", true, false,
 			new EntityId(1, 2, 4));
 	MerkleToken usableAtFirst = new MerkleToken(
 			100, 1,
-			adminKey,
 			"FrozenToken", false, true,
 			new EntityId(1, 2, 4));
 

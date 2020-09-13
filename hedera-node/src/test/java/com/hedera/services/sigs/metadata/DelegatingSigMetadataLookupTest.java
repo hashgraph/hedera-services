@@ -62,7 +62,7 @@ class DelegatingSigMetadataLookupTest {
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
-		token = new MerkleToken(tokenFloat, divisibility, adminKey, symbol, freezeDefault, kycDefault, treasury);
+		token = new MerkleToken(tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
 
 		tokenStore = mock(TokenStore.class);
 

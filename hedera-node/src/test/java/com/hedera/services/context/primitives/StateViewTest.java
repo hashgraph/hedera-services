@@ -142,9 +142,9 @@ class StateViewTest {
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
 				100, 1,
-				TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
 				"UnfrozenToken", true, true,
 				new EntityId(1, 2, 3));
+		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());

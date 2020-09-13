@@ -232,11 +232,10 @@ public class CommonUtils {
    *
    * @return generated readable string
    */
-  public static String toReadableStringShort(
+  public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {
     TransactionBody body = extractTransactionBody(grpcTransaction);
-    String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID()) + "; memo=" + body
-            .getMemo();
+    String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
     return rv;
   }
 

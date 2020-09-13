@@ -162,7 +162,7 @@ enum ResponseCodeEnum {
   INVALID_TOPIC_ID = 150; // The Topic ID specified is not in the system.
   INVALID_ADMIN_KEY = 155;
   INVALID_SUBMIT_KEY = 156;
-  UNAUTHORIZED = 157; // An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey).
+  UNAUTHORIZED = 157; // An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey, a tokenUpdate or tokenDelete for token with no adminKey).
   INVALID_TOPIC_MESSAGE = 158; // A ConsensusService message is empty.
   INVALID_AUTORENEW_ACCOUNT = 159; // The autoRenewAccount specified is not a valid, active account.
 
