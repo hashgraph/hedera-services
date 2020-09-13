@@ -162,7 +162,6 @@ public class FeeChargingRecordsHistorianTest {
 	private ExpiringCreations creator;
 	private TransactionContext txnCtx;
 	private ItemizableFeeCharging itemizableFeeCharging;
-	private GlobalDynamicProperties dynamicProperties;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private BlockingQueue<EarliestRecordExpiry> expirations;
 

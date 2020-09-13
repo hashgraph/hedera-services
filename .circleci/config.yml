@@ -1527,7 +1527,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - token-fees
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

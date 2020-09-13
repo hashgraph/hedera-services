@@ -56,8 +56,8 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
 			entry("bootstrap.genesisPem.path", "TBD"),
 			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
-			entry("bootstrap.ledger.nodeAccounts.initialBalance", 100000000000000L),
-			entry("bootstrap.ledger.systemAccounts.initialBalance", 100000000000000L),
+			entry("bootstrap.ledger.nodeAccounts.initialBalance", 0L),
+			entry("bootstrap.ledger.systemAccounts.initialBalance", 0L),
 			entry("bootstrap.ledger.systemAccounts.recordThresholds", 5000000000000000000L),
 			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
 			entry("bootstrap.rates.currentHbarEquiv", 1),
@@ -156,7 +156,7 @@ class BootstrapPropertiesTest {
 
 		// then:
 		for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
-			assertEquals(expectedProps.get(name), subject.getProperty(name));
+			assertEquals(expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
 		}
 		// and:
 		assertEquals(expectedProps, subject.bootstrapProps);

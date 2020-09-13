@@ -42,11 +42,6 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean hasOnlyCryptoAccounts(TransferList accountAmounts) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean isValidExpiry(Timestamp expiry) {
 		throw new UnsupportedOperationException();
 	}

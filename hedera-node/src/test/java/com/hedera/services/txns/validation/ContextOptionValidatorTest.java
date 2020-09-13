@@ -24,7 +24,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MapValueFactory;
@@ -94,7 +93,6 @@ public class ContextOptionValidatorTest {
 	private MerkleTopic merkleTopic;
 	private FCMap topics;
 	private FCMap accounts;
-	private HederaLedger ledger;
 	private PropertySource properties;
 	private TransactionContext txnCtx;
 	private ContextOptionValidator subject;
@@ -109,11 +107,6 @@ public class ContextOptionValidatorTest {
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
-		ledger = mock(HederaLedger.class);
-		given(ledger.isSmartContract(a)).willReturn(false);
-		given(ledger.isSmartContract(b)).willReturn(false);
-		given(ledger.isSmartContract(c)).willReturn(true);
-		given(ledger.isSmartContract(d)).willReturn(false);
 		properties = mock(PropertySource.class);
 		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(100);
 		accounts = mock(FCMap.class);
@@ -137,7 +130,7 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new JFileInfo(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(ledger, properties, txnCtx);
+		subject = new ContextOptionValidator(properties, txnCtx);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(JFileInfo meta) throws Exception {
@@ -357,24 +350,6 @@ public class ContextOptionValidatorTest {
 		assertFalse(subject.isAcceptableLength(wrapper));
 		// and:
 		verify(properties).getIntProperty("ledger.transfers.maxLen");
-	}
-
-	@Test
-	public void recognizesCleanTransfers() {
-		// given:
-		TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
-
-		// expect:
-		assertTrue(subject.hasOnlyCryptoAccounts(wrapper));
-	}
-
-	@Test
-	public void recognizesContractInTransfer() {
-		// given:
-		TransferList wrapper = withAdjustments(a, 2L, c, -3L, d, 1L);
-
-		// expect:
-		assertFalse(subject.hasOnlyCryptoAccounts(wrapper));
 	}
 
 	@Test

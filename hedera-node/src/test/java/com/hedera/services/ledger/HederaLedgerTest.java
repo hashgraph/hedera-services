@@ -790,10 +790,13 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
-		System.out.println(tokenStore.createProvisionally(stdWith("MINE", a), a, thisSecond).getStatus());
-		tA = tokenStore.createProvisionally(stdWith("MINE", a), a, thisSecond).getCreated().get();
+		var rA = tokenStore.createProvisionally(stdWith("MINE", a), a, thisSecond);
+		System.out.println(rA.getStatus());
+		tA = rA.getCreated().get();
 		tokenStore.commitCreation();
-		tB = tokenStore.createProvisionally(stdWith("YOURS", b), b, thisSecond).getCreated().get();
+		var rB = tokenStore.createProvisionally(stdWith("YOURS", b), b, thisSecond);
+		System.out.println(rB.getStatus());
+		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
 		subject.doTransfer(d, a, 1_000L);
@@ -840,6 +843,7 @@ public class HederaLedgerTest {
 				.setSymbol(symbol)
 				.setFloat(0)
 				.setTreasury(account)
+				.setExpiry(2 * thisSecond)
 				.setDivisibility(0)
 				.setFreezeDefault(false)
 				.build();
