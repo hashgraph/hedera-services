@@ -43,6 +43,7 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
 import com.swirlds.fcmap.FCMap;
@@ -126,6 +127,15 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				: ChildIndices.NUM_080_CHILDREN;
 	}
 
+	@Override
+	public void initialize(MerkleInternal previous) {
+		if (tokens() == null) {
+			setChild(ChildIndices.TOKENS,
+					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
+			log.info("Created tokens FCMap after 0.7.0 state restoration");
+		}
+	}
+
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
@@ -136,7 +146,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		if (getNumberOfChildren() < ChildIndices.NUM_070_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_080_CHILDREN) {
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
@@ -153,10 +163,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
-			if (getNumberOfChildren() < ChildIndices.NUM_080_CHILDREN) {
-				setChild(ChildIndices.TOKENS,
-						new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
-			}
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 			merkleDigest.accept(this);
 			printHashes();
