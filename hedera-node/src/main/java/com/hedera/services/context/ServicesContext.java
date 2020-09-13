@@ -1009,7 +1009,8 @@ public class ServicesContext {
 					txnCtx(),
 					charging(),
 					this::accounts,
-					expiries());
+					expiries(),
+					globalDynamicProperties());
 		}
 		return recordsHistorian;
 	}

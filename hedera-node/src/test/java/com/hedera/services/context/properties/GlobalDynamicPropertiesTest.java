@@ -28,6 +28,8 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -54,6 +56,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
+		assertFalse(subject.shouldCreateThresholdRecords());
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolLength());
 		assertEquals(3L, subject.maxAccountNum());
@@ -82,6 +85,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// expect:
+		assertTrue(subject.shouldCreateThresholdRecords());
 		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolLength());
 		assertEquals(4L, subject.maxAccountNum());
@@ -97,6 +101,7 @@ class GlobalDynamicPropertiesTest {
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
+		given(properties.getBooleanProperty("ledger.createThresholdRecords")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
 		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long)i + 3);
 		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long)i + 4);

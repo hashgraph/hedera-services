@@ -93,6 +93,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.realm", 0L),
 			entry("hedera.shard", 0L),
 			entry("ledger.fundingAccount", 98L),
+			entry("ledger.createThresholdRecords", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),

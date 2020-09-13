@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Collections.unmodifiableSet;
-import static java.util.Set.of;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -194,6 +193,7 @@ public class BootstrapProperties implements PropertySource {
 			"contracts.defaultSendThreshold",
 			"contracts.maxStorageKb",
 			"files.maxSizeKb",
+			"ledger.createThresholdRecords",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
 			"rates.intradayChangeLimitPercent",
@@ -252,6 +252,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.system.entityExpiry", AS_LONG),
 			entry("files.maxSizeKb", AS_INT),
 			entry("ledger.fundingAccount", AS_LONG),
+			entry("ledger.createThresholdRecords", AS_BOOLEAN),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
 			entry("ledger.totalTinyBarFloat", AS_LONG),
