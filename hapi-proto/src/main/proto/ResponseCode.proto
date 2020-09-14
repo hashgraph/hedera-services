@@ -133,8 +133,8 @@ enum ResponseCodeEnum {
   CONTRACT_FILE_EMPTY = 83; // File to create a smart contract was of length zero
   CONTRACT_BYTECODE_EMPTY = 84; // Bytecode for smart contract is of length zero
   INVALID_INITIAL_BALANCE=85; // Attempt to set negative initial balance
-  INVALID_RECEIVE_RECORD_THRESHOLD=86 [deprecated=true]; // attempt to set negative receive record threshold
-  INVALID_SEND_RECORD_THRESHOLD=87 [deprecated=true]; // attempt to set negative send record threshold
+  INVALID_RECEIVE_RECORD_THRESHOLD=86 [deprecated=true]; // [Deprecated]. attempt to set negative receive record threshold
+  INVALID_SEND_RECORD_THRESHOLD=87 [deprecated=true]; // [Deprecated]. attempt to set negative send record threshold
   ACCOUNT_IS_NOT_GENESIS_ACCOUNT = 88; // Special Account Operations should be performed by only Genesis account, return this code if it is not Genesis Account
   PAYER_ACCOUNT_UNAUTHORIZED = 89; // The fee payer account doesn't have permission to submit such Transaction
   INVALID_FREEZE_TRANSACTION_BODY = 90; // FreezeTransactionBody is invalid

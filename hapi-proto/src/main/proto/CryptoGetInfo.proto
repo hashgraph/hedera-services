@@ -50,9 +50,9 @@ message CryptoGetInfoResponse {
         int64 proxyReceived = 6; // The total number of tinybars proxy staked to this account
         Key key = 7; // The key for the account, which must sign in order to transfer out, or to modify the account in any way other than extending its expiration date.
         uint64 balance = 8; // The current balance of account in tinybars
-        // The threshold amount, in tinybars, at which a record is created of any transaction that decreases the balance of this account by more than the threshold
+        // [Deprecated]. The threshold amount, in tinybars, at which a record is created of any transaction that decreases the balance of this account by more than the threshold
         uint64 generateSendRecordThreshold = 9 [deprecated=true];
-        // The threshold amount, in tinybars, at which a record is created of any transaction that increases the balance of this account by more than the threshold
+        // [Deprecated]. The threshold amount, in tinybars, at which a record is created of any transaction that increases the balance of this account by more than the threshold
         uint64 generateReceiveRecordThreshold = 10 [deprecated=true];
         bool receiverSigRequired = 11; // If true, no transaction can transfer to this account unless signed by this account's key
         Timestamp expirationTime = 12; // The TimeStamp time at which this account is set to expire
