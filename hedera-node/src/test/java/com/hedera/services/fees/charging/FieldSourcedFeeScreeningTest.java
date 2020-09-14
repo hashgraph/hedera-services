@@ -41,8 +41,14 @@ import static com.hedera.services.fees.TxnFeeType.*;
 
 @RunWith(JUnitPlatform.class)
 class FieldSourcedFeeScreeningTest {
-	long willingness = 1_000L;
-	long network = 500L, service = 200L, node = 100L, stateRecord = 150L, cacheRecord = 50L;
+
+	final long willingness = 1_000L;
+	final long network = 500L;
+	final long service = 200L;
+	final long node = 100L;
+	final long stateRecord = 150L;
+	final long cacheRecord = 50L;
+
 	AccountID payer = IdUtils.asAccount("0.0.1001");
 	AccountID master = IdUtils.asAccount("0.0.50");
 	AccountID participant = IdUtils.asAccount("0.0.2002");
@@ -184,13 +190,32 @@ class FieldSourcedFeeScreeningTest {
 	}
 
 	@Test
-	public void feeTest() {
+	public void canParticipantAffordTest() {
 		// setup:
 		EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
 		subject.setFor(NETWORK, network);
 		subject.setFor(SERVICE, service);
 		subject.setFor(NODE, node);
 		subject.setFor(CACHE_RECORD, cacheRecord);
+		// when:
+		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
+		// then:
+		assertFalse(viability);
+	}
+
+	@Test
+	public void participantCantAffordTest() {
+		// setup:
+		final BalanceCheck check = (payer, amount) -> amount >= stateRecord;
+
+		final EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
+		subject.setFor(NETWORK, network);
+		subject.setFor(SERVICE, service);
+		subject.setFor(NODE, node);
+		subject.setFor(CACHE_RECORD, cacheRecord);
+		subject.setFor(THRESHOLD_RECORD, stateRecord);
+		subject.setBalanceCheck(check);
+
 		// when:
 		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
 		// then:
