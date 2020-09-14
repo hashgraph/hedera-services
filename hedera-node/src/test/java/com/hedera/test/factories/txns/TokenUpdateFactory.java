@@ -21,6 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hedera.test.factories.keys.KeyTree;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,6 +34,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_REPL
 public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 	private TokenRef ref;
 	private Optional<KeyTree> newAdminKt = Optional.empty();
+	private Optional<AccountID> newAutoRenew = Optional.empty();
 	private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
 
 	private TokenUpdateFactory() { }
@@ -48,6 +50,11 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 
 	public TokenUpdateFactory newAdmin(KeyTree kt) {
 		newAdminKt = Optional.of(kt);
+		return this;
+	}
+
+	public TokenUpdateFactory newAutoRenew(AccountID account) {
+		newAutoRenew = Optional.of(account);
 		return this;
 	}
 
@@ -98,6 +105,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 		if (replaceWipe) {
 			op.setWipeKey(TOKEN_REPLACE_KT.asKey());
 		}
+		newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
 		txn.setTokenUpdate(op);
 	}
 }

@@ -266,6 +266,10 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return divisibility;
 	}
 
+	public boolean hasAdminKey() {
+		return adminKey != UNUSED_KEY;
+	}
+
 	public Optional<JKey> adminKey() {
 		return Optional.ofNullable(adminKey);
 	}

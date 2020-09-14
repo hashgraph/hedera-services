@@ -939,7 +939,11 @@ public class ServicesContext {
 				entry(TokenCreate,
 						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUpdate,
-						List.of(new TokenUpdateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenUpdateTransitionLogic(
+								tokenStore(),
+								ledger(),
+								txnCtx(),
+								HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenTransact,
 						List.of(new TokenTransactTransitionLogic(ledger(), txnCtx()))),
 				entry(TokenFreezeAccount,

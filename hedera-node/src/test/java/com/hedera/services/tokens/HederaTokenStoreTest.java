@@ -139,6 +139,7 @@ class HederaTokenStoreTest {
 		given(token.symbol()).willReturn(symbol);
 		given(token.hasAutoRenewAccount()).willReturn(true);
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
+		given(token.hasAdminKey()).willReturn(true);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -501,6 +502,35 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(INVALID_EXPIRATION_TIME, outcome);
+	}
+
+	@Test
+	public void updateRejectsImmutableToken() {
+		given(token.hasAdminKey()).willReturn(false);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// given:
+		var op = updateWith(NO_KEYS, true, false);
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+	}
+
+	@Test
+	public void canExtendImmutableExpiry() {
+		given(token.hasAdminKey()).willReturn(false);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		// given:
+		var op = updateWith(NO_KEYS, false, false);
+		op = op.toBuilder().setExpiry(expiry + 1_234).build();
+
+		// when:
+		var outcome = subject.update(op, thisSecond);
+
+		// then:
+		assertEquals(OK, outcome);
 	}
 
 	@Test

@@ -84,6 +84,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -418,6 +419,7 @@ public class HederaTokenStore implements TokenStore {
 			return INVALID_TOKEN_REF;
 		}
 		var validity = OK;
+		var isExpiryOnly = affectsExpiryAtMost(changes);
 		var hasNewSymbol = changes.getSymbol().length() > 0;
 		if (hasNewSymbol) {
 			validity = symbolCheck(changes.getSymbol());
@@ -467,6 +469,9 @@ public class HederaTokenStore implements TokenStore {
 			if (!token.hasSupplyKey() && newSupplyKey.isPresent()) {
 				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
 			}
+			if (!token.hasAdminKey() && !isExpiryOnly) {
+				appliedValidity.set(TOKEN_IS_IMMUTABlE);
+			}
 			if (OK != appliedValidity.get()) {
 				return;
 			}
@@ -508,6 +513,18 @@ public class HederaTokenStore implements TokenStore {
 			}
 		});
 		return appliedValidity.get();
+	}
+
+	public static boolean affectsExpiryAtMost(TokenManagement op) {
+		return !op.hasAdminKey() &&
+				!op.hasKycKey() &&
+				!op.hasWipeKey() &&
+				!op.hasFreezeKey() &&
+				!op.hasSupplyKey() &&
+				!op.hasTreasury() &&
+				!op.hasAutoRenewAccount() &&
+				op.getSymbol().length() == 0 &&
+				op.getAutoRenewPeriod() == 0;
 	}
 
 	private ResponseCodeEnum keyValidity(

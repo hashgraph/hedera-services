@@ -41,6 +41,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -50,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -76,6 +78,7 @@ class TokenUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private Predicate<TokenManagement> expiryOnlyCheck;
 
 	private TokenUpdateTransitionLogic subject;
 
@@ -93,7 +96,10 @@ class TokenUpdateTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenUpdateTransitionLogic(store, ledger, txnCtx);
+		expiryOnlyCheck = (Predicate<TokenManagement>) mock(Predicate.class);
+		given(expiryOnlyCheck.test(any())).willReturn(false);
+
+		subject = new TokenUpdateTransitionLogic(store, ledger, txnCtx, expiryOnlyCheck);
 	}
 
 	@Test
@@ -208,6 +214,21 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void permitsExtendingExpiry() {
+		givenValidTxnCtx(false);
+		// and:
+		given(token.adminKey()).willReturn(Optional.empty());
+		given(expiryOnlyCheck.test(any())).willReturn(true);
+		given(store.update(any(), anyLong())).willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
 	public void abortsOnNotSetAdminKey() {
 		givenValidTxnCtx(true);
 		// and:
@@ -217,7 +238,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(UNAUTHORIZED);
+		verify(txnCtx).setStatus(TOKEN_IS_IMMUTABlE);
 	}
 
 	@Test
