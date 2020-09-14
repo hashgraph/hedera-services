@@ -175,8 +175,6 @@ public class ParseRecordFileDemo {
 
 							counter++;
 							log.info(MARKER, "record counter = " + counter);
-//							log.info(MARKER, "txRecord = " + txRecord);
-//							log.info(MARKER, "\n\n-----------------------------");
 
 							break;
 						case TYPE_SIGNATURE:

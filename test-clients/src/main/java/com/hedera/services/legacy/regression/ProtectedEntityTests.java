@@ -241,7 +241,6 @@ public class ProtectedEntityTests extends BaseClient {
   public static void main(String[] args) throws Throwable {
     ProtectedEntityTests tester = new ProtectedEntityTests(testConfigFilePath);
     long[] sysAccountToFund = {3, 49, 50, 51, 55, 56, 57, 58, 59, 60, 80, 81, 100, 45, 46};
-//    long[] sysAccountToFund = {};
     tester.init(sysAccountToFund);
     TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.Body;
     TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
@@ -721,7 +720,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
- //     Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
     }
   }
 
@@ -817,7 +815,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
-//      Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
     }
   }
 
@@ -998,7 +995,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
-//      Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
   
       checkFeeCharge(transactionID, payerID, nodeID, isFree);
       
@@ -1626,16 +1622,6 @@ public class ProtectedEntityTests extends BaseClient {
     log.info("c0=" + c0 + ", c0Change=" + c0Change + "; c1=" + c1 + ", c1Change=" + c1Change);
     Assert.assertEquals(c0n <= (c0 + c0*B/100), c0Change);
     Assert.assertEquals(c1n <= (c1 + c1*B/100), c1Change);
-    
-//    for(int b=0; b < 100; b++) {
-//      long c0n = c0 + c0 * b / 100;
-//      long c1n = c1 + c1 * b / 100;
-//      boolean c0Change = isSmallChange(B, c0, 1, c0n, 1);
-//      boolean c1Change = isSmallChange(B, c1, 1, c1n, 1);
-//      log.info("b=" + b + ", B=" + B + "; c0=" + c0 + ", c0Change=" + c0Change + "; c1=" + c1 + ", c1Change=" + c1Change);
-//      Assert.assertEquals(b <= B, c0Change);
-//      Assert.assertEquals(b <= B, c1Change);
-//    }
   }
 
   /**

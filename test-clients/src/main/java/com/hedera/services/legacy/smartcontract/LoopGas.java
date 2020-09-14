@@ -170,8 +170,6 @@ public class LoopGas {
         .getReceipt().getStatus().equals(ResponseCodeEnum.UNKNOWN)) {
       Thread.sleep(100);
       transactionReceipts = stub.getTransactionReceipts(query);
-//      System.out.println("waiting to getTransactionReceipts as not Unknown..." +
-//          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().name());
       attempts++;
     }
     channel.shutdown();
@@ -269,11 +267,9 @@ public class LoopGas {
     TransactionResponse response = stub.contractCallMethod(callContractRequest);
     log.info("callContract Pre Check Response :: " + response.getNodeTransactionPrecheckCode()
             .name());
-//    Thread.sleep(1000);
     TransactionBody callContractBody = TransactionBody.parseFrom(callContractRequest.getBodyBytes());
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(
         callContractBody.getTransactionID());
-//    log.info("Contract call receipt is " + contractCallReceipt);
     Assert.assertEquals(expectedStatus, contractCallReceipt.getReceipt().getStatus());
 
     TransactionRecord txRecord = getTransactionRecord(payerAccount,
@@ -305,7 +301,6 @@ public class LoopGas {
     recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee,
         ResponseType.ANSWER_ONLY);
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
     channel.shutdown();
     return txRecord;
   }

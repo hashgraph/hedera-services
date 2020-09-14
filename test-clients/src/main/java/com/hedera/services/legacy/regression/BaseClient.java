@@ -177,7 +177,6 @@ public class BaseClient extends SmartContractServiceTest {
      } else {
        transactionID = createAccountRequest.getBody().getTransactionID();
       }
-//      cache.addTransactionID(transactionID);
 
       Query query = Query.newBuilder()
           .setTransactionGetReceipt(
@@ -265,7 +264,6 @@ public class BaseClient extends SmartContractServiceTest {
 
     TransactionBody body = TransactionBody.parseFrom(transferTxSigned.getBodyBytes());
     TransactionID txId = body.getTransactionID();
-    // cache.addTransactionID(txId);
 
     TransactionReceipt receipt = null;
     if (retrieveTxReceipt) {

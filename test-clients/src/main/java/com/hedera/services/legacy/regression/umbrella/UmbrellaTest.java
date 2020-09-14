@@ -126,11 +126,7 @@ public class UmbrellaTest {
     } else {
       log.warn("(: pre- and post- total balance of all transfer accounts DO NOT match!");
     }
-      
-//    AtomicCounter allApiSuccessCount = UmbrellaServiceRunnable.activeFailCountMap.get("ALL_API");
-//    if(allApiSuccessCount.value()==0) {
-//      CryptoServiceTest.tallyBalances();
-//    }
+    
     if (rt.changeGenesisKey) {
       rt.revertGenesisKey();
     }

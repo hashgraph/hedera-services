@@ -86,7 +86,6 @@ public class FeeClient {
         byte[] fileBytes = new byte[(int) feeSchFile.length()];
         fis.read(fileBytes);
         CurrentAndNextFeeSchedule feeSch = CurrentAndNextFeeSchedule.parseFrom(fileBytes);
-        // System.out.println(feeSch);
         List<TransactionFeeSchedule> transFeeSchList =
             feeSch.getCurrentFeeSchedule().getTransactionFeeScheduleList();
         for (TransactionFeeSchedule transSch : transFeeSchList) {

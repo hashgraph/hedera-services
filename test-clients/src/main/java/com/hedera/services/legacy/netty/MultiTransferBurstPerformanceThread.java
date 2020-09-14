@@ -126,26 +126,18 @@ public class MultiTransferBurstPerformanceThread {
             }
 
         }
-
-        // = properties.getProperty("host");
         int port = Integer.parseInt(properties.getProperty("port"));
         log.info("Connecting host = " + host + "; port = " + port);
 
-
-        //int tCounts = 5;
         log.info("Spawning " + numThreads +" Threads per container");
         //tpsDesired is the TPS per thread, actual it would be tCounts x 5 x number clients
 
-
         for(int i=0 ; i< numThreads ; i++)
         {
-           // MultiTransferSeqThread perf1 = new MultiTransferSeqThread(port, host, numTransfer, retrieveTxReceipt,nodeAccount,tpsDesired);
-            MultiAccountBurstTransferSeqThread perf1 = new MultiAccountBurstTransferSeqThread(port, host, numTransfer, retrieveTxReceipt,retrieveRecords, nodeAccount,tpsDesired,numAccountsIterations);
-            perf1.start();
-
+           MultiAccountBurstTransferSeqThread perf1 = new MultiAccountBurstTransferSeqThread(port, host, numTransfer, retrieveTxReceipt,retrieveRecords, nodeAccount,tpsDesired,numAccountsIterations);
+           perf1.start();
         }
 
         log.warn("****** GO THREADS GO ********");
-
     }
 }

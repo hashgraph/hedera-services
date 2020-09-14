@@ -206,9 +206,7 @@ public class UmbrellaServiceRunnable implements Runnable {
         }
 
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:fileGetInfo");
           fit.getFileInfo(fid, payerID, nodeID);
-//          stopWatch.stop();
         } catch (Throwable e) {
           if(FileServiceTest.fid2waclMap.containsKey(fid)){
             incFailCountIfClientProbablyNotToBlameFor(opn, e);
@@ -227,9 +225,7 @@ public class UmbrellaServiceRunnable implements Runnable {
         }
 
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:fileGetContent");
           fit.getFileContent(fid, payerID, nodeID);
-//          stopWatch.stop();
         } catch (Throwable e) {
           log.warn("fileGetContent error! fid={}, payerID={}, nodeID={}: {}  ",
                   fid, payerID, nodeID, e);
@@ -251,10 +247,8 @@ public class UmbrellaServiceRunnable implements Runnable {
         fid = entry.getKey();
         oldWaclPubKeyList = entry.getValue();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:fileUpdate");
           List<Key> newWaclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
           fit.updateFile(fid, fileType, payerID, nodeID, oldWaclPubKeyList, newWaclPubKeyList);
-//          stopWatch.stop();
           FileServiceTest.fid2waclMap
               .put(fid, newWaclPubKeyList); //make fid available for file crud
         } catch (Throwable e) {
@@ -275,9 +269,7 @@ public class UmbrellaServiceRunnable implements Runnable {
         fid = entry.getKey();
         List<Key> waclPubKeyList = entry.getValue();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:fileDelete");
           fit.deleteFile(fid, payerID, nodeID, waclPubKeyList);
-//          stopWatch.stop();
           // commenting the line out as file delete flag has been implemented
 //          FileServiceTest.fid2waclMap.put(fid, waclPubKeyList); //make fid available for file crud
           FileServiceTest.fid2waclMap.remove(fid);
@@ -288,12 +280,9 @@ public class UmbrellaServiceRunnable implements Runnable {
         }
         break;
       case cryptoCreate:
-//			payerID = fit.getGenesisAccountID(); //use genesis to create new account
         isSmallAccount = true;
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoCreate");
           AccountID accountId = fit.createAccount(payerID, nodeID, true);
-//          stopWatch.stop();
           if(CryptoServiceTest.getReceipt) {
 			  log.info("account created: account = {}", accountId);
 		  }
@@ -304,16 +293,13 @@ public class UmbrellaServiceRunnable implements Runnable {
         isSmallAccount = false;
         break;
       case getTxReceipt:
-//        TransactionID txId = fit.cache.getRandomTransactionID4Receipt();
         TransactionID txId = fit.cache.pollOldestTransactionID4Receipt();
         if (txId == null) {
           log.warn("getTxReceipt: no txId available!");
           break;
         }
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getTxReceipt");
           TransactionReceipt receipt = fit.getTxReceipt(txId);
-//          stopWatch.stop();
           log.info("getTxReceipt: txId = {} ==> receipt = {}", txId, receipt);
         } catch (Throwable e) {
           log.warn("getTxReceipt error!", e);
@@ -321,16 +307,13 @@ public class UmbrellaServiceRunnable implements Runnable {
         }
         break;
       case getTxFastRecord:
-//        txId = fit.cache.getRandomTransactionID4Receipt();
         txId = fit.cache.pollOldestTransactionID4Receipt();
         if (txId == null) {
           log.warn("getTxFastRecord: no txId available!");
           break;
         }
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getTxFastRecord");
           TransactionReceipt receipt = fit.getTxFastRecord(txId);
-//          stopWatch.stop();
           log.info("getTxFastRecord: txId = {} ==> receipt = {}", txId, receipt);
 
         } catch (Throwable e) {
@@ -339,16 +322,13 @@ public class UmbrellaServiceRunnable implements Runnable {
         }
         break;
       case getTxRecord:
-//        txId = fit.cache.getRandomTransactionID4Record();
         txId = fit.cache.pollOldestTransactionID4Record();
         if (txId == null) {
           log.warn("getTxRecord: no txId available!");
           break;
         }
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getTxRecord");
           TransactionRecord record = fit.getTransactionRecord(txId, payerID, nodeID);
-//          stopWatch.stop();
           log.info("getTxRecord: txId = {} ==> record = {}", txId, record);
         } catch (Throwable e) {
           log.warn("getTxRecord error!", e);
@@ -372,16 +352,7 @@ public class UmbrellaServiceRunnable implements Runnable {
 
         long amount = CryptoServiceTest.getRandomTransferAmount();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoTransfer");
           TransactionReceipt receipt = fit.transfer(payerID, nodeID, fromAccountID, toAccountID, amount);
-//          if(CryptoServiceTest.getReceipt & ResponseCodeEnum.SUCCESS.name().equals(receipt.getStatus().name()) ) {
-//            boolean fromAccFlag = CryptoServiceTest.uplodateLocalLedger(fromAccountID, -amount);
-//            boolean toAccFlag = CryptoServiceTest.uplodateLocalLedger(toAccountID, amount);
-//            if (!fromAccFlag || !toAccFlag) {
-//              incFailCountIfClientProbablyNotToBlameFor(op.toString());
-//            }
-//          }
-//          stopWatch.stop();
         } catch (Throwable e) {
           log.warn("cryptoTransfer error!", e);
           incFailCountIfClientProbablyNotToBlameFor(opn, e);
@@ -390,9 +361,7 @@ public class UmbrellaServiceRunnable implements Runnable {
       case cryptoGetBalance:
         AccountID accountID = FileServiceTest.getRandomPayerAccount();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoGetBalance");
           long balance = fit.getAccountBalance(accountID, payerID, nodeID);
-//          stopWatch.stop();
           log.info("cryptoGetBalance: balance = {}", balance);
         } catch (Throwable e) {
           log.warn("cryptoGetBalance error!", e);
@@ -402,10 +371,8 @@ public class UmbrellaServiceRunnable implements Runnable {
       case cryptoGetRecords:
         accountID = FileServiceTest.getRandomPayerAccount();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoGetRecords");
           List<TransactionRecord> records = fit
               .getTransactionRecordsByAccountId(accountID, payerID, nodeID);
-//          stopWatch.stop();
           log.info("cryptoGetRecords: records = {}", records);
         } catch (Throwable e) {
           log.warn("cryptoGetRecords error!", e);
@@ -415,9 +382,7 @@ public class UmbrellaServiceRunnable implements Runnable {
       case cryptoGetInfo:
         accountID = FileServiceTest.getRandomPayerAccount();
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoGetInfo");
           AccountInfo accInfo = fit.getAccountInfo(accountID, payerID, nodeID);
-//          stopWatch.stop();
           log.info("cryptoGetInfo: info = {}", accInfo);
         } catch (Throwable e) {
           log.warn("cryptoGetInfo error!", e);
@@ -426,10 +391,7 @@ public class UmbrellaServiceRunnable implements Runnable {
         break;
       case cryptoUpdate:
         try {
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoUpdate");
           AccountInfo accInfo = null;
-//		        int coinFlip = CryptoServiceTest.rand.nextInt(2);
-//		        if(coinFlip == 0) {
           // update auto renew period
           accountID = FileServiceTest.getRandomPayerAccount();
           if (accountID == null) {
@@ -437,18 +399,6 @@ public class UmbrellaServiceRunnable implements Runnable {
             break;
           }
           accInfo = fit.updateAccount(accountID, payerID, nodeID);
-//		    		// update account key
-//		        	accountID = fit.getRandomNonPayerAccount();
-//		        	if(accountID == null) {
-//						log.warn("cryptoUpdate account key: no accountID available!");
-//						break;
-//		    		}
-//		    		String accountKeyType = fit.getRandomAccountKeyType();
-//		    		Key newKey = fit.genComplexKey(accountKeyType);
-//					accInfo = fit.updateAccountKey(accountID, payerID, nodeID, newKey);
-//		        }
-
-//          stopWatch.stop();
           if(CryptoServiceTest.getReceipt) {
 			  log.info("cryptoUpdate: updated account info = {}", accInfo);
 		  }
@@ -457,19 +407,6 @@ public class UmbrellaServiceRunnable implements Runnable {
           incFailCountIfClientProbablyNotToBlameFor(opn, e);
         }
         break;
-//		case cryptoDelete: //service not implemented
-//			accountID = ServiceRegressionTestsIT.getRandomPayerAccount();
-//			AccountID transferAccountID = fit.getGenesisAccountID();
-//			try {
-//		        StopWatch stopWatch = new Log4JStopWatch("RoundTrip:cryptoDelete");
-//		        TransactionReceipt receipt = fit.deleteAccount(accountID, transferAccountID, payerID, nodeID);
-//				stopWatch.stop();
-//				log.info("cryptoDelete: receipt = " + receipt);
-//				counter.increment(); // for account update itself
-//			} catch (InvalidKeySpecException | DecoderException e) {
-//				log.warn("cryptoDelete error!", e);
-//			}
-//			break;
       case createContract:
         String fileName = fit.getRandomSmartContractFile();
         try {
@@ -482,13 +419,9 @@ public class UmbrellaServiceRunnable implements Runnable {
           log.info("createContract: upload contract file at: {}; size={}", fileName, bytes.length);
           List<Key> waclKeys = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
           String savePath = "saved" + FileSystems.getDefault().getSeparator() + fileName;
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createContract");
-//          StopWatch stopWatchInner = new Log4JStopWatch("RoundTrip:fileUpload");
           FileID contractFid = fit.uploadFile(savePath, bytes, payerID, nodeID, waclKeys);
-//          stopWatchInner.stop();
 
           ContractID contractID = fit.createContract(contractFid, fileName, payerID, nodeID, true);
-//          stopWatch.stop();
           if(CryptoServiceTest.getReceipt) {
 			  log.info("createContract: contractID={}", contractID);
 		  }
@@ -506,9 +439,7 @@ public class UmbrellaServiceRunnable implements Runnable {
             break;
           }
 
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:updateContract");
           TransactionReceipt receipt = fit.updateContract(payerID, contractId, nodeID);
-//          stopWatch.stop();
           if(CryptoServiceTest.getReceipt) {
 			  log.info("updateContract: receipt = {}", receipt);
 		  }
@@ -531,10 +462,8 @@ public class UmbrellaServiceRunnable implements Runnable {
           contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
           int valueToSet =
               FileServiceTest.rand.nextInt(SmartContractServiceTest.CONTRACT_CALL_VALUE_BOUND) + 1;
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:contractCallMethod");
           //set value to simple storage smart contract
           fit.callContract(payerID, nodeID, contractId, valueToSet);
-//          stopWatch.stop();
           log.info("contractCallMethod: contractId={}; contractFile={}; valueToSet={}",
                   contractId, contractFile, valueToSet);
 
@@ -553,9 +482,7 @@ public class UmbrellaServiceRunnable implements Runnable {
             break;
           }
           contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:contractCallLocalMethod");
           int result = fit.callContractLocal(payerID, nodeID, contractId);
-//          stopWatch.stop();
           log.info("contractCallLocalMethod: contractId={}; contractFile={}; result={}",
                   contractId, contractFile, result);
         } catch (Throwable e) {
@@ -571,9 +498,7 @@ public class UmbrellaServiceRunnable implements Runnable {
             log.warn("contractGetBytecode: no smart contract available!");
             break;
           }
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:contractGetBytecode");
           String retData = fit.getContractByteCode(payerID, contractId, nodeID);
-//          stopWatch.stop();
           if (retData.length() == 0) {
             log.warn("contractGetBytecode: returned data = {}", retData);
           } else {
@@ -591,9 +516,7 @@ public class UmbrellaServiceRunnable implements Runnable {
             log.warn("getContractInfo: no smart contract available!");
             break;
           }
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getContractInfo");
           ContractInfo retData = fit.getContractInfo(payerID, contractId, nodeID);
-//          stopWatch.stop();
           if (retData == null) {
             log.warn("getContractInfo: returned data = {}", retData);
           } else {
@@ -611,9 +534,7 @@ public class UmbrellaServiceRunnable implements Runnable {
             log.warn("getBySolidityID: no smart contract available!");
             break;
           }
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getBySolidityID");
           ContractID retData = fit.getBySolidityID(payerID, solidityId, nodeID);
-//          stopWatch.stop();
           log.info("getBySolidityID: solidity ID = {}, returned contract ID = {}",
               solidityId, retData);
         } catch (Throwable e) {
@@ -628,10 +549,8 @@ public class UmbrellaServiceRunnable implements Runnable {
             log.warn("getTxRecordByContractID: no smart contract available!");
             break;
           }
-//          StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getTxRecordByContractID");
           List<TransactionRecord> retData = fit
               .getTxRecordByContractID(payerID, contractId, nodeID);
-//          stopWatch.stop();
           log.info(
               "getTxRecordByContractID: contractId={}; returned data = ", contractId, retData);
         } catch (Throwable e) {
@@ -651,7 +570,6 @@ public class UmbrellaServiceRunnable implements Runnable {
    */
   private void handleGrpcException(Throwable e) {
     if (e.getMessage() != null && e.getMessage().contains("UNAVAILABLE")) {
-//      log.error("GRPC UNAVAILABLE DUE TO PLATFORM");
       try {
         CommonUtils.nap(GRPC_UNAVAILABLE_WAIT_SEC);
       } catch (Exception e1) {

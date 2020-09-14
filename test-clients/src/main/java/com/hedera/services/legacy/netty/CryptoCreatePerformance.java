@@ -190,19 +190,14 @@ public class CryptoCreatePerformance implements Runnable {
 
         // create 1st account by payer as genesis
         log.info("Create Req " + (i + 1));
-        //log.info("Node Account " +nodeAccount3 );
         KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
         Transaction transaction = TestHelper
             .createAccount(payerAccount, nodeAccount3, firstPair, 12300000000l,
                 FeeClient.getMaxFee(), MAX_THRESHOLD_FEE, MAX_THRESHOLD_FEE);
-        //System.out.println("REQ: " + transaction);
         Transaction signTransaction = TransactionSigner
             .signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
-        // StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createAccount");
-        // System.out.println("REQ SIG: " + signTransaction);
         TransactionResponse response = stub.createAccount(signTransaction);
         Assert.assertNotNull(response);
-        // System.out.println("RES: " + response);
         TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
         if (ResponseCodeEnum.OK == response.getNodeTransactionPrecheckCode()) {
           goodResponse++;
@@ -213,8 +208,6 @@ public class CryptoCreatePerformance implements Runnable {
           log.info("Got a bad response " + response.getNodeTransactionPrecheckCode());
         }
         stub = CryptoServiceGrpc.newBlockingStub(channel);
-
-        //System.out.println("BODY: " + body);
 
         if(i!=0 && (i % 20 ==0)) {
 			getReceiptRecords(20, i);
@@ -265,7 +258,6 @@ public class CryptoCreatePerformance implements Runnable {
           try {
             tReceipt = TestHelper.getTxReceipt(newId, stub);
             newlyCreateAccountId1 = tReceipt.getAccountID();
-            //log.info("AccountID " + newlyCreateAccountId1.getAccountNum());
             goodReceipt++;
           } catch (Exception ex) {
             log.info("Error Happened " ,ex);
@@ -275,7 +267,6 @@ public class CryptoCreatePerformance implements Runnable {
 
           if (this.retrieveTxRecord) {
             try {
-              //log.warn("Getting Record for " + newId + " Account " + newlyCreateAccountId1);
               Response accountRecords = TestHelper
                   .getAccountRecords(stub, newlyCreateAccountId1, payerAccount, genKeyPair,
                       nodeAccount3);
