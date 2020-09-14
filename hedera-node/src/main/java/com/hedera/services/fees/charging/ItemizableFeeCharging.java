@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -166,9 +166,11 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	private List<AccountAmount> receiverFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, true);
 	}
+
 	private List<AccountAmount> senderFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, false);
 	}
+
 	private List<AccountAmount> itemized(AccountID payer, AccountID receiver, long amount, boolean isReceiverFirst) {
 		return List.of(
 				AccountAmount.newBuilder()
@@ -185,7 +187,8 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	public void chargeSubmittingNodeUpTo(EnumSet<TxnFeeType> fees) {
 		pay(
 				fees,
-				() -> {},
+				() -> {
+				},
 				(fee) -> chargeUpTo(submittingNode, funding, fee));
 	}
 
@@ -244,7 +247,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	private void completeNonVanishing(AccountID payer, AccountID payee, long amount, TxnFeeType fee) {
-		if (amount > 0)	 {
+		if (amount > 0) {
 			ledger.doTransfer(payer, payee, amount);
 			updateRecords(payer, fee, amount);
 		}
@@ -263,15 +266,11 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	private void updateRecords(AccountID source, TxnFeeType fee, long amount) {
-		if (fee == THRESHOLD_RECORD) {
-			thresholdFeePayers.add(source);
-		} else {
-			if (source.equals(accessor.getPayer())) {
-				payerFeesCharged.put(fee, amount);
-			}
-			if (source.equals(submittingNode)) {
-				submittingNodeFeesCharged.put(fee, amount);
-			}
+		if (source.equals(accessor.getPayer())) {
+			payerFeesCharged.put(fee, amount);
+		}
+		if (source.equals(submittingNode)) {
+			submittingNodeFeesCharged.put(fee, amount);
 		}
 	}
 }
