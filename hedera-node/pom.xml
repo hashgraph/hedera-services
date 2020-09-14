@@ -233,6 +233,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.hedera.services</groupId>
+      <artifactId>hapi-fees</artifactId>
+    </dependency>
+    <dependency>
         <groupId>com.hedera.services</groupId>
         <artifactId>hapi-proto</artifactId>
     </dependency>

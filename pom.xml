@@ -223,6 +223,11 @@
       </dependency>
       <dependency>
         <groupId>com.hedera.services</groupId>
+        <artifactId>hapi-fees</artifactId>
+        <version>${hedera-services.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.hedera.services</groupId>
         <artifactId>evm-adapter</artifactId>
         <version>${hedera-services.version}</version>
       </dependency>

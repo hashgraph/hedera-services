@@ -22,19 +22,13 @@ package com.hedera.services.usage;
 
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.fee.FeeBuilder;
-
-import java.util.List;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
 
@@ -42,8 +36,19 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 	ESTIMATOR_UTILS;
 
 	@Override
-	public long baseNetworkRbh() {
-		return nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR);
+	public long baseNetworkRbs() {
+		return BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC;
+	}
+
+	@Override
+	public UsageEstimate baseEstimate(TransactionBody txn, SigUsage sigUsage) {
+		var base = FeeComponents.newBuilder()
+				.setBpr(INT_SIZE)
+				.setVpt(sigUsage.numSigs())
+				.setBpt(baseBodyBytes(txn) + sigUsage.sigsSize());
+		var estimate = new UsageEstimate(base);
+		estimate.addRbs(baseRecordBytes(txn) * RECIEPT_STORAGE_TIME_SEC);
+		return estimate;
 	}
 
 	@Override
@@ -73,43 +78,14 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 				.build();
 	}
 
-	@Override
-	public FeeComponents.Builder newBaseEstimate(TransactionBody txn, SigUsage sigUsage) {
-		return FeeComponents.newBuilder()
-				.setBpr(INT_SIZE)
-				.setVpt(sigUsage.numSigs())
-				.setBpt(baseBodyBytes(txn) + sigUsage.sigsSize())
-				.setRbh(nonDegenerateDiv(baseRecordBytes(txn) * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR));
+	int baseRecordBytes(TransactionBody txn) {
+		return BASIC_TX_RECORD_SIZE
+				+ txn.getMemoBytes().size()
+				+ transferListBytes(txn.getCryptoTransfer().getTransfers());
 	}
 
-	public long nonDegenerateDiv(long dividend, int divisor) {
-		return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
-	}
-
-	public int baseRecordBytes(TransactionBody txn) {
-		return BASIC_TX_RECORD_SIZE + memoBytesUtf8(txn) + transferListBytes(txn.getCryptoTransfer().getTransfers());
-	}
-
-	int baseBodyBytes(TransactionBody txn) {
-		return BASIC_TX_BODY_SIZE + memoBytesUtf8(txn);
-	}
-
-	public static int transferListBytes(TransferList transfers) {
+	private int transferListBytes(TransferList transfers) {
 		return BASIC_ACCT_AMT_SIZE * transfers.getAccountAmountsCount();
 	}
 
-	public static int memoBytesUtf8(TransactionBody txn) {
-		return txn.getMemoBytes().size();
-	}
-
-	public static int keyBytes(List<Key> all) {
-		return all.stream()
-				.mapToInt(FeeBuilder::getAccountKeyStorageSize)
-				.sum();
-	}
-
-	public static long relativeLifetime(TransactionBody txn, long expiry) {
-		long effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
-		return expiry - effectiveNow;
-	}
 }

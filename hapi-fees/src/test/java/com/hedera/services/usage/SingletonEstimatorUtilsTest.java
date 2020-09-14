@@ -1,9 +1,7 @@
 package com.hedera.services.usage;
 
-import com.hedera.services.test.KeyUtils;
 import com.hedera.services.test.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -14,7 +12,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.List;
 
 import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
@@ -22,13 +19,7 @@ import static com.hedera.services.test.UsageUtils.A_USAGE_VECTOR;
 import static com.hedera.services.test.UsageUtils.NETWORK_RBH;
 import static com.hedera.services.test.UsageUtils.NUM_PAYER_KEYS;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.SingletonEstimatorUtils.keyBytes;
-import static com.hedera.services.usage.SingletonEstimatorUtils.memoBytesUtf8;
-import static com.hedera.services.usage.SingletonEstimatorUtils.relativeLifetime;
-import static com.hedera.services.usage.SingletonEstimatorUtils.transferListBytes;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -42,34 +33,9 @@ class SingletonEstimatorUtilsTest {
 			asAccount("0.0.4"), 1);
 
 	@Test
-	public void hasExectedBaseUsage() {
-		// setup:
-		TransactionBody txn = TransactionBody.newBuilder()
-				.setMemo(memo)
-				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transfers))
-				.build();
-		// and:
-		var expected = FeeComponents.newBuilder()
-				.setBpr(INT_SIZE)
-				.setVpt(sigUsage.numSigs())
-				.setBpt(ESTIMATOR_UTILS.baseBodyBytes(txn) + sigUsage.sigsSize())
-				.setRbh(ESTIMATOR_UTILS.nonDegenerateDiv(
-						ESTIMATOR_UTILS.baseRecordBytes(txn) * RECIEPT_STORAGE_TIME_SEC,
-						HRS_DIVISOR));
-
-		// given:
-		var actual = ESTIMATOR_UTILS.newBaseEstimate(txn, sigUsage);
-
-		// then:
-		assertEquals(expected.build(), actual.build());
-	}
-
-	@Test
-	public void hasExpectedBaseNetworkRbh() {
+	public void hasExpectedBaseNetworkRbs() {
 		// expect:
-		assertEquals(
-				ESTIMATOR_UTILS.baseNetworkRbh(),
-				ESTIMATOR_UTILS.nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, HRS_DIVISOR));
+		assertEquals( BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
 	}
 
 	@Test
@@ -78,21 +44,6 @@ class SingletonEstimatorUtilsTest {
 		assertEquals(
 				A_USAGES_MATRIX,
 				ESTIMATOR_UTILS.withDefaultPartitioning(A_USAGE_VECTOR, NETWORK_RBH, NUM_PAYER_KEYS));
-	}
-
-	@Test
-	void usesLegacyKeySbs() {
-		// given:
-		var keys = List.of(KeyUtils.A_THRESHOLD_KEY, KeyUtils.A_KEY_LIST);
-
-		// expect:
-		assertEquals(keys.stream().mapToInt(FeeBuilder::getAccountKeyStorageSize).sum(), keyBytes(keys));
-	}
-
-	@Test
-	public void graspsTransferListSize() {
-		// expect:
-		assertEquals(3 * FeeBuilder.BASIC_ACCT_AMT_SIZE, transferListBytes(transfers));
 	}
 
 	@Test
@@ -105,7 +56,7 @@ class SingletonEstimatorUtilsTest {
 		var txn = TransactionBody.newBuilder().setTransactionID(txnId).build();
 
 		// when:
-		long lifetime = relativeLifetime(txn, then);
+		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, then);
 
 		// then:
 		assertEquals(then - now, lifetime);
@@ -135,7 +86,8 @@ class SingletonEstimatorUtilsTest {
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transfers))
 				.build();
 		// and:
-		int expected = FeeBuilder.BASIC_TX_RECORD_SIZE + memo.length() + FeeBuilder.BASIC_ACCT_AMT_SIZE * 3;
+		int expected = FeeBuilder.BASIC_TX_RECORD_SIZE + memo.length()
+				+ FeeBuilder.BASIC_ACCT_AMT_SIZE * transfers.getAccountAmountsCount();
 
 		// when:
 		int actual = ESTIMATOR_UTILS.baseRecordBytes(txn);
@@ -150,21 +102,5 @@ class SingletonEstimatorUtilsTest {
 		assertEquals(0, ESTIMATOR_UTILS.nonDegenerateDiv(0, 60));
 		assertEquals(1, ESTIMATOR_UTILS.nonDegenerateDiv(1, 60));
 		assertEquals(5, ESTIMATOR_UTILS.nonDegenerateDiv(301, 60));
-	}
-
-	@Test
-	public void emptyMemoIsZeroBytes() {
-		// expect:
-		assertEquals(0, memoBytesUtf8(TransactionBody.getDefaultInstance()));
-	}
-
-	@Test
-	public void memoIsExpectedSize() {
-		var memo = "abcdefgh";
-
-		// expect:
-		assertEquals(
-				8,
-				memoBytesUtf8(TransactionBody.newBuilder().setMemo(memo).build()));
 	}
 }

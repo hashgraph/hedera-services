@@ -1,110 +1,75 @@
 package com.hedera.services.usage;
 
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-public abstract class TxnUsageEstimator<T extends TxnUsageEstimator<T>> {
-	static int SIG_MAP = 1;
-	static int TXN_BODY = 1 << 1;
-	static int NUM_PAYER_KEYS = 1 << 2;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 
-	static final int REQUIRED_FIELDS_COUNT = 3;
-	static final int ALL_SET = (1 << REQUIRED_FIELDS_COUNT) - 1;
-
-	private int known = 0;
-	private int numPayerKeys = 0;
-	private long bpt, vpt, rbh, sbh, gas, tv, networkRbh;
-	private SignatureMap sigMap;
-	private TransactionBody txn;
-
+public class TxnUsageEstimator {
+	private final SigUsage sigUsage;
+	private final TransactionBody txn;
 	private final EstimatorUtils utils;
 
-	protected TxnUsageEstimator(EstimatorUtils utils) {
-		this.utils = utils;
-	}
+	private long bpt, vpt, rbs, sbs, gas, tv, networkRbs;
 
-	abstract protected T self();
-
-	public T withTxn(TransactionBody txn) {
-		known |= TXN_BODY;
+	public TxnUsageEstimator(SigUsage sigUsage, TransactionBody txn, EstimatorUtils utils) {
 		this.txn = txn;
-		return self();
-	}
-
-	public T withSigMap(SignatureMap sigMap) {
-		known |= SIG_MAP;
-		this.sigMap = sigMap;
-		return self();
-	}
-
-	public T withNumPayerKeys(int numPayerKeys) {
-		this.numPayerKeys = numPayerKeys;
-		known |= NUM_PAYER_KEYS;
-		return self();
+		this.utils = utils;
+		this.sigUsage = sigUsage;
 	}
 
 	public FeeData get() {
-		throwIfNotAllSet();
-
-		var sigUsage = new SigUsage(sigMap.getSigPairCount(), sigMap.getSerializedSize(), numPayerKeys);
-
-		var usage = utils.newBaseEstimate(txn, sigUsage);
+		var usage = utils.baseEstimate(txn, sigUsage);
 		customize(usage);
-
-		return utils.withDefaultPartitioning(usage.build(), networkRbh, numPayerKeys);
+		return utils.withDefaultPartitioning(
+				usage.build(),
+				utils.nonDegenerateDiv(networkRbs, HRS_DIVISOR),
+				sigUsage.numPayerKeys());
 	}
 
-	private void customize(FeeComponents.Builder usage) {
-		usage.setBpt(usage.getBpt() + bpt)
-				.setVpt(usage.getVpt() + vpt)
-				.setRbh(usage.getRbh() + rbh)
-				.setSbh(usage.getSbh() + sbh)
-				.setGas(usage.getGas() + gas)
-				.setTv(usage.getTv() + tv);
-		this.networkRbh += utils.baseNetworkRbh();
+	private void customize(UsageEstimate usage) {
+		var baseUsage = usage.base();
+		baseUsage.setBpt(baseUsage.getBpt() + bpt)
+				.setVpt(baseUsage.getVpt() + vpt)
+				.setGas(baseUsage.getGas() + gas)
+				.setTv(baseUsage.getTv() + tv);
+		usage.addRbs(rbs);
+		usage.addSbs(sbs);
+		this.networkRbs += utils.baseNetworkRbs();
 	}
 
-	protected T plusBpt(long bpt) {
+	public TxnUsageEstimator addBpt(long bpt) {
 		this.bpt += bpt;
-		return self();
+		return this;
 	}
 
-	protected T plusVpt(long vpt) {
+	public TxnUsageEstimator addVpt(long vpt) {
 		this.vpt += vpt;
-		return self();
+		return this;
 	}
 
-	protected T plusRbh(long rbh) {
-		this.rbh += rbh;
-		return self();
+	public TxnUsageEstimator addRbs(long rbs) {
+		this.rbs += rbs;
+		return this;
 	}
 
-	protected T plusSbh(long sbh) {
-		this.sbh += sbh;
-		return self();
+	public TxnUsageEstimator addSbs(long sbs) {
+		this.sbs += sbs;
+		return this;
 	}
 
-	protected T plusGas(long gas) {
+	public TxnUsageEstimator addGas(long gas) {
 		this.gas += gas;
-		return self();
+		return this;
 	}
 
-	protected T plusTv(long tv) {
+	public TxnUsageEstimator addTv(long tv) {
 		this.tv += tv;
-		return self();
+		return this;
 	}
 
-	protected T plusNetworkRbh(long networkRbh) {
-		this.networkRbh += networkRbh;
-		return self();
-	}
-
-	private void throwIfNotAllSet() {
-		if (known != ALL_SET) {
-			throw new IllegalStateException(
-					String.format("Not all required fields are available - mask is %d not %d", known, ALL_SET));
-		}
+	public TxnUsageEstimator addNetworkRbs(long networkRbs) {
+		this.networkRbs += networkRbs;
+		return this;
 	}
 }
