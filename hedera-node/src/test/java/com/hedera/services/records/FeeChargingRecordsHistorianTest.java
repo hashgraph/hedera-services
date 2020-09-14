@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
@@ -69,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -137,13 +139,10 @@ public class FeeChargingRecordsHistorianTest {
 			.setMemo("This is different!")
 			.build();
 	final private ExpirableTxnRecord jFinalRecord = ExpirableTxnRecord.fromGprc(finalRecord);
-
 	{
 		jFinalRecord.setExpiry(expiry);
 	}
-
 	final private ExpirableTxnRecord payerRecord = ExpirableTxnRecord.fromGprc(finalRecord);
-
 	{
 		payerRecord.setExpiry(payerExpiry);
 	}
@@ -162,6 +161,7 @@ public class FeeChargingRecordsHistorianTest {
 	private ExpiringCreations creator;
 	private TransactionContext txnCtx;
 	private ItemizableFeeCharging itemizableFeeCharging;
+	private GlobalDynamicProperties dynamicProperties;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private BlockingQueue<EarliestRecordExpiry> expirations;
 
@@ -302,6 +302,36 @@ public class FeeChargingRecordsHistorianTest {
 		// then:
 		verify(txnCtx).isPayerSigKnownActive();
 		verify(ledger).doTransfer(sn, funding, cacheRecordFee);
+	}
+
+	@Test
+	public void doesntAddRecordToQualifyingAccountsIfShouldnt() {
+		setupForAdd();
+		given(dynamicProperties.shouldCreateThresholdRecords()).willReturn(false);
+
+		// when:
+		subject.addNewRecords();
+
+		// then:
+		verify(exemptions).hasExemptPayer(txnCtx.accessor());
+		verify(fees).computeCachingFee(record);
+		verify(recordCache).setPostConsensus(
+				txnIdA,
+				finalRecord.getReceipt().getStatus(),
+				payerRecord);
+		verify(ledger).doTransfer(a, funding, aBalance);
+		// and:
+		verify(ledger, times(1)).netTransfersInTxn();
+		verify(txnCtx).recordSoFar();
+		verify(txnCtx).updatedRecordGiven(any());
+		verify(fees, never()).computeStorageFee(record);
+		// and:
+		verify(ledger, times(1)).getBalance(a);
+		// and:
+		verify(properties, never()).getIntProperty("ledger.records.ttl");
+		verify(txnCtx, times(1)).consensusTime();
+		// and:
+		verify(creator, never()).createExpiringHistoricalRecord(any(), any(), anyLong(), anyLong());
 	}
 
 	@Test
@@ -477,6 +507,9 @@ public class FeeChargingRecordsHistorianTest {
 		given(properties.getAccountProperty("ledger.funding.account")).willReturn(funding);
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
 
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.shouldCreateThresholdRecords()).willReturn(true);
+
 		creator = mock(ExpiringCreations.class);
 		given(creator.createExpiringPayerRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
@@ -515,7 +548,8 @@ public class FeeChargingRecordsHistorianTest {
 				txnCtx,
 				itemizableFeeCharging,
 				() -> accounts,
-				expiries);
+				expiries,
+				dynamicProperties);
 		subject.setLedger(ledger);
 		subject.setCreator(creator);
 	}
@@ -536,7 +570,8 @@ public class FeeChargingRecordsHistorianTest {
 				txnCtx,
 				itemizableFeeCharging,
 				() -> accounts,
-				expiries);
+				expiries,
+				dynamicProperties);
 		subject.setLedger(ledger);
 	}
 

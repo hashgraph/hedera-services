@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.hedera.services</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.7.0</version>
+    <version>0.8.0</version>
   </parent>
 
   <properties>
@@ -339,11 +339,6 @@
       <id>ossrh-swirlds-staging</id>
       <name>Staging repo</name>
       <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1167</url>
-    </repository>
-    <repository>
-      <id>ossrh-ethereumj-staging</id>
-      <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1169</url>
     </repository>
     <repository>
       <snapshots>

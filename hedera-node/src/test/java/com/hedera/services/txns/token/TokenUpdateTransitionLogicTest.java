@@ -211,6 +211,19 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void abortsOnNotSetAdminKey() {
+		givenValidTxnCtx(true);
+		// and:
+		given(token.adminKey()).willReturn(Optional.empty());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(UNAUTHORIZED);
+	}
+
+	@Test
 	public void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
