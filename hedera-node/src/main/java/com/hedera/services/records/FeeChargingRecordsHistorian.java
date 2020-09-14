@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -28,13 +29,13 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -44,8 +45,8 @@ import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.THRESHOLD_RECORD_FEE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
@@ -61,8 +62,10 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	private final RecordCache recordCache;
 	private final FeeCalculator fees;
 	private final ExpiryManager expiries;
+	private final Set<AccountID> historyRecordQualifiers = new HashSet<>();
 	private final TransactionContext txnCtx;
 	private final ItemizableFeeCharging feeCharging;
+	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public FeeChargingRecordsHistorian(
@@ -71,12 +74,14 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 			TransactionContext txnCtx,
 			ItemizableFeeCharging feeCharging,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			ExpiryManager expiries
+			ExpiryManager expiries,
+			GlobalDynamicProperties properties
 	) {
 		this.fees = fees;
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
 		this.accounts = accounts;
+		this.properties = properties;
 		this.recordCache = recordCache;
 		this.feeCharging = feeCharging;
 	}
@@ -99,13 +104,16 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void addNewRecords() {
+		historyRecordQualifiers.clear();
 		var record = txnCtx.recordSoFar();
 
 		long cachingFeePaid = payForCaching(record);
-		long thresholdRecordFee = fees.computeStorageFee(record);
-		Set<AccountID> qualifiers = getThreshXQualifiers(thresholdRecordFee);
-		feeCharging.setFor(THRESHOLD_RECORD, thresholdRecordFee);
-		payForThresholdRecords(qualifiers);
+		if (properties.shouldCreateThresholdRecords()) {
+			long thresholdRecordFee = fees.computeStorageFee(record);
+			getThreshXQualifiers(thresholdRecordFee);
+			feeCharging.setFor(THRESHOLD_RECORD, thresholdRecordFee);
+			payForThresholdRecords();
+		}
 		if (feeCharging.numThresholdFeesCharged() > 0 || cachingFeePaid > 0L) {
 			record = txnCtx.updatedRecordGiven(ledger.netTransfersInTxn());
 		}
@@ -114,9 +122,9 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
-		addNonThreshXQualifiers(record, qualifiers);
-		if (!qualifiers.isEmpty()) {
-			createHistorical(qualifiers, record, now, submittingMember);
+		addNonThreshXQualifiers(record);
+		if (!historyRecordQualifiers.isEmpty()) {
+			createHistorical(historyRecordQualifiers, record, now, submittingMember);
 		}
 
 		var payerRecord = creator.createExpiringPayerRecord(
@@ -162,16 +170,16 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		}
 	}
 
-	private void payForThresholdRecords(Set<AccountID> ids) {
-		ids.forEach(id -> feeCharging.chargeParticipant(id, THRESHOLD_RECORD_FEE));
+	private void payForThresholdRecords() {
+		historyRecordQualifiers.forEach(id -> feeCharging.chargeParticipant(id, THRESHOLD_RECORD_FEE));
 	}
 
-	private Set<AccountID> getThreshXQualifiers(long recordFee) {
-		return ledger.netTransfersInTxn().getAccountAmountsList()
+	private void getThreshXQualifiers(long recordFee) {
+		ledger.netTransfersInTxn().getAccountAmountsList()
 				.stream()
 				.filter(aa -> qualifiesForRecord(aa, recordFee))
 				.map(AccountAmount::getAccountID)
-				.collect(toSet());
+				.forEach(historyRecordQualifiers::add);
 	}
 
 	private void createHistorical(
@@ -200,16 +208,16 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		}
 	}
 
-	private void addNonThreshXQualifiers(TransactionRecord record, Set<AccountID> qualifiers) {
+	private void addNonThreshXQualifiers(TransactionRecord record) {
 		TransactionBody txn = txnCtx.accessor().getTxn();
 		if (txn.hasContractCreateInstance()) {
 			if (txnCtx.status() == SUCCESS) {
-				qualifiers.add(EntityIdUtils.asAccount(record.getReceipt().getContractID()));
+				historyRecordQualifiers.add(asAccount(record.getReceipt().getContractID()));
 			}
 		} else if (txn.hasContractCall()) {
-			AccountID id = EntityIdUtils.asAccount(txn.getContractCall().getContractID());
+			AccountID id = asAccount(txn.getContractCall().getContractID());
 			if (isCallableContract(id)) {
-				qualifiers.add(id);
+				historyRecordQualifiers.add(id);
 			}
 		}
 	}

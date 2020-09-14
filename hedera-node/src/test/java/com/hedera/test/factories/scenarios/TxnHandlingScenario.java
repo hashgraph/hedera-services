@@ -171,20 +171,28 @@ public interface TxnHandlingScenario {
 		var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
 
+		var immutableToken = new MerkleToken(
+				100, 1,
+				"ImmutableToken", false, false,
+				new EntityId(1, 2, 3));
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_IMMUTABLE_ID)))
+				.willReturn(KNOWN_TOKEN_IMMUTABLE);
+		given(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).willReturn(immutableToken);
+
 		var vanillaToken = new MerkleToken(
 				100, 1,
-				adminKey,
 				"VanillaToken", false, false,
 				new EntityId(1, 2, 3));
+		vanillaToken.setAdminKey(adminKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS)))
 				.willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
 		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
 
 		var frozenToken = new MerkleToken(
 				100, 1,
-				adminKey,
 				"FrozenToken", true, false,
 				new EntityId(1, 2, 4));
+		frozenToken.setAdminKey(adminKey);
 		frozenToken.setFreezeKey(optionalFreezeKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
 				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
@@ -192,9 +200,9 @@ public interface TxnHandlingScenario {
 
 		var kycToken = new MerkleToken(
 				100, 1,
-				adminKey,
 				"KycToken", false, true,
 				new EntityId(1, 2, 4));
+		kycToken.setAdminKey(adminKey);
 		kycToken.setKycKey(optionalKycKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_KYC)))
 				.willReturn(KNOWN_TOKEN_WITH_KYC);
@@ -202,9 +210,9 @@ public interface TxnHandlingScenario {
 
 		var supplyToken = new MerkleToken(
 				100, 1,
-				adminKey,
 				"SupplyToken", false, false,
 				new EntityId(1, 2, 4));
+		supplyToken.setAdminKey(adminKey);
 		supplyToken.setSupplyKey(optionalSupplyKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_SUPPLY)))
 				.willReturn(KNOWN_TOKEN_WITH_SUPPLY);
@@ -212,9 +220,9 @@ public interface TxnHandlingScenario {
 
 		var wipeToken = new MerkleToken(
 				100, 1,
-				adminKey,
 				"WipeToken", false, false,
 				new EntityId(1, 2, 4));
+		wipeToken.setAdminKey(adminKey);
 		wipeToken.setWipeKey(optionalWipeKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_WIPE)))
 				.willReturn(KNOWN_TOKEN_WITH_WIPE);
@@ -317,6 +325,8 @@ public interface TxnHandlingScenario {
 	String MISSING_TOPIC_ID = "0.0.12121";
 	TopicID MISSING_TOPIC = asTopic(MISSING_TOPIC_ID);
 
+	String KNOWN_TOKEN_IMMUTABLE_ID = "0.0.534";
+	TokenID KNOWN_TOKEN_IMMUTABLE = asToken(KNOWN_TOKEN_IMMUTABLE_ID);
 	String KNOWN_TOKEN_NO_SPECIAL_KEYS_ID = "0.0.535";
 	TokenID KNOWN_TOKEN_NO_SPECIAL_KEYS = asToken(KNOWN_TOKEN_NO_SPECIAL_KEYS_ID);
 	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";

@@ -31,14 +31,14 @@ import java.util.Optional;
  * @author Michael Tinker
  */
 public class TokenSigningMetadata {
-	private final JKey adminKey;
+	private final Optional<JKey> adminKey;
 	private final Optional<JKey> kycKey;
 	private final Optional<JKey> wipeKey;
 	private final Optional<JKey> freezeKey;
 	private final Optional<JKey> supplyKey;
 
 	private TokenSigningMetadata(
-			JKey adminKey,
+			Optional<JKey> adminKey,
 			Optional<JKey> kycKey,
 			Optional<JKey> wipeKey,
 			Optional<JKey> freezeKey,
@@ -60,7 +60,7 @@ public class TokenSigningMetadata {
 				token.supplyKey());
 	}
 
-	public JKey adminKey() {
+	public Optional<JKey> adminKey() {
 		return adminKey;
 	}
 

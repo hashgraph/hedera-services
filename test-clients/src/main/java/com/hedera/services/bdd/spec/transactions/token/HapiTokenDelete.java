@@ -107,7 +107,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		return List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getKey(token));
+				spec -> spec.registry().getAdminKey(token));
 	}
 
 	@Override

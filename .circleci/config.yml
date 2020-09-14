@@ -2930,7 +2930,7 @@ jobs:
       - run-eet-suites:
           dsl-args: "-A DeprecatedContractKeySpecs"
       - run-eet-suites:
-          dsl-args: "-A ThresholdRecordCreationSpecs"
+          dsl-args: "ThresholdRecordCreationSpecs"
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
   run-umbrella-freeze-restart-test:
@@ -3131,7 +3131,7 @@ jobs:
             '/repo/.circleci/scripts/firewall_create_rules.sh'
       - run-eet-suites:
           dsl-args: "CryptoTransferLoadTest status.preResolve.pause.ms=8000"
-          ci-properties-map: mins=50
+          ci-properties-map: mins=50,tps=10,threads=3
       - run:
           name: call script to remove firewall rules
           command: |

@@ -22,6 +22,8 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenCreationResult;
@@ -43,6 +45,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.math.BigInteger;
+import java.util.Optional;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,6 +58,7 @@ class TokenUpdateTransitionLogicTest {
 	private TokenRef targetRef = IdUtils.asIdRef("1.2.666");
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
+	private JKey adminKey = new JEd25519Key("w/e".getBytes());
 	private TransactionBody tokenUpdateTxn;
 	private MerkleToken token;
 
@@ -72,6 +76,7 @@ class TokenUpdateTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 
 		token = mock(MerkleToken.class);
+		given(token.adminKey()).willReturn(Optional.of(adminKey));
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
 		given(store.resolve(targetRef)).willReturn(target);
 		given(store.get(target)).willReturn(token);
@@ -190,6 +195,19 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).unfreeze(newTreasury, target);
 		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	public void abortsOnNotSetAdminKey() {
+		givenValidTxnCtx(true);
+		// and:
+		given(token.adminKey()).willReturn(Optional.empty());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(UNAUTHORIZED);
 	}
 
 	@Test

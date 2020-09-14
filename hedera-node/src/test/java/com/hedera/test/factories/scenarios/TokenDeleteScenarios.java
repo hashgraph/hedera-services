@@ -47,4 +47,14 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenDelete()
+							.deleting(asIdRef(KNOWN_TOKEN_IMMUTABLE))
+							.get()
+			));
+		}
+	}
 }

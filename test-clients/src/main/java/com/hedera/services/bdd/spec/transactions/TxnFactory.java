@@ -97,7 +97,7 @@ public class TxnFactory {
 
 	public TransactionID defaultTransactionID() {
 		return TransactionID.newBuilder()
-				.setTransactionValidStart(defaultTimestampPlusSecs(setup.txnStartOffsetSecs()))
+				.setTransactionValidStart(getUniqueTimestampPlusSecs(setup.txnStartOffsetSecs()))
 				.setAccountID(setup.defaultPayer()).build();
 	}
 
