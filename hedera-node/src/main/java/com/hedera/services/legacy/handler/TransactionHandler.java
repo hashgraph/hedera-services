@@ -36,6 +36,7 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
+import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;
@@ -293,25 +294,6 @@ public class TransactionHandler {
   }
 
   /**
-   * @param trBody body of the transaction
-   * @return ResponseCodeEnum.MEMO_TOO_LONG if this is a contract creation or update and the memo is
-   * longer than 100 characters, else OK.
-   */
-  private ResponseCodeEnum validateContractMemoSize(TransactionBody trBody) {
-    String memo = null;
-    ResponseCodeEnum returnCode = OK;
-    if (trBody.hasContractCreateInstance()) {
-      memo = trBody.getContractCreateInstance().getMemo();
-    } else if (trBody.hasContractUpdateInstance()) {
-      memo = trBody.getContractUpdateInstance().getMemo();
-    }
-    if (memo != null && memo.length() > 100) {
-      returnCode = ResponseCodeEnum.MEMO_TOO_LONG;
-    }
-    return returnCode;
-  }
-
-  /**
    * validates node account id against current node account
    *
    * @param trBody body of the transaction
@@ -536,7 +518,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      returnCode = validateContractMemoSize(txn);
+      returnCode = AwareProcessLogic.validateContractMemoSize(txn);
     }
 
     return new TxnValidityAndFeeReq(returnCode, feeRequired);

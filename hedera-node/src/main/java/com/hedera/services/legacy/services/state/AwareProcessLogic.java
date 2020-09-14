@@ -77,6 +77,9 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class AwareProcessLogic implements ProcessLogic {
+
+	private static final int MEMO_SIZE_LIMIT = 100;
+
 	static Logger log = LogManager.getLogger(AwareProcessLogic.class);
 
 	private static final EnumSet<ResponseCodeEnum> SIG_RATIONALIZATION_ERRORS = EnumSet.of(
@@ -104,6 +107,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	@Override
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
+
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
 			if (!txnSanityChecks(accessor, consensusTime, submittingMember)) {
 				return;
@@ -127,6 +131,14 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.error(msg);
 			return false;
 		}
+
+		if (validateContractMemoSize(accessor.getTxn()) == ResponseCodeEnum.MEMO_TOO_LONG) {
+			final var msg = String.format("Transaction contains a memo with size greater than %d",
+					MEMO_SIZE_LIMIT);
+			log.warn(msg);
+			return false;
+		}
+
 		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
 			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
 					submittingMember,
@@ -134,7 +146,28 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.warn(msg);
 			return false;
 		}
+
 		return true;
+	}
+
+	/**
+	 * @param trBody body of the transaction
+	 * @return ResponseCodeEnum.MEMO_TOO_LONG if this is a contract creation or update and the memo is
+	 * longer than 100 characters, else OK.
+	 */
+	public static ResponseCodeEnum validateContractMemoSize(final TransactionBody trBody) {
+		String memo = null;
+		if (trBody.hasContractCreateInstance()) {
+			memo = trBody.getContractCreateInstance().getMemo();
+		} else if (trBody.hasContractUpdateInstance()) {
+			memo = trBody.getContractUpdateInstance().getMemo();
+		}
+
+		if (memo != null && memo.length() > MEMO_SIZE_LIMIT) {
+			return ResponseCodeEnum.MEMO_TOO_LONG;
+		}
+
+		return OK;
 	}
 
 	private void processTxnInCtx() {
