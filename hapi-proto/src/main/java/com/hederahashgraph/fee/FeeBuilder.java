@@ -299,9 +299,7 @@ public class FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-    /*return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
-
   }
 
 

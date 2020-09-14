@@ -148,9 +148,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
-    // tv - Transfer Value
-    // tv = getTV(txBody);
-
     bpr = INT_SIZE;
 
     rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
@@ -347,8 +344,8 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return cryptoTransfertBodySize;
   }
 
-  ////////////////////////////////////////////////////////////////////////// Query Fee
-  ////////////////////////////////////////////////////////////////////////// //////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////// Query Fee //////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * This method returns the Fee Matrices for balance query
@@ -607,8 +604,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int acountAmountSize = 0;
     if (transRecord.hasTransferList()) {
       int accountAmountCount = transRecord.getTransferList().getAccountAmountsCount();
-      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8
-      // bytes Amount)
+      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8 bytes Amount)
     }
 
     int txRecordSize = BASIC_TX_RECORD_SIZE + memoBytesSize + acountAmountSize;

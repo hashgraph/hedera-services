@@ -229,9 +229,7 @@ public class AccountBalanceExport {
 
   public void signAccountBalanceFile(Platform platform, String balanceFileName) {
     byte[] fileHash = getFileHash(balanceFileName);
-    //log.info("fileHash of {}: {}", balanceFileName, fileHash);
     byte[] signature = platform.sign(fileHash);
-    //log.info("signature of {}: {}", balanceFileName, signature);
 
     String sigFileName = RecordStream.generateSigFile(balanceFileName, signature, fileHash);
     if (sigFileName != null) {
