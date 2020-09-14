@@ -208,7 +208,6 @@ public class ContractCall extends ClientBaseThread {
                   Timestamp consensusTimeStamp = record.getConsensusTimestamp();
                   Instant payerExpiryTime = RequestBuilder.convertProtoTimeStamp(consensusTimeStamp).plusSeconds(
                           RECORD_EXPIRE_SECOND);
-                  //log.info("Old record {}", item);
 
                   Instant nowTime = Instant.now();
                   java.time.Duration duration = java.time.Duration.between(nowTime, payerExpiryTime);

@@ -80,12 +80,6 @@ public class ContractCreate extends ClientBaseThread {
     try {
       initAccountsAndChannels();
 
-//      List<PrivateKey> genesisAccountPrivateKeys = new ArrayList<>();
-//      genesisAccountPrivateKeys.add(genesisPrivateKey);
-//      contractFileId = LargeFileUploadIT
-//              .uploadFile(genesisAccount, SIMPLE_STORAGE_BIN, genesisAccountPrivateKeys, host,
-//                      nodeAccount);
-
       //start an extra thread to check account transaction result
       Thread checkThread = new Thread("New Thread") {
         public void run() {
@@ -98,7 +92,6 @@ public class ContractCreate extends ClientBaseThread {
 
                 if (isBackupTxIDRecord) {
                   TransactionRecord record = getTransactionRecord(genesisAccount, item, false);
-                  //log.info("Record = {}", record);
                   confirmedTxRecord.add(record);
                 }
 

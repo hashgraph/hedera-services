@@ -314,9 +314,6 @@ public class NegativeTransferTest {
     Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
     Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
 
-//        SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct).addSigs(fromAccountObj)
-//                .build();
-
     return Transaction.newBuilder().setBodyBytes(transferBodyBytes).build();
 
   }

@@ -147,18 +147,6 @@ public class BIP39KeysUtil {
       System.out.println(keyPair.getPublicKey().length);
       System.out.println(keyPair.getPrivateKey().length);
 
-//      long queryStuff = 1000l;
-//      Response accountrecResponse =executeGetAccountRecords(util.stub,
-//          AccountID.newBuilder().setAccountNum(qAccountId).build(),
-//          AccountID.newBuilder().setAccountNum(payerAccountId).build(),
-//          keyPair, AccountID.newBuilder().setAccountNum(nodeAccount).build(),queryStuff,ResponseType.ANSWER_ONLY);
-//
-//      System.out.println("******* Account Rec Resp Start***************");
-//      System.out.println(accountrecResponse);
-//      System.out.println("******* Account Rec Resp End***************");
-//      System.exit(0);
-
-
       Response accountInfoResponse = getCryptoGetAccountInfo(util.stub,
               AccountID.newBuilder().setAccountNum(qAccountId).build(),
               AccountID.newBuilder().setAccountNum(payerAccountId).build(),
@@ -295,7 +283,6 @@ public class BIP39KeysUtil {
     Query cryptoGetInfoQuery = RequestBuilder
         .getCryptoGetInfoQuery(accountID, transferTransaction, responseType);
     System.out.println("AccQ -" + cryptoGetInfoQuery);
-   // System.exit(0);
     return stub.getAccountInfo(cryptoGetInfoQuery);
   }
 

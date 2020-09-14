@@ -187,7 +187,6 @@ public class ContractCallLocalBalanceCheck extends ClientBaseThread {
           if (response != null){
             bytes = response.getFunctionResult().getContractCallResult().toByteArray();
             long readValue = new BigInteger(bytes).longValue();
-            //log.info("readValue " + readValue);
             Assert.assertEquals(readValue, currValueToSet);
             long gasUsed = response.getFunctionResult().getGasUsed();
             Assert.assertTrue(gasUsed > 0L);

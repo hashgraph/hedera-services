@@ -229,7 +229,6 @@ public class RecordStreamCmp {
 		var history = new RecordHistory();
 		var suspectRecords = allRecords
 				.stream()
-				// .filter(pair -> pair.consensusTime().isBefore(DIVERGENCE))
 				.peek(history::observe)
 				.filter(ignore -> history.lastChange().changeType != ChangeType.NONE)
 				.collect(toList());
@@ -237,53 +236,6 @@ public class RecordStreamCmp {
 		writeReadableWithHistoryInfo(
 				suspectRecords,
 				String.format(BASE_LOC_TPL, node) + "/allWithSuspectInvolvement.txt");
-
-
-//		EnumSet<HederaFunctionality> majority = EnumSet.of(CryptoTransfer, ConsensusSubmitMessage);
-//		var edgeRecords = allRecords
-//				.stream()
-//				.filter(pair -> !majority.contains(pair.uncheckedAccessor().getFunction()))
-//				.collect(toList());
-//		System.out.println("# of edge records: " + edgeRecords.size());
-
-//		var counts = edgeRecords.stream()
-//				.map(pair -> pair.uncheckedAccessor().getFunction())
-//				.collect(groupingBy(Function.identity(), counting()));
-//		System.out.println(counts);
-//		var readableLoc = String.format(BASE_LOC_TPL, node);
-//		writeReadable(edgeRecords, readableLoc + "/allMinorityRecords.txt");
-
-
-//		var minorityPostDivergence = edgeRecords.stream()
-//				.filter(pair -> pair.consensusTime().isAfter(divergence))
-//				.collect(toList());
-//		writeReadable(
-//				minorityPostDivergence,
-//				String.format(BASE_LOC_TPL, node) + "/postDivergenceMinorityRecords.txt");
-
-//		var allPostDivergence = allRecords.stream()
-//				.filter(pair -> pair.consensusTime().isAfter(divergence))
-//				.collect(toList());
-//		writeReadable(
-//				allPostDivergence,
-//				String.format(BASE_LOC_TPL, node) + "/allPostDivergenceRecords.txt");
-//		var allPostDivergenceFromNode0 = allRecords.stream()
-//				.filter(pair -> pair.consensusTime().isAfter(divergence))
-//				.filter(pair -> pair.uncheckedAccessor().getTxn().getNodeAccountID().getAccountNum() == 3)
-//				.collect(toList());
-//		writeReadable(
-//				allPostDivergenceFromNode0,
-//				String.format(BASE_LOC_TPL, node) + "/allPostDivergenceNode0Records.txt");
-
-//		var recordsWith6237 = allRecords
-//				.stream()
-//				.filter(this::involving6237)
-//				.collect(toList());
-//		var readableLoc = String.format(BASE_LOC_TPL, node);
-//		writeReadable(recordsWith6237, readableLoc + "/only6237Records.txt");
-
-//		var readableLoc = String.format(BASE_LOC_TPL, node);
-//		writeReadable(allRecords, readableLoc + "/allRecords.txt");
 	}
 
 	private boolean involving6237(StreamEntry pair) {
@@ -647,7 +599,6 @@ public class RecordStreamCmp {
 		Runnable contractCallLocal = () -> {
 			while (true) {
 				try {
-//					var queryPayer = candidates[r.nextInt(3)];
 					var queryPayer = candidates[2];
 					backingAccounts.getRef(queryPayer);
 				} catch (ConcurrentModificationException cme) {

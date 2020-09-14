@@ -133,7 +133,6 @@ public class CryptoTransferUpdate extends ClientBaseThread {
                 Common.getReceiptByTransactionId(stub, item);
                 if (isBackupTxIDRecord) {
                   record = getTransactionRecord(genesisAccount, item, false);
-                  //log.info("Record = {}", record);
                   confirmedTxRecord.add(record);
                 }
               }else{
@@ -177,7 +176,6 @@ public class CryptoTransferUpdate extends ClientBaseThread {
       int accumulatedTransferCount = 0;
       long startTime = System.currentTimeMillis();
 
-      long balanceFee = FeeClient.getBalanceQueryFee();
       Map<AccountID, Long> preBalance = null;
 
       log.info("Doing " + transferTimes + " Operations");
@@ -352,12 +350,6 @@ public class CryptoTransferUpdate extends ClientBaseThread {
           log.error("Unexpected error ", e);
           return;
         }
-
-
-//        log.info("From account balance {}", getAccountBalance(stub, fromAccount,
-//                payerAccount, genesisPrivateKey, nodeAccount));
-//        log.info("To account balance {}", getAccountBalance(stub, toAccount,
-//                payerAccount, genesisPrivateKey, nodeAccount));
       }
       log.info("Finish all operations");
 

@@ -118,8 +118,6 @@ public class ContractBigArray extends ClientBaseThread {
       Assert.assertNotEquals(0, zeroContractFileId.getFileNum());
       log.info("Contract file uploaded successfully");
 
-      // Create contract
-      //zeroContractId = createContract(crAccount, zeroContractFileId, null);
       Properties properties = TestHelper.getApplicationProperties();
       long contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
       TransactionID txID = createContractOnly(crAccount, zeroContractFileId, null, contractDuration, null);
@@ -218,7 +216,6 @@ public class ContractBigArray extends ClientBaseThread {
     TransactionGetReceiptResponse contractCallReceipt = Common.getReceiptByTransactionId(stub, txId);
     if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
         .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
-      //Thread.sleep(6000);
       TransactionRecord trRecord = getTransactionRecord(payerAccount, txId, true);
       if (trRecord != null && trRecord.hasContractCallResult()) {
         ContractFunctionResult callResults = trRecord.getContractCallResult();
