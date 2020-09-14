@@ -183,6 +183,20 @@ class FieldSourcedFeeScreeningTest {
 		verify(check).canAfford(payer, willingness);
 	}
 
+	@Test
+	public void feeTest() {
+		// setup:
+		EnumSet<TxnFeeType> thresholdRecordFee = EnumSet.of(THRESHOLD_RECORD);
+		subject.setFor(NETWORK, network);
+		subject.setFor(SERVICE, service);
+		subject.setFor(NODE, node);
+		subject.setFor(CACHE_RECORD, cacheRecord);
+		// when:
+		boolean viability = subject.canParticipantAfford(master, thresholdRecordFee);
+		// then:
+		assertFalse(viability);
+	}
+
 	private void givenKnownFeeAmounts() {
 		subject.setFor(NETWORK, network);
 		subject.setFor(SERVICE, service);
