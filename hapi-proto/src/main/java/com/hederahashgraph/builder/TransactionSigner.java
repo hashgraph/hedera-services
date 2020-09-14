@@ -128,7 +128,7 @@ public class TransactionSigner {
    * signature list for the transaction.
    *
    * @param transaction transaction to be singed
-   * @param privKeyList private key list for signing
+   * @param privKeysList private key list for signing
    * @return transaction with signatures
    */
   public static Transaction signTransactionNew(Transaction transaction,
@@ -354,7 +354,7 @@ public class TransactionSigner {
    * Signs transaction using signature map format.
    *
    * @param transaction transaction to be singed
-   * @param privKeyList private key list for signing
+   * @param privKeysList private key list for signing
    * @return transaction with signatures
    * @throws Exception
    */
@@ -370,20 +370,14 @@ public class TransactionSigner {
       }
       
       if(pubKeysList.size() != privKeysList.size()) {
-        throw new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
+        throw new Exception("public and private keys size mismtach! pubKeysList size = " +
+                pubKeysList.size() +
+                ", privKeysList size = " +
+                privKeysList.size());
       }
       
-      List<SignaturePair> pairs = new ArrayList<>();
-      int i = 0;
-      for (List<PrivateKey> privKeyList : privKeysList) {
-        List<PublicKey> pubKeyList = pubKeysList.get(i++);
-        int j = 0;
-        for(PrivateKey privKey : privKeyList) {
-          PublicKey pubKey = pubKeyList.get(j++);
-          SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
-          pairs.add(sig);
-        }
-      }
+      final List<SignaturePair> pairs = buildSignaturePairs(privKeysList, pubKeysList, bodyBytes);
+
       SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
       if(transaction.hasBody()) {
       	rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
@@ -392,6 +386,25 @@ public class TransactionSigner {
       }
       return rv;
     }
+
+  private static List<SignaturePair> buildSignaturePairs(final List<List<PrivateKey>> privKeysList,
+          final List<List<PublicKey>> pubKeysList,
+          final byte[] bodyBytes) throws DecoderException, SignatureException, NoSuchAlgorithmException,
+          InvalidKeyException, UnsupportedEncodingException {
+    final List<SignaturePair> pairs = new ArrayList<>();
+    for (final List<PrivateKey> privKeyList : privKeysList) {
+      for (final List<PublicKey> pubKeyList : pubKeysList) {
+        for(final PrivateKey privKey : privKeyList) {
+          for (final PublicKey pubKey : pubKeyList) {
+            SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
+            pairs.add(sig);
+          }
+        }
+      }
+    }
+
+    return pairs;
+  }
 
   private static SignaturePair signAsSignaturePair(PublicKey pubKey, PrivateKey privKey,
       byte[] bodyBytes) throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, DecoderException {
