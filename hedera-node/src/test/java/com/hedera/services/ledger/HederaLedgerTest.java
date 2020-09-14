@@ -787,10 +787,10 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
-		System.out.println(tokenStore.createProvisionally(stdWith("MINE", a), a).getStatus());
-		tA = tokenStore.createProvisionally(stdWith("MINE", a), a).getCreated().get();
+		System.out.println(tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a).getStatus());
+		tA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a).getCreated().get();
 		tokenStore.commitCreation();
-		tB = tokenStore.createProvisionally(stdWith("YOURS", b), b).getCreated().get();
+		tB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b).getCreated().get();
 		tokenStore.commitCreation();
 		// and:
 		subject.doTransfer(d, a, 1_000L);
@@ -829,12 +829,13 @@ public class HederaLedgerTest {
 				));
 	}
 
-	private TokenCreation stdWith(String symbol, AccountID account) {
+	private TokenCreation stdWith(String symbol, String tokenName, AccountID account) {
 		var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		return TokenCreation.newBuilder()
 				.setAdminKey(key)
 				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.setSymbol(symbol)
+				.setName(tokenName)
 				.setFloat(0)
 				.setTreasury(account)
 				.setDivisibility(0)

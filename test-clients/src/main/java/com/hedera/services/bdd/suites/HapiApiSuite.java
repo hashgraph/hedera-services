@@ -63,7 +63,7 @@ public abstract class HapiApiSuite {
 
 	private static final Random r = new Random();
 
-	protected String salted(String symbol) {
+	public static String salted(String symbol) {
 		return symbol + r.nextInt(1_234_567);
 	}
 

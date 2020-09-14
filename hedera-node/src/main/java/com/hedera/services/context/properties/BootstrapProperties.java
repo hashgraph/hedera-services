@@ -202,7 +202,8 @@ public class BootstrapProperties implements PropertySource {
 			"contracts.defaultSendThreshold",
 			"ledger.maxAccountNum",
 			"tokens.maxPerAccount",
-			"tokens.maxSymbolLength"
+			"tokens.maxSymbolLength",
+			"tokens.maxTokenNameLength"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -245,6 +246,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("ledger.totalTinyBarFloat", AS_LONG),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolLength", AS_INT),
+			entry("tokens.maxTokenNameLength", AS_INT),
 			entry("contracts.defaultReceiveThreshold", AS_LONG),
 			entry("contracts.defaultSendThreshold", AS_LONG)
 	);

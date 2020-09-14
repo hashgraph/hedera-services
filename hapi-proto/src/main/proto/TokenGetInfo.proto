@@ -37,17 +37,18 @@ message TokenGetInfoQuery {
 message TokenInfo {
     TokenID tokenId = 1;
     string symbol = 2;
-    AccountID treasury = 3;
-    uint64 currentFloat = 4;
-    uint32 divisibility = 5;
-    Key adminKey = 6;
-    Key kycKey = 7;
-    Key freezeKey = 8;
-    Key wipeKey = 9;
-    Key supplyKey = 10;
-    TokenFreezeStatus defaultFreezeStatus = 11;
-    TokenKycStatus defaultKycStatus = 12;
-    bool isDeleted = 13;
+    string name = 3;
+    AccountID treasury = 4;
+    uint64 currentFloat = 5;
+    uint32 divisibility = 6;
+    Key adminKey = 7;
+    Key kycKey = 8;
+    Key freezeKey = 9;
+    Key wipeKey = 10;
+    Key supplyKey = 11;
+    TokenFreezeStatus defaultFreezeStatus = 12;
+    TokenKycStatus defaultKycStatus = 13;
+    bool isDeleted = 14;
 }
 
 message TokenGetInfoResponse {

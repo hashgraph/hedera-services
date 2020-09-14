@@ -57,8 +57,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newSupplyKey = Optional.empty();
 	private Optional<String> newFreezeKey = Optional.empty();
 	private Optional<String> newSymbol = Optional.empty();
+	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
+	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -97,6 +99,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate symbol(Function<HapiApiSpec, String> symbolFn) {
 		this.newSymbolFn = Optional.of(symbolFn);
+		return this;
+	}
+
+	public HapiTokenUpdate name(String name) {
+		this.newName = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate name(Function<HapiApiSpec, String> nameFn) {
+		this.newNameFn = Optional.of(nameFn);
 		return this;
 	}
 
@@ -144,12 +156,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		if (newSymbolFn.isPresent()) {
 			newSymbol = Optional.of(newSymbolFn.get().apply(spec));
 		}
+		if (newNameFn.isPresent()) {
+			newName = Optional.of(newNameFn.get().apply(spec));
+		}
 		TokenManagement opBody = spec
 				.txns()
 				.<TokenManagement, TokenManagement.Builder>body(
 						TokenManagement.class, b -> {
 							b.setToken(TxnUtils.asRef(id));
 							newSymbol.ifPresent(b::setSymbol);
+							newName.ifPresent(b::setName);
 							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
@@ -182,6 +198,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		var registry = spec.registry();
 		newAdminKey.ifPresent(n -> registry.saveKey(token, registry.getKey(n)));
 		newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
+		newName.ifPresent(s -> registry.saveName(token, s));
 		newFreezeKey.ifPresent(n -> registry.saveFreezeKey(token, registry.getKey(n)));
 		newSupplyKey.ifPresent(n -> registry.saveSupplyKey(token, registry.getKey(n)));
 		newWipeKey.ifPresent(n -> registry.saveWipeKey(token, registry.getKey(n)));

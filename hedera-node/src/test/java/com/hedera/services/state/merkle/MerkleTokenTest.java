@@ -26,7 +26,6 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -62,6 +61,7 @@ class MerkleTokenTest {
 	JKey supplyKey, otherSupplyKey;
 	JKey kycKey, otherKycKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
+	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
 	int divisibility = 2, otherDivisibility = 3;
 	long tokenFloat = 1_000_000, otherFloat = 1_000_001;
 	boolean freezeDefault = true, otherFreezeDefault = false;
@@ -86,7 +86,7 @@ class MerkleTokenTest {
 		otherSupplyKey = new JEd25519Key("not-a-real-supply-key-either".getBytes());
 
 		subject = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		subject.setAdminKey(adminKey);
 		subject.setFreezeKey(freezeKey);
 		subject.setKycKey(kycKey);
@@ -122,6 +122,7 @@ class MerkleTokenTest {
 		// then:
 		inOrder.verify(out).writeBoolean(isDeleted);
 		inOrder.verify(out).writeNormalisedString(symbol);
+		inOrder.verify(out).writeNormalisedString(name);
 		inOrder.verify(out).writeSerializable(treasury, true);
 		inOrder.verify(out).writeLong(tokenFloat);
 		inOrder.verify(out).writeInt(divisibility);
@@ -160,7 +161,9 @@ class MerkleTokenTest {
 				.willReturn(kycKey)
 				.willReturn(supplyKey)
 				.willReturn(wipeKey);
-		given(fin.readNormalisedString(anyInt())).willReturn(symbol);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name);
 		given(fin.readLong()).willReturn(subject.tokenFloat());
 		given(fin.readInt()).willReturn(subject.divisibility());
 		given(fin.readBoolean())
@@ -181,7 +184,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFloats() {
 		// given:
 		other = new MerkleToken(
-				otherFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				otherFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -194,7 +197,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentDivisibility() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, otherDivisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, otherDivisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -207,7 +210,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentWipeKey() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 		other.setWipeKey(otherWipeKey);
 
@@ -221,7 +224,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentSupply() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 		other.setSupplyKey(otherSupplyKey);
 
@@ -235,7 +238,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentDeleted() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 		other.setDeleted(otherIsDeleted);
 
@@ -249,7 +252,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentAdminKey() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -262,7 +265,20 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentSymbol() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, otherSymbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, otherSymbol, name, freezeDefault, kycDefault, treasury);
+		setKeys(other);
+
+		// expect:
+		assertNotEquals(subject, other);
+		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	public void objectContractHoldsForDifferentName() {
+		// given:
+		other = new MerkleToken(
+				tokenFloat, divisibility, symbol, otherName, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -275,7 +291,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFreezeDefault() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, otherFreezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, otherFreezeDefault, kycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -288,7 +304,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentKycDefault() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, otherKycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, otherKycDefault, treasury);
 		setKeys(other);
 
 		// expect:
@@ -301,7 +317,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentTreasury() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, otherTreasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, otherTreasury);
 		setKeys(other);
 
 		// expect:
@@ -314,7 +330,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentKycKeys() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 		other.setKycKey(otherKycKey);
 
@@ -336,7 +352,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFreezeKeys() {
 		// given:
 		other = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(other);
 		other.setFreezeKey(otherFreezeKey);
 
@@ -368,13 +384,13 @@ class MerkleTokenTest {
 		var defaultSubject = new MerkleAccountState();
 		// and:
 		var identicalSubject = new MerkleToken(
-				tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setKeys(identicalSubject);
 		identicalSubject.setDeleted(isDeleted);
 
 		// and:
 		other = new MerkleToken(
-				otherFloat, otherDivisibility, otherSymbol,
+				otherFloat, otherDivisibility, otherSymbol, otherName,
 				otherFreezeDefault, otherKycDefault, otherTreasury);
 
 		// expect:
@@ -397,6 +413,7 @@ class MerkleTokenTest {
 		assertEquals("MerkleToken{" +
 					    "deleted=" + isDeleted + ", " +
 						"symbol=" + symbol + ", " +
+						"name=" + name + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +
 						"float=" + tokenFloat + ", " +
 						"divisibility=" + divisibility + ", " +

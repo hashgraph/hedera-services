@@ -45,15 +45,17 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 
 	private String account;
 	private String token;
+	private long amount;
 
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.TokenAccountWipe;
 	}
 
-	public HapiTokenWipe(String token, String account) {
+	public HapiTokenWipe(String token, String account, long amount) {
 		this.token = token;
 		this.account = account;
+		this.amount = amount;
 	}
 
 	@Override
@@ -94,6 +96,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 						TokenWipeAccount.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
 							b.setAccount(aId);
+							b.setAmount(amount);
 						});
 		return b -> b.setTokenWipe(opBody);
 	}
@@ -118,7 +121,8 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
-				.add("account", account);
+				.add("account", account)
+				.add("amount", amount);
 		return helper;
 	}
 }

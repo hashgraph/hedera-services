@@ -90,7 +90,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("tokens.maxPerAccount", 1_000),
-			entry("tokens.maxSymbolLength", 32)
+			entry("tokens.maxSymbolLength", 32),
+			entry("tokens.maxTokenNameLength",100)
 	);
 
 	@Test

@@ -211,26 +211,6 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rollsBackIfWipeFails() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true))
-				.willReturn(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).dropPendingTokenChanges();
-		// and:
-		verify(txnCtx).setStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
-	}
-
-	@Test
 	public void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
@@ -240,20 +220,23 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).wipe(oldTreasury, target, true);
+		verify(ledger, never()).getTokenBalance(oldTreasury, target);
+		verify(ledger, never()).doTransfer(eq(oldTreasury), eq(newTreasury), anyLong());
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
 	public void followsHappyPathWithNewTreasury() {
+		// setup:
+		long oldTreasuryBalance = 1000;
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
 		given(store.update(any())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
 
 		// when:
 		subject.doStateTransition();
@@ -261,7 +244,8 @@ class TokenUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).unfreeze(newTreasury, target);
 		verify(ledger).grantKyc(newTreasury, target);
-		verify(store).wipe(oldTreasury, target, true);
+		verify(ledger).getTokenBalance(oldTreasury, target);
+		verify(ledger).doTransfer(oldTreasury, newTreasury, oldTreasuryBalance);
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -273,7 +257,6 @@ class TokenUpdateTransitionLogicTest {
 		givenToken(false, false);
 		// and:
 		given(store.update(any())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();

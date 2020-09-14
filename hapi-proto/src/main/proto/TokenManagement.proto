@@ -36,4 +36,5 @@ message TokenManagement {
     Key wipeKey = 6;
     Key supplyKey = 7;
     string symbol = 8;
+    string name = 9; // ASCII character string identifying the name of the token
 }

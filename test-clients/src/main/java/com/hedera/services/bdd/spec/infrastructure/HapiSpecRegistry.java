@@ -262,8 +262,16 @@ public class HapiSpecRegistry {
 		put(token + "Symbol", symbol, String.class);
 	}
 
+	public void saveName(String token, String name) {
+		put(token + "Name", name, String.class);
+	}
+
 	public String getSymbol(String token) {
 		return get(token + "Symbol", String.class);
+	}
+
+	public String getName(String token) {
+		return get(token + "Name", String.class);
 	}
 
 	public Key getKey(String name) {
