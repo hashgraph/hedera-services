@@ -61,16 +61,16 @@ public class TransactionSigner {
    * Signature algorithm
    */
   static final String ECDSA_SIGNATURE_ALGORITHM = "SHA384withECDSA";
-  public static enum SIGNATURE_FORMAT_ENUM {
+  public enum SIGNATURE_FORMAT_ENUM {
     SignatureList,SignatureMap,Random
   }
   public static SIGNATURE_FORMAT_ENUM SIGNATURE_FORMAT = SIGNATURE_FORMAT_ENUM.SignatureMap;
 
-  public static enum TX_BODY_FORMAT_ENUM {
+  public enum TX_BODY_FORMAT_ENUM {
     Body,BodyBytes,Random
   }
   public static TX_BODY_FORMAT_ENUM TX_BODY_FORMAT = TX_BODY_FORMAT_ENUM.BodyBytes;
-  private static Random rand = new Random();
+  private static final Random rand = new Random();
 
   /**
    * Generates ED25519 or ECDSA signature depending on the type of private key provided.
@@ -184,8 +184,7 @@ public class TransactionSigner {
    *
    * @param transaction transaction to be singed
    * @param keys complex keys for signing
-   * @param privKeyList private key list for signing, each key in keys corresponds to a list of
-   * private keys.
+   * @param pubKey2privKeyMap
    * @return transaction with signatures
    */
   public static Transaction signTransactionComplex(Transaction transaction, List<Key> keys,
@@ -252,8 +251,7 @@ public class TransactionSigner {
    *
    * @param transaction transaction to be singed
    * @param keys complex keys for signing
-   * @param privKeyList private key list for signing, each key in keys corresponds to a list of
-   * private keys.
+   * @param pubKey2privKeyMap
    * @return transaction with signatures as a SignatureMap object
    */
   public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
@@ -281,8 +279,7 @@ public class TransactionSigner {
    * 
    * @param messageBytes
    * @param keys complex keys for signing
-   * @param privKeyList private key list for signing, each key in keys corresponds to a list of
-   * private keys.
+   * @param pubKey2privKeyMap
    * @return transaction with signatures as a SignatureMap object
    * @throws Exception
    */
