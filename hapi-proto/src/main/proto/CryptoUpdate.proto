@@ -40,11 +40,11 @@ message CryptoUpdateTransactionBody {
     int32 proxyFraction = 5 [deprecated = true]; // [Deprecated]. Payments earned from proxy staking are shared between the node and this account, with proxyFraction / 10000 going to this account
     oneof sendRecordThresholdField {
         uint64 sendRecordThreshold = 6 [deprecated = true]; // [Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction
-        google.protobuf.UInt64Value sendRecordThresholdWrapper = 11; // The new threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction
+        google.protobuf.UInt64Value sendRecordThresholdWrapper = 11 [deprecated = true]; // [Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction
     }
     oneof receiveRecordThresholdField {
         uint64 receiveRecordThreshold = 7 [deprecated = true]; // [Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction.
-        google.protobuf.UInt64Value receiveRecordThresholdWrapper = 12; // The new threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction.
+        google.protobuf.UInt64Value receiveRecordThresholdWrapper = 12 [deprecated = true]; // [Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction.
     }
     Duration autoRenewPeriod = 8; // The duration in which it will automatically extend the expiration period. If it doesn't have enough balance, it extends as long as possible. If it is empty when it expires, then it is deleted.
     Timestamp expirationTime = 9; // The new expiration time to extend to (ignored if equal to or before the current one)
