@@ -51,7 +51,6 @@ public class HederaNodeStats {
 	private static final double DEFAULT_HALF_LIFE = 10.0;
 	public static final int UPDATE_PERIOD = 3000;
 
-	@Deprecated
 	private static final String THRESHOLD_RECORDS_IN_STATE = "thresholdRecInState";
 
 	private final Logger log;

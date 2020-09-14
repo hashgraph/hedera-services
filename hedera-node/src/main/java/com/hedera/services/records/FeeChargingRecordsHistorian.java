@@ -41,7 +41,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.fees.TxnFeeType.CACHE_RECORD;
+import static com.hedera.services.fees.TxnFeeType.THRESHOLD_RECORD;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.CACHE_RECORD_FEE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.THRESHOLD_RECORD_FEE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -106,7 +108,13 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 		var record = txnCtx.recordSoFar();
 
 		long cachingFeePaid = payForCaching(record);
-		if (cachingFeePaid > 0L) {
+		if (properties.shouldCreateThresholdRecords()) {
+			long thresholdRecordFee = fees.computeStorageFee(record);
+			getThreshXQualifiers(thresholdRecordFee);
+			feeCharging.setFor(THRESHOLD_RECORD, thresholdRecordFee);
+			payForThresholdRecords();
+		}
+		if (feeCharging.numThresholdFeesCharged() > 0 || cachingFeePaid > 0L) {
 			record = txnCtx.updatedRecordGiven(ledger.netTransfersInTxn());
 		}
 
@@ -138,6 +146,40 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void reviewExistingRecords() {
 		expiries.resumeTrackingFrom(accounts.get());
+	}
+
+	private boolean qualifiesForRecord(AccountAmount adjustment, long recordFee) {
+		AccountID id = adjustment.getAccountID();
+		if (ledger.isPendingCreation(id)) {
+			return false;
+		}
+		long balance = ledger.getBalance(id);
+		if (balance < recordFee) {
+			return false;
+		}
+
+		long amount = adjustment.getAmount();
+		return checkIfAmountUnderThreshold(amount, id);
+	}
+
+	private boolean checkIfAmountUnderThreshold(long amount, AccountID id) {
+		if (amount < 0) {
+			return -1 * amount > ledger.fundsSentRecordThreshold(id);
+		} else {
+			return amount > ledger.fundsReceivedRecordThreshold(id);
+		}
+	}
+
+	private void payForThresholdRecords() {
+		historyRecordQualifiers.forEach(id -> feeCharging.chargeParticipant(id, THRESHOLD_RECORD_FEE));
+	}
+
+	private void getThreshXQualifiers(long recordFee) {
+		ledger.netTransfersInTxn().getAccountAmountsList()
+				.stream()
+				.filter(aa -> qualifiesForRecord(aa, recordFee))
+				.map(AccountAmount::getAccountID)
+				.forEach(historyRecordQualifiers::add);
 	}
 
 	private void createHistorical(

@@ -144,6 +144,13 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 			includeIfCharged(CACHE_RECORD, payer, payerFeesCharged, fees);
 		}
 
+		if (!thresholdFeePayers.isEmpty()) {
+			long thresholdRecordFee = feeAmounts.get(THRESHOLD_RECORD);
+			thresholdFeePayers.stream()
+					.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
+					.forEach(id -> fees.addAllAccountAmounts(receiverFirst(id, funding, thresholdRecordFee)));
+		}
+
 		return fees.build();
 	}
 
@@ -166,11 +173,9 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	private List<AccountAmount> receiverFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, true);
 	}
-
 	private List<AccountAmount> senderFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, false);
 	}
-
 	private List<AccountAmount> itemized(AccountID payer, AccountID receiver, long amount, boolean isReceiverFirst) {
 		return List.of(
 				AccountAmount.newBuilder()
@@ -187,8 +192,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	public void chargeSubmittingNodeUpTo(EnumSet<TxnFeeType> fees) {
 		pay(
 				fees,
-				() -> {
-				},
+				() -> {},
 				(fee) -> chargeUpTo(submittingNode, funding, fee));
 	}
 
@@ -247,7 +251,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	private void completeNonVanishing(AccountID payer, AccountID payee, long amount, TxnFeeType fee) {
-		if (amount > 0) {
+		if (amount > 0)	 {
 			ledger.doTransfer(payer, payee, amount);
 			updateRecords(payer, fee, amount);
 		}
@@ -266,11 +270,15 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	private void updateRecords(AccountID source, TxnFeeType fee, long amount) {
-		if (source.equals(accessor.getPayer())) {
-			payerFeesCharged.put(fee, amount);
-		}
-		if (source.equals(submittingNode)) {
-			submittingNodeFeesCharged.put(fee, amount);
+		if (fee == THRESHOLD_RECORD) {
+			thresholdFeePayers.add(source);
+		} else {
+			if (source.equals(accessor.getPayer())) {
+				payerFeesCharged.put(fee, amount);
+			}
+			if (source.equals(submittingNode)) {
+				submittingNodeFeesCharged.put(fee, amount);
+			}
 		}
 	}
 }
