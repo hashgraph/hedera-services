@@ -99,14 +99,14 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getAccountInfo("misc").logged(),
-						wipeTokenAccount(wipeableToken, "misc")
+						wipeTokenAccount(wipeableToken, "misc", 500)
 								.via("wipeTxn"),
 						getAccountInfo("misc").logged()
 				).then(
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(wipeableToken, 1_000),
+								.hasTokenBalance(wipeableToken, 500),
 						getTxnRecord("wipeTxn").logged()
 				);
 	}
@@ -122,20 +122,22 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						tokenCreate(unwipeableToken)
+								.name(salted("name"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(wipeableToken)
+								.name(salted("name"))
 								.treasury(TOKEN_TREASURY)
 								.wipeKey("wipeKey")
 				).then(
-						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY)
+						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
-						wipeTokenAccount(wipeableToken, "misc")
+						wipeTokenAccount(wipeableToken, "misc", 1)
 								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
-						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),
-						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT)
 				);
 	}
@@ -149,6 +151,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						newKeyNamed("oneKyc"),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(unknowableToken)
+								.name(salted("name"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(knowableToken)
 								.kycDefault(false)

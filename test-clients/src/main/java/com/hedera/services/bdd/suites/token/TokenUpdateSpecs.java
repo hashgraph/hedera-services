@@ -131,7 +131,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
 						burnToken("tbu", 10)
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
-						wipeTokenAccount("tbu", "misc")
+						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
 				);

@@ -30,4 +30,5 @@ import "BasicTypes.proto";
 message TokenWipeAccount {
     TokenRef token = 1;
     AccountID account = 2;
+    uint64 amount = 3;
 }

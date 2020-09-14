@@ -22,6 +22,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
+	public int maxTokensNameLength() {
+		return 100;
+	}
+
+	@Override
 	public long maxAccountNum() {
 		return 100_000_000L;
 	}

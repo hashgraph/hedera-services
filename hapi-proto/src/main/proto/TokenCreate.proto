@@ -42,4 +42,5 @@ message TokenCreation {
     bool freezeDefault = 9; // The default status (frozen or unfrozen) of Hedera accounts relative to this token
     bool kycDefault = 10; // The default KYC status (granted or revoked) of Hedera accounts relative to this token
     string symbol = 11; // The case-insensitive UTF-8 alphanumeric string identifying the token
+    string name = 12; // The ASCII character string identifying the name of the token
 }

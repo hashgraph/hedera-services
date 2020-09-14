@@ -105,7 +105,7 @@ public class MerkleAccountTest {
 	JKey adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 	MerkleToken unfrozenToken = new MerkleToken(
 			100, 1,
-			"UnfrozenToken", false, false,
+			"UnfrozenToken", "UnfrozenTokenName", false, false,
 			new EntityId(1, 2, 3));
 
 	MerkleAccountState state;

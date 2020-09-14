@@ -41,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -142,7 +141,7 @@ class StateViewTest {
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
 				100, 1,
-				"UnfrozenToken", true, true,
+				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				new EntityId(1, 2, 3));
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
@@ -207,6 +206,7 @@ class StateViewTest {
 		// then:
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
+		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.tokenFloat(), info.getCurrentFloat());
 		assertEquals(token.divisibility(), info.getDivisibility());
@@ -224,6 +224,7 @@ class StateViewTest {
 		assertTrue(info.getIsDeleted());
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
+		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.tokenFloat(), info.getCurrentFloat());
 		assertEquals(token.divisibility(), info.getDivisibility());
