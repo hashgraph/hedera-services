@@ -28,6 +28,7 @@ public class GlobalDynamicProperties {
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
+	private boolean shouldCreateThresholdRecords;
 
 	public GlobalDynamicProperties(PropertySource properties) {
 		this.properties = properties;
@@ -36,6 +37,7 @@ public class GlobalDynamicProperties {
 	}
 
 	public void reload() {
+		shouldCreateThresholdRecords = properties.getBooleanProperty("ledger.createThresholdRecords");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokensSymbolLength = properties.getIntProperty("tokens.maxSymbolLength");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -61,5 +63,9 @@ public class GlobalDynamicProperties {
 
 	public long maxAccountNum() {
 		return maxAccountNum;
+	}
+
+	public boolean shouldCreateThresholdRecords() {
+		return shouldCreateThresholdRecords;
 	}
 }
