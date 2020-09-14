@@ -22,6 +22,8 @@ package com.hedera.services.legacy.services.state;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Address;
@@ -31,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -105,5 +108,62 @@ class AwareProcessLogicTest {
 
 		// then:
 		verify(mockLog).error(argThat((String s) -> s.startsWith("Catastrophic invariant failure!")));
+	}
+
+
+	@Test
+	@DisplayName("incorporateConsensusTxn returns with a warning on memo size for ContractCreateInstance")
+	public void shortCircuitsOnMemoSizeForContractCreate() {
+		// setup:
+		var now = Instant.now();
+		var then = now.minusMillis(1L);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+
+		final Transaction platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+								.setMemo("This is a very long memo because it contains more than 100 characters, " +
+										"which is greater than it is expected")
+								.build())
+						.setTransactionID(TransactionID.newBuilder()
+								.setAccountID(IdUtils.asAccount("0.0.2")))
+						.build()
+						.toByteString())
+				.build().toByteArray());
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, now, 666);
+
+		// then:
+		verify(mockLog).warn(argThat((String s) -> s.startsWith("Transaction contains a memo with size greater than")));
+	}
+
+	@Test
+	@DisplayName("incorporateConsensusTxn returns with a warning on memo size for ContractUpdateInstance")
+	public void shortCircuitsOnMemoSizeForContractUpdate() {
+		// setup:
+		var now = Instant.now();
+		var then = now.minusMillis(1L);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+
+		final Transaction platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+								.setMemo("This is a very long memo because it contains more than 100 characters, " +
+										"which is greater than it is expected")
+								.build())
+						.setTransactionID(TransactionID.newBuilder()
+								.setAccountID(IdUtils.asAccount("0.0.2")))
+						.build()
+						.toByteString())
+				.build().toByteArray());
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, now, 666);
+
+		// then:
+		verify(mockLog).warn(argThat((String s) -> s.startsWith("Transaction contains a memo with size greater than")));
 	}
 }
