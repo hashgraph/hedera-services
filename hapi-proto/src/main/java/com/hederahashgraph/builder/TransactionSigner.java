@@ -370,7 +370,7 @@ public class TransactionSigner {
       }
       
       if(pubKeysList.size() != privKeysList.size()) {
-        new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
+        throw new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
       }
       
       List<SignaturePair> pairs = new ArrayList<>();
