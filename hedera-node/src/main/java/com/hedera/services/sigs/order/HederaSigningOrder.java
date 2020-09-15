@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,10 +54,10 @@ import static java.util.stream.Collectors.toList;
 /**
  * Encapsulates all policies related to:
  * <ol>
- *     <li>Which Hedera keys must have active signatures for a given gRPC transaction to be valid; and,</li>
- *     <li>The <i>order</i> in which Hedera {@link com.hederahashgraph.api.proto.java.Signature}
- *         instances must be supplied to test activation of these keys when the gRPC transaction has a
- *         {@link com.hederahashgraph.api.proto.java.SignatureList}.</li>
+ * <li>Which Hedera keys must have active signatures for a given gRPC transaction to be valid; and,</li>
+ * <li>The <i>order</i> in which Hedera {@link com.hederahashgraph.api.proto.java.Signature}
+ * instances must be supplied to test activation of these keys when the gRPC transaction has a
+ * {@link com.hederahashgraph.api.proto.java.SignatureList}.</li>
  * </ol>
  * The second item is really an implementation detail, as logically this class could just as well
  * return a {@code Set<JKey>} instead of a {@code List<JKey>}. However, until there are no clients
@@ -93,9 +93,12 @@ public class HederaSigningOrder {
 	 * Uses the provided factory to summarize an attempt to compute the canonical signing order
 	 * of the Hedera key(s) that must be active for the payer of the given gRPC transaction.
 	 *
-	 * @param txn the gRPC transaction of interest.
-	 * @param factory the result factory to use to summarize the listing attempt.
-	 * @param <T> the type of error report created by the factory.
+	 * @param txn
+	 * 		the gRPC transaction of interest.
+	 * @param factory
+	 * 		the result factory to use to summarize the listing attempt.
+	 * @param <T>
+	 * 		the type of error report created by the factory.
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
 	 */
 	public <T> SigningOrderResult<T> keysForPayer(TransactionBody txn, SigningOrderResultFactory<T> factory) {
@@ -107,9 +110,12 @@ public class HederaSigningOrder {
 	 * of the Hedera key(s) that must be active for any Hedera entities involved in a non-payer
 	 * role in the given gRPC transaction. (Which could also include the payer crypto account.)
 	 *
-	 * @param txn the gRPC transaction of interest.
-	 * @param factory the result factory to use to summarize the listing attempt.
-	 * @param <T> the type of error report created by the factory.
+	 * @param txn
+	 * 		the gRPC transaction of interest.
+	 * @param factory
+	 * 		the result factory to use to summarize the listing attempt.
+	 * @param <T>
+	 * 		the type of error report created by the factory.
 	 * @return a {@link SigningOrderResult} summarizing the listing attempt.
 	 */
 	public <T> SigningOrderResult<T> keysForOtherParties(TransactionBody txn, SigningOrderResultFactory<T> factory) {
@@ -141,14 +147,14 @@ public class HederaSigningOrder {
 			return factory.forValidOrder(supplier.get());
 		} catch (SigningOrderException soe) {
 			@SuppressWarnings("unchecked")
-			SigningOrderResult<T> summary = (SigningOrderResult<T>)soe.getErrorReport();
+			SigningOrderResult<T> summary = (SigningOrderResult<T>) soe.getErrorReport();
 			return summary;
 		}
 	}
 
 	private <T> SigningOrderResult<T> orderForPayer(
-		TransactionBody txn,
-		SigningOrderResultFactory<T> factory
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
 	) {
 		var payer = txn.getTransactionID().getAccountID();
 		var result = sigMetaLookup.accountSigningMetaFor(payer);
@@ -183,7 +189,8 @@ public class HederaSigningOrder {
 		} catch (AdminKeyNotExistException ane) {
 			throw new SigningOrderException(factory.forImmutableContract(ane.getContractId(), txn.getTransactionID()));
 		} catch (InvalidAutoRenewAccountIDException e) {
-			throw new SigningOrderException(factory.forMissingAutoRenewAccount(e.getAccountId(), txn.getTransactionID()));
+			throw new SigningOrderException(
+					factory.forMissingAutoRenewAccount(e.getAccountId(), txn.getTransactionID()));
 		} catch (Exception e) {
 			throw new SigningOrderException(factory.forGeneralError(txn.getTransactionID()));
 		}
@@ -227,7 +234,7 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		if (txn.hasTokenCreation()) {
-			return Optional.of(tokenCreate(txn.getTokenCreation(), factory));
+			return Optional.of(tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory));
 		} else if (txn.hasTokenTransfers()) {
 			return Optional.of(tokenTransact(txn.getTransactionID(), txn.getTokenTransfers(), factory));
 		} else if (txn.hasTokenFreeze()) {
@@ -312,6 +319,7 @@ public class HederaSigningOrder {
 			}
 		});
 	}
+
 	private boolean needsCurrentAdminSig(ContractUpdateTransactionBody op) {
 		return !op.hasExpirationTime()
 				|| hasNondeprecatedAdminKey(op)
@@ -320,6 +328,7 @@ public class HederaSigningOrder {
 				|| op.hasFileID()
 				|| op.getMemo().length() > 0;
 	}
+
 	private boolean hasNondeprecatedAdminKey(ContractUpdateTransactionBody op) {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID();
 	}
@@ -375,6 +384,7 @@ public class HederaSigningOrder {
 	private List<JKey> forFileCreate(FileCreateTransactionBody op) throws Exception {
 		return List.of(asJKey(op.getKeys()));
 	}
+
 	private JKey asJKey(KeyList keyList) throws Exception {
 		return JKey.mapKey(Key.newBuilder().setKeyList(keyList).build());
 	}
@@ -481,7 +491,7 @@ public class HederaSigningOrder {
 	}
 
 	private List<JKey> mutable(List<JKey> required) {
-		return (required == EMPTY_LIST)	? new ArrayList<>() : required;
+		return (required == EMPTY_LIST) ? new ArrayList<>() : required;
 	}
 
 	private <T> SigningOrderResult<T> cryptoCreate(
@@ -510,26 +520,27 @@ public class HederaSigningOrder {
 				ConsensusCreateTopicTransactionBody::hasAdminKey,
 				ConsensusCreateTopicTransactionBody::getAdminKey,
 				required);
-
-		if (op.hasAutoRenewAccount()) {
-			var result = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccount());
-			if (result.succeeded()) {
-				required = mutable(required);
-				required.add(result.metadata().getKey());
-			} else {
-				return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
-			}
+		if (!addAutoRenew(
+				op,
+				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
+				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
+				required)) {
+			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
 
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenCreate(
+			TransactionID txnId,
 			TokenCreation op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = new ArrayList<>();
 
+		if (!addAutoRenew(op, TokenCreation::hasAutoRenewAccount, TokenCreation::getAutoRenewAccount, required)) {
+			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+		}
 		addToMutableReqIfPresent(op, TokenCreation::hasAdminKey, TokenCreation::getAdminKey, required);
 
 		return factory.forValidOrder(required);
@@ -574,8 +585,28 @@ public class HederaSigningOrder {
 	) {
 		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
 		var basic = tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
-		addToMutableReqIfPresent(op, TokenManagement::hasAdminKey, TokenManagement::getAdminKey, basic.getOrderedKeys());
+		var required = basic.getOrderedKeys();
+		if (!addAutoRenew(
+				op,
+				TokenManagement::hasAutoRenewAccount,
+				TokenManagement::getAutoRenewAccount,
+				required)) {
+			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
+		}
+		addToMutableReqIfPresent(op, TokenManagement::hasAdminKey, TokenManagement::getAdminKey, required);
 		return basic;
+	}
+
+	private <T> boolean addAutoRenew(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
+		if (isPresent.test(op)) {
+			var result = sigMetaLookup.accountSigningMetaFor(getter.apply(op));
+			if (result.succeeded()) {
+				reqs.add(result.metadata().getKey());
+			} else {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private <T> SigningOrderResult<T> tokenMutates(
@@ -644,7 +675,7 @@ public class HederaSigningOrder {
 			if (transfer.getAmount() < 0) {
 				var account = transfer.getAccount();
 				var result = sigMetaLookup.accountSigningMetaFor(account);
-				if (result.succeeded())	 {
+				if (result.succeeded()) {
 					required = mutable(required);
 					required.add(result.metadata().getKey());
 				} else {

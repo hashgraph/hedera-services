@@ -20,17 +20,30 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
+import com.hedera.services.config.HederaNumbers;
+import com.hederahashgraph.api.proto.java.AccountID;
+
 public class GlobalDynamicProperties {
+	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
 	private int maxTokensPerAccount;
 	private int maxTokensSymbolLength;
+	private int maxFileSizeKb;
+	private int cacheRecordsTtl;
+	private int maxContractStorageKb;
+	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
+	private AccountID fundingAccount;
 	private boolean shouldCreateThresholdRecords;
 
-	public GlobalDynamicProperties(PropertySource properties) {
+	public GlobalDynamicProperties(
+			HederaNumbers hederaNums,
+			PropertySource properties
+	) {
+		this.hederaNums = hederaNums;
 		this.properties = properties;
 
 		reload();
@@ -43,6 +56,15 @@ public class GlobalDynamicProperties {
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
 		defaultContractSendThreshold = properties.getLongProperty("contracts.defaultSendThreshold");
 		defaultContractReceiveThreshold = properties.getLongProperty("contracts.defaultReceiveThreshold");
+		maxFileSizeKb = properties.getIntProperty("files.maxSizeKb");
+		fundingAccount = AccountID.newBuilder()
+				.setShardNum(hederaNums.shard())
+				.setRealmNum(hederaNums.realm())
+				.setAccountNum(properties.getLongProperty("ledger.fundingAccount"))
+				.build();
+		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
+		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
+		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -64,6 +86,26 @@ public class GlobalDynamicProperties {
 	public long maxAccountNum() {
 		return maxAccountNum;
 	}
+
+	public int maxFileSizeKb() {
+		return maxFileSizeKb;
+	}
+
+	public AccountID fundingAccount() {
+		return fundingAccount;
+	}
+
+	public int cacheRecordsTtl() {
+		return cacheRecordsTtl;
+	}
+
+	public int maxContractStorageKb() {
+		return maxContractStorageKb;
+	}
+
+	public int ratesIntradayChangeLimitPercent() {
+		return ratesIntradayChangeLimitPercent;
+        }
 
 	public boolean shouldCreateThresholdRecords() {
 		return shouldCreateThresholdRecords;

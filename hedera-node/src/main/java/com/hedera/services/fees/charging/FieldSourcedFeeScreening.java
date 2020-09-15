@@ -83,14 +83,18 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 	@Override
 	public boolean canParticipantAfford(AccountID participant, EnumSet<TxnFeeType> fees) {
 		long exemptAmount = 0;
-		if (fees.contains(THRESHOLD_RECORD)) {
+		if (fees.contains(THRESHOLD_RECORD) && feeAmounts.containsKey(THRESHOLD_RECORD)) {
 			exemptAmount += exemptions.isExemptFromRecordFees(participant) ? feeAmounts.get(THRESHOLD_RECORD) : 0;
 		}
-		long netAmount = totalAmountOf(fees) - exemptAmount;
+
+		final long netAmount = totalAmountOf(fees) - exemptAmount;
 		return check.canAfford(participant, netAmount);
 	}
 
 	protected long totalAmountOf(EnumSet<TxnFeeType> fees) {
-		return fees.stream().mapToLong(feeAmounts::get).sum();
+		return fees.stream()
+				.filter(fee -> feeAmounts.containsKey(fee))
+				.mapToLong(feeAmounts::get)
+				.sum();
 	}
 }

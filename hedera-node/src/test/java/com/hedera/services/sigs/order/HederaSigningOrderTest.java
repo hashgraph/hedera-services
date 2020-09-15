@@ -1434,6 +1434,61 @@ public class HederaSigningOrderTest {
 		assertTrue(summary.getOrderedKeys().isEmpty());
 	}
 
+	@Test
+	public void getsTokenCreateWithAutoRenew() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenCreateWithMissingAutoRenew() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		// and:
+		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+	}
+
+	@Test
+	public void getsTokenUpdateWithAutoRenew() throws Throwable {
+		// given:
+		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsTokenUpdateWithMissingAutoRenew() throws Throwable {
+		// given:
+		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		// and:
+		assertEquals(SignatureStatusCode.INVALID_AUTO_RENEW_ACCOUNT_ID, summary.getErrorReport().getStatusCode());
+	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);

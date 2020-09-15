@@ -36,10 +36,10 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 
@@ -93,19 +93,18 @@ public class ChildStorageSpec extends HapiApiSuite {
 	}
 
 	HapiApiSpec childStorage() {
-		Map<String, String> props = new HashMap<>();
-
-		var MAX_GAS_LIMIT_PROP = "maxGasLimit";
-		var MAX_CONTRACT_SIZE_KB_PROP = "maxContractStateSize";
+		var MAX_CONTRACT_STORAGE_ALLOWED = 1024;
 
 		return defaultHapiSpec("ChildStorage")
 				.given(
-						getFileContents(APP_PROPERTIES).addingConfigListTo(props),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
+						)),
 						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
 						contractCreate("childStorage").bytecode("bytecode")
 				).when(
 						withOpContext((spec, opLog) -> {
-							int almostFullKb = Integer.parseInt(props.get(MAX_CONTRACT_SIZE_KB_PROP)) * 3 / 4;
+							int almostFullKb = MAX_CONTRACT_STORAGE_ALLOWED * 3 / 4;
 							long kbPerStep = 16;
 
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {

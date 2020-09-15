@@ -23,6 +23,7 @@ package com.hedera.services.files.interceptors;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -74,7 +75,7 @@ class TxnAwareRatesManagerTest {
 	int actualLimit = 3;
 
 	FileNumbers fileNums;
-	PropertySource properties;
+	GlobalDynamicProperties properties;
 	TransactionContext txnCtx;
 	ExchangeRates midnightRates;
 	Consumer<ExchangeRateSet> postUpdateCb;
@@ -101,8 +102,8 @@ class TxnAwareRatesManagerTest {
 		intradayLimitFactory = mock(IntFunction.class);
 		given(intradayLimitFactory.apply(actualLimit)).willReturn(intradayLimit);
 
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("exchangeRates.intradayChange.limitPercent")).willReturn(actualLimit);
+		properties = mock(GlobalDynamicProperties.class);
+		given(properties.ratesIntradayChangeLimitPercent()).willReturn(actualLimit);
 
 		subject = new TxnAwareRatesManager(
 				new MockFileNumbers(),

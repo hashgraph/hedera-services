@@ -36,4 +36,7 @@ message TokenManagement {
     Key wipeKey = 6;
     Key supplyKey = 7;
     string symbol = 8;
+    AccountID autoRenewAccount = 9;
+    uint64 autoRenewPeriod = 10;
+    uint64 expiry = 11;
 }
