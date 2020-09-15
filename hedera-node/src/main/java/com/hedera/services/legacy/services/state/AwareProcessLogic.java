@@ -70,6 +70,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -137,7 +138,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.warn(msg);
 			return false;
 		}
-
 		return true;
 	}
 
@@ -369,6 +369,8 @@ public class AwareProcessLogic implements ProcessLogic {
 			try {
 				if (!ctx.hfs().exists(fid)) {
 					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, INVALID_FILE_ID);
+				} else if(isMemoTooLong(txn.getContractCreateInstance().getMemo())) {
+					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
 				} else {
 					byte[] contractByteCode = ctx.hfs().cat(fid);
 					if (contractByteCode.length > 0) {
@@ -389,7 +391,11 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		} else if (txn.hasContractUpdateInstance()) {
 			try {
-				record = ctx.contracts().updateContract(txn, consensusTime);
+				if (isMemoTooLong(txn.getContractUpdateInstance().getMemo())) {
+					record = ctx.contracts().getFailureTransactionRecord(txn, consensusTime, MEMO_TOO_LONG);
+				} else {
+					record = ctx.contracts().updateContract(txn, consensusTime);
+				}
 			} catch (Exception e) {
 				log.error("Error during update contract", e);
 			}
@@ -420,5 +426,13 @@ public class AwareProcessLogic implements ProcessLogic {
 			}
 		}
 		return record;
+	}
+
+	private boolean isMemoTooLong(String memo) {
+		if (memo == null ) {
+			return false;
+		}
+
+		return memo.length() > MEMO_SIZE_LIMIT;
 	}
 }
