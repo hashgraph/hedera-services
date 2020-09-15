@@ -151,6 +151,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						wipeTokenAccount(anotherWipeableToken, "misc", 501)
 								.hasKnownStatus(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", -1)
+								.hasKnownStatus(INVALID_WIPING_AMOUNT),
+						wipeTokenAccount(anotherWipeableToken, "misc", 0)
 								.hasKnownStatus(INVALID_WIPING_AMOUNT)
 				);
 	}
