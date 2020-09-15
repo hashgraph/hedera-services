@@ -389,13 +389,13 @@ public class TransactionSigner {
           final byte[] bodyBytes) throws DecoderException, SignatureException, NoSuchAlgorithmException,
           InvalidKeyException, UnsupportedEncodingException {
     final List<SignaturePair> pairs = new ArrayList<>();
-    int i = 0;
 
-    for (List<PrivateKey> privKeyList : privKeysList) {
-      List<PublicKey> pubKeyList = pubKeysList.get(i++);
-      for(PrivateKey privKey : privKeyList) {
-        for(PublicKey pubKey : pubKeyList) {
-          SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
+    for (int index = 0; index < privKeysList.size(); index++) {
+      final List<PrivateKey> privKeyList = privKeysList.get(index);
+      final List<PublicKey> pubKeyList = pubKeysList.get(index);
+      for(final PrivateKey privKey : privKeyList) {
+        for(final PublicKey pubKey : pubKeyList) {
+          final SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
           pairs.add(sig);
         }
       }
