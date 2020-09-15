@@ -455,7 +455,7 @@ public class HederaTokenStore implements TokenStore {
 		}
 		var hasNewTokenName = changes.getName().length() > 0;
 		if (hasNewTokenName) {
-			var validity = nameCheck(changes.getName());
+			validity = nameCheck(changes.getName());
 			if (validity != OK) {
 				return validity;
 			}

@@ -308,7 +308,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentExpiries() {
 		// given:
 		other = new MerkleToken(
-				otherExpiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				otherExpiry, tokenFloat, divisibility, symbol, name, freezeDefault, kycDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:

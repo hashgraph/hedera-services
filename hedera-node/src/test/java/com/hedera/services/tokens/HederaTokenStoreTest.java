@@ -650,7 +650,7 @@ class HederaTokenStoreTest {
 		op = op.toBuilder().setName(tooLongName).build();
 
 		// when:
-		var outcome = subject.update(op);
+		var outcome = subject.update(op, thisSecond);
 
 		// then:
 		assertEquals(TOKEN_NAME_TOO_LONG, outcome);
@@ -1614,7 +1614,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_NAME_TOO_LONG, result.getStatus());
@@ -1648,7 +1648,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_NAME_ALREADY_IN_USE, result.getStatus());
@@ -1676,7 +1676,7 @@ class HederaTokenStoreTest {
 				.build();
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor);
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
 		assertEquals(ResponseCodeEnum.MISSING_TOKEN_NAME, result.getStatus());
