@@ -391,8 +391,8 @@ public class TransactionSigner {
     final List<SignaturePair> pairs = new ArrayList<>();
 
     for (int index = 0; index < privKeysList.size(); index++) {
-      final List<PrivateKey> privKeyList = privKeysList.get(index);
-      final List<PublicKey> pubKeyList = pubKeysList.get(index);
+      List<PrivateKey> privKeyList = privKeysList.get(index);
+      List<PublicKey> pubKeyList = pubKeysList.get(index);
       for(final PrivateKey privKey : privKeyList) {
         for(final PublicKey pubKey : pubKeyList) {
           final SignaturePair sig = signAsSignaturePair(pubKey, privKey, bodyBytes);
