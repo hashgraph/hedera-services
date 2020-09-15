@@ -7,24 +7,25 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenMintUsage extends TokenUsage<TokenMintUsage> {
-	private TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
-		super(tokenMintOp, usageEstimator);
+public class TokenWipeUsage extends TokenUsage<TokenWipeUsage> {
+	private TokenWipeUsage(TransactionBody tokenWipeOp, TxnUsageEstimator usageEstimator) {
+		super(tokenWipeOp, usageEstimator);
 	}
 
-	public static TokenMintUsage newEstimate(TransactionBody tokenMintOp, SigUsage sigUsage) {
-		return new TokenMintUsage(tokenMintOp, estimatorFactory.get(sigUsage, tokenMintOp, ESTIMATOR_UTILS));
+	public static TokenWipeUsage newEstimate(TransactionBody tokenWipeOp, SigUsage sigUsage) {
+		return new TokenWipeUsage(tokenWipeOp, estimatorFactory.get(sigUsage, tokenWipeOp, ESTIMATOR_UTILS));
 	}
 
 	@Override
-	TokenMintUsage self() {
+	TokenWipeUsage self() {
 		return this;
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenMint();
+		var op = tokenOp.getTokenWipe();
 		addRefBpt(op.getToken());
 		addAmountBpt();
+		addAccountBpt();
 		addTransfersRecordRb(1, 1);
 		return usageEstimator.get();
 	}

@@ -36,15 +36,14 @@ public class TokenCreateUsage extends TokenUsage<TokenCreateUsage> {
 		if (op.hasAutoRenewAccount()) {
 			baseSize += BASIC_ENTITY_ID_SIZE;
 		}
-
 		var lifetime = op.hasAutoRenewAccount()
 				? op.getAutoRenewPeriod()
 				: ESTIMATOR_UTILS.relativeLifetime(tokenOp, op.getExpiry());
+
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);
-		usageEstimator.addNetworkRbs(BASIC_ENTITY_ID_SIZE * usageProperties.legacyReceiptStorageSecs());
-
-		addRecordRb(tokenEntitySizes.bytesUsedToRecordTransfers(1, 1));
+		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
+		addTransfersRecordRb(1, 1);
 
 		return usageEstimator.get();
 	}

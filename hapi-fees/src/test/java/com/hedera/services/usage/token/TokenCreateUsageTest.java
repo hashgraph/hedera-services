@@ -34,7 +34,6 @@ public class TokenCreateUsageTest {
 	long expiry = 2_345_678L;
 	long autoRenewPeriod = 1_234_567L;
 	long now = expiry - autoRenewPeriod;
-	long someRelationshipLifetime = 1_234_567L;
 	String symbol = "ABCDEFGH";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -68,14 +67,13 @@ public class TokenCreateUsageTest {
 		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
 
 		// when:
-		var actual = subject.novelRelLasting(someRelationshipLifetime).get();
+		var actual = subject.get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs(expectedBytes * autoRenewPeriod);
-		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship() * someRelationshipLifetime);
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -89,14 +87,13 @@ public class TokenCreateUsageTest {
 		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
 
 		// when:
-		var actual = subject.novelRelLasting(someRelationshipLifetime).get();
+		var actual = subject.get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs(expectedBytes * autoRenewPeriod);
-		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship() * someRelationshipLifetime);
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 1) *
 				USAGE_PROPERTIES.legacyReceiptStorageSecs());

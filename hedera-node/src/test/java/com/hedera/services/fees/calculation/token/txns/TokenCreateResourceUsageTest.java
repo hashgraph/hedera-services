@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenCreateUsage;
@@ -45,7 +44,6 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
@@ -70,7 +68,6 @@ class TokenCreateResourceUsageTest {
 	StateView view;
 	MerkleAccount account;
 	TokenCreateUsage usage;
-	FCMapBackingAccounts accounts;
 
 	TokenCreateResourceUsage subject;
 
@@ -78,11 +75,7 @@ class TokenCreateResourceUsageTest {
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
 
-		account = mock(MerkleAccount.class);
-		given(account.getExpiry()).willReturn(expiry);
-
 		usage = mock(TokenCreateUsage.class);
-		given(usage.novelRelLasting(expiry - now)).willReturn(usage);
 		given(usage.get()).willReturn(MOCK_TOKEN_CREATE_USAGE);
 
 		tokenCreateTxn = mock(TransactionBody.class);
@@ -97,9 +90,8 @@ class TokenCreateResourceUsageTest {
 		factory = (BiFunction<TransactionBody, SigUsage, TokenCreateUsage>)mock(BiFunction.class);
 		given(factory.apply(tokenCreateTxn, sigUsage)).willReturn(usage);
 
-		accounts = mock(FCMapBackingAccounts.class);
 		TokenCreateResourceUsage.factory = factory;
-		subject = new TokenCreateResourceUsage(accounts);
+		subject = new TokenCreateResourceUsage();
 	}
 
 	@Test
@@ -110,30 +102,12 @@ class TokenCreateResourceUsageTest {
 	}
 
 	@Test
-	public void delegatesToCorrectEstimateWithValidTreasury() throws Exception {
-		given(accounts.contains(treasury)).willReturn(true);
-		given(accounts.getRef(treasury)).willReturn(account);
-
+	public void delegatesToCorrectEstimate() throws Exception {
 		// when:
 		var actual = subject.usageGiven(tokenCreateTxn, obj, view);
 
 		// expect:
 		assertSame(MOCK_TOKEN_CREATE_USAGE, actual);
-		// and:
-		verify(usage).novelRelLasting(expiry - now);
-	}
-
-	@Test
-	public void delegatesToCorrectEstimateWithInvalidTreasury() throws Exception {
-		given(accounts.contains(treasury)).willReturn(false);
-
-		// when:
-		var actual = subject.usageGiven(tokenCreateTxn, obj, view);
-
-		// expect:
-		assertSame(MOCK_TOKEN_CREATE_USAGE, actual);
-		// and:
-		verify(usage, never()).novelRelLasting(anyLong());
 	}
 
 	public static final FeeData MOCK_TOKEN_CREATE_USAGE = UsageEstimatorUtils.defaultPartitioning(

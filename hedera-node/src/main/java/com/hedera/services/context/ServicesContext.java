@@ -709,7 +709,7 @@ public class ServicesContext {
 				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
 				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* Token */
-				entry(TokenCreate, List.of(new TokenCreateResourceUsage(backingAccounts()))),
+				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
 				entry(TokenTransact, List.of(new TokenTransactResourceUsage())),
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
