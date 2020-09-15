@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -64,6 +65,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Platform;
@@ -79,6 +81,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
 import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
@@ -359,8 +362,7 @@ public class TransactionHandler {
 
   private TxnValidityAndFeeReq validateTransactionFeeCoverage(
           TransactionBody txn,
-          SignedTxnAccessor accessor
-  ) {
+          SignedTxnAccessor accessor) {
     ResponseCodeEnum returnCode = OK;
     if (exemptions.hasExemptPayer(accessor)) {
       return new TxnValidityAndFeeReq(returnCode);
@@ -525,6 +527,10 @@ public class TransactionHandler {
       TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(txn, accessor);
       returnCode = localResp.getValidity();
       feeRequired = localResp.getRequiredFee();
+    }
+
+    if(returnCode == OK && isQueryPayment && txn.hasCryptoTransfer()){
+      returnCode = queryFeeCheck.validateQueryPaymentTransaction(txn, feeRequired);
     }
 
     if (!(isQueryPayment && txn.hasCryptoTransfer()) && returnCode == OK) {

@@ -9,9 +9,9 @@ package com.hedera.services.queries.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,17 +21,23 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class QueryFeeCheck {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -68,7 +74,7 @@ public class QueryFeeCheck {
 	}
 
 	ResponseCodeEnum transfersPlausibility(List<AccountAmount> transfers) {
-		if (Optional.ofNullable(transfers).map(List::size).orElse(0 ) == 0) {
+		if (Optional.ofNullable(transfers).map(List::size).orElse(0) == 0) {
 			return INVALID_ACCOUNT_AMOUNTS;
 		}
 
@@ -116,5 +122,43 @@ public class QueryFeeCheck {
 		}
 
 		return OK;
+	}
+
+	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn, long feeRequired) {
+		ResponseCodeEnum returnCode = OK;
+		long suppliedFee = txn.getTransactionFee();
+		long transferAmount = 0;
+		if (txn.getTransactionID().hasAccountID()) {
+			AccountID payerAccount = txn.getTransactionID().getAccountID();
+			Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
+					.map(MerkleAccount::getBalance)
+					.orElse(null);
+
+			List<AccountAmount> transfers = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
+
+			if (transfers.size() != 2) {
+				returnCode = INVALID_TRANSACTION_BODY;
+				return returnCode;
+			}
+
+			for (AccountAmount entry : transfers) {
+				if(entry.getAmount() < 0){
+					transferAmount = entry.getAmount();
+					if(!entry.getAccountID().equals(payerAccount)){
+						returnCode = INVALID_PAYER_ACCOUNT_ID;
+					}
+				}
+
+				if(entry.getAmount() > 0){
+					if(!entry.getAccountID().equals(txn.getNodeAccountID())){
+						returnCode = INVALID_RECEIVING_NODE_ACCOUNT;
+					}
+				}
+			}
+			if (payerAccountBalance < transferAmount + suppliedFee) {
+				returnCode = INSUFFICIENT_PAYER_BALANCE;
+			}
+		}
+		return returnCode;
 	}
 }

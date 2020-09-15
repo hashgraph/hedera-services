@@ -33,6 +33,10 @@ import static com.hedera.services.context.ServicesNodeType.*;
 import com.google.protobuf.ByteString;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountAmountOrBuilder;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -41,6 +45,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.TransferListOrBuilder;
 import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,6 +145,34 @@ class TxnHandlerSubmissionFlowTest {
 	}
 
 	@Test
+	public void validateQueryPayment() {
+		// setup:
+		AccountID payer = asAccount("0.0.2");
+		AccountID nodeAccount = asAccount("0.0.3");
+		TransferList transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(payer).setAmount(-8))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(nodeAccount).setAmount(-8))
+				.build();
+		Transaction signedQueryPaymentTxn = Transaction.newBuilder()
+				.setBody(TransactionBody.newBuilder()
+						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+						.setTransactionID(txnId)
+						.setNodeAccountID(nodeAccount)
+						.setTransactionFee(feeRequired))
+				.build();
+		TxnValidityAndFeeReq metaValidity = new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE, feeRequired);
+
+		given(txnHandler.validateTransactionPreConsensus(signedTxn, true)).willReturn(metaValidity);
+
+		// when:
+		TransactionResponse response = subject.submit(signedTxn);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, response.getNodeTransactionPrecheckCode());
+		assertEquals(feeRequired, response.getCost());
+	}
+
+	@Test
 	public void rejectsInvalidSyntax() {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(INVALID_ACCOUNT_ID);
@@ -186,5 +220,10 @@ class TxnHandlerSubmissionFlowTest {
 
 		// then:
 		assertEquals(NOT_SUPPORTED, response.getNodeTransactionPrecheckCode());
+	}
+
+	private static TransferList.Builder buildAccountAmounts(TransferList.Builder tfrList, long accountId, long balance){
+		 return tfrList.getAccountAmountsList().add(AccountAmount.newBuilder()
+				 .setAccountID(IdUtils.asAccount("0.0."+ accountId )).setAmount(balance));
 	}
 }
