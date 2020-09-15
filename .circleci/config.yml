@@ -2930,7 +2930,7 @@ jobs:
       - run-eet-suites:
           dsl-args: "-A DeprecatedContractKeySpecs"
       - run-eet-suites:
-          dsl-args: "-A ThresholdRecordCreationSpecs"
+          dsl-args: "ThresholdRecordCreationSpecs"
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
   run-umbrella-freeze-restart-test:

@@ -176,6 +176,15 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void ensuresNonNullTokenFcmAfterReadingFromLegacySavedState() {
+		// when:
+		subject.initialize(null);
+
+		// then:
+		assertNotNull(subject.tokens());
+	}
+
+	@Test
 	public void hasExpectedMinChildCounts() {
 		// given:
 		subject = new ServicesState(ctx, self, Collections.emptyList());

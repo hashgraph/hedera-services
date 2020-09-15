@@ -247,7 +247,6 @@ public class TxnUtils {
 				.setSeconds(instant.getEpochSecond() + offsetSecs)
 				.setNanos(candidateNano).build();
 
-		log.info("timestamp : {}", uniqueTS);
 		return uniqueTS;
 	}
 

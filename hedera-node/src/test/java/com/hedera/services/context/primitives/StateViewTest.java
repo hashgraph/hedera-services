@@ -44,6 +44,7 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.accounts.MapValueFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -80,6 +81,8 @@ class StateViewTest {
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
+	AccountID autoRenew = asAccount("2.4.6");
+	long autoRenewPeriod = 1_234_567;
 
 	FileGetInfoResponse.FileInfo expected;
 	FileGetInfoResponse.FileInfo expectedImmutable;
@@ -141,7 +144,7 @@ class StateViewTest {
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", true, true,
 				new EntityId(1, 2, 3));
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
@@ -149,6 +152,9 @@ class StateViewTest {
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
+		token.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenew));
+		token.setExpiry(expiry);
+		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
 		given(tokenStore.resolve(foundToken)).willReturn(tokenId);
 		given(tokenStore.resolve(missingToken)).willReturn(TokenStore.MISSING_TOKEN);
@@ -231,6 +237,9 @@ class StateViewTest {
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
 		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
+		assertEquals(autoRenew, info.getAutoRenewAccount());
+		assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
+		assertEquals(expiry, info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
 	}

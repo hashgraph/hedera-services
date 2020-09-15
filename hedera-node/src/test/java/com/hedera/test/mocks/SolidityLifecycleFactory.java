@@ -20,10 +20,11 @@ package com.hedera.test.mocks;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.contracts.execution.SolidityLifecycle;
 
 public class SolidityLifecycleFactory {
 	public static SolidityLifecycle newTestInstance() {
-		return new SolidityLifecycle(TestProperties.TEST_PROPERTIES);
+		return new SolidityLifecycle(new MockGlobalDynamicProps());
 	}
 }

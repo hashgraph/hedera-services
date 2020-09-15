@@ -47,7 +47,6 @@ import java.time.Instant;
 
 public interface OptionValidator {
 	boolean hasGoodEncoding(Key key);
-	boolean hasOnlyCryptoAccounts(TransferList accountAmounts);
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isValidEntityMemo(String memo);
 	boolean isValidTxnDuration(long duration);

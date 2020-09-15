@@ -41,6 +41,8 @@ public interface PropertySource {
 
 	Function<String, Object> AS_INT = Integer::valueOf;
 	Function<String, Object> AS_LONG = Long::valueOf;
+	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
+	Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
