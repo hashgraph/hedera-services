@@ -82,6 +82,6 @@ public interface OpProvider {
 
 	String UNIQUE_PAYER_ACCOUNT = "uniquePayerAccount";
 	long UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE = 50_000_000_000L;
-	long TRANSACTION_FEE = 500_000_000L;
+	long TRANSACTION_FEE = 5_000_000_000L;
 
 }

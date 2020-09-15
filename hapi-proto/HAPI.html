@@ -4558,14 +4558,14 @@ If unspecified, no change. </p></td>
                   <td>sendRecordThreshold</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction </p></td>
+                  <td><p>[Deprecated]. The threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction </p></td>
                 </tr>
               
                 <tr>
                   <td>receiveRecordThreshold</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction </p></td>
+                  <td><p>[Deprecated]. The threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction </p></td>
                 </tr>
               
                 <tr>
@@ -4606,6 +4606,32 @@ If unspecified, no change. </p></td>
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>sendRecordThreshold</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+                <tr>
+                  <td>receiveRecordThreshold</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -5050,14 +5076,14 @@ If unspecified, no change. </p></td>
                   <td>generateSendRecordThreshold</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The threshold amount, in tinybars, at which a record is created of any transaction that decreases the balance of this account by more than the threshold </p></td>
+                  <td><p>[Deprecated]. The threshold amount, in tinybars, at which a record is created of any transaction that decreases the balance of this account by more than the threshold </p></td>
                 </tr>
               
                 <tr>
                   <td>generateReceiveRecordThreshold</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The threshold amount, in tinybars, at which a record is created of any transaction that increases the balance of this account by more than the threshold </p></td>
+                  <td><p>[Deprecated]. The threshold amount, in tinybars, at which a record is created of any transaction that increases the balance of this account by more than the threshold </p></td>
                 </tr>
               
                 <tr>
@@ -5098,6 +5124,32 @@ If unspecified, no change. </p></td>
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>generateSendRecordThreshold</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+                <tr>
+                  <td>generateReceiveRecordThreshold</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -5634,7 +5686,7 @@ If unspecified, no change. </p></td>
                   <td>sendRecordThresholdWrapper</td>
                   <td><a href="#google.protobuf.UInt64Value">google.protobuf.UInt64Value</a></td>
                   <td></td>
-                  <td><p>The new threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction </p></td>
+                  <td><p>[Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any send/withdraw transaction </p></td>
                 </tr>
               
                 <tr>
@@ -5648,7 +5700,7 @@ If unspecified, no change. </p></td>
                   <td>receiveRecordThresholdWrapper</td>
                   <td><a href="#google.protobuf.UInt64Value">google.protobuf.UInt64Value</a></td>
                   <td></td>
-                  <td><p>The new threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction. </p></td>
+                  <td><p>[Deprecated]. The new threshold amount (in tinybars) for which an account record is created for any receive/deposit transaction. </p></td>
                 </tr>
               
                 <tr>
@@ -5706,7 +5758,17 @@ If unspecified, no change. </p></td>
                 </tr>
               
                 <tr>
+                  <td>sendRecordThresholdWrapper</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+                <tr>
                   <td>receiveRecordThreshold</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+                <tr>
+                  <td>receiveRecordThresholdWrapper</td>
                   <td><p>true</p></td>
                 </tr>
               
@@ -7752,13 +7814,13 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>INVALID_RECEIVE_RECORD_THRESHOLD</td>
                 <td>86</td>
-                <td><p>attempt to set negative receive record threshold</p></td>
+                <td><p>[Deprecated]. attempt to set negative receive record threshold</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SEND_RECORD_THRESHOLD</td>
                 <td>87</td>
-                <td><p>attempt to set negative send record threshold</p></td>
+                <td><p>[Deprecated]. attempt to set negative send record threshold</p></td>
               </tr>
             
               <tr>
