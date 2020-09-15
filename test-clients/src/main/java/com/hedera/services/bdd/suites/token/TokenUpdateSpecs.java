@@ -36,6 +36,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
@@ -55,6 +58,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						treasuryEvolves(),
 						validatesMissingAdminKey(),
 						validatesMissingRef(),
+						nameChangeFails(),
+						nameChanges()
 				}
 		);
 	}
@@ -182,6 +187,43 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenTransact(
 								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
+				);
+	}
+
+	public HapiApiSpec nameChanges() {
+		var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
+
+		return defaultHapiSpec("NameChanges")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenUpdate("tbu")
+								.name(hopefullyUnique)
+				).then(
+						getTokenInfo("tbu").hasName(hopefullyUnique)
+				);
+	}
+
+	public HapiApiSpec nameChangeFails() {
+		var emptyName = "";
+		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(101);
+
+		return defaultHapiSpec("NameChangeFails")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.name(tooLongName)
+								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
