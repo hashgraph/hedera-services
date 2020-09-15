@@ -21,9 +21,15 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -50,6 +56,10 @@ class QueryFeeCheckTest {
 	AccountID aRich = asAccount("0.0.2");
 	AccountID aNode = asAccount("0.0.3");
 	AccountID aBroke = asAccount("0.0.13257");
+
+	TransactionID txnId = TransactionID.newBuilder().setAccountID(aRich).build();
+	long feeRequired = 1234L;
+
 	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L;
 	MerkleAccount broke, rich;
 	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
@@ -229,6 +239,28 @@ class QueryFeeCheckTest {
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, status);
 	}
 
+	@Test
+	public void validateQueryPaymentSucceeds() {
+		// setup:
+		long amount =8;
+		// given :
+		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount);
+
+		// then:
+		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), OK);
+	}
+
+	@Test
+	public void validateQueryPaymentInsufficientPayerBalance() {
+		// setup:
+		long amount = Long.MAX_VALUE;
+		// given :
+		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount);
+
+		// then:
+		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), OK);
+	}
+
 	private AccountAmount adjustmentWith(AccountID id, long amount) {
 		return AccountAmount.newBuilder()
 				.setAccountID(id)
@@ -249,5 +281,21 @@ class QueryFeeCheckTest {
 			AccountAmount c
 	) {
 		return List.of(a, b, c);
+	}
+
+	private TransactionBody getSignedPaymentTxn(long amount) {
+		TransferList transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
+				.build();
+		Transaction signedTransaction = Transaction.newBuilder()
+				.setBody(TransactionBody.newBuilder()
+						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+						.setTransactionID(txnId)
+						.setNodeAccountID(aNode)
+						.setTransactionFee(feeRequired))
+				.build();
+		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(signedTransaction);
+		return accessor.getTxn();
 	}
 }

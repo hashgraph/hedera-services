@@ -31,13 +31,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class QueryFeeCheck {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -137,13 +135,13 @@ public class QueryFeeCheck {
 			List<AccountAmount> transfers = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
 
 			if (transfers.size() != 2) {
-				returnCode = INVALID_TRANSACTION_BODY;
+				returnCode = INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 				return returnCode;
 			}
 
 			for (AccountAmount entry : transfers) {
 				if(entry.getAmount() < 0){
-					transferAmount = entry.getAmount();
+					transferAmount = -1 * entry.getAmount();
 					if(!entry.getAccountID().equals(payerAccount)){
 						returnCode = INVALID_PAYER_ACCOUNT_ID;
 					}

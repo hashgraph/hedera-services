@@ -206,4 +206,6 @@ enum ResponseCodeEnum {
   INVALID_TOKEN_EXPIRY = 192;
   TOKEN_HAS_EXPIRED = 193;
   TOKEN_IS_IMMUTABlE = 194;
+
+  INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS = 195; // The query payment crypto transfer has more than 2 account amounts
 }

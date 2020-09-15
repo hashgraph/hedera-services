@@ -147,34 +147,6 @@ class TxnHandlerSubmissionFlowTest {
 	}
 
 	@Test
-	public void validateQueryPayment() {
-		// setup:
-		AccountID payer = asAccount("0.0.2");
-		AccountID nodeAccount = asAccount("0.0.3");
-		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(payer).setAmount(-8))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(nodeAccount).setAmount(-8))
-				.build();
-		Transaction signedQueryPaymentTxn = Transaction.newBuilder()
-				.setBody(TransactionBody.newBuilder()
-						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-						.setTransactionID(txnId)
-						.setNodeAccountID(nodeAccount)
-						.setTransactionFee(feeRequired))
-				.build();
-		TxnValidityAndFeeReq metaValidity = new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE, feeRequired);
-
-		assertEquals(txnHandler.validateTransactionPreConsensus(signedQueryPaymentTxn, true),metaValidity);
-
-		// when:
-		TransactionResponse response = subject.submit(signedTxn);
-
-		// then:
-		assertEquals(INSUFFICIENT_PAYER_BALANCE, response.getNodeTransactionPrecheckCode());
-		assertEquals(feeRequired, response.getCost());
-	}
-
-	@Test
 	public void rejectsInvalidSyntax() {
 		given(txnHandler.validateTransactionPreConsensus(signedTxn, false)).willReturn(okMeta);
 		given(syntaxCheck.apply(any())).willReturn(INVALID_ACCOUNT_ID);
