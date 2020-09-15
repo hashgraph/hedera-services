@@ -294,6 +294,25 @@ public class TransactionHandler {
   }
 
   /**
+   * @param trBody body of the transaction
+   * @return ResponseCodeEnum.MEMO_TOO_LONG if this is a contract creation or update and the memo is
+   * longer than 100 characters, else OK.
+   */
+  private ResponseCodeEnum validateContractMemoSize(TransactionBody trBody) {
+    String memo = null;
+    ResponseCodeEnum returnCode = OK;
+    if (trBody.hasContractCreateInstance()) {
+      memo = trBody.getContractCreateInstance().getMemo();
+    } else if (trBody.hasContractUpdateInstance()) {
+      memo = trBody.getContractUpdateInstance().getMemo();
+    }
+    if (memo != null && memo.length() > 100) {
+      returnCode = ResponseCodeEnum.MEMO_TOO_LONG;
+    }
+    return returnCode;
+  }
+
+  /**
    * validates node account id against current node account
    *
    * @param trBody body of the transaction
@@ -518,7 +537,7 @@ public class TransactionHandler {
     }
 
     if (returnCode == OK) {
-      returnCode = AwareProcessLogic.validateContractMemoSize(txn);
+      returnCode = validateContractMemoSize(txn);
     }
 
     return new TxnValidityAndFeeReq(returnCode, feeRequired);
