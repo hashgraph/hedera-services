@@ -29,19 +29,31 @@ import "Response.proto";
 import "TransactionResponse.proto";
 import "Transaction.proto";
 
-/* The requests and responses for different network services. */
+/* Transactions and queries for the Token Service */
 service TokenService {
-    rpc mintToken (Transaction) returns (TransactionResponse);
-    rpc burnToken (Transaction) returns (TransactionResponse);
+    // Creates a new Token by submitting the transaction
     rpc createToken (Transaction) returns (TransactionResponse);
+    // Updates the account by submitting the transaction
     rpc updateToken (Transaction) returns (TransactionResponse);
+    // Mints an amount of the token to the defined treasury account
+    rpc mintToken (Transaction) returns (TransactionResponse);
+    // Burns an amount of the token from the defined treasury account
+    rpc burnToken (Transaction) returns (TransactionResponse);
+    // (NOT CURRENTLY SUPPORTED) Deletes a Token
     rpc deleteToken (Transaction) returns (TransactionResponse);
-    rpc transferTokens (Transaction) returns (TransactionResponse);
+    // Wipes the provided amount of tokens from the specified Account ID
     rpc wipeTokenAccount (Transaction) returns (TransactionResponse);
+    // Freezes the transfer of tokens to or from the specified Account ID
     rpc freezeTokenAccount (Transaction) returns (TransactionResponse);
+    // Unfreezes the transfer of tokens to or from the specified Account ID
     rpc unfreezeTokenAccount (Transaction) returns (TransactionResponse);
+    // Flags the provided Account ID as having gone through KYC
     rpc grantKycToTokenAccount (Transaction) returns (TransactionResponse);
+    // Removes the KYC flag of the provided Account ID
     rpc revokeKycFromTokenAccount (Transaction) returns (TransactionResponse);
+    // Initiates a Token transfer by submitting the transaction
+    rpc transferTokens (Transaction) returns (TransactionResponse);
 
+    // Retrieves the metadata of a token
     rpc getTokenInfo (Query) returns (Response);
 }

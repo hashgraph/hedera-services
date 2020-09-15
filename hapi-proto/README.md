@@ -17,6 +17,7 @@ execution of Solidity contract creations and calls; contract may both possess
 ℏ themselves and exchange it with non-contract accounts.
 4. The [file service](src/main/proto/FileService.proto), for storage and 
 retrieval of opaque binary data.
+5. The [token service](src/main/proto/TokenService.proto), for token related operations such as create, update, mint, burn, transfer etc.. 
 
 There are also two secondary service families:
 1. The [network service](src/main/proto/NetworkService.proto), for operations scoped

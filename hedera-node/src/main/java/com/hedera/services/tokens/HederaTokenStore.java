@@ -35,7 +35,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.swirlds.fcmap.FCMap;
@@ -345,7 +345,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now) {
+	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		var validity = symbolCheck(request.getSymbol());
 		if (validity != OK) {
 			return failure(validity);
@@ -371,7 +371,7 @@ public class HederaTokenStore implements TokenStore {
 				return failure(INVALID_EXPIRATION_TIME);
 			}
 		}
-		validity = floatAndDivisibilityCheck(request.getFloat(), request.getDivisibility());
+		validity = floatAndDivisibilityCheck(request.getInitialSupply(), request.getDecimals());
 		if (validity != OK) {
 			return failure(validity);
 		}
@@ -389,8 +389,8 @@ public class HederaTokenStore implements TokenStore {
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
 				expiry,
-				request.getFloat(),
-				request.getDivisibility(),
+				request.getInitialSupply(),
+				request.getDecimals(),
 				request.getSymbol(),
 				request.getName(),
 				request.getFreezeDefault(),
@@ -413,7 +413,7 @@ public class HederaTokenStore implements TokenStore {
 		return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 	}
 
-	private long expiryOf(TokenCreation request, long now) {
+	private long expiryOf(TokenCreateTransactionBody request, long now) {
 		return request.hasAutoRenewAccount()
 				? now + request.getAutoRenewPeriod()
 				: request.getExpiry();
