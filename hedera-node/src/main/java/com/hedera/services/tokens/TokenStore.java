@@ -59,13 +59,13 @@ public interface TokenStore {
 	ResponseCodeEnum mint(TokenID tId, long amount);
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
-	ResponseCodeEnum update(TokenManagement changes);
+	ResponseCodeEnum update(TokenManagement changes, long now);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor);
+	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now);
 	void commitCreation();
 	void rollbackCreation();
 	boolean isCreationPending();

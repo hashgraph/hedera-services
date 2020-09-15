@@ -53,7 +53,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private String token;
 
 	private OptionalInt divisibility = OptionalInt.empty();
+	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialFloat = OptionalLong.empty();
+	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
 	private Optional<String> kycKey = Optional.empty();
 	private Optional<String> wipeKey = Optional.empty();
@@ -63,6 +65,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<Boolean> kycDefault = Optional.empty();
+	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 
 	@Override
@@ -99,6 +102,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate expiry(long at) {
+		expiry = OptionalLong.of(at);
+		return this;
+	}
+
 	public HapiTokenCreate kycKey(String name) {
 		kycKey = Optional.of(name);
 		return this;
@@ -131,6 +139,16 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate treasury(String treasury) {
 		this.treasury = Optional.of(treasury);
+		return this;
+	}
+
+	public HapiTokenCreate autoRenewAccount(String account) {
+		this.autoRenewAccount = Optional.of(account);
+		return this;
+	}
+
+	public HapiTokenCreate autoRenewPeriod(long secs) {
+		this.autoRenewPeriod = OptionalLong.of(secs);
 		return this;
 	}
 
@@ -179,6 +197,13 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
+							if (autoRenewAccount.isPresent()) {
+								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
+								b.setAutoRenewAccount(id);
+								b.setAutoRenewPeriod(autoRenewPeriod
+										.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds()));
+							}
+							expiry.ifPresent(b::setExpiry);
 							wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							treasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
@@ -192,6 +217,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				spec -> spec.registry().getKey(effectivePayer(spec))));
 		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
+		autoRenewAccount.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		return signers;
 	}
 

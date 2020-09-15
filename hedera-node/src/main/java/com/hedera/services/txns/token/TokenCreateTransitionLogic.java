@@ -70,7 +70,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(TokenCreation op) {
-		var result = store.createProvisionally(op, txnCtx.activePayer());
+		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond());
 		if (result.getStatus() != OK) {
 			abortWith(result.getStatus());
 			return;

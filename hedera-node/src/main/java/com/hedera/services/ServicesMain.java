@@ -161,7 +161,7 @@ public class ServicesMain implements SwirldMain {
 		log.info("Record expiration reviewed.");
 		loadFeeSchedule();
 		log.info("Fee schedule loaded.");
-		sanitizeProperties();
+
 		log.info("Completed initialization of {} #{}", ctx.nodeType(), ctx.id());
 
 		startTimerTasksIfNeeded();
@@ -210,11 +210,11 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void startNettyIfAppropriate() {
-		int port = ctx.properties().getIntProperty("grpc.port");
+		int port = ctx.nodeLocalProperties().port();
 		final int PORT_MODULUS = 1000;
-		int tlsPort = ctx.properties().getIntProperty("grpc.tlsPort");
+		int tlsPort = ctx.nodeLocalProperties().tlsPort();
 		log.info("TLS is turned on by default on node {}", ctx.id());
-		Profile activeProfile = ctx.properties().getProfileProperty("hedera.profiles.active");
+		Profile activeProfile = ctx.nodeLocalProperties().activeProfile();
 		log.info("Active profile: {}", activeProfile);
 		if (activeProfile == DEV) {
 			if (onlyDefaultNodeListens()) {
@@ -242,10 +242,6 @@ public class ServicesMain implements SwirldMain {
 		String myNodeAccount = ctx.addressBook().getAddress(ctx.id().getId()).getMemo();
 		String blessedNodeAccount = ctx.properties().getStringProperty("dev.defaultListeningNodeAccount");
 		return myNodeAccount.equals(blessedNodeAccount);
-	}
-
-	private void sanitizeProperties() {
-		ctx.propertySanitizer().sanitize(ctx.propertySources());
 	}
 
 	private void loadFeeSchedule() {

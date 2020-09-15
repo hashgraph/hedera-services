@@ -120,10 +120,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getKeyExpansionDepth();
 	}
 
-	public static int getTxReceiptTTL() {
-		return SyncPropertiesObject.getTxReceiptTTL();
-	}
-
 	public static int getThresholdTxRecordTTL() {
 		return SyncPropertiesObject.getThresholdTxRecordTTL();
 	}
@@ -142,10 +138,6 @@ public class PropertiesLoader {
 
 	public static int getQueriesTps() {
 		return AsyncPropertiesObject.getQueriesTps();
-	}
-
-	public static String getFeeCollectionAccount() {
-		return SyncPropertiesObject.getDefaultFeeCollectionAccount();
 	}
 
 	public static long getMinimumAutorenewDuration() {
@@ -188,10 +180,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getLocalCallEstReturnBytes();
 	}
 
-	public static int getExchangeRateAllowedPercentage() {
-		return SyncPropertiesObject.getExchangeRateAllowedPercentage();
-	}
-
 	public static int getTxMinRemaining() {
 		return SyncPropertiesObject.getTxMinRemaining();
 	}
@@ -204,39 +192,12 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTxMaxDuration();
 	}
 
-	public static int getMaxContractStateSize() {
-		return SyncPropertiesObject.getMaxContractStateSize();
-	}
-
-	/**
-	 * If Exchange_Rate_Allowed_Percentage in application.properties is invalid,
-	 * i.e. <=0, we set it to be DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE, and
-	 * return false; else return true;
-	 *
-	 * @return
-	 */
-	public static boolean validExchangeRateAllowedPercentage() {
-		return SyncPropertiesObject.validExchangeRateAllowedPercentage();
-	}
-
 	public static boolean isEnableRecordStreaming() {
 		return AsyncPropertiesObject.isEnableRecordStreaming();
 	}
 
 	public static Map<String, PermissionedAccountsRange> getApiPermission() {
 		return AsyncPropertiesObject.getApiPermission();
-	}
-
-	public static int getPort() {
-		return AsyncPropertiesObject.getPort();
-	}
-
-	public static int getTlsPort() {
-		return AsyncPropertiesObject.getTlsPort();
-	}
-
-	public static int getEnvironment() {
-		return AsyncPropertiesObject.getEnvironment();
 	}
 
 	public static String getDefaultListeningNodeAccount() {
@@ -289,10 +250,6 @@ public class PropertiesLoader {
 
 	public static int getMaxGasLimit() {
 		return SyncPropertiesObject.getMaxGasLimit();
-	}
-
-	public static int getMaxFileSize() {
-		return SyncPropertiesObject.getMaxFileSize();
 	}
 
 	public static boolean getStartStatsDumpTimer() {

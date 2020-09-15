@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*
 
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.*;
 
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -49,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -72,9 +74,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-				vanillaTransferSucceeds()
+//				vanillaTransferSucceeds(),
 //				complexKeyAcctPaysForOwnTransfer(),
-//				twoComplexKeysRequired()
+//				twoComplexKeysRequired(),
+				systemBalancesCheck()
 		);
 	}
 
@@ -129,6 +132,15 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								forKey("payer", payerSigs),
 								forKey("receiver", receiverSigs)
 						).hasKnownStatus(SUCCESS)
+				);
+	}
+
+	private HapiApiSpec systemBalancesCheck() {
+		return defaultHapiSpec("SystemBalancesCheck")
+				.given( ).when( ).then(
+						IntStream.range(1, 101)
+								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
+								.toArray(n -> new HapiSpecOperation[n])
 				);
 	}
 

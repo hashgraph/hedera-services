@@ -43,6 +43,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.HederaTokenStore;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -114,6 +115,7 @@ import static org.mockito.BDDMockito.when;
 
 @RunWith(JUnitPlatform.class)
 public class HederaLedgerTest {
+	long thisSecond = 1_234_567L;
 	final long NEXT_ID = 1_000_000L;
 	final long MISC_BALANCE = 1_234L;
 	final long RAND_BALANCE = 2_345L;
@@ -381,6 +383,7 @@ public class HederaLedgerTest {
 				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
 		tokenStore = new HederaTokenStore(
 				ids,
+				TestContextValidator.TEST_VALIDATOR,
 				new MockGlobalDynamicProps(),
 				() -> tokens);
 		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
@@ -787,10 +790,13 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
-		System.out.println(tokenStore.createProvisionally(stdWith("MINE", a), a).getStatus());
-		tA = tokenStore.createProvisionally(stdWith("MINE", a), a).getCreated().get();
+		var rA = tokenStore.createProvisionally(stdWith("MINE", a), a, thisSecond);
+		System.out.println(rA.getStatus());
+		tA = rA.getCreated().get();
 		tokenStore.commitCreation();
-		tB = tokenStore.createProvisionally(stdWith("YOURS", b), b).getCreated().get();
+		var rB = tokenStore.createProvisionally(stdWith("YOURS", b), b, thisSecond);
+		System.out.println(rB.getStatus());
+		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
 		subject.doTransfer(d, a, 1_000L);
@@ -837,6 +843,7 @@ public class HederaLedgerTest {
 				.setSymbol(symbol)
 				.setFloat(0)
 				.setTreasury(account)
+				.setExpiry(2 * thisSecond)
 				.setDivisibility(0)
 				.setFreezeDefault(false)
 				.build();

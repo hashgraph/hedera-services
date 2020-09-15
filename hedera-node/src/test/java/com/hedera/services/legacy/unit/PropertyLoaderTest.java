@@ -126,22 +126,17 @@ public class PropertyLoaderTest {
 
   @Test
   public void testAPPChangeProperties() throws Exception {
-    int txReceiptTTL = PropertiesLoader.getTxReceiptTTL();
     int thresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
     int txMaxDuration = PropertiesLoader.getTxMaxDuration();
-    assertEquals(180, txReceiptTTL);
     assertEquals(90000, thresholdTxRecordTTL);
     assertEquals(120, txMaxDuration);
     ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD,THRESHOLD_TTL_UPD,TX_MAX_DURATION_UPD);
     // now reload properties 
     PropertiesLoader.populateApplicationPropertiesWithProto(servicesConfigurationList);
-    int newTxReceiptTTL = PropertiesLoader.getTxReceiptTTL();
     int newThresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
     int newTxMaxDuration = PropertiesLoader.getTxMaxDuration();
-    assertNotEquals(txReceiptTTL, newTxReceiptTTL);
     assertNotEquals(thresholdTxRecordTTL, newThresholdTxRecordTTL);
     assertNotEquals(txMaxDuration, newTxMaxDuration);
-    assertEquals(280, newTxReceiptTTL);
     assertEquals(80000, newThresholdTxRecordTTL);
     assertEquals(220, newTxMaxDuration);
     

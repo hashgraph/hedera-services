@@ -111,5 +111,27 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 							.get()
 			));
 		}
+	},
+	TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.newAutoRenew(MISC_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.newAutoRenew(MISSING_ACCOUNT)
+							.get()
+			));
+		}
 	}
 }

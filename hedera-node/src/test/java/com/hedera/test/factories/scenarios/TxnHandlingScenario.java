@@ -172,7 +172,7 @@ public interface TxnHandlingScenario {
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
 
 		var immutableToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"ImmutableToken", false, false,
 				new EntityId(1, 2, 3));
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_IMMUTABLE_ID)))
@@ -180,7 +180,7 @@ public interface TxnHandlingScenario {
 		given(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).willReturn(immutableToken);
 
 		var vanillaToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"VanillaToken", false, false,
 				new EntityId(1, 2, 3));
 		vanillaToken.setAdminKey(adminKey);
@@ -189,7 +189,7 @@ public interface TxnHandlingScenario {
 		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
 
 		var frozenToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"FrozenToken", true, false,
 				new EntityId(1, 2, 4));
 		frozenToken.setAdminKey(adminKey);
@@ -199,7 +199,7 @@ public interface TxnHandlingScenario {
 		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
 
 		var kycToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"KycToken", false, true,
 				new EntityId(1, 2, 4));
 		kycToken.setAdminKey(adminKey);
@@ -209,7 +209,7 @@ public interface TxnHandlingScenario {
 		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
 
 		var supplyToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"SupplyToken", false, false,
 				new EntityId(1, 2, 4));
 		supplyToken.setAdminKey(adminKey);
@@ -219,7 +219,7 @@ public interface TxnHandlingScenario {
 		given(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(supplyToken);
 
 		var wipeToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"WipeToken", false, false,
 				new EntityId(1, 2, 4));
 		wipeToken.setAdminKey(adminKey);
