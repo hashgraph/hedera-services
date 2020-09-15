@@ -57,7 +57,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
 						creationYieldsExpectedToken(),
-						autoRenewValidationWorks(),
+						creationSetsExpectedName(),
+						creationFailsFaultyName()
 				}
 		);
 	}
@@ -104,6 +105,45 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
+				);
+	}
+
+	public HapiApiSpec creationSetsExpectedName() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationSetsExpectedName")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed("freeze")
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasName(saltedName)
+				);
+	}
+
+
+	public HapiApiSpec creationFailsFaultyName() {
+		return defaultHapiSpec("CreationFailsFaultyName")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						newKeyNamed("freeze")
+				).when(
+				).then(
+						tokenCreate("primary")
+								.name("")
+								.logged()
+								.hasKnownStatus(MISSING_TOKEN_NAME),
+						tokenCreate("primary")
+								.name("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+								.logged()
+								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
