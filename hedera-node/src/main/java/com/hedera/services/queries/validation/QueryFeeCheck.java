@@ -124,7 +124,7 @@ public class QueryFeeCheck {
 		return OK;
 	}
 
-	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn, long feeRequired) {
+	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn) {
 		ResponseCodeEnum returnCode = OK;
 		long suppliedFee = txn.getTransactionFee();
 		long transferAmount = 0;

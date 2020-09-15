@@ -530,7 +530,7 @@ public class TransactionHandler {
     }
 
     if(returnCode == OK && isQueryPayment && txn.hasCryptoTransfer()){
-      returnCode = queryFeeCheck.validateQueryPaymentTransaction(txn, feeRequired);
+      returnCode = queryFeeCheck.validateQueryPaymentTransaction(txn);
     }
 
     if (!(isQueryPayment && txn.hasCryptoTransfer()) && returnCode == OK) {
