@@ -36,7 +36,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.hedera.services.legacy.exception.KeySignatureTypeMismatchException;
-import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.hedera.services.queries.validation.QueryFeeCheck;

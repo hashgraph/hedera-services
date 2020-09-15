@@ -107,7 +107,6 @@ public class AwareProcessLogic implements ProcessLogic {
 	@Override
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
-
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
 			if (!txnSanityChecks(accessor, consensusTime, submittingMember)) {
 				return;
@@ -131,7 +130,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.error(msg);
 			return false;
 		}
-
 		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
 			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
 					submittingMember,
