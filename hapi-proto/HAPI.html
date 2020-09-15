@@ -8048,13 +8048,13 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>INVALID_TOKEN_DIVISIBILITY</td>
+                <td>INVALID_TOKEN_DECIMALS</td>
                 <td>168</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INVALID_TOKEN_FLOAT</td>
+                <td>INVALID_INITIAL_SUPPLY</td>
                 <td>169</td>
                 <td><p></p></td>
               </tr>
@@ -8628,7 +8628,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenCreateTransactionBody">TokenCreateTransactionBody</h3>
-        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The Name and Symbol properties must be unique within the network. If there are other tokens defined with the same name or symbol, respectively TOKEN_SYMBOL_ALREADY_IN_USE and TOKEN_NAME_ALREADY_IN_USE errors are returned.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be S*(10^D), where S is initial supply and D is decimals. The maximum supply a token can have is S*(10^D) < 2^63.</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated.</p><p>If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
+        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The Name and Symbol properties must be unique within the network. If there are other tokens defined with the same name or symbol, respectively TOKEN_SYMBOL_ALREADY_IN_USE and TOKEN_NAME_ALREADY_IN_USE errors are returned.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be S*(10^D), where S is initial supply and D is decimals. The maximum supply a token can have is S*(10^D) < 2^63.</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
 
         
           <table class="field-table">
@@ -8947,14 +8947,14 @@ by HAPI.</p></td>
                 </tr>
               
                 <tr>
-                  <td>currentFloat</td>
+                  <td>totalSupply</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>divisibility</td>
+                  <td>decimals</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
                   <td><p> </p></td>

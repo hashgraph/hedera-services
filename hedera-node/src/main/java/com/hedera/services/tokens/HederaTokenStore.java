@@ -71,8 +71,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
@@ -632,21 +632,21 @@ public class HederaTokenStore implements TokenStore {
 
 	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
 		if (tokenFloat < 0) {
-			return INVALID_TOKEN_FLOAT;
+			return INVALID_INITIAL_SUPPLY;
 		}
 
 		try {
 			var divisibilityFloat = BigInteger.valueOf(10)
 					.pow(divisibility);
 			if (divisibilityFloat.longValue() < 0) {
-				return INVALID_TOKEN_DIVISIBILITY;
+				return INVALID_TOKEN_DECIMALS;
 			}
 
 			var tinyTokenFloat = divisibilityFloat
 					.multiply(BigInteger.valueOf(tokenFloat));
-			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DIVISIBILITY;
+			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DECIMALS;
 		} catch (ArithmeticException ignore) {
-			return INVALID_TOKEN_DIVISIBILITY;
+			return INVALID_TOKEN_DECIMALS;
 		}
 	}
 

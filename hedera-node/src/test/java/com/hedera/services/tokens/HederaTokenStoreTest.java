@@ -1770,7 +1770,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
@@ -1788,7 +1788,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
@@ -1803,7 +1803,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
@@ -1818,7 +1818,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
@@ -1833,7 +1833,7 @@ class HederaTokenStoreTest {
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test

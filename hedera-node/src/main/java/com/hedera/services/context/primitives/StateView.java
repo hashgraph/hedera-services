@@ -169,8 +169,8 @@ public class StateView {
 					.setSymbol(token.symbol())
 					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())
-					.setCurrentFloat(token.tokenFloat())
-					.setDivisibility(token.divisibility())
+					.setTotalSupply(token.tokenFloat())
+					.setDecimals(token.divisibility())
 					.setExpiry(token.expiry());
 
 			var adminCandidate = token.adminKey();
