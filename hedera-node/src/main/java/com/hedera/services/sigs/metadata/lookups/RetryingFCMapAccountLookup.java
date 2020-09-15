@@ -20,13 +20,13 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.Pause;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.services.stats.HederaNodeStats;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,9 +55,10 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 
 	private int maxRetries;
 	private int retryWaitIncrementMs;
-	private Optional<PropertySource> properties;
 	final private Pause pause;
 	final private HederaNodeStats stats;
+
+	private Optional<NodeLocalProperties> properties;
 
 	public RetryingFCMapAccountLookup(
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
@@ -76,7 +77,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 
 	public RetryingFCMapAccountLookup(
 			Pause pause,
-			PropertySource properties,
+			NodeLocalProperties properties,
 			HederaNodeStats stats,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
@@ -91,10 +92,10 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
 		maxRetries = properties
-				.map(p -> p.getIntProperty("validation.preConsensus.accountKey.maxLookupRetries"))
+				.map(NodeLocalProperties::precheckLookupRetries)
 				.orElse(maxRetries);
 		retryWaitIncrementMs = properties
-				.map(p -> p.getIntProperty("validation.preConsensus.accountKey.retryBackoffIncrementMs"))
+				.map(NodeLocalProperties::precheckLookupRetryBackoffMs)
 				.orElse(retryWaitIncrementMs);
 
 		final long lookupStart = System.nanoTime();

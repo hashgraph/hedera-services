@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -46,6 +47,7 @@ class BootstrapPropertiesTest {
 	private String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
 
 	private String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
+	private String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
 
 	private static final Map<String, Object> expectedProps = Map.ofEntries(
 			entry("bootstrap.feeSchedulesJson.resource", "FeeSchedule.json"),
@@ -54,8 +56,8 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.genesisPemPassphrase.path", "TBD"),
 			entry("bootstrap.genesisPem.path", "TBD"),
 			entry("bootstrap.hapiPermissions.path", "data/config/api-permission.properties"),
-			entry("bootstrap.ledger.nodeAccounts.initialBalance", 100000000000000L),
-			entry("bootstrap.ledger.systemAccounts.initialBalance", 100000000000000L),
+			entry("bootstrap.ledger.nodeAccounts.initialBalance", 0L),
+			entry("bootstrap.ledger.systemAccounts.initialBalance", 0L),
 			entry("bootstrap.ledger.systemAccounts.recordThresholds", 5000000000000000000L),
 			entry("bootstrap.networkProperties.path", "data/config/application.properties"),
 			entry("bootstrap.rates.currentHbarEquiv", 1),
@@ -77,23 +79,38 @@ class BootstrapPropertiesTest {
 			entry("accounts.treasury", 2L),
 			entry("contracts.defaultSendThreshold", 5000000000000000000L),
 			entry("contracts.defaultReceiveThreshold", 5000000000000000000L),
+			entry("contracts.maxStorageKb", 1024),
 			entry("files.addressBook", 101L),
 			entry("files.networkProperties", 121L),
 			entry("files.exchangeRates", 112L),
 			entry("files.feeSchedules", 111L),
 			entry("files.hapiPermissions", 122L),
 			entry("files.nodeDetails", 102L),
+			entry("grpc.port", 50211),
+			entry("grpc.tlsPort", 50212),
 			entry("hedera.numReservedSystemEntities", 1_000L),
+			entry("hedera.profiles.active", Profile.PROD),
 			entry("hedera.realm", 0L),
 			entry("hedera.shard", 0L),
+			entry("ledger.fundingAccount", 98L),
 			entry("ledger.createThresholdRecords", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
+			entry("precheck.account.maxLookupRetries", 10),
+			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolLength", 32),
-			entry("tokens.maxTokenNameLength",100)
+			entry("tokens.maxTokenNameLength",100),
+			entry("files.maxSizeKb", 1024),
+			entry("cache.records.ttl", 180),
+			entry("rates.intradayChangeLimitPercent", 25)
 	);
+
+	@BeforeEach
+	void setUp() {
+		subject.BOOTSTRAP_OVERRIDE_PROPS_LOC = EMPTY_OVERRIDE_PROPS_LOC;
+	}
 
 	@Test
 	public void throwsIseIfUnreadable() {
@@ -139,11 +156,11 @@ class BootstrapPropertiesTest {
 		subject.ensureProps();
 
 		// then:
-		assertEquals(expectedProps, subject.bootstrapProps);
-		// and:
 		for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
-			assertEquals(expectedProps.get(name), subject.getProperty(name));
+			assertEquals(expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
 		}
+		// and:
+		assertEquals(expectedProps, subject.bootstrapProps);
 	}
 
 	@Test

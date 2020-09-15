@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
@@ -56,7 +57,8 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	private HederaLedger ledger;
 	private final FeeExemptions exemptions;
-	private final PropertySource properties;
+
+	private final GlobalDynamicProperties properties;
 
 	AccountID node;
 	AccountID funding;
@@ -67,7 +69,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 
 	public ItemizableFeeCharging(
 			FeeExemptions exemptions,
-			PropertySource properties
+			GlobalDynamicProperties properties
 	) {
 		super(exemptions);
 		this.exemptions = exemptions;
@@ -99,7 +101,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		super.resetFor(accessor);
 
 		node = accessor.getTxn().getNodeAccountID();
-		funding = properties.getAccountProperty("ledger.funding.account");
+		funding = properties.fundingAccount();
 		this.submittingNode = submittingNode;
 
 		payerFeesCharged.clear();

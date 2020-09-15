@@ -172,6 +172,7 @@ public class TxnFactory {
 			builder.setDivisibility(setup.defaultTokenDivisibility());
 			builder.setFloat(setup.defaultTokenFloat());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
+			builder.setExpiry(defaultExpiry().getSeconds());
 		};
 	}
 

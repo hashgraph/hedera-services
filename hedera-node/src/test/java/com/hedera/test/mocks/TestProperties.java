@@ -40,7 +40,7 @@ public enum TestProperties implements PropertySource {
 		} else if (name.equals("contracts.defaultReceiveThreshold")) {
 			return 5000000000000000000L;
 		} else if (name.equals("contracts.maxStorageKb")) {
-			return PropertiesLoader.getMaxContractStateSize();
+			return 1024;
 		} else if (name.equals("hedera.transaction.minValidityBufferSecs")) {
 			return 10;
 		} else {
