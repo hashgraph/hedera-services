@@ -33,10 +33,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static com.hedera.services.context.properties.Profile.DEV;
-import static com.hedera.services.context.properties.Profile.PROD;
-import static com.hedera.services.context.properties.Profile.TEST;
-import static com.hedera.services.legacy.config.PropertiesLoader.getEnvironment;
 import static com.hedera.services.legacy.config.PropertiesLoader.getSaveAccounts;
 import static com.hedera.services.legacy.config.PropertiesLoader.getUniqueListeningPortFlag;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_CONFIG_PREFIX;
@@ -60,26 +56,22 @@ import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACIT
 public class StandardizedPropertySources implements PropertySources {
 	public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
 
+	public static Supplier<ScreenedNodeFileProps> nodePropertiesSupplier = ScreenedNodeFileProps::new;
 	public static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 
 	public static final String RESPECT_LEGACY_THROTTLING_PROPERTY = API_THROTTLING_CONFIG_PREFIX + ".useLegacyProps";
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
 	private static final int ISS_ROUNDS_TO_DUMP = 5;
-	public static final String VERSION_INFO_PROPERTIES_FILE = "semantic-version.properties";
-	public static final String VERSION_INFO_PROPERTIES_PROTO_KEY = "hapi.proto.version";
-	public static final String VERSION_INFO_PROPERTIES_SERVICES_KEY = "hedera.services.version";
 	public static final int MAX_MEMO_UTF8_BYTES = 100;
-	public static final int PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES = 10;
-	public static final int PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS = 10;
 	public static final long LONG_MASK = 0xffffffffL;
-
-	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	private final PropertySource bootstrapProps;
 	private final Predicate<String> fileSourceExists;
-	private final ScreenedSysFileProps dynamicGlobalProps;
 	private final Map<String, Object> throttlePropsFromSysFile = new HashMap<>();
+
+	final ScreenedSysFileProps dynamicGlobalProps;
+	final ScreenedNodeFileProps nodeProps;
 
 	public StandardizedPropertySources(
 			PropertySource bootstrapProps,
@@ -88,6 +80,7 @@ public class StandardizedPropertySources implements PropertySources {
 		this.bootstrapProps = bootstrapProps;
 		this.fileSourceExists = fileSourceExists;
 
+		nodeProps = nodePropertiesSupplier.get();
 		dynamicGlobalProps = dynamicGlobalPropsSupplier.get();
 
 		throttlePropsFromSysFile.put(RESPECT_LEGACY_THROTTLING_PROPERTY, true);
@@ -162,24 +155,17 @@ public class StandardizedPropertySources implements PropertySources {
 	public PropertySource asResolvingSource() {
 		var bootstrap = new SupplierMapPropertySource(sourceMap());
 		var bootstrapPlusThrottleProps = new DeferringPropertySource(bootstrap, throttlePropsFromSysFile);
-		return new ChainedSources(dynamicGlobalProps, bootstrapPlusThrottleProps);
+		var bootstrapPlusThrottlePlusNodeProps = new ChainedSources(nodeProps, bootstrapPlusThrottleProps);
+		return new ChainedSources(dynamicGlobalProps, bootstrapPlusThrottlePlusNodeProps);
 	}
 
 	private Map<String, Supplier<Object>> sourceMap() {
-		Supplier<Object> maxLookupRetries = () -> PRE_CONSENSUS_ACCOUNT_KEY_MAX_LOOKUP_RETRIES;
-		Supplier<Object> retryBackoffIncrementMs = () -> PRE_CONSENSUS_ACCOUNT_KEY_RETRY_BACKOFF_INCREMENT_MS;
-
 		Map<String, Supplier<Object>> source = new HashMap<>();
 
 		/* Bootstrap properties, which must include defaults for every system property. */
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
-		source.put("ledger.funding.account", PropertiesLoader::getFeeCollectionAccount);
 
 		/* Global/dynamic properties. */
-		source.put("cache.records.ttl", PropertiesLoader::getTxReceiptTTL);
-		source.put("contracts.maxStorageKb", PropertiesLoader::getMaxContractStateSize);
-		source.put("exchangeRates.intradayChange.limitPercent", PropertiesLoader::getExchangeRateAllowedPercentage);
-		source.put("files.maxSizeKb", PropertiesLoader::getMaxFileSize);
 		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);
@@ -210,19 +196,11 @@ public class StandardizedPropertySources implements PropertySources {
 		/* Node-local/static properties. */
 		source.put("dev.defaultListeningNodeAccount", PropertiesLoader::getDefaultListeningNodeAccount);
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
-		source.put("grpc.port", PropertiesLoader::getPort);
-		source.put("grpc.tlsPort", PropertiesLoader::getTlsPort);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
 		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
-		source.put("hedera.profiles.active", () -> LEGACY_ENV_ORDER[getEnvironment()]);
-		source.put("hedera.versionInfo.resource", () -> VERSION_INFO_PROPERTIES_FILE);
-		source.put("hedera.versionInfo.protoKey", () -> VERSION_INFO_PROPERTIES_PROTO_KEY);
-		source.put("hedera.versionInfo.servicesKey", () -> VERSION_INFO_PROPERTIES_SERVICES_KEY);
 		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
-		source.put("validation.preConsensus.accountKey.maxLookupRetries", maxLookupRetries);
-		source.put("validation.preConsensus.accountKey.retryBackoffIncrementMs", retryBackoffIncrementMs);
 
 		/* Node-local/dynamic properties. */
 		source.put("timer.stats.dump.started", PropertiesLoader::getStartStatsDumpTimer);

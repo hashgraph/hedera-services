@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,8 +58,34 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
 						creationYieldsExpectedToken(),
+						autoRenewValidationWorks(),
 				}
 		);
+	}
+
+	public HapiApiSpec autoRenewValidationWorks() {
+		return defaultHapiSpec("AutoRenewValidationWorks")
+				.given(
+						cryptoCreate("autoRenew")
+				).when(
+						tokenCreate("primary")
+								.signedBy(GENESIS)
+								.autoRenewAccount("1.2.3")
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+						tokenCreate("primary")
+								.autoRenewAccount("autoRenew")
+								.autoRenewPeriod(Long.MAX_VALUE)
+								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+						tokenCreate("primary")
+								.signedBy(GENESIS)
+								.autoRenewAccount("autoRenew")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenCreate("primary")
+								.autoRenewAccount("autoRenew")
+				).then(
+						getTokenInfo("primary")
+								.logged()
+				);
 	}
 
 	public HapiApiSpec creationYieldsExpectedToken() {
@@ -148,7 +175,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						newKeyNamed("adminKey")
-				).when( ).then(
+				).when().then(
 						tokenCreate("shouldntWork")
 								.payingWith("payer")
 								.adminKey("adminKey")

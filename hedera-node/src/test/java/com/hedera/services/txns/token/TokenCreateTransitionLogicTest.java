@@ -37,6 +37,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.math.BigInteger;
+import java.time.Instant;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,6 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @RunWith(JUnitPlatform.class)
 class TokenCreateTransitionLogicTest {
+	long thisSecond = 1_234_567L;
+	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private int divisibility = 2;
 	private long initialFloat = 1_000_000L;
 	private long tinyFloat = BigInteger.valueOf(initialFloat)
@@ -78,7 +81,7 @@ class TokenCreateTransitionLogicTest {
 	public void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willThrow(IllegalStateException.class);
 
 		// when:
@@ -97,7 +100,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfCreationFails() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.failure(INVALID_ADMIN_KEY));
 
 		// when:
@@ -116,7 +119,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfFloatAdjustFails() {
 		givenValidTxnCtx();
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
@@ -138,7 +141,7 @@ class TokenCreateTransitionLogicTest {
 	public void abortsIfUnfreezeFails() {
 		givenValidTxnCtx(false, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
@@ -158,7 +161,7 @@ class TokenCreateTransitionLogicTest {
 	public void followsHappyPathWithAllKeys() {
 		givenValidTxnCtx(true, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
@@ -182,7 +185,7 @@ class TokenCreateTransitionLogicTest {
 	public void doesntUnfreezeIfNoKeyIsPresent() {
 		givenValidTxnCtx(true, false);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
@@ -205,7 +208,7 @@ class TokenCreateTransitionLogicTest {
 	public void doesntGrantKycIfNoKeyIsPresent() {
 		givenValidTxnCtx(false, true);
 		// and:
-		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer))
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
@@ -252,6 +255,7 @@ class TokenCreateTransitionLogicTest {
 		tokenCreateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
 	}
 }

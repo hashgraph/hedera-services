@@ -59,9 +59,6 @@ public class AsyncPropertiesObject {
 	private static long accountBalanceExportPeriodMinutes = ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES;
 	
 	// Server Properties
-	private static int port = ApplicationConstants.APP_PORT;
-	private static int tlsPort = ApplicationConstants.APP_TLS_PORT;
-	private static int environment;
 	private static String defaultListeningNodeAccount = ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT;
 	private static int uniqueListeningPortFlag;
 	
@@ -89,9 +86,6 @@ public class AsyncPropertiesObject {
 
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
-		port = appConfig.getInt("port", ApplicationConstants.APP_PORT);
-		tlsPort = appConfig.getInt("tlsPort", ApplicationConstants.APP_TLS_PORT);
-		environment = appConfig.getInt("environment", ApplicationConstants.ZERO);
 		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
 		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
 		
@@ -241,18 +235,6 @@ public class AsyncPropertiesObject {
 
 	static long accountBalanceExportPeriodMinutes() {
 		return accountBalanceExportPeriodMinutes;
-	}
-
-	static int getPort() {
-		return port;
-	}
-
-	static int getTlsPort() {
-		return tlsPort;
-	}
-
-	static int getEnvironment() {
-		return environment;
 	}
 
 	static String getDefaultListeningNodeAccount() {

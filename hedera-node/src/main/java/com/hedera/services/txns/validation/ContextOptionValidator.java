@@ -21,17 +21,15 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.HederaLedger;
-import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -41,9 +39,9 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 /**
  * Implements an {@link OptionValidator} that relies an injected instance
@@ -53,14 +51,11 @@ import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
  * @author Michael Tinker
  */
 public class ContextOptionValidator implements OptionValidator {
-
 	public static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
-	private final HederaLedger ledger;
 	private final PropertySource properties;
 	private final TransactionContext txnCtx;
 
-	public ContextOptionValidator(HederaLedger ledger, PropertySource properties, TransactionContext txnCtx) {
-		this.ledger = ledger;
+	public ContextOptionValidator(PropertySource properties, TransactionContext txnCtx) {
 		this.properties = properties;
 		this.txnCtx = txnCtx;
 	}
@@ -106,14 +101,6 @@ public class ContextOptionValidator implements OptionValidator {
 		int maxLen = properties.getIntProperty("ledger.transfers.maxLen");
 
 		return accountAmounts.getAccountAmountsCount() <= maxLen;
-	}
-
-	@Override
-	public boolean hasOnlyCryptoAccounts(TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsList()
-				.stream()
-				.map(AccountAmount::getAccountID)
-				.noneMatch(ledger::isSmartContract);
 	}
 
 	@Override
