@@ -169,7 +169,8 @@ public class StateView {
 					.setSymbol(token.symbol())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setCurrentFloat(token.tokenFloat())
-					.setDivisibility(token.divisibility());
+					.setDivisibility(token.divisibility())
+					.setExpiry(token.expiry());
 
 			var adminCandidate = token.adminKey();
 			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
@@ -190,6 +191,11 @@ public class StateView {
 			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
 			var wipeCandidate = token.wipeKey();
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+
+			if (token.hasAutoRenewAccount()) {
+				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
+				info.setAutoRenewPeriod(token.autoRenewPeriod());
+			}
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {

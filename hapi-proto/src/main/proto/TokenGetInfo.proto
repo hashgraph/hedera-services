@@ -48,6 +48,9 @@ message TokenInfo {
     TokenFreezeStatus defaultFreezeStatus = 11;
     TokenKycStatus defaultKycStatus = 12;
     bool isDeleted = 13;
+    AccountID autoRenewAccount = 14;
+    uint64 autoRenewPeriod = 15;
+    uint64 expiry = 16;
 }
 
 message TokenGetInfoResponse {

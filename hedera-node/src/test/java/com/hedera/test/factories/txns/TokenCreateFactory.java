@@ -21,13 +21,17 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.Optional;
+
 public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean frozen = false;
 	private boolean omitAdmin = false;
+	private Optional<AccountID> autoRenew = Optional.empty();
 
 	private TokenCreateFactory() {}
 
@@ -37,6 +41,11 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 
 	public TokenCreateFactory frozen() {
 		frozen = true;
+		return this;
+	}
+
+	public TokenCreateFactory autoRenew(AccountID account) {
+		autoRenew = Optional.of(account);
 		return this;
 	}
 
@@ -64,6 +73,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
+		autoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
 		txn.setTokenCreation(op);
 	}
 }

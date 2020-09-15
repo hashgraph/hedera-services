@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -63,6 +64,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private final PropertySource properties;
 	private final HbarCentExchange exchange;
 	private final UsagePricesProvider usagePrices;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
@@ -70,12 +72,14 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			PropertySource properties,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
+			GlobalDynamicProperties dynamicProperties,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
 		this.properties = properties;
 		this.usagePrices = usagePrices;
+		this.dynamicProperties = dynamicProperties;
 		this.queryUsageEstimators = queryUsageEstimators;
 		this.txnUsageEstimators = txnUsageEstimators;
 	}
@@ -87,7 +91,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	@Override
 	public long computeCachingFee(TransactionRecord record) {
-		return priceForStorage(record, properties.getIntProperty("cache.records.ttl"));
+		return priceForStorage(record, dynamicProperties.cacheRecordsTtl());
 	}
 
 	@Override

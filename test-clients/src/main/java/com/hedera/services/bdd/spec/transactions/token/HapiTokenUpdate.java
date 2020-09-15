@@ -36,10 +36,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.ProcessIdUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -51,6 +53,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	private String token;
 
+	private OptionalLong expiry = OptionalLong.empty();
+	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> newAdminKey = Optional.empty();
 	private Optional<String> newKycKey = Optional.empty();
 	private Optional<String> newWipeKey = Optional.empty();
@@ -58,6 +62,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newFreezeKey = Optional.empty();
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
+	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 
 	@Override
@@ -110,6 +115,21 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate autoRenewAccount(String account) {
+		this.autoRenewAccount = Optional.of(account);
+		return this;
+	}
+
+	public HapiTokenUpdate autoRenewPeriod(long secs) {
+		this.autoRenewPeriod = OptionalLong.of(secs);
+		return this;
+	}
+
+	public HapiTokenUpdate expiry(long at) {
+		this.expiry = OptionalLong.of(at);
+		return this;
+	}
+
 	@Override
 	protected HapiTokenUpdate self() {
 		return this;
@@ -156,6 +176,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
+							if (autoRenewAccount.isPresent()) {
+								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
+								b.setAutoRenewAccount(autoRenewId);
+							}
+							expiry.ifPresent(b::setExpiry);
+							autoRenewPeriod.ifPresent(b::setAutoRenewPeriod);
 						});
 		return b -> b.setTokenUpdate(opBody);
 	}
@@ -164,8 +190,15 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
 		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-		signers.add(spec -> spec.registry().getAdminKey(token));
+		signers.add(spec -> {
+			try {
+				return spec.registry().getAdminKey(token);
+			} catch (Exception ignore) {
+				return Key.getDefaultInstance();
+			}
+		});
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
+		autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
 		return signers;
 	}
 

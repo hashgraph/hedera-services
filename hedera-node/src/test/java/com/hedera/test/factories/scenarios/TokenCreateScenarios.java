@@ -51,4 +51,24 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	TOKEN_CREATE_WITH_AUTO_RENEW {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.autoRenew(MISC_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_MISSING_AUTO_RENEW {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.autoRenew(MISSING_ACCOUNT)
+							.get()
+			));
+		}
+	},
 }

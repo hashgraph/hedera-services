@@ -71,6 +71,7 @@ test-clients/devops-utils/sysfiles-update/b64GenesisKeyPair.txt
 test-clients/src/main/resource/TestnetStartupAccount.txt
 test-clients/src/main/resource/MainnetStartupAccount.txt
 test-clients/src/main/resource/StableTestnetStartupAccount.txt
+test-clients/src/main/resource/StableTestnetAccount50StartupAccount.txt
 test-clients/saved/
 test-clients/target/
 test-clients/record-snapshots/
