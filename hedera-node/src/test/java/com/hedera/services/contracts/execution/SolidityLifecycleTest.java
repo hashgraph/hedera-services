@@ -20,6 +20,7 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -57,7 +58,7 @@ class SolidityLifecycleTest {
 
 	ContractFunctionResult expected;
 
-	PropertySource properties;
+	GlobalDynamicProperties properties;
 	SolidityExecutor executor;
 	ServicesRepositoryRoot root;
 
@@ -75,8 +76,8 @@ class SolidityLifecycleTest {
 		given(executor.getReceipt()).willReturn(receipt);
 		given(executor.getCreatedContracts()).willReturn(allCreations);
 
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(maxStorageKb);
+		properties = mock(GlobalDynamicProperties.class);
+		given(properties.maxContractStorageKb()).willReturn(maxStorageKb);
 		root = mock(ServicesRepositoryRoot.class);
 		given(root.flushStorageCacheIfTotalSizeLessThan(maxStorageKb)).willReturn(true);
 

@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -71,12 +72,10 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var transfers = txnCtx.accessor().getTxn().getCryptoTransfer().getTransfers();
-
-			if (!validator.hasOnlyCryptoAccounts(transfers)) {
+			if (!hasOnlyCryptoAccounts(transfers)) {
 				txnCtx.setStatus(INVALID_ACCOUNT_ID);
 				return;
 			}
-
 			ledger.doTransfers(transfers);
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
@@ -88,6 +87,15 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		} catch (Exception e) {
 			txnCtx.setStatus(FAIL_INVALID);
 		}
+	}
+
+	private boolean hasOnlyCryptoAccounts(TransferList transfers) {
+		for (AccountAmount aa : transfers.getAccountAmountsList()) {
+			if (ledger.isSmartContract(aa.getAccountID())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

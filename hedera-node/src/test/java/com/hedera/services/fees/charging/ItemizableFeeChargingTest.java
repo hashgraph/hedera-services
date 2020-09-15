@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
@@ -62,7 +63,7 @@ class ItemizableFeeChargingTest {
 
 	HederaLedger ledger;
 	FeeExemptions exemptions;
-	PropertySource properties;
+	GlobalDynamicProperties properties;
 	TransactionBody txn;
 	SignedTxnAccessor accessor;
 
@@ -74,12 +75,12 @@ class ItemizableFeeChargingTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(SignedTxnAccessor.class);
 		exemptions = mock(FeeExemptions.class);
-		properties = mock(PropertySource.class);
+		properties = mock(GlobalDynamicProperties.class);
 
 		given(txn.getNodeAccountID()).willReturn(givenNode);
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getPayer()).willReturn(payer);
-		given(properties.getAccountProperty("ledger.funding.account")).willReturn(funding);
+		given(properties.fundingAccount()).willReturn(funding);
 
 		subject = new ItemizableFeeCharging(exemptions, properties);
 		subject.setLedger(ledger);

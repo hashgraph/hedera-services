@@ -42,11 +42,6 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean hasOnlyCryptoAccounts(TransferList accountAmounts) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean isValidExpiry(Timestamp expiry) {
 		throw new UnsupportedOperationException();
 	}
@@ -68,8 +63,8 @@ public enum TestContextValidator implements OptionValidator {
 	@Override
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
-		long minDuration = PropertiesLoader.getMinimumAutorenewDuration();
-		long maxDuration = PropertiesLoader.getMaximumAutorenewDuration();
+		long minDuration = 1L;
+		long maxDuration = 1_000_000_000l;
 
 		if (duration < minDuration || duration > maxDuration) {
 			return false;

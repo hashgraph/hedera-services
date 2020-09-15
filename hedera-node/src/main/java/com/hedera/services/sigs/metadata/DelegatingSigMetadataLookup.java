@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -114,7 +115,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
 			HederaFs hfs,
-			PropertySource properties,
+			NodeLocalProperties properties,
 			HederaNodeStats stats,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
