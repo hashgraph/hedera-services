@@ -20,34 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.TransitionLogicLookup;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.PlatformStatus;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.platform.runner.JUnitPlatform;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-
-import java.util.Optional;
-import java.util.function.Function;
-
-import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
-import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -56,10 +28,31 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.services.context.ServicesNodeType.*;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.TransitionLogicLookup;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.legacy.handler.TransactionHandler;
+import com.swirlds.common.Platform;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+
+import java.util.Optional;
+import java.util.function.Function;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class TxnHandlerSubmissionFlowTest {
@@ -85,7 +78,6 @@ class TxnHandlerSubmissionFlowTest {
 	@BeforeEach
 	private void setup() {
 		logic = mock(TransitionLogic.class);
-		Mockito.mock(CurrentPlatformStatus.class).set(PlatformStatus.ACTIVE);
 		txnHandler = mock(TransactionHandler.class);
 		syntaxCheck = mock(Function.class);
 		given(logic.syntaxCheck()).willReturn(syntaxCheck);

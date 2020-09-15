@@ -123,7 +123,6 @@ public class QueryFeeCheck {
 	}
 
 	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn) {
-		ResponseCodeEnum returnCode = OK;
 		long suppliedFee = txn.getTransactionFee();
 		long transferAmount = 0;
 		if (txn.getTransactionID().hasAccountID()) {
@@ -135,28 +134,27 @@ public class QueryFeeCheck {
 			List<AccountAmount> transfers = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
 
 			if (transfers.size() != 2) {
-				returnCode = INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
-				return returnCode;
+				return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 			}
 
 			for (AccountAmount entry : transfers) {
 				if(entry.getAmount() < 0){
-					transferAmount = -1 * entry.getAmount();
+					transferAmount += -1 * entry.getAmount();
 					if(!entry.getAccountID().equals(payerAccount)){
-						returnCode = INVALID_PAYER_ACCOUNT_ID;
+						return INVALID_PAYER_ACCOUNT_ID;
 					}
 				}
 
 				if(entry.getAmount() > 0){
 					if(!entry.getAccountID().equals(txn.getNodeAccountID())){
-						returnCode = INVALID_RECEIVING_NODE_ACCOUNT;
+						return INVALID_RECEIVING_NODE_ACCOUNT;
 					}
 				}
 			}
-			if (payerAccountBalance < transferAmount + suppliedFee) {
-				returnCode = INSUFFICIENT_PAYER_BALANCE;
+			if (payerAccountBalance.longValue() < Math.min(0L, transferAmount + suppliedFee)) {
+				return INSUFFICIENT_PAYER_BALANCE;
 			}
 		}
-		return returnCode;
+		return OK;
 	}
 }
