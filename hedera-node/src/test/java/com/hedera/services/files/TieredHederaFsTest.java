@@ -20,7 +20,7 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -71,7 +71,7 @@ class TieredHederaFsTest {
 	FileUpdateInterceptor highInterceptor;
 
 	EntityIdSource ids;
-	PropertySource properties;
+	GlobalDynamicProperties properties;
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, JFileInfo> metadata;
@@ -100,8 +100,8 @@ class TieredHederaFsTest {
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
 
-		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("files.maxSizeKb")).willReturn(1);
+		properties = mock(GlobalDynamicProperties.class);
+		given(properties.maxFileSizeKb()).willReturn(1);
 
 		subject = new TieredHederaFs(ids, properties, clock, data, metadata);
 	}
@@ -242,7 +242,7 @@ class TieredHederaFsTest {
 		given(metadata.get(fid)).willReturn(livingAttr);
 		given(data.get(fid)).willReturn(stretchContents);
 		// and:
-		given(properties.getIntProperty("files.maxSizeKb")).willReturn(1);
+		given(properties.maxFileSizeKb()).willReturn(1);
 
 		// when:
 		try {
@@ -266,7 +266,7 @@ class TieredHederaFsTest {
 		given(metadata.containsKey(fid)).willReturn(true);
 		given(metadata.get(fid)).willReturn(livingAttr);
 		// and:
-		given(properties.getIntProperty("files.maxSizeKb")).willReturn(1);
+		given(properties.maxFileSizeKb()).willReturn(1);
 
 		// when:
 		try {
@@ -745,7 +745,7 @@ class TieredHederaFsTest {
 		// setup:
 		IllegalArgumentException iae = null;
 
-		given(properties.getIntProperty("files.maxSizeKb")).willReturn(1);
+		given(properties.maxFileSizeKb()).willReturn(1);
 		// and:
 		var oversizeContents = new byte[BYTES_PER_KB + 1];
 

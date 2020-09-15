@@ -26,6 +26,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -35,7 +36,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
@@ -53,17 +57,38 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						keysChange(),
 						treasuryEvolves(),
-						validatesMissingAdminKey(),
 						validatesMissingRef(),
+						standardImmutabilitySemanticsHold(),
+						validAutoRenewWorks(),
+						validatesMissingAdminKey(),
 				}
 		);
+	}
+
+	private HapiApiSpec standardImmutabilitySemanticsHold() {
+		long then = Instant.now().getEpochSecond() + 1_234_567L;
+		return defaultHapiSpec("StandardImmutabilitySemanticsHold")
+				.given(
+						tokenCreate("immutable").expiry(then)
+				).when(
+						tokenUpdate("immutable")
+								.treasury(ADDRESS_BOOK_CONTROL)
+								.hasKnownStatus(TOKEN_IS_IMMUTABlE),
+						tokenUpdate("immutable")
+								.expiry(then - 1)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME),
+						tokenUpdate("immutable")
+								.expiry(then + 1)
+				).then(
+						getTokenInfo("immutable").logged()
+				);
 	}
 
 	private HapiApiSpec validatesMissingRef() {
 		return defaultHapiSpec("UpdateValidatesRef")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
-				).when( ).then(
+				).when().then(
 						tokenUpdate("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
@@ -72,7 +97,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validatesMissingAdminKey() {
-		return defaultHapiSpec("UpdateValidatesMissingAdminKey")
+		return defaultHapiSpec("ValidatesMissingAdminKey")
 				.given(
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate("payer")
@@ -81,11 +106,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.freezeDefault(false)
 								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
-				).when( ).then(
+				).when().then(
 						tokenUpdate("tbd")
+								.autoRenewAccount(GENESIS)
 								.payingWith("payer")
-								.signedBy("payer")
-								.hasKnownStatus(UNAUTHORIZED)
+								.signedBy("payer", GENESIS)
+								.hasKnownStatus(TOKEN_IS_IMMUTABlE)
 				);
 	}
 
@@ -162,6 +188,31 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
 						getTxnRecord("treasuryUpdateTxn").logged()
+				);
+	}
+
+	public HapiApiSpec validAutoRenewWorks() {
+		long firstPeriod = 500_000, secondPeriod = 600_000;
+		return defaultHapiSpec("AutoRenewInfoChanges")
+				.given(
+						cryptoCreate("autoRenew"),
+						cryptoCreate("newAutoRenew"),
+						newKeyNamed("adminKey")
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.autoRenewAccount("autoRenew")
+								.autoRenewPeriod(firstPeriod),
+						tokenUpdate("tbu")
+								.signedBy(GENESIS)
+								.autoRenewAccount("newAutoRenew")
+								.autoRenewPeriod(secondPeriod)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenUpdate("tbu")
+								.autoRenewAccount("newAutoRenew")
+								.autoRenewPeriod(secondPeriod)
+				).then(
+						getTokenInfo("tbu").logged()
 				);
 	}
 

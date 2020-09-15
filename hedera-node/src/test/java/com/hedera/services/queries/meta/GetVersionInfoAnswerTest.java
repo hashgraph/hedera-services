@@ -22,6 +22,7 @@ package com.hedera.services.queries.meta;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
@@ -53,7 +54,6 @@ class GetVersionInfoAnswerTest {
 	private Transaction paymentTxn;
 	StateView view;
 
-	PropertySource properties;
 	SemanticVersion expectedVersions = SemanticVersion.newBuilder()
 			.setMajor(0)
 			.setMinor(4)
@@ -65,22 +65,16 @@ class GetVersionInfoAnswerTest {
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
 
-		properties = mock(PropertySource.class);
-		given(properties.getStringProperty("hedera.versionInfo.resource"))
-				.willReturn("frozenVersion.properties");
-		given(properties.getStringProperty("hedera.versionInfo.protoKey"))
-				.willReturn("hapi.proto.version");
-		given(properties.getStringProperty("hedera.versionInfo.servicesKey"))
-				.willReturn("hedera.services.version");
+		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "frozenVersion.properties";
 
-		subject = new GetVersionInfoAnswer(properties);
+		subject = new GetVersionInfoAnswer();
 		GetVersionInfoAnswer.knownActive.set(null);
 	}
 
 	@Test
 	public void recognizesAvailableResource() {
 		// when:
-		var status = GetVersionInfoAnswer.invariantValidityCheck(properties);
+		var status = GetVersionInfoAnswer.invariantValidityCheck();
 
 		// then:
 		assertEquals(ResponseCodeEnum.OK, status);
@@ -91,13 +85,17 @@ class GetVersionInfoAnswerTest {
 
 	@Test
 	public void recognizesUnavailableResource() {
-		given(properties.getStringProperty("hedera.versionInfo.resource")).willReturn("nonsense.properties");
+		// setup:
+		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "nonsense.properties";
 
 		// when:
-		var status = GetVersionInfoAnswer.invariantValidityCheck(properties);
+		var status = GetVersionInfoAnswer.invariantValidityCheck();
 
 		// then:
 		assertEquals(ResponseCodeEnum.FAIL_INVALID, status);
+
+		// cleanup:
+		GetVersionInfoAnswer.VERSION_INFO_RESOURCE = "frozenVersion.properties";
 	}
 
 	@Test

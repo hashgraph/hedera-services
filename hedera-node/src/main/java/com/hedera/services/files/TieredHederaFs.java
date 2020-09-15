@@ -20,7 +20,7 @@ package com.hedera.services.files;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,10 +54,10 @@ public class TieredHederaFs implements HederaFs {
 	public static final Logger log = LogManager.getLogger(TieredHederaFs.class);
 
 	private final EntityIdSource ids;
-	private final PropertySource properties;
 	private final Supplier<Instant> now;
 	private final Map<FileID, byte[]> data;
 	private final Map<FileID, JFileInfo> metadata;
+	private final GlobalDynamicProperties properties;
 
 	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
 
@@ -82,7 +82,7 @@ public class TieredHederaFs implements HederaFs {
 
 	public TieredHederaFs(
 			EntityIdSource ids,
-			PropertySource properties,
+			GlobalDynamicProperties properties,
 			Supplier<Instant> now,
 			Map<FileID, byte[]> data,
 			Map<FileID, JFileInfo> metadata
@@ -299,7 +299,7 @@ public class TieredHederaFs implements HederaFs {
 	}
 
 	private void assertValid(byte[] data) {
-		if (data.length > properties.getIntProperty("files.maxSizeKb") * BYTES_PER_KB) {
+		if (data.length > properties.maxFileSizeKb() * BYTES_PER_KB) {
 			throwIllegal(OVERSIZE_CONTENTS);
 		}
 	}

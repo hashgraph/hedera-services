@@ -50,15 +50,18 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
+	private final Predicate<TokenManagement> affectsExpiryOnly;
 
 	public TokenUpdateTransitionLogic(
 			TokenStore store,
 			HederaLedger ledger,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			Predicate<TokenManagement> affectsExpiryOnly
 	) {
 		this.store = store;
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
+		this.affectsExpiryOnly = affectsExpiryOnly;
 	}
 
 	@Override
@@ -81,8 +84,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		var outcome = OK;
 		MerkleToken token = store.get(id);
 
-		if (token.adminKey().isEmpty()) {
-			txnCtx.setStatus(UNAUTHORIZED);
+		if (token.adminKey().isEmpty() && !affectsExpiryOnly.test(op)) {
+			txnCtx.setStatus(TOKEN_IS_IMMUTABlE);
 			return;
 		}
 
@@ -104,7 +107,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		outcome = store.update(op);
+		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
 			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
 			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);

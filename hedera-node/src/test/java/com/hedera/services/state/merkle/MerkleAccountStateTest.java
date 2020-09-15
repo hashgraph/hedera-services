@@ -116,15 +116,15 @@ class MerkleAccountStateTest {
 	JKey optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
 
 	MerkleToken alwaysUsable = new MerkleToken(
-			100, 1,
+			Long.MAX_VALUE, 100, 1,
 			"UnfrozenToken", "UnfrozenTokenName", false, true,
 			new EntityId(1, 2, 3));
 	MerkleToken unusableAtFirst = new MerkleToken(
-			100, 1,
+			Long.MAX_VALUE, 100, 1,
 			"FrozenToken", "UnusableFrozenTokenName", true, false,
 			new EntityId(1, 2, 4));
 	MerkleToken usableAtFirst = new MerkleToken(
-			100, 1,
+			Long.MAX_VALUE, 100, 1,
 			"FrozenToken", "UsableFrozenToken", false, true,
 			new EntityId(1, 2, 4));
 
