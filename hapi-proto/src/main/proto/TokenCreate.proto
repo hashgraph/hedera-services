@@ -28,7 +28,7 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 
 /*
-Create a new token, returning its id in the receipt.
+Create a new token, returning its id in the receipt. <b>Signing requirements</b>: If an admin key is given, it must sign the transaction. If an auto-renew account is given, it must sign the transaction.
  */
 message TokenCreation {
     uint64 float = 1; // The total number of tokens to put into circulation
@@ -43,4 +43,7 @@ message TokenCreation {
     bool kycDefault = 10; // The default KYC status (granted or revoked) of Hedera accounts relative to this token
     string symbol = 11; // The case-insensitive UTF-8 alphanumeric string identifying the token
     string name = 12; // The ASCII character string identifying the name of the token
+    uint64 expiry = 13; // The epoch second at which the the token should expiry; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
+    AccountID autoRenewAccount = 14; // An account which will be automatically charged to renew the token's expiration, at an interval given by the autoRenewPeriod below
+    uint64 autoRenewPeriod = 15; // The interval at which the auto-renew account will be charged to extend the token's expiry
 }

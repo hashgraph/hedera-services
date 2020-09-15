@@ -20,6 +20,7 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -38,12 +39,12 @@ import java.util.Map;
 import java.util.Optional;
 
 public class SolidityLifecycle {
-	private final PropertySource properties;
+	private final GlobalDynamicProperties properties;
 
 	public static final String OVERSIZE_RESULT_ERROR_MSG_TPL =
 			"Result size (%d bytes) exceeded maximum allowed size (%d bytes)";
 
-	public SolidityLifecycle(PropertySource properties) {
+	public SolidityLifecycle(GlobalDynamicProperties properties) {
 		this.properties = properties;
 	}
 
@@ -58,7 +59,7 @@ public class SolidityLifecycle {
 
 		var succeededSoFar = StringUtils.isEmpty(result.getErrorMessage());
 		if (succeededSoFar) {
-			if (!root.flushStorageCacheIfTotalSizeLessThan(properties.getIntProperty("contracts.maxStorageKb"))) {
+			if (!root.flushStorageCacheIfTotalSizeLessThan(properties.maxContractStorageKb())) {
 				succeededSoFar = false;
 				status = MAX_CONTRACT_STORAGE_EXCEEDED;
 			}

@@ -61,9 +61,16 @@
     <grpc.version>1.22.0</grpc.version>
     <jackson-databind.version>2.9.9.1</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <junit.version>4.12</junit.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.37.Final</netty.version>
+    <!-- Test dependency properties -->
+    <hamcrest-all.version>1.3</hamcrest-all.version>
+    <junit.version>4.12</junit.version>
+    <junit.jupiter.version>5.4.2</junit.jupiter.version>
+    <junit.vintage.version>5.4.2</junit.vintage.version>
+    <junit.platform.version>1.4.2</junit.platform.version>
+    <mockito-junit-jupiter.version>3.3.0</mockito-junit-jupiter.version>
+    <mockito2.version>3.3.0</mockito2.version>
 
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.5</jacoco.version>
@@ -77,6 +84,7 @@
 
   <modules>
     <module>hapi-proto</module>
+    <module>hapi-fees</module>
     <module>hedera-node</module>
     <module>test-clients</module>
   </modules>
@@ -211,6 +219,11 @@
       <dependency>
         <groupId>com.hedera.services</groupId>
         <artifactId>hapi-proto</artifactId>
+        <version>${hedera-services.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.hedera.services</groupId>
+        <artifactId>hapi-fees</artifactId>
         <version>${hedera-services.version}</version>
       </dependency>
       <dependency>

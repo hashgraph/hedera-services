@@ -44,7 +44,7 @@ class PureRatesValidationTest {
 
 	private static ExchangeRates midnightRates;
 
-	int bound = ApplicationConstants.DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE;
+	int bound = 1;
 
 	@BeforeAll
 	public static void setUp() {

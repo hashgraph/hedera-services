@@ -158,10 +158,10 @@ public class FeeChargingRecordsHistorianTest {
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
 	private PropertySource properties;
+	private GlobalDynamicProperties dynamicProperties;
 	private ExpiringCreations creator;
 	private TransactionContext txnCtx;
 	private ItemizableFeeCharging itemizableFeeCharging;
-	private GlobalDynamicProperties dynamicProperties;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private BlockingQueue<EarliestRecordExpiry> expirations;
 
@@ -362,7 +362,7 @@ public class FeeChargingRecordsHistorianTest {
 		verify(ledger).getBalance(d);
 		verify(ledger).fundsSentRecordThreshold(d);
 		// and:
-		verify(properties, times(1)).getAccountProperty("ledger.funding.account");
+		verify(dynamicProperties, times(1)).fundingAccount();
 		verify(ledger).doTransfer(b, funding, recordFee);
 		verify(ledger, never()).doTransfer(c, funding, recordFee);
 		verify(ledger).doTransfer(d, funding, recordFee);
@@ -504,10 +504,10 @@ public class FeeChargingRecordsHistorianTest {
 		given(exemptions.isExemptFromRecordFees(c)).willReturn(true);
 
 		properties = mock(PropertySource.class);
-		given(properties.getAccountProperty("ledger.funding.account")).willReturn(funding);
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(accountRecordTtl);
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.fundingAccount()).willReturn(funding);
 		given(dynamicProperties.shouldCreateThresholdRecords()).willReturn(true);
 
 		creator = mock(ExpiringCreations.class);
@@ -535,7 +535,7 @@ public class FeeChargingRecordsHistorianTest {
 		dValue = add(d, dBalance, dSendThresh, dReceiveThresh, dExps, EMPTY_LIST, EMPTY_LIST);
 		snValue = add(sn, snBalance, dSendThresh, dReceiveThresh, EMPTY_LIST, EMPTY_LIST, EMPTY_LIST);
 
-		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, properties);
+		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
 		itemizableFeeCharging.resetFor(accessor, sn);
 
 		expirations = mock(BlockingQueue.class);
@@ -562,7 +562,7 @@ public class FeeChargingRecordsHistorianTest {
 
 		ledger = mock(HederaLedger.class);
 
-		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, properties);
+		itemizableFeeCharging = new ItemizableFeeCharging(exemptions, dynamicProperties);
 
 		subject = new FeeChargingRecordsHistorian(
 				recordCache,

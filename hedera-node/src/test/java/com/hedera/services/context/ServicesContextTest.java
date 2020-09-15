@@ -25,6 +25,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -103,7 +104,6 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
-import com.hedera.services.legacy.services.context.properties.DefaultPropertySanitizer;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
 import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
@@ -135,6 +135,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -241,26 +242,6 @@ public class ServicesContextTest {
 		inOrder.verify(state).topics();
 		inOrder.verify(state).storage();
 		inOrder.verify(state).accounts();
-	}
-
-	@Test
-	public void hasExpectedFundingAccount() {
-		given(properties.getStringProperty("ledger.funding.account")).willReturn("0.0.98");
-
-		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
-
-		// then:
-		assertEquals(AccountID.newBuilder().setAccountNum(98L).build(), ctx.fundingAccount());
-	}
-
-	@Test
-	public void returnsMissingValueWithoutFundingAccountProp() {
-		// when:
-		ServicesContext ctx = new ServicesContext(id, platform, state, propertySources);
-
-		// then:
-		assertNull(ctx.fundingAccount());
 	}
 
 	@Test
@@ -430,6 +411,7 @@ public class ServicesContextTest {
 		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
+		assertThat(ctx.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:
@@ -439,7 +421,6 @@ public class ServicesContextTest {
 		assertThat(ctx.contracts(), instanceOf(SmartContractRequestHandler.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeServiceImpl.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(SmartContractServiceImpl.class));
-		assertThat(ctx.propertySanitizer(), instanceOf(DefaultPropertySanitizer.class));
 		assertThat(ctx.stateMigrations(), instanceOf(DefaultStateMigrations.class));
 		assertThat(ctx.recordStream(), instanceOf(RecordStream.class));
 		assertThat(ctx.accountsExporter(), instanceOf(DefaultAccountsExporter.class));

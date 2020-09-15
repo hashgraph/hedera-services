@@ -135,7 +135,7 @@ public class MerkleAccountPropertyTest {
 		var newTokenBalance = 1_234_567L;
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		var unfrozenToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", false, true,
 				new EntityId(1, 2, 3));
 		unfrozenToken.setFreezeKey(adminKey);
@@ -143,7 +143,7 @@ public class MerkleAccountPropertyTest {
 		var unfrozenTokenScope = TokenScope.scopeOf(unfrozenTokenId, unfrozenToken);
 		var tokenBalance = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, newTokenBalance);
 		var frozenToken = new MerkleToken(
-				100, 1,
+				Long.MAX_VALUE, 100, 1,
 				"FrozenToken", "FrozenTokenName", true, false,
 				new EntityId(1, 2, 3));
 		frozenToken.setFreezeKey(adminKey);

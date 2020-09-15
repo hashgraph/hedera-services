@@ -25,10 +25,7 @@ public class ApplicationConstants {
 
 	public static String LEDGER_PATH = "/{0}/";
 	// Default values
-	public static int APP_PORT = 50211;
-	public static int APP_TLS_PORT = 50212;
 	public static long DEFAULT_FEE = 100000l;
-	public static int DEFAULT_EXCHANGE_RATE_ALLOWED_PERCENTAGE = 1;
 
 	// Signature Algorithm Type Constants
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
@@ -51,7 +48,6 @@ public class ApplicationConstants {
 
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
-	public static int TX_RECEIPT_TTL = 180;
 	public static int THRESH_REC_TTL = 90000;
 	public static int TX_MIN_DUR = 5;
 	public static int TX_MAX_DUR = 180;
@@ -59,7 +55,6 @@ public class ApplicationConstants {
 
 	public static long INITIAL_GENESIS_COINS = 5000000000000000000l;
 
-	public static String DEFAULT_FEE_COLLECTION_ACCOUNT = "0.0.98";
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 
 	public static long MINIMUM_AUTORENEW_DURATION = 1l;
@@ -69,8 +64,6 @@ public class ApplicationConstants {
 
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;
-	public static int MAX_CONTRACT_STATE_SIZE = 1024;
-	public static int MAX_FILE_SIZE = 1024;
 	public static String DEFAULT_LISTENING_NODE_ACCT = "0.0.3";
 
 	public static long KEEP_ALIVE_TIME = 20;

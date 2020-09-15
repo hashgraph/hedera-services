@@ -2,10 +2,11 @@ package com.hedera.services.config;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hederahashgraph.api.proto.java.AccountID;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public MockGlobalDynamicProps() {
-		super(null);
+		super(null, null);
 	}
 
 	@Override
@@ -39,5 +40,30 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public long defaultContractReceiveThreshold() {
 		return 5000000000000000000L;
+	}
+
+	@Override
+	public int maxFileSizeKb() {
+		return 1024;
+	}
+
+	@Override
+	public AccountID fundingAccount() {
+		return AccountID.newBuilder().setAccountNum(98L).build();
+	}
+
+	@Override
+	public int cacheRecordsTtl() {
+		return 180;
+	}
+
+	@Override
+	public int maxContractStorageKb() {
+		return 1024;
+	}
+
+	@Override
+	public int ratesIntradayChangeLimitPercent() {
+		return 5;
 	}
 }
