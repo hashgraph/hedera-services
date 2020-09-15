@@ -139,20 +139,24 @@ public class QueryFeeCheck {
 
 			List<AccountAmount> transfers = transferList.getAccountAmountsList();
 			for (AccountAmount entry : transfers) {
-				if(entry.getAmount() < 0){
+				if (entry.getAmount() < 0) {
 					transferAmount += -1 * entry.getAmount();
-					if(!entry.getAccountID().equals(payerAccount)){
+					if (!entry.getAccountID().equals(payerAccount)) {
 						return INVALID_PAYER_ACCOUNT_ID;
 					}
 				}
 
-				if(entry.getAmount() > 0){
-					if(!entry.getAccountID().equals(txn.getNodeAccountID())){
+				if (entry.getAmount() > 0) {
+					if (!entry.getAccountID().equals(txn.getNodeAccountID())) {
 						return INVALID_RECEIVING_NODE_ACCOUNT;
 					}
 				}
 			}
-			if (payerAccountBalance.longValue() < Math.min(0L, transferAmount + suppliedFee)) {
+			try {
+				if (payerAccountBalance < Math.addExact(transferAmount, suppliedFee)) {
+					return INSUFFICIENT_PAYER_BALANCE;
+				}
+			} catch (ArithmeticException e) {
 				return INSUFFICIENT_PAYER_BALANCE;
 			}
 		}

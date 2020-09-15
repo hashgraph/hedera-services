@@ -267,7 +267,7 @@ class QueryFeeCheckTest {
 	@Test
 	public void validateQueryPaymentInvalidAccountAmount() {
 		// setup:
-		long amount = Long.MAX_VALUE;
+		long amount = 200L;
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
