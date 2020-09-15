@@ -221,9 +221,4 @@ class TxnHandlerSubmissionFlowTest {
 		// then:
 		assertEquals(NOT_SUPPORTED, response.getNodeTransactionPrecheckCode());
 	}
-
-	private static TransferList.Builder buildAccountAmounts(TransferList.Builder tfrList, long accountId, long balance){
-		 return tfrList.getAccountAmountsList().add(AccountAmount.newBuilder()
-				 .setAccountID(IdUtils.asAccount("0.0."+ accountId )).setAmount(balance));
-	}
 }
