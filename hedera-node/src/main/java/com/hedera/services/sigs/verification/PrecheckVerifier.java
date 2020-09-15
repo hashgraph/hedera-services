@@ -27,7 +27,6 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.swirlds.common.crypto.Signature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +37,6 @@ import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.sigs.utils.PrecheckUtils.assertCompatibility;
 
 /**
  * Encapsulates logic to validate a transaction has the necessary
@@ -79,15 +77,6 @@ public class PrecheckVerifier {
 	public boolean hasNecessarySignatures(SignedTxnAccessor accessor) throws Exception {
 		try {
 			List<JKey> reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
-
-//			if (accessor.getSignedTxn().hasSigs()) {
-//				List<com.hederahashgraph.api.proto.java.Signature> sigs = accessor.getSigsList();
-//				if (reqKeys.size() > sigs.size()) {
-//					throw new KeySignatureCountMismatchException("Incompatible key/sig shapes!");
-//				}
-//				assertCompatibility(reqKeys, sigs.subList(0, reqKeys.size()));
-//			}
-
 			List<Signature> availSigs = getAvailSigs(reqKeys, accessor);
 			syncVerifier.verifySync(availSigs);
 			Function<byte[], Signature> sigsFn = pkToSigMapFrom(availSigs);

@@ -105,10 +105,6 @@ public class SignedTxnAccessor {
 		return signedTxn;
 	}
 
-//	public List<Signature> getSigsList() {
-//		return signedTxn.getSigs().getSigsList();
-//	}
-
 	public TransactionBody getTxn() {
 		return txn;
 	}
