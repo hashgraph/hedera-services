@@ -107,7 +107,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		outcome = store.update(op);
 		if (outcome == OK && replacedTreasury.isPresent()) {
 			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
-			ledger.doTransfer(replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance);
+			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);
