@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.List;
@@ -131,12 +132,12 @@ public class QueryFeeCheck {
 					.map(MerkleAccount::getBalance)
 					.orElse(null);
 
-			List<AccountAmount> transfers = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
-
-			if (transfers.size() != 2) {
+			TransferList transferList = txn.getCryptoTransfer().getTransfers();
+			if (transferList.getAccountAmountsCount() != 2) {
 				return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 			}
 
+			List<AccountAmount> transfers = transferList.getAccountAmountsList();
 			for (AccountAmount entry : transfers) {
 				if(entry.getAmount() < 0){
 					transferAmount += -1 * entry.getAmount();
