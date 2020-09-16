@@ -22,10 +22,8 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -44,8 +42,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -87,7 +88,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						createAnAccountInvalidED25519(),
 						invalidDurationGetsMeaningfulResponse(),
 						xferRequiresCrypto(),
-						queryPaymentsAreSanityChecked(),
+						queryPaymentsAreSanityChecked()
 				}
 		);
 	}
@@ -103,7 +104,23 @@ public class CryptoCreateSuite extends HapiApiSuite {
 										cryptoTransfer(spec ->
 												invalidMultiAccountPaymentToNode003(
 														spec, "a", "b", 1_000L))
-								).hasAnswerOnlyPrecheck(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS)
+								).hasAnswerOnlyPrecheck(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												invalidPayer(
+														spec, "a", "b", 1_000L))
+								).hasAnswerOnlyPrecheck(INVALID_PAYER_ACCOUNT_ID),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												invalidPayer(
+														spec, GENESIS, "b", 1_000L))
+								).hasAnswerOnlyPrecheck(INVALID_RECEIVING_NODE_ACCOUNT),
+						getAccountInfo(GENESIS)
+								.fee(Long.MAX_VALUE)
+								.setNode("0.0.3")
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE)
 				);
 	}
 
@@ -117,6 +134,18 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
 				.addAccountAmounts(adjust(spec.registry().getAccountID(second), -amount / 2))
 				.addAccountAmounts(adjust(asAccount("0.0.3"), amount))
+				.build();
+	}
+
+	private TransferList invalidPayer(
+			HapiApiSpec spec,
+			String first,
+			String second,
+			long amount
+	) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(second), amount / 2))
 				.build();
 	}
 
