@@ -51,6 +51,7 @@ public class KeyExport extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						exportCurrentTreasuryKey(),
 //						exportGenesisKey(),
 //						validateNewKey(),
 				}
@@ -66,6 +67,17 @@ public class KeyExport extends HapiApiSuite {
 		).when().then(
 				fileCreate("testFile").key("newKey")
 		);
+	}
+
+	private HapiApiSpec exportCurrentTreasuryKey() {
+		KeyFactory.PEM_PASSPHRASE = "passphrase";
+
+		return defaultHapiSpec("ExportCurrentTreasuryKeyAsPem")
+				.given( ).when( ).then(
+						withOpContext((spec, opLog) -> {
+							spec.keys().exportSimpleWacl("devGenesisKeypair.pem", GENESIS);
+						})
+				);
 	}
 
 	private HapiApiSpec exportGenesisKey() {
