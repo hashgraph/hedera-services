@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -96,8 +97,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	private HapiApiSpec queryPaymentsAreSanityChecked() {
 		return defaultHapiSpec("QueryPaymentsAreSanityChecked")
 				.given(
-						cryptoCreate("a"),
-						cryptoCreate("b")
+						cryptoCreate("a").balance(1_234L),
+						cryptoCreate("b").balance(1_234L)
 				).when().then(
 						getAccountInfo(GENESIS)
 								.withPayment(
@@ -117,6 +118,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
 												invalidPayer(
 														spec, GENESIS, "b", 1_000L))
 								).hasAnswerOnlyPrecheck(INVALID_RECEIVING_NODE_ACCOUNT),
+						getAccountInfo(GENESIS)
+								.fee(100L)
+								.setNode("0.0.3")
+								.hasAnswerOnlyPrecheck(OK),
 						getAccountInfo(GENESIS)
 								.fee(Long.MAX_VALUE)
 								.setNode("0.0.3")
