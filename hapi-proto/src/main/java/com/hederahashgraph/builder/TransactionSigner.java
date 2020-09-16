@@ -209,32 +209,33 @@ public class TransactionSigner {
     }
     SignatureList sigsList = SignatureList.newBuilder().addAllSigs(sigs).build();
 
-    // tx has bodybytes
     if(transaction.hasBody()) {
-      if (TX_BODY_FORMAT_ENUM.Body.equals(TX_BODY_FORMAT)) {
+      if(TX_BODY_FORMAT_ENUM.Body.equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
-      } else if (TX_BODY_FORMAT_ENUM.BodyBytes.equals(TX_BODY_FORMAT)) {
+      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
       } else {//random
         int coin = rand.nextInt(2);
-        if (coin == 0) {
+        if(coin == 0) {
           rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigs(sigsList).build();
         } else {
           rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
         }
       }
-    } else if (TX_BODY_FORMAT_ENUM.Body.equals(TX_BODY_FORMAT)) {
-      TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
-      rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
-    } else if (TX_BODY_FORMAT_ENUM.BodyBytes.equals(TX_BODY_FORMAT)) {
-      rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
-    } else {//random
-      int coin = rand.nextInt(2);
-      if (coin == 0) {
+    } else {// tx has bodybytes
+      if(TX_BODY_FORMAT_ENUM.Body.equals(TX_BODY_FORMAT)) {
         TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
         rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
-      } else {
+      } else if(TX_BODY_FORMAT_ENUM.BodyBytes.equals(TX_BODY_FORMAT)) {
         rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+      } else {//random
+        int coin = rand.nextInt(2);
+        if(coin == 0) {
+          TransactionBody reconstructedBody = TransactionBody.parseFrom(bodyBytes);
+          rv = Transaction.newBuilder().setBody(reconstructedBody).setSigs(sigsList).build();
+        } else {
+          rv = Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(bodyBytes)).setSigs(sigsList).build();
+        }
       }
     }
     return rv;
