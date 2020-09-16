@@ -166,7 +166,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreation() {
+	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
 		return builder -> {
 			builder.setTreasury(setup.defaultPayer());
 			builder.setDecimals(setup.defaultTokenDivisibility());
