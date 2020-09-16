@@ -154,7 +154,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.name(salted("name"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(knowableToken)
-								.kycDefault(false)
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY)
 				).when(
@@ -267,24 +266,20 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						newKeyNamed("oneKyc"),
 						newKeyNamed("twoKyc"),
 						tokenCreate(withPlusDefaultTrue)
-								.kycDefault(true)
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(withPlusDefaultFalse)
-								.kycDefault(false)
-								.kycKey("twoKyc")
 								.treasury(TOKEN_TREASURY)
 				).when(
-						tokenTransact(
-								moving(1, withPlusDefaultTrue)
-										.between(TOKEN_TREASURY, "misc")),
-						revokeTokenKyc(withPlusDefaultTrue, "misc"),
 						tokenTransact(
 								moving(1, withPlusDefaultTrue)
 										.between(TOKEN_TREASURY, "misc"))
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						getAccountInfo("misc").logged(),
-						grantTokenKyc(withPlusDefaultFalse, "misc"),
+						grantTokenKyc(withPlusDefaultTrue, "misc"),
+						tokenTransact(
+								moving(1, withPlusDefaultTrue)
+										.between(TOKEN_TREASURY, "misc")),
 						tokenTransact(
 								moving(1, withPlusDefaultFalse)
 										.between(TOKEN_TREASURY, "misc"))

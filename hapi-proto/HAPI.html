@@ -4837,7 +4837,7 @@ If unspecified, no change. </p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The ID of the token, in the format that can be used for querying TokenInfo </p></td>
+                  <td><p>The ID of the token, in the format that can be used as TokenRef </p></td>
                 </tr>
               
                 <tr>
@@ -8712,13 +8712,6 @@ by HAPI.</p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>The default Freeze status (frozen or unfrozen) of Hedera accounts relative to this token. If true, an account must be unfrozen before it can receive the token </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycDefault</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The default KYC status (granted or revoked) of Hedera accounts relative to this token. If true, an account must be KYCed before it can receive the token. If false or empty KYC is not required. </p></td>
                 </tr>
               
                 <tr>

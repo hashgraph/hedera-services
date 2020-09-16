@@ -74,7 +74,6 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 				).when( ).then(
@@ -99,7 +98,6 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.wipeKey("multiKey")
 								.supplyKey("multiKey")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 				).when(

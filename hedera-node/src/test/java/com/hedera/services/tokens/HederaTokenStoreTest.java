@@ -114,7 +114,7 @@ class HederaTokenStoreTest {
 	TokenID misc = IdUtils.asToken("3.2.1");
 	TokenRef miscRef = IdUtils.asIdRef(misc);
 	boolean freezeDefault = true;
-	boolean kycDefault = true;
+	boolean kycDefault = false;
 	long autoRenewPeriod = 500_000;
 	long newAutoRenewPeriod = 2_000_000;
 	AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
@@ -1850,22 +1850,6 @@ class HederaTokenStoreTest {
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
-	@Test
-	public void forcesToTrueKycDefaultWithoutKycKey() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearKycKey()
-				.setKycDefault(false)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
-		assertTrue(subject.pendingCreation.accountKycGrantedByDefault());
-	}
-
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(expiry)
@@ -1879,7 +1863,6 @@ class HederaTokenStoreTest {
 				.setInitialSupply(tokenFloat)
 				.setTreasury(treasury)
 				.setDecimals(divisibility)
-				.setFreezeDefault(freezeDefault)
-				.setKycDefault(kycDefault);
+				.setFreezeDefault(freezeDefault);
 	}
 }
