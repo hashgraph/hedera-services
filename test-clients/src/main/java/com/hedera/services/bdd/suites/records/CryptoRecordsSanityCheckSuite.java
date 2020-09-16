@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);
@@ -67,7 +66,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				).when(
-						cryptoCreate("test").via("txn")
+						cryptoCreate("test").via("txn").saveTransaction()
 				).then(
 						validateTransferListForBalances("txn", List.of("test", FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
@@ -80,7 +79,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						cryptoCreate("test"),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "test")
 				)).when(
-						cryptoDelete("test").via("txn")
+						cryptoDelete("test").via("txn").saveTransaction()
 				).then(
 						validateTransferListForBalances(
 								"txn",
@@ -98,7 +97,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				)).when(
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, "a", 1_234L)
-						).via("txn")
+						).via("txn").saveTransaction()
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "a")),
 						validateRecordTransactionFees("txn")
@@ -112,7 +111,8 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "test")
 				)).when(
-						cryptoUpdate("test").key("newKey").via("txn").fee(500_000L).payingWith("test")
+						cryptoUpdate("test").key("newKey").via("txn").saveTransaction()
+								.fee(500_000L).payingWith("test")
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
 						validateRecordTransactionFees("txn")
@@ -130,10 +130,12 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
 								.payingWith("payer")
 								.via("txn1")
+								.saveTransaction()
 								.deferStatusResolution(),
 						cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
 								.payingWith("payer")
 								.via("txn2")
+								.saveTransaction()
 								.hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
 						sleepFor(1_000L)
 
