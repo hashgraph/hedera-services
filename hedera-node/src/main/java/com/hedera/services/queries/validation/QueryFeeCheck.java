@@ -131,32 +131,31 @@ public class QueryFeeCheck {
 	 * @return
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn) {
-		if (txn.getTransactionID().hasAccountID()) {
-			AccountID payerAccount = txn.getTransactionID().getAccountID();
-			TransferList transferList = txn.getCryptoTransfer().getTransfers();
-			List<AccountAmount> transfers = transferList.getAccountAmountsList();
-			long suppliedFee = txn.getTransactionFee();
+		AccountID payerAccount = txn.getTransactionID().getAccountID();
+		TransferList transferList = txn.getCryptoTransfer().getTransfers();
+		List<AccountAmount> transfers = transferList.getAccountAmountsList();
+		long suppliedFee = txn.getTransactionFee();
 
-			if (Optional.ofNullable(transfers).map(List::size).orElse(0) != 2) {
-				return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
-			}
+		if (Optional.ofNullable(transfers).map(List::size).orElse(0) != 2) {
+			return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
+		}
 
-			ResponseCodeEnum response = checkNodeAndPayerAccounts(transfers,
-					payerAccount, txn.getNodeAccountID());
-			if (response != OK) {
-				return response;
-			}
+		ResponseCodeEnum response = checkNodeAndPayerAccounts(transfers,
+				payerAccount, txn.getNodeAccountID());
+		if (response != OK) {
+			return response;
+		}
 
-			response = checkPayerBalance(payerAccount, transfers, suppliedFee);
-			if (response != OK) {
-				return response;
-			}
+		response = checkPayerBalance(payerAccount, transfers, suppliedFee);
+		if (response != OK) {
+			return response;
 		}
 		return OK;
 	}
 
 	/**
 	 * Check if payer can afford transaction fee and transfer amount
+	 *
 	 * @param payerAccount
 	 * @param transfers
 	 * @param suppliedFee
@@ -183,6 +182,7 @@ public class QueryFeeCheck {
 
 	/**
 	 * Check payer account and node accounts in transfer list of query payment transaction
+	 *
 	 * @param transfers
 	 * @param payer
 	 * @param node
