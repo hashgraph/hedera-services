@@ -22,24 +22,30 @@ package com.hedera.services.bdd.suites.crypto;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -53,7 +59,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -70,19 +75,56 @@ public class CryptoCreateSuite extends HapiApiSuite {
 	}
 
 	private List<HapiApiSpec> negativeTests() {
-		return List.of(
-				createAnAccountEmptyThresholdKey(),
-				createAnAccountEmptyKeyList(),
-				createAnAccountEmptyNestedKey(),
-				createAnAccountInvalidKeyList(),
-				createAnAccountInvalidNestedKeyList(),
-				createAnAccountInvalidThresholdKey(),
-				createAnAccountInvalidNestedThresholdKey(),
-				createAnAccountThresholdKeyWithInvalidThreshold(),
-				createAnAccountInvalidED25519(),
-				invalidDurationGetsMeaningfulResponse(),
-				xferRequiresCrypto()
+		return List.of(new HapiApiSpec[] {
+						createAnAccountEmptyThresholdKey(),
+						createAnAccountEmptyKeyList(),
+						createAnAccountEmptyNestedKey(),
+						createAnAccountInvalidKeyList(),
+						createAnAccountInvalidNestedKeyList(),
+						createAnAccountInvalidThresholdKey(),
+						createAnAccountInvalidNestedThresholdKey(),
+						createAnAccountThresholdKeyWithInvalidThreshold(),
+						createAnAccountInvalidED25519(),
+						invalidDurationGetsMeaningfulResponse(),
+						xferRequiresCrypto(),
+						queryPaymentsAreSanityChecked(),
+				}
 		);
+	}
+
+	private HapiApiSpec queryPaymentsAreSanityChecked() {
+		return defaultHapiSpec("QueryPaymentsAreSanityChecked")
+				.given(
+						cryptoCreate("a"),
+						cryptoCreate("b")
+				).when().then(
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												invalidMultiAccountPaymentToNode003(
+														spec, "a", "b", 1_000L))
+								).hasAnswerOnlyPrecheck(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS)
+				);
+	}
+
+	private TransferList invalidMultiAccountPaymentToNode003(
+			HapiApiSpec spec,
+			String first,
+			String second,
+			long amount
+	) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(second), -amount / 2))
+				.addAccountAmounts(adjust(asAccount("0.0.3"), amount))
+				.build();
+	}
+
+	private AccountAmount adjust(AccountID id, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(id)
+				.setAmount(amount)
+				.build();
 	}
 
 	private HapiApiSpec xferRequiresCrypto() {
@@ -106,7 +148,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	public static HapiApiSpec invalidDurationGetsMeaningfulResponse() {
+	public HapiApiSpec invalidDurationGetsMeaningfulResponse() {
 		return defaultHapiSpec("InvalidDurationGetsMeaningfulResponse")
 				.given().when().then(
 						cryptoCreate("broken")
