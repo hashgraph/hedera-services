@@ -1305,21 +1305,6 @@
         
           
           <li>
-            <a href="#TokenManagement.proto">TokenManagement.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#proto.TokenManagement"><span class="badge">M</span>TokenManagement</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#TokenMintCoins.proto">TokenMintCoins.proto</a>
             <ul>
               
@@ -1389,6 +1374,21 @@
               
                 <li>
                   <a href="#proto.TokenUnfreeze"><span class="badge">M</span>TokenUnfreeze</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#TokenUpdate.proto">TokenUpdate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.TokenUpdateTransactionBody"><span class="badge">M</span>TokenUpdateTransactionBody</a>
                 </li>
               
               
@@ -4837,7 +4837,7 @@ If unspecified, no change. </p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The ID of the token, in the format that can be used for querying TokenInfo </p></td>
+                  <td><p>The ID of the token, in the format that can be used as TokenRef </p></td>
                 </tr>
               
                 <tr>
@@ -9098,121 +9098,6 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenManagement.proto">TokenManagement.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="proto.TokenManagement">TokenManagement</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>treasury</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>adminKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>freezeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>wipeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>supplyKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>symbol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>autoRenewAccount</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="TokenMintCoins.proto">TokenMintCoins.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -9514,6 +9399,121 @@ by HAPI.</p></td>
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="TokenUpdate.proto">TokenUpdate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</h3>
+        <p>Updates an already created Token. If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in whic case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>treasury</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kycKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>freezeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>wipeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>supplyKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>symbol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>autoRenewAccount</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>autoRenewPeriod</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expiry</td>
+                  <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -9933,7 +9933,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenUpdate</td>
-                  <td><a href="#proto.TokenManagement">TokenManagement</a></td>
+                  <td><a href="#proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

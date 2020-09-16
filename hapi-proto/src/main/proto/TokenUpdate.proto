@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+option java_multiple_files = true;
+
+import "BasicTypes.proto";
+
+/* Updates an already created Token.
+ If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.
+ */
+message TokenUpdateTransactionBody {
+    TokenRef token = 1; // The Token to be updated
+    string symbol = 2; // The new Symbol of the Token. Must be a unique, case-insensitive UTF-8 alphanumeric string identifying the token.
+    string name = 3; // The new Name of the Token. Must be a unique string of ASCII characters.
+    AccountID treasury = 4; // The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one.
+    Key adminKey = 5; // The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE.
+    Key kycKey = 6; // The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY.
+    Key freezeKey = 7; // The new Freeze key of the Token. If the Token does not have currently a Freeze key, transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.
+    Key wipeKey = 8; // The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY.
+    Key supplyKey = 9; // The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
+    AccountID autoRenewAccount = 10; // The new account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval.
+    uint64 autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
+    uint64 expiry = 12;
+}

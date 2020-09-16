@@ -47,7 +47,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenGrantKyc;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintCoins;
 import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
@@ -162,7 +162,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenManagement.Builder> defaultDef_TokenManagement() {
+	public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenManagement() {
 		return builder -> {};
 	}
 
