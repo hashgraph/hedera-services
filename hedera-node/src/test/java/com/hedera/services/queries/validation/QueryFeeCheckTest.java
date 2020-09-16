@@ -21,12 +21,10 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -45,7 +43,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
@@ -247,25 +244,44 @@ class QueryFeeCheckTest {
 		// setup:
 		long amount =8;
 		// given :
-		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount, null);
+		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, null);
 
 		// then:
 		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), OK);
 	}
 
 	@Test
-	public void validateQueryPaymentInsufficientPayerBalance() {
+	public void queryPaymentFailsWithException() {
 		// setup:
 		long amount = Long.MAX_VALUE;
 		// given :
-		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount, null);
+		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, null);
 
 		// then:
 		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), INSUFFICIENT_PAYER_BALANCE);
 	}
 
 	@Test
-	public void validateQueryPaymentInvalidAccountAmount() {
+	public void queryPaymentFailsWithInsufficientBalance() {
+		// setup:
+		long amount = 5000L;
+		// given :
+		TransferList transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
+				.build();
+		TransactionBody body = TransactionBody.newBuilder()
+						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+						.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke).build())
+						.setNodeAccountID(aNode)
+						.setTransactionFee(feeRequired).build();
+
+		// then:
+		assertEquals(subject.validateQueryPaymentTransaction(body), INSUFFICIENT_PAYER_BALANCE);
+	}
+
+	@Test
+	public void queryPaymentInvalidAccountAmount() {
 		// setup:
 		long amount = 200L;
 
@@ -275,39 +291,42 @@ class QueryFeeCheckTest {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(asAccount("0.0.6")).setAmount(amount))
 				.build();
-		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount, transList);
+		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
+
 		// then:
 		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
 				INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS);
 	}
 
 	@Test
-	public void validateQueryPaymentInvalidPayerId() {
+	public void queryPaymentInvalidPayerId() {
 		// setup:
 		long amount = 200L;
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(asAccount("0.0.6")).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1*amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.build();
-		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount, transList);
+		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
+
 		// then:
 		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
 				INVALID_PAYER_ACCOUNT_ID);
 	}
 
 	@Test
-	public void validateQueryPaymentInvalidNodeId() {
+	public void queryPaymentInvalidNodeId() {
 		// setup:
 		long amount = 200L;
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(asAccount("0.0.6")).setAmount(amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(amount))
 				.build();
-		TransactionBody signedQueryPaymentTxnBody = getSignedPaymentTxn(amount, transList);
+		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
+
 		// then:
 		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
 				INVALID_RECEIVING_NODE_ACCOUNT);
@@ -335,7 +354,7 @@ class QueryFeeCheckTest {
 		return List.of(a, b, c);
 	}
 
-	private TransactionBody getSignedPaymentTxn(long amount, TransferList transferList) {
+	private TransactionBody getPaymentTxnBody(long amount, TransferList transferList) {
 		TransferList transList = TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
@@ -343,14 +362,11 @@ class QueryFeeCheckTest {
 		if(transferList != null){
 			transList = transferList;
 		}
-		Transaction signedTransaction = Transaction.newBuilder()
-				.setBody(TransactionBody.newBuilder()
+		TransactionBody body = TransactionBody.newBuilder()
 						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
 						.setTransactionID(txnId)
 						.setNodeAccountID(aNode)
-						.setTransactionFee(feeRequired))
-				.build();
-		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(signedTransaction);
-		return accessor.getTxn();
+						.setTransactionFee(feeRequired).build();
+		return body;
 	}
 }
