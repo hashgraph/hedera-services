@@ -9,9 +9,9 @@ package com.hedera.services.queries.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -116,7 +116,7 @@ class QueryFeeCheckTest {
 				INVALID_RECEIVING_NODE_ACCOUNT,
 				subject.nodePaymentValidity(
 						transfersWith(
-								adjustmentWith(aRich, -aLittle ),
+								adjustmentWith(aRich, -aLittle),
 								adjustmentWith(aBroke, aLittle)),
 						aLittle - 1, aNode));
 	}
@@ -242,7 +242,7 @@ class QueryFeeCheckTest {
 	@Test
 	public void validateQueryPaymentSucceeds() {
 		// setup:
-		long amount =8;
+		long amount = 8;
 		// given :
 		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, null);
 
@@ -267,17 +267,17 @@ class QueryFeeCheckTest {
 		long amount = 5000L;
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.build();
 		TransactionBody body = TransactionBody.newBuilder()
-						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-						.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke).build())
-						.setNodeAccountID(aNode)
-						.setTransactionFee(feeRequired).build();
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(aBroke).build())
+				.setNodeAccountID(aNode)
+				.setTransactionFee(feeRequired).build();
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(body), INSUFFICIENT_PAYER_BALANCE);
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransaction(body));
 	}
 
 	@Test
@@ -287,15 +287,15 @@ class QueryFeeCheckTest {
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(asAccount("0.0.6")).setAmount(amount))
 				.build();
 		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
-				INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS);
+		assertEquals(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS,
+				subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
 	}
 
 	@Test
@@ -305,14 +305,13 @@ class QueryFeeCheckTest {
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.build();
 		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
-				INVALID_PAYER_ACCOUNT_ID);
+		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
 	}
 
 	@Test
@@ -322,14 +321,14 @@ class QueryFeeCheckTest {
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(amount))
 				.build();
 		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody),
-				INVALID_RECEIVING_NODE_ACCOUNT);
+		assertEquals(INVALID_RECEIVING_NODE_ACCOUNT,
+				subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
 	}
 
 	private AccountAmount adjustmentWith(AccountID id, long amount) {
@@ -356,17 +355,17 @@ class QueryFeeCheckTest {
 
 	private TransactionBody getPaymentTxnBody(long amount, TransferList transferList) {
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1*amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
 				.build();
-		if(transferList != null){
+		if (transferList != null) {
 			transList = transferList;
 		}
 		TransactionBody body = TransactionBody.newBuilder()
-						.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-						.setTransactionID(txnId)
-						.setNodeAccountID(aNode)
-						.setTransactionFee(feeRequired).build();
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+				.setTransactionID(txnId)
+				.setNodeAccountID(aNode)
+				.setTransactionFee(feeRequired).build();
 		return body;
 	}
 }
