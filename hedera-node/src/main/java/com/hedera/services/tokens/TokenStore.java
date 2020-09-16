@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -66,7 +66,7 @@ public interface TokenStore {
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now);
+	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 	void commitCreation();
 	void rollbackCreation();
 	boolean isCreationPending();

@@ -8,7 +8,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -38,7 +38,7 @@ public class TokenCreateUsageTest {
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
-	TokenCreation op;
+	TokenCreateTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -106,7 +106,7 @@ public class TokenCreateUsageTest {
 	}
 
 	private void givenExpiryBasedOp() {
-		op = TokenCreation.newBuilder()
+		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(expiry)
 				.setSymbol(symbol)
 				.setKycKey(kycKey)
@@ -119,7 +119,7 @@ public class TokenCreateUsageTest {
 	}
 
 	private void givenAutoRenewBasedOp() {
-		op = TokenCreation.newBuilder()
+		op = TokenCreateTransactionBody.newBuilder()
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(autoRenewPeriod)
 				.setSymbol(symbol)

@@ -50,7 +50,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -900,17 +900,17 @@ public class HederaLedgerTest {
 				));
 	}
 
-	private TokenCreation stdWith(String symbol, String tokenName, AccountID account) {
+	private TokenCreateTransactionBody stdWith(String symbol, String tokenName, AccountID account) {
 		var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-		return TokenCreation.newBuilder()
+		return TokenCreateTransactionBody.newBuilder()
 				.setAdminKey(key)
 				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.setSymbol(symbol)
 				.setName(tokenName)
-				.setFloat(0)
+				.setInitialSupply(0)
 				.setTreasury(account)
 				.setExpiry(2 * thisSecond)
-				.setDivisibility(0)
+				.setDecimals(0)
 				.setFreezeDefault(false)
 				.build();
 	}

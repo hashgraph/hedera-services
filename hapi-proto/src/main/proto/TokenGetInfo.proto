@@ -39,8 +39,8 @@ message TokenInfo {
     string symbol = 2;
     string name = 3;
     AccountID treasury = 4;
-    uint64 currentFloat = 5;
-    uint32 divisibility = 6;
+    uint64 totalSupply = 5;
+    uint32 decimals = 6;
     Key adminKey = 7;
     Key kycKey = 8;
     Key freezeKey = 9;
