@@ -246,7 +246,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	@DisplayName("incorporateConsensusTxn assigns a failure due to memo size for ContractCreateInstance")
+	@DisplayName("creates a contract with small memo size")
 	public void contractCreateInstanceIsCreated() {
 		// setup:
 		final byte[] contractByteCode = new byte[] { 100 };
@@ -266,6 +266,39 @@ class AwareProcessLogicTest {
 		given(txnBody.hasContractCreateInstance()).willReturn(true);
 		given(txnBody.getContractCreateInstance()).willReturn(ContractCreateTransactionBody.newBuilder()
 				.setMemo("This is a very small memo")
+				.setFileID(FileID.newBuilder().build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(10).build())
+				.build());
+		given(hfs.cat(any())).willReturn(contractByteCode);
+
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, now, 666);
+
+		// then:
+		verify(contracts).createContract(txnBody, now, contractByteCode, sequenceNumber);
+	}
+
+	@Test
+	@DisplayName("creates a contract with no memo")
+	public void contractCreateInstanceIsCreatedNoMemo() {
+		// setup:
+		final byte[] contractByteCode = new byte[] { 100 };
+		final SequenceNumber sequenceNumber = new SequenceNumber();
+		final Instant now = Instant.now();
+		final Instant then = now.minusMillis(10L);
+		final IssEventInfo eventInfo = mock(IssEventInfo.class);
+		final TransactionRecord record = mock(TransactionRecord.class);
+		given(eventInfo.status()).willReturn(NO_KNOWN_ISS);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+		given(ctx.addressBook().getAddress(666).getStake()).willReturn(1L);
+		given(ctx.issEventInfo()).willReturn(eventInfo);
+		given(ctx.seqNo()).willReturn(sequenceNumber);
+
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(txnBody.hasContractCreateInstance()).willReturn(true);
+		given(txnBody.getContractCreateInstance()).willReturn(ContractCreateTransactionBody.newBuilder()
 				.setFileID(FileID.newBuilder().build())
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(10).build())
 				.build());
