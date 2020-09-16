@@ -37,6 +37,7 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -81,6 +82,7 @@ class AwareProcessLogicTest {
 	TransactionContext txnCtx;
 	TransactionBody txnBody;
 	SmartContractRequestHandler contracts;
+	HederaFs hfs;
 
 	AwareProcessLogic subject;
 
@@ -102,7 +104,7 @@ class AwareProcessLogicTest {
 		final TxnFeeChargingPolicy policy = mock(TxnFeeChargingPolicy.class);
 		final SystemOpPolicies policies = mock(SystemOpPolicies.class);
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
-		final HederaFs hfs = mock(HederaFs.class);
+		hfs = mock(HederaFs.class);
 
 		given(histories.get(any())).willReturn(recentHistory);
 
@@ -244,6 +246,40 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
+	@DisplayName("incorporateConsensusTxn assigns a failure due to memo size for ContractCreateInstance")
+	public void contractCreateInstanceIsCreated() {
+		// setup:
+		final byte[] contractByteCode = new byte[] { 100 };
+		final SequenceNumber sequenceNumber = new SequenceNumber();
+		final Instant now = Instant.now();
+		final Instant then = now.minusMillis(10L);
+		final IssEventInfo eventInfo = mock(IssEventInfo.class);
+		final TransactionRecord record = mock(TransactionRecord.class);
+		given(eventInfo.status()).willReturn(NO_KNOWN_ISS);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+		given(ctx.addressBook().getAddress(666).getStake()).willReturn(1L);
+		given(ctx.issEventInfo()).willReturn(eventInfo);
+		given(ctx.seqNo()).willReturn(sequenceNumber);
+
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(txnBody.hasContractCreateInstance()).willReturn(true);
+		given(txnBody.getContractCreateInstance()).willReturn(ContractCreateTransactionBody.newBuilder()
+				.setMemo("This is a very small memo")
+				.setFileID(FileID.newBuilder().build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(10).build())
+				.build());
+		given(hfs.cat(any())).willReturn(contractByteCode);
+
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, now, 666);
+
+		// then:
+		verify(contracts).createContract(txnBody, now, contractByteCode, sequenceNumber);
+	}
+
+	@Test
 	@DisplayName("incorporateConsensusTxn assigns a failure due to memo size for ContractUpdateInstance")
 	public void shortCircuitsOnMemoSizeForContractUpdate() {
 		// setup:
@@ -272,6 +308,35 @@ class AwareProcessLogicTest {
 
 		// then:
 		verify(contracts).getFailureTransactionRecord(txnBody, now, MEMO_TOO_LONG);
+	}
+
+	@Test
+	@DisplayName("ContractUpdateInstance is updated in contracts")
+	public void contractUpdateInstanceIsUpdate() {
+		// setup:
+		final Instant now = Instant.now();
+		final Instant then = now.minusMillis(10L);
+		final IssEventInfo eventInfo = mock(IssEventInfo.class);
+		final TransactionRecord record = mock(TransactionRecord.class);
+		given(eventInfo.status()).willReturn(NO_KNOWN_ISS);
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+		given(ctx.addressBook().getAddress(666).getStake()).willReturn(1L);
+		given(ctx.issEventInfo()).willReturn(eventInfo);
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(txnBody.hasContractUpdateInstance()).willReturn(true);
+		given(txnBody.getContractUpdateInstance()).willReturn(ContractUpdateTransactionBody.newBuilder()
+				.setMemo("This is a very small memo")
+				.setFileID(FileID.newBuilder().build())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(10).build())
+				.build());
+
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, now, 666);
+
+		// then:
+		verify(contracts).updateContract(txnBody, now);
 	}
 
 }
