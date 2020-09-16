@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -61,12 +62,14 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> wipeKey = Optional.empty();
 	private Optional<String> supplyKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
+	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<Boolean> kycDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
+	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -132,6 +135,16 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate name(String name) {
+		this.name = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenCreate name(Function<HapiApiSpec, String> nameFn) {
+		this.nameFn = Optional.of(nameFn);
+		return this;
+	}
+
 	public HapiTokenCreate adminKey(String adminKeyName) {
 		this.adminKey = Optional.of(adminKeyName);
 		return this;
@@ -185,11 +198,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		if (symbolFn.isPresent()) {
 			symbol = Optional.of(symbolFn.get().apply(spec));
 		}
+		if (nameFn.isPresent()) {
+			name = Optional.of(nameFn.get().apply(spec));
+		}
 		TokenCreation opBody = spec
 				.txns()
 				.<TokenCreation, TokenCreation.Builder>body(
 						TokenCreation.class, b -> {
 							symbol.ifPresent(b::setSymbol);
+							name.ifPresent(b::setName);
 							initialFloat.ifPresent(b::setFloat);
 							divisibility.ifPresent(b::setDivisibility);
 							freezeDefault.ifPresent(b::setFreezeDefault);
@@ -233,7 +250,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		}
 		var registry = spec.registry();
 		registry.saveSymbol(token, symbol.orElse(token));
+		registry.saveName(token, name.orElse(token));
 		registry.saveTokenId(token, lastReceipt.getTokenId());
+
 		adminKey.ifPresent(k -> registry.saveAdminKey(token, registry.getKey(k)));
 		kycKey.ifPresent(k -> registry.saveKycKey(token, registry.getKey(k)));
 		wipeKey.ifPresent(k -> registry.saveWipeKey(token, registry.getKey(k)));

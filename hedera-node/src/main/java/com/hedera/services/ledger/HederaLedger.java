@@ -259,6 +259,22 @@ public class HederaLedger {
 		clearNetTokenTransfers();
 	}
 
+	public ResponseCodeEnum doTokenTransfer(TokenID tId, AccountID from, AccountID to, long adjustment, boolean skipTokenCheck) {
+		if (!skipTokenCheck && !tokenStore.exists(tId)) {
+			return INVALID_TOKEN_ID;
+		}
+		var validity = OK;
+		validity = adjustTokenBalance(from, tId, -adjustment);
+		if (validity == OK) {
+			validity = adjustTokenBalance(to, tId, adjustment);
+		}
+
+		if (validity != OK) {
+			dropPendingTokenChanges();
+		}
+		return validity;
+	}
+
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
 		var validity = OK;
 

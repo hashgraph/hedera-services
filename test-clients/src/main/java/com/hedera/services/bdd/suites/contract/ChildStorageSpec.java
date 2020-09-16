@@ -97,7 +97,9 @@ public class ChildStorageSpec extends HapiApiSuite {
 
 		return defaultHapiSpec("ChildStorage")
 				.given(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
 								"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
 						)),
 						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),

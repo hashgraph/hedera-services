@@ -263,7 +263,7 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void rejectsMissingId() {
+	public void atomicZeroSumTokenTransferRejectsMissingId() {
 		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
 
 		// when:
@@ -278,7 +278,7 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void rejectsMissingSymbol() {
+	public void atomicZeroSumTokenTransferRejectsMissingSymbol() {
 		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
 
 		// when:
@@ -293,15 +293,8 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void happyPathTransfers() {
-		given(tokenStore.adjustBalance(any(), any(), anyLong()))
-				.willAnswer(invocationOnMock -> {
-					AccountID aId = invocationOnMock.getArgument(0);
-					TokenID tId = invocationOnMock.getArgument(1);
-					long amount = invocationOnMock.getArgument(2);
-					subject.updateTokenXfers(tId, aId, amount);
-					return OK;
-				});
+	public void happyPathZeroSumTokenTransfers() {
+		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// when:
 		var outcome = subject.doAtomicZeroSumTokenTransfers(multipleValidTokenTransfers);
@@ -319,6 +312,85 @@ public class HederaLedgerTest {
 		assertEquals(
 				List.of(aa(misc, 1_000), aa(rand, -1_000)),
 				netXfers.get(1).getTransfersList());
+	}
+
+	@Test
+	public void tokenTransferRejectsForMissingId() {
+		// setup
+		given(tokenStore.exists(tokenId)).willReturn(false);
+
+		// when:
+		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000, false);
+
+		// then:
+		assertEquals(INVALID_TOKEN_ID, outcome);
+	}
+
+	@Test
+	public void tokenTransferSkipTokenCheckWorks() {
+		// setup
+		given(subject.adjustTokenBalance(misc, tokenId, -1_000)).willReturn(OK);
+		given(subject.adjustTokenBalance(rand, tokenId, 1_000)).willReturn(OK);
+
+		// when:
+		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 1_000, true);
+
+		// then:
+		assertEquals(OK, outcome);
+		verify(tokenStore, never()).exists(tokenId);
+	}
+
+	@Test
+	public void tokenTransferRevertsChangesOnFirstAdjust() {
+		// setup
+		given(tokenStore.adjustBalance(misc, tokenId, -555))
+				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		// given:
+		var status = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+
+		// expect:
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		// and:
+		assertEquals(0, subject.numTouches);
+		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
+		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
+	public void tokenTransferRevertsChangesOnSecondAdjust() {
+		// setup
+		given(tokenStore.adjustBalance(misc, tokenId, -555))
+				.willReturn(OK);
+		given(tokenStore.adjustBalance(rand, tokenId, 555))
+				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		// given:
+		var status = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+
+		// expect:
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		// and:
+		assertEquals(0, subject.numTouches);
+		verify(tokenStore).adjustBalance(misc, tokenId, -555);
+		verify(tokenStore).adjustBalance(rand, tokenId, 555);
+		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
+	public void tokenTransferHappyPath() {
+		// setup
+		givenAdjustBalanceUpdatingTokenXfers(misc, tokenId, -555);
+		givenAdjustBalanceUpdatingTokenXfers(rand, tokenId, 555);
+
+		// given
+		var outcome = subject.doTokenTransfer(tokenId, misc, rand, 555, true);
+		var netXfers = subject.netTokenTransfersInTxn();
+
+		assertEquals(OK, outcome);
+		assertEquals(tokenId, netXfers.get(0).getToken());
+		assertEquals(List.of(aa(misc, -555), aa(rand, 555)),
+				netXfers.get(0).getTransfersList());
 	}
 
 	@Test
@@ -346,14 +418,7 @@ public class HederaLedgerTest {
 
 	@Test
 	public void adjustsIfValid() {
-		given(tokenStore.adjustBalance(any(), any(), anyLong()))
-				.willAnswer(invocationOnMock -> {
-					AccountID aId = invocationOnMock.getArgument(0);
-					TokenID tId = invocationOnMock.getArgument(1);
-					long amount = invocationOnMock.getArgument(2);
-					subject.updateTokenXfers(tId, aId, amount);
-					return OK;
-				});
+		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// given:
 		var status = subject.adjustTokenBalance(misc, tokenId, 555);
@@ -790,11 +855,11 @@ public class HederaLedgerTest {
 		AccountID c = subject.create(genesis, 3_000L, new HederaAccountCustomizer().memo("c"));
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
-		var rA = tokenStore.createProvisionally(stdWith("MINE", a), a, thisSecond);
+		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
 		System.out.println(rA.getStatus());
 		tA = rA.getCreated().get();
 		tokenStore.commitCreation();
-		var rB = tokenStore.createProvisionally(stdWith("YOURS", b), b, thisSecond);
+		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
 		System.out.println(rB.getStatus());
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
@@ -835,12 +900,13 @@ public class HederaLedgerTest {
 				));
 	}
 
-	private TokenCreation stdWith(String symbol, AccountID account) {
+	private TokenCreation stdWith(String symbol, String tokenName, AccountID account) {
 		var key = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 		return TokenCreation.newBuilder()
 				.setAdminKey(key)
 				.setFreezeKey(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.setSymbol(symbol)
+				.setName(tokenName)
 				.setFloat(0)
 				.setTreasury(account)
 				.setExpiry(2 * thisSecond)
@@ -1364,5 +1430,16 @@ public class HederaLedgerTest {
 			records.offer(record);
 		}
 		return records;
+	}
+
+	private void givenAdjustBalanceUpdatingTokenXfers(AccountID misc, TokenID tokenId, long i) {
+		given(tokenStore.adjustBalance(misc, tokenId, i))
+				.willAnswer(invocationOnMock -> {
+					AccountID aId = invocationOnMock.getArgument(0);
+					TokenID tId = invocationOnMock.getArgument(1);
+					long amount = invocationOnMock.getArgument(2);
+					subject.updateTokenXfers(tId, aId, amount);
+					return OK;
+				});
 	}
 }

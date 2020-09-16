@@ -52,12 +52,13 @@ public interface TokenStore {
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
 	boolean symbolExists(String symbol);
+	boolean nameExists(String name);
 	TokenID lookup(String symbol);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);
-	ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck);
+	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum update(TokenManagement changes, long now);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
