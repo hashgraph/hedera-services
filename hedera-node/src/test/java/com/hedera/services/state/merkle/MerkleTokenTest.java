@@ -483,7 +483,7 @@ class MerkleTokenTest {
 						"wipeKey=" + describe(wipeKey) + ", " +
 						"supplyKey=" + describe(supplyKey) + ", " +
 						"freezeKey=" + describe(freezeKey) + ", " +
-						"accountKycGrantedByDefault=" + kycDefault + ", " +
+						"accountsKycGrantedByDefault=" + kycDefault + ", " +
 						"accountsFrozenByDefault=" + freezeDefault + "}",
 				subject.toString());
 	}

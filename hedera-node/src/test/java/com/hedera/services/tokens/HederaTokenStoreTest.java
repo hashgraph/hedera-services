@@ -1341,7 +1341,7 @@ class HederaTokenStoreTest {
 
 	private void givenTokenWithKycKey(boolean kycDefault) {
 		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
-		given(token.accountKycGrantedByDefault()).willReturn(kycDefault);
+		given(token.accountsKycGrantedByDefault()).willReturn(kycDefault);
 	}
 
 	@Test
