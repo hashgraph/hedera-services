@@ -429,10 +429,6 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private boolean isMemoTooLong(String memo) {
-		if (memo == null ) {
-			return false;
-		}
-
 		return memo.length() > MEMO_SIZE_LIMIT;
 	}
 }
