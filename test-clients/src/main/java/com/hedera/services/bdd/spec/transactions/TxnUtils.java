@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -45,6 +46,7 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
@@ -217,6 +219,10 @@ public class TxnUtils {
 				.setShardNum(contract.getShardNum())
 				.setRealmNum(contract.getRealmNum())
 				.setAccountNum(contract.getContractNum()).build();
+	}
+
+	public static SigUsage suFrom(SigValueObj svo) {
+		return new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 	}
 
 	public static Timestamp defaultTimestamp() {
