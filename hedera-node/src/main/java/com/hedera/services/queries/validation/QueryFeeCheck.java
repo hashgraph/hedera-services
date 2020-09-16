@@ -21,7 +21,6 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -123,6 +122,13 @@ public class QueryFeeCheck {
 		return OK;
 	}
 
+	/**
+	 * Validates query payment transaction before reaching consensus.
+	 * Query payment transaction should have only two account amounts in transfer list,
+	 * where payer account is transferring to node account
+	 * @param txn
+	 * @return
+	 */
 	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn) {
 		long suppliedFee = txn.getTransactionFee();
 		long transferAmount = 0;
@@ -133,11 +139,13 @@ public class QueryFeeCheck {
 					.orElse(null);
 
 			TransferList transferList = txn.getCryptoTransfer().getTransfers();
+			// check if there are only two account amounts in transfer list
 			if (transferList.getAccountAmountsCount() != 2) {
 				return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 			}
 
 			List<AccountAmount> transfers = transferList.getAccountAmountsList();
+			// check if payer transfers to node
 			for (AccountAmount entry : transfers) {
 				if (entry.getAmount() < 0) {
 					transferAmount += -1 * entry.getAmount();
@@ -152,6 +160,7 @@ public class QueryFeeCheck {
 					}
 				}
 			}
+			// check if payer balance is not sufficient for transfer amount and transaction fee
 			try {
 				if (payerAccountBalance < Math.addExact(transferAmount, suppliedFee)) {
 					return INSUFFICIENT_PAYER_BALANCE;
