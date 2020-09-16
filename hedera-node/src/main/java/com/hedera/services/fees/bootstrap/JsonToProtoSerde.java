@@ -9,9 +9,9 @@ package com.hedera.services.fees.bootstrap;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,7 +63,7 @@ public class JsonToProtoSerde {
 					feeSchedules,
 					rawFeeSchedule,
 					FeeSchedule.class,
-					bindFeeScheduleFrom((List<Map<String, Object>>)rawFeeSchedules.get(i++).get(rawFeeSchedule)));
+					bindFeeScheduleFrom((List<Map<String, Object>>) rawFeeSchedules.get(i++).get(rawFeeSchedule)));
 		}
 
 		return feeSchedules.build();
@@ -72,7 +72,7 @@ public class JsonToProtoSerde {
 	static List<Map<String, Object>> asMapList(String jsonResource) {
 		ObjectMapper om = new ObjectMapper();
 		try (InputStream in = JsonToProtoSerde.class.getClassLoader().getResourceAsStream(jsonResource)) {
-			return (List<Map<String, Object>>)om.readValue(in, List.class);
+			return (List<Map<String, Object>>) om.readValue(in, List.class);
 		} catch (Exception e) {
 			throw new IllegalStateException(String.format("Cannot load fee schedules '%s'!", jsonResource), e);
 		}
@@ -87,7 +87,7 @@ public class JsonToProtoSerde {
 				feeSchedule.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry));
 			} else {
 				feeSchedule.addTransactionFeeSchedule(bindTxnFeeScheduleFrom(
-						(Map<String, Object>)part.get(TXN_FEE_SCHEDULE_KEY)));
+						(Map<String, Object>) part.get(TXN_FEE_SCHEDULE_KEY)));
 			}
 		}
 
@@ -96,9 +96,9 @@ public class JsonToProtoSerde {
 
 	static TransactionFeeSchedule bindTxnFeeScheduleFrom(Map<String, Object> rawTxnFeeSchedule) throws Exception {
 		TransactionFeeSchedule.Builder txnFeeSchedule = TransactionFeeSchedule.newBuilder();
-		var key = translateClaimFunction((String)rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
+		var key = translateClaimFunction((String) rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
 		txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
-		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY)));
+		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>) rawTxnFeeSchedule.get(FEE_DATA_KEY)));
 		return txnFeeSchedule.build();
 	}
 
@@ -123,7 +123,7 @@ public class JsonToProtoSerde {
 					feeData,
 					feeComponent,
 					FeeComponents.class,
-					bindFeeComponentsFrom((Map<String, Object>)rawFeeData.get(feeComponent)));
+					bindFeeComponentsFrom((Map<String, Object>) rawFeeData.get(feeComponent)));
 		}
 
 		return feeData.build();
@@ -133,16 +133,17 @@ public class JsonToProtoSerde {
 		FeeComponents.Builder feeComponents = FeeComponents.newBuilder();
 		for (String resource : RESOURCE_KEYS) {
 			set(
-				FeeComponents.Builder.class,
-				feeComponents,
-				resource,
-				long.class,
-				Long.parseLong(rawFeeComponents.get(resource) + ""));
+					FeeComponents.Builder.class,
+					feeComponents,
+					resource,
+					long.class,
+					Long.parseLong(rawFeeComponents.get(resource) + ""));
 		}
 		return feeComponents.build();
 	}
 
-	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType, T value) throws Exception {
+	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType,
+			T value) throws Exception {
 		Method setter = builderType.getDeclaredMethod(setterName(property), valueType);
 		setter.invoke(builder, value);
 	}

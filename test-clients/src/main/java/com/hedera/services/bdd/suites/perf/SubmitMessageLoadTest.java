@@ -57,6 +57,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static String topicID = null;
 	private static int messageSize = 40;
 	private static String pemFile = null;
+
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
 
@@ -121,12 +122,13 @@ public class SubmitMessageLoadTest extends LoadTest {
 						// if no pem file defined then create a new submitKey
 						pemFile == null ? newKeyNamed("submitKey") :
 								keyFromPem(pemFile)
-								.name("submitKey")
-								.simpleWacl()
-								.passphrase(KeyFactory.PEM_PASSPHRASE),
+										.name("submitKey")
+										.simpleWacl()
+										.passphrase(KeyFactory.PEM_PASSPHRASE),
 
 						// if just created a new key then export spec for later reuse
-						pemFile == null ? withOpContext((spec, ignore) ->spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")):
+						pemFile == null ? withOpContext(
+								(spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey")) :
 								sleepFor(100),
 						logIt(ignore -> settings.toString())
 				).when(
@@ -136,7 +138,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
 						topicID == null ? createTopic("topic")
 								.submitKeyName("submitKey")
-								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED):
+								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED) :
 								sleepFor(100),
 						sleepFor(5000) //wait all other thread ready
 				).then(
@@ -147,12 +149,15 @@ public class SubmitMessageLoadTest extends LoadTest {
 	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
 		byte[] payload = randomUtf8Bytes(settings.getIntProperty("messageSize", messageSize) - 8);
 		var op = submitMessageTo(topicID != null ? topicID : "topic")
-				.message(ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(), payload))
+				.message(
+						ArrayUtils.addAll(ByteBuffer.allocate(8).putLong(Instant.now().toEpochMilli()).array(),
+								payload))
 				.noLogging()
 				.payingWith("sender")
 				.signedBy("sender", "submitKey")
 				.suppressStats(true)
-				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+						INSUFFICIENT_PAYER_BALANCE)
 				.hasKnownStatusFrom(SUCCESS, OK)
 				.deferStatusResolution();
 		if (settings.getBooleanProperty("isChunk", false)) {

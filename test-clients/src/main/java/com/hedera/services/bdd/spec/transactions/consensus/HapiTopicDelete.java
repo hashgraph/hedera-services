@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,6 +51,7 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 	public HapiTopicDelete(String topic) {
 		this.topic = Optional.ofNullable(topic);
 	}
+
 	public HapiTopicDelete(Function<HapiApiSpec, TopicID> topicFn) {
 		this.topicFn = Optional.of(topicFn);
 	}
@@ -71,16 +72,16 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 		ConsensusDeleteTopicTransactionBody opBody = spec
 				.txns()
 				.<ConsensusDeleteTopicTransactionBody, ConsensusDeleteTopicTransactionBody.Builder>body(
-					ConsensusDeleteTopicTransactionBody.class, b -> {
-						b.setTopicID(id);
-					});
+						ConsensusDeleteTopicTransactionBody.class, b -> {
+							b.setTopicID(id);
+						});
 		return b -> b.setConsensusDeleteTopic(opBody);
 	}
 
 	private TopicID resolveTopicId(HapiApiSpec spec) {
 		if (topicFn.isPresent()) {
-		    TopicID topicID = topicFn.get().apply(spec);
-		    topic = Optional.of(HapiPropertySource.asTopicString(topicID));
+			TopicID topicID = topicFn.get().apply(spec);
+			topic = Optional.of(HapiPropertySource.asTopicString(topicID));
 			return topicID;
 		}
 		if (topic.isPresent()) {
@@ -109,7 +110,7 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 			if (spec.registry().hasKey(topic)) {
 				return spec.registry().getKey(topic);
 			} else {
-			    return Key.getDefaultInstance();  // = no key
+				return Key.getDefaultInstance();  // = no key
 			}
 		}));
 

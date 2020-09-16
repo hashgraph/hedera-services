@@ -9,9 +9,9 @@ package com.hedera.services.sigs.factories;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,8 +34,10 @@ public interface TxnScopedPlatformSigFactory {
 	/**
 	 * Returns a {@link com.swirlds.common.crypto.Signature} on the scoped transaction.
 	 *
-	 * @param publicKey the public key to use in creating the platform sig.
-	 * @param sigBytes the cryptographic signature to use in creating the platform sig.
+	 * @param publicKey
+	 * 		the public key to use in creating the platform sig.
+	 * @param sigBytes
+	 * 		the cryptographic signature to use in creating the platform sig.
 	 * @return a platform sig for the scoped transaction.
 	 */
 	Signature create(ByteString publicKey, ByteString sigBytes);

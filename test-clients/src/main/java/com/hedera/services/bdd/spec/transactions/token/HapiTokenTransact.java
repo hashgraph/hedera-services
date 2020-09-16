@@ -85,7 +85,7 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 
 		public List<TokenTransfer> specializedFor(HapiApiSpec spec) {
 			List<TokenTransfer> transfers = new ArrayList<>();
-			if (useSymbols)	 {
+			if (useSymbols) {
 				var symbol = spec.registry().getSymbol(token);
 				transfers.add(symbolicTransfer(sender, symbol, -amount, spec));
 				if (receiver.isPresent()) {
@@ -233,7 +233,8 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 				helper.add(
 						"transfers",
 						TxnUtils.readableTokenTransferList(txn.getTokenTransfers()));
-			} catch (Exception ignore) {}
+			} catch (Exception ignore) {
+			}
 		}
 		return helper;
 	}

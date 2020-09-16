@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,7 +86,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	}
 
 
-
 	private HapiApiSpec complexKeyAcctPaysForOwnTransfer() {
 		SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(2,
 				KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
@@ -137,7 +136,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private HapiApiSpec systemBalancesCheck() {
 		return defaultHapiSpec("SystemBalancesCheck")
-				.given( ).when( ).then(
+				.given().when().then(
 						IntStream.range(1, 101)
 								.mapToObj(i -> getAccountBalance("0.0." + i).logged())
 								.toArray(n -> new HapiSpecOperation[n])
@@ -150,9 +149,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaTransferSucceeds")
 				.given(
 						UtilVerbs.inParallel(
-							cryptoCreate("payer"),
-							cryptoCreate("payeeSigReq").receiverSigRequired(true),
-							cryptoCreate("payeeNoSigReq")
+								cryptoCreate("payer"),
+								cryptoCreate("payeeSigReq").receiverSigRequired(true),
+								cryptoCreate("payeeNoSigReq")
 						)
 				).when(
 						cryptoTransfer(

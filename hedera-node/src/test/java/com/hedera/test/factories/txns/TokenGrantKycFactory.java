@@ -31,7 +31,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenGrantKycFactory extends SignedTxnFactory<TokenGrantKycFactory> {
-	private TokenGrantKycFactory() {}
+	private TokenGrantKycFactory() {
+	}
 
 	private AccountID to;
 	private TokenRef ref;

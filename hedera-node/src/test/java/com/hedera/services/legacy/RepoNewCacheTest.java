@@ -9,9 +9,9 @@ package com.hedera.services.legacy;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,172 +62,175 @@ import org.spongycastle.util.encoders.Hex;
 import static org.mockito.BDDMockito.*;
 
 public class RepoNewCacheTest {
-  @Ignore
-  public void test() {
-    FCMap<MerkleEntityId, MerkleAccount> accountMap =
-            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+	@Ignore
+	public void test() {
+		FCMap<MerkleEntityId, MerkleAccount> accountMap =
+				new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(),
+				new MerkleOptionalBlob.Provider());
+		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-            AccountProperty.class,
-            () -> new MerkleAccount(),
-            new FCMapBackingAccounts(() -> accountMap),
-            new ChangeSummaryManager<>());
-    HederaLedger ledger = new HederaLedger(
-            mock(TokenStore.class),
-            mock(EntityIdSource.class),
-            mock(ExpiringCreations.class),
-            mock(AccountRecordsHistorian.class),
-            delegate);
-    Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
-    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-    String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
-    byte[] keyByte = null;
-    try {
-      keyByte = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
-    repository.addBalance(keyByte, BigInteger.TEN);
-    System.out.println("Initial repo balance before commit ::" + repository.getBalance(keyByte));
-    repository.commit();
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+				AccountProperty.class,
+				() -> new MerkleAccount(),
+				new FCMapBackingAccounts(() -> accountMap),
+				new ChangeSummaryManager<>());
+		HederaLedger ledger = new HederaLedger(
+				mock(TokenStore.class),
+				mock(EntityIdSource.class),
+				mock(ExpiringCreations.class),
+				mock(AccountRecordsHistorian.class),
+				delegate);
+		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
+		String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
+		byte[] keyByte = null;
+		try {
+			keyByte = MiscUtils.commonsHexToBytes(key);
+		} catch (DecoderException e) {
+			e.printStackTrace();
+		}
+		repository.addBalance(keyByte, BigInteger.TEN);
+		System.out.println("Initial repo balance before commit ::" + repository.getBalance(keyByte));
+		repository.commit();
 
-    System.out.println("Initial repo balance aftre commit ::" + repository.getBalance(keyByte));
+		System.out.println("Initial repo balance aftre commit ::" + repository.getBalance(keyByte));
 
-    Repository track1 = repository.startTracking();
+		Repository track1 = repository.startTracking();
 
-    Repository track2 = track1.startTracking();
-    track2.addBalance(keyByte, BigInteger.TEN);
-    assertEquals(20, track2.getBalance(keyByte).longValue());
-    assertEquals(10, track1.getBalance(keyByte).longValue());
-    assertEquals(10, repository.getBalance(keyByte).longValue());
-    track2.commit();
+		Repository track2 = track1.startTracking();
+		track2.addBalance(keyByte, BigInteger.TEN);
+		assertEquals(20, track2.getBalance(keyByte).longValue());
+		assertEquals(10, track1.getBalance(keyByte).longValue());
+		assertEquals(10, repository.getBalance(keyByte).longValue());
+		track2.commit();
 
-    assertEquals(20, track2.getBalance(keyByte).longValue());
-    assertEquals(20, track1.getBalance(keyByte).longValue());
-    assertEquals(10, repository.getBalance(keyByte).longValue());
+		assertEquals(20, track2.getBalance(keyByte).longValue());
+		assertEquals(20, track1.getBalance(keyByte).longValue());
+		assertEquals(10, repository.getBalance(keyByte).longValue());
 
-    track1.commit();
+		track1.commit();
 
-    assertEquals(20, track2.getBalance(keyByte).longValue());
-    assertEquals(20, track1.getBalance(keyByte).longValue());
-    assertEquals(20, repository.getBalance(keyByte).longValue());
+		assertEquals(20, track2.getBalance(keyByte).longValue());
+		assertEquals(20, track1.getBalance(keyByte).longValue());
+		assertEquals(20, repository.getBalance(keyByte).longValue());
 
-    repository.commit();
-    assertEquals(20, track2.getBalance(keyByte).longValue());
-    assertEquals(20, track1.getBalance(keyByte).longValue());
-    assertEquals(20, repository.getBalance(keyByte).longValue());
+		repository.commit();
+		assertEquals(20, track2.getBalance(keyByte).longValue());
+		assertEquals(20, track1.getBalance(keyByte).longValue());
+		assertEquals(20, repository.getBalance(keyByte).longValue());
 
-    track1.addBalance(keyByte, BigInteger.valueOf(-5l));
+		track1.addBalance(keyByte, BigInteger.valueOf(-5l));
 
-    assertEquals(15, track2.getBalance(keyByte).longValue());
-    assertEquals(15, track1.getBalance(keyByte).longValue());
-    assertEquals(20, repository.getBalance(keyByte).longValue());
+		assertEquals(15, track2.getBalance(keyByte).longValue());
+		assertEquals(15, track1.getBalance(keyByte).longValue());
+		assertEquals(20, repository.getBalance(keyByte).longValue());
 
-    track1.commit();
+		track1.commit();
 
-    assertEquals(15, track2.getBalance(keyByte).longValue());
-    assertEquals(15, track1.getBalance(keyByte).longValue());
-    assertEquals(15, repository.getBalance(keyByte).longValue());
-    repository.commit();
+		assertEquals(15, track2.getBalance(keyByte).longValue());
+		assertEquals(15, track1.getBalance(keyByte).longValue());
+		assertEquals(15, repository.getBalance(keyByte).longValue());
+		repository.commit();
 
-    repository.saveCode(keyByte, "Test Code for SmartContract".getBytes());
+		repository.saveCode(keyByte, "Test Code for SmartContract".getBytes());
 
-    byte[] code = repository.getCode(keyByte);
-    String codeStr = new String(code);
-    assertEquals("Test Code for SmartContract", codeStr);
-    System.out.println("The code is " + codeStr);
-    repository.commit();
+		byte[] code = repository.getCode(keyByte);
+		String codeStr = new String(code);
+		assertEquals("Test Code for SmartContract", codeStr);
+		System.out.println("The code is " + codeStr);
+		repository.commit();
 
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code is " + codeStr);
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is ===>> " + codeStr);
+		code = repository.getCode(keyByte);
+		codeStr = new String(code);
+		System.out.println("The code is " + codeStr);
+		code = repository.getCode(keyByte);
+		codeStr = new String(code);
+		System.out.println("The code second is ===>> " + codeStr);
 
-    repository.saveCode(keyByte, "Test Code for SmartContract..New".getBytes());
-    repository.commit();
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
-    System.out.println("*****************************");
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
+		repository.saveCode(keyByte, "Test Code for SmartContract..New".getBytes());
+		repository.commit();
+		code = repository.getCode(keyByte);
+		codeStr = new String(code);
+		System.out.println("The code second is " + codeStr);
+		System.out.println("*****************************");
+		code = repository.getCode(keyByte);
+		codeStr = new String(code);
+		System.out.println("The code second is " + codeStr);
 
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
+		code = repository.getCode(keyByte);
+		codeStr = new String(code);
+		System.out.println("The code second is " + codeStr);
 
 
-  }
+	}
 
-  @Test
-  public void rollbackTest() {
-    FCMap<MerkleEntityId, MerkleAccount> accountMap =
-            new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-    FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
-    DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
+	@Test
+	public void rollbackTest() {
+		FCMap<MerkleEntityId, MerkleAccount> accountMap =
+				new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>(new MerkleBlobMeta.Provider(),
+				new MerkleOptionalBlob.Provider());
+		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-    FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
-    TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-            AccountProperty.class,
-            () -> new MerkleAccount(),
-            backingAccounts,
-            new ChangeSummaryManager<>());
-    MerkleAccount someAccount = new MerkleAccount();
-    MerkleAccount someOtherAccount = new MerkleAccount();
-    try {
-      someAccount.setBalance(100_000_000L);
-      someOtherAccount.setBalance(0L);
-      new HederaAccountCustomizer()
-              .key(new JContractIDKey(0, 0, 1))
-              .customizing(someAccount);
-      new HederaAccountCustomizer()
-              .key(new JContractIDKey(0, 0, 2))
-              .customizing(someOtherAccount);
-    } catch (Exception impossible) {}
-    backingAccounts.put(IdUtils.asAccount("0.0.1"), someAccount);
-    backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
-    HederaLedger ledger = new HederaLedger(
-            mock(TokenStore.class),
-            mock(EntityIdSource.class),
-            mock(ExpiringCreations.class),
-            mock(AccountRecordsHistorian.class),
-            delegate);
-    Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
-    ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
+		FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
+		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
+				AccountProperty.class,
+				() -> new MerkleAccount(),
+				backingAccounts,
+				new ChangeSummaryManager<>());
+		MerkleAccount someAccount = new MerkleAccount();
+		MerkleAccount someOtherAccount = new MerkleAccount();
+		try {
+			someAccount.setBalance(100_000_000L);
+			someOtherAccount.setBalance(0L);
+			new HederaAccountCustomizer()
+					.key(new JContractIDKey(0, 0, 1))
+					.customizing(someAccount);
+			new HederaAccountCustomizer()
+					.key(new JContractIDKey(0, 0, 2))
+					.customizing(someOtherAccount);
+		} catch (Exception impossible) {
+		}
+		backingAccounts.put(IdUtils.asAccount("0.0.1"), someAccount);
+		backingAccounts.put(IdUtils.asAccount("0.0.2"), someOtherAccount);
+		HederaLedger ledger = new HederaLedger(
+				mock(TokenStore.class),
+				mock(EntityIdSource.class),
+				mock(ExpiringCreations.class),
+				mock(AccountRecordsHistorian.class),
+				delegate);
+		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
-    String someKey = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
-    byte[] someKeyBytes = null;
-    try {
-      someKeyBytes = MiscUtils.commonsHexToBytes(someKey);
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
+		String someKey = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
+		byte[] someKeyBytes = null;
+		try {
+			someKeyBytes = MiscUtils.commonsHexToBytes(someKey);
+		} catch (DecoderException e) {
+			e.printStackTrace();
+		}
 
-    ledger.begin();
-    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
-    repository.increaseNonce(someKeyBytes);
-    ServicesRepositoryImpl track1 = repository.startTracking();
-    track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
+		ledger.begin();
+		System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
+		repository.increaseNonce(someKeyBytes);
+		ServicesRepositoryImpl track1 = repository.startTracking();
+		track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
 
-    // To show under debug that the two AccountStates are the same object.
-    AccountState info1 = track1.getAccount(someKeyBytes);
-    AccountState info2 = repository.getAccount(someKeyBytes);
-    System.out.println("Info1 is " + info1 + ", info2 is " + info2);
+		// To show under debug that the two AccountStates are the same object.
+		AccountState info1 = track1.getAccount(someKeyBytes);
+		AccountState info2 = repository.getAccount(someKeyBytes);
+		System.out.println("Info1 is " + info1 + ", info2 is " + info2);
 
-    assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
-    assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
+		assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
+		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
 
-    track1.rollback();
+		track1.rollback();
 
-    repository.commit();
-    ledger.commit();
+		repository.commit();
+		ledger.commit();
 
-    assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
-  }
+		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());
+	}
 
 }

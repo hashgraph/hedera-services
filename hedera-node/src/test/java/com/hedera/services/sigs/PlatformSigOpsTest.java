@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.runner.RunWith;
+
 import static com.hedera.test.factories.keys.NodeFactory.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -55,7 +57,7 @@ public class PlatformSigOpsTest {
 	private final byte[] EMPTY_SIG = new byte[0];
 	private final byte[] MOCK_SIG = "FIRST".getBytes();
 	private final byte[][] MORE_MOCK_SIGS = new byte[][] {
-		"SECOND".getBytes(), "THIRD".getBytes(), "FOURTH".getBytes(), "FIFTH".getBytes()
+			"SECOND".getBytes(), "THIRD".getBytes(), "FOURTH".getBytes(), "FIFTH".getBytes()
 	};
 	private final byte[][] MORE_EMPTY_SIGS = new byte[][] {
 			EMPTY_SIG, EMPTY_SIG, EMPTY_SIG, EMPTY_SIG

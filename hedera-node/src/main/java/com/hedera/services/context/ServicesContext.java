@@ -747,7 +747,8 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
+			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics,
+					REF_LOOKUP_FACTORY.apply(tokenStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -1310,7 +1311,7 @@ public class ServicesContext {
 						}
 					},
 					config -> {
-						((StandardizedPropertySources)propertySources()).reloadFrom(config);
+						((StandardizedPropertySources) propertySources()).reloadFrom(config);
 						globalDynamicProperties().reload();
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},

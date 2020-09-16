@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,9 +48,11 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 	 * Returns metadata for the given account's signing activity; e.g., whether
 	 * the account must sign transactions in which it receives cryptocurrency.
 	 *
-	 * @param id the account to recover signing metadata for.
+	 * @param id
+	 * 		the account to recover signing metadata for.
 	 * @return the desired metadata.
-	 * @throws InvalidAccountIDException if the backing {@code FCMap} has no matching entry.
+	 * @throws InvalidAccountIDException
+	 * 		if the backing {@code FCMap} has no matching entry.
 	 */
 	@Override
 	public AccountSigningMetadata lookup(AccountID id) throws Exception {
@@ -67,8 +69,8 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 		return (account == null)
 				? SafeLookupResult.failure(MISSING_ACCOUNT)
 				: new SafeLookupResult<>(
-						new AccountSigningMetadata(
-								account.getKey(),
-								account.isReceiverSigRequired()));
+				new AccountSigningMetadata(
+						account.getKey(),
+						account.isReceiverSigRequired()));
 	}
 }

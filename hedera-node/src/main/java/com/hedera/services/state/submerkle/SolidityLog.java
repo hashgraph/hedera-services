@@ -101,7 +101,8 @@ public class SolidityLog implements SelfSerializable {
 		}
 	}
 
-	public SolidityLog() { }
+	public SolidityLog() {
+	}
 
 	public SolidityLog(
 			EntityId contractId,

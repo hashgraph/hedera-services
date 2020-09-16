@@ -27,7 +27,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenWipeFactory extends SignedTxnFactory<TokenWipeFactory> {
-	private TokenWipeFactory() {}
+	private TokenWipeFactory() {
+	}
 
 	private TokenRef ref;
 	private AccountID target;

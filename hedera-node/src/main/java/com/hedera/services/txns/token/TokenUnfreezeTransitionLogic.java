@@ -56,7 +56,7 @@ public class TokenUnfreezeTransitionLogic implements TransitionLogic {
 		try {
 			var op = txnCtx.accessor().getTxn().getTokenUnfreeze();
 			var token = tokenStore.resolve(op.getToken());
-			var outcome	= ledger.unfreeze(op.getAccount(), token);
+			var outcome = ledger.unfreeze(op.getAccount(), token);
 			txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);

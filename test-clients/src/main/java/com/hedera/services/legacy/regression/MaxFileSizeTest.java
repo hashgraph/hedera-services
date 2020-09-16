@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -91,7 +91,7 @@ public class MaxFileSizeTest {
 	private static long fileDuration;
 	public static long DAY_SEC = 24 * 60 * 60; // secs in a day
 	private static int FILE_CHUNK_SIZE = 5; //in kilobytes 
-	private  static int serverMaxFileSize; //in kilobytes
+	private static int serverMaxFileSize; //in kilobytes
 
 	public static void main(String args[]) throws Exception {
 
@@ -119,21 +119,21 @@ public class MaxFileSizeTest {
 	}
 
 	private void loadGenesisAndNodeAcccounts() throws Exception {
-		   Map<String, List<AccountKeyListObj>> hederaAccounts = null;
-		    Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
+		Map<String, List<AccountKeyListObj>> hederaAccounts = null;
+		Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
 
-		    // Get Genesis Account key Pair
-		    List<AccountKeyListObj> genesisAccountList = keyFromFile.get("START_ACCOUNT");
-		    ;
+		// Get Genesis Account key Pair
+		List<AccountKeyListObj> genesisAccountList = keyFromFile.get("START_ACCOUNT");
+		;
 
-		    // get Private Key
-		    KeyPairObj genKeyPairObj = genesisAccountList.get(0).getKeyPairList().get(0);
-		    PrivateKey genesisPrivateKey = genKeyPairObj.getPrivateKey();
-		    KeyPair genesisKeyPair = new KeyPair(genKeyPairObj.getPublicKey(), genesisPrivateKey);
+		// get Private Key
+		KeyPairObj genKeyPairObj = genesisAccountList.get(0).getKeyPairList().get(0);
+		PrivateKey genesisPrivateKey = genKeyPairObj.getPrivateKey();
+		KeyPair genesisKeyPair = new KeyPair(genKeyPairObj.getPublicKey(), genesisPrivateKey);
 
-		    // get the Account Object
-		    genesisAccount = genesisAccountList.get(0).getAccountId();
-		    accountKeyPairs.put(genesisAccount, genesisKeyPair);
+		// get the Account Object
+		genesisAccount = genesisAccountList.get(0).getAccountId();
+		accountKeyPairs.put(genesisAccount, genesisKeyPair);
 	}
 
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
@@ -263,37 +263,36 @@ public class MaxFileSizeTest {
 		List<PrivateKey> waclPrivKeyList = new ArrayList<PrivateKey>();
 		int sentFileBytes = 0;
 		if (crAccount != null) {
-			genWacl(1,waclPubKeyList,waclPrivKeyList);
+			genWacl(1, waclPubKeyList, waclPrivKeyList);
 			Assert.assertNotEquals(0, crAccount.getAccountNum());
-			Random rd = new Random(); 
+			Random rd = new Random();
 			byte[] fileContent = new byte[1024 * FILE_CHUNK_SIZE];
 			rd.nextBytes(fileContent);
-			FileID fileId = createFile(crAccount,waclPubKeyList,waclPrivKeyList,fileContent);
+			FileID fileId = createFile(crAccount, waclPubKeyList, waclPrivKeyList, fileContent);
 			Assert.assertNotNull(fileId);
-			Assert.assertNotEquals(0,fileId.getFileNum());
+			Assert.assertNotEquals(0, fileId.getFileNum());
 			sentFileBytes = FILE_CHUNK_SIZE;
-			while(sentFileBytes <= serverMaxFileSize) {
+			while (sentFileBytes <= serverMaxFileSize) {
 				log.info("File Current size is " + sentFileBytes);
 				int appendFileSize = FILE_CHUNK_SIZE;
 				ResponseCodeEnum expectedStatus = ResponseCodeEnum.SUCCESS;
-				if(sentFileBytes + appendFileSize >serverMaxFileSize) {
+				if (sentFileBytes + appendFileSize > serverMaxFileSize) {
 					//first check if  exact max was reached 
-					if(sentFileBytes==serverMaxFileSize) {
+					if (sentFileBytes == serverMaxFileSize) {
 						log.info("About to reach max file size limit");
-						appendFileSize = serverMaxFileSize -sentFileBytes +1; //exceed allowed size by 1 byte
+						appendFileSize = serverMaxFileSize - sentFileBytes + 1; //exceed allowed size by 1 byte
 						expectedStatus = ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
-					}
-					else {
-						appendFileSize = serverMaxFileSize -sentFileBytes;
+					} else {
+						appendFileSize = serverMaxFileSize - sentFileBytes;
 					}
 				}
 				byte[] appendContent = new byte[1024 * appendFileSize];
-				appendFile(crAccount,fileId,waclPubKeyList,waclPrivKeyList,appendContent,expectedStatus);
-				sentFileBytes +=appendFileSize;
-				
+				appendFile(crAccount, fileId, waclPubKeyList, waclPrivKeyList, appendContent, expectedStatus);
+				sentFileBytes += appendFileSize;
+
 			}
-			
-			
+
+
 		}
 	}
 
@@ -341,21 +340,21 @@ public class MaxFileSizeTest {
 		Transaction fileCreateRequest = RequestBuilder.getFileCreateBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
 				timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp, waclPubKeyList);
-		
+
 		List<Key> keyList = new ArrayList<>();
-        Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-        
-        //add payer keys 
-        List<KeyPair> payerKeyPair = Collections.singletonList(accountKeyPairs.get(payerAccount));
-        populateKeyListAndMapFromKeyPair(payerKeyPair,keyList, pubKey2privKeyMap);
-        //add wacl keys
-        populateKeyListAndMapFromWacl(waclPubKeyList,waclPrivKeyList,keyList, pubKey2privKeyMap);
-        Transaction signedFileCreate =TransactionSigner.signTransactionComplexWithSigMap(fileCreateRequest, keyList,
-                pubKey2privKeyMap);
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
+
+		//add payer keys
+		List<KeyPair> payerKeyPair = Collections.singletonList(accountKeyPairs.get(payerAccount));
+		populateKeyListAndMapFromKeyPair(payerKeyPair, keyList, pubKey2privKeyMap);
+		//add wacl keys
+		populateKeyListAndMapFromWacl(waclPubKeyList, waclPrivKeyList, keyList, pubKey2privKeyMap);
+		Transaction signedFileCreate = TransactionSigner.signTransactionComplexWithSigMap(fileCreateRequest, keyList,
+				pubKey2privKeyMap);
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 		FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc
 				.newBlockingStub(channel);
-		
+
 		TransactionResponse response = stub.createFile(signedFileCreate);
 		System.out
 				.println(" createFile Pre Check Response :: " + response.getNodeTransactionPrecheckCode().name());
@@ -367,8 +366,9 @@ public class MaxFileSizeTest {
 		channel.shutdown();
 		return fileIdToReturn;
 	}
-	
-	public void appendFile(AccountID payerAccount, FileID fileToAppend, List<Key> waclPubKeyList, List<PrivateKey> waclPrivKeyList,
+
+	public void appendFile(AccountID payerAccount, FileID fileToAppend, List<Key> waclPubKeyList,
+			List<PrivateKey> waclPrivKeyList,
 			byte[] fileContent, ResponseCodeEnum expectedResponse) throws Exception {
 		FileID fileIdToReturn = FileID.getDefaultInstance();
 		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
@@ -380,29 +380,29 @@ public class MaxFileSizeTest {
 		Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
 				timestamp, transactionDuration, true, "fileAppend", signatures, fileData, fileToAppend);
-		
+
 		List<Key> keyList = new ArrayList<>();
-        Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
-        
-        //add payer keys 
-        List<KeyPair> payerKeyPair = Collections.singletonList(accountKeyPairs.get(payerAccount));
-        populateKeyListAndMapFromKeyPair(payerKeyPair,keyList, pubKey2privKeyMap);
-        //add wacl keys
-        populateKeyListAndMapFromWacl(waclPubKeyList,waclPrivKeyList,keyList, pubKey2privKeyMap);
-        Transaction signedFileAppend =TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keyList,
-                pubKey2privKeyMap);
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
+		Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
+
+		//add payer keys
+		List<KeyPair> payerKeyPair = Collections.singletonList(accountKeyPairs.get(payerAccount));
+		populateKeyListAndMapFromKeyPair(payerKeyPair, keyList, pubKey2privKeyMap);
+		//add wacl keys
+		populateKeyListAndMapFromWacl(waclPubKeyList, waclPrivKeyList, keyList, pubKey2privKeyMap);
+		Transaction signedFileAppend = TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keyList,
+				pubKey2privKeyMap);
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 		FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc
 				.newBlockingStub(channel);
-		
+
 		TransactionResponse response = stub.appendContent(signedFileAppend);
 		log.info(" appendContent Pre Check Response :: " + response.getNodeTransactionPrecheckCode().name());
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 		TransactionBody fileAppendBody = TransactionBody.parseFrom(signedFileAppend.getBodyBytes());
 		TransactionGetReceiptResponse contractUpdateReceipt = getReceipt(fileAppendBody.getTransactionID(),
 				expectedResponse);
-		
+
 		channel.shutdown();
-		
+
 	}
 }

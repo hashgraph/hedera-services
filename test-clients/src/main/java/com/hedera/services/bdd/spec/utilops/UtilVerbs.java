@@ -301,7 +301,8 @@ public class UtilVerbs {
 						.chunkInfo(totalChunks, currentChunk, initialTransactionID)
 						.payingWith(payer)
 						.hasKnownStatus(SUCCESS)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, INSUFFICIENT_PAYER_BALANCE)
+						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
+								INSUFFICIENT_PAYER_BALANCE)
 						.noLogging()
 						.suppressStats(true);
 				if (1 == currentChunk) {

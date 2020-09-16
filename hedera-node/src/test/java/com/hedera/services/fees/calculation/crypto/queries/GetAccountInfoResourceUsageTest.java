@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -93,7 +93,7 @@ class GetAccountInfoResourceUsageTest {
 		Query costAnswerQuery = accountInfoQuery(a, COST_ANSWER);
 		given(accounts.get(key)).willReturn(aValue);
 		given(usageEstimator.getAccountInfoQueryFeeMatrices(aKey, Collections.EMPTY_LIST, COST_ANSWER))
-			.willReturn(costAnswerUsage);
+				.willReturn(costAnswerUsage);
 		given(usageEstimator.getAccountInfoQueryFeeMatrices(aKey, Collections.EMPTY_LIST, ANSWER_ONLY))
 				.willReturn(answerOnlyUsage);
 

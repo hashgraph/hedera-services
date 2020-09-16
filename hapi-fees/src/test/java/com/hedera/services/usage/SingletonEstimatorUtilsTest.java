@@ -35,7 +35,7 @@ class SingletonEstimatorUtilsTest {
 	@Test
 	public void hasExpectedBaseNetworkRbs() {
 		// expect:
-		assertEquals( BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
+		assertEquals(BASIC_RECEIPT_SIZE * RECIEPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
 	}
 
 	@Test

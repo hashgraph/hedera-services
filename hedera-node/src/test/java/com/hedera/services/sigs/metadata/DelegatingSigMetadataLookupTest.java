@@ -49,7 +49,7 @@ class DelegatingSigMetadataLookupTest {
 	long tokenFloat = 1_000_000;
 	boolean freezeDefault = true;
 	boolean kycDefault = true;
-	EntityId treasury = new EntityId(1,2, 3);
+	EntityId treasury = new EntityId(1, 2, 3);
 	TokenRef ref = IdUtils.asIdRef("1.2.666");
 
 	MerkleToken token;

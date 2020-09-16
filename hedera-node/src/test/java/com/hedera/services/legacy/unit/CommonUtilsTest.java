@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,7 @@ public class CommonUtilsTest {
 		long utcMillis = 1554331942000L;
 		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		cal.setTimeInMillis(utcMillis);
-		Assertions.assertEquals(cal.get(Calendar.YEAR) , 2019);
+		Assertions.assertEquals(cal.get(Calendar.YEAR), 2019);
 		Assertions.assertEquals(cal.get(Calendar.HOUR), 10);
 		Assertions.assertEquals(cal.get(Calendar.HOUR_OF_DAY), 22);
 		Assertions.assertEquals(cal.get(Calendar.MINUTE), 52);
@@ -52,8 +52,8 @@ public class CommonUtilsTest {
 	public void getUTCHourMinFromSecsTest() {
 		long utcMillis = 1554331942000l;
 		int[] hourMin = getUTCHourMinFromMillis(utcMillis);
-		Assertions.assertEquals(hourMin[0] , 22);
-		Assertions.assertEquals(hourMin[1] , 52);
+		Assertions.assertEquals(hourMin[0], 22);
+		Assertions.assertEquals(hourMin[1], 52);
 	}
 
 

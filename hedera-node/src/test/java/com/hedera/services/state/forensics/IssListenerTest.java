@@ -137,7 +137,7 @@ class IssListenerTest {
 				round,
 				String.valueOf(self),
 				String.valueOf(other));
-		verify(mockLog).warn((String)argThat(msg::equals), any(Exception.class));
+		verify(mockLog).warn((String) argThat(msg::equals), any(Exception.class));
 	}
 
 	@Test

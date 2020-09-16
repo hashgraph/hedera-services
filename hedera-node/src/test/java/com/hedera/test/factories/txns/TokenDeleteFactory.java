@@ -26,7 +26,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenDeleteFactory extends SignedTxnFactory<TokenDeleteFactory> {
-	private TokenDeleteFactory() {}
+	private TokenDeleteFactory() {
+	}
 
 	private TokenRef ref;
 

@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.test;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -141,12 +141,13 @@ public class ClientBaseThread extends Thread {
 	/**
 	 * Convert hex string to bytes.
 	 *
-	 * @param data to be converted
+	 * @param data
+	 * 		to be converted
 	 * @return converted bytes
 	 */
 	public static byte[] hexToBytes(String data) throws DecoderException {
-	  byte[] rv = Hex.decodeHex(data);
-	  return rv;
+		byte[] rv = Hex.decodeHex(data);
+		return rv;
 	}
 
 	@Override
@@ -449,9 +450,11 @@ public class ClientBaseThread extends Thread {
 				if (useSigMap) {
 					byte[] pubKey = ((EdDSAPublicKey) newAccountKeyPair.getPublic()).getAbyte();
 					Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-					Key newAccountKeyList = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(key).build()).build();
+					Key newAccountKeyList = Key.newBuilder().setKeyList(
+							KeyList.newBuilder().addKeys(key).build()).build();
 					Key payerKey = acc2ComplexKeyMap.get(payerAccount);
-					createRequest = Common.createAccountComplex(payerAccount, payerKey, nodeAccount, newAccountKeyList, initialBalance,
+					createRequest = Common.createAccountComplex(payerAccount, payerKey, nodeAccount, newAccountKeyList,
+							initialBalance,
 							pubKey2privKeyMap);
 				} else {
 					createRequest = TestHelper
@@ -493,7 +496,7 @@ public class ClientBaseThread extends Thread {
 	}
 
 	long getTransactionRecordFee(AccountID payerAccount,
-			TransactionID transactionId){
+			TransactionID transactionId) {
 		long fee = FeeClient.getCostForGettingTxRecord();
 		Pair<Transaction, Response> pair = executeQueryForTxRecord(payerAccount, transactionId, fee,
 				ResponseType.COST_ANSWER, false);
@@ -599,7 +602,7 @@ public class ClientBaseThread extends Thread {
 
 	public Pair<List<Transaction>, ContractCallLocalResponse> callContractLocal2(AccountID payerAccount,
 			ContractID contractToCall, byte[] data, long gas, long localCallGas) {
-		ByteString callData =  (data != null) ? ByteString.copyFrom(
+		ByteString callData = (data != null) ? ByteString.copyFrom(
 				data) : ByteString.EMPTY;
 		long fee = FeeClient.getCostContractCallLocalFee(callData.size());
 		Response response = Common.querySubmit(() -> {
@@ -612,7 +615,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::contractCallLocalMethod);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getContractCallLocal().getHeader().getCost() + localCallGas;
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -628,7 +632,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::contractCallLocalMethod);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
 
 		ContractCallLocalResponse result = response.getContractCallLocal();
 
@@ -695,7 +700,7 @@ public class ClientBaseThread extends Thread {
 			for (TransactionID txID : txIDList) {
 				Pair<TransactionRecord, TransactionID> result =
 						getTransactionRecordAndQueryTransactionID(genesisAccount,
-						txID, false);
+								txID, false);
 				if (result != null) {
 					record = result.getLeft();
 					queryTranID = result.getRight();
@@ -727,7 +732,8 @@ public class ClientBaseThread extends Thread {
 	}
 
 
-	public Pair<List<Transaction>, CryptoGetInfoResponse.AccountInfo> getAccountInfo(CryptoServiceGrpc.CryptoServiceBlockingStub cryptoStub,
+	public Pair<List<Transaction>, CryptoGetInfoResponse.AccountInfo> getAccountInfo(
+			CryptoServiceGrpc.CryptoServiceBlockingStub cryptoStub,
 			AccountID accountID,
 			AccountID payerAccount) {
 		long fee = FeeClient.getCostForGettingAccountInfo();
@@ -741,7 +747,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, cryptoStub::getAccountInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		long feeForAccountInfo = response.getCryptoGetInfo().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -756,7 +763,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, cryptoStub::getAccountInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		CryptoGetInfoResponse.AccountInfo accountInfo = response.getCryptoGetInfo().getAccountInfo();
 
@@ -778,7 +786,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, stub::getAccountRecords);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode());
 
 		long feeForAccountRecords = response.getCryptoGetAccountRecords().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -793,7 +802,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, stub::getAccountRecords);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode());
 
 		List<TransactionRecord> recordsList = response.getCryptoGetAccountRecords().getRecordsList();
 
@@ -829,7 +839,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, cryptoStub::getStakersByAccountID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getCryptoGetProxyStakers().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -844,7 +855,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, cryptoStub::getStakersByAccountID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
 
 		AllProxyStakers stakes = response.getCryptoGetProxyStakers().getStakers();
 
@@ -864,7 +876,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getContractInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getContractGetInfo().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -879,7 +892,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getContractInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		ContractGetInfoResponse.ContractInfo result = response.getContractGetInfo().getContractInfo();
 
@@ -900,7 +914,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getTxRecordByContractID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getContractGetRecordsResponse().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -915,7 +930,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getTxRecordByContractID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
 
 		List<TransactionRecord> recordsList = response.getContractGetRecordsResponse().getRecordsList();
 
@@ -935,7 +951,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getBySolidityID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getGetBySolidityID().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -950,7 +967,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::getBySolidityID);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
 
 		GetBySolidityIDResponse result = response.getGetBySolidityID();
 
@@ -970,7 +988,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::contractGetBytecode);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
 
 		long actualFee = response.getContractGetBytecodeResponse().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
@@ -985,7 +1004,8 @@ public class ClientBaseThread extends Thread {
 			}
 		}, sCServiceStub::contractGetBytecode);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
 
 		ByteString result = response.getContractGetBytecodeResponse().getBytecode();
 

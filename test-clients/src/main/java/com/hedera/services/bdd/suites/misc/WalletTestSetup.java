@@ -69,7 +69,7 @@ public class WalletTestSetup extends HapiApiSuite {
 	private HapiApiSpec mnemonicToPem() {
 		return defaultHapiSpec("MnemonicToPem").given(
 				keyFromMnemonic("fm", mnemonic)
-		).when( ).then(
+		).when().then(
 				withOpContext((spec, opLog) -> {
 					KeyFactory.PEM_PASSPHRASE = "guessAgain";
 					spec.keys().exportSimpleKey(String.format("pretend-genesis.pem"), "fm");
@@ -85,9 +85,13 @@ public class WalletTestSetup extends HapiApiSuite {
 						"client.feeSchedule.path", "system-files/feeSchedule.bin",
 						"client.exchangeRates.fromDisk", "true",
 						"client.exchangeRates.path", "system-files/exchangeRates.bin",
-//						"nodes", "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
+//						"nodes", "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94
+//						.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,
+//						34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
 						"nodes", "34.94.106.61:0.0.3,35.237.119.55:0.0.4,35.245.27.193:0.0.5,34.83.112.116:0.0.6"
-//						"nodes", "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
+//						"nodes", "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94
+//						.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,
+//						34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
 				)).given(
 //						keyFromPem("src/main/resource/mainnet-account950.pem")
 //								.passphrase("swirlds")
@@ -103,12 +107,13 @@ public class WalletTestSetup extends HapiApiSuite {
 								.passphrase("<SECRET>")
 								.linkedTo("0.0.50"),
 						keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic)
-				).when( ).then(
+				).when().then(
 						cryptoCreate("target")
 								.key(DETERMINISTIC_WALLET)
 								.payingWith("master")
 //						cryptoTransfer(
-//								HapiCryptoTransfer.tinyBarsFromTo(GENESIS, DETERMINISTIC_WALLET, 1_000_000 * 100_000_000L))
+//								HapiCryptoTransfer.tinyBarsFromTo(GENESIS, DETERMINISTIC_WALLET, 1_000_000 *
+//								100_000_000L))
 //						QueryVerbs.getAccountBalance("0.0.950"),
 //						cryptoTransfer(
 //								HapiCryptoTransfer.tinyBarsFromTo(
@@ -143,7 +148,10 @@ public class WalletTestSetup extends HapiApiSuite {
 	private HapiApiSpec reviewDeterministicWallet() {
 		return customHapiSpec("ReviewDeterministicWallet")
 				.withProperties(Map.of(
-						"nodes", "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
+						"nodes",
+						"35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94.236.63:0.0" +
+								".7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,34" +
+								".90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
 				)).given(
 						keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic)
 								.linkedTo("0.0.1113")

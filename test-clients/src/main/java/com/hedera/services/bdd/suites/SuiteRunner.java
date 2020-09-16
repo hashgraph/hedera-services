@@ -237,9 +237,9 @@ public class SuiteRunner {
 		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
-			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
+			expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 
 			String payer_id = "0.0." + overrideOrDefault(effArgs,

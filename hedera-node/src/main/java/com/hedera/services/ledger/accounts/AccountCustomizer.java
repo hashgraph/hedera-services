@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,11 +38,14 @@ import static java.util.Collections.unmodifiableMap;
  * relevant to any account on a ledger, no matter the id, account, and
  * property types.
  *
- * @param <K> the type of the id used by the ledger.
- * @param <A> the type of the account stored in the ledger.
- * @param <P> the type of the properties applicable to the account.
- * @param <T> the type of a customizer appropriate to {@code K}, {@code A}, {@code P}.
- *
+ * @param <K>
+ * 		the type of the id used by the ledger.
+ * @param <A>
+ * 		the type of the account stored in the ledger.
+ * @param <P>
+ * 		the type of the properties applicable to the account.
+ * @param <T>
+ * 		the type of a customizer appropriate to {@code K}, {@code A}, {@code P}.
  * @author Michael Tinker
  */
 public abstract class AccountCustomizer<
@@ -60,7 +63,9 @@ public abstract class AccountCustomizer<
 		IS_RECEIVER_SIG_REQUIRED,
 		FUNDS_SENT_RECORD_THRESHOLD,
 		FUNDS_RECEIVED_RECORD_THRESHOLD,
-	};
+	}
+
+	;
 
 	private final Map<Option, P> optionProperties;
 	private final EnumMap<P, Object> changes;

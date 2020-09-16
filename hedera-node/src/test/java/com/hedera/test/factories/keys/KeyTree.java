@@ -9,9 +9,9 @@ package com.hedera.test.factories.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +48,9 @@ public class KeyTree {
 
 	@SuppressWarnings("unchecked")
 	public void traverseLeaves(Consumer<KeyTreeLeaf> visitor) {
-		traverse(node -> node instanceof KeyTreeLeaf, node -> visitor.accept((KeyTreeLeaf)node));
+		traverse(node -> node instanceof KeyTreeLeaf, node -> visitor.accept((KeyTreeLeaf) node));
 	}
+
 	public void traverse(Predicate<KeyTreeNode> shouldVisit, Consumer<KeyTreeNode> visitor) {
 		root.traverse(shouldVisit, visitor);
 	}
@@ -57,12 +58,15 @@ public class KeyTree {
 	public JKey asJKey() throws Exception {
 		return JKey.mapKey(asKey());
 	}
+
 	public JKey asJKeyUnchecked() {
 		return MiscUtils.asFcKeyUnchecked(asKey());
 	}
+
 	public Key asKey() {
 		return asKey(KeyFactory.getDefaultInstance());
 	}
+
 	public Key asKey(KeyFactory factoryToUse) {
 		return root.asKey(factoryToUse);
 	}

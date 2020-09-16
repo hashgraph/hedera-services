@@ -93,233 +93,233 @@ import static org.mockito.BDDMockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FreezeServiceImplTest {
 
-  @BeforeAll
-  @BeforeClass
-  public static void setupAll() {
-    SettingsCommon.transactionMaxBytes = 1_234_567;
-  }
+	@BeforeAll
+	@BeforeClass
+	public static void setupAll() {
+		SettingsCommon.transactionMaxBytes = 1_234_567;
+	}
 
-  FCMap<MerkleEntityId, MerkleAccount> accountFCMap = null;
-  FCMap<MerkleEntityId, MerkleTopic> topicFCMap = null;
-  Transaction tx;
-  Transaction signTransaction;
-  Platform platform;
-  long payerAccount;
-  private TransactionHandler transactionHandler;
-  private FreezeServiceImpl freezeService;
-  private RecordCache receiptCache;
-  private PlatformSubmissionManager submissionManager;
-  private AccountID nodeAccountId;
-  private Key key;
-  private Map<String, PrivateKey> pubKey2privKeyMap;
-  private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
+	FCMap<MerkleEntityId, MerkleAccount> accountFCMap = null;
+	FCMap<MerkleEntityId, MerkleTopic> topicFCMap = null;
+	Transaction tx;
+	Transaction signTransaction;
+	Platform platform;
+	long payerAccount;
+	private TransactionHandler transactionHandler;
+	private FreezeServiceImpl freezeService;
+	private RecordCache receiptCache;
+	private PlatformSubmissionManager submissionManager;
+	private AccountID nodeAccountId;
+	private Key key;
+	private Map<String, PrivateKey> pubKey2privKeyMap;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
 
-  @BeforeAll
-  public void setUp() throws Exception {
-    payerAccount = 58;
-    nodeAccountId = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
+	@BeforeAll
+	public void setUp() throws Exception {
+		payerAccount = 58;
+		nodeAccountId = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
 
-    submissionManager = mock(PlatformSubmissionManager.class);
-    given(submissionManager.trySubmission(any())).willReturn(OK);
+		submissionManager = mock(PlatformSubmissionManager.class);
+		given(submissionManager.trySubmission(any())).willReturn(OK);
 
-    //Init FCMap; Add account 58
-    accountFCMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
-    MerkleEntityId mk = new MerkleEntityId();
-    mk.setNum(payerAccount);
-    mk.setRealm(0);
+		//Init FCMap; Add account 58
+		accountFCMap = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		MerkleEntityId mk = new MerkleEntityId();
+		mk.setNum(payerAccount);
+		mk.setRealm(0);
 
-    MerkleAccount mv = new MerkleAccount();
-    mv.setBalance(10000000000000000l);
+		MerkleAccount mv = new MerkleAccount();
+		mv.setBalance(10000000000000000l);
 
-    pubKey2privKeyMap = new HashMap<>();
-    key = genSingleEd25519Key(pubKey2privKeyMap);
-    mv.setKey(JKey.mapKey(key));
-    accountFCMap.put(mk, mv);
+		pubKey2privKeyMap = new HashMap<>();
+		key = genSingleEd25519Key(pubKey2privKeyMap);
+		mv.setKey(JKey.mapKey(key));
+		accountFCMap.put(mk, mv);
 
-    receiptCache = new RecordCache(
-            null,
-            CacheBuilder.newBuilder().build(),
-            new HashMap<>());
+		receiptCache = new RecordCache(
+				null,
+				CacheBuilder.newBuilder().build(),
+				new HashMap<>());
 
-    PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
-    given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-    HbarCentExchange exchange = new OneToOneRates();
-    var policies = new SystemOpPolicies(new MockEntityNumbers());
-    var platformStatus = new ContextPlatformStatus();
-    platformStatus.set(PlatformStatus.ACTIVE);
+		PrecheckVerifier precheckVerifier = mock(PrecheckVerifier.class);
+		given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
+		HbarCentExchange exchange = new OneToOneRates();
+		var policies = new SystemOpPolicies(new MockEntityNumbers());
+		var platformStatus = new ContextPlatformStatus();
+		platformStatus.set(PlatformStatus.ACTIVE);
 
-    PropertySource propertySource = null;
+		PropertySource propertySource = null;
 
-    transactionHandler = new TransactionHandler(
-            receiptCache,
-            () -> accountFCMap,
-            nodeAccountId,
-            precheckVerifier,
-            TEST_USAGE_PRICES,
-            exchange,
-            TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource ),
-            new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
-            new QueryFeeCheck(() -> accountFCMap),
-            new MockAccountNumbers(),
-            policies,
-            new StandardExemptions(new MockAccountNumbers(), policies),
-            platformStatus);
-    PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
-            "./configuration/dev/application.properties",
-            "./configuration/dev/api-permission.properties");
-    GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
-    freezeService = new FreezeServiceImpl(transactionHandler, submissionManager);
+		transactionHandler = new TransactionHandler(
+				receiptCache,
+				() -> accountFCMap,
+				nodeAccountId,
+				precheckVerifier,
+				TEST_USAGE_PRICES,
+				exchange,
+				TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
+				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
+				new QueryFeeCheck(() -> accountFCMap),
+				new MockAccountNumbers(),
+				policies,
+				new StandardExemptions(new MockAccountNumbers(), policies),
+				platformStatus);
+		PropertyLoaderTest.populatePropertiesWithConfigFilesPath(
+				"./configuration/dev/application.properties",
+				"./configuration/dev/api-permission.properties");
+		GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
+		freezeService = new FreezeServiceImpl(transactionHandler, submissionManager);
 
-  }
+	}
 
-  private static ExchangeRateSet getDefaultExchangeRateSet() {
-    long expiryTime = Long.MAX_VALUE;
-    return RequestBuilder.getExchangeRateSetBuilder(
-            1, 1, expiryTime,
-            1, 1, expiryTime);
-  }
+	private static ExchangeRateSet getDefaultExchangeRateSet() {
+		long expiryTime = Long.MAX_VALUE;
+		return RequestBuilder.getExchangeRateSetBuilder(
+				1, 1, expiryTime,
+				1, 1, expiryTime);
+	}
 
-  private static class OneToOneRates implements HbarCentExchange {
-    long expiryTime = Long.MAX_VALUE;
-  	ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
-  	        1, 1, expiryTime,
-            1, 1, expiryTime);
+	private static class OneToOneRates implements HbarCentExchange {
+		long expiryTime = Long.MAX_VALUE;
+		ExchangeRateSet rates = RequestBuilder.getExchangeRateSetBuilder(
+				1, 1, expiryTime,
+				1, 1, expiryTime);
 
-    @Override
-    public ExchangeRate activeRate() {
-      return rates.getCurrentRate();
-    }
+		@Override
+		public ExchangeRate activeRate() {
+			return rates.getCurrentRate();
+		}
 
-    @Override
-    public ExchangeRateSet activeRates() {
-      return rates;
-    }
+		@Override
+		public ExchangeRateSet activeRates() {
+			return rates;
+		}
 
-    @Override
-    public ExchangeRate rate(Timestamp at) {
-      return rates.getCurrentRate();
-    }
-  }
+		@Override
+		public ExchangeRate rate(Timestamp at) {
+			return rates.getCurrentRate();
+		}
+	}
 
 
-  private static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
-    KeyPair pair = new KeyPairGenerator().generateKeyPair();
-    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-    Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-    String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
-    pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
-    return akey;
-  }
+	private static Key genSingleEd25519Key(Map<String, PrivateKey> pubKey2privKeyMap) {
+		KeyPair pair = new KeyPairGenerator().generateKeyPair();
+		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
+		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
+		return akey;
+	}
 
-  @Test
-  public void freezeTest() throws Exception {
-    tx = FreezeTestHelper.createFreezeTransaction(true, true, null);
-    signTransaction = sign(tx);
+	@Test
+	public void freezeTest() throws Exception {
+		tx = FreezeTestHelper.createFreezeTransaction(true, true, null);
+		signTransaction = sign(tx);
 
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        System.out.println(response.getNodeTransactionPrecheckCode());
-        Assertions.assertEquals( response.getNodeTransactionPrecheckCode() , OK);
-      }
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				System.out.println(response.getNodeTransactionPrecheckCode());
+				Assertions.assertEquals(response.getNodeTransactionPrecheckCode(), OK);
+			}
 
-      @Override
-      public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
-      }
+			@Override
+			public void onError(Throwable t) {
+				System.out.println("Error Happened " + t.getMessage());
+			}
 
-      @Override
-      public void onCompleted() {
-        System.out.println("Freeze Completed");
-      }
-    };
+			@Override
+			public void onCompleted() {
+				System.out.println("Freeze Completed");
+			}
+		};
 
-    TransactionID txID = CommonUtils.extractTransactionBody(tx).getTransactionID();
-    freezeService.freeze(signTransaction, responseObserver);
-    TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
-            TransactionReceipt.newBuilder().setStatus(OK))
-            .build();
-    receiptCache.setPostConsensus(
-            txID,
-            record.getReceipt().getStatus(),
-            ExpirableTxnRecord.fromGprc(record));
-  }
+		TransactionID txID = CommonUtils.extractTransactionBody(tx).getTransactionID();
+		freezeService.freeze(signTransaction, responseObserver);
+		TransactionRecord record = TransactionRecord.newBuilder().setReceipt(
+				TransactionReceipt.newBuilder().setStatus(OK))
+				.build();
+		receiptCache.setPostConsensus(
+				txID,
+				record.getReceipt().getStatus(),
+				ExpirableTxnRecord.fromGprc(record));
+	}
 
-  /**
-   * If a Freeze Transaction is not paid by account 55, precheck would return
-   * ResponseCodeEnum.NOT_SUPPORTED
-   */
-  @Test
-  public void freeze_NotPaidBy58_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true, null);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        System.out.println(
-                "Expecting NOT_SUPPORTED for freeze not paid by 58, got " +
-                        response.getNodeTransactionPrecheckCode());
-        Assertions.assertEquals(response.getNodeTransactionPrecheckCode() , ResponseCodeEnum.NOT_SUPPORTED);
-      }
+	/**
+	 * If a Freeze Transaction is not paid by account 55, precheck would return
+	 * ResponseCodeEnum.NOT_SUPPORTED
+	 */
+	@Test
+	public void freeze_NotPaidBy58_Test() throws Exception {
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(false, true, null);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				System.out.println(
+						"Expecting NOT_SUPPORTED for freeze not paid by 58, got " +
+								response.getNodeTransactionPrecheckCode());
+				Assertions.assertEquals(response.getNodeTransactionPrecheckCode(), ResponseCodeEnum.NOT_SUPPORTED);
+			}
 
-      @Override
-      public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
-      }
+			@Override
+			public void onError(Throwable t) {
+				System.out.println("Error Happened " + t.getMessage());
+			}
 
-      @Override
-      public void onCompleted() {
-        System.out.println("Freeze Completed");
-      }
-    };
+			@Override
+			public void onCompleted() {
+				System.out.println("Freeze Completed");
+			}
+		};
 
-    freezeService.freeze(signed, responseObserver);
-  }
+		freezeService.freeze(signed, responseObserver);
+	}
 
-  /**
-   * If a Freeze Transaction is not valid, precheck would return ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY
-   */
-  @Test
-  public void freeze_NotValidFreezeTxBody_Test() throws Exception {
-    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false, null);
-    Transaction signed = sign(freezeTx);
-    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TransactionResponse response) {
-        System.out.println(response.getNodeTransactionPrecheckCode());
-        Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
-      }
+	/**
+	 * If a Freeze Transaction is not valid, precheck would return ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY
+	 */
+	@Test
+	public void freeze_NotValidFreezeTxBody_Test() throws Exception {
+		Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, false, null);
+		Transaction signed = sign(freezeTx);
+		StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+			@Override
+			public void onNext(TransactionResponse response) {
+				System.out.println(response.getNodeTransactionPrecheckCode());
+				Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
+			}
 
-      @Override
-      public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
-      }
+			@Override
+			public void onError(Throwable t) {
+				System.out.println("Error Happened " + t.getMessage());
+			}
 
-      @Override
-      public void onCompleted() {
-        System.out.println("Freeze Completed");
-      }
-    };
+			@Override
+			public void onCompleted() {
+				System.out.println("Freeze Completed");
+			}
+		};
 
-    freezeService.freeze(signed, responseObserver);
-  }
+		freezeService.freeze(signed, responseObserver);
+	}
 
-  /**
-   * This is required to close all objects Else next set of test cases will fail
-   */
-  @AfterAll
-  public void tearDown() {
-    try {
-    } catch (Throwable tx) {
-      tx.printStackTrace();
-    } finally {
-    }
-  }
+	/**
+	 * This is required to close all objects Else next set of test cases will fail
+	 */
+	@AfterAll
+	public void tearDown() {
+		try {
+		} catch (Throwable tx) {
+			tx.printStackTrace();
+		} finally {
+		}
+	}
 
-  public Transaction sign(Transaction tx) throws Exception {
-    SignatureMap sigsMap = TransactionSigner.signAsSignatureMap(
-            tx.getBodyBytes().toByteArray(), Collections.singletonList(key), pubKey2privKeyMap);
-    return tx.toBuilder().setSigMap(sigsMap).build();
-  }
+	public Transaction sign(Transaction tx) throws Exception {
+		SignatureMap sigsMap = TransactionSigner.signAsSignatureMap(
+				tx.getBodyBytes().toByteArray(), Collections.singletonList(key), pubKey2privKeyMap);
+		return tx.toBuilder().setSigMap(sigsMap).build();
+	}
 }

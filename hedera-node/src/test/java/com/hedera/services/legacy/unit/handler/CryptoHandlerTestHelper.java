@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +73,7 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 		this.stats = stats;
 	}
 
-	public CryptoHandlerTestHelper(FCMap<MerkleEntityId, MerkleAccount> map){
+	public CryptoHandlerTestHelper(FCMap<MerkleEntityId, MerkleAccount> map) {
 		this(map, null);
 	}
 
@@ -80,45 +81,45 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 	 * This util translates application constant to ResponseCodeEnum
 	 */
 	public static ResponseCodeEnum translateResponseCode(Exception ex) {
-	  if (ex == null) {
-		return ResponseCodeEnum.FAIL_INVALID;
-	  }
+		if (ex == null) {
+			return ResponseCodeEnum.FAIL_INVALID;
+		}
 
-	  if (ex.getMessage() == null) {
-		return ResponseCodeEnum.FAIL_INVALID;
-	  }
+		if (ex.getMessage() == null) {
+			return ResponseCodeEnum.FAIL_INVALID;
+		}
 
-	  switch (ex.getMessage()) {
-		case (INSUFFICIENT_PAYER_BALANCE):
-		  return ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+		switch (ex.getMessage()) {
+			case (INSUFFICIENT_PAYER_BALANCE):
+				return ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
-		case (INSUFFICIENT_BAL):
-		  return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+			case (INSUFFICIENT_BAL):
+				return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
-		case (BAD_ENCODING):
-		  return ResponseCodeEnum.BAD_ENCODING;
+			case (BAD_ENCODING):
+				return ResponseCodeEnum.BAD_ENCODING;
 
-		case (KEY_REQUIRED):
-		  return ResponseCodeEnum.KEY_REQUIRED;
+			case (KEY_REQUIRED):
+				return ResponseCodeEnum.KEY_REQUIRED;
 
-		case (INSUFFICIENT_FEE):
-		  return ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+			case (INSUFFICIENT_FEE):
+				return ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
-		case (PAYER_ACCOUNT_NOT_FOUND):
-		  return ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+			case (PAYER_ACCOUNT_NOT_FOUND):
+				return ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
-		case (INSUFFICIENT_ACCOUNT_BALANCE):
-		  return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+			case (INSUFFICIENT_ACCOUNT_BALANCE):
+				return ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
-		case (ACCOUNT_ETHADDRESS_NOT_FOUND):
-		  return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+			case (ACCOUNT_ETHADDRESS_NOT_FOUND):
+				return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-		case (ACCOUNT_NOT_FOUND):
-		  return ResponseCodeEnum.INVALID_ACCOUNT_ID;
+			case (ACCOUNT_NOT_FOUND):
+				return ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
-		default:
-		  return ResponseCodeEnum.FAIL_INVALID;
-	  }
+			default:
+				return ResponseCodeEnum.FAIL_INVALID;
+		}
 	}
 
 	/**

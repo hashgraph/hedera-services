@@ -9,9 +9,9 @@ package com.hedera.services.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@ public class HederaKeyTraversal {
 
 	private static final Logger log = LogManager.getLogger(HederaKeyTraversal.class);
 
-	private HederaKeyTraversal(){
+	private HederaKeyTraversal() {
 		throw new IllegalStateException("Utility Class");
 	}
 
@@ -46,8 +46,10 @@ public class HederaKeyTraversal {
 	 * Performs a left-to-right DFS of the Hedera key structure, offering each simple key to
 	 * the provided {@link Consumer}.
 	 *
-	 * @param key the top-level Hedera key to traverse.
-	 * @param actionOnSimpleKey the logic to apply to each visited simple key.
+	 * @param key
+	 * 		the top-level Hedera key to traverse.
+	 * @param actionOnSimpleKey
+	 * 		the logic to apply to each visited simple key.
 	 */
 	public static void visitSimpleKeys(JKey key, Consumer<JKey> actionOnSimpleKey) {
 		if (key.hasThresholdKey()) {
@@ -62,7 +64,8 @@ public class HederaKeyTraversal {
 	/**
 	 * Counts the simple keys present in a complex Hedera key.
 	 *
-	 * @param key the top-level Hedera key.
+	 * @param key
+	 * 		the top-level Hedera key.
 	 * @return the number of simple keys in the leaves of the Hedera key.
 	 */
 	public static int numSimpleKeys(JKey key) {
@@ -71,9 +74,11 @@ public class HederaKeyTraversal {
 		return count.get();
 	}
 
-	/** Counts the simple keys present in an account's Hedera key.
+	/**
+	 * Counts the simple keys present in an account's Hedera key.
 	 *
-	 * @param account the account with the Hedera key of interest.
+	 * @param account
+	 * 		the account with the Hedera key of interest.
 	 * @return the number of simple keys.
 	 */
 	public static int numSimpleKeys(MerkleAccount account) {
@@ -84,4 +89,4 @@ public class HederaKeyTraversal {
 			return 0;
 		}
 	}
- }
+}

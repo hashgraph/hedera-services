@@ -9,9 +9,9 @@ package com.hedera.services.legacy.smartcontract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.log4j.LogManager;
@@ -249,7 +250,7 @@ public class PayableConstructor {
 		log.info("Smart Contract file uploaded successfully");
 
 		ContractID payTestContractId = createContractWithKey(crAccount, simpleStorageFileId,
-				contractDuration, adminKeyPair,1_2345L);
+				contractDuration, adminKeyPair, 1_2345L);
 		Assert.assertNotNull(payTestContractId);
 		Assert.assertNotEquals(0, payTestContractId.getContractNum());
 		log.info("Contract created with initial balance: " + payTestContractId);
@@ -282,7 +283,7 @@ public class PayableConstructor {
 						payerAccount.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
 						nodeAccount.getShardNum(), MAX_TX_FEE, timestamp,
 						transactionDuration, true, "", 250000, contractFile, ByteString.EMPTY,
-						initialBalance, contractAutoRenew, keyPairList, "",adminPubKey);
+						initialBalance, contractAutoRenew, keyPairList, "", adminPubKey);
 
 		TransactionResponse response = stub.createContract(createContractRequest);
 		System.out.println(

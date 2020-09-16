@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -90,10 +90,10 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 			if (password == null) {
 				password = new char[0];
 			}
-			if(converter == null) {
+			if (converter == null) {
 				this.converter = new JcaPEMKeyConverter().setProvider(ED_PROVIDER);
 			}
-			if(random == null) {
+			if (random == null) {
 				try {
 					this.random = SecureRandom.getInstance("DRBG",
 							DrbgParameters.instantiation(256, DrbgParameters.Capability.RESEED_ONLY, null));
@@ -115,6 +115,7 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 
 	/**
 	 * Issue #139, load from a pem file without a password.
+	 *
 	 * @param source
 	 * @return
 	 * @throws KeyStoreException
@@ -154,13 +155,13 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 		return generator.generateKeyPair();
 	}
 
-	public static int getIndex(final String sourceFile) throws KeyStoreException{
+	public static int getIndex(final String sourceFile) throws KeyStoreException {
 		BufferedReader reader;
-		try{
+		try {
 			reader = new BufferedReader(new FileReader(sourceFile));
 			String line = reader.readLine();
-			while (line!=null){
-				if (line.contains("Index:")){
+			while (line != null) {
+				if (line.contains("Index:")) {
 					String[] parsedLine = line.split(":");
 					return Integer.parseInt(parsedLine[1].replace(" ", ""));
 				}
@@ -182,7 +183,7 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 		}
 	}
 
-	public KeyPair insertNewKeyPair(Ed25519PrivateKey privateKey) throws KeyStoreException{
+	public KeyPair insertNewKeyPair(Ed25519PrivateKey privateKey) throws KeyStoreException {
 		try {
 			final KeyPair kp = EncryptionUtils.buildKeyPairFromMainnetPrivateKey(privateKey);
 			this.add(kp);
@@ -258,7 +259,7 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 			try (final JcaPEMWriter pemWriter = new JcaPEMWriter(new OutputStreamWriter(ostream))) {
 				pemWriter.write(String.format("Application: Hedera Transaction Tool\n"));
 				pemWriter.write(String.format("%s\n", version));
-				pemWriter.write(String.format("Index: %d\n",index));
+				pemWriter.write(String.format("Index: %d\n", index));
 				for (KeyPair kp : this) {
 					pemWriter.writeObject(encodeKeyPair(kp, encryptor));
 				}

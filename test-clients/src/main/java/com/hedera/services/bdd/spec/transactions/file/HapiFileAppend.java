@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,14 +59,17 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 		contents = Optional.of(data);
 		return this;
 	}
+
 	public HapiFileAppend content(String data) {
 		contents = Optional.of(data.getBytes());
 		return this;
 	}
+
 	public HapiFileAppend path(String to) {
 		path = Optional.of(to);
 		return this;
 	}
+
 	public HapiFileAppend contentFrom(Supplier<byte[]> more) {
 		contentsSupplier = Optional.of(more);
 		return this;
@@ -88,10 +91,10 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 		FileAppendTransactionBody opBody = spec
 				.txns()
 				.<FileAppendTransactionBody, FileAppendTransactionBody.Builder>body(
-					FileAppendTransactionBody.class, builder -> {
-						builder.setFileID(fid);
-						contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
-					});
+						FileAppendTransactionBody.class, builder -> {
+							builder.setFileID(fid);
+							contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
+						});
 		return b -> b.setFileAppend(opBody);
 	}
 
@@ -105,7 +108,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 		Timestamp expiry = TxnUtils.currExpiry(file, spec);
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
 				fileFees.getFileAppendTxFeeMatrices(txBody, expiry, sigUsage);
-		return spec.fees().forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc,txn, numPayerKeys);
+		return spec.fees().forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc, txn, numPayerKeys);
 	}
 
 	@Override

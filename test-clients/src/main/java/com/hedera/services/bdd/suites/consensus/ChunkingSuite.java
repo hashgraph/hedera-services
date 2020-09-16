@@ -89,7 +89,8 @@ public class ChunkingSuite extends HapiApiSuite {
 								.chunkInfo(3, 2, "initialTransactionPayer")
 								.hasKnownStatus(INVALID_CHUNK_TRANSACTION_ID),
 						submitMessageTo("testTopic")
-								.message("acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
+								.message(
+										"acceptsChunkNumberDifferentThan1HavingTheSamePayerEvenWhenNotMatchingValidStart")
 								.chunkInfo(3, 3, "initialTransactionPayer")
 								.payingWith("initialTransactionPayer")
 								// Add delay to make sure the valid start of the transaction will not match

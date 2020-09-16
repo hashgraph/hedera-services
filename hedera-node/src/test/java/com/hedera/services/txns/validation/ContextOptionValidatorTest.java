@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,6 +52,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
 import java.time.Instant;
 import java.util.Optional;
 
@@ -119,7 +120,8 @@ public class ContextOptionValidatorTest {
 		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
 		expiredMerkleTopic = TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
-		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(now.plusSeconds(555L).getEpochSecond()).get();
+		merkleTopic = TopicFactory.newTopic().memo("Hi, over here!").expiry(
+				now.plusSeconds(555L).getEpochSecond()).get();
 		given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
 		given(topics.get(MerkleEntityId.fromTopicId(missingTopicId))).willReturn(null);
 		given(topics.get(MerkleEntityId.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,11 +65,20 @@ public class ContractCallSuite extends HapiApiSuite {
 	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
 	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
 	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
-	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	final String GET_CHILD_ADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	final String SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	final String DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\"," +
+			"\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
+	final String GET_CHILD_ADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\"," +
+			"\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
+	final String SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"}," +
+			"{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[],\"payable\":false," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	final String DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}]," +
+			"\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -91,10 +100,10 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-			insufficientFee(),
-			invalidContract(),
-			invalidAbi(),
-			nonPayable()
+				insufficientFee(),
+				invalidContract(),
+				invalidAbi(),
+				nonPayable()
 		);
 	}
 
@@ -273,12 +282,12 @@ public class ContractCallSuite extends HapiApiSuite {
 						getTxnRecord("getChildAddressTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith()
-											.resultThruAbi(
-													GET_CHILD_ADDRESS_ABI,
-													isContractWith(contractWith()
-															.nonNullContractId()
-															.propertiesInheritedFrom("parentInfo")))
-											.logs(inOrder()))),
+												.resultThruAbi(
+														GET_CHILD_ADDRESS_ABI,
+														isContractWith(contractWith()
+																.nonNullContractId()
+																.propertiesInheritedFrom("parentInfo")))
+												.logs(inOrder()))),
 						contractListWithPropertiesInheritedFrom("createChildCallResult", 1, "parentInfo")
 				);
 	}
@@ -306,7 +315,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord("callTxn").hasPriority(
 								recordWith().contractCallResult(
-									resultWith().logs(inOrder())))
+										resultWith().logs(inOrder())))
 				);
 	}
 

@@ -9,9 +9,9 @@ package com.hedera.services.legacy.bip39utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@ package com.hedera.services.legacy.bip39utils;
  * limitations under the License.
  * ‍
  */
-
 
 
 import java.math.BigInteger;
@@ -43,7 +42,7 @@ import java.util.regex.Pattern;
 public class Reference {
 	// data is the actual reference, either 16 or 32 bytes
 	private byte[] data;
-	private static final  String digits = "0123456789"
+	private static final String digits = "0123456789"
 			+ "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
 
@@ -51,16 +50,16 @@ public class Reference {
 	 * Pass to the constructor 16, 32, or 48 bytes (128, 256, or 384 bits), which is the hash of the thing
 	 * being referenced (a key, a swirld name, a file, etc). A copy of data is made, so it is OK to change
 	 * the array after instantiating the Reference.
-	 * 
+	 *
 	 * The stored information will be one byte longer than the data, found by first appending a CRC8
 	 * checksum to the end, then XORing all the previous bytes with that checksum. Later, the checksum can
 	 * be checked by doing the XOR, then the checksum calculation, then comparing the result to the last
 	 * byte. When expressing a Reference in base 62 or as a list of words, the longer version is used.
-	 * 
+	 *
 	 * @param data
-	 *            the 16 or 32 or 48 bytes constituting the reference
+	 * 		the 16 or 32 or 48 bytes constituting the reference
 	 */
-	public Reference( byte[] data) {
+	public Reference(byte[] data) {
 		if (data == null) {
 			throw new InvalidParameterException("data should not be null");
 		}
@@ -86,9 +85,9 @@ public class Reference {
 
 	/**
 	 * return the log base 2 of x
-	 * 
+	 *
 	 * @param x
-	 *            the number to take the log of
+	 * 		the number to take the log of
 	 * @return the log base 2 of x
 	 */
 	private double log2(double x) {
@@ -99,9 +98,9 @@ public class Reference {
 	 * Pass to the constructor a string representing the data. If the string starts and ends in <> and
 	 * contains only letters and digits in between, then it is considered a base62 encoding. Otherwise, it
 	 * is considered a list of words.
-	 * 
+	 *
 	 * @param dataString
-	 *            the 16, 32, or 48 bytes constituting the reference
+	 * 		the 16, 32, or 48 bytes constituting the reference
 	 */
 	public Reference(String dataString) {
 		if (dataString.matches("^<[a-zA-Z0-9]*>$")) { // base 62 encoding
@@ -166,7 +165,7 @@ public class Reference {
 		byte[] dataUnscrambled = new byte[32];
 		byte crc = data[data.length - 1];
 		for (int i = 0; i < data.length - 1; i++) {
-			dataUnscrambled[i] = (byte) (((byte)data[i]) ^ crc);
+			dataUnscrambled[i] = (byte) (((byte) data[i]) ^ crc);
 		}
 		crc = crc8(dataUnscrambled);
 		if (data[data.length - 1] != crc) {
@@ -179,18 +178,18 @@ public class Reference {
 	 * Given a number in base fromRadix, with each digit being an integer in array number (number[0] is most
 	 * significant), return a new number in toRadix, where the array has toLength elements, left padded with
 	 * zeros if the number is too small, and chopping off the most significant digits if it is too large.
-	 * 
+	 *
 	 * @param number
-	 *            the input number to convert
+	 * 		the input number to convert
 	 * @param fromRadix
-	 *            the base of input number
+	 * 		the base of input number
 	 * @param toRadix
-	 *            the base of the returned number
+	 * 		the base of the returned number
 	 * @param toLength
-	 *            the number of digits in the returned number
+	 * 		the number of digits in the returned number
 	 * @return the number in the new base
 	 */
-	
+
 	private int[] convertRadix(int[] number, int fromRadix, int toRadix,
 			int toLength) {
 		int[] result = new int[toLength];
@@ -215,13 +214,13 @@ public class Reference {
 	 * 0100110) is a good polynomial choice, which is x^8 + x^6 + x^3 + x^2 + x^1 . The following code uses
 	 * 0xB2 (1 0110010), which is 0xA6 with the bits reversed (after the first bit), which is needed for
 	 * this code.
-	 * 
+	 *
 	 * @param data
-	 *            the data to find checksum for (where the last byte does not affect the checksum)
+	 * 		the data to find checksum for (where the last byte does not affect the checksum)
 	 * @return the checksum
 	 */
 	public static byte crc8(byte[] data) {
-	    int count = data.length;
+		int count = data.length;
 		int crc = 0xFF;
 		for (int i = 0; i < data.length - 1; i++) {
 			crc ^= Reference.byteToUnsignedInt(data[i]);
@@ -235,7 +234,7 @@ public class Reference {
 	/**
 	 * Return the base-62 encoding, inside of <brackets>.
 	 */
-	
+
 	@Override
 	public String toString() {
 		return to62();
@@ -243,10 +242,10 @@ public class Reference {
 
 	/**
 	 * Return this reference as an array of 16 or 32 or 48 bytes.
-	 * 
+	 *
 	 * @return the reference as an array of 16 or 32 or 48 bytes.
 	 */
-	
+
 	public byte[] toBytes() {
 		byte[] result = Arrays.copyOfRange(data, 0, data.length - 1);
 		byte crc = data[data.length - 1];
@@ -258,20 +257,20 @@ public class Reference {
 
 	/**
 	 * Return the first few characters of the string representing the reference, encoded in base 62
-	 * 
+	 *
 	 * @return
 	 */
-	
+
 	public String to62Prefix() {
 		return to62().substring(0, 6) + "...>";
 	}
 
 	/**
 	 * Return a string representing the reference, encoded in base 62
-	 * 
+	 *
 	 * @return
 	 */
-	
+
 	public String to62() {
 		int len = (int) Math.ceil(data.length * 8 / log2(digits.length()));
 		int[] fromDigits = new int[data.length];
@@ -291,10 +290,10 @@ public class Reference {
 	/**
 	 * Return a string representing the reference, made up of multiple lines of 4 words each, broken into
 	 * groups of 4 lines. The last group may have fewer lines, and its last line may have fewer words.
-	 * 
+	 *
 	 * @return the result as one string
 	 */
-	
+
 	public String toWords() {
 		return toWords("+----------\n| ", " ", "\n| ", "\n| ", "\n|\n| ",
 				"\n|\n| ", "\n+----------");
@@ -309,11 +308,11 @@ public class Reference {
 	/**
 	 * Return a string representing the reference, made up of multiple lines of 4 words each, broken into
 	 * groups of 4 lines. The last group may have fewer lines, and its last line may have fewer words.
-	 * 
-	 * @indent a string inserted at the start of each line
+	 *
 	 * @return the result as one string
+	 * @indent a string inserted at the start of each line
 	 */
-	
+
 	public String toWords(String indent) {
 		return toWords( //
 				indent + "+----------\n" + indent + "| ", //
@@ -335,24 +334,24 @@ public class Reference {
 	 * Return a string representing the reference, made up of multiple lines of 4 words each, broken into
 	 * groups of 3 lines. The last group may have fewer lines, and its last line may have fewer words. There
 	 * are no actual line breaks unless they are included in the parameters passed in.
-	 * 
+	 *
 	 * @param prefix
-	 *            start of the entire string
+	 * 		start of the entire string
 	 * @param wordSeparator
-	 *            between adjacent words in a line of 4 words
+	 * 		between adjacent words in a line of 4 words
 	 * @param lineSeparator1
-	 *            between lines in a group of 3 lines, for every other group, starting with first
+	 * 		between lines in a group of 3 lines, for every other group, starting with first
 	 * @param lineSeparator2
-	 *            between lines in a group of 3 lines, for every other group, starting with second
+	 * 		between lines in a group of 3 lines, for every other group, starting with second
 	 * @param groupSeparator1
-	 *            between groups of 4 lines, for every other group, starting with first
+	 * 		between groups of 4 lines, for every other group, starting with first
 	 * @param groupSeparator2
-	 *            between groups of 4 lines, for every other group, starting with second
+	 * 		between groups of 4 lines, for every other group, starting with second
 	 * @param suffix
-	 *            end of the entire string
+	 * 		end of the entire string
 	 * @return the result as one string
 	 */
-	
+
 	public String toWords(String prefix, String wordSeparator,
 			String lineSeparator1, String lineSeparator2,
 			String groupSeparator1, String groupSeparator2, String suffix) {
@@ -379,41 +378,41 @@ public class Reference {
 		return new String(answer + suffix);
 	}
 
-	
-	public List<String> toWordsList(){
-        List<String> words = WordList.words;
-        // need len words
-        int len = (int) Math.ceil(data.length * 8 / log2(words.size()));
-        ArrayList<String> answer = new ArrayList<String>();
 
-        int[] fromDigits = new int[data.length];
-        for (int i = 0; i < data.length; i++) {
-            fromDigits[i] = Reference.byteToUnsignedInt(data[i]);
-        }
-        int[] toDigits = convertRadix(fromDigits, 256, words.size(), len);
+	public List<String> toWordsList() {
+		List<String> words = WordList.words;
+		// need len words
+		int len = (int) Math.ceil(data.length * 8 / log2(words.size()));
+		ArrayList<String> answer = new ArrayList<String>();
 
-        for (int i = 0; i < len; i++) {
-            answer.add(words.get(toDigits[i]));
-        }
-        return answer;
-    }
+		int[] fromDigits = new int[data.length];
+		for (int i = 0; i < data.length; i++) {
+			fromDigits[i] = Reference.byteToUnsignedInt(data[i]);
+		}
+		int[] toDigits = convertRadix(fromDigits, 256, words.size(), len);
+
+		for (int i = 0; i < len; i++) {
+			answer.add(words.get(toDigits[i]));
+		}
+		return answer;
+	}
 
 	/**
 	 * return a string representation of the given byte array in hex, with a each byte becoming two
 	 * characters (including a leading zero, if necessary). Only use the array from index firstIndex to
 	 * index lastIndex. A lastIndex of -1 means the last element, -2 is the second to last, and so on. If
 	 * minIndex>maxIndex (after any wrapping of lastIndex), then return the null string.
-	 * 
+	 *
 	 * @param bytes
-	 *            an array of bytes, some of which are to be converted
+	 * 		an array of bytes, some of which are to be converted
 	 * @param firstIndex
-	 *            index of first element to convert
+	 * 		index of first element to convert
 	 * @param lastIndex
-	 *            index of last element to convert (or -1 for last -2 for 2nd to last, etc)
+	 * 		index of last element to convert (or -1 for last -2 for 2nd to last, etc)
 	 * @return a hex string of exactly two characters per converted byte
 	 */
-	
-	static String toHex( byte[] bytes, int firstIndex, int lastIndex) {
+
+	static String toHex(byte[] bytes, int firstIndex, int lastIndex) {
 		String ans = "";
 		int last = lastIndex >= 0 ? lastIndex : bytes.length + lastIndex;
 		if (!(0 <= firstIndex && firstIndex <= last && last < bytes.length)) {
@@ -429,10 +428,10 @@ public class Reference {
 		return 0x00 << 24 | b & 0xff;
 	}
 
-	public static List<String> lowercasedWords () {
+	public static List<String> lowercasedWords() {
 		List<String> words = WordList.words;
 		ArrayList<String> lowercasedWords = new ArrayList<>();
-		for (int i = 0; i < words.size() ; i++) {
+		for (int i = 0; i < words.size(); i++) {
 			lowercasedWords.add(words.get(i).toLowerCase());
 		}
 		return lowercasedWords;
@@ -441,7 +440,7 @@ public class Reference {
 
 class WordList {
 	/** the list of 4096 words */
-	
+
 	static List<String> words = Arrays.asList("aback", "abbey", "abbot",
 			"abide", "ablaze", "able", "aboard", "abode", "abort", "abound",
 			"about", "above", "abroad", "abrupt", "absent", "absorb", "absurd",

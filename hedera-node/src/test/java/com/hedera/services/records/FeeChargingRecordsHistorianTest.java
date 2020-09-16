@@ -139,10 +139,13 @@ public class FeeChargingRecordsHistorianTest {
 			.setMemo("This is different!")
 			.build();
 	final private ExpirableTxnRecord jFinalRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+
 	{
 		jFinalRecord.setExpiry(expiry);
 	}
+
 	final private ExpirableTxnRecord payerRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+
 	{
 		payerRecord.setExpiry(payerExpiry);
 	}

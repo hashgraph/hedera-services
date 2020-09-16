@@ -80,7 +80,8 @@ public class ExchangeRates implements SelfSerializable {
 
 	private boolean initialized = false;
 
-	public ExchangeRates() { }
+	public ExchangeRates() {
+	}
 
 	public ExchangeRates(
 			int currHbarEquiv,
@@ -145,7 +146,7 @@ public class ExchangeRates implements SelfSerializable {
 		if (o == null || ExchangeRates.class != o.getClass()) {
 			return false;
 		}
-		var that = (ExchangeRates)o;
+		var that = (ExchangeRates) o;
 
 		return currHbarEquiv == that.currHbarEquiv &&
 				currCentEquiv == that.currCentEquiv &&

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,15 +53,15 @@ public class ContractGetRecordsSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-			positiveSpecs(),
-			negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return Arrays.asList(
-			insufficientFee(),
-			invalidContract()
+				insufficientFee(),
+				invalidContract()
 		);
 	}
 
@@ -79,10 +79,10 @@ public class ContractGetRecordsSuite extends HapiApiSuite {
 				.given(
 						contractCreate("testContract").adminKey(THRESHOLD)
 				).when().then(
-					QueryVerbs.getContractRecords("testContract").has(
-							inOrder(
-									recordWith().transfers(atLeastOneTransfer()).contractCreateResult(
-											resultWith().contract("testContract")))));
+						QueryVerbs.getContractRecords("testContract").has(
+								inOrder(
+										recordWith().transfers(atLeastOneTransfer()).contractCreateResult(
+												resultWith().contract("testContract")))));
 	}
 
 	HapiApiSpec recordsExpire() {

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,50 +62,56 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		this.topic = topic;
 	}
 
-	public HapiGetTopicInfo hasMemo(String memo)	{
+	public HapiGetTopicInfo hasMemo(String memo) {
 		topicMemo = Optional.of(memo);
 		return this;
 	}
 
-	public HapiGetTopicInfo hasSeqNo(long exp)	{
+	public HapiGetTopicInfo hasSeqNo(long exp) {
 		seqNo = OptionalLong.of(exp);
 		return this;
 	}
 
-	public HapiGetTopicInfo hasSeqNo(LongSupplier supplier)	{
+	public HapiGetTopicInfo hasSeqNo(LongSupplier supplier) {
 		seqNoFn = Optional.of(supplier);
 		return this;
 	}
 
-	public HapiGetTopicInfo hasRunningHash(byte[] exp)	{
+	public HapiGetTopicInfo hasRunningHash(byte[] exp) {
 		runningHash = Optional.of(exp);
 		return this;
 	}
 
-	public HapiGetTopicInfo hasExpiry(long exp)	{
+	public HapiGetTopicInfo hasExpiry(long exp) {
 		expiry = OptionalLong.of(exp);
 		return this;
 	}
-	public HapiGetTopicInfo hasAutoRenewPeriod(long exp)	{
+
+	public HapiGetTopicInfo hasAutoRenewPeriod(long exp) {
 		autoRenewPeriod = OptionalLong.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasAdminKey(String exp) {
 		adminKey = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasNoAdminKey() {
 		hasNoAdminKey = true;
 		return this;
 	}
+
 	public HapiGetTopicInfo hasSubmitKey(String exp) {
 		submitKey = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo hasAutoRenewAccount(String exp) {
 		autoRenewAccount = Optional.of(exp);
 		return this;
 	}
+
 	public HapiGetTopicInfo saveRunningHash() {
 		saveRunningHash = true;
 		return this;
@@ -146,7 +152,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
 		submitKey.ifPresent(exp ->
 				assertEquals("Bad submit key!", spec.registry().getKey(exp), info.getSubmitKey()));
 		autoRenewAccount.ifPresent(exp ->
-			assertEquals("Bad auto-renew account!", asId(exp, spec), info.getAutoRenewAccount()));
+				assertEquals("Bad auto-renew account!", asId(exp, spec), info.getAutoRenewAccount()));
 		if (hasNoAdminKey) {
 			assertFalse("Should have no admin key!", info.hasAdminKey());
 		}

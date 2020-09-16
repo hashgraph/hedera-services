@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,6 +48,7 @@ import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
+
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
@@ -55,13 +56,16 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.*;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static java.util.stream.Collectors.toList;
+
 import org.junit.runner.RunWith;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 import static com.hedera.test.factories.txns.FileCreateFactory.*;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.*;
 import static com.hedera.test.factories.txns.ContractCreateFactory.*;
@@ -173,6 +177,7 @@ public class HederaSigningOrderTest {
 	private interface ThrowingAccountLookup {
 		AccountSigningMetadata lookup(AccountID id) throws Exception;
 	}
+
 	@FunctionalInterface
 	private interface ThrowingTopicLookup {
 		TopicSigningMetadata lookup(TopicID id) throws Exception;
@@ -183,14 +188,18 @@ public class HederaSigningOrderTest {
 	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_ALWAYS_SIGNS = (txn, f) -> true;
 	private static final Predicate<TransactionBody> UPDATE_ACCOUNT_ALWAYS_SIGNS = txn -> true;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
-		new DelegatingSigMetadataLookup(
-				id -> { throw new Exception(); },
-				AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-				contractSigMetaLookup,
-				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-				id -> null);
+			new DelegatingSigMetadataLookup(
+					id -> {
+						throw new Exception();
+					},
+					AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+					contractSigMetaLookup,
+					TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+					id -> null);
 	private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			id -> { throw new Exception(); }
+			id -> {
+				throw new Exception();
+			}
 	);
 	private static final SigMetadataLookup INVALID_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			id -> {
@@ -198,7 +207,9 @@ public class HederaSigningOrderTest {
 			}
 	);
 	private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			id -> { throw new AdminKeyNotExistException("Oops!", MISC_CONTRACT); }
+			id -> {
+				throw new AdminKeyNotExistException("Oops!", MISC_CONTRACT);
+			}
 	);
 
 	private HederaFs hfs;
@@ -312,11 +323,17 @@ public class HederaSigningOrderTest {
 		setupFor(
 				CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
 				new DelegatingSigMetadataLookup(
-						id -> { throw new Exception(); },
+						id -> {
+							throw new Exception();
+						},
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-						id -> { throw new Exception(); },
-						TopicAdapter.with(id -> { throw new Exception(); }),
-						id -> null ));
+						id -> {
+							throw new Exception();
+						},
+						TopicAdapter.with(id -> {
+							throw new Exception();
+						}),
+						id -> null));
 		aMockSummaryFactory();
 		// and:
 		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
@@ -335,7 +352,7 @@ public class HederaSigningOrderTest {
 	public void getsCryptoUpdateVanillaNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(true);
@@ -354,7 +371,7 @@ public class HederaSigningOrderTest {
 	public void getsCryptoUpdateProtectedNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -373,7 +390,7 @@ public class HederaSigningOrderTest {
 	public void getsCryptoUpdateProtectedNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -390,7 +407,7 @@ public class HederaSigningOrderTest {
 	public void getsCryptoUpdateVanillaNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(true);
@@ -1493,24 +1510,28 @@ public class HederaSigningOrderTest {
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			Predicate<TransactionBody> updateAccountSigns
 	) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS, updateAccountSigns);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns
 	) throws Throwable {
 		setupFor(scenario, waclSigns, UPDATE_ACCOUNT_ALWAYS_SIGNS);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			SigMetadataLookup sigMetadataLookup
 	) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS, UPDATE_ACCOUNT_ALWAYS_SIGNS, Optional.of(sigMetadataLookup));
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
@@ -1518,6 +1539,7 @@ public class HederaSigningOrderTest {
 	) throws Throwable {
 		setupFor(scenario, waclSigns, updateAccountSigns, Optional.empty());
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
@@ -1543,12 +1565,14 @@ public class HederaSigningOrderTest {
 	}
 
 	private void aMockSummaryFactory() {
-		mockSummaryFactory = (SigningOrderResultFactory<SignatureStatus>)mock(SigningOrderResultFactory.class);
+		mockSummaryFactory = (SigningOrderResultFactory<SignatureStatus>) mock(SigningOrderResultFactory.class);
 	}
 
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
-				id -> { throw new Exception(); },
+				id -> {
+					throw new Exception();
+				},
 				AccountAdapter.withSafe(id -> {
 					if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
 						try {
@@ -1561,7 +1585,9 @@ public class HederaSigningOrderTest {
 						return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
 					}
 				}),
-				id -> { throw new Exception(); },
+				id -> {
+					throw new Exception();
+				},
 				TopicAdapter.withSafe(id -> {
 					if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
 						return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));
@@ -1577,9 +1603,10 @@ public class HederaSigningOrderTest {
 		return jKeys.stream().map(jKey -> {
 					try {
 						return JKey.mapJKey(jKey);
-					} catch (Exception ignore) { }
+					} catch (Exception ignore) {
+					}
 					throw new AssertionError("All keys should be mappable!");
 				}
-			).collect(toList());
+		).collect(toList());
 	}
 }

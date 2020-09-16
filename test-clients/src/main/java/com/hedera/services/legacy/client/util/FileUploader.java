@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,8 +67,8 @@ public class FileUploader {
 
 	private static final Logger log = LogManager.getLogger(FileUploader.class);
 
-	/** upload a new file or update an existing file
-	 *
+	/**
+	 * upload a new file or update an existing file
 	 */
 	public static Pair<List<Transaction>, FileID> uploadFile(
 			FileID fileID,
@@ -96,7 +96,7 @@ public class FileUploader {
 
 		List<Transaction> resultTxList = new ArrayList<>();
 		Transaction transaction = null;
-		if(fileID == null) { //create new one
+		if (fileID == null) { //create new one
 			//create file with first part
 			transaction = createUpdateFile(fileStub,
 					payerAccount, payerPrivateKey, accessKeys,
@@ -106,7 +106,7 @@ public class FileUploader {
 
 			fileID = Common.getFileIDfromReceipt(stub,
 					TransactionBody.parseFrom(transaction.getBodyBytes()).getTransactionID());
-		}else{
+		} else {
 			transaction = createUpdateFile(fileStub,
 					payerAccount, payerPrivateKey, accessKeys,
 					nodeAccountNumber, firstPartBytes, fileDuration, transactionFee, pubKey2PrivateKeyMap, fileID);
@@ -129,12 +129,14 @@ public class FileUploader {
 		}
 
 		//wait transaction reach consensus then read back content
-		Common.getReceiptByTransactionId(stub, TransactionBody.parseFrom(transaction.getBodyBytes()).getTransactionID());
+		Common.getReceiptByTransactionId(stub,
+				TransactionBody.parseFrom(transaction.getBodyBytes()).getTransactionID());
 
 		AccountID nodeAccount = RequestBuilder.getAccountIdBuild(nodeAccountNumber, 0l, 0l);
 		// get file content and check again original
 		for (i = 0; i < 10; i++) {
-			Pair<List<Transaction>, byte[]> result = getFileContent(fileStub, payerAccount, payerPrivateKey, fileID, nodeAccount);
+			Pair<List<Transaction>, byte[]> result = getFileContent(fileStub, payerAccount, payerPrivateKey, fileID,
+					nodeAccount);
 			log.info("getFileContent return transaction list size {}", result.getLeft().size());
 			resultTxList.addAll(result.getLeft());
 			byte[] content = result.getRight();
@@ -173,9 +175,11 @@ public class FileUploader {
 		long feeForFileContentCost = FeeClient.getFeeByID(HederaFunctionality.FileGetContents);
 		Response getFileCostInfoResponse = Common.querySubmit(() -> {
 			try {
-				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount, feeForFileContentCost,
+				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount,
+						feeForFileContentCost,
 						"queryFileContentFee");
-				Query getFileInfoQuery = RequestBuilder.getFileGetContentBuilder(queryPaymentTx, fid, ResponseType.COST_ANSWER);
+				Query getFileInfoQuery = RequestBuilder.getFileGetContentBuilder(queryPaymentTx, fid,
+						ResponseType.COST_ANSWER);
 				return getFileInfoQuery;
 			} catch (Exception e) {
 				return null;
@@ -189,9 +193,11 @@ public class FileUploader {
 
 		Response fileContentResp = Common.querySubmit(() -> {
 			try {
-				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount, queryGetFileContentCostFee,
+				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount,
+						queryGetFileContentCostFee,
 						"queryFileContentAnswer");
-				Query getFileInfoQuery = RequestBuilder.getFileGetContentBuilder(queryPaymentTx, fid, ResponseType.ANSWER_ONLY);
+				Query getFileInfoQuery = RequestBuilder.getFileGetContentBuilder(queryPaymentTx, fid,
+						ResponseType.ANSWER_ONLY);
 				queryTranList.add(queryPaymentTx);
 				return getFileInfoQuery;
 			} catch (Exception e) {
@@ -224,13 +230,13 @@ public class FileUploader {
 
 		List<Key> sigMapKeyList = new ArrayList<>();
 		sigMapKeyList.add(Common.PrivateKeyToKey(payerPrivateKey));
-		for(KeyPair pair : accessKeys){
+		for (KeyPair pair : accessKeys) {
 			waclPrivKeyList.add(pair.getPrivate());
 			sigMapKeyList.add(Common.PrivateKeyToKey(pair.getPrivate()));
 		}
 
 		List<Key> waclPubKeyList = new ArrayList<>();
-		for(KeyPair pair : accessKeys){
+		for (KeyPair pair : accessKeys) {
 			byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 			Key waclKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 			waclPubKeyList.add(waclKey);
@@ -253,7 +259,8 @@ public class FileUploader {
 		return transaction;
 	}
 
-	public static Pair<List<Transaction>, FileGetInfoResponse.FileInfo> getFileInfo(FileServiceGrpc.FileServiceBlockingStub fileStub,
+	public static Pair<List<Transaction>, FileGetInfoResponse.FileInfo> getFileInfo(
+			FileServiceGrpc.FileServiceBlockingStub fileStub,
 			AccountID payerAccount,
 			PrivateKey payerKey,
 			long nodeAccountNumber,
@@ -262,7 +269,8 @@ public class FileUploader {
 		final AccountID nodeAccount = RequestBuilder.getAccountIdBuild(nodeAccountNumber, 0l, 0l);
 		Response fileInfoResp = Common.querySubmit(() -> {
 			try {
-				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount, feeForFileInfoCost,
+				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount,
+						feeForFileInfoCost,
 						"queryFileInfoFee");
 				return RequestBuilder.getFileGetInfoBuilder(queryPaymentTx, fid, ResponseType.COST_ANSWER);
 			} catch (Exception e) {
@@ -270,14 +278,16 @@ public class FileUploader {
 			}
 		}, fileStub::getFileInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		long feeForFileInfo = fileInfoResp.getFileGetInfo().getHeader().getCost();
 		final List<Transaction> queryTranList = new ArrayList<>();
 
 		fileInfoResp = Common.querySubmit(() -> {
 			try {
-				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount, feeForFileInfo,
+				Transaction queryPaymentTx = createQueryHeaderTransfer(payerAccount, payerKey, nodeAccount,
+						feeForFileInfo,
 						"QueryFileInfoAnswer");
 				queryTranList.add(queryPaymentTx);
 				return RequestBuilder.getFileGetInfoBuilder(queryPaymentTx, fid, ResponseType.ANSWER_ONLY);
@@ -286,7 +296,8 @@ public class FileUploader {
 			}
 		}, fileStub::getFileInfo);
 
-		Assert.assertEquals(ResponseCodeEnum.OK, fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		Assert.assertEquals(ResponseCodeEnum.OK,
+				fileInfoResp.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
 
 		FileGetInfoResponse.FileInfo fileInfo = fileInfoResp.getFileGetInfo().getFileInfo();
 		log.info("fileGetInfoQuery: info = " + fileInfo);
@@ -306,8 +317,7 @@ public class FileUploader {
 			long nodeAccountNumber, byte[] bytes,
 			long fileDuration, long transactionFee,
 			final Map<String, PrivateKey> pubKey2PrivateKeyMap,
-			FileID fileID)
-	{
+			FileID fileID) {
 		Timestamp timestamp = RequestBuilder
 				.getTimestamp(Instant.now(Clock.systemUTC()));
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
@@ -322,20 +332,20 @@ public class FileUploader {
 
 		List<Key> sigMapKeyList = new ArrayList<>();
 		sigMapKeyList.add(Common.PrivateKeyToKey(payerPrivateKey));
-		for(KeyPair pair : accessKeys){
+		for (KeyPair pair : accessKeys) {
 			waclPrivKeyList.add(pair.getPrivate());
 			sigMapKeyList.add(Common.PrivateKeyToKey(pair.getPrivate()));
 		}
 
 		List<Key> waclPubKeyList = new ArrayList<>();
-		for(KeyPair pair : accessKeys){
+		for (KeyPair pair : accessKeys) {
 			byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 			Key waclKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 			waclPubKeyList.add(waclKey);
 		}
 
 		Transaction transaction;
-		if(fileID == null) {
+		if (fileID == null) {
 			transaction = Common.tranSubmit(() -> {
 				try {
 					Transaction FileCreateRequest = RequestBuilder
@@ -352,7 +362,7 @@ public class FileUploader {
 					return null;
 				}
 			}, fileStub::createFile);
-		}else {
+		} else {
 			transaction = Common.tranSubmit(() -> {
 				try {
 					Transaction FileUpdateRequest = RequestBuilder

@@ -59,8 +59,10 @@ public class ZeroStakeNodeTest extends HapiApiSuite {
 		);
 	}
 
-	/** This test has to be run with nodes in spec-defaults set as the full list of ipAddresses and node ids of the network
-	  * with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network.
+	/**
+	 * This test has to be run with nodes in spec-defaults set as the full list of ipAddresses and node ids of the
+	 * network
+	 * with zero stake nodes. Assumes that node 0.0.7 and node 0.0.8 are started with zero stake in a 6 node network.
 	 **/
 	private HapiApiSpec zeroStakeBehavesAsExpectedJRS() {
 		return defaultHapiSpec("zeroStakeBehavesAsExpectedJRS")

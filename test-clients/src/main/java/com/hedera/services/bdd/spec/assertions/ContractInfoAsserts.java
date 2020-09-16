@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.assertions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,17 +23,21 @@ package com.hedera.services.bdd.spec.assertions;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import org.junit.Assert;
+
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {
 	public static ContractInfoAsserts infoKnownFor(String contract) {
 		return contractWith().knownInfoFor(contract);
 	}
-	public static ContractInfoAsserts contractWith() { return new ContractInfoAsserts(); }
+
+	public static ContractInfoAsserts contractWith() {
+		return new ContractInfoAsserts();
+	}
 
 	public ContractInfoAsserts knownInfoFor(String contract) {
 		registerProvider((spec, o) -> {
-			ContractInfo actual = (ContractInfo)o;
+			ContractInfo actual = (ContractInfo) o;
 			Assert.assertEquals("Bad contract id!",
 					spec.registry().getContractId(contract), actual.getContractID());
 			Assert.assertEquals("Bad account id!",
@@ -77,7 +81,8 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 
 	public ContractInfoAsserts expiry(long expectedExpiry) {
 		registerProvider((spec, o) -> {
-			Assert.assertEquals("Bad expiry time!", expectedExpiry, object2ContractInfo(o).getExpirationTime().getSeconds());
+			Assert.assertEquals("Bad expiry time!", expectedExpiry,
+					object2ContractInfo(o).getExpirationTime().getSeconds());
 		});
 		return this;
 	}

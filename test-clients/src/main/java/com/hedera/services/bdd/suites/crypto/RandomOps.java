@@ -60,7 +60,7 @@ public class RandomOps extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
+				new HapiApiSpec[] {
 						freezeWorks(),
 //						createThenTransferThenUpdateDeleteThenUpdate()
 				}
@@ -71,7 +71,7 @@ public class RandomOps extends HapiApiSuite {
 		return customHapiSpec("FreezeWorks")
 				.withProperties(Map.of(
 						"nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"
-				)).given( ).when(
+				)).given().when(
 				).then(
 						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);

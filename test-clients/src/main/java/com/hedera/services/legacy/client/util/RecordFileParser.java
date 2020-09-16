@@ -10,9 +10,9 @@ package com.hedera.services.legacy.client.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -120,11 +120,15 @@ public class RecordFileParser {
 							txList.add(Pair.of(transaction, txRecord));
 
 							counter++;
-							RecordFileLogger.storeRecord(counter, RequestBuilder.convertProtoTimeStamp(txRecord.getConsensusTimestamp()), transaction, txRecord);
+							RecordFileLogger.storeRecord(counter,
+									RequestBuilder.convertProtoTimeStamp(txRecord.getConsensusTimestamp()), transaction,
+									txRecord);
 							log.info(MARKER, "record counter = {}\n=============================", counter);
-							log.info(MARKER, "Transaction Consensus Timestamp = {}\n", RequestBuilder.convertProtoTimeStamp(txRecord.getConsensusTimestamp()));
+							log.info(MARKER, "Transaction Consensus Timestamp = {}\n",
+									RequestBuilder.convertProtoTimeStamp(txRecord.getConsensusTimestamp()));
 							log.info(MARKER, "Transaction = {}", RecordFileParser.printTransaction(transaction));
-							log.info(MARKER, "Record = {}\n=============================\n",  TextFormat.shortDebugString(txRecord));
+							log.info(MARKER, "Record = {}\n=============================\n",
+									TextFormat.shortDebugString(txRecord));
 							break;
 						case TYPE_SIGNATURE:
 							int sigLength = dis.readInt();
@@ -266,16 +270,19 @@ public class RecordFileParser {
 				log.info(MARKER, "readPrevFileHash :: Previous file Hash = {}, file name = {}", hexString, fileName);
 				return hexString;
 			} else {
-				log.error(MARKER, "readPrevFileHash :: Should read Previous file Hash, but found file delimiter {}, file name = {}", typeDelimiter, fileName);
+				log.error(MARKER,
+						"readPrevFileHash :: Should read Previous file Hash, but found file delimiter {}, file name = " +
+								"{}",
+						typeDelimiter, fileName);
 			}
 			dis.close();
 
 		} catch (FileNotFoundException e) {
-			log.error(MARKER, "readPrevFileHash :: File Not Found Error, file name = {}",  fileName);
+			log.error(MARKER, "readPrevFileHash :: File Not Found Error, file name = {}", fileName);
 		} catch (IOException e) {
-			log.error(MARKER, "readPrevFileHash :: IOException Error, file name = {}",  fileName);
+			log.error(MARKER, "readPrevFileHash :: IOException Error, file name = {}", fileName);
 		} catch (Exception e) {
-			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}",  fileName);
+			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}", fileName);
 		} finally {
 			try {
 				if (stream != null) {
@@ -291,6 +298,7 @@ public class RecordFileParser {
 
 	/**
 	 * print a Transaction's content to a String
+	 *
 	 * @param transaction
 	 * @return
 	 * @throws InvalidProtocolBufferException
@@ -309,7 +317,8 @@ public class RecordFileParser {
 		return stringBuilder.toString();
 	}
 
-	public static TransactionBody getTransactionBody(final Transaction transaction)  throws InvalidProtocolBufferException {
+	public static TransactionBody getTransactionBody(
+			final Transaction transaction) throws InvalidProtocolBufferException {
 		if (transaction.hasBody()) {
 			return transaction.getBody();
 		} else {

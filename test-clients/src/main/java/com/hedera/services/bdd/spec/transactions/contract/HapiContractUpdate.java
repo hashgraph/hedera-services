@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,18 +69,22 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		newKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiContractUpdate newExpiryTime(long t) {
 		newExpiryTime = OptionalLong.of(t);
 		return this;
 	}
+
 	public HapiContractUpdate newExpirySecs(long t) {
 		newExpirySecs = Optional.of(t);
 		return this;
 	}
+
 	public HapiContractUpdate newMemo(String s) {
 		newMemo = Optional.of(s);
 		return this;
 	}
+
 	public HapiContractUpdate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
@@ -106,7 +110,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 							b.setContractID(spec.registry().getContractId(contract));
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
-							}  else {
+							} else {
 								key.ifPresent(k -> b.setAdminKey(k));
 							}
 							newExpiryTime.ifPresent(s ->
@@ -126,6 +130,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
 		}
 		return signers;
 	}
+
 	private List<Function<HapiApiSpec, Key>> oldDefaults() {
 		return List.of(
 				spec -> spec.registry().getKey(effectivePayer(spec)),

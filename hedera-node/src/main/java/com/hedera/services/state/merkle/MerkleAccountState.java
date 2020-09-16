@@ -90,7 +90,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 
 	long[] tokenRels = NO_TOKEN_RELATIONSHIPS;
 
-	public MerkleAccountState() { }
+	public MerkleAccountState() {
+	}
 
 	public MerkleAccountState(
 			JKey key,

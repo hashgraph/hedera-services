@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,20 +37,20 @@ import java.util.stream.Stream;
 import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
-	private static long[] NO_PARTS = {};
+	private static long[] NO_PARTS = { };
 
 	public static String readableId(Object o) {
 		if (o instanceof AccountID) {
-			AccountID id = (AccountID)o;
+			AccountID id = (AccountID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 		} else if (o instanceof FileID) {
-			FileID id = (FileID)o;
+			FileID id = (FileID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getFileNum());
 		} else if (o instanceof TopicID) {
-			TopicID id = (TopicID)o;
+			TopicID id = (TopicID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 		} else if (o instanceof TokenID) {
-			TokenID id = (TokenID)o;
+			TokenID id = (TokenID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 		} else {
 			return String.valueOf(o);
@@ -60,9 +60,11 @@ public class EntityIdUtils {
 	/**
 	 * Returns the {@code AccountID} represented by a literal of the form {@code <shard>.<realm>.<num>}.
 	 *
-	 * @param repr the string representation
+	 * @param repr
+	 * 		the string representation
 	 * @return the corresponding id
-	 * @throws IllegalArgumentException if the literal is not formatted correctly
+	 * @throws IllegalArgumentException
+	 * 		if the literal is not formatted correctly
 	 */
 	public static AccountID accountParsedFromString(String repr) {
 		var parts = NO_PARTS;
@@ -126,11 +128,11 @@ public class EntityIdUtils {
 	}
 
 	public static String asSolidityAddressHex(AccountID id) {
-		return Hex.toHexString(asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+		return Hex.toHexString(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
 	public static byte[] asSolidityAddress(ContractID id) {
-		return asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static byte[] asSolidityAddress(int shard, long realm, long num) {

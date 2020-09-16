@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -128,6 +128,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	/**
 	 * Pre-consensus (and post-consensus-pre-doStateTransition) validation validates the encoding of the optional
 	 * adminKey; this check occurs before signature validation which occurs before doStateTransition.
+	 *
 	 * @param transactionBody
 	 * @return the validity
 	 */
@@ -143,6 +144,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 
 	/**
 	 * Validation of the post-consensus transaction just prior to state transition.
+	 *
 	 * @return the validity
 	 */
 	private ResponseCodeEnum validatePreStateTransition() {

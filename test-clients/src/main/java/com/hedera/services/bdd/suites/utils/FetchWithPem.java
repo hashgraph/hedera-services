@@ -158,7 +158,7 @@ public class FetchWithPem extends HapiApiSuite {
 			try {
 				var proto = parser.parseFrom(bytes);
 				var jutilConfig = new Properties();
-				((ServicesConfigurationList)proto).getNameValueList().forEach(setting ->
+				((ServicesConfigurationList) proto).getNameValueList().forEach(setting ->
 						jutilConfig.setProperty(setting.getName(), setting.getValue()));
 				return jutilConfig.stringPropertyNames()
 						.stream()

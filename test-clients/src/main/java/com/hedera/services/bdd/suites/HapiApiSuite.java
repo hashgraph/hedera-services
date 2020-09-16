@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,6 +59,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class HapiApiSuite {
 	protected abstract Logger getResultsLogger();
+
 	protected abstract List<HapiApiSpec> getSpecsInSuite();
 
 	private static final Random r = new Random();
@@ -76,11 +77,17 @@ public abstract class HapiApiSuite {
 	public List<HapiApiSpec> getFinalSpecs() {
 		return finalSpecs;
 	}
-	public boolean leaksState() { return false; }
+
+	public boolean leaksState() {
+		return false;
+	}
+
 	private boolean reportStats = false;
+
 	public void setReportStats(boolean reportStats) {
 		this.reportStats = reportStats;
 	}
+
 	public boolean hasInterestingStats() {
 		return false;
 	}
@@ -118,7 +125,8 @@ public abstract class HapiApiSuite {
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
 	}
 
-	public enum FinalOutcome { SUITE_PASSED, SUITE_FAILED }
+	public enum FinalOutcome {SUITE_PASSED, SUITE_FAILED}
+
 	protected FinalOutcome finalOutcomeFor(List<HapiApiSpec> completedSpecs) {
 		return completedSpecs.stream().allMatch(HapiApiSpec::OK) ? SUITE_PASSED : SUITE_FAILED;
 	}
@@ -126,6 +134,7 @@ public abstract class HapiApiSuite {
 	public FinalOutcome runSuiteAsync() {
 		return runSuite(this::runAsync);
 	}
+
 	public FinalOutcome runSuiteSync() {
 		return runSuite(this::runSync);
 	}
@@ -144,11 +153,13 @@ public abstract class HapiApiSuite {
 		return Stream
 				.of(ops)
 				.map(op -> (op instanceof HapiSpecOperation)
-						? new HapiSpecOperation[] { (HapiSpecOperation)op }
-						: ((op instanceof List) ? ((List)op).toArray(new HapiSpecOperation[0]) : (HapiSpecOperation[])op))
+						? new HapiSpecOperation[] { (HapiSpecOperation) op }
+						: ((op instanceof List) ? ((List) op).toArray(
+						new HapiSpecOperation[0]) : (HapiSpecOperation[]) op))
 				.flatMap(Stream::of)
 				.toArray(n -> new HapiSpecOperation[n]);
 	}
+
 	protected List<HapiApiSpec> allOf(List<HapiApiSpec>... specLists) {
 		return Arrays.stream(specLists).flatMap(List::stream).collect(Collectors.toList());
 	}
@@ -156,6 +167,7 @@ public abstract class HapiApiSuite {
 	protected HapiSpecOperation[] asOpArray(int N, Function<Integer, HapiSpecOperation> factory) {
 		return IntStream.range(0, N).mapToObj(i -> factory.apply(i)).toArray(n -> new HapiSpecOperation[n]);
 	}
+
 	protected HapiQueryOp<?>[] asQueryOpArray(int N, Function<Integer, HapiQueryOp<?>> factory) {
 		return IntStream.range(0, N).mapToObj(i -> factory.apply(i)).toArray(n -> new HapiQueryOp<?>[n]);
 	}
@@ -172,7 +184,9 @@ public abstract class HapiApiSuite {
 
 	private void reportStats(Logger log) {
 		List<HapiApiSpec> okSpecs = finalSpecs.stream().filter(HapiApiSpec::OK).collect(toList());
-		if (okSpecs.isEmpty()) { return; }
+		if (okSpecs.isEmpty()) {
+			return;
+		}
 		List<OpObs> opStats = okSpecs
 				.stream()
 				.filter(HapiApiSpec::OK)
@@ -231,7 +245,7 @@ public abstract class HapiApiSuite {
 			return "~ \uD835\uDCA9(μ=" + rounded(stats.mean())
 					+ "ms, σ=" + rounded(stats.sampleStandardDeviation()) + "ms)";
 		} else {
-			return "= " + (long)stats.sum() + "ms";
+			return "= " + (long) stats.sum() + "ms";
 		}
 	}
 
@@ -241,7 +255,7 @@ public abstract class HapiApiSuite {
 
 	private void runSync(Iterable<HapiApiSpec> specs) {
 		StreamSupport
-			.stream(specs.spliterator(), false)
+				.stream(specs.spliterator(), false)
 				.forEach(Runnable::run);
 	}
 

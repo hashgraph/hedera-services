@@ -10,7 +10,8 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public void reload() { }
+	public void reload() {
+	}
 
 	@Override
 	public int maxTokensPerAccount() {

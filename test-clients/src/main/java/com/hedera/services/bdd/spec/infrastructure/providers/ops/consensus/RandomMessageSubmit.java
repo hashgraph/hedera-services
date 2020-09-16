@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,65 +43,66 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class RandomMessageSubmit implements OpProvider {
-        private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
+	private static final Logger log = LogManager.getLogger(RandomMessageSubmit.class);
 
-        public static final int DEFAULT_NUM_STABLE_TOPICS = 5;
-        private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-                TOPIC_EXPIRED,
-                INVALID_TOPIC_ID,
-                INVALID_CHUNK_NUMBER,
-                INVALID_CHUNK_TRANSACTION_ID
-        );
+	public static final int DEFAULT_NUM_STABLE_TOPICS = 5;
+	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+			TOPIC_EXPIRED,
+			INVALID_TOPIC_ID,
+			INVALID_CHUNK_NUMBER,
+			INVALID_CHUNK_TRANSACTION_ID
+	);
 
-        private final SplittableRandom r = new SplittableRandom();
-        private final EntityNameProvider<TopicID> topics;
-        private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
-        private static byte[] messageBytes = new byte[1024];
-        static {
-                Arrays.fill(messageBytes, (byte) 0b1);
-        }
+	private final SplittableRandom r = new SplittableRandom();
+	private final EntityNameProvider<TopicID> topics;
+	private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
+	private static byte[] messageBytes = new byte[1024];
 
-        public RandomMessageSubmit(EntityNameProvider<TopicID> topics) {
-                this.topics = topics;
-        }
+	static {
+		Arrays.fill(messageBytes, (byte) 0b1);
+	}
 
-        public RandomMessageSubmit numStableTopics(int n) {
-                numStableTopics = n;
-                return this;
-        }
+	public RandomMessageSubmit(EntityNameProvider<TopicID> topics) {
+		this.topics = topics;
+	}
 
-        public static Set<String> stableTopics(int n) {
-                return IntStream.range(0, n)
-                        .mapToObj(i -> String.format("stable-topic%d", i)).collect(toSet());
-        }
+	public RandomMessageSubmit numStableTopics(int n) {
+		numStableTopics = n;
+		return this;
+	}
 
-        @Override
-        public List<HapiSpecOperation> suggestedInitializers() {
-                return stableTopics(numStableTopics).stream()
-                        .map(topic -> createTopic(my(topic)).noLogging().deferStatusResolution())
-                        .collect(toList());
-        }
+	public static Set<String> stableTopics(int n) {
+		return IntStream.range(0, n)
+				.mapToObj(i -> String.format("stable-topic%d", i)).collect(toSet());
+	}
 
-        private String my(String opName) {
-                return unique(opName, RandomMessageSubmit.class);
-        }
+	@Override
+	public List<HapiSpecOperation> suggestedInitializers() {
+		return stableTopics(numStableTopics).stream()
+				.map(topic -> createTopic(my(topic)).noLogging().deferStatusResolution())
+				.collect(toList());
+	}
 
-        @Override
-        public Optional<HapiSpecOperation> get() {
-                final var target = topics.getQualifying();
-                if (target.isEmpty()) {
-                        return Optional.empty();
-                }
+	private String my(String opName) {
+		return unique(opName, RandomMessageSubmit.class);
+	}
 
-                HapiMessageSubmit op = submitMessageTo(target.get())
-                        .message(new String(messageBytes))
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+	@Override
+	public Optional<HapiSpecOperation> get() {
+		final var target = topics.getQualifying();
+		if (target.isEmpty()) {
+			return Optional.empty();
+		}
 
-                if (r.nextBoolean()) {
-                        op = op.usePresetTimestamp();
-                }
+		HapiMessageSubmit op = submitMessageTo(target.get())
+				.message(new String(messageBytes))
+				.hasKnownStatusFrom(permissibleOutcomes)
+				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 
-                return Optional.of(op);
-        }
+		if (r.nextBoolean()) {
+			op = op.usePresetTimestamp();
+		}
+
+		return Optional.of(op);
+	}
 }

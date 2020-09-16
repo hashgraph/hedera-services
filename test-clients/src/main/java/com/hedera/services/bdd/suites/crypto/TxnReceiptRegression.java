@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,7 +69,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 
 	private HapiApiSpec returnsInvalidForUnspecifiedTxnId() {
 		return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
-				.given( ).when( ).then(
+				.given().when().then(
 						getReceipt("")
 								.useDefaultTxnId()
 								.hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID)
@@ -80,7 +80,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 		return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
 				.given(
 						cryptoCreate("misc").via("success").balance(1_000L)
-				).when( ).then(
+				).when().then(
 						getReceipt("success")
 								.forgetOp()
 								.hasAnswerOnlyPrecheck(NOT_SUPPORTED)
@@ -101,7 +101,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 	private HapiApiSpec receiptUnknownBeforeConsensus() {
 		return defaultHapiSpec("ReceiptUnknownBeforeConsensus")
 				.given(
-				).when( ).then(
+				).when().then(
 						cryptoCreate("misc")
 								.via("success")
 								.balance(1_000L)
@@ -114,7 +114,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
 		return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
 				.given(
 						cryptoCreate("misc").via("success").balance(1_000L)
-				).when( ).then(
+				).when().then(
 						getReceipt("success").hasPriorityStatus(SUCCESS)
 				);
 	}
@@ -136,12 +136,12 @@ public class TxnReceiptRegression extends HapiApiSuite {
 
 	private HapiApiSpec receiptNotFoundOnUnknownTransactionID() {
 		return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
-				.given( ).when( ).then(
+				.given().when().then(
 						withOpContext((spec, ctxLog) -> {
 							HapiGetReceipt op = getReceipt(spec.txns().defaultTransactionID())
 									.hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND);
 							CustomSpecAssert.allRunFor(spec, op);
-							})
+						})
 				);
 	}
 }

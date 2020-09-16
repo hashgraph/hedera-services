@@ -65,7 +65,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 				+ "34.68.9.203:0.0.5,34.83.131.197:0.0.6";
 		final String DIRECT_NODES = "35.237.194.97:0.0.3,13.71.127.1:0.0.6,27.110.33.145:0.0.7,20.49.137.94:0.0.12," +
 				"35.245.226.22:0.0.4,34.72.55.137:0.0.5,35.203.26.115:0.0.8,34.77.3.213:0.0.9," + // Ubuntu
-				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"; // CentOS
+				"35.197.237.44:0.0.10,35.246.250.176:0.0.11,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0" +
+				".15"; // CentOS
 		final String DIRECT_MAINNET = "50.28.79.14:0.0.3";
 
 		return customHapiSpec("xfer")
@@ -73,7 +74,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 						"nodes", DIRECT_MAINNET,
 						"default.payer", "0.0.950",
 						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
-				)).given( ).when().then(
+				)).given().when().then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
 				);
 	}

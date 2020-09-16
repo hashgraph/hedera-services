@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,7 +86,8 @@ public class AwareTransactionContextTest {
 			.setNanos(now.getNano())
 			.build();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).build();
-	private ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
+	private ExchangeRateSet ratesNow =
+			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
 	private AccountID node = asAccount("0.0.3");
 	private AccountID anotherNodeAccount = asAccount("0.0.4");
@@ -119,9 +120,9 @@ public class AwareTransactionContextTest {
 	private String memo = "Hi!";
 	private ByteString hash = ByteString.copyFrom(uncheckedSha384Hash(memo.getBytes()));
 	private TransactionID txnId = TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
-					.setAccountID(payer)
-					.build();
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
+			.setAccountID(payer)
+			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	JKey payerKey;
 

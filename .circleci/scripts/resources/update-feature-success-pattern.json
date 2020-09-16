@@ -1,15 +1,15 @@
 {
-    "update-feature" : {
-        "Start step": "FreezeSuite - -------------- STARTING Freeze SUITE --------------",
-        "Creating zip from updateSettings": "FreezeSuite - Creating zip file from updateSettings",
-        "Creating zip from updateSettings": "ZipUtil - Root = src/main/resource/testfiles/updateFeature/updateSettings, current = src/main/resource/testfiles/updateFeature/updateSettings",
-        "Creating zip from updateSettings": "ZipUtil - Current directory src/main/resource/testfiles/updateFeature/updateSettings",
-        "Adding file:/exec.sh": "ZipUtil - Adding file:/exec.sh",
-        "Adding file:/exec.sh": "ZipUtil - Root = src/main/resource/testfiles/updateFeature/updateSettings, current = src/main/resource/testfiles/updateFeature/updateSettings/sdk",
-        "Adding dir sdk/": "ZipUtil - Adding dir sdk/",
-        "Adding dir sdk/": "ZipUtil - Current directory src/main/resource/testfiles/updateFeature/updateSettings/sdk",
-        "Adding file:/sdk/settings.txt": "ZipUtil - Adding file:/sdk/settings.txt",
-        "Uploading file Archive.zip": "FreezeSuite - Uploading file Archive.zip",
-        "Final step running FreezeSuite" : "SuiteRunner - FreezeSuite                      :: 1/1 suites ran OK"
-    }
+  "update-feature": {
+	"Start step": "FreezeSuite - -------------- STARTING Freeze SUITE --------------",
+	"Creating zip from updateSettings": "FreezeSuite - Creating zip file from updateSettings",
+	"Creating zip from updateSettings": "ZipUtil - Root = src/main/resource/testfiles/updateFeature/updateSettings, current = src/main/resource/testfiles/updateFeature/updateSettings",
+	"Creating zip from updateSettings": "ZipUtil - Current directory src/main/resource/testfiles/updateFeature/updateSettings",
+	"Adding file:/exec.sh": "ZipUtil - Adding file:/exec.sh",
+	"Adding file:/exec.sh": "ZipUtil - Root = src/main/resource/testfiles/updateFeature/updateSettings, current = src/main/resource/testfiles/updateFeature/updateSettings/sdk",
+	"Adding dir sdk/": "ZipUtil - Adding dir sdk/",
+	"Adding dir sdk/": "ZipUtil - Current directory src/main/resource/testfiles/updateFeature/updateSettings/sdk",
+	"Adding file:/sdk/settings.txt": "ZipUtil - Adding file:/sdk/settings.txt",
+	"Uploading file Archive.zip": "FreezeSuite - Uploading file Archive.zip",
+	"Final step running FreezeSuite": "SuiteRunner - FreezeSuite                      :: 1/1 suites ran OK"
+  }
 }

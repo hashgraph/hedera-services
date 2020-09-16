@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.utilops.throughput;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,14 +48,17 @@ public class FinishThroughputObs extends UtilOp {
 		gateSupplier = Optional.of(queriesSupplier);
 		return this;
 	}
+
 	public FinishThroughputObs gatedByQuery(Supplier<HapiQueryOp<?>> querySupplier) {
 		gateSupplier = Optional.of(() -> new HapiQueryOp<?>[] { querySupplier.get() });
 		return this;
 	}
+
 	public FinishThroughputObs sleepMs(long length) {
 		sleepMs = Optional.of(length);
 		return this;
 	}
+
 	public FinishThroughputObs expiryMs(long length) {
 		maxObsLengthMs = Optional.of(length);
 		return this;
@@ -93,11 +96,13 @@ public class FinishThroughputObs extends UtilOp {
 			try {
 				CustomSpecAssert.allRunFor(spec, gatingQueries);
 				break;
-			} catch (Throwable ignore) { }
+			} catch (Throwable ignore) {
+			}
 			log.info(spec.logPrefix() + this + " sleeping " + sleepTimeMs + "ms before retrying gate!");
 			try {
 				Thread.sleep(sleepTimeMs);
-			} catch (InterruptedException ignore) {}
+			} catch (InterruptedException ignore) {
+			}
 			now = System.currentTimeMillis();
 		}
 
@@ -120,7 +125,8 @@ public class FinishThroughputObs extends UtilOp {
 		while (now < t) {
 			try {
 				Thread.sleep(t - now + 1L);
-			} catch (InterruptedException ignore) {}
+			} catch (InterruptedException ignore) {
+			}
 			now = System.currentTimeMillis();
 		}
 	}

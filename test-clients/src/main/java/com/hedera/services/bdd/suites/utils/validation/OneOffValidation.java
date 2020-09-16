@@ -69,14 +69,15 @@ public class OneOffValidation extends HapiApiSuite {
 	private static final String TESTNET_BOOTSTRAP_ACCOUNT = "0.0.50";
 	private static final String TESTNET_CIVILIAN_BOOTSTRAP_ACCOUNT = "0.0.65221";
 	private static final String TESTNET_BOOTSTRAP_ACCOUNT_LOC = "src/main/resource/TestnetStartupAccount.txt";
-	private static final String TESTNET_CIVILIAN_BOOTSTRAP_ACCOUNT_LOC = "src/main/resource/TestnetCivilianStartupAccount.txt";
+	private static final String TESTNET_CIVILIAN_BOOTSTRAP_ACCOUNT_LOC = "src/main/resource" +
+			"/TestnetCivilianStartupAccount.txt";
 
 	private static final String NODES = TESTNET_NODES;
-//	private static final String NODES = MAINNET_NODES;
+	//	private static final String NODES = MAINNET_NODES;
 //	private static final String BOOTSTRAP_ACCOUNT = TESTNET_BOOTSTRAP_ACCOUNT;
 //	private static final String BOOTSTRAP_ACCOUNT = MAINNET_BOOTSTRAP_ACCOUNT;
 	private static final String BOOTSTRAP_ACCOUNT = TESTNET_CIVILIAN_BOOTSTRAP_ACCOUNT;
-//	private static final String BOOTSTRAP_ACCOUNT_LOC = TESTNET_BOOTSTRAP_ACCOUNT_LOC;
+	//	private static final String BOOTSTRAP_ACCOUNT_LOC = TESTNET_BOOTSTRAP_ACCOUNT_LOC;
 //	private static final String BOOTSTRAP_ACCOUNT_LOC = MAINNET_BOOTSTRAP_ACCOUNT_LOC;
 	private static final String BOOTSTRAP_ACCOUNT_LOC = TESTNET_CIVILIAN_BOOTSTRAP_ACCOUNT_LOC;
 

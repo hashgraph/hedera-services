@@ -9,9 +9,9 @@ package com.hedera.services.legacy.CI;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -78,7 +79,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		String memo = TestHelperComplex.getStringMemo(1);
 		long payerAccountBalance_before = getAccountBalance(account_3, queryPayerId, nodeID);
 		long balanceQueryCost = FeeClient.getBalanceQueryFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(account_3, nodeID, memo, balanceQueryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(account_3, nodeID, memo,
+				balanceQueryCost);
 
 		Query cryptoGetBalanceQuery = RequestBuilder.getCryptoGetBalanceQuery(payerID, paymentTxSigned,
 				ResponseType.COST_ANSWER);
@@ -125,7 +127,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		}
 		String memo = TestHelperComplex.getStringMemo(10);
 		long balanceQueryCost = FeeClient.getBalanceQueryFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, balanceQueryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo,
+				balanceQueryCost);
 
 		Query cryptoGetBalanceQuery = RequestBuilder.getCryptoGetBalanceQuery(newAccountID, paymentTxSigned,
 				ResponseType.COST_ANSWER);
@@ -154,7 +157,8 @@ public class QueryFeeTests extends BaseFeeTests {
 	public void cryptoGetAccountInfoFeeTest() throws Throwable {
 		String memo = TestHelperComplex.getStringMemo(1);
 		long balanceQueryCost = TestHelper.getCryptoMaxFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo, balanceQueryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo,
+				balanceQueryCost);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(payerID, paymentTxSigned,
 				ResponseType.ANSWER_ONLY);
 		log.info("\n-----------------------------------\ngetAccountInfo: request = " + cryptoGetInfoQuery);
@@ -196,7 +200,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		}
 		String memo = TestHelperComplex.getStringMemo(10);
 		long balanceQueryCost = TestHelper.getCryptoMaxFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo, balanceQueryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo,
+				balanceQueryCost);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(newAccountID, paymentTxSigned,
 				ResponseType.ANSWER_ONLY);
 		log.info("\n-----------------------------------\ngetAccountInfo: request = " + cryptoGetInfoQuery);
@@ -248,7 +253,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		Thread.sleep(NAP);
 
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(fileCreateRequest);
+		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(
+				fileCreateRequest);
 		TransactionID txId = body.getTransactionID();
 		// get the file ID
 		TransactionReceipt receipt = getTxReceipt(txId);
@@ -259,7 +265,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		log.info("GetTxReceipt: file ID = " + fid);
 		AccountID newAccountID = getMultiSigAccount(1, 10, durationSeconds);
 		long queryCost = TestHelper.getCryptoMaxFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo,
+				queryCost);
 		Query fileGetInfoQuery = RequestBuilder.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.COST_ANSWER);
 		log.info("\n-----------------------------------");
 		log.info("fileGetInfoQuery: query = " + fileGetInfoQuery);
@@ -309,7 +316,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		Thread.sleep(NAP);
 
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(fileCreateRequest);
+		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(
+				fileCreateRequest);
 		TransactionID txId = body.getTransactionID();
 		// get the file ID
 		TransactionReceipt receipt = getTxReceipt(txId);
@@ -320,7 +328,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		log.info("GetTxReceipt: file ID = " + fid);
 		AccountID newAccountID = getMultiSigAccount(10, 10, durationSeconds);
 		long queryCost = TestHelper.getCryptoMaxFee();
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo,
+				queryCost);
 		Query fileGetInfoQuery = RequestBuilder.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.COST_ANSWER);
 		log.info("\n-----------------------------------");
 		log.info("fileGetInfoQuery: query = " + fileGetInfoQuery);
@@ -361,7 +370,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		log.info("Get Tx record by Tx Id...");
 		long queryFeeForTxRecord = FeeClient.getCostForGettingTxRecord();
 		TransactionBody body = TransactionBody.parseFrom(newAccountTransaction.getBodyBytes());
-		Transaction transferTransaction = CryptoServiceTest.getSignedTransferTx(newAccountID, nodeID, newAccountID, nodeID,
+		Transaction transferTransaction = CryptoServiceTest.getSignedTransferTx(newAccountID, nodeID, newAccountID,
+				nodeID,
 				queryFeeForTxRecord, memo);
 
 		Query query = RequestBuilder.getTransactionGetRecordQuery(body.getTransactionID(), transferTransaction,
@@ -421,7 +431,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		Assert.assertEquals(ResponseCodeEnum.OK_VALUE, response.getNodeTransactionPrecheckCodeValue());
 		Thread.sleep(NAP);
 
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(fileCreateRequest);
+		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(
+				fileCreateRequest);
 		TransactionID txId = body.getTransactionID();
 		// get the file ID
 		TransactionReceipt receipt = getTxReceipt(txId);
@@ -434,7 +445,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		Assert.assertNotNull(newAccountID);
 		long payerAccountBalance_before = getAccountBalance(newAccountID, queryPayerId, nodeID);
 		long queryCost = FeeClient.getFileContentQueryFee(fileContents.length);
-		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
+		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo,
+				queryCost);
 
 		Query fileGetContentQuery = RequestBuilder.getFileGetContentBuilder(paymentTxSigned, fid,
 				ResponseType.COST_ANSWER);
@@ -494,7 +506,8 @@ public class QueryFeeTests extends BaseFeeTests {
 				key, 1000000000L, TestHelper.getCryptoMaxFee(), false, 10, durationSeconds, 100l, 10000l);
 		Thread.sleep(NAP);
 		TransactionResponse response = CryptoServiceTest.cstub.createAccount(createAccountRequest);
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(createAccountRequest);
+		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(
+				createAccountRequest);
 		Thread.sleep(NAP);
 		TransactionReceipt txReceipt1 = TestHelper.getTxReceipt(body.getTransactionID(), CryptoServiceTest.cstub);
 		AccountID accountForRecords = txReceipt1.getAccountID();
@@ -532,7 +545,8 @@ public class QueryFeeTests extends BaseFeeTests {
 
 		// Step 2 : Get the fee for getting account records
 		long acctRecordQueryCost = 0;
-		Transaction paymentTxSigned = CryptoServiceTest.getSignedTransferTx(account_2, nodeID, accountForRecords, nodeID,
+		Transaction paymentTxSigned = CryptoServiceTest.getSignedTransferTx(account_2, nodeID, accountForRecords,
+				nodeID,
 				acctRecordQueryCost, memo);
 		Query accountRecordCostQry = RequestBuilder.getAccountRecordsQuery(accountForRecords, paymentTxSigned,
 				ResponseType.COST_ANSWER);
@@ -550,7 +564,8 @@ public class QueryFeeTests extends BaseFeeTests {
 		// Step 3: Actual query to get the Account Records
 		// Now prepare the actual transfer transaction to pay the fee for query. The
 		// payer for this transfer transaction is different account
-		paymentTxSigned = CryptoServiceTest.getSignedTransferTx(account_2, nodeID, accountForRecords, nodeID, acctRecordQueryCost, memo);
+		paymentTxSigned = CryptoServiceTest.getSignedTransferTx(account_2, nodeID, accountForRecords, nodeID,
+				acctRecordQueryCost, memo);
 
 		Query accountRecordQry = RequestBuilder.getAccountRecordsQuery(accountForRecords, paymentTxSigned,
 				ResponseType.ANSWER_ONLY);

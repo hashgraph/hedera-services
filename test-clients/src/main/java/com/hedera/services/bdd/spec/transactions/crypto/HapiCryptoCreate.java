@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -87,34 +88,42 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		sendThresh = Optional.of(amount);
 		return this;
 	}
+
 	public HapiCryptoCreate autoRenewSecs(long time) {
 		autoRenewDurationSecs = Optional.of(time);
 		return this;
 	}
+
 	public HapiCryptoCreate receiveThreshold(Long amount) {
 		receiveThresh = Optional.of(amount);
 		return this;
 	}
+
 	public HapiCryptoCreate receiverSigRequired(boolean isRequired) {
 		receiverSigRequired = Optional.of(isRequired);
 		return this;
 	}
+
 	public HapiCryptoCreate balance(Long amount) {
 		initialBalance = Optional.of(amount);
 		return this;
 	}
+
 	public HapiCryptoCreate balance(Function<HapiApiSpec, Long> fn) {
 		balanceFn = Optional.of(fn);
 		return this;
 	}
+
 	public HapiCryptoCreate key(String name) {
 		keyName = Optional.of(name);
 		return this;
 	}
+
 	public HapiCryptoCreate keyType(KeyType type) {
 		keyType = Optional.of(type);
 		return this;
 	}
+
 	public HapiCryptoCreate withRecharging() {
 		recharging = true;
 		return this;
@@ -129,6 +138,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		keyShape = Optional.of(controller);
 		return this;
 	}
+
 	public HapiCryptoCreate proxy(String idLit) {
 		proxy = Optional.of(HapiPropertySource.asAccount(idLit));
 		return this;
@@ -160,7 +170,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 							receiveThresh.ifPresent(a -> b.setReceiveRecordThreshold(a));
 							initialBalance.ifPresent(a -> b.setInitialBalance(a));
 							receiverSigRequired.ifPresent(r -> b.setReceiverSigRequired(r));
-							autoRenewDurationSecs.ifPresent(s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
+							autoRenewDurationSecs.ifPresent(
+									s -> b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(s).build()));
 						});
 		return b -> b.setCryptoCreateAccount(opBody);
 	}
@@ -184,7 +195,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 		}
 		if (recharging) {
 			spec.registry().setRecharging(account, initialBalance.orElse(spec.setup().defaultBalance()));
-			if(rechargeWindow.isPresent()){
+			if (rechargeWindow.isPresent()) {
 				spec.registry().setRechargingWindow(account, rechargeWindow.get());
 			}
 		}

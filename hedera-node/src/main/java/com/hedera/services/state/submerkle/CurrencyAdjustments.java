@@ -80,7 +80,8 @@ public class CurrencyAdjustments implements SelfSerializable {
 	long[] hbars = NO_ADJUSTMENTS;
 	List<EntityId> accountIds = Collections.emptyList();
 
-	public CurrencyAdjustments() { }
+	public CurrencyAdjustments() {
+	}
 
 	/* --- SelfSerializable --- */
 

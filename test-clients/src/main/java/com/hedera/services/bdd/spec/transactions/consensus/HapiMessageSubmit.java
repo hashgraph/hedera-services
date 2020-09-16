@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -105,7 +106,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	}
 
 	public HapiMessageSubmit clearMessage() {
-	    clearMessage = true;
+		clearMessage = true;
 		return this;
 	}
 
@@ -131,7 +132,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 		ConsensusSubmitMessageTransactionBody opBody = spec
 				.txns()
 				.<ConsensusSubmitMessageTransactionBody, ConsensusSubmitMessageTransactionBody.Builder>body(
-					ConsensusSubmitMessageTransactionBody.class, b -> {
+						ConsensusSubmitMessageTransactionBody.class, b -> {
 							b.setTopicID(id);
 							message.ifPresent(m -> b.setMessage(m));
 							if (clearMessage) {
@@ -169,7 +170,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	protected Function<HapiApiSpec, List<Key>> variableDefaultSigners() {
 		return spec -> {
 			if (topic.isPresent() && spec.registry().hasKey(topic.get() + "Submit")) {
-					return List.of(spec.registry().getKey(topic.get() + "Submit"));
+				return List.of(spec.registry().getKey(topic.get() + "Submit"));
 			}
 			return Collections.emptyList();
 		};

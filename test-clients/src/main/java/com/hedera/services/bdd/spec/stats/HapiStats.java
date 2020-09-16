@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.stats;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,6 +50,7 @@ public class HapiStats {
 	public Stats txnResponseLatencyStats() {
 		return Stats.of(txnObs().stream().map(TxnObs::getResponseLatency).collect(toList()));
 	}
+
 	public Stats txnResponseLatencyStatsFor(HederaFunctionality txnType) {
 		return Stats.of(
 				txnObs()
@@ -59,16 +60,17 @@ public class HapiStats {
 						.collect(toList())
 		);
 	}
+
 	public <T extends OpObs> Stats statsProjectedFor(
 			Class<T> tClass,
 			Predicate<T> relevancy,
 			Function<T, Long> projection) {
 		return Stats.of(
 				(tClass.equals(TxnObs.class) ? txnObs() : queryObs())
-					.stream()
-					.filter(obs -> relevancy.test(tClass.cast(obs)))
-					.map(obs -> projection.apply(tClass.cast(obs)))
-					.collect(toList())
+						.stream()
+						.filter(obs -> relevancy.test(tClass.cast(obs)))
+						.map(obs -> projection.apply(tClass.cast(obs)))
+						.collect(toList())
 		);
 	}
 
@@ -77,7 +79,7 @@ public class HapiStats {
 	}
 
 	public List<TxnObs> txnObs() {
-		return obs.stream().filter(op -> op instanceof TxnObs).map(op -> (TxnObs)op).collect(toList());
+		return obs.stream().filter(op -> op instanceof TxnObs).map(op -> (TxnObs) op).collect(toList());
 	}
 
 	public Set<HederaFunctionality> queryTypes() {
@@ -93,7 +95,7 @@ public class HapiStats {
 	}
 
 	public List<QueryObs> queryObs() {
-		return obs.stream().filter(op -> op instanceof QueryObs).map(op -> (QueryObs)op).collect(toList());
+		return obs.stream().filter(op -> op instanceof QueryObs).map(op -> (QueryObs) op).collect(toList());
 	}
 
 	public Stats txnResponseLatencyStatsFor() {

@@ -112,7 +112,7 @@ public class ServicesMain implements SwirldMain {
 	@Override
 	public void newSignedState(SwirldState signedState, Instant when, long round) {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
-			((ServicesState)signedState).printHashes();
+			((ServicesState) signedState).printHashes();
 		}
 		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
 				ctx.balancesExporter().isTimeToExport(when)) {

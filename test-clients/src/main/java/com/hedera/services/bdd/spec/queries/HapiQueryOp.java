@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,15 +72,28 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	protected Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
 	protected Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
 
-	protected ResponseCodeEnum expectedCostAnswerPrecheck() { return costAnswerPrecheck.orElse(OK); }
-	protected ResponseCodeEnum expectedAnswerOnlyPrecheck() { return answerOnlyPrecheck.orElse(OK); }
+	protected ResponseCodeEnum expectedCostAnswerPrecheck() {
+		return costAnswerPrecheck.orElse(OK);
+	}
+
+	protected ResponseCodeEnum expectedAnswerOnlyPrecheck() {
+		return answerOnlyPrecheck.orElse(OK);
+	}
 
 	/* WARNING: Must set `response` as a side effect! */
 	protected abstract void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable;
+
 	protected abstract boolean needsPayment();
 
-	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable { return 0L; }
-	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable { return 0L; };
+	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+		return 0L;
+	}
+
+	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+		return 0L;
+	}
+
+	;
 
 	public Response getResponse() {
 		return response;
@@ -142,10 +155,13 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		} else {
 			Assert.assertEquals("Bad answerOnlyPrecheck!", expectedAnswerOnlyPrecheck(), actualPrecheck);
 		}
-		if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) { return false; }
+		if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) {
+			return false;
+		}
 		txnSubmitted = payment;
 		return true;
 	}
+
 	private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		if (suppressStats) {
 			submitWith(spec, payment);
@@ -184,7 +200,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (recordsNodePayment) {
 				spec.registry().saveAmount(nodePaymentName, realNodePayment);
 			}
-			if (!suppressStats) { spec.incrementNumLedgerOps(); }
+			if (!suppressStats) {
+				spec.incrementNumLedgerOps();
+			}
 			if (expectedCostAnswerPrecheck() != OK) {
 				return null;
 			}
@@ -212,7 +230,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			return finalizedTxn(spec, opDef(spec, realNodePayment));
 		}
 	}
-	private long timedCostLookupWith(HapiApiSpec spec, Transaction payment)	throws Throwable {
+
+	private long timedCostLookupWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		if (suppressStats) {
 			return lookupCostWith(spec, payment);
 		} else {
@@ -246,53 +265,65 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		costAnswerPrecheck = Optional.of(precheck);
 		return self();
 	}
+
 	public T hasCostAnswerPrecheckFrom(ResponseCodeEnum... prechecks) {
 		permissibleCostAnswerPrechecks = Optional.of(EnumSet.copyOf(List.of(prechecks)));
 		return self();
 	}
+
 	public T hasAnswerOnlyPrecheck(ResponseCodeEnum precheck) {
 		answerOnlyPrecheck = Optional.of(precheck);
 		return self();
 	}
+
 	public T hasAnswerOnlyPrecheckFrom(ResponseCodeEnum... prechecks) {
 		permissibleAnswerOnlyPrechecks = Optional.of(EnumSet.copyOf(List.of(prechecks)));
 		return self();
 	}
+
 	public T nodePayment(Function<HapiApiSpec, Long> fn) {
 		nodePaymentFn = Optional.of(fn);
 		return self();
 	}
+
 	public T nodePayment(long amount) {
 		nodePayment = Optional.of(amount);
 		return self();
 	}
+
 	public T stoppingAfterCostAnswer() {
 		stopAfterCostAnswer = true;
 		return self();
 	}
+
 	public T expectStrictCostAnswer() {
 		expectStrictCostAnswer = true;
 		return self();
 	}
+
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxnId = true;
 		return self();
 	}
+
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);
 		}
 		return self();
 	}
+
 	public T logged() {
 		verboseLoggingOn = true;
 		return self();
 	}
+
 	public T payingWith(String name) {
 		payer = Optional.of(name);
 		return self();
 	}
+
 	public T signedBy(String... keys) {
 		signers = Optional.of(
 				Stream.of(keys)
@@ -300,38 +331,47 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 						.collect(toList()));
 		return self();
 	}
+
 	public T record(Boolean isGenerated) {
 		genRecord = Optional.of(isGenerated);
 		return self();
 	}
+
 	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
 		sigMapGen = Optional.of(nature);
 		return self();
 	}
+
 	public T sigStyle(SigStyle style) {
 		useLegacySignature = (style == SigStyle.LIST);
 		return self();
 	}
+
 	public T sigControl(ControlForKey... overrides) {
 		controlOverrides = Optional.of(overrides);
 		return self();
 	}
+
 	public T numPayerSigs(int hardcoded) {
 		this.hardcodedNumPayerKeys = Optional.of(hardcoded);
 		return self();
 	}
+
 	public T delayBy(long pauseMs) {
 		submitDelay = Optional.of(pauseMs);
 		return self();
 	}
+
 	public T suppressStats(boolean flag) {
 		suppressStats = flag;
 		return self();
 	}
+
 	public T noLogging() {
 		loggingOff = true;
 		return self();
 	}
+
 	public T logging() {
 		loggingOff = false;
 		return self();
@@ -342,22 +382,27 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		nodePaymentName = s;
 		return self();
 	}
+
 	public T useEmptyTxnAsCostPayment() {
 		useDefaultTxnAsCostAnswerPayment = true;
 		return self();
 	}
+
 	public T useEmptyTxnAsAnswerPayment() {
 		useDefaultTxnAsAnswerOnlyPayment = true;
 		return self();
 	}
+
 	public T randomNode() {
 		useRandomNode = true;
 		return self();
 	}
+
 	public T setNode(String account) {
 		node = Optional.of(HapiPropertySource.asAccount(account));
 		return self();
 	}
+
 	public T setNodeFrom(Supplier<String> accountSupplier) {
 		nodeSupplier = Optional.of(() -> HapiPropertySource.asAccount(accountSupplier.get()));
 		return self();

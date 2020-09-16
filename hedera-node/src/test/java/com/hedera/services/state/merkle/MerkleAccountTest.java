@@ -526,9 +526,9 @@ public class MerkleAccountTest {
 		given(in.readUTF())
 				.willReturn(memo);
 		given(in.readByte())
-				.willReturn((byte)(receiverSigRequired ? 1 : 0))
-				.willReturn((byte)1)
-				.willReturn((byte)(smartContract ? 1 : 0));
+				.willReturn((byte) (receiverSigRequired ? 1 : 0))
+				.willReturn((byte) 1)
+				.willReturn((byte) (smartContract ? 1 : 0));
 		given(serdes.deserializeKey(in)).willReturn(key);
 		given(serdes.deserializeId(in)).willReturn(proxy);
 		will(invoke -> {
@@ -540,7 +540,7 @@ public class MerkleAccountTest {
 		}).given(serdes).deserializeIntoRecords(argThat(in::equals), any());
 
 		// when:
-		var providedSubject = (MerkleAccount)new MerkleAccount.Provider().deserialize(in);
+		var providedSubject = (MerkleAccount) new MerkleAccount.Provider().deserialize(in);
 
 		// then:
 		assertEquals(expectedState, providedSubject.state());

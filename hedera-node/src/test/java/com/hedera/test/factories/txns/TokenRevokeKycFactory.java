@@ -27,7 +27,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactory> {
-	private TokenRevokeKycFactory() {}
+	private TokenRevokeKycFactory() {
+	}
 
 	private AccountID to;
 	private TokenRef ref;

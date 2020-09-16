@@ -9,9 +9,9 @@ package com.hedera.services.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -98,8 +98,8 @@ public class GetVersionInfoAnswer extends AbstractAnswer {
 			props.load(in);
 			log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
 			knownActive.set(new ActiveVersions(
-					asSemVer((String)props.get(protoKey)),
-					asSemVer((String)props.get(servicesKey))));
+					asSemVer((String) props.get(protoKey)),
+					asSemVer((String) props.get(servicesKey))));
 		} catch (Exception surprising) {
 			log.warn(
 					"Failed to read versions from resource '{}' (keys '{}' and '{}')",
@@ -114,9 +114,9 @@ public class GetVersionInfoAnswer extends AbstractAnswer {
 	private static SemanticVersion asSemVer(String value) {
 		long[] parts = EntityIdUtils.asDotDelimitedLongArray(value);
 		return SemanticVersion.newBuilder()
-				.setMajor((int)parts[0])
-				.setMinor((int)parts[1])
-				.setPatch((int)parts[2])
+				.setMajor((int) parts[0])
+				.setMinor((int) parts[1])
+				.setPatch((int) parts[2])
 				.build();
 	}
 

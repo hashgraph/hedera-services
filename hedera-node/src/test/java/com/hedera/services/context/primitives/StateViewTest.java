@@ -9,9 +9,9 @@ package com.hedera.services.context.primitives;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -138,7 +138,7 @@ class StateViewTest {
 				.autoRenewPeriod(1_000_000L)
 				.expirationTime(9_999_999L)
 				.get();
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>)mock(FCMap.class);
+		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
 

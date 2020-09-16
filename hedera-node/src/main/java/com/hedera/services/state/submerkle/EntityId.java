@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,7 +59,8 @@ public class EntityId implements SelfSerializable {
 		}
 	}
 
-	public EntityId() { }
+	public EntityId() {
+	}
 
 	public EntityId(long shard, long realm, long num) {
 		this.shard = shard;
@@ -107,7 +108,7 @@ public class EntityId implements SelfSerializable {
 		if (o == null || EntityId.class != o.getClass()) {
 			return false;
 		}
-		EntityId that = (EntityId)o;
+		EntityId that = (EntityId) o;
 		return shard == that.shard && realm == that.realm && num == that.num;
 	}
 
@@ -148,31 +149,31 @@ public class EntityId implements SelfSerializable {
 	/* --- Helpers --- */
 
 	public static EntityId ofNullableAccountId(AccountID accountId) {
-		return (accountId == null )
+		return (accountId == null)
 				? null
 				: new EntityId(accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
 	}
 
 	public static EntityId ofNullableFileId(FileID fileId) {
-		return (fileId == null )
+		return (fileId == null)
 				? null
 				: new EntityId(fileId.getShardNum(), fileId.getRealmNum(), fileId.getFileNum());
 	}
 
 	public static EntityId ofNullableTopicId(TopicID topicId) {
-		return (topicId == null )
+		return (topicId == null)
 				? null
 				: new EntityId(topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum());
 	}
 
 	public static EntityId ofNullableTokenId(TokenID tokenId) {
-		return (tokenId == null )
+		return (tokenId == null)
 				? null
 				: new EntityId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
 	}
 
 	public static EntityId ofNullableContractId(ContractID contractId) {
-		return (contractId == null )
+		return (contractId == null)
 				? null
 				: new EntityId(contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +48,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
-	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\"," +
+			"\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new ContractCallLocalSuite().runSuiteSync();
@@ -58,10 +61,10 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-			new HapiApiSpec[] {
+				new HapiApiSpec[] {
 //					impureCallFails(),
-					lowBalanceFails(),
-			}
+						lowBalanceFails(),
+				}
 		);
 	}
 
@@ -76,7 +79,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-			vanillaSuccess()
+				vanillaSuccess()
 		);
 	}
 

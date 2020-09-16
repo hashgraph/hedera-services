@@ -9,9 +9,9 @@ package com.hedera.test.factories.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
 import static java.util.stream.Collectors.toList;
 
@@ -55,6 +56,7 @@ public class SigFactory {
 	public SigFactory() {
 		this(SigMapGenerator.withUniquePrefixes());
 	}
+
 	public SigFactory(SigMapGenerator sigMapGen) {
 		this.sigMapGen = sigMapGen;
 	}
@@ -71,6 +73,7 @@ public class SigFactory {
 	public Transaction signWithSigList(Transaction.Builder txn, List<KeyTree> signers) {
 		return signWithSigList(txn, signers, KeyFactory.getDefaultInstance());
 	}
+
 	public Transaction signWithSigList(Transaction.Builder txn, List<KeyTree> signers, KeyFactory factory) {
 		final byte[] data = txn.getBodyBytes().toByteArray();
 
@@ -80,10 +83,11 @@ public class SigFactory {
 
 		return txn.build();
 	}
+
 	private Signature asHederaSignature(KeyTreeNode node, byte[] data, KeyFactory factory) {
 		if (node instanceof KeyTreeLeaf) {
 			@SuppressWarnings("unchecked")
-			KeyTreeLeaf leaf = (KeyTreeLeaf)node;
+			KeyTreeLeaf leaf = (KeyTreeLeaf) node;
 			if (leaf.isUsedToSign()) {
 				if (leaf.getSigType() == SignatureType.ED25519) {
 					byte[] sig = signUnchecked(data, factory.lookupPrivateKey(leaf.asKey(factory)));
@@ -98,22 +102,23 @@ public class SigFactory {
 			}
 		} else if (node instanceof KeyTreeThresholdNode) {
 			@SuppressWarnings("unchecked")
-			KeyTreeThresholdNode thresholdNode = (KeyTreeThresholdNode)node;
+			KeyTreeThresholdNode thresholdNode = (KeyTreeThresholdNode) node;
 			return Signature.newBuilder()
 					.setThresholdSignature(
 							ThresholdSignature.newBuilder()
 									.setSigs(
 											SignatureList.newBuilder()
 													.addAllSigs(
-														thresholdNode.getChildren().stream()
-																.map(child -> asHederaSignature(child, data, factory))
-																.collect(toList())
+															thresholdNode.getChildren().stream()
+																	.map(child -> asHederaSignature(child, data,
+																			factory))
+																	.collect(toList())
 													).build()
 									).build()
 					).build();
 		} else if (node instanceof KeyTreeListNode) {
 			@SuppressWarnings("unchecked")
-			KeyTreeListNode listNode = (KeyTreeListNode)node;
+			KeyTreeListNode listNode = (KeyTreeListNode) node;
 			return Signature.newBuilder()
 					.setSignatureList(
 							SignatureList.newBuilder()
@@ -133,6 +138,7 @@ public class SigFactory {
 	public Transaction signWithSigMap(Transaction.Builder txn, List<KeyTree> signers) throws Throwable {
 		return signWithSigMap(txn, signers, KeyFactory.getDefaultInstance());
 	}
+
 	public Transaction signWithSigMap(
 			Transaction.Builder txn,
 			List<KeyTree> signers,
@@ -178,11 +184,11 @@ public class SigFactory {
 
 		private void signRecursively(KeyTreeNode node) throws Throwable {
 			if (node instanceof KeyTreeLeaf) {
-				if (((KeyTreeLeaf)node).isUsedToSign()) {
+				if (((KeyTreeLeaf) node).isUsedToSign()) {
 					signIfNecessary(node.asKey(factory));
 				}
 			} else if (node instanceof KeyTreeListNode) {
-				for (KeyTreeNode child : ((KeyTreeListNode)node).getChildren()) {
+				for (KeyTreeNode child : ((KeyTreeListNode) node).getChildren()) {
 					signRecursively(child);
 				}
 			}

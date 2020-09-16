@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file.negative;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,7 +58,7 @@ public class QueryFailuresSpec extends HapiApiSuite {
 				.given(
 						fileCreate("tbd"),
 						fileDelete("tbd")
-				).when( ).then(
+				).when().then(
 						getFileInfo("1.2.3")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
@@ -68,11 +68,11 @@ public class QueryFailuresSpec extends HapiApiSuite {
 						getFileContents("tbd")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(FILE_DELETED)
-						        .logged(),
+								.logged(),
 						getFileInfo("tbd")
 								.nodePayment(1_234L)
 								.hasAnswerOnlyPrecheck(FILE_DELETED)
-						        .logged()
+								.logged()
 				);
 	}
 

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -146,16 +146,17 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, ADEQUATE_FUNDS)),
 						fileUpdate(EXCHANGE_RATES)
-						.contents(
-								spec -> {
-									ByteString newRates = spec
-											.ratesProvider()
-											.rateSetWith(10, 254)
-											.toByteString();
-									spec.registry().saveBytes("newRates", newRates);
-									return newRates;
-								}
-						).payingWith(EXCHANGE_RATE_CONTROL).fee(1_000_000_000).hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
+								.contents(
+										spec -> {
+											ByteString newRates = spec
+													.ratesProvider()
+													.rateSetWith(10, 254)
+													.toByteString();
+											spec.registry().saveBytes("newRates", newRates);
+											return newRates;
+										}
+								).payingWith(EXCHANGE_RATE_CONTROL).fee(1_000_000_000).hasKnownStatus(
+								EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
@@ -216,8 +217,8 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
 										spec -> spec.ratesProvider()
-													.rateSetWith(1, 25)
-													.toByteString()
+												.rateSetWith(1, 25)
+												.toByteString()
 								).payingWith(EXCHANGE_RATE_CONTROL).hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
 				);
 	}

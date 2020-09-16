@@ -46,134 +46,134 @@ import static com.hedera.services.bdd.suites.regression.RegressionProviderFactor
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
-    private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
+	private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 
-    public static final String DEFAULT_PROPERTIES = "regression-file_ops.properties";
+	public static final String DEFAULT_PROPERTIES = "regression-file_ops.properties";
 
-    public static String nodeId = "0.0.";
-    public static String nodeAddress = "";
-    public static String payer = "0.0.";
-    public static String startUpAccount = "";
-    public static int topic_running_hash_version = 0;
+	public static String nodeId = "0.0.";
+	public static String nodeAddress = "";
+	public static String payer = "0.0.";
+	public static String startUpAccount = "";
+	public static int topic_running_hash_version = 0;
 
-    private AtomicLong duration = new AtomicLong(1);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
-    private AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
-    private AtomicInteger backoffSleepSecs = new AtomicInteger(1);
-    private AtomicInteger statusTimeoutSecs = new AtomicInteger(5);
-    private AtomicReference<String> props = new AtomicReference<>(DEFAULT_PROPERTIES);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(MILLISECONDS);
+	private AtomicLong duration = new AtomicLong(1);
+	private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);
+	private AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
+	private AtomicInteger backoffSleepSecs = new AtomicInteger(1);
+	private AtomicInteger statusTimeoutSecs = new AtomicInteger(5);
+	private AtomicReference<String> props = new AtomicReference<>(DEFAULT_PROPERTIES);
+	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MILLISECONDS);
 
-    public static void main(String... args) {
-        if(args.length < 4){
-            HapiSpecSetup defaultSetup = HapiSpecSetup.getDefaultInstance();
-            NodeConnectInfo nodeInfo = defaultSetup.nodes().get(0);
-            nodeId += nodeInfo.getAccount().getAccountNum();
-            nodeAddress = nodeInfo.getHost();
-            log.info("using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
-                    nodeId, nodeAddress);
-            payer +=  defaultSetup.defaultPayer().getAccountNum();
-            startUpAccount =  defaultSetup.startupAccountsPath();
-            topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
-        }
-        else{
-            nodeId += args[0];
-            nodeAddress = args[1];
-            payer += args[2];
-            startUpAccount = args[3];
-            topic_running_hash_version = Integer.parseInt(args[4]);
-        }
+	public static void main(String... args) {
+		if (args.length < 4) {
+			HapiSpecSetup defaultSetup = HapiSpecSetup.getDefaultInstance();
+			NodeConnectInfo nodeInfo = defaultSetup.nodes().get(0);
+			nodeId += nodeInfo.getAccount().getAccountNum();
+			nodeAddress = nodeInfo.getHost();
+			log.info("using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
+					nodeId, nodeAddress);
+			payer += defaultSetup.defaultPayer().getAccountNum();
+			startUpAccount = defaultSetup.startupAccountsPath();
+			topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
+		} else {
+			nodeId += args[0];
+			nodeAddress = args[1];
+			payer += args[2];
+			startUpAccount = args[3];
+			topic_running_hash_version = Integer.parseInt(args[4]);
+		}
 
-        UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
-        umbrellaReduxWithCustomNodes.runSuiteSync();
-    }
-    @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[]{
-                        UmbrellaReduxWithCustomNodes(),
-                        messageSubmissionSimple()
-                }
-        );
-    }
+		UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
+		umbrellaReduxWithCustomNodes.runSuiteSync();
+	}
 
-    private HapiApiSpec messageSubmissionSimple() {
-        return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
-                .withProperties(Map.of(
-                        "default.topic.runningHash.version",topic_running_hash_version,
-                        "default.node",nodeId,
-                        "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId,
-                        "startupAccounts.path", startUpAccount
-                ))
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic("testTopic")
-                                .submitKeyName("submitKey")
-                )
-                .when(
-                        cryptoCreate("civilian").sendThreshold(1L)
-                )
-                .then(
-                        submitMessageTo("testTopic")
-                                .message("testmessage")
-                                .payingWith("civilian")
-                                .hasKnownStatus(SUCCESS)
-                                .via("messageSubmissionSimple"),
-                        QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
-                                .hasPriority(TransactionRecordAsserts
-                                        .recordWith()
-                                        .checkTopicRunningHashVersion(topic_running_hash_version)
-                                )
-                );
-    }
+	@Override
+	protected List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(
+				new HapiApiSpec[] {
+						UmbrellaReduxWithCustomNodes(),
+						messageSubmissionSimple()
+				}
+		);
+	}
 
-    private HapiApiSpec UmbrellaReduxWithCustomNodes(){
-        return HapiApiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
-                .withProperties(Map.of(
-                        "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get()),
-                        "default.node",nodeId,
-                        "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId,
-                        "startupAccounts.path", startUpAccount))
-                .given().when().then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(factoryFrom(props::get))
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get)
-                                .maxPendingOps(maxPendingOps::get)
-                                .backoffSleepSecs(backoffSleepSecs::get)
-                );
-    }
+	private HapiApiSpec messageSubmissionSimple() {
+		return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
+				.withProperties(Map.of(
+						"default.topic.runningHash.version", topic_running_hash_version,
+						"default.node", nodeId,
+						"default.payer", payer,
+						"nodes", nodeAddress + ":" + nodeId,
+						"startupAccounts.path", startUpAccount
+				))
+				.given(
+						newKeyNamed("submitKey"),
+						createTopic("testTopic")
+								.submitKeyName("submitKey")
+				)
+				.when(
+						cryptoCreate("civilian").sendThreshold(1L)
+				)
+				.then(
+						submitMessageTo("testTopic")
+								.message("testmessage")
+								.payingWith("civilian")
+								.hasKnownStatus(SUCCESS)
+								.via("messageSubmissionSimple"),
+						QueryVerbs.getTxnRecord("messageSubmissionSimple").logged()
+								.hasPriority(TransactionRecordAsserts
+										.recordWith()
+										.checkTopicRunningHashVersion(topic_running_hash_version)
+								)
+				);
+	}
 
-    private void configureFromCi(HapiApiSpec spec) {
-        HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
-        if (ciProps.has("duration")) {
-            duration.set(ciProps.getLong("duration"));
-        }
-        if (ciProps.has("unit")) {
-            unit.set(ciProps.getTimeUnit("unit"));
-        }
-        if (ciProps.has("maxOpsPerSec")) {
-            maxOpsPerSec.set(ciProps.getInteger("maxOpsPerSec"));
-        }
-        if (ciProps.has("props")) {
-            props.set(ciProps.get("props"));
-        }
-        if (ciProps.has("maxPendingOps")) {
-            maxPendingOps.set(ciProps.getInteger("maxPendingOps"));
-        }
-        if (ciProps.has("backoffSleepSecs")) {
-            backoffSleepSecs.set(ciProps.getInteger("backoffSleepSecs"));
-        }
-        if (ciProps.has("statusTimeoutSecs")) {
-            statusTimeoutSecs.set(ciProps.getInteger("statusTimeoutSecs"));
-        }
-    }
+	private HapiApiSpec UmbrellaReduxWithCustomNodes() {
+		return HapiApiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
+				.withProperties(Map.of(
+						"status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get()),
+						"default.node", nodeId,
+						"default.payer", payer,
+						"nodes", nodeAddress + ":" + nodeId,
+						"startupAccounts.path", startUpAccount))
+				.given().when().then(
+						withOpContext((spec, opLog) -> configureFromCi(spec)),
+						runWithProvider(factoryFrom(props::get))
+								.lasting(duration::get, unit::get)
+								.maxOpsPerSec(maxOpsPerSec::get)
+								.maxPendingOps(maxPendingOps::get)
+								.backoffSleepSecs(backoffSleepSecs::get)
+				);
+	}
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
+	private void configureFromCi(HapiApiSpec spec) {
+		HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
+		if (ciProps.has("duration")) {
+			duration.set(ciProps.getLong("duration"));
+		}
+		if (ciProps.has("unit")) {
+			unit.set(ciProps.getTimeUnit("unit"));
+		}
+		if (ciProps.has("maxOpsPerSec")) {
+			maxOpsPerSec.set(ciProps.getInteger("maxOpsPerSec"));
+		}
+		if (ciProps.has("props")) {
+			props.set(ciProps.get("props"));
+		}
+		if (ciProps.has("maxPendingOps")) {
+			maxPendingOps.set(ciProps.getInteger("maxPendingOps"));
+		}
+		if (ciProps.has("backoffSleepSecs")) {
+			backoffSleepSecs.set(ciProps.getInteger("backoffSleepSecs"));
+		}
+		if (ciProps.has("statusTimeoutSecs")) {
+			statusTimeoutSecs.set(ciProps.getInteger("statusTimeoutSecs"));
+		}
+	}
+
+	@Override
+	protected Logger getResultsLogger() {
+		return log;
+	}
 
 }

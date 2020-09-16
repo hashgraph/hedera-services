@@ -19,12 +19,12 @@ public class KeyUtils {
 			.build();
 	public static Key A_KEY_LIST = Key.newBuilder()
 			.setKeyList(KeyList.newBuilder()
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes()))))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes()))))
 			.build();
 	public static Key A_COMPLEX_KEY = Key.newBuilder()
 			.setThresholdKey(ThresholdKey.newBuilder()

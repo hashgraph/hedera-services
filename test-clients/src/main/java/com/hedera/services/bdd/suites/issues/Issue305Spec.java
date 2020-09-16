@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.issues;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;

@@ -28,7 +28,8 @@ import java.io.IOException;
 public class SequenceNumber {
 	volatile long i;
 
-	public SequenceNumber() { }
+	public SequenceNumber() {
+	}
 
 	public SequenceNumber(long i) {
 		this.i = i;

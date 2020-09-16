@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.assertions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,7 +48,7 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
 	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
 		registerProvider((spec, o) -> {
 			R expected = spec.registry().getId(key, cls);
-			R actual = getActual.apply((T)o);
+			R actual = getActual.apply((T) o);
 			Assert.assertEquals(err, expected, actual);
 		});
 	}

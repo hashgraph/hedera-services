@@ -9,9 +9,9 @@ package com.hedera.services.throttling.bucket;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
 
 import static java.util.stream.Collectors.toList;
@@ -140,13 +141,15 @@ public class BucketConfig {
 		if (properties.containsProperty(primary)) {
 			try {
 				return lookup.apply(primary);
-			} catch (Exception ignore) { }
+			} catch (Exception ignore) {
+			}
 		}
 
 		if (properties.containsProperty(fallback)) {
 			try {
 				return lookup.apply(fallback);
-			} catch (Exception ignore) { }
+			} catch (Exception ignore) {
+			}
 		}
 
 		return defaultT;

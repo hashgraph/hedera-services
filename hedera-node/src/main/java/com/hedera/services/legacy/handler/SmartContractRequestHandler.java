@@ -9,9 +9,9 @@ package com.hedera.services.legacy.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,6 +41,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.txns.validation.PureValidation;
 
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.evm.SolidityExecutor;
@@ -324,7 +325,7 @@ public class SmartContractRequestHandler {
 				getContractCallRbhInTinyBars(mockConsensusTime),
 				getContractCallSbhInTinyBars(mockConsensusTime),
 				txnCtx,
-		true,
+				true,
 				sigsVerifier);
 
 		var result = lifecycle.runPure(maxResultSize, executor);
@@ -496,15 +497,15 @@ public class SmartContractRequestHandler {
 				rbhInTinybars = getContractCallRbhInTinyBars(consensusTimeStamp);
 				sbhInTinybars = getContractCallSbhInTinyBars(consensusTimeStamp);
 				var record = run(
-					tx,
-					senderAccountEthAddress,
-					transaction,
-					consensusTime,
-					startTime,
-					sequenceNum,
-					rbhInTinybars,
-					sbhInTinybars,
-					false);
+						tx,
+						senderAccountEthAddress,
+						transaction,
+						consensusTime,
+						startTime,
+						sequenceNum,
+						rbhInTinybars,
+						sbhInTinybars,
+						false);
 				setParentPropertiesForChildrenContracts(
 						receiverAccount,
 						record.getContractCallResult().getCreatedContractIDsList());

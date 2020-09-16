@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,6 +85,7 @@ public final class Ed25519PublicKey {
 
 	/**
 	 * Convert a Ed25519PublicKey string into a java type <code>PublicKey</code>
+	 *
 	 * @param ed25529KeyBytes
 	 * @return
 	 */
@@ -92,7 +93,8 @@ public final class Ed25519PublicKey {
 		if (ed25529KeyBytes == null || ed25529KeyBytes.length < 1) {
 			throw new IllegalArgumentException("Ed25519 byte array is empty.");
 		}
-		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(ed25529KeyBytes, EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519));
+		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(ed25529KeyBytes,
+				EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519));
 		return new EdDSAPublicKey(pubKeySpec);
 	}
 

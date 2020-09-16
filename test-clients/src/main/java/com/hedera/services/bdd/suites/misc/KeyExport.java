@@ -82,7 +82,7 @@ public class KeyExport extends HapiApiSuite {
 		return defaultHapiSpec("ExportGenesisKey")
 				.given(
 						newKeyNamed("ab-initio").shape(listOfSizeOne)
-				).when( ).then(
+				).when().then(
 						withOpContext((spec, opLog) -> {
 							opLog.info("Passphrase is: {}", KeyFactory.PEM_PASSPHRASE);
 							spec.keys().exportSimpleWacl(PEM_FILE_NAME, "ab-initio");

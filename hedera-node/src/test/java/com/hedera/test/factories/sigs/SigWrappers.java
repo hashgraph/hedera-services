@@ -9,9 +9,9 @@ package com.hedera.test.factories.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,9 +34,11 @@ public class SigWrappers {
 	public static List<Signature> asValid(List<Signature> sigs) {
 		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, VALID)).collect(toList());
 	}
+
 	public static List<Signature> asInvalid(List<Signature> sigs) {
 		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, INVALID)).collect(toList());
 	}
+
 	public static List<Signature> asKind(List<Map.Entry<Signature, VerificationStatus>> sigToStatus) {
 		return sigToStatus.stream()
 				.map(entry -> new SigWithKnownStatus(entry.getKey(), entry.getValue()))

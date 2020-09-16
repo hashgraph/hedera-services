@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.*;
+
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -89,14 +90,14 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
 
 	private final BiFunction<String, Function<Long, Long>, Function<HapiApiSpec, Long>> getBalanceFromFee =
 			(name, balanceFn) -> spec -> {
-		HapiGetTxnRecord referenceTransferRec = QueryVerbs.getTxnRecord(name);
-		allRunFor(spec, referenceTransferRec);
-		TransactionRecord record =
-				referenceTransferRec.getResponse().getTransactionGetRecord().getTransactionRecord();
-		long feeCharged = record.getTransactionFee();
-		spec.registry().saveAmount(FEE_CHARGED, feeCharged);
-		return balanceFn.apply(feeCharged);
-	};
+				HapiGetTxnRecord referenceTransferRec = QueryVerbs.getTxnRecord(name);
+				allRunFor(spec, referenceTransferRec);
+				TransactionRecord record =
+						referenceTransferRec.getResponse().getTransactionGetRecord().getTransactionRecord();
+				long feeCharged = record.getTransactionFee();
+				spec.registry().saveAmount(FEE_CHARGED, feeCharged);
+				return balanceFn.apply(feeCharged);
+			};
 
 	private HapiApiSpec nodeCoversForBrokePayer() {
 		final long TRANSFER_AMOUNT = 1_000L;
@@ -110,18 +111,20 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
 						cryptoCreate("payer")
 								.balance(getBalanceFromFee.apply("referenceTransfer", sufficientBalanceFn)),
 						UtilVerbs.inParallel(
-							cryptoTransfer(
-									tinyBarsFromTo(
-											"payer", EXCHANGE_RATE_CONTROL, spec -> spec.registry().getAmount(FEE_CHARGED))
-							).via("txnA").payingWith("payer").hasAnyPrecheck().hasAnyKnownStatus(),
-							cryptoTransfer(
-									tinyBarsFromTo(
-											"payer", EXCHANGE_RATE_CONTROL, spec -> spec.registry().getAmount(FEE_CHARGED))
-							).via("txnB").payingWith("payer").hasAnyPrecheck().hasAnyKnownStatus()
+								cryptoTransfer(
+										tinyBarsFromTo(
+												"payer", EXCHANGE_RATE_CONTROL,
+												spec -> spec.registry().getAmount(FEE_CHARGED))
+								).via("txnA").payingWith("payer").hasAnyPrecheck().hasAnyKnownStatus(),
+								cryptoTransfer(
+										tinyBarsFromTo(
+												"payer", EXCHANGE_RATE_CONTROL,
+												spec -> spec.registry().getAmount(FEE_CHARGED))
+								).via("txnB").payingWith("payer").hasAnyPrecheck().hasAnyKnownStatus()
 						)
 				).then(
-					UtilVerbs.assertionsHold((spec, assertLog) -> {
-					})
+						UtilVerbs.assertionsHold((spec, assertLog) -> {
+						})
 				);
 	}
 

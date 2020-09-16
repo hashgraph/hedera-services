@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+
 import java.time.Instant;
 import java.util.List;
+
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -60,13 +62,13 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-					failsForDeletedAccount(),
-					failsForMissingAccount(),
-					failsForMissingPayment(),
-					failsForInsufficientPayment(),
-					failsForMalformedPayment(),
-					failsForUnfundablePayment(),
-					succeedsNormally(),
+						failsForDeletedAccount(),
+						failsForMissingAccount(),
+						failsForMissingPayment(),
+						failsForInsufficientPayment(),
+						failsForMalformedPayment(),
+						failsForUnfundablePayment(),
+						succeedsNormally(),
 				}
 		);
 	}
@@ -143,8 +145,8 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 		return defaultHapiSpec("FailsForInsufficientPayment")
 				.given().when().then(
 						getAccountInfo(GENESIS)
-							.nodePayment(1L)
-							.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
+								.nodePayment(1L)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
 				);
 	}
 

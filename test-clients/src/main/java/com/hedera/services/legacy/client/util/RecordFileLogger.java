@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,37 +67,36 @@ public class RecordFileLogger implements LoggerInterface {
 	public static void start() {
 		// called at the start of record file parsing
 	}
+
 	public static void finish() {
 		// called at the end of record file parsing
 	}
+
 	public static void initFile(String fileName) {
 		// called when a file starts processing
 		// open a resource such as a file or database here
-		try
-		{
-		    String filename= "output/recordStream.txt";
-		    fw = new FileWriter(filename,true);
-		}
-		catch(IOException ioe)
-		{
-		    System.err.println("IOException: " + ioe.getMessage());
+		try {
+			String filename = "output/recordStream.txt";
+			fw = new FileWriter(filename, true);
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
 		}
 	}
+
 	public static void completeFile() {
 		// called when a file completes processing
 		// close the file or database here
-		try
-		{
-		    if (fw != null) {
-		    	fw.close();
-		    }
-		}
-		catch(IOException ioe)
-		{
-		    System.err.println("IOException: " + ioe.getMessage());
+		try {
+			if (fw != null) {
+				fw.close();
+			}
+		} catch (IOException ioe) {
+			System.err.println("IOException: " + ioe.getMessage());
 		}
 	}
-	public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws InvalidProtocolBufferException {
+
+	public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction,
+			TransactionRecord txRecord) throws InvalidProtocolBufferException {
 		// called for each record so it can be processed, transformed and stored
 		// these are sample transaction and record parsing
 		TransactionBody body = null;
@@ -184,7 +183,7 @@ public class RecordFileLogger implements LoggerInterface {
 			ByteString hash = claim.getHash();
 
 			KeyList keys = claim.getKeys();
-			for (int i=0; i < keys.getKeysCount(); i++) {
+			for (int i = 0; i < keys.getKeysCount(); i++) {
 				Key key = keys.getKeys(i);
 				if (key.hasKeyList()) {
 					// key is a key list
@@ -231,7 +230,7 @@ public class RecordFileLogger implements LoggerInterface {
 			CryptoTransferTransactionBody transfer = body.getCryptoTransfer();
 
 			TransferList transfers = transfer.getTransfers();
-			for (int i=0; i < transfers.getAccountAmountsCount(); i++) {
+			for (int i = 0; i < transfers.getAccountAmountsCount(); i++) {
 				AccountAmount accountAmount = transfers.getAccountAmounts(i);
 				AccountID account = accountAmount.getAccountID();
 				long amount = accountAmount.getAmount();

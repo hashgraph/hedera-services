@@ -9,9 +9,9 @@ package com.hedera.test.factories.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,7 @@ public class ContractUpdateFactory extends SignedTxnFactory<ContractUpdateFactor
 	public ContractUpdateFactory(String contract) {
 		this.contract = contract;
 	}
+
 	public static ContractUpdateFactory newSignedContractUpdate(String contract) {
 		return new ContractUpdateFactory(contract);
 	}
@@ -84,26 +85,32 @@ public class ContractUpdateFactory extends SignedTxnFactory<ContractUpdateFactor
 		this.newMemo = Optional.of(s);
 		return this;
 	}
+
 	public ContractUpdateFactory newFile(String f) {
 		this.newFile = Optional.of(asFile(f));
 		return this;
 	}
+
 	public ContractUpdateFactory newDeprecatedAdminKey(boolean useDeprecated) {
 		this.newDeprecatedAdminKey = useDeprecated;
 		return this;
 	}
+
 	public ContractUpdateFactory newAdminKt(KeyTree kt) {
 		this.newAdminKt = Optional.of(kt);
 		return this;
 	}
+
 	public ContractUpdateFactory newAutoRenewPeriod(Duration d) {
 		this.newAutoRenewPeriod = Optional.of(d);
 		return this;
 	}
+
 	public ContractUpdateFactory newExpiration(Timestamp t) {
 		this.newExpiration = Optional.of(t);
 		return this;
 	}
+
 	public ContractUpdateFactory newProxyAccount(String a) {
 		this.newProxyAccount = Optional.of(asAccount(a));
 		return this;

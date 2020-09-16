@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -151,7 +151,8 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		@SuppressWarnings("unchecked")
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>)mock(FCMap.class);
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = (FCMap<MerkleBlobMeta, MerkleOptionalBlob>) mock(
+				FCMap.class);
 
 		return storage;
 	}
@@ -267,7 +268,7 @@ public interface TxnHandlingScenario {
 					ed25519(),
 					list(
 							threshold(2,
-									ed25519(), ed25519(),  ed25519()))));
+									ed25519(), ed25519(), ed25519()))));
 
 	String FROM_OVERLAP_PAYER_ID = "0.0.1343";
 	AccountID FROM_OVERLAP_PAYER = asAccount(FROM_OVERLAP_PAYER_ID);

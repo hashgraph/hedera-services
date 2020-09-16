@@ -1,6 +1,6 @@
 {
-    "validate-freeze-success-pattern" : {
-        "Run TopicCreateSpecs": "SuiteRunner - TopicCreateSpecs                 :: 1/1 suites ran OK"
-   }
+  "validate-freeze-success-pattern": {
+	"Run TopicCreateSpecs": "SuiteRunner - TopicCreateSpecs                 :: 1/1 suites ran OK"
+  }
 }
 

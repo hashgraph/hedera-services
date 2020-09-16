@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -80,7 +80,7 @@ public class HederaToPlatformSigOps {
 	public final static SigStatusOrderResultFactory PRE_HANDLE_SUMMARY_FACTORY =
 			new SigStatusOrderResultFactory(false);
 
-	private HederaToPlatformSigOps(){
+	private HederaToPlatformSigOps() {
 		throw new IllegalStateException("Utility Class");
 	}
 
@@ -100,9 +100,12 @@ public class HederaToPlatformSigOps {
 	 *     it silently. </li>
 	 * </ul>
 	 *
-	 * @param txnAccessor the accessor for the platform txn.
-	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn.
-	 * @param sigsProvider source of crypto sigs for the simple keys in the Hedera key leaves.
+	 * @param txnAccessor
+	 * 		the accessor for the platform txn.
+	 * @param keyOrderer
+	 * 		facility for listing Hedera keys required to sign the gRPC txn.
+	 * @param sigsProvider
+	 * 		source of crypto sigs for the simple keys in the Hedera key leaves.
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus expandIn(
@@ -133,10 +136,14 @@ public class HederaToPlatformSigOps {
 	 *     processing and return a {@link SignatureStatus} representing this error.</li>
 	 * </ul>
 	 *
-	 * @param txnAccessor the accessor for the platform txn.
-	 * @param syncVerifier facility for synchronously verifying a cryptographic signature.
-	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn.
-	 * @param sigsProvider source of crypto sigs for the simple keys in the Hedera key leaves.
+	 * @param txnAccessor
+	 * 		the accessor for the platform txn.
+	 * @param syncVerifier
+	 * 		facility for synchronously verifying a cryptographic signature.
+	 * @param keyOrderer
+	 * 		facility for listing Hedera keys required to sign the gRPC txn.
+	 * @param sigsProvider
+	 * 		source of crypto sigs for the simple keys in the Hedera key leaves.
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus rationalizeIn(
@@ -169,7 +176,7 @@ public class HederaToPlatformSigOps {
 		public SignatureStatus execute() {
 			log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 			var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
-			if ( SUCCESS != payerStatus.getStatusCode() ) {
+			if (SUCCESS != payerStatus.getStatusCode()) {
 				if (log.isDebugEnabled()) {
 					log.debug(
 							"Failed expanding Hedera payer sigs for txn {}: {}",
@@ -179,7 +186,7 @@ public class HederaToPlatformSigOps {
 				return payerStatus;
 			}
 			var otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
-			if ( SUCCESS != otherStatus.getStatusCode() ) {
+			if (SUCCESS != otherStatus.getStatusCode()) {
 				if (log.isDebugEnabled()) {
 					log.debug(
 							"Failed expanding other Hedera sigs for txn {}: {}",

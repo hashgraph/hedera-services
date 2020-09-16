@@ -134,7 +134,7 @@ public class GetTokenInfoAnswer implements AnswerService {
 				response.setHeader(answerOnlyHeader(INVALID_TOKEN_REF));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setTokenInfo((TokenInfo)ctx.get(TOKEN_INFO_CTX_KEY));
+				response.setTokenInfo((TokenInfo) ctx.get(TOKEN_INFO_CTX_KEY));
 			}
 		} else {
 			var info = view.infoForToken(op.getToken());

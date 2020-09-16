@@ -1,45 +1,45 @@
 {
   "swirlds": [
-    {
-      "id": "superfluous_sig_verify_error",
-      "pattern": "VerificationProvider - Adv Crypto Subsystem: Signature Verification Failure",
-      "filterAfterOccurrences": 0,
-      "impliedExitCode": 0,
-      "shouldRetry": false
-    },
-    {
-      "id": "spot_node_network_failure",
-      "pattern": "SyncListener - ! SyncListener.sync Exception (so incrementing interruptedRecSyncsPerSecond)",
-      "impliedExitCode": 1,
-      "filterAfterOccurrences": 1,
-      "shouldRetry": true,
-      "readableInference": "the AWS spot node network collapsed"
-    },
-    {
-      "id": "spot_node_network_broken_pipe",
-      "pattern": "javax.net.ssl.SSLException: Broken pipe (Write failed)",
-      "impliedExitCode": 1,
-      "filterAfterOccurrences": 1,
-      "shouldRetry": true,
-      "readableInference": "the AWS spot node network collapsed"
-    }
+	{
+	  "id": "superfluous_sig_verify_error",
+	  "pattern": "VerificationProvider - Adv Crypto Subsystem: Signature Verification Failure",
+	  "filterAfterOccurrences": 0,
+	  "impliedExitCode": 0,
+	  "shouldRetry": false
+	},
+	{
+	  "id": "spot_node_network_failure",
+	  "pattern": "SyncListener - ! SyncListener.sync Exception (so incrementing interruptedRecSyncsPerSecond)",
+	  "impliedExitCode": 1,
+	  "filterAfterOccurrences": 1,
+	  "shouldRetry": true,
+	  "readableInference": "the AWS spot node network collapsed"
+	},
+	{
+	  "id": "spot_node_network_broken_pipe",
+	  "pattern": "javax.net.ssl.SSLException: Broken pipe (Write failed)",
+	  "impliedExitCode": 1,
+	  "filterAfterOccurrences": 1,
+	  "shouldRetry": true,
+	  "readableInference": "the AWS spot node network collapsed"
+	}
   ],
   "hgcaa": [
-    {
-      "id": "spot_node_network_failure",
-      "pattern": "HederaNodeMain - Now current platform status = DISCONNECTED",
-      "impliedExitCode": 1,
-      "filterAfterOccurrences": 1,
-      "shouldRetry": true,
-      "readableInference": "the AWS spot node network collapsed"
-    },
-    {
-      "id": "platform_status_active",
-      "pattern": "HederaNodeMain - Now current platform status = ACTIVE",
-      "impliedExitCode": 0,
-      "filterAfterOccurrences": 5,
-      "shouldRetry": false,
-      "readableInference": "noise from possible spot node network problem"
-    }
+	{
+	  "id": "spot_node_network_failure",
+	  "pattern": "HederaNodeMain - Now current platform status = DISCONNECTED",
+	  "impliedExitCode": 1,
+	  "filterAfterOccurrences": 1,
+	  "shouldRetry": true,
+	  "readableInference": "the AWS spot node network collapsed"
+	},
+	{
+	  "id": "platform_status_active",
+	  "pattern": "HederaNodeMain - Now current platform status = ACTIVE",
+	  "impliedExitCode": 0,
+	  "filterAfterOccurrences": 5,
+	  "shouldRetry": false,
+	  "readableInference": "noise from possible spot node network problem"
+	}
   ]
 }

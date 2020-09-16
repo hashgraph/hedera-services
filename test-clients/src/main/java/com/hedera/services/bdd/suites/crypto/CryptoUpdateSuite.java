@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -108,13 +108,13 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		String name = String.format("UpdateWithUnique%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
 		return defaultHapiSpec(name)
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
-					cryptoUpdate(TARGET_ACCOUNT)
-							.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
-							.sigStyle(style)
-							.receiverSigRequired(true)
+						cryptoUpdate(TARGET_ACCOUNT)
+								.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
+								.sigStyle(style)
+								.receiverSigRequired(true)
 				);
 	}
 
@@ -144,8 +144,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		String name = String.format("UpdateWithOverlapping%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
 		return defaultHapiSpec(name)
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
@@ -159,8 +159,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 		String name = String.format("UpdateFailsWithInsufficient%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
 		return defaultHapiSpec(name)
 				.given(
-					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
-					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
+						newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
+						cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))

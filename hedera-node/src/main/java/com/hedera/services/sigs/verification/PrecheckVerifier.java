@@ -9,9 +9,9 @@ package com.hedera.services.sigs.verification;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.function.Function;
+
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
@@ -72,9 +73,11 @@ public class PrecheckVerifier {
 	 * Tests if a signed gRPC transaction has the necessary (valid) signatures to
 	 * be allowed through precheck.
 	 *
-	 * @param accessor convenience interface to the signed txn.
+	 * @param accessor
+	 * 		convenience interface to the signed txn.
 	 * @return a flag giving the verdict on the precheck sigs for the txn.
-	 * @throws Exception if the txn doesn't reference valid keys or has malformed sigs.
+	 * @throws Exception
+	 * 		if the txn doesn't reference valid keys or has malformed sigs.
 	 */
 	public boolean hasNecessarySignatures(SignedTxnAccessor accessor) throws Exception {
 		try {

@@ -60,11 +60,11 @@ public class BigRecordSpec extends HapiApiSuite {
 	}
 
 	HapiApiSpec bigCall() {
-		int byteArraySize = (int)(87.5 * 1_024);
+		int byteArraySize = (int) (87.5 * 1_024);
 
 		return defaultHapiSpec("BigRecord")
 				.given(
-						cryptoCreate("payer").balance( 10 * A_HUNDRED_HBARS),
+						cryptoCreate("payer").balance(10 * A_HUNDRED_HBARS),
 						fileCreate("bytecode")
 								.path(PATH_TO_BIG_BIG_BYTECODE),
 						contractCreate("bigBig")

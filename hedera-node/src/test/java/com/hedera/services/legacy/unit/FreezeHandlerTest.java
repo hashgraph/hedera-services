@@ -64,6 +64,7 @@ public class FreezeHandlerTest {
 	private HederaFs hfs;
 
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
+
 	@BeforeAll
 	@BeforeClass
 	public static void setupAll() {
@@ -83,7 +84,7 @@ public class FreezeHandlerTest {
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
-		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 	}
 
 	@Test
@@ -115,7 +116,7 @@ public class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
-		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		freezeHandler.handleUpdateFeature();
 

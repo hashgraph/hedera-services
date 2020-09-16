@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.hedera.services.legacy.core.KeyPairObj;
+
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -89,12 +90,24 @@ public class ContractToContract {
 	private final Logger log = LogManager.getLogger(ContractToContract.class);
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
-	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SC_SET_ADDRESS_CASE_1 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\",\"type\":\"address\"}],\"name\":\"setAddressCase1\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SC_SET_STORAGE_CASE_2 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\",\"type\":\"address\"}],\"name\":\"setStorageCase2\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"};";
-	private static final String SC_SET_STORAGE_CASE_3 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\",\"type\":\"address\"}],\"name\":\"setStorageCase3\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SC_CT_GETADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\",\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
+	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}]," +
+			"\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	private static final String SC_SET_ADDRESS_CASE_1 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\"," +
+			"\"type\":\"address\"}],\"name\":\"setAddressCase1\",\"outputs\":[],\"payable\":false," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	private static final String SC_SET_STORAGE_CASE_2 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\"," +
+			"\"type\":\"address\"}],\"name\":\"setStorageCase2\",\"outputs\":[],\"payable\":false," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"};";
+	private static final String SC_SET_STORAGE_CASE_3 = "{\"constant\":false,\"inputs\":[{\"name\":\"_myStorage\"," +
+			"\"type\":\"address\"}],\"name\":\"setStorageCase3\",\"outputs\":[],\"payable\":false," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	private static final String SC_CT_GETADDRESS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getAddress\"," +
+			"\"outputs\":[{\"name\":\"retval\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
 
 	private static AccountID nodeAccount;
 	private static long node_account_number;
@@ -535,13 +548,13 @@ public class ContractToContract {
 		String sampleStorageSolidityID = sampleStorageContractInfo.getContractAccountID();
 		assert (StringUtils.isNotEmpty(sampleStorageSolidityID));
 		setAddressCase1(payerAccount, storageUserContractId, sampleStorageSolidityID);
-		ContractID returnedContract = getAddressFromContract(payerAccount,storageUserContractId);
-		assert(sampleStorageContractId.equals(returnedContract));
+		ContractID returnedContract = getAddressFromContract(payerAccount, storageUserContractId);
+		assert (sampleStorageContractId.equals(returnedContract));
 		testGetSet(payerAccount, storageUserContractId, 7);
 
 	}
 
-	
+
 	private void testSetStorageCase2(AccountID payerAccount, FileID insideStorageFileId, FileID storageUserFileId)
 			throws Exception {
 		ContractID sampleStorageContractId = createContract(payerAccount, insideStorageFileId, contractDuration);
@@ -555,11 +568,11 @@ public class ContractToContract {
 		String sampleStorageSolidityID = sampleStorageContractInfo.getContractAccountID();
 		assert (StringUtils.isNotEmpty(sampleStorageSolidityID));
 		setStorageCase2(payerAccount, storageUserContractId, sampleStorageSolidityID);
-		ContractID returnedContract = getAddressFromContract(payerAccount,storageUserContractId);
-		assert(sampleStorageContractId.equals(returnedContract));
+		ContractID returnedContract = getAddressFromContract(payerAccount, storageUserContractId);
+		assert (sampleStorageContractId.equals(returnedContract));
 		testGetSet(payerAccount, storageUserContractId, 5);
 	}
-	
+
 	private void testSetStorageCase3(AccountID payerAccount, FileID insideStorageFileId, FileID storageUserFileId)
 			throws Exception {
 		ContractID sampleStorageContractId = createContract(payerAccount, insideStorageFileId, contractDuration);
@@ -573,11 +586,11 @@ public class ContractToContract {
 		String sampleStorageSolidityID = sampleStorageContractInfo.getContractAccountID();
 		assert (StringUtils.isNotEmpty(sampleStorageSolidityID));
 		setStorageCase3(payerAccount, storageUserContractId, sampleStorageSolidityID);
-		ContractID returnedContract = getAddressFromContract(payerAccount,storageUserContractId);
-		assert(sampleStorageContractId.equals(returnedContract));
+		ContractID returnedContract = getAddressFromContract(payerAccount, storageUserContractId);
+		assert (sampleStorageContractId.equals(returnedContract));
 		testGetSet(payerAccount, storageUserContractId, 5);
 	}
-	
+
 	private void testGetSet(AccountID payerAccount, ContractID contractToTest, int numberOfTests) throws Exception {
 		for (int i = 0; i < numberOfTests; i++) {
 			int currValueToSet = ThreadLocalRandom.current().nextInt(1, 1000000 + 1);
@@ -673,7 +686,7 @@ public class ContractToContract {
 		}
 		return retVal;
 	}
-	
+
 	private CallTransaction.Function getSetStorageCase2Function() {
 		String funcJson = SC_SET_STORAGE_CASE_2.replaceAll("'", "\"");
 		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
@@ -692,7 +705,7 @@ public class ContractToContract {
 		// set value to simple storage smart contract
 		byte[] retData = callContract(payerAccount, contractId, dataToSet);
 	}
-	
+
 	private CallTransaction.Function getSetStorageCase3Function() {
 		String funcJson = SC_SET_STORAGE_CASE_3.replaceAll("'", "\"");
 		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);

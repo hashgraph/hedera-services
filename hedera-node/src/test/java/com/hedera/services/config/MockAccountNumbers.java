@@ -9,9 +9,9 @@ package com.hedera.services.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,19 +51,29 @@ public class MockAccountNumbers extends AccountNumbers {
 	}
 
 	@Override
-	public long freezeAdmin() { return 58; }
+	public long freezeAdmin() {
+		return 58;
+	}
 
 	@Override
-	public long systemDeleteAdmin() { return 59; }
+	public long systemDeleteAdmin() {
+		return 59;
+	}
 
 	@Override
-	public long systemUndeleteAdmin() { return 60; }
+	public long systemUndeleteAdmin() {
+		return 60;
+	}
 
 	@Override
-	public long firstManagedBySysAdmin() { return 51; }
+	public long firstManagedBySysAdmin() {
+		return 51;
+	}
 
 	@Override
-	public long lastManagedBySysAdmin() { return 80; }
+	public long lastManagedBySysAdmin() {
+		return 80;
+	}
 
 	@Override
 	public boolean isSuperuser(long num) {

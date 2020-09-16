@@ -9,9 +9,9 @@ package com.hedera.services.legacy.initialization;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,8 @@ import java.util.Map;
 public class MigrationVerification {
 	private static final Logger log = LogManager.getLogger(MigrationVerification.class);
 
-	// The file is needed for loading default key to validate account's key which are created during migration; and for signing transactions for testing after migration
+	// The file is needed for loading default key to validate account's key which are created during migration; and for
+	// signing transactions for testing after migration
 	private static final String startUpAccountFilePath = "../hedera-node/data/onboard/StartUpAccount.txt";
 
 	public static void main(String[] args) {
@@ -61,7 +62,10 @@ public class MigrationVerification {
 			updatedCsv = new File(args[0]);
 			createdCsv = new File(args[1]);
 		} else {
-			log.info("input args should contain two string, the first string should be the path of afterMigration_updated.csv, and the second string should be the path of  afterMigration_created.csv");
+			log.info(
+					"input args should contain two string, the first string should be the path of " +
+							"afterMigration_updated.csv, and the second string should be the path of  " +
+							"afterMigration_created.csv");
 			System.exit(1);
 		}
 
@@ -95,7 +99,9 @@ public class MigrationVerification {
 				// process the line
 				String[] strs = line.split(",");
 				if (strs.length != 2) {
-					log.info(String.format("line #%s in %s has invalid format: %s", lineNum, updatedCsv.getName(), line));
+					log.info(
+							String.format("line #%s in %s has invalid format: %s", lineNum, updatedCsv.getName(),
+									line));
 					return false;
 				}
 				long accountNum = Long.parseLong(strs[0]);
@@ -103,7 +109,8 @@ public class MigrationVerification {
 				long expectedExpTime = getExpirationTime(accountNum);
 				// check expirationTime
 				if (expTime != expectedExpTime) {
-					log.info(String.format("line #%s in %s has invalid expTime: %s, expTime should be %s", lineNum, updatedCsv.getName(), line, expectedExpTime));
+					log.info(String.format("line #%s in %s has invalid expTime: %s, expTime should be %s", lineNum,
+							updatedCsv.getName(), line, expectedExpTime));
 					return false;
 				}
 			}
@@ -126,7 +133,9 @@ public class MigrationVerification {
 				return false;
 			}
 			int lineNum = 1;
-			assert line.equals("AccountID, Balance, ReceiverThreshold, SenderThreshold, ReceiverSigRequired, AccountKeys, ExpirationTime");
+			assert line.equals(
+					"AccountID, Balance, ReceiverThreshold, SenderThreshold, ReceiverSigRequired, AccountKeys, " +
+							"ExpirationTime");
 			long expectedAccountNum = 900;
 			long expectedBalance = 0;
 			long expectedReceiverThreshold = 50_000_000_000__00_000_000l;
@@ -138,7 +147,9 @@ public class MigrationVerification {
 				// process the line
 				String[] strs = line.split(",");
 				if (strs.length != 7) {
-					log.info(String.format("line #%s in %s has invalid format: %s", lineNum, createdCsv.getName(), line));
+					log.info(
+							String.format("line #%s in %s has invalid format: %s", lineNum, createdCsv.getName(),
+									line));
 					return false;
 				}
 
@@ -154,17 +165,21 @@ public class MigrationVerification {
 				}
 
 				long receiverThreshold = Long.parseLong(strs[2]);
-				if (!verifyValue(receiverThreshold, expectedReceiverThreshold, "ReceiverThreshold", createdCsv.getName(), accountNum)) {
+				if (!verifyValue(receiverThreshold, expectedReceiverThreshold, "ReceiverThreshold",
+						createdCsv.getName(),
+						accountNum)) {
 					return false;
 				}
 
 				long senderThreshold = Long.parseLong(strs[3]);
-				if (!verifyValue(senderThreshold, expectedSenderThreshold, "SenderThreshold", createdCsv.getName(), accountNum)) {
+				if (!verifyValue(senderThreshold, expectedSenderThreshold, "SenderThreshold", createdCsv.getName(),
+						accountNum)) {
 					return false;
 				}
 
 				boolean receiverSigRequired = Boolean.parseBoolean(strs[4]);
-				if (!verifyValue(receiverSigRequired, expectedReceiverSigRequired, "ReceiverSigRequired", createdCsv.getName(), accountNum)) {
+				if (!verifyValue(receiverSigRequired, expectedReceiverSigRequired, "ReceiverSigRequired",
+						createdCsv.getName(), accountNum)) {
 					return false;
 				}
 
@@ -193,9 +208,10 @@ public class MigrationVerification {
 	 * Get expiration value of migrated or created account
 	 * accounts below or equal to 1000 - expiration is Long.MAX_VALUE
 	 * accounts above 1000 :
-	 *    1001 to expire on Nov 1st 2019 00:01
-	 *    1002 to expire on Nov 1st 2019 00:02
-	 *    ...
+	 * 1001 to expire on Nov 1st 2019 00:01
+	 * 1002 to expire on Nov 1st 2019 00:02
+	 * ...
+	 *
 	 * @param accountNum
 	 * @return
 	 */
@@ -211,7 +227,8 @@ public class MigrationVerification {
 	static String getDefaultKeyString() {
 		GenesisCreateAndTransfer genesisCreateAndTransfer = new GenesisCreateAndTransfer();
 		try {
-			Map<String, List<AccountKeyListObj>> accountMap = genesisCreateAndTransfer.getStartupAccountMap(startUpAccountFilePath);
+			Map<String, List<AccountKeyListObj>> accountMap = genesisCreateAndTransfer.getStartupAccountMap(
+					startUpAccountFilePath);
 
 			List<AccountKeyListObj> startAccountList = accountMap.get("START_ACCOUNT");
 
@@ -236,7 +253,8 @@ public class MigrationVerification {
 		if (actual.equals(expected)) {
 			return true;
 		} else {
-			log.info(String.format("Account #%s in %s has invalid %s. Actual value: %s, Expected value: %s", accountNum, fileName, fieldName, actual, expected));
+			log.info(String.format("Account #%s in %s has invalid %s. Actual value: %s, Expected value: %s", accountNum,
+					fileName, fieldName, actual, expected));
 			return false;
 		}
 	}

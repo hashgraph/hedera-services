@@ -9,9 +9,9 @@ package com.hedera.services.sigs.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,7 +48,7 @@ public class PrecheckUtilsTest {
 	public void queryPaymentsMustBeCryptoTransfers() throws Throwable {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
-			newSignedCryptoUpdate("0.0.2").get()
+				newSignedCryptoUpdate("0.0.2").get()
 		)).getTxn();
 
 		// expect:
@@ -60,7 +60,7 @@ public class PrecheckUtilsTest {
 		// given:
 		TransactionBody txn = new PlatformTxnAccessor(from(
 				newSignedCryptoTransfer().transfers(
-					tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
+						tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
 				).get()
 		)).getTxn();
 

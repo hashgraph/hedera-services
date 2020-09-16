@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -106,6 +106,7 @@ import org.junit.runner.RunWith;
 
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.utils.TxnUtils.*;
+
 import com.google.protobuf.GeneratedMessageV3;
 
 import java.io.ByteArrayOutputStream;
@@ -191,7 +192,7 @@ public class MiscUtilsTest {
 
 		// given:
 		KeyPair kp = new KeyPairGenerator().generateKeyPair();
-		byte[] expected = ((EdDSAPublicKey)kp.getPublic()).getAbyte();
+		byte[] expected = ((EdDSAPublicKey) kp.getPublic()).getAbyte();
 		// and:
 		writeB64EncodedKeyPair(new File(tmpLoc), kp);
 
@@ -318,7 +319,8 @@ public class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
+					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreation.class));
 			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfers.class));
 			put(TokenController.TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreeze.class));
@@ -619,7 +621,7 @@ public class MiscUtilsTest {
 						.findFirst()
 						.get();
 				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T)defaultGetter.invoke(null);
+				T defaultInstance = (T) defaultGetter.invoke(null);
 				setter.invoke(query, defaultInstance);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);
@@ -633,7 +635,7 @@ public class MiscUtilsTest {
 						.findFirst()
 						.get();
 				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T)defaultGetter.invoke(null);
+				T defaultInstance = (T) defaultGetter.invoke(null);
 				setter.invoke(txn, defaultInstance);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);

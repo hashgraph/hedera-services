@@ -9,9 +9,9 @@ package com.hedera.services.legacy.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,6 +57,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
@@ -74,264 +75,264 @@ import org.junit.Assert;
 public class DuplicateTransactionTest {
 
 
-  private static final Logger log = LogManager.getLogger(DuplicateTransactionTest.class);
+	private static final Logger log = LogManager.getLogger(DuplicateTransactionTest.class);
 
-  public static String fileName = TestHelper.getStartUpFile();
-  private static CryptoServiceGrpc.CryptoServiceBlockingStub stub;
+	public static String fileName = TestHelper.getStartUpFile();
+	private static CryptoServiceGrpc.CryptoServiceBlockingStub stub;
 
-  public DuplicateTransactionTest(int port, String host) {
-    // connecting to the grpc server on the port
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
-        .build();
-    DuplicateTransactionTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
-  }
+	public DuplicateTransactionTest(int port, String host) {
+		// connecting to the grpc server on the port
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+				.usePlaintext(true)
+				.build();
+		DuplicateTransactionTest.stub = CryptoServiceGrpc.newBlockingStub(channel);
+	}
 
-  public static void main(String args[])
-      throws Exception {
-    Properties properties = TestHelper.getApplicationProperties();
-    String host = properties.getProperty("host");
-    int port = Integer.parseInt(properties.getProperty("port"));
-    DuplicateTransactionTest duplicateTransactionTest = new DuplicateTransactionTest(port, host);
-    duplicateTransactionTest.demo();
+	public static void main(String args[])
+			throws Exception {
+		Properties properties = TestHelper.getApplicationProperties();
+		String host = properties.getProperty("host");
+		int port = Integer.parseInt(properties.getProperty("port"));
+		DuplicateTransactionTest duplicateTransactionTest = new DuplicateTransactionTest(port, host);
+		duplicateTransactionTest.demo();
 
-  }
+	}
 
-  public void demo()
-      throws Exception {
-
-
-    Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(fileName);
-
-    List<AccountKeyListObj> genesisAccount = keyFromFile.get("START_ACCOUNT");
-    // get Private Key
-    KeyPairObj genKeyPairObj = genesisAccount.get(0).getKeyPairList().get(0);
-    PrivateKey genesisPrivateKey = genKeyPairObj.getPrivateKey();
-    KeyPair genKeyPair = new KeyPair(genKeyPairObj.getPublicKey(), genesisPrivateKey);
-    AccountID payerAccount = genesisAccount.get(0).getAccountId();
-
-    AccountID defaultNodeAccount = RequestBuilder
-        .getAccountIdBuild(Utilities.getDefaultNodeAccount(), 0l, 0l);
-
-    // create first account
-    KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
-
-    Transaction transaction = TestHelper
-        .createAccountWithSigMap(payerAccount, defaultNodeAccount, firstPair, 10000000l,
-            genKeyPair);
-    TransactionResponse response = stub.createAccount(transaction);
-    Assert.assertNotNull(response);
-    Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-    log.info(
-        "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
-            .name());
-
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
-    AccountID newlyCreateAccountId1 = TestHelper
-        .getTxReceipt(body.getTransactionID(), stub).getAccountID();
-    Assert.assertNotNull(newlyCreateAccountId1);
-    log.info("Account ID " + newlyCreateAccountId1.getAccountNum() + " created successfully.");
-    log.info("--------------------------------------");
-
-    // create account duplicate transaction
-
-    KeyPair FourthPair = new KeyPairGenerator().generateKeyPair();
-    transaction = TestHelper
-        .createAccountWithSigMap(payerAccount, defaultNodeAccount, FourthPair, 10000000l,
-            genKeyPair);
-    int size = 2;
-    ExecutorService threads = Executors.newFixedThreadPool(size);
-    List<Callable<TransactionResponse>> torun = new ArrayList<>(size);
-    Transaction finalTransaction = transaction;
-    torun.add(() -> stub.createAccount(finalTransaction));
-    Transaction finalTransaction1 = transaction;
-    torun.add(() -> stub.createAccount(finalTransaction1));
-    // all tasks executed in different threads, at 'once'.
-    List<Future<TransactionResponse>> futures = threads.invokeAll(torun);
-    // no more need for the threadpool
-    threads.shutdown();
-
-    // submitting same transaction to same node from two different threads
-
-    try {
-      TransactionResponse response0 = futures.get(0).get();
-      TransactionResponse response1 = futures.get(1).get();
-      Assert.assertNotNull(response0);
-      System.out.println("The transaction response is ::");
-      System.out.println(response0.getNodeTransactionPrecheckCode());
-      System.out.println(response1.getNodeTransactionPrecheckCode());
-      Assert.assertEquals(ResponseCodeEnum.OK, response0.getNodeTransactionPrecheckCode());
-      Assert.assertNotNull(response1);
-      Assert.assertEquals(ResponseCodeEnum.OK, response1.getNodeTransactionPrecheckCode());
-
-      log.info("Pre Check Response of Create fourth account :: " + response
-          .getNodeTransactionPrecheckCode().name());
-
-      TransactionBody finalTransactionBody = TransactionBody.parseFrom(finalTransaction.getBodyBytes());
-      AccountID newlyCreateAccountId2 = TestHelper
-          .getTxReceipt(finalTransactionBody.getTransactionID(), stub).getAccountID();
-      Assert.assertNotNull(newlyCreateAccountId2);
-      System.out.println(newlyCreateAccountId2);
-      log.info("Account ID " + newlyCreateAccountId2.getAccountNum() + " created successfully.");
-      log.info("--------------------------------------");
-
-      TransactionBody finalTransactionBody1 = TransactionBody.parseFrom(finalTransaction1.getBodyBytes());
-      AccountID newlyCreateAccountId2rejected = TestHelper
-          .getTxReceipt(finalTransactionBody1.getTransactionID(), stub).getAccountID();
-      Assert.assertNotNull(newlyCreateAccountId2rejected);
-      System.out.println(newlyCreateAccountId2rejected);
-      log.info(
-          "Account ID " + newlyCreateAccountId2rejected.getAccountNum() + " created successfully.");
-
-      // assert that the
-
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    }
-
-    // needs to be fixed
-
-    // same transaction ID but parameters in request are different. create account request
-    // same transaction IDs being passed to two different nodes . 2 transactions differ in balance
-    // duplicate transaction tests for crypto transfers
-
-    long genesisbalancebeforeTransfer = TestHelper
-        .getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
-            defaultNodeAccount).getCryptoGetInfo().getAccountInfo().getBalance();
-
-    Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-    Transaction transaction4 = createTransfer(timestamp, payerAccount, genKeyPair,
-        newlyCreateAccountId1, payerAccount, genKeyPair, defaultNodeAccount, 100l);
-    Transaction transaction5 = createTransfer(timestamp, payerAccount, genKeyPair,
-        newlyCreateAccountId1, payerAccount, genKeyPair, defaultNodeAccount, 1000l);
-
-    ExecutorService threads45 = Executors.newFixedThreadPool(size);
-    torun = new ArrayList<>(size);
-    torun.add(() -> stub.cryptoTransfer(transaction4));
-    torun.add(() -> stub.createAccount(transaction5));
-    // all tasks executed in different threads, at 'once'.
-    List<Future<TransactionResponse>> futures45 = threads45.invokeAll(torun);
-    // no more need for the threadpool
-    threads45.shutdown();
-
-    try {
-
-      TransactionResponse response4 = futures45.get(0).get();
-      TransactionResponse response5 = futures45.get(1).get();
-      Assert.assertEquals(ResponseCodeEnum.OK, response4.getNodeTransactionPrecheckCode());
-      Assert.assertEquals(ResponseCodeEnum.OK, response5.getNodeTransactionPrecheckCode());
-      TransactionBody transactionBody4 = TransactionBody.parseFrom(transaction4.getBodyBytes());
-      TransactionReceipt txReceipt4 = TestHelper
-          .getTxReceipt(transactionBody4.getTransactionID(), stub);
-      Assert.assertNotNull(txReceipt4);
-
-      long genesisbalanceAfterTransfer = TestHelper
-          .getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
-              defaultNodeAccount).getCryptoGetInfo().getAccountInfo().getBalance();
-      Assert.assertNotEquals(genesisbalancebeforeTransfer, genesisbalanceAfterTransfer);
-      if ((genesisbalancebeforeTransfer - genesisbalanceAfterTransfer) == 160) {
-        log.info("the transaction 4 was selected. Transaction 5 was rejected by the platform");
-        Assert.assertNotEquals(1060, (genesisbalancebeforeTransfer - genesisbalanceAfterTransfer));
-      } else {
-        log.info("the transaction 5 was selected. Transaction 4 was rejected by the platform");
-        Assert.assertNotEquals(160, (genesisbalancebeforeTransfer - genesisbalanceAfterTransfer));
-      }
+	public void demo()
+			throws Exception {
 
 
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    }
+		Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(fileName);
+
+		List<AccountKeyListObj> genesisAccount = keyFromFile.get("START_ACCOUNT");
+		// get Private Key
+		KeyPairObj genKeyPairObj = genesisAccount.get(0).getKeyPairList().get(0);
+		PrivateKey genesisPrivateKey = genKeyPairObj.getPrivateKey();
+		KeyPair genKeyPair = new KeyPair(genKeyPairObj.getPublicKey(), genesisPrivateKey);
+		AccountID payerAccount = genesisAccount.get(0).getAccountId();
+
+		AccountID defaultNodeAccount = RequestBuilder
+				.getAccountIdBuild(Utilities.getDefaultNodeAccount(), 0l, 0l);
+
+		// create first account
+		KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
+
+		Transaction transaction = TestHelper
+				.createAccountWithSigMap(payerAccount, defaultNodeAccount, firstPair, 10000000l,
+						genKeyPair);
+		TransactionResponse response = stub.createAccount(transaction);
+		Assert.assertNotNull(response);
+		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+		log.info(
+				"Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
+						.name());
+
+		TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+		AccountID newlyCreateAccountId1 = TestHelper
+				.getTxReceipt(body.getTransactionID(), stub).getAccountID();
+		Assert.assertNotNull(newlyCreateAccountId1);
+		log.info("Account ID " + newlyCreateAccountId1.getAccountNum() + " created successfully.");
+		log.info("--------------------------------------");
+
+		// create account duplicate transaction
+
+		KeyPair FourthPair = new KeyPairGenerator().generateKeyPair();
+		transaction = TestHelper
+				.createAccountWithSigMap(payerAccount, defaultNodeAccount, FourthPair, 10000000l,
+						genKeyPair);
+		int size = 2;
+		ExecutorService threads = Executors.newFixedThreadPool(size);
+		List<Callable<TransactionResponse>> torun = new ArrayList<>(size);
+		Transaction finalTransaction = transaction;
+		torun.add(() -> stub.createAccount(finalTransaction));
+		Transaction finalTransaction1 = transaction;
+		torun.add(() -> stub.createAccount(finalTransaction1));
+		// all tasks executed in different threads, at 'once'.
+		List<Future<TransactionResponse>> futures = threads.invokeAll(torun);
+		// no more need for the threadpool
+		threads.shutdown();
+
+		// submitting same transaction to same node from two different threads
+
+		try {
+			TransactionResponse response0 = futures.get(0).get();
+			TransactionResponse response1 = futures.get(1).get();
+			Assert.assertNotNull(response0);
+			System.out.println("The transaction response is ::");
+			System.out.println(response0.getNodeTransactionPrecheckCode());
+			System.out.println(response1.getNodeTransactionPrecheckCode());
+			Assert.assertEquals(ResponseCodeEnum.OK, response0.getNodeTransactionPrecheckCode());
+			Assert.assertNotNull(response1);
+			Assert.assertEquals(ResponseCodeEnum.OK, response1.getNodeTransactionPrecheckCode());
+
+			log.info("Pre Check Response of Create fourth account :: " + response
+					.getNodeTransactionPrecheckCode().name());
+
+			TransactionBody finalTransactionBody = TransactionBody.parseFrom(finalTransaction.getBodyBytes());
+			AccountID newlyCreateAccountId2 = TestHelper
+					.getTxReceipt(finalTransactionBody.getTransactionID(), stub).getAccountID();
+			Assert.assertNotNull(newlyCreateAccountId2);
+			System.out.println(newlyCreateAccountId2);
+			log.info("Account ID " + newlyCreateAccountId2.getAccountNum() + " created successfully.");
+			log.info("--------------------------------------");
+
+			TransactionBody finalTransactionBody1 = TransactionBody.parseFrom(finalTransaction1.getBodyBytes());
+			AccountID newlyCreateAccountId2rejected = TestHelper
+					.getTxReceipt(finalTransactionBody1.getTransactionID(), stub).getAccountID();
+			Assert.assertNotNull(newlyCreateAccountId2rejected);
+			System.out.println(newlyCreateAccountId2rejected);
+			log.info(
+					"Account ID " + newlyCreateAccountId2rejected.getAccountNum() + " created successfully.");
+
+			// assert that the
+
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+
+		// needs to be fixed
+
+		// same transaction ID but parameters in request are different. create account request
+		// same transaction IDs being passed to two different nodes . 2 transactions differ in balance
+		// duplicate transaction tests for crypto transfers
+
+		long genesisbalancebeforeTransfer = TestHelper
+				.getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
+						defaultNodeAccount).getCryptoGetInfo().getAccountInfo().getBalance();
+
+		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
+		Transaction transaction4 = createTransfer(timestamp, payerAccount, genKeyPair,
+				newlyCreateAccountId1, payerAccount, genKeyPair, defaultNodeAccount, 100l);
+		Transaction transaction5 = createTransfer(timestamp, payerAccount, genKeyPair,
+				newlyCreateAccountId1, payerAccount, genKeyPair, defaultNodeAccount, 1000l);
+
+		ExecutorService threads45 = Executors.newFixedThreadPool(size);
+		torun = new ArrayList<>(size);
+		torun.add(() -> stub.cryptoTransfer(transaction4));
+		torun.add(() -> stub.createAccount(transaction5));
+		// all tasks executed in different threads, at 'once'.
+		List<Future<TransactionResponse>> futures45 = threads45.invokeAll(torun);
+		// no more need for the threadpool
+		threads45.shutdown();
+
+		try {
+
+			TransactionResponse response4 = futures45.get(0).get();
+			TransactionResponse response5 = futures45.get(1).get();
+			Assert.assertEquals(ResponseCodeEnum.OK, response4.getNodeTransactionPrecheckCode());
+			Assert.assertEquals(ResponseCodeEnum.OK, response5.getNodeTransactionPrecheckCode());
+			TransactionBody transactionBody4 = TransactionBody.parseFrom(transaction4.getBodyBytes());
+			TransactionReceipt txReceipt4 = TestHelper
+					.getTxReceipt(transactionBody4.getTransactionID(), stub);
+			Assert.assertNotNull(txReceipt4);
+
+			long genesisbalanceAfterTransfer = TestHelper
+					.getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
+							defaultNodeAccount).getCryptoGetInfo().getAccountInfo().getBalance();
+			Assert.assertNotEquals(genesisbalancebeforeTransfer, genesisbalanceAfterTransfer);
+			if ((genesisbalancebeforeTransfer - genesisbalanceAfterTransfer) == 160) {
+				log.info("the transaction 4 was selected. Transaction 5 was rejected by the platform");
+				Assert.assertNotEquals(1060, (genesisbalancebeforeTransfer - genesisbalanceAfterTransfer));
+			} else {
+				log.info("the transaction 5 was selected. Transaction 4 was rejected by the platform");
+				Assert.assertNotEquals(160, (genesisbalancebeforeTransfer - genesisbalanceAfterTransfer));
+			}
 
 
-  }
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
 
 
-  public static Transaction createTransferOLD(Timestamp timestamp, AccountID fromAccount,
-      PrivateKey fromKey, AccountID toAccount,
-      AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
-      long amount) {
-    Duration transactionDuration = RequestBuilder.getDuration(30);
+	}
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
-    Transaction transferTx =
-        RequestBuilder
-            .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-                payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-                nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
-                timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
-                -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString bodyBytes =  transferTx.getBodyBytes();
 
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) fromKey);
+	public static Transaction createTransferOLD(Timestamp timestamp, AccountID fromAccount,
+			PrivateKey fromKey, AccountID toAccount,
+			AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
+			long amount) {
+		Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
+		SignatureList sigList = SignatureList.getDefaultInstance();
+		Transaction transferTx =
+				RequestBuilder
+						.getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
+								payerAccount.getShardNum(), nodeAccount.getAccountNum(),
+								nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
+								timestamp, transactionDuration, false,
+								"Test Transfer", sigList, fromAccount.getAccountNum(),
+								-amount, toAccount.getAccountNum(), amount);
+		// get the transaction body
+		ByteString bodyBytes = transferTx.getBodyBytes();
 
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
+		// Payer Account will sign this transaction
+		ByteString payerAcctSig = TransactionSigner
+				.signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) payerAccountKey);
+		// from Account will sign the key
+		ByteString fromAccountSig = TransactionSigner
+				.signBytes(bodyBytes.toByteArray(), (EdDSAPrivateKey) fromKey);
 
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(newsigList).build();
-  }
+		Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
+		Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
 
-  public static Transaction createTransfer(Timestamp timestamp, AccountID fromAccount,
-      KeyPair fromKeyPair, AccountID toAccount,
-      AccountID payerAccount, KeyPair payerKeyPair, AccountID nodeAccount,
-      long amount) throws Exception {
-    Transaction rv = TestHelper.createTransferSigMap(fromAccount, fromKeyPair,
-        toAccount, payerAccount,
-        payerKeyPair, nodeAccount, amount);
-    return rv;
-  }
+		SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
+				.addSigs(fromAccountObj)
+				.build();
 
-  public static Transaction createAccountSameTxnIDDiffReq1(Timestamp timestamp,
-      AccountID payerAccount, AccountID nodeAccount, KeyPair pair, long initialBalance,
-      List<PrivateKey> privKey) throws Exception {
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-    byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-    String pubKeyStr = Hex.encodeHexString(pubKey);
-    Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
-    List<Key> keyList = Collections.singletonList(key);
+		return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(newsigList).build();
+	}
 
-    long transactionFee = 0;
-    boolean generateRecord = true;
-    String memo = "Create Account Test";
-    long sendRecordThreshold = 100l;
-    long receiveRecordThreshold = 100l;
-    boolean receiverSigRequired = false;
-    Duration autoRenewPeriod = RequestBuilder.getDuration(5000);
+	public static Transaction createTransfer(Timestamp timestamp, AccountID fromAccount,
+			KeyPair fromKeyPair, AccountID toAccount,
+			AccountID payerAccount, KeyPair payerKeyPair, AccountID nodeAccount,
+			long amount) throws Exception {
+		Transaction rv = TestHelper.createTransferSigMap(fromAccount, fromKeyPair,
+				toAccount, payerAccount,
+				payerKeyPair, nodeAccount, amount);
+		return rv;
+	}
 
-    Transaction transaction = RequestBuilder
-        .getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-            payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-            nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            transactionFee, timestamp, transactionDuration, generateRecord,
-            memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+	public static Transaction createAccountSameTxnIDDiffReq1(Timestamp timestamp,
+			AccountID payerAccount, AccountID nodeAccount, KeyPair pair, long initialBalance,
+			List<PrivateKey> privKey) throws Exception {
+		Duration transactionDuration = RequestBuilder.getDuration(30);
+		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		String pubKeyStr = Hex.encodeHexString(pubKey);
+		Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
+		List<Key> keyList = Collections.singletonList(key);
 
-    transaction = TransactionSigner.signTransaction(transaction, privKey);
-    transactionFee = FeeClient.getCreateAccountFee(transaction,privKey.size());
+		long transactionFee = 0;
+		boolean generateRecord = true;
+		String memo = "Create Account Test";
+		long sendRecordThreshold = 100l;
+		long receiveRecordThreshold = 100l;
+		boolean receiverSigRequired = false;
+		Duration autoRenewPeriod = RequestBuilder.getDuration(5000);
 
-    transaction = RequestBuilder
-        .getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-            payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-            nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            transactionFee, timestamp, transactionDuration, generateRecord,
-            memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
-    transaction = TransactionSigner.signTransaction(transaction, privKey);
-    return transaction;
+		Transaction transaction = RequestBuilder
+				.getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
+						payerAccount.getShardNum(), nodeAccount.getAccountNum(),
+						nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
+						transactionFee, timestamp, transactionDuration, generateRecord,
+						memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
+						receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
+						SignatureList.newBuilder().getDefaultInstanceForType());
 
-  }
+		transaction = TransactionSigner.signTransaction(transaction, privKey);
+		transactionFee = FeeClient.getCreateAccountFee(transaction, privKey.size());
+
+		transaction = RequestBuilder
+				.getCreateAccountBuilder(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
+						payerAccount.getShardNum(), nodeAccount.getAccountNum(),
+						nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
+						transactionFee, timestamp, transactionDuration, generateRecord,
+						memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
+						receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
+						SignatureList.newBuilder().getDefaultInstanceForType());
+		transaction = TransactionSigner.signTransaction(transaction, privKey);
+		return transaction;
+
+	}
 
 
 }

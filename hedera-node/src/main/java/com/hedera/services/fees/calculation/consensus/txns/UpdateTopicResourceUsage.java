@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,41 +38,42 @@ import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpd
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
 public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
+	private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
 
-    @Override
-    public boolean applicableTo(TransactionBody txn) {
-        return txn.hasConsensusUpdateTopic();
-    }
+	@Override
+	public boolean applicableTo(TransactionBody txn) {
+		return txn.hasConsensusUpdateTopic();
+	}
 
-    @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        try {
-            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-            long rbsIncrease = getUpdateTopicRbsIncrease(
-                    txn.getTransactionID().getTransactionValidStart(),
-                    JKey.mapJKey(merkleTopic.getAdminKey()),
-                    JKey.mapJKey(merkleTopic.getSubmitKey()),
-                    merkleTopic.getMemo(),
-                    merkleTopic.hasAutoRenewAccountId(),
-                    lookupExpiry(merkleTopic),
-                    txn.getConsensusUpdateTopic());
-            return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
-        } catch (Exception illegal) {
-            log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
-            throw new InvalidTxBodyException(illegal);
-        }
-    }
+	@Override
+	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
+		try {
+			MerkleTopic merkleTopic = view.topics().get(
+					MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
+			long rbsIncrease = getUpdateTopicRbsIncrease(
+					txn.getTransactionID().getTransactionValidStart(),
+					JKey.mapJKey(merkleTopic.getAdminKey()),
+					JKey.mapJKey(merkleTopic.getSubmitKey()),
+					merkleTopic.getMemo(),
+					merkleTopic.hasAutoRenewAccountId(),
+					lookupExpiry(merkleTopic),
+					txn.getConsensusUpdateTopic());
+			return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
+		} catch (Exception illegal) {
+			log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
+			throw new InvalidTxBodyException(illegal);
+		}
+	}
 
-    private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
-        try {
-            return Timestamp.newBuilder()
-                    .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
-                    .build();
-        } catch (NullPointerException e) {
+	private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
+		try {
+			return Timestamp.newBuilder()
+					.setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
+					.build();
+		} catch (NullPointerException e) {
 			/* Effect is to charge nothing for RBH */
-            log.warn("Missing topic expiry data, ignoring expiration time in fee calculation!", e);
-            return ZERO_EXPIRY;
-        }
-    }
+			log.warn("Missing topic expiry data, ignoring expiration time in fee calculation!", e);
+			return ZERO_EXPIRY;
+		}
+	}
 }

@@ -9,9 +9,9 @@ package com.hedera.test.forensics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,9 +47,9 @@ public class FcByteViews {
 						that.signedState, 4, 52));
 
 		System.out.println("BEGINNINGS :: " + this.starts + " -vs- " + that.starts
-			+ " ? " + this.starts.equals(that.starts));
+				+ " ? " + this.starts.equals(that.starts));
 		System.out.println("ENDINGS    :: " + this.ends + " -vs- " + that.ends
-		+ " ? " + this.ends.equals(that.ends));
+				+ " ? " + this.ends.equals(that.ends));
 
 		System.out.println("Accounts? " +
 				Arrays.equals(
@@ -65,9 +65,9 @@ public class FcByteViews {
 						that.signedState, that.starts.get(2), that.ends.get(2) + 4));
 
 		System.out.println("Overall? " +
-			Arrays.equals(
-					this.signedState, 0, this.signedState.length,
-					that.signedState, 0, that.signedState.length));
+				Arrays.equals(
+						this.signedState, 0, this.signedState.length,
+						that.signedState, 0, that.signedState.length));
 		if (this.signedState.length != that.signedState.length) {
 			System.out.println("DIFFERENT LENGTHS");
 		}
@@ -75,10 +75,10 @@ public class FcByteViews {
 
 	public static List<Integer> offsetsOf(int marker, byte[] signedState) {
 		byte[] search = new byte[] {
-				(byte)((marker & (0xFF << 24)) >>> 24),
-				(byte)((marker & (0xFF << 16)) >>> 16),
-				(byte)((marker & (0xFF << 8)) >>> 8),
-				(byte)(marker & 0xFF)
+				(byte) ((marker & (0xFF << 24)) >>> 24),
+				(byte) ((marker & (0xFF << 16)) >>> 16),
+				(byte) ((marker & (0xFF << 8)) >>> 8),
+				(byte) (marker & 0xFF)
 		};
 
 		List<Integer> offsets = new ArrayList<>();

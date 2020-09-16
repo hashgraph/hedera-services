@@ -10,6 +10,6 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class TokenUsageUtils {
 	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
-		return check.test(op)? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+		return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
 	}
 }

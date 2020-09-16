@@ -9,9 +9,9 @@ package com.hedera.test.factories.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -76,7 +76,9 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 	Optional<Long> customFee = Optional.empty();
 
 	protected abstract T self();
+
 	protected abstract long feeFor(Transaction signedTxn, int numPayerKeys);
+
 	protected abstract void customizeTxn(TransactionBody.Builder txn);
 
 	public Transaction get() throws Throwable {
@@ -85,23 +87,27 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 				? provisional
 				: signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
 	}
+
 	private Transaction.Builder signableTxn(long fee) {
 		TransactionBody.Builder txn = baseTxn();
 		customizeTxn(txn);
 		txn.setTransactionFee(fee);
 		return Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(txn.build().toByteArray()));
 	}
+
 	private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
 		List<KeyTree> signers = allKts();
 		return useSigMap
 				? sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory)
 				: sigFactory.signWithSigList(txnWithSigs, signers);
 	}
+
 	private List<KeyTree> allKts() {
 		return Stream.of(
 				skipPayerSig ? Stream.<KeyTree>empty() : Stream.of(payerKt),
 				otherKts.stream()).flatMap(Function.identity()).collect(toList());
 	}
+
 	private TransactionBody.Builder baseTxn() {
 		TransactionBody.Builder txn = TransactionBody.newBuilder()
 				.setTransactionID(txnId())
@@ -110,18 +116,21 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 				.setMemo(memo);
 		return txn;
 	}
+
 	private TransactionID txnId() {
 		return TransactionID.newBuilder()
 				.setAccountID(asAccount(payer))
 				.setTransactionValidStart(validStart())
 				.build();
 	}
+
 	private Timestamp validStart() {
 		return Timestamp.newBuilder()
 				.setSeconds(start.getEpochSecond())
 				.setNanos(start.getNano())
 				.build();
 	}
+
 	private Duration validDuration() {
 		return Duration.newBuilder().setSeconds(validDuration).build();
 	}
@@ -130,34 +139,42 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 		this.payer = payer;
 		return self();
 	}
+
 	public T payerKt(KeyTree payerKt) {
 		this.payerKt = payerKt;
 		return self();
 	}
+
 	public T nonPayerKts(KeyTree... otherKts) {
 		this.otherKts = List.of(otherKts);
 		return self();
 	}
+
 	public T fee(long amount) {
 		customFee = Optional.of(amount);
 		return self();
 	}
+
 	public T useSigList() {
 		useSigMap = false;
 		return self();
 	}
+
 	public T skipPayerSig() {
 		skipPayerSig = true;
 		return self();
 	}
+
 	public T keyFactory(KeyFactory keyFactory) {
 		this.keyFactory = keyFactory;
 		return self();
 	}
+
 	public T sigMapGen(SigMapGenerator sigMapGen) {
 		this.sigFactory = new SigFactory(sigMapGen);
 		return self();
 	}
+
 	public T txnValidStart(Timestamp at) {
 		start = Instant.ofEpochSecond(at.getSeconds(), at.getNanos());
 		return self();

@@ -9,9 +9,9 @@ package com.hedera.services.legacy.netty;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,8 @@ public class NettyServerManager {
 		return buildNettyServer(port, false);
 	}
 
-	public NettyServerBuilder buildNettyServer(int port, boolean tlsSupport) throws FileNotFoundException, SSLException {
+	public NettyServerBuilder buildNettyServer(int port, boolean tlsSupport) throws FileNotFoundException,
+			SSLException {
 		String nettyMode = PropertiesLoader.getNettyMode();
 		boolean isDevMode = ApplicationConstants.NETTY_MODE_DEV.equalsIgnoreCase(nettyMode);
 
@@ -96,9 +97,10 @@ public class NettyServerManager {
 			File certChain = new File("hedera.crt");
 			File privateKey = new File("hedera.key");
 			if (!certChain.exists() || !privateKey.exists()) {
-				throw new FileNotFoundException("hedera.crt or hedera.key could not be found in Services app base folder");
+				throw new FileNotFoundException(
+						"hedera.crt or hedera.key could not be found in Services app base folder");
 			}
-			String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
+			String[] protocols = new String[] { "TLSv1.2", "TLSv1.3" };
 			List<String> ciphers = Arrays.asList(
 					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
 					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"

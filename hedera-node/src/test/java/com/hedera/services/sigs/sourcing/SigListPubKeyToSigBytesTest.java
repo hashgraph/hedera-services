@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import org.junit.platform.runner.JUnitPlatform;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
@@ -58,8 +59,8 @@ public class SigListPubKeyToSigBytesTest {
 			SignedTxnFactory.DEFAULT_PAYER_KT
 	};
 	private final static KeyTree[] otherPartySigners = {
-		KeyTree.withRoot(threshold(1, ed25519(true), ed25519(false))),
-		KeyTree.withRoot(list(rsa3072(true), threshold(1, ed25519(false), ecdsa384(true))))
+			KeyTree.withRoot(threshold(1, ed25519(true), ed25519(false))),
+			KeyTree.withRoot(list(rsa3072(true), threshold(1, ed25519(false), ecdsa384(true))))
 	};
 	private final static KeyTree[] allPartySigners =
 			Stream.of(payerSigners, otherPartySigners).flatMap(Arrays::stream).toArray(n -> new KeyTree[n]);
@@ -168,7 +169,7 @@ public class SigListPubKeyToSigBytesTest {
 
 		// expect:
 		assertThrows(KeySignatureCountMismatchException.class, () -> {
-			for (int i = 1; i < 7; i++)	{
+			for (int i = 1; i < 7; i++) {
 				subject.sigBytesFor(ANY_PUBLIC_KEY);
 			}
 		});

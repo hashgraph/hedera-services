@@ -42,10 +42,10 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
-			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
+			entry("rates.intradayChangeLimitPercent", limitPercent -> (int) limitPercent > 0)
 	);
 
-	Map<String, Object>	from121 = Collections.emptyMap();
+	Map<String, Object> from121 = Collections.emptyMap();
 
 	public void screenNew(ServicesConfigurationList rawProps) {
 		from121 = rawProps.getNameValueList()

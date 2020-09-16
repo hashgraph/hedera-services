@@ -30,6 +30,7 @@ public class UsageUtils {
 			.build();
 
 	public static final FeeData A_USAGES_MATRIX;
+
 	static {
 		var usagesBuilder = FeeData.newBuilder();
 		usagesBuilder.setNetworkdata(FeeComponents.newBuilder()

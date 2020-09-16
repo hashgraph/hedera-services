@@ -9,9 +9,9 @@ package com.hedera.services.context.domain.haccount;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,7 +66,8 @@ class LegacyAccountsTest {
 */
 
 		// given:
-		FCMap<MerkleEntityId, MerkleAccount> subject = new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER);
+		FCMap<MerkleEntityId, MerkleAccount> subject = new FCMap<>(new MerkleEntityId.Provider(),
+				MerkleAccount.LEGACY_PROVIDER);
 		// and:
 		var in = new SerializableDataInputStream(
 				Files.newInputStream(Paths.get("src/test/resources/testAccounts.fcm")));
@@ -126,7 +127,7 @@ class LegacyAccountsTest {
 	public MerkleAccount accountFrom(int s) throws Exception {
 		long v = s + 1;
 		MerkleAccount account = new HederaAccountCustomizer()
-				.proxy(new EntityId(v,2 * v, 3 * v))
+				.proxy(new EntityId(v, 2 * v, 3 * v))
 				.key(keys[s])
 				.memo(memos[s])
 				.isSmartContract(s % 2 != 0)

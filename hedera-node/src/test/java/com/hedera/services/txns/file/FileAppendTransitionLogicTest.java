@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,7 +60,7 @@ import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class FileAppendTransitionLogicTest {
-	enum TargetType { VALID, MISSING, DELETED, IMMUTABLE }
+	enum TargetType {VALID, MISSING, DELETED, IMMUTABLE}
 
 	byte[] moreContents = "MORE".getBytes();
 	FileID target = IdUtils.asFile("0.0.13257");
@@ -140,7 +140,8 @@ class FileAppendTransitionLogicTest {
 	public void catchesOversize() {
 		givenTxnCtxAppending(TargetType.VALID);
 		given(hfs.append(any(), any()))
-				.willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
+				.willThrow(
+						new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
 
 		// when:
 		subject.doStateTransition();

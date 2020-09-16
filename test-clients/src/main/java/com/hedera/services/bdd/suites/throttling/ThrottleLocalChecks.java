@@ -333,7 +333,7 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				var op = fileUpdate("unknown")
-						.contents(ignore ->  {
+						.contents(ignore -> {
 							var randomBytes = new byte[32];
 							r.nextBytes(randomBytes);
 							return ByteString.copyFrom(randomBytes);
@@ -407,7 +407,7 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 
 	private HapiApiSpec saveToBkup() {
 		return defaultHapiSpec("SaveToBkup")
-				.given( ).when( ).then(
+				.given().when().then(
 						withOpContext((spec, opLog) -> {
 							var lookup = getFileContents(APP_PROPERTIES).saveTo(BACKUP_LOC);
 							allRunFor(spec, lookup);

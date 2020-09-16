@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,40 +31,48 @@ import java.util.Optional;
  * state, such as occurs in the middle of an transaction. The
  * accessors make this distinction explicit.
  *
- * @param <K> the type of an account id.
- * @param <P> the type of the property family associated to an account.
- * @param <A> the account type.
- *
+ * @param <K>
+ * 		the type of an account id.
+ * @param <P>
+ * 		the type of the property family associated to an account.
+ * @param <A>
+ * 		the account type.
  * @author Michael Tinker
  */
 public interface Ledger<K, P extends Enum<P>, A> {
 	/**
 	 * Sets value of a given property to a given value for the specified account.
 	 *
-	 * @param id the id of the account to update.
-	 * @param property the property to change.
-	 * @param value the new value of the property.
+	 * @param id
+	 * 		the id of the account to update.
+	 * @param property
+	 * 		the property to change.
+	 * @param value
+	 * 		the new value of the property.
 	 */
 	void set(K id, P property, Object value);
 
 	/**
 	 * Creates an new account with the given id and all default property values.
 	 *
-	 * @param id the id to use for the new account.
+	 * @param id
+	 * 		the id to use for the new account.
 	 */
 	void create(K id);
 
 	/**
 	 * Forgets everything about the account with the given id.
 	 *
-	 * @param id the id of the account to be forgotten.
+	 * @param id
+	 * 		the id of the account to be forgotten.
 	 */
 	void destroy(K id);
 
 	/**
 	 * Gets the account with the specified id.
 	 *
-	 * @param id the id of the relevant account.
+	 * @param id
+	 * 		the id of the relevant account.
 	 * @return the account.
 	 */
 	A get(K id);
@@ -74,7 +82,8 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * to the account so far. Any non-token changes to this account
 	 * will be ignored.
 	 *
-	 * @param id the id of the relevant account.
+	 * @param id
+	 * 		the id of the relevant account.
 	 * @return the account.
 	 */
 	A getTokenRef(K id);
@@ -83,8 +92,10 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * Gets the current property value of the specified account. This value
 	 * need not be persisted to a durable backing store.
 	 *
-	 * @param id the id of the relevant account.
-	 * @param property which property to fetch.
+	 * @param id
+	 * 		the id of the relevant account.
+	 * @param property
+	 * 		which property to fetch.
 	 * @return the value of the property.
 	 */
 	Object get(K id, P property);
@@ -94,8 +105,10 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * the scoping token. This value need not be persisted to a durable backing
 	 * store.
 	 *
-	 * @param id the id of the relevant account.
-	 * @param property which property to fetch.
+	 * @param id
+	 * 		the id of the relevant account.
+	 * @param property
+	 * 		which property to fetch.
 	 * @return the value of the property.
 	 */
 	Object get(K id, P property, TokenScope scope);
@@ -104,7 +117,8 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * Indicates whether an account is present (in either a saved or transient
 	 * state---either is considered extant).
 	 *
-	 * @param id the id of the relevant account.
+	 * @param id
+	 * 		the id of the relevant account.
 	 * @return whether the account is present.
 	 */
 	boolean exists(K id);
@@ -112,7 +126,8 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	/**
 	 * Indicates whether an account is present solely in a transient state.
 	 *
- 	 * @param id the id of the relevant account.
+	 * @param id
+	 * 		the id of the relevant account.
 	 * @return whether the account has no saved state, only transient.
 	 */
 	boolean existsPending(K id);

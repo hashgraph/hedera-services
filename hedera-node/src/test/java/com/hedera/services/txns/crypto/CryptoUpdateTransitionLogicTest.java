@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,6 +54,7 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.*;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
+
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -131,7 +132,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
+		assertEquals(receiveThresh, (long) changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -151,7 +152,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(receiveThresh, (long)changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
+		assertEquals(receiveThresh, (long) changes.get(AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -209,7 +210,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
+		assertEquals(sendThresh, (long) changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -228,7 +229,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(expiry, (long)changes.get(AccountProperty.EXPIRY));
+		assertEquals(expiry, (long) changes.get(AccountProperty.EXPIRY));
 	}
 
 	@Test
@@ -247,7 +248,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(sendThresh, (long)changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
+		assertEquals(sendThresh, (long) changes.get(AccountProperty.FUNDS_SENT_RECORD_THRESHOLD));
 	}
 
 	@Test
@@ -283,7 +284,7 @@ public class CryptoUpdateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(1, changes.size());
-		assertEquals(key, JKey.mapJKey((JKey)changes.get(AccountProperty.KEY)));
+		assertEquals(key, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
 	}
 
 	@Test

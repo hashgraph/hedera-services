@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,15 +67,18 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 		expectation = Optional.of(provider);
 		return this;
 	}
+
 	public HapiGetAccountRecords withLogging(BiConsumer<Logger, List<TransactionRecord>> customLog) {
 		verboseLoggingOn = true;
 		this.customLog = Optional.of(customLog);
 		return this;
 	}
+
 	public HapiGetAccountRecords savingTo(String dirPath) {
 		snapshotDirPath = Optional.of(dirPath);
 		return this;
 	}
+
 	public HapiGetAccountRecords checkingAgainst(String dirPath) {
 		expectationsDirPath = Optional.of(dirPath);
 		return this;
@@ -98,7 +101,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (expectation.isPresent()) {
-			List<TransactionRecord>	actualRecords = response.getCryptoGetAccountRecords().getRecordsList();
+			List<TransactionRecord> actualRecords = response.getCryptoGetAccountRecords().getRecordsList();
 			List<Throwable> errors = expectation.get().assertsFor(spec).errorsIn(actualRecords);
 			rethrowSummaryError(log, "Bad account records!", errors);
 		}
@@ -202,7 +205,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
-		MoreObjects.ToStringHelper helper =  super.toStringHelper()
+		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("account", account);
 		Optional.ofNullable(response).ifPresent(
 				r -> helper.add("records", r.getCryptoGetAccountRecords().getRecordsList().size()));

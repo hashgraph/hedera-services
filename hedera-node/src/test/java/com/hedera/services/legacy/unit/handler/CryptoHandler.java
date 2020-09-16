@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,26 +27,26 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
 public class CryptoHandler {
-  private FCMap<MerkleEntityId, MerkleAccount> map = StateView.EMPTY_ACCOUNTS;
+	private FCMap<MerkleEntityId, MerkleAccount> map = StateView.EMPTY_ACCOUNTS;
 
-  public boolean validateAccountID(AccountID accountID) {
-    boolean isValid = false;
-    MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
-    if (map.containsKey(merkleEntityId)) {
-      MerkleAccount mapValue = map.get(merkleEntityId);
-      if (mapValue != null) {
-        isValid = !mapValue.isSmartContract();
-      }
-    }
-    return isValid;
-  }
+	public boolean validateAccountID(AccountID accountID) {
+		boolean isValid = false;
+		MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);
+		if (map.containsKey(merkleEntityId)) {
+			MerkleAccount mapValue = map.get(merkleEntityId);
+			if (mapValue != null) {
+				isValid = !mapValue.isSmartContract();
+			}
+		}
+		return isValid;
+	}
 
-  public boolean isAccountSetForDelete(AccountID accountID) {
-    MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
-    if (map.containsKey(accountKey)) {
-      MerkleAccount accountValue = map.get(accountKey);
-      return accountValue.isDeleted();
-    }
-    return false;
-  }
+	public boolean isAccountSetForDelete(AccountID accountID) {
+		MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
+		if (map.containsKey(accountKey)) {
+			MerkleAccount accountValue = map.get(accountKey);
+			return accountValue.isDeleted();
+		}
+		return false;
+	}
 }

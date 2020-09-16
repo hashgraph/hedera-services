@@ -86,7 +86,7 @@ class BackedSystemAccountsCreatorTest {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
 						.addKeys(Key.newBuilder()
-										.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(hexedABytes)))
+								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(hexedABytes)))
 						)).build());
 
 		hederaNums = mock(HederaNumbers.class);
@@ -120,7 +120,7 @@ class BackedSystemAccountsCreatorTest {
 		given(book.getSize()).willReturn(1);
 		given(book.getAddress(0L)).willReturn(address);
 
-		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
+		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>) mock(BackingAccounts.class);
 		given(backingAccounts.idSet()).willReturn(Set.of(
 				accountWith(1),
 				accountWith(2),

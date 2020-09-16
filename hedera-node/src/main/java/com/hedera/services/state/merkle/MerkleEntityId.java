@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,8 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 	private long realm;
 	private long num;
 
-	public MerkleEntityId() { }
+	public MerkleEntityId() {
+	}
 
 	public MerkleEntityId(long shard, long realm, long num) {
 		this.shard = shard;
@@ -122,7 +123,7 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 			return false;
 		}
 
-		var that = (MerkleEntityId)o;
+		var that = (MerkleEntityId) o;
 		return new EqualsBuilder()
 				.append(shard, that.shard)
 				.append(realm, that.realm)
@@ -146,7 +147,8 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 	}
 
 	@Override
-	public void delete() { }
+	public void delete() {
+	}
 
 	@Override
 	@Deprecated

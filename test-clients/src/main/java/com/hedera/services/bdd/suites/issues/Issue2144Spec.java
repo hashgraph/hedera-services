@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.issues;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.issues;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -48,7 +50,7 @@ public class Issue2144Spec extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
+				new HapiApiSpec[] {
 						superusersAreNeverThrottledOnTransfers(),
 						superusersAreNeverThrottledOnMiscTxns(),
 						superusersAreNeverThrottledOnHcsTxns(),
@@ -99,7 +101,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("simpletransferTps", "1"))
+										Map.of("simpletransferTps", "1"))
 				).then(flattened(
 						transferBurstFn.apply(MASTER),
 						transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
@@ -107,7 +109,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("simpletransferTps", "0"))
+										Map.of("simpletransferTps", "0"))
 				));
 	}
 
@@ -119,7 +121,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttlingTps", "1"))
+										Map.of("throttlingTps", "1"))
 				).then(flattened(
 						miscTxnBurstFn.apply(MASTER),
 						miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
@@ -127,7 +129,7 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttlingTps", "0"))
+										Map.of("throttlingTps", "0"))
 				));
 	}
 
@@ -139,14 +141,14 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.createTopic.tps", "0.5"))
+										Map.of("throttling.hcs.createTopic.tps", "0.5"))
 				).then(flattened(
 						hcsTxnBurstFn.apply(MASTER),
 						hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.createTopic.tps", "33.3"))
+										Map.of("throttling.hcs.createTopic.tps", "33.3"))
 				));
 	}
 
@@ -158,14 +160,14 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("queriesTps", "1"))
+										Map.of("queriesTps", "1"))
 				).then(flattened(
 						inParallel(miscQueryBurstFn.apply(MASTER)),
 						inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("queriesTps", "0"))
+										Map.of("queriesTps", "0"))
 				));
 	}
 
@@ -178,14 +180,14 @@ public class Issue2144Spec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
+										Map.of("throttling.hcs.getTopicInfo.tps", "0.5"))
 				).then(flattened(
 						inParallel(hcsQueryBurstFn.apply(MASTER)),
 						inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
-								Map.of("throttling.hcs.getTopicInfo.tps", "33.3"))
+										Map.of("throttling.hcs.getTopicInfo.tps", "33.3"))
 				));
 	}
 

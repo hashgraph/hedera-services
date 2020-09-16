@@ -9,9 +9,9 @@ package com.hedera.services.txns.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,7 +55,8 @@ class MerkleTopicDeleteTransitionLogicTest {
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
 	private PlatformTxnAccessor accessor;
-	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider());
+	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>(new MerkleEntityId.Provider(),
+			new MerkleTopic.Provider());
 	private OptionValidator validator;
 	private TopicDeleteTransitionLogic subject;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
@@ -112,7 +113,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
 		givenTransaction(getBasicValidTransactionBodyBuilder());
 
-		topics = (FCMap<MerkleEntityId, MerkleTopic>)mock(FCMap.class);
+		topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
 
 		given(topics.get(topicFcKey)).willReturn(deletableTopic);
 		given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);

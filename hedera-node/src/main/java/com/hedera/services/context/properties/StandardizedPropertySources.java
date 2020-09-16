@@ -9,9 +9,9 @@ package com.hedera.services.context.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -89,7 +89,7 @@ public class StandardizedPropertySources implements PropertySources {
 	public void reloadFrom(ServicesConfigurationList config) {
 		log.info("Updating throttle props from {} candidates", config.getNameValueCount());
 		throttlePropsFromSysFile.clear();
-		for (Setting setting : config.getNameValueList())  {
+		for (Setting setting : config.getNameValueList()) {
 			var name = setting.getName();
 			if (!name.startsWith(API_THROTTLING_PREFIX)) {
 				continue;
@@ -118,6 +118,7 @@ public class StandardizedPropertySources implements PropertySources {
 			DEFAULT_CAPACITY_PROPERTY,
 			DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY,
 			DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY);
+
 	private boolean isDoubleProp(String name) {
 		if (DEFAULT_DOUBLE_PROPS.contains(name)) {
 			return true;
@@ -127,6 +128,7 @@ public class StandardizedPropertySources implements PropertySources {
 		}
 		return false;
 	}
+
 	private void putDouble(String name, String literal) {
 		try {
 			throttlePropsFromSysFile.put(name, Double.parseDouble(literal));

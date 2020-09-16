@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,22 +48,24 @@ public class PropertyLoaderTest {
 	private final int RECIEPT_TTL = 180;
 	private final int THRESHOLD_TTL = 90000;
 	private final int TX_MAX_DURATION = 120;
-	
+
 	private final int RECIEPT_TTL_UPD = 280;
 	private final int THRESHOLD_TTL_UPD = 80000;
 	private final int TX_MAX_DURATION_UPD = 220;
-	
+
 	private final String APP_CONFIG_FILE_PATH = "./configuration/dev/testConfig.properties";
 	private final String API_CONFIG_FILE_PATH = "./configuration/dev/testApi.properties";
 
 	public static void initialize(String applicationPropsFilePath, String apiPropertiesFilePath) {
-			PropertiesLoader.applicationProps = propertiesFrom(applicationPropsFilePath);
-			PropertiesLoader.apiProperties = propertiesFrom(apiPropertiesFilePath);
-			SyncPropertiesObject.loadSynchProperties(PropertiesLoader.applicationProps);
-			AsyncPropertiesObject.loadAsynchProperties(PropertiesLoader.applicationProps);
-			AsyncPropertiesObject.loadApiProperties(PropertiesLoader.apiProperties);
-			PropertiesLoader.log.info("Application Properties Populated with these values :: "+ PropertiesLoader.applicationProps.getCustomProperties());
-			PropertiesLoader.log.info("API Properties Populated with these values :: "+ PropertiesLoader.apiProperties.getCustomProperties());
+		PropertiesLoader.applicationProps = propertiesFrom(applicationPropsFilePath);
+		PropertiesLoader.apiProperties = propertiesFrom(apiPropertiesFilePath);
+		SyncPropertiesObject.loadSynchProperties(PropertiesLoader.applicationProps);
+		AsyncPropertiesObject.loadAsynchProperties(PropertiesLoader.applicationProps);
+		AsyncPropertiesObject.loadApiProperties(PropertiesLoader.apiProperties);
+		PropertiesLoader.log.info(
+				"Application Properties Populated with these values :: " + PropertiesLoader.applicationProps.getCustomProperties());
+		PropertiesLoader.log.info(
+				"API Properties Populated with these values :: " + PropertiesLoader.apiProperties.getCustomProperties());
 	}
 
 	private static CustomProperties propertiesFrom(String loc) {
@@ -76,150 +78,156 @@ public class PropertyLoaderTest {
 		return new CustomProperties(delegate);
 	}
 
-	public static void populatePropertiesWithConfigFilesPath(String applicationPropsFilePath, String apiPropertiesFilePath) {
-		initialize(applicationPropsFilePath,apiPropertiesFilePath);
+	public static void populatePropertiesWithConfigFilesPath(String applicationPropsFilePath,
+			String apiPropertiesFilePath) {
+		initialize(applicationPropsFilePath, apiPropertiesFilePath);
 	}
 
 	@Before
-  public void setUp() throws Exception {
-    loadPropertyFiles(String.valueOf(RECIEPT_TTL), String.valueOf(THRESHOLD_TTL), String.valueOf(TX_MAX_DURATION));
-    populatePropertiesWithConfigFilesPath(APP_CONFIG_FILE_PATH,API_CONFIG_FILE_PATH);
-  }
+	public void setUp() throws Exception {
+		loadPropertyFiles(String.valueOf(RECIEPT_TTL), String.valueOf(THRESHOLD_TTL), String.valueOf(TX_MAX_DURATION));
+		populatePropertiesWithConfigFilesPath(APP_CONFIG_FILE_PATH, API_CONFIG_FILE_PATH);
+	}
 
-  private void loadPropertyFiles(String txReceiptTTL, String thresholdTxRecordTTL,
-      String txMaximumDuration) {
-    // create test application property file
-    try (OutputStream output = new FileOutputStream(APP_CONFIG_FILE_PATH)) {
+	private void loadPropertyFiles(String txReceiptTTL, String thresholdTxRecordTTL,
+			String txMaximumDuration) {
+		// create test application property file
+		try (OutputStream output = new FileOutputStream(APP_CONFIG_FILE_PATH)) {
 
-      Properties prop = new Properties();
-      // set the properties value
-      prop.setProperty("txReceiptTTL", txReceiptTTL);
-      prop.setProperty("thresholdTxRecordTTL", thresholdTxRecordTTL);
-      prop.setProperty("txMaximumDuration", txMaximumDuration);
-      prop.store(output, null);
-      System.out.println(prop);
-      output.flush();
-      output.close();
-    } catch (IOException io) {
-      io.printStackTrace();
-    }
+			Properties prop = new Properties();
+			// set the properties value
+			prop.setProperty("txReceiptTTL", txReceiptTTL);
+			prop.setProperty("thresholdTxRecordTTL", thresholdTxRecordTTL);
+			prop.setProperty("txMaximumDuration", txMaximumDuration);
+			prop.store(output, null);
+			System.out.println(prop);
+			output.flush();
+			output.close();
+		} catch (IOException io) {
+			io.printStackTrace();
+		}
 
-    // create test api property file
-    try (OutputStream output = new FileOutputStream(API_CONFIG_FILE_PATH)) {
-      Properties prop = new Properties();
-      // set the properties value
-      prop.setProperty("createAccount", "0-*");
-      prop.setProperty("cryptoTransfer", "0-*");
-      prop.store(output, null);
-      System.out.println(prop);
-      output.flush();
-      output.close();
+		// create test api property file
+		try (OutputStream output = new FileOutputStream(API_CONFIG_FILE_PATH)) {
+			Properties prop = new Properties();
+			// set the properties value
+			prop.setProperty("createAccount", "0-*");
+			prop.setProperty("cryptoTransfer", "0-*");
+			prop.store(output, null);
+			System.out.println(prop);
+			output.flush();
+			output.close();
 
-    } catch (IOException io) {
-      io.printStackTrace();
-    }
-  }
-  
-  /**
-   * Test for Loading from Configuration file and then update and reload from Proto Object
-   */
+		} catch (IOException io) {
+			io.printStackTrace();
+		}
+	}
 
-  @Test
-  public void testAPPChangeProperties() throws Exception {
-    int thresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    int txMaxDuration = PropertiesLoader.getTxMaxDuration();
-    assertEquals(90000, thresholdTxRecordTTL);
-    assertEquals(120, txMaxDuration);
-    ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD,THRESHOLD_TTL_UPD,TX_MAX_DURATION_UPD);
-    // now reload properties 
-    PropertiesLoader.populateApplicationPropertiesWithProto(servicesConfigurationList);
-    int newThresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    int newTxMaxDuration = PropertiesLoader.getTxMaxDuration();
-    assertNotEquals(thresholdTxRecordTTL, newThresholdTxRecordTTL);
-    assertNotEquals(txMaxDuration, newTxMaxDuration);
-    assertEquals(80000, newThresholdTxRecordTTL);
-    assertEquals(220, newTxMaxDuration);
-    
-    
+	/**
+	 * Test for Loading from Configuration file and then update and reload from Proto Object
+	 */
 
-    // delete the files after test.
-    File appProp = new File(APP_CONFIG_FILE_PATH);
-    File appApiProp = new File(API_CONFIG_FILE_PATH);
+	@Test
+	public void testAPPChangeProperties() throws Exception {
+		int thresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
+		int txMaxDuration = PropertiesLoader.getTxMaxDuration();
+		assertEquals(90000, thresholdTxRecordTTL);
+		assertEquals(120, txMaxDuration);
+		ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD, THRESHOLD_TTL_UPD,
+				TX_MAX_DURATION_UPD);
+		// now reload properties
+		PropertiesLoader.populateApplicationPropertiesWithProto(servicesConfigurationList);
+		int newThresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
+		int newTxMaxDuration = PropertiesLoader.getTxMaxDuration();
+		assertNotEquals(thresholdTxRecordTTL, newThresholdTxRecordTTL);
+		assertNotEquals(txMaxDuration, newTxMaxDuration);
+		assertEquals(80000, newThresholdTxRecordTTL);
+		assertEquals(220, newTxMaxDuration);
 
-    if (appProp.delete()) {
-      System.out.println("testConfig.properties File deleted successfully");
-    }
-    if (appApiProp.delete()) {
-      System.out.println("testApi.properties File deleted successfully");
-    }    
 
-  }
-  
-  
-  @Test
-  public void testAPIChangeProperties() throws Exception {
-	Map<String , PermissionedAccountsRange> apiProperties = PropertiesLoader.getApiPermission();
-	PermissionedAccountsRange createAcctRange = apiProperties.get("createAccount");
-	PermissionedAccountsRange crptTransferRange = apiProperties.get("cryptoTransfer");
-	
-	assertEquals(0, createAcctRange.from().longValue());
-	assertEquals(Long.MAX_VALUE, createAcctRange.inclusiveTo().longValue());
-	
-	assertEquals(0, crptTransferRange.from().longValue());
-	assertEquals(Long.MAX_VALUE, crptTransferRange.inclusiveTo().longValue());
+		// delete the files after test.
+		File appProp = new File(APP_CONFIG_FILE_PATH);
+		File appApiProp = new File(API_CONFIG_FILE_PATH);
 
-	ServicesConfigurationList servicesConfigurationList =  getAPIConfigPropProto("10-1000","10-2000");
-	  // now reload properties
-	PropertiesLoader.populateAPIPropertiesWithProto(servicesConfigurationList); 
-	
-	apiProperties = PropertiesLoader.getApiPermission();
-	createAcctRange = apiProperties.get("createAccount");
-	crptTransferRange = apiProperties.get("cryptoTransfer");
-	
-	assertNotEquals(0, createAcctRange.from().longValue());
-	assertNotEquals(Long.MAX_VALUE,createAcctRange.inclusiveTo().longValue());
-	
-	assertNotEquals(0, crptTransferRange.from().longValue());
-	assertNotEquals(Long.MAX_VALUE,crptTransferRange.inclusiveTo().longValue());
-	
-	assertEquals(10, createAcctRange.from().longValue());
-	assertEquals(1000,createAcctRange.inclusiveTo().longValue());
-	
-	assertEquals(10, crptTransferRange.from().longValue());
-	assertEquals(2000,crptTransferRange.inclusiveTo().longValue());
-	
-    // delete the files after test.
-    File appProp = new File(APP_CONFIG_FILE_PATH);
-    File appApiProp = new File(API_CONFIG_FILE_PATH);
+		if (appProp.delete()) {
+			System.out.println("testConfig.properties File deleted successfully");
+		}
+		if (appApiProp.delete()) {
+			System.out.println("testApi.properties File deleted successfully");
+		}
 
-    if (appProp.delete()) {
-      System.out.println("testConfig.properties File deleted successfully");
-    }
-    if (appApiProp.delete()) {
-      System.out.println("testApi.properties File deleted successfully");
-    }    
+	}
 
-  }
 
-    
-  private ServicesConfigurationList getAPPConfigPropProto(int recieptTime, int thresholdTime, int txMaxDuration) {
-	  Setting recieptTimeSet = Setting.newBuilder().setName("txReceiptTTL").setValue(String.valueOf(recieptTime)).build();
-	  Setting thresholdTimeSet = Setting.newBuilder().setName("thresholdTxRecordTTL").setValue(String.valueOf(thresholdTime)).build();
-	  Setting txMaxDurationSet = Setting.newBuilder().setName("txMaximumDuration").setValue(String.valueOf(txMaxDuration)).build();
-	  ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
-			  																.addNameValue(recieptTimeSet)
-			  																.addNameValue(thresholdTimeSet)
-			  																.addNameValue(txMaxDurationSet).build();
-	  return serviceConfigList;
-  }
-  
-  private ServicesConfigurationList getAPIConfigPropProto(String crAcctRange, String crTransferRange) {
-	  Setting recieptTimeSet = Setting.newBuilder().setName("createAccount").setValue(String.valueOf(crAcctRange)).build();
-	  Setting thresholdTimeSet = Setting.newBuilder().setName("cryptoTransfer").setValue(String.valueOf(crTransferRange)).build();
-	  ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
-			  																.addNameValue(recieptTimeSet)
-			  																.addNameValue(thresholdTimeSet).build();
-	  return serviceConfigList;
-  }
+	@Test
+	public void testAPIChangeProperties() throws Exception {
+		Map<String, PermissionedAccountsRange> apiProperties = PropertiesLoader.getApiPermission();
+		PermissionedAccountsRange createAcctRange = apiProperties.get("createAccount");
+		PermissionedAccountsRange crptTransferRange = apiProperties.get("cryptoTransfer");
+
+		assertEquals(0, createAcctRange.from().longValue());
+		assertEquals(Long.MAX_VALUE, createAcctRange.inclusiveTo().longValue());
+
+		assertEquals(0, crptTransferRange.from().longValue());
+		assertEquals(Long.MAX_VALUE, crptTransferRange.inclusiveTo().longValue());
+
+		ServicesConfigurationList servicesConfigurationList = getAPIConfigPropProto("10-1000", "10-2000");
+		// now reload properties
+		PropertiesLoader.populateAPIPropertiesWithProto(servicesConfigurationList);
+
+		apiProperties = PropertiesLoader.getApiPermission();
+		createAcctRange = apiProperties.get("createAccount");
+		crptTransferRange = apiProperties.get("cryptoTransfer");
+
+		assertNotEquals(0, createAcctRange.from().longValue());
+		assertNotEquals(Long.MAX_VALUE, createAcctRange.inclusiveTo().longValue());
+
+		assertNotEquals(0, crptTransferRange.from().longValue());
+		assertNotEquals(Long.MAX_VALUE, crptTransferRange.inclusiveTo().longValue());
+
+		assertEquals(10, createAcctRange.from().longValue());
+		assertEquals(1000, createAcctRange.inclusiveTo().longValue());
+
+		assertEquals(10, crptTransferRange.from().longValue());
+		assertEquals(2000, crptTransferRange.inclusiveTo().longValue());
+
+		// delete the files after test.
+		File appProp = new File(APP_CONFIG_FILE_PATH);
+		File appApiProp = new File(API_CONFIG_FILE_PATH);
+
+		if (appProp.delete()) {
+			System.out.println("testConfig.properties File deleted successfully");
+		}
+		if (appApiProp.delete()) {
+			System.out.println("testApi.properties File deleted successfully");
+		}
+
+	}
+
+
+	private ServicesConfigurationList getAPPConfigPropProto(int recieptTime, int thresholdTime, int txMaxDuration) {
+		Setting recieptTimeSet = Setting.newBuilder().setName("txReceiptTTL").setValue(
+				String.valueOf(recieptTime)).build();
+		Setting thresholdTimeSet = Setting.newBuilder().setName("thresholdTxRecordTTL").setValue(
+				String.valueOf(thresholdTime)).build();
+		Setting txMaxDurationSet = Setting.newBuilder().setName("txMaximumDuration").setValue(
+				String.valueOf(txMaxDuration)).build();
+		ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
+				.addNameValue(recieptTimeSet)
+				.addNameValue(thresholdTimeSet)
+				.addNameValue(txMaxDurationSet).build();
+		return serviceConfigList;
+	}
+
+	private ServicesConfigurationList getAPIConfigPropProto(String crAcctRange, String crTransferRange) {
+		Setting recieptTimeSet = Setting.newBuilder().setName("createAccount").setValue(
+				String.valueOf(crAcctRange)).build();
+		Setting thresholdTimeSet = Setting.newBuilder().setName("cryptoTransfer").setValue(
+				String.valueOf(crTransferRange)).build();
+		ServicesConfigurationList serviceConfigList = ServicesConfigurationList.newBuilder()
+				.addNameValue(recieptTimeSet)
+				.addNameValue(thresholdTimeSet).build();
+		return serviceConfigList;
+	}
 
 }

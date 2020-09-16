@@ -80,10 +80,10 @@ public class PerpetualLocalCalls extends HapiApiSuite {
 	private HapiApiSpec localCallsForever() {
 		return defaultHapiSpec("LocalCallsForever").
 				given().when().then(
-						runWithProvider(localCallsFactory())
-								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
-				);
+				runWithProvider(localCallsFactory())
+						.lasting(duration::get, unit::get)
+						.maxOpsPerSec(maxOpsPerSec::get)
+		);
 	}
 
 	private Function<HapiApiSpec, OpProvider> localCallsFactory() {
@@ -99,10 +99,10 @@ public class PerpetualLocalCalls extends HapiApiSuite {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				var op = contractCallLocal("childStorage", GET_MY_VALUE_ABI)
-								.noLogging()
-								.has(resultWith().resultThruAbi(
-										GET_MY_VALUE_ABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(73) })));
+						.noLogging()
+						.has(resultWith().resultThruAbi(
+								GET_MY_VALUE_ABI,
+								isLiteralResult(new Object[] { BigInteger.valueOf(73) })));
 				var soFar = totalBeforeFailure.getAndIncrement();
 				if (soFar % 1000 == 0) {
 					log.info("--- " + soFar);

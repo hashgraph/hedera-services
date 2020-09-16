@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -149,9 +149,9 @@ class CurrencyAdjustmentsTest {
 		var in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializableList(
-						intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
-						booleanThat(Boolean.TRUE::equals),
-						(Supplier<EntityId>)any())).willReturn(subject.accountIds);
+				intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
+				booleanThat(Boolean.TRUE::equals),
+				(Supplier<EntityId>) any())).willReturn(subject.accountIds);
 		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
 
 		// when:
@@ -176,12 +176,12 @@ class CurrencyAdjustmentsTest {
 
 		// then:
 		verify(out).writeSerializableList(
-				(List<EntityId>)idsCaptor.capture(),
+				(List<EntityId>) idsCaptor.capture(),
 				booleanThat(Boolean.TRUE::equals),
 				booleanThat(Boolean.TRUE::equals));
-		verify(out).writeLongArray((long[])amountsCaptor.capture());
+		verify(out).writeLongArray((long[]) amountsCaptor.capture());
 		// and:
-		assertArrayEquals(subject.hbars, (long[])amountsCaptor.getValue());
+		assertArrayEquals(subject.hbars, (long[]) amountsCaptor.getValue());
 		assertEquals(subject.accountIds, idsCaptor.getValue());
 	}
 }

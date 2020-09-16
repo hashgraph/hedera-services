@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.hedera.services.legacy.core.KeyPairObj;
+
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -92,12 +93,24 @@ public class ContractGetBalance {
 	private final Logger log = LogManager.getLogger(ContractGetBalance.class);
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
-	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	private static final String SC_GET_BALANCE_OF = "{\"constant\":true,\"inputs\":[{\"name\":\"accToCheck\",\"type\":\"address\"}],\"name\":\"getBalanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
+	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}]," +
+			"\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\"," +
+			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
+	private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\"," +
+			"\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	private static final String SC_GET_BALANCE_OF = "{\"constant\":true,\"inputs\":[{\"name\":\"accToCheck\"," +
+			"\"type\":\"address\"}],\"name\":\"getBalanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	private static final String SC_SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\"," +
+			"\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	private static final long MAX_TX_FEE = TestHelper.getContractMaxFee();
 	private static AccountID nodeAccount;
 	private static long node_account_number;
@@ -111,7 +124,7 @@ public class ContractGetBalance {
 	private static int port;
 	private static long localCallGas;
 	private KeyPair adminKeyPair = null;
-	private  KeyPair genesisKeyPair;
+	private KeyPair genesisKeyPair;
 	private static long contractDuration;
 
 	public static void main(String args[]) throws Exception {
@@ -569,7 +582,7 @@ public class ContractGetBalance {
 
 		KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
 		AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, TestHelper.getCryptoMaxFee() * 10);
-		
+
 		log.info("Account created successfully");
 		String fileName = "PayTest.bin";
 		adminKeyPair = new KeyPairGenerator().generateKeyPair();
@@ -578,8 +591,8 @@ public class ContractGetBalance {
 			FileID simpleStorageFileId = LargeFileUploadIT.uploadFile(crAccount, fileName, crAccountKeyPair);
 			if (simpleStorageFileId != null) {
 				log.info("Smart Contract file uploaded successfully");
-				ContractID payTestContractId = 	createContractWithKey(crAccount, simpleStorageFileId,
-						contractDuration,	adminKeyPair);
+				ContractID payTestContractId = createContractWithKey(crAccount, simpleStorageFileId,
+						contractDuration, adminKeyPair);
 				Assert.assertNotNull(payTestContractId);
 				log.info("Contract created successfully");
 				int expectedFeeDeduction = 120;// hardcoded for now , need to take the actual fee out.
@@ -608,28 +621,30 @@ public class ContractGetBalance {
 				Assert.assertEquals(ResponseCodeEnum.OK,
 						getBalanceResp.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());
 				Assert.assertNotEquals(0, getBalanceResp.getCryptogetAccountBalance().getBalance());
-				
+
 				//contract does not exist
-				getBalanceResp = getBalance(crAccount, null, ContractID.newBuilder().setShardNum(666).setRealmNum(666).setContractNum(13).build());
+				getBalanceResp = getBalance(crAccount, null,
+						ContractID.newBuilder().setShardNum(666).setRealmNum(666).setContractNum(13).build());
 				Assert.assertEquals(ResponseCodeEnum.INVALID_CONTRACT_ID,
 						getBalanceResp.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());
-				
-				
+
+
 				//account does not exist
-				getBalanceResp = getBalance(crAccount, AccountID.newBuilder().setShardNum(666).setRealmNum(666).setAccountNum(13).build(),null);
+				getBalanceResp = getBalance(crAccount,
+						AccountID.newBuilder().setShardNum(666).setRealmNum(666).setAccountNum(13).build(), null);
 				Assert.assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID,
 						getBalanceResp.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());
-				
-				
-				TransactionRecord delRec =  deleteContractAndGetRecord(crAccount, payTestContractId,
+
+
+				TransactionRecord delRec = deleteContractAndGetRecord(crAccount, payTestContractId,
 						crAccount, null);
 				ResponseCodeEnum deleteOK = delRec.getReceipt().getStatus();
 				Assert.assertEquals(ResponseCodeEnum.SUCCESS, deleteOK);
-				
+
 				getBalanceResp = getBalance(crAccount, null, payTestContractId);
 				Assert.assertEquals(ResponseCodeEnum.CONTRACT_DELETED,
 						getBalanceResp.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());
-				
+
 			}
 		}
 
@@ -792,7 +807,7 @@ public class ContractGetBalance {
 		return respToReturn;
 
 	}
-	
+
 	private TransactionRecord deleteContractAndGetRecord(AccountID payerAccount, ContractID contractId,
 			AccountID transferAccount, ContractID transferContractID) throws Exception {
 		ContractID createdContract = null;
@@ -826,6 +841,7 @@ public class ContractGetBalance {
 
 		return contractDeleteRecord;
 	}
+
 	private ContractID createContractWithKey(AccountID payerAccount, FileID contractFile, long durationInSeconds,
 			KeyPair adminKeyPair) throws Exception {
 		ContractID createdContract = null;

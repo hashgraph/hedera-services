@@ -1,5 +1,5 @@
 {
-    "umbrella-test-success-pattern" : {
-        "Run legacy umbrella step": "ALL_API                  | \\d+     | \\d+        "
-    }
+  "umbrella-test-success-pattern": {
+	"Run legacy umbrella step": "ALL_API                  | \\d+     | \\d+        "
+  }
 }

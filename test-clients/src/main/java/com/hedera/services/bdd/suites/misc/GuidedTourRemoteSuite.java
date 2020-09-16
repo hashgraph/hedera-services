@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.misc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -148,7 +148,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 						newKeyNamed("newKey"),
 						cryptoCreate("target")
 								.key("oldKey")
-				) .when(
+				).when(
 						cryptoUpdate("target")
 								.key("newKey")
 								.deferStatusResolution()
@@ -168,7 +168,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						newKeyNamed("invalidPayerKey").shape(keyShape)
-				) .when().then(
+				).when().then(
 						cryptoUpdate(MASTER)
 								.receiverSigRequired(true)
 								.signedBy("invalidPayerKey")
@@ -183,9 +183,9 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						cryptoCreate("targetAccount").balance(0L)
-				) .when(
+				).when(
 						cryptoTransfer(
-							tinyBarsFromTo(GENESIS, "targetAccount", AMOUNT)
+								tinyBarsFromTo(GENESIS, "targetAccount", AMOUNT)
 						)
 				).then(
 						getAccountBalance("targetAccount").hasTinyBars(AMOUNT),

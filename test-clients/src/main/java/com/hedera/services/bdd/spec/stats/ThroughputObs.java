@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.stats;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,7 +79,7 @@ public class ThroughputObs {
 			return "Cannot be summarized, incomplete observation!";
 		} else {
 			int n = (numOpsAtObservationFinish - numOpsAtExpectedQueueSaturation);
-			double opsPerSecond = (double)n / obsLengthMs * 1_000L;
+			double opsPerSecond = (double) n / obsLengthMs * 1_000L;
 			return String.format("~%.2f ledger ops/sec", opsPerSecond);
 		}
 	}
@@ -87,6 +87,7 @@ public class ThroughputObs {
 	private boolean summarizable() {
 		return pos(numOpsAtExpectedQueueSaturation) && pos(numOpsAtObservationFinish) && pos(obsLengthMs);
 	}
+
 	private boolean pos(long v) {
 		return v > 0L;
 	}

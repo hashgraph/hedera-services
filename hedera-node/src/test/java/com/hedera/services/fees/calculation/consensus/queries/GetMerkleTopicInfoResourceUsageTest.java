@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,9 +86,14 @@ class GetMerkleTopicInfoResourceUsageTest {
 	@CsvSource({
 			", , , , 236, 112",
 			"abcdefgh, , , , 236, 120", // bpr += memo size(8)
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, , , 236, 152", // bpr += 32 for admin key
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, , 236, 184", // bpr += 32 for submit key
-			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 236, 208" // bpr += 24 for auto renew account
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, , , 236, 152", // bpr += 32
+			// for admin key
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, " +
+					"1111111111111111111111111111111111111111111111111111111111111111, , 236, 184", // bpr += 32 for
+			// submit key
+			"abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000, " +
+					"1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 236, 208" // bpr += 24
+			// for auto renew account
 	})
 	public void feeDataAsExpected(
 			String memo,
@@ -98,8 +103,9 @@ class GetMerkleTopicInfoResourceUsageTest {
 			int expectedBpt,  // query header + topic id size
 			int expectedBpr  // query response header + topic id size + topic info size
 	) {
-	    // setup:
-		MerkleTopic merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId, new RichInstant(1, 0));
+		// setup:
+		MerkleTopic merkleTopic = new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId,
+				new RichInstant(1, 0));
 		FeeData expectedFeeData = FeeData.newBuilder()
 				.setNodedata(FeeComponents.newBuilder().setConstant(1).setBpt(expectedBpt).setBpr(expectedBpr).build())
 				.setNetworkdata(FeeComponents.getDefaultInstance())

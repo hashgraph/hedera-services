@@ -175,9 +175,11 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	private List<AccountAmount> receiverFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, true);
 	}
+
 	private List<AccountAmount> senderFirst(AccountID payer, AccountID receiver, long amount) {
 		return itemized(payer, receiver, amount, false);
 	}
+
 	private List<AccountAmount> itemized(AccountID payer, AccountID receiver, long amount, boolean isReceiverFirst) {
 		return List.of(
 				AccountAmount.newBuilder()
@@ -194,7 +196,8 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	public void chargeSubmittingNodeUpTo(EnumSet<TxnFeeType> fees) {
 		pay(
 				fees,
-				() -> {},
+				() -> {
+				},
 				(fee) -> chargeUpTo(submittingNode, funding, fee));
 	}
 
@@ -253,7 +256,7 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 	}
 
 	private void completeNonVanishing(AccountID payer, AccountID payee, long amount, TxnFeeType fee) {
-		if (amount > 0)	 {
+		if (amount > 0) {
 			ledger.doTransfer(payer, payee, amount);
 			updateRecords(payer, fee, amount);
 		}
