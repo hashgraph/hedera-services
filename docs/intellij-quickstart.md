@@ -77,6 +77,18 @@ communicating via the loopback interface. But each still has a private
 instance of the Platform, and keeps its own state, just as it would in a 
 true distributed network.
 
+During the initial startup, the network creates system accounts `0.0.1` through `0.0.100`. 
+It sets the key for each account to a `KeyList` of size one with a well-known Ed25519 
+keypair. The network reads the keypair in a legacy format from [here](../hedera-node/data/onboard/StartUpAccount.txt), 
+but the same keypair is available in PEM format using the PKCS8 encoding 
+[here](../hedera-node/data/onboard/devGenesisKeypair.pem) (the passphrase is `passphrase`).
+
+Even more explicitly, the 32-byte hex-encoded private and public keys of the Ed25519 keypair are:
+```
+Public: 0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92
+Private: 91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
+```
+
 ## Submitting transactions to your local network
 
 The _test-clients/_ directory in this repo contains a large number of 
@@ -107,6 +119,9 @@ will run against your local network, culminating in logs similar to:
 2020-01-31 15:42:21.311 INFO   128  HelloWorldSpec - -------------- RESULTS OF HelloWorldSpec SUITE --------------
 2020-01-31 15:42:21.311 INFO   130  HelloWorldSpec - Spec{name=BalancesChangeOnTransfer, status=PASSED}
 ``` 
+(This client uses account `0.0.2` as the default payer, and is aware of the above
+keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
+under the `startupAccounts.path` key). 
 
 ## Stopping/restarting the network
 Stop the `ServicesMain` process in IntelliJ to shut down the network.
