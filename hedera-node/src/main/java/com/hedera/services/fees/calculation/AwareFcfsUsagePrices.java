@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,14 +85,14 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		var feeSchedules_fileID = fileNumbers.toFid(fileNumbers.feeSchedules());
 		if (!hfs.exists(feeSchedules_fileID)) {
 			throw new IllegalStateException(
-					String.format("No fee schedule available at %s!", readableId(feeSchedules)));
+					String.format( "No fee schedule available at %s!", readableId(feeSchedules)));
 		}
 		try {
 			setFeeSchedules(CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedules_fileID)));
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(feeSchedules), e);
 			throw new IllegalStateException(
-					String.format("Fee schedule %s is corrupt!", readableId(feeSchedules)));
+					String.format( "Fee schedule %s is corrupt!", readableId(feeSchedules)));
 		}
 	}
 

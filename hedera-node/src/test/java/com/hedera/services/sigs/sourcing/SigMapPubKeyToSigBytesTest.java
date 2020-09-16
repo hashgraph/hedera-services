@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(JUnitPlatform.class)
 public class SigMapPubKeyToSigBytesTest {
-	private final byte[] EMPTY_SIG = { };
+	private final byte[] EMPTY_SIG = {};
 	private final KeyTree payerKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ecdsa384(true), rsa3072(true)));
 	private final KeyTree otherKt =
@@ -127,7 +127,6 @@ public class SigMapPubKeyToSigBytesTest {
 			throw thrown.get();
 		}
 	}
-
 	private byte[] pubKeyFor(KeyTreeLeaf leaf, KeyFactory factory) {
 		Key key = leaf.asKey(factory);
 		if (key.getEd25519() != ByteString.EMPTY) {
@@ -139,7 +138,6 @@ public class SigMapPubKeyToSigBytesTest {
 		}
 		throw new AssertionError("Impossible leaf type!");
 	}
-
 	private byte[] expectedSigFor(KeyTreeLeaf leaf, KeyFactory factory, byte[] data) {
 		if (!leaf.isUsedToSign()) {
 			return EMPTY_SIG;

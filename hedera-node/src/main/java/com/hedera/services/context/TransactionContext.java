@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,10 +47,8 @@ public interface TransactionContext {
 	/**
 	 * Clear the context and processing history, initialize for a new consensus txn.
 	 *
-	 * @param accessor
-	 * 		the consensus platform txn to manage context of.
-	 * @param consensusTime
-	 * 		when the txn reached consensus.
+	 * @param accessor the consensus platform txn to manage context of.
+	 * @param consensusTime when the txn reached consensus.
 	 */
 	void resetFor(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember);
 
@@ -80,9 +78,8 @@ public interface TransactionContext {
 	/**
 	 * Returns the Hedera account id paying for the current txn
 	 *
+	 * @throws IllegalStateException if there is no active txn
 	 * @return the ad
-	 * @throws IllegalStateException
-	 * 		if there is no active txn
 	 */
 	AccountID activePayer();
 
@@ -125,11 +122,9 @@ public interface TransactionContext {
 	 * Returns the last record created by {@link TransactionContext#recordSoFar()},
 	 * with the transfer list and fees updated.
 	 *
-	 * @param listWithNewFees
-	 * 		the new transfer list to use in the record.
+	 * @param listWithNewFees the new transfer list to use in the record.
 	 * @return the updated historical record of processing the current txn thus far.
-	 * @throws IllegalStateException
-	 * 		if {@code recordSoFar} has not been called for the active txn.
+	 * @throws IllegalStateException if {@code recordSoFar} has not been called for the active txn.
 	 */
 	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
 
@@ -144,48 +139,42 @@ public interface TransactionContext {
 	/**
 	 * Set a new status for the current txn's processing.
 	 *
-	 * @param status
-	 * 		the new status of processing the current txn.
+	 * @param status the new status of processing the current txn.
 	 */
 	void setStatus(ResponseCodeEnum status);
 
 	/**
 	 * Record that the current transaction created a file.
 	 *
-	 * @param id
-	 * 		the created file.
+	 * @param id the created file.
 	 */
 	void setCreated(FileID id);
 
 	/**
 	 * Record that the current transaction created a crypto account.
 	 *
-	 * @param id
-	 * 		the created account.
+	 * @param id the created account.
 	 */
 	void setCreated(AccountID id);
 
 	/**
 	 * Record that the current transaction created a smart contract.
 	 *
-	 * @param id
-	 * 		the created contract.
+	 * @param id the created contract.
 	 */
 	void setCreated(ContractID id);
 
 	/**
 	 * Record that the current transaction created a consensus topic.
 	 *
-	 * @param id
-	 * 		the created topic.
+	 * @param id the created topic.
 	 */
 	void setCreated(TopicID id);
 
 	/**
 	 * Record that the current transaction created a token.
 	 *
-	 * @param id
-	 * 		the created token.
+	 * @param id the created token.
 	 */
 	void setCreated(TokenID id);
 
@@ -193,8 +182,7 @@ public interface TransactionContext {
 	 * Record that the current transaction called a smart contract with
 	 * a specified result.
 	 *
-	 * @param result
-	 * 		the result of the contract call.
+	 * @param result the result of the contract call.
 	 */
 	void setCallResult(ContractFunctionResult result);
 
@@ -202,8 +190,7 @@ public interface TransactionContext {
 	 * Record that the current transaction created a smart contract with
 	 * a specified result.
 	 *
-	 * @param result
-	 * 		the result of the contract creation.
+	 * @param result the result of the contract creation.
 	 */
 	void setCreateResult(ContractFunctionResult result);
 
@@ -211,8 +198,7 @@ public interface TransactionContext {
 	 * Record that an additional fee was deducted from the payer of the
 	 * current txn.
 	 *
-	 * @param amount
-	 * 		the extra amount deducted from the current txn's payer.
+	 * @param amount the extra amount deducted from the current txn's payer.
 	 */
 	void addNonThresholdFeeChargedToPayer(long amount);
 
@@ -225,7 +211,6 @@ public interface TransactionContext {
 
 	/**
 	 * Update the topic's running hash and sequence number.
-	 *
 	 * @param runningHash
 	 * @param sequenceNumber
 	 */

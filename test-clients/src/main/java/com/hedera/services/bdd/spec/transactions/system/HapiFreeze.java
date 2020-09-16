@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.system;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,7 +50,6 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	ZonedDateTime start, end;
 	private FileID fileID = null;
 	private String fileName = null;
-
 	@Override
 	protected HapiFreeze self() {
 		return this;
@@ -61,13 +60,11 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		settingDelayUnits = true;
 		return this;
 	}
-
 	public HapiFreeze andLasting(int n) {
 		this.duration = n;
-		settingDelayUnits = false;
+		settingDelayUnits =false;
 		return this;
 	}
-
 	public HapiFreeze seconds() {
 		if (settingDelayUnits) {
 			this.delayUnit = SECONDS;
@@ -76,7 +73,6 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		}
 		return this;
 	}
-
 	public HapiFreeze minutes() {
 		if (settingDelayUnits) {
 			this.delayUnit = MINUTES;
@@ -109,10 +105,10 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 							b.setStartMin(start.getMinute());
 							b.setEndHour(end.getHour());
 							b.setEndMin(end.getMinute());
-							if (fileID != null) {
+							if (fileID!=null) {
 								b.setUpdateFile(fileID);
 							}
-							if (fileName != null) {
+							if (fileName !=null){
 								FileID foundID = spec.registry().getFileId(fileName);
 								b.setUpdateFile(foundID);
 							}
@@ -135,8 +131,8 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper();
 		if (start != null && end != null) {
-			helper.add("start", String.format("%d:%d", start.getHour(), start.getMinute()))
-					.add("end", String.format("%d:%d", end.getHour(), end.getMinute()));
+				helper.add("start", String.format("%d:%d", start.getHour(), start.getMinute()))
+						.add("end", String.format("%d:%d", end.getHour(), end.getMinute()));
 		}
 		return helper;
 	}

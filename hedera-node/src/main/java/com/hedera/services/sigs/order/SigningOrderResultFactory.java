@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,8 +40,7 @@ import java.util.List;
  * additional context about the gRPC transaction being evaluated. This will depend
  * on the level of detail required by the type of error report.
  *
- * @param <T>
- * 		the type of error report this factory produces.
+ * @param <T> the type of error report this factory produces.
  * @author Michael Tinker
  * @see HederaSigningOrder
  */
@@ -49,8 +48,7 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Wrap the (successful) determination of a signing order in a {@link SigningOrderResult}.
 	 *
-	 * @param keys
-	 * 		a known signing order.
+	 * @param keys a known signing order.
 	 * @return the wrapper object.
 	 */
 	SigningOrderResult<T> forValidOrder(List<JKey> keys);
@@ -58,8 +56,7 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a non-specific error that occurred when listing signing keys for some txn.
 	 *
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forGeneralError(TransactionID txnId);
@@ -67,10 +64,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report an invalid account encountered when listing signing keys for some txn.
 	 *
-	 * @param account
-	 * 		the invalid account.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param account the invalid account.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forInvalidAccount(AccountID account, TransactionID txnId);
@@ -78,10 +73,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report an invalid smart contract encountered when listing signing keys for some txn.
 	 *
-	 * @param contract
-	 * 		the invalid account.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param contract the invalid account.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forInvalidContract(ContractID contract, TransactionID txnId);
@@ -91,10 +84,8 @@ public interface SigningOrderResultFactory<T> {
 	 * keys for some txn. (The current semantics of {@link HederaSigningOrder} mean it is
 	 * never valid to reference such smart contracts in a transaction.)
 	 *
-	 * @param contract
-	 * 		the invalid contract.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param contract the invalid contract.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forImmutableContract(ContractID contract, TransactionID txnId);
@@ -102,10 +93,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a missing file encountered when listing signing keys for some txn.
 	 *
-	 * @param file
-	 * 		the missing file.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param file the missing file.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingFile(FileID file, TransactionID txnId);
@@ -113,10 +102,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a missing account encountered when listing signing keys for some txn.
 	 *
-	 * @param account
-	 * 		the missing account.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param account the missing account.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingAccount(AccountID account, TransactionID txnId);
@@ -124,10 +111,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a missing token encountered when listing signing keys for some txn.
 	 *
-	 * @param ref
-	 * 		the missing token.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param ref the missing token.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingToken(TokenRef ref, TransactionID txnId);
@@ -135,10 +120,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a non-specific payer error that occurred when listing signing keys for some txn.
 	 *
-	 * @param payer
-	 * 		the problematic payer.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param payer the problematic payer.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forGeneralPayerError(AccountID payer, TransactionID txnId);
@@ -146,10 +129,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a missing topic occurring during listing signing keys for a txn.
 	 *
-	 * @param topic
-	 * 		the missing topic
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param topic the missing topic
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingTopic(TopicID topic, TransactionID txnId);
@@ -157,10 +138,8 @@ public interface SigningOrderResultFactory<T> {
 	/**
 	 * Report a missing auto renew account encountered when listing signing keys for some txn.
 	 *
-	 * @param account
-	 * 		the missing account.
-	 * @param txnId
-	 * 		the {@link TransactionID} of the problematic txn.
+	 * @param account the missing account.
+	 * @param txnId the {@link TransactionID} of the problematic txn.
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forMissingAutoRenewAccount(AccountID account, TransactionID txnId);

@@ -9,9 +9,9 @@ package com.hedera.services.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,15 +43,11 @@ public interface FeeCalculator {
 	void init();
 
 	long computeCachingFee(TransactionRecord record);
-
 	long computeStorageFee(TransactionRecord record);
 
 	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
-
 	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
-
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
-
 	FeeObject computePayment(
 			Query query,
 			FeeData usagePrices,

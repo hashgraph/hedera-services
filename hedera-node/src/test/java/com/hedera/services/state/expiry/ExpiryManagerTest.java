@@ -287,7 +287,7 @@ class ExpiryManagerTest {
 
 	private TxnId txnIdOf(long t) {
 		return TxnId.fromGrpc(TransactionID.newBuilder().
-				setAccountID(IdUtils.asAccount(String.format("0.0.%d", t))).build());
+						setAccountID(IdUtils.asAccount(String.format("0.0.%d", t))).build());
 	}
 
 	@Test

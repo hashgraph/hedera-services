@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -119,25 +119,18 @@ public class Utils {
 	/**
 	 * With a base date string as the starting UTC datetime for the beginning of the day, add
 	 *
-	 * @param excelUtcDate
-	 * 		The beginning of the UTC datetime as a date string.
-	 * @param hours
-	 * 		elapsed hours since the beginning of the UTC date. The value range is in [0, 23] inclusively.
-	 * @param minutes
-	 * 		elapsed minutes in the moment hour since the beginning of the hour. The value range is in [0, 59]
-	 * 		inclusively.
-	 * @return a <code>com.hederahashgraph.api.proto.java.Timestamp</code> object if the input can be converted into a
-	 * 		valid timestamp.
+	 * @param excelUtcDate The beginning of the UTC datetime as a date string.
+	 * @param hours	elapsed hours since the beginning of the UTC date. The value range is in [0, 23] inclusively.
+	 * @param minutes	elapsed minutes in the moment hour since the beginning of the hour. The value range is in [0, 59] inclusively.
+	 * @return a <code>com.hederahashgraph.api.proto.java.Timestamp</code> object if the input can be converted into a valid timestamp.
 	 */
 	@Nullable
-	public static Timestamp excelUtcDateWithOffsetsToTimestamp(@Nonnull String excelUtcDate, final int hours,
-			final int minutes) {
+	public static Timestamp excelUtcDateWithOffsetsToTimestamp (@Nonnull String excelUtcDate, final int hours, final int minutes) {
 		if (excelUtcDate == null || excelUtcDate.isEmpty()) {
 			throw new IllegalArgumentException("Input date string is empty.");
 		}
 		if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-			throw new IllegalArgumentException(
-					String.format("Offset 'hours:minutes' is [%s:%s], not in '[0-23:0-59]' format.", hours, minutes));
+			throw new IllegalArgumentException(String.format("Offset 'hours:minutes' is [%s:%s], not in '[0-23:0-59]' format.", hours, minutes));
 		}
 		final Date date;
 		try {
@@ -152,7 +145,6 @@ public class Utils {
 		}
 		return null;
 	}
-
 	/**
 	 * Build an AccountID
 	 *
@@ -336,7 +328,6 @@ public class Utils {
 
 	/**
 	 * Read input from Console or System.in
-	 *
 	 * @param format
 	 * @param args
 	 * @return
@@ -352,14 +343,13 @@ public class Utils {
 		return reader.readLine();
 	}
 
-	public static String timestampToExcelDateTimeString(Timestamp timestamp) {
+	public static String timestampToExcelDateTimeString(Timestamp timestamp){
 		SimpleDateFormat df = new SimpleDateFormat(DATE_TIME_FULL_PATTERN);
 		return df.format((new Date(1000L * timestamp.getSeconds())).getTime());
 	}
 
 	/**
 	 * Return the ResponseCodeEnum in Response
-	 *
 	 * @param response
 	 * @return
 	 */
@@ -381,7 +371,6 @@ public class Utils {
 
 	/**
 	 * Return the Receipt in Response
-	 *
 	 * @param response
 	 * @return
 	 */

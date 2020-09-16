@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,8 +60,7 @@ public class SignedTxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) {
-		}
+		} catch (Exception impossible) {}
 		return null;
 	}
 
@@ -96,8 +95,7 @@ public class SignedTxnAccessor {
 						.setBody(TransactionBody.parseFrom(signedTxn.getBodyBytes()))
 						.clearBodyBytes()
 						.build();
-			} catch (InvalidProtocolBufferException ignore) {
-			}
+			} catch (InvalidProtocolBufferException ignore) { }
 		}
 		return signedTxn4Log;
 	}

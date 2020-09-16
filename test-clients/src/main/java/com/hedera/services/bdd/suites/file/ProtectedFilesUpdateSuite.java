@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -161,7 +161,6 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 			Assert.assertEquals(expected, actual);
 		});
 	}
-
 	private HapiApiSpec specialAccountCanUpdateSpecialFile(
 			final String specialAccount,
 			final String specialFile,
@@ -183,8 +182,8 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 				specialFile,
 				isFree,
 				contents ->
-						target.equals("ignore")
-								? contents : (new String(contents).replace(target, replacement)).getBytes());
+					target.equals("ignore")
+							? contents : (new String(contents).replace(target, replacement)).getBytes());
 	}
 
 	private HapiApiSpec specialAccountCanUpdateSpecialFile(

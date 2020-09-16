@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-
 import java.util.Arrays;
 import java.util.List;
-
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -46,7 +44,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	private final SignatureMap sigMap;
-	private static final byte[] EMPTY_SIG = { };
+	private static final byte[] EMPTY_SIG = {};
 
 	SigMapPubKeyToSigBytes(SignatureMap sigMap) {
 		this.sigMap = sigMap;

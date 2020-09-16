@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -117,11 +117,11 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 						cryptoCreate("d")
 				).when(
 						cryptoTransfer(spec -> TransferList.newBuilder()
-								.addAccountAmounts(aa(spec, GENESIS, -4L))
-								.addAccountAmounts(aa(spec, "a", 1L))
-								.addAccountAmounts(aa(spec, "b", 1L))
-								.addAccountAmounts(aa(spec, "c", 1L))
-								.addAccountAmounts(aa(spec, "d", 1L)).build())
+											.addAccountAmounts(aa(spec, GENESIS, -4L))
+											.addAccountAmounts(aa(spec, "a", 1L))
+											.addAccountAmounts(aa(spec, "b", 1L))
+											.addAccountAmounts(aa(spec, "c", 1L))
+											.addAccountAmounts(aa(spec, "d", 1L)).build())
 								.payingWith("hairTriggerPayer")
 								.via("txn")
 				).then(
@@ -219,7 +219,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 
 	HapiApiSpec[] cryptoCreatePaths() {
 		return new HapiApiSpec[] {
-				cryptoCreateSimpleKey(),
+			cryptoCreateSimpleKey(),
 		};
 	}
 
@@ -255,7 +255,5 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}]," +
-			"\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\"," +
-			"\"type\":\"function\"}";
+	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }

@@ -9,9 +9,9 @@ package com.hedera.services.sigs.metadata.lookups;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,11 +34,9 @@ public interface ContractSigMetaLookup {
 	 * Returns metadata for the given smart contract's signing activity; e.g.,
 	 * whether the contract has an admin key.
 	 *
-	 * @param contract
-	 * 		the smart contract to recover signing metadata for.
+	 * @param contract the smart contract to recover signing metadata for.
 	 * @return the desired metadata.
-	 * @throws Exception
-	 * 		if no appropriate metadata exists.
+	 * @throws Exception if no appropriate metadata exists.
 	 */
 	ContractSigningMetadata lookup(ContractID contract) throws Exception;
 }

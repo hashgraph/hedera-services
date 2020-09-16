@@ -240,9 +240,7 @@ public class HapiSpecRegistry {
 		put(name, key, Key.class);
 	}
 
-	public void saveAdminKey(String name, Key key) {
-		put(name + "Admin", key, Key.class);
-	}
+	public void saveAdminKey(String name, Key key) { put(name + "Admin", key, Key.class); }
 
 	public void saveFreezeKey(String name, Key key) {
 		put(name + "Freeze", key, Key.class);

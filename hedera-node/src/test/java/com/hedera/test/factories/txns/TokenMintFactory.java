@@ -26,8 +26,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenMintFactory extends SignedTxnFactory<TokenMintFactory> {
-	private TokenMintFactory() {
-	}
+	private TokenMintFactory() {}
 
 	private TokenRef ref;
 

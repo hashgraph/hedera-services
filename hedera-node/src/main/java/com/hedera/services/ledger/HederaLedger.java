@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -97,8 +97,7 @@ public class HederaLedger {
 
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
-	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {
-	};
+	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -198,7 +197,7 @@ public class HederaLedger {
 
 	/* -- CURRENCY MANIPULATION -- */
 	public long getBalance(AccountID id) {
-		return (long) ledger.get(id, BALANCE);
+		return (long)ledger.get(id, BALANCE);
 	}
 
 	public void adjustBalance(AccountID id, long adjustment) {
@@ -232,7 +231,7 @@ public class HederaLedger {
 
 	/* --- TOKEN MANIPULATION --- */
 	public long getTokenBalance(AccountID aId, TokenID tId) {
-		return (long) ledger.get(aId, BALANCE, idScopeOf(tId));
+		return (long)ledger.get(aId, BALANCE, idScopeOf(tId));
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
@@ -263,7 +262,7 @@ public class HederaLedger {
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
 		var validity = OK;
 
-		for (TokenTransfer transfer : transfers.getTransfersList()) {
+		for (TokenTransfer transfer : transfers.getTransfersList())	{
 			var id = tokenStore.resolve(transfer.getToken());
 			if (id == TokenStore.MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
@@ -307,7 +306,7 @@ public class HederaLedger {
 	}
 
 	public void customize(AccountID id, HederaAccountCustomizer customizer) {
-		if ((boolean) ledger.get(id, IS_DELETED)) {
+		if ((boolean)ledger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
 		customizer.customize(id, ledger);
@@ -329,28 +328,28 @@ public class HederaLedger {
 	}
 
 	/* -- ACCOUNT PROPERTY ACCESS -- */
-	public boolean exists(AccountID id) {
+	public boolean exists(AccountID id)	 {
 		return ledger.exists(id);
 	}
 
 	public long expiry(AccountID id) {
-		return (long) ledger.get(id, EXPIRY);
+		return (long)ledger.get(id, EXPIRY);
 	}
 
 	public long fundsSentRecordThreshold(AccountID id) {
-		return (long) ledger.get(id, FUNDS_SENT_RECORD_THRESHOLD);
+		return (long)ledger.get(id, FUNDS_SENT_RECORD_THRESHOLD);
 	}
 
 	public long fundsReceivedRecordThreshold(AccountID id) {
-		return (long) ledger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD);
+		return (long)ledger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD);
 	}
 
 	public boolean isSmartContract(AccountID id) {
-		return (boolean) ledger.get(id, IS_SMART_CONTRACT);
+		return (boolean)ledger.get(id, IS_SMART_CONTRACT);
 	}
 
 	public boolean isDeleted(AccountID id) {
-		return (boolean) ledger.get(id, IS_DELETED);
+		return (boolean)ledger.get(id, IS_DELETED);
 	}
 
 	public boolean isPendingCreation(AccountID id) {
@@ -371,7 +370,7 @@ public class HederaLedger {
 	}
 
 	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) ledger.get(id, property);
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, property);
 		records.offer(record);
 		ledger.set(id, property, records);
 		return records.peek().getExpiry();
@@ -391,7 +390,7 @@ public class HederaLedger {
 			long now,
 			Consumer<ExpirableTxnRecord> cb
 	) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) ledger.get(id, recordsProp);
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>)ledger.get(id, recordsProp);
 		int numBefore = records.size();
 
 		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
@@ -427,7 +426,7 @@ public class HederaLedger {
 	}
 
 	private long computeNewBalance(AccountID id, long adjustment) {
-		if ((boolean) ledger.get(id, IS_DELETED)) {
+		if ((boolean)ledger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
 		long balance = getBalance(id);

@@ -9,9 +9,9 @@ package com.hedera.services.state.serdes;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -116,23 +116,23 @@ public class DomainSerdes {
 	}
 
 	public RichInstant deserializeTimestamp(DataInputStream in) throws IOException {
-		return RichInstant.from((SerializableDataInputStream) in);
+		return RichInstant.from((SerializableDataInputStream)in);
 	}
 
 	@SuppressWarnings("unchecked")
 	public void serializeTimestamp(RichInstant ts, DataOutputStream out) throws IOException {
-		ts.serialize((SerializableDataOutputStream) out);
+		ts.serialize((SerializableDataOutputStream)out);
 	}
 
 	public EntityId deserializeId(DataInputStream _in) throws IOException {
-		var in = (SerializableDataInputStream) _in;
+		var in = (SerializableDataInputStream)_in;
 		return in.readSerializable();
 	}
 
 	@Deprecated
 	@SuppressWarnings("unchecked")
 	public void deserializeIntoRecords(DataInputStream din, FCQueue<ExpirableTxnRecord> to) throws IOException {
-		SerializableDataInputStream in = (SerializableDataInputStream) din;
+		SerializableDataInputStream in = (SerializableDataInputStream)din;
 		to.copyFrom(in);
 		to.copyFromExtra(in);
 	}

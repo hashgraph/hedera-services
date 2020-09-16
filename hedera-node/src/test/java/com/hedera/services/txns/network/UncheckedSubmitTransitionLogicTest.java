@@ -56,7 +56,6 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.*;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -123,8 +123,7 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId contractId;
 	ExchangeRates exchangeRates;
 
-	public TxnReceipt() {
-	}
+	public TxnReceipt() { }
 
 	public TxnReceipt(
 			@Nullable String status,

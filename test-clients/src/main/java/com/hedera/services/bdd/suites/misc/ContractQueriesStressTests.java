@@ -146,11 +146,11 @@ public class ContractQueriesStressTests extends HapiApiSuite {
 				return List.of(
 						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
 						contractCreate("childStorage").bytecode("bytecode"),
-						contractCall("childStorage", GROW_CHILD_ABI, 0, 1, 1),
-						contractCall("childStorage", GROW_CHILD_ABI, 1, 1, 3),
-						contractCall("childStorage", SET_ZERO_READ_ONE_ABI, 23).via("first"),
-						contractCall("childStorage", SET_ZERO_READ_ONE_ABI, 23).via("second"),
-						contractCall("childStorage", SET_ZERO_READ_ONE_ABI, 23).via("third")
+						contractCall( "childStorage", GROW_CHILD_ABI, 0, 1, 1),
+						contractCall( "childStorage", GROW_CHILD_ABI, 1, 1, 3),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("first"),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("second"),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23).via("third")
 				);
 			}
 

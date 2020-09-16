@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,44 +34,38 @@ import java.util.concurrent.Callable;
  */
 public class ParallelSubmit implements Callable<TransactionResponse> {
 
-	private Transaction transaction;
-	private SmartContractServiceGrpc.SmartContractServiceBlockingStub contractStub;
-	private long startMicroSecond = 500;
+    private Transaction transaction;
+    private SmartContractServiceGrpc.SmartContractServiceBlockingStub contractStub;
+    private long startMicroSecond= 500;
+    public ParallelSubmit(){}
 
-	public ParallelSubmit() {
-	}
-
-	public ParallelSubmit(Transaction transaction,
-			SmartContractServiceGrpc.SmartContractServiceBlockingStub contractStub) {
-		this.transaction = transaction;
-		this.contractStub = contractStub;
-	}
-
-	public TransactionResponse call() throws Exception {
-		System.out.println(String.format("Starting task thread %s",
-				Thread.currentThread().getName()));
-		TransactionResponse response = null;
-		long executionMicroSecond = getNextMillisecondsForMatch(startMicroSecond);
-		//Wait for specific millisecond for submitting transaction
-		System.out.println(
-				"******Waiting -- " + Thread.currentThread().getName() + ", Current Time: " + System.currentTimeMillis());
-		while (executionMicroSecond == System.currentTimeMillis()) {
+    public ParallelSubmit(Transaction transaction, SmartContractServiceGrpc.SmartContractServiceBlockingStub contractStub){
+        this.transaction = transaction;
+        this.contractStub = contractStub;
+    }
+    public TransactionResponse call() throws Exception {
+        System.out.println(String.format("Starting task thread %s",
+                Thread.currentThread().getName()));
+        TransactionResponse response = null;
+        long executionMicroSecond = getNextMillisecondsForMatch(startMicroSecond);
+        //Wait for specific millisecond for submitting transaction
+        System.out.println("******Waiting -- "+Thread.currentThread().getName()+", Current Time: "+System.currentTimeMillis());
+        while (executionMicroSecond == System.currentTimeMillis()) {
 			;
 		}
-		System.out.println(
-				"******Done -- " + Thread.currentThread().getName() + ", Completed TIme " + System.currentTimeMillis());
-		response = contractStub.createContract(transaction);
-		return response;
-	}
+        System.out.println("******Done -- "+Thread.currentThread().getName()+", Completed TIme "+System.currentTimeMillis());
+        response = contractStub.createContract(transaction);
+        return response;
+    }
 
-	private long getNextMillisecondsForMatch(long milliSeconds) {
-		long nextMilliseconds;
-		if (System.currentTimeMillis() > milliSeconds) {
-			nextMilliseconds = System.currentTimeMillis() - milliSeconds;
-		} else {
-			nextMilliseconds = System.currentTimeMillis() + milliSeconds;
-		}
-		return nextMilliseconds;
-	}
+    private long getNextMillisecondsForMatch(long milliSeconds) {
+        long nextMilliseconds;
+        if( System.currentTimeMillis()  > milliSeconds  ){
+            nextMilliseconds = System.currentTimeMillis() - milliSeconds;
+        } else {
+            nextMilliseconds = System.currentTimeMillis() + milliSeconds;
+        }
+        return nextMilliseconds;
+    }
 
 }

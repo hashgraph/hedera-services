@@ -238,7 +238,7 @@ public class TxnUtils {
 		Instant instant = Instant.now(Clock.systemUTC());
 
 		int candidateNano = NEXT_NANO.getAndIncrement() + NANO_OFFSET;
-		if (candidateNano >= NANOS_IN_A_SECOND) {
+		if( candidateNano >= NANOS_IN_A_SECOND ) {
 			candidateNano = 0;
 			NEXT_NANO.set(1);
 		}
@@ -343,7 +343,6 @@ public class TxnUtils {
 		}
 		return sb.toString();
 	}
-
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 

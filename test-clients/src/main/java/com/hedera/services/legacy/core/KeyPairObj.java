@@ -79,26 +79,26 @@ public class KeyPairObj implements Serializable {
 		this.privateKey = privateKey;
 	}
 
-	public static String getPrivateKeyString(PrivateKey pKey) {
+	public static String getPrivateKeyString (PrivateKey pKey) {
 
 		return null;
 	}
 
 	public PrivateKey getPrivateKey() {
-		PrivateKey privKey = null;
+		PrivateKey privKey=null;
 		byte[] privArray = new byte[0];
 		try {
 			privArray = Hex.decodeHex(privateKey);
 		} catch (DecoderException e) {
 			e.printStackTrace();
 		}
-		if (privateKey.length() == 128) {
+		if(privateKey.length()==128) {
 			EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 			EdDSAPrivateKeySpec pubKeySpec = new EdDSAPrivateKeySpec(spec, privArray);
 			privKey = new EdDSAPrivateKey(pubKeySpec);
 		} else {
 			PKCS8EncodedKeySpec encoded = new PKCS8EncodedKeySpec(privArray);
-			try {
+			try{
 				privKey = new EdDSAPrivateKey(encoded);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -109,10 +109,11 @@ public class KeyPairObj implements Serializable {
 	}
 
 
+
 	public PrivateKey getPrivateKey_128() {
 		byte[] privArray = null;
 		try {
-			privArray = Hex.decodeHex(privateKey);
+			privArray=Hex.decodeHex(privateKey);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -126,7 +127,7 @@ public class KeyPairObj implements Serializable {
 	public PublicKey getPublicKey() throws DecoderException, InvalidKeySpecException {
 		byte[] pubKeyBytes = HexUtils.hexToBytes(publicKey);
 		PublicKey pubKey = null;
-		if (publicKey.length() == 64) {
+		if(publicKey.length()==64) {
 			EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 			EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(pubKeyBytes, spec);
 			pubKey = new EdDSAPublicKey(pubKeySpec);
@@ -138,10 +139,10 @@ public class KeyPairObj implements Serializable {
 	}
 
 	public PublicKey getPublicKey_64() {
-		byte[] pubKeyBytes = null;
+		byte[] pubKeyBytes=null;
 		try {
 			pubKeyBytes = ClientBaseThread.hexToBytes(publicKey);
-		} catch (Exception e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);

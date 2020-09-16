@@ -116,7 +116,7 @@ class ServicesStateTest {
 	@BeforeEach
 	private void setup() {
 		CONTEXTS.clear();
-		mockDigest = (Consumer<MerkleNode>) mock(Consumer.class);
+		mockDigest = (Consumer<MerkleNode>)mock(Consumer.class);
 		ServicesState.merkleDigest = mockDigest;
 
 		out = mock(SerializableDataOutputStream.class);
@@ -315,13 +315,13 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
-						"  Overall        :: %s\n" +
-						"  Accounts       :: %s\n" +
-						"  Storage        :: %s\n" +
-						"  Topics         :: %s\n" +
-						"  Tokens         :: %s\n" +
-						"  NetworkContext :: %s\n" +
-						"  AddressBook    :: %s",
+				"  Overall        :: %s\n" +
+				"  Accounts       :: %s\n" +
+				"  Storage        :: %s\n" +
+				"  Topics         :: %s\n" +
+				"  Tokens         :: %s\n" +
+				"  NetworkContext :: %s\n" +
+				"  AddressBook    :: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,

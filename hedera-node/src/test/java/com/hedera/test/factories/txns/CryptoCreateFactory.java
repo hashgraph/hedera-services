@@ -9,9 +9,9 @@ package com.hedera.test.factories.txns;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
@@ -40,9 +39,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 	private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
 	private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
 
-	private CryptoCreateFactory() {
-	}
-
+	private CryptoCreateFactory() {}
 	public static CryptoCreateFactory newSignedCryptoCreate() {
 		return new CryptoCreateFactory();
 	}
@@ -72,7 +69,6 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 		this.accountKt = accountKt;
 		return this;
 	}
-
 	public CryptoCreateFactory receiverSigRequired(boolean isRequired) {
 		this.receiverSigRequired = isRequired;
 		return this;

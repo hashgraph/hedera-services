@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static java.util.stream.Collectors.joining;
-
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.properties.BeanProperty;
@@ -51,12 +50,10 @@ import org.apache.logging.log4j.Logger;
  * backing store when the transaction is committed; or dropped with no effects
  * upon a rollback.
  *
- * @param <K>
- * 		the type of id used by the ledger.
- * @param <P>
- * 		the family of properties associated to accounts in the ledger.
- * @param <A>
- * 		the type of a ledger account.
+ * @param <K> the type of id used by the ledger.
+ * @param <P> the family of properties associated to accounts in the ledger.
+ * @param <A> the type of a ledger account.
+ *
  * @author Michael Tinker
  */
 public class TransactionalLedger<

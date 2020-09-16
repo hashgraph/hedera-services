@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,7 +56,6 @@ public class SigListPubKeyToSigBytes implements PubKeyToSigBytes {
 	public SigListPubKeyToSigBytes(List<Signature> hederaSigs) {
 		simpleSigs = hederaSigs.stream().flatMap(this::flattened).collect(toList());
 	}
-
 	private Stream<Signature> flattened(Signature sig) {
 		if (sig.hasThresholdSignature()) {
 			return sig.getThresholdSignature().getSigs().getSigsList().stream().flatMap(this::flattened);

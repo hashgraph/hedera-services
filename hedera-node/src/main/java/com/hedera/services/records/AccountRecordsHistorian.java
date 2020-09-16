@@ -9,9 +9,9 @@ package com.hedera.services.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,8 +49,7 @@ public interface AccountRecordsHistorian {
 	 * Injects the ledger in which accounts pay for the transactions
 	 * whose history is of interest.
 	 *
-	 * @param ledger
-	 * 		the ledger to record history for.
+	 * @param ledger the ledger to record history for.
 	 */
 	void setLedger(HederaLedger ledger);
 
@@ -58,8 +57,7 @@ public interface AccountRecordsHistorian {
 	 * Injects the expiring entity creator which the historian
 	 * should use to create records.
 	 *
-	 * @param creator
-	 * 		the creator of expiring entities.
+	 * @param creator the creator of expiring entities.
 	 */
 	void setCreator(EntityCreator creator);
 

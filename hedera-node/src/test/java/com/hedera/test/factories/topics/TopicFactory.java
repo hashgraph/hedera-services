@@ -9,9 +9,9 @@ package com.hedera.test.factories.topics;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,9 +40,7 @@ public class TopicFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<AccountID> autoRenewAccount = Optional.empty();
 
-	private TopicFactory() {
-	}
-
+	private TopicFactory() {}
 	public MerkleTopic get() throws Exception {
 		MerkleTopic value = new MerkleTopic();
 
@@ -62,8 +60,7 @@ public class TopicFactory {
 	private JKey uncheckedMap(Key k) {
 		try {
 			return JKey.mapKey(k);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) {}
 		throw new AssertionError("Valid key failed to map!");
 	}
 

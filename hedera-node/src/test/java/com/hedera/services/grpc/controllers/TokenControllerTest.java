@@ -168,6 +168,6 @@ class TokenControllerTest {
 		subject.getTokenInfo(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).respondToToken(query, queryObserver, null, TOKEN_GET_INFO_METRIC);
+		verify(queryResponseHelper).respondToToken(query, queryObserver,null , TOKEN_GET_INFO_METRIC);
 	}
 }

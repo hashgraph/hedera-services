@@ -1,8 +1,8 @@
 {
-  "build-artifact-success-pattern": {
-	"build service step": "Hedera Services .................................... SUCCESS",
-	"build service API step": "Hedera Services API ................................ SUCCESS",
-	"build hedera node step": "Hedera Services Node ............................... SUCCESS",
-	"build test clients step": "Hedera Services Test Clients ....................... SUCCESS"
-  }
+    "build-artifact-success-pattern": {
+        "build service step"     : "Hedera Services .................................... SUCCESS",
+        "build service API step" : "Hedera Services API ................................ SUCCESS",
+        "build hedera node step" : "Hedera Services Node ............................... SUCCESS",
+        "build test clients step": "Hedera Services Test Clients ....................... SUCCESS"
+    }
 }

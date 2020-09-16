@@ -70,12 +70,10 @@ public class SpecKeyFromPem extends UtilOp {
 		this.control = SIMPLE_WACL;
 		return this;
 	}
-
 	public SpecKeyFromPem passphrase(String secret) {
 		passphrase = secret;
 		return this;
 	}
-
 	public SpecKeyFromPem name(String custom) {
 		name = Optional.of(custom);
 		return this;

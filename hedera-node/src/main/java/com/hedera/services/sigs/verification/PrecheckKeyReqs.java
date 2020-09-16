@@ -9,9 +9,9 @@ package com.hedera.services.sigs.verification;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-
 import static com.hedera.services.sigs.HederaToPlatformSigOps.*;
 
 /**
@@ -58,11 +57,9 @@ public class PrecheckKeyReqs {
 	 * Returns a list of Hedera keys which must have valid signatures
 	 * for the given {@link TransactionBody} to pass precheck.
 	 *
-	 * @param txn
-	 * 		a gRPC txn.
+	 * @param txn a gRPC txn.
 	 * @return a list of keys precheck requires to have active signatures.
-	 * @throws Exception
-	 * 		if the txn does not reference valid keys.
+	 * @throws Exception if the txn does not reference valid keys.
 	 */
 	public List<JKey> getRequiredKeys(TransactionBody txn) throws Exception {
 		List<JKey> keys = new ArrayList<>();
@@ -85,7 +82,7 @@ public class PrecheckKeyReqs {
 	}
 
 	private void addQueryPaymentKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-		SigningOrderResult<SignatureStatus> otherResult =
+		SigningOrderResult<SignatureStatus>	otherResult =
 				keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY);
 		if (otherResult.hasErrorReport()) {
 			SignatureStatus error = otherResult.getErrorReport();

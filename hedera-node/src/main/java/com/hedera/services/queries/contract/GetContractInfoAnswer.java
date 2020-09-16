@@ -144,7 +144,7 @@ public class GetContractInfoAnswer implements AnswerService {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
+				response.setContractInfo((ContractGetInfoResponse.ContractInfo)ctx.get(CONTRACT_INFO_CTX_KEY));
 			}
 		} else {
 			var info = view.infoForContract(op.getContractID());

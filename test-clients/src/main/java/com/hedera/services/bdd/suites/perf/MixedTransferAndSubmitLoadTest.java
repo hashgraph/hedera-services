@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,13 +26,11 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -79,8 +77,7 @@ public class MixedTransferAndSubmitLoadTest extends HapiApiSuite {
 										cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
 												.noLogging()
 												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION,
-														PLATFORM_TRANSACTION_NOT_CREATED)
+														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 												.deferStatusResolution())
 								.toArray(n -> new HapiSpecOperation[n]),
 						IntStream.range(0, settings.getBurstSize() / 2)
@@ -89,8 +86,7 @@ public class MixedTransferAndSubmitLoadTest extends HapiApiSuite {
 												.message("A fascinating item of general interest!")
 												.noLogging()
 												.hasPrecheckFrom(
-														OK, BUSY, DUPLICATE_TRANSACTION,
-														PLATFORM_TRANSACTION_NOT_CREATED)
+														OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
 												.deferStatusResolution())
 								.toArray(n -> new HapiSpecOperation[n])
 				)),

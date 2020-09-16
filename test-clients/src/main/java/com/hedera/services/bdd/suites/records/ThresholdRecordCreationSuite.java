@@ -122,8 +122,8 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"ledger.createThresholdRecords", "true"
-								)),
+								"ledger.createThresholdRecords", "true"
+						)),
 						cryptoCreate("lowSend").sendThreshold(A_LOW_THRESHOLD),
 						cryptoCreate("lowReceive").receiveThreshold(A_LOW_THRESHOLD)
 				).when(
@@ -140,8 +140,8 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"ledger.createThresholdRecords", "false"
-								))
+								"ledger.createThresholdRecords", "false"
+						))
 				);
 	}
 
@@ -248,8 +248,8 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"ledger.createThresholdRecords", "true"
-								)),
+								"ledger.createThresholdRecords", "true"
+						)),
 						cryptoCreate("lowSendThreshPayer")
 								.sendThreshold(1L),
 						cryptoCreate("misc")
@@ -281,8 +281,8 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"ledger.createThresholdRecords", "false"
-								))
+								"ledger.createThresholdRecords", "false"
+						))
 				);
 	}
 

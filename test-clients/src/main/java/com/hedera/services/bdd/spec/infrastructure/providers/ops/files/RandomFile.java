@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,9 +52,9 @@ public class RandomFile implements OpProvider {
 	private final RegistrySourcedNameProvider<FileID> files;
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_FILE_ID);
 	static byte[][] contentChoices = new byte[][] {
-			paddedTo(BYTES_1K, "I turn the page and read / I dream of silent verses...".getBytes()),
-			paddedTo(BYTES_2K, "In Manchua territory half is slough / Half pine tree forest...".getBytes()),
-			paddedTo(BYTES_4K, "Twas brillig, and the slithy toves / Did gyre and gimble in the wabe...".getBytes()),
+				paddedTo(BYTES_1K, "I turn the page and read / I dream of silent verses...".getBytes()),
+				paddedTo(BYTES_2K, "In Manchua territory half is slough / Half pine tree forest...".getBytes()),
+				paddedTo(BYTES_4K, "Twas brillig, and the slithy toves / Did gyre and gimble in the wabe...".getBytes()),
 	};
 
 	public RandomFile(
@@ -101,7 +101,7 @@ public class RandomFile implements OpProvider {
 		if (bytes.length < n) {
 			byte[] padded = Arrays.copyOf(bytes, n);
 			for (int i = bytes.length; i < n; i++) {
-				padded[i] = (byte) filler.charAt(i % filler.length());
+				padded[i] = (byte)filler.charAt(i % filler.length());
 			}
 			return padded;
 		} else {

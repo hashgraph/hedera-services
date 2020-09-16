@@ -476,8 +476,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 							if (args.length != 5) {
 								System.out.println(
 										String.format(
-												"Args (%s) don't include a path to the fee schedule JSON for the " +
-														"update!",
+												"Args (%s) don't include a path to the fee schedule JSON for the update!",
 												Arrays.toString(args)));
 								System.exit(1);
 							}

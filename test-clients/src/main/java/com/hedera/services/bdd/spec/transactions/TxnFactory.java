@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -88,7 +88,7 @@ public class TxnFactory {
 		TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
 		composedBodySpec.accept(bodyBuilder);
 		return Transaction.newBuilder()
-				.setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
+			.setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
 	}
 
 	public TransactionID sampleRecentTxnId() {
@@ -107,7 +107,7 @@ public class TxnFactory {
 			sampleTxnId.set(defaultTxnId);
 		}
 
-		final var memoToUse = (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
+		final var memoToUse = (setup.isMemoUTF8() == TRUE ) ? setup.defaultUTF8memo() : setup.defaultMemo();
 
 		return builder -> builder
 				.setTransactionID(defaultTxnId)
@@ -119,61 +119,51 @@ public class TxnFactory {
 
 	public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def) throws Throwable {
 		Method newBuilder = tClass.getMethod("newBuilder");
-		B opBuilder = (B) newBuilder.invoke(null);
+		B opBuilder = (B)newBuilder.invoke(null);
 		String defaultBodyMethod = String.format("defaultDef_%s", tClass.getSimpleName());
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
-		((Consumer<B>) defaultBody.invoke(this)).andThen(def).accept(opBuilder);
-		return (T) opBuilder.build();
+		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
+		return (T)opBuilder.build();
 	}
 
 	public Consumer<TokenWipeAccount.Builder> defaultDef_TokenWipeAccount() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenRevokeKyc.Builder> defaultDef_TokenRevokeKyc() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenGrantKyc.Builder> defaultDef_TokenGrantKyc() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenBurnCoins.Builder> defaultDef_TokenBurnCoins() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenMintCoins.Builder> defaultDef_TokenMintCoins() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenDeletion.Builder> defaultDef_TokenDeletion() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenFreeze.Builder> defaultDef_TokenFreeze() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenUnfreeze.Builder> defaultDef_TokenUnfreeze() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenManagement.Builder> defaultDef_TokenManagement() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<TokenCreation.Builder> defaultDef_TokenCreation() {
@@ -187,8 +177,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<UncheckedSubmitBody.Builder> defaultDef_UncheckedSubmitBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<ConsensusSubmitMessageTransactionBody.Builder> defaultDef_ConsensusSubmitMessageTransactionBody() {
@@ -198,8 +187,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<ConsensusUpdateTopicTransactionBody.Builder> defaultDef_ConsensusUpdateTopicTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<ConsensusCreateTopicTransactionBody.Builder> defaultDef_ConsensusCreateTopicTransactionBody() {
@@ -209,18 +197,15 @@ public class TxnFactory {
 	}
 
 	public Consumer<ConsensusDeleteTopicTransactionBody.Builder> defaultDef_ConsensusDeleteTopicTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<FreezeTransactionBody.Builder> defaultDef_FreezeTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<FileDeleteTransactionBody.Builder> defaultDef_FileDeleteTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<ContractDeleteTransactionBody.Builder> defaultDef_ContractDeleteTransactionBody() {
@@ -230,8 +215,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<ContractUpdateTransactionBody.Builder> defaultDef_ContractUpdateTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<ContractCallTransactionBody.Builder> defaultDef_ContractCallTransactionBody() {
@@ -264,8 +248,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<FileUpdateTransactionBody.Builder> defaultDef_FileUpdateTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	private Timestamp defaultExpiry() {
@@ -283,13 +266,11 @@ public class TxnFactory {
 	}
 
 	public Consumer<SystemDeleteTransactionBody.Builder> defaultDef_SystemDeleteTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<SystemUndeleteTransactionBody.Builder> defaultDef_SystemUndeleteTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 
 	public Consumer<CryptoCreateTransactionBody.Builder> defaultDef_CryptoCreateTransactionBody() {
@@ -308,7 +289,6 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
-		return builder -> {
-		};
+		return builder -> {};
 	}
 }

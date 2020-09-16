@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,19 +53,16 @@ public interface PubKeyToSigBytes {
 	 * Return the cryptographic signature associated to a given public key in some
 	 * context (presumably the creation of a {@link com.swirlds.common.crypto.Signature}).
 	 *
-	 * @param pubKey
-	 * 		a public key whose private key was used to sign some data.
+ 	 * @param pubKey a public key whose private key was used to sign some data.
 	 * @return the cryptographic signature that resulted.
-	 * @throws Exception
-	 * 		if the desired cryptographic signature is unavailable.
+	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
 
 	/**
 	 * Create a {@code PubKeyToSigBytes} implementation backed by the given map.
 	 *
-	 * @param sigMap
-	 * 		a list of public-key-to-cryptographic-signature map entries.
+	 * @param sigMap a list of public-key-to-cryptographic-signature map entries.
 	 * @return a source of raw signatures that encapsulates this mapping.
 	 */
 	static PubKeyToSigBytes from(SignatureMap sigMap) {
@@ -77,8 +74,7 @@ public interface PubKeyToSigBytes {
 	 * list of cryptographic signatures contained in a list of Hedera
 	 * {@link Signature} instances.
 	 *
-	 * @param hederaSigs
-	 * 		a list of Hedera {@link Signature} objects.
+	 * @param hederaSigs a list of Hedera {@link Signature} objects.
 	 * @return a source of the raw signatures contained in the Hedera signatures.
 	 */
 	static PubKeyToSigBytes from(List<Signature> hederaSigs) {
@@ -89,13 +85,12 @@ public interface PubKeyToSigBytes {
 	 * Create a {@code PubKeyToSigBytes} implementation backed by the cryptographic
 	 * signatures associated to the payer of a given gRPC transaction.
 	 *
-	 * @param signedTxn
-	 * 		a gRPC transaction.
+	 * @param signedTxn a gRPC transaction.
 	 * @return a source of the raw signatures associated to the payer for the txn.
 	 */
 	static PubKeyToSigBytes forPayer(Transaction signedTxn) {
 		if (signedTxn.hasSigs()) {
-			List<Signature> sigs = signedTxn.getSigs().getSigsList();
+			List<Signature>	sigs = signedTxn.getSigs().getSigsList();
 			return sigs.size() >= 1 ? from(sigs.subList(0, 1)) : SigListPubKeyToSigBytes.NO_SIGS;
 		} else {
 			return from(signedTxn.getSigMap());
@@ -107,13 +102,12 @@ public interface PubKeyToSigBytes {
 	 * signatures associated to entities involved in non-payer roles for a given
 	 * gRPC transaction.
 	 *
-	 * @param signedTxn
-	 * 		a gRPC transaction.
+	 * @param signedTxn a gRPC transaction.
 	 * @return a source of the raw signatures associated non-payer roles in the txn.
 	 */
 	static PubKeyToSigBytes forOtherParties(Transaction signedTxn) {
 		if (signedTxn.hasSigs()) {
-			List<Signature> sigs = signedTxn.getSigs().getSigsList();
+			List<Signature>	sigs = signedTxn.getSigs().getSigsList();
 			return sigs.size() > 1 ? from(sigs.subList(1, sigs.size())) : SigListPubKeyToSigBytes.NO_SIGS;
 		} else {
 			return from(signedTxn.getSigMap());
@@ -125,8 +119,7 @@ public interface PubKeyToSigBytes {
 	 * signatures associated to entities involved in non-payer roles for a given
 	 * gRPC transaction.
 	 *
-	 * @param signedTxn
-	 * 		a gRPC transaction.
+	 * @param signedTxn a gRPC transaction.
 	 * @return a source of the raw signatures associated non-payer roles in the txn.
 	 */
 	static PubKeyToSigBytes forAllParties(Transaction signedTxn) {

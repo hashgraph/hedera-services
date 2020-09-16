@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,9 +57,8 @@ import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class FileSysDelTransitionLogicTest {
-	enum TargetType {VALID, MISSING, DELETED}
-
-	enum NewExpiryType {NONE, FUTURE, PAST}
+	enum TargetType { VALID, MISSING, DELETED }
+	enum NewExpiryType { NONE, FUTURE, PAST }
 
 	long now = Instant.now().getEpochSecond();
 	long lifetime = 1_000_000L;
@@ -133,8 +132,7 @@ class FileSysDelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertTrue(attr.isDeleted());
-		;
+		assertTrue(attr.isDeleted());;
 		assertEquals(oldExpiry, attr.getExpirationTimeSeconds());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));
@@ -166,8 +164,7 @@ class FileSysDelTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		assertTrue(attr.isDeleted());
-		;
+		assertTrue(attr.isDeleted());;
 		assertEquals(newExpiry, attr.getExpirationTimeSeconds());
 		inOrder.verify(hfs).setattr(tbd, attr);
 		inOrder.verify(oldExpiries).put(EntityId.ofNullableFileId(tbd), Long.valueOf(oldExpiry));

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,13 +48,11 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 	private static final TrieSigMapGenerator uniqueInstance;
 	private static final TrieSigMapGenerator ambiguousInstance;
 	private static final TrieSigMapGenerator confusedInstance;
-
 	static {
 		uniqueInstance = new TrieSigMapGenerator(Nature.UNIQUE);
 		ambiguousInstance = new TrieSigMapGenerator(Nature.AMBIGUOUS);
 		confusedInstance = new TrieSigMapGenerator(Nature.CONFUSED);
 	}
-
 	public static SigMapGenerator withNature(Nature nature) {
 		switch (nature) {
 			default:
@@ -75,17 +73,17 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 		log.debug("---- Beginning SigMap Construction ----");
 		return keySigs.stream()
 				.map(keySig ->
-						SignaturePair.newBuilder()
-								.setPubKeyPrefix(ByteString.copyFrom(prefixCalc.apply(keySig.getKey())))
-								.setEd25519(ByteString.copyFrom(keySig.getValue()))
-								.build()
+					SignaturePair.newBuilder()
+							.setPubKeyPrefix(ByteString.copyFrom(prefixCalc.apply(keySig.getKey())))
+							.setEd25519(ByteString.copyFrom(keySig.getValue()))
+							.build()
 				).collect(collectingAndThen(toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
 	}
 
 	private Function<byte[], byte[]> getPrefixCalcFor(ByteTrie trie) {
 		return key -> {
-			byte[] prefix = { };
-			switch (nature) {
+			byte[] prefix = {};
+			switch (nature)	 {
 				case UNIQUE:
 					prefix = trie.shortestPrefix(key, 1);
 					break;
@@ -106,18 +104,15 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 			int count = 1;
 			Node[] children = new Node[256];
 		}
-
 		Node root = new Node();
 		Random r = new Random();
 
 		public ByteTrie(List<byte[]> allA) {
 			allA.stream().forEach(a -> insert(a));
 		}
-
 		private void insert(byte[] a) {
 			insert(a, root, 0);
 		}
-
 		private void insert(byte[] a, Node n, int i) {
 			if (i == a.length) {
 				return;
@@ -136,13 +131,12 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 			byte[] prefix = new byte[len];
 			return randomPrefix(prefix, 0);
 		}
-
 		private byte[] randomPrefix(byte[] prefix, int i) {
 			if (i == prefix.length) {
 				return prefix;
 			}
 			int v = r.nextInt(256);
-			byte next = (byte) ((v < 128) ? v : v - 256);
+			byte next = (byte)((v < 128) ? v : v - 256);
 			prefix[i] = next;
 			return randomPrefix(prefix, i + 1);
 		}
@@ -150,7 +144,6 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 		public byte[] shortestPrefix(byte[] a, int maxPrefixCard) {
 			return shortestPrefix(a, root, maxPrefixCard, 1);
 		}
-
 		private byte[] shortestPrefix(byte[] a, Node n, int maxPrefixCard, int lenUsed) {
 			Assert.assertTrue("No unique prefix exists!", lenUsed <= a.length);
 			int v = vAt(a, lenUsed - 1);
@@ -160,7 +153,6 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 				return shortestPrefix(a, n.children[v], maxPrefixCard, lenUsed + 1);
 			}
 		}
-
 		private int vAt(byte[] a, int i) {
 			byte next = a[i];
 			return (next < 0) ? (next + 256) : next;

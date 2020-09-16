@@ -67,7 +67,7 @@ class BackedAccountLookupTest {
 		// expect:
 		assertThrows(
 				InvalidAccountIDException.class,
-				() -> subject.lookup(a));
+				() ->  subject.lookup(a));
 	}
 
 	@Test

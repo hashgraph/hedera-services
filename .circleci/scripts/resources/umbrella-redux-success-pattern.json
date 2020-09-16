@@ -1,5 +1,5 @@
 {
-  "umbrella-redux-success-pattern": {
-	"Run EET umbrella test": "UmbrellaRedux                    :: 1/1 suites ran OK"
-  }
+    "umbrella-redux-success-pattern" : {
+        "Run EET umbrella test": "UmbrellaRedux                    :: 1/1 suites ran OK"
+    }
 }

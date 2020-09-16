@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,11 +34,9 @@ public class KeyShape extends SigControl {
 	protected KeyShape(SigControl.Nature nature) {
 		super(nature);
 	}
-
 	protected KeyShape(SigControl... childControls) {
 		super(childControls);
 	}
-
 	protected KeyShape(int threshold, SigControl... childControls) {
 		super(threshold, childControls);
 	}
@@ -46,7 +44,6 @@ public class KeyShape extends SigControl {
 	public static KeyShape listOf(int N) {
 		return listOf(IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
 	}
-
 	public static KeyShape listOf(KeyShape... childShapes) {
 		return new KeyShape(childShapes);
 	}
@@ -55,7 +52,6 @@ public class KeyShape extends SigControl {
 		Assert.assertTrue("A threshold key requires M <= N!", M <= N);
 		return threshOf(M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
 	}
-
 	public static KeyShape threshOf(int M, KeyShape... childShapes) {
 		return new KeyShape(M, childShapes);
 	}
@@ -91,7 +87,6 @@ public class KeyShape extends SigControl {
 		}
 		throw new IllegalStateException("Unanticipated key type - " + type);
 	}
-
 	private static KeyShape[] randomlyListing(
 			int N,
 			int depthAtMost,
@@ -113,26 +108,25 @@ public class KeyShape extends SigControl {
 	public static List<Object> sigs(Object... controls) {
 		return List.of(controls);
 	}
-
 	public SigControl signedWith(Object control) {
 		if (SIMPLE.getNature().equals(this.getNature())) {
 			Assert.assertTrue(
 					"Shape is simple but multiple controls given!",
 					(control instanceof SigControl));
-			return (SigControl) control;
-		} else {
-			KeyShape[] childShapes = (KeyShape[]) getChildControls();
+			return (SigControl)control;
+		} else  {
+			KeyShape[] childShapes = (KeyShape[])getChildControls();
 			int size = childShapes.length;
-			List<Object> controls = (List<Object>) control;
+			List<Object> controls = (List<Object>)control;
 			Assert.assertEquals(
 					"Shape is " + this.getNature() + "[n=" + size
 							+ (this.getNature().equals(Nature.THRESHOLD) ? ",m=" + this.getThreshold() : "")
 							+ "] but " + controls.size() + " controls given!",
 					size, controls.size());
 			SigControl[] childControls = IntStream
-					.range(0, size)
-					.mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
-					.toArray(n -> new SigControl[n]);
+							.range(0, size)
+							.mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
+							.toArray(n -> new SigControl[n]);
 			if (this.getNature() == Nature.LIST) {
 				return listSigs(childControls);
 			} else {

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,57 +39,57 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 
 public class RandomTopicCreation implements OpProvider {
-	public static final int DEFAULT_CEILING_NUM = 100;
+        public static final int DEFAULT_CEILING_NUM = 100;
 
-	private int ceilingNum = DEFAULT_CEILING_NUM;
+        private int ceilingNum = DEFAULT_CEILING_NUM;
 
-	private final AtomicInteger opNo = new AtomicInteger();
-	private final EntityNameProvider<Key> keys;
-	private final RegistrySourcedNameProvider<TopicID> topics;
-	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
-			INVALID_TOPIC_ID,
-			TOPIC_EXPIRED);
+        private final AtomicInteger opNo = new AtomicInteger();
+        private final EntityNameProvider<Key> keys;
+        private final RegistrySourcedNameProvider<TopicID> topics;
+        private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+                        INVALID_TOPIC_ID,
+                        TOPIC_EXPIRED);
 
-	public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
-		this.keys = keys;
-		this.topics = topics;
-	}
+        public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
+                this.keys = keys;
+                this.topics = topics;
+        }
 
-	public RandomTopicCreation ceiling(int n) {
-		ceilingNum = n;
-		return this;
-	}
+        public RandomTopicCreation ceiling(int n) {
+                ceilingNum = n;
+                return this;
+        }
 
-	@Override
-	public Optional<HapiSpecOperation> get() {
-		if (topics.numPresent() >= ceilingNum) {
-			return Optional.empty();
-		}
+        @Override
+        public Optional<HapiSpecOperation> get() {
+                if (topics.numPresent() >= ceilingNum) {
+                        return Optional.empty();
+                }
 
 
-		Optional<String> key = keys.getQualifying();
-		if (key.isEmpty()) {
-			return Optional.empty();
-		}
+                Optional<String> key = keys.getQualifying();
+                if (key.isEmpty()) {
+                        return Optional.empty();
+                }
 
-		int n = opNo.getAndIncrement();
-		final String newTopic = my("topic" + n);
-		var op = createTopic(newTopic)
-				.adminKeyName(key.get())
-				.submitKeyName(key.get())
-				.hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-				.hasAnyPrecheck()
-				.hasKnownStatusFrom(permissibleOutcomes);
+                int n = opNo.getAndIncrement();
+                final String newTopic = my("topic" + n);
+                var op = createTopic(newTopic)
+                                .adminKeyName(key.get())
+                                .submitKeyName(key.get())
+                                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                                .hasAnyPrecheck()
+                                .hasKnownStatusFrom(permissibleOutcomes);
 
-		return Optional.of(op);
-	}
+                return Optional.of(op);
+        }
 
-	@Override
-	public List<HapiSpecOperation> suggestedInitializers() {
-		return List.of(newKeyNamed(my("simpleKey")));
-	}
+        @Override
+        public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(newKeyNamed(my("simpleKey")));
+        }
 
-	private String my(String opName) {
-		return unique(opName, RandomTopicCreation.class);
-	}
+        private String my(String opName) {
+                return unique(opName, RandomTopicCreation.class);
+        }
 }

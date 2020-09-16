@@ -11,5 +11,5 @@
   "payerAccountNum": "95",
   "startupAccount": "custom-migration-saved-states/StartUpAccount.txt",
   "s3bucketName": "hedera-service-regression",
-  "topicRunningHashVersion": "2"
+  "topicRunningHashVersion":"2"
 }

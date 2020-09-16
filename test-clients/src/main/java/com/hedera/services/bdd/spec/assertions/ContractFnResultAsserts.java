@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.assertions;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 	public ContractFnResultAsserts resultThruAbi(
 			String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
 		registerProvider((spec, o) -> {
-			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult)o).getContractCallResult().toByteArray());
 			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
 			if (error.isPresent()) {
 				throw error.get();
@@ -59,7 +59,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		});
 		return this;
 	}
-
 	public static Object[] viaAbi(String abi, byte[] bytes) {
 		CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(abi);
 		return function.decodeResult(bytes);
@@ -72,7 +71,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts logs(ErroringAssertsProvider<List<ContractLoginfo>> provider) {
 		registerProvider((spec, o) -> {
-			List<ContractLoginfo> logs = ((ContractFunctionResult) o).getLogInfoList();
+			List<ContractLoginfo> logs = ((ContractFunctionResult)o).getLogInfoList();
 			ErroringAsserts<List<ContractLoginfo>> asserts = provider.assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(logs);
 			AssertUtils.rethrowSummaryError(log, "Bad logs!", errors);
@@ -82,7 +81,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts error(String msg) {
 		registerProvider((spec, o) -> {
-			ContractFunctionResult result = (ContractFunctionResult) o;
+			ContractFunctionResult result = (ContractFunctionResult)o;
 			Assert.assertEquals("Wrong contract function error!",
 					msg, Optional.ofNullable(result.getErrorMessage()).orElse(""));
 		});
@@ -96,7 +95,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 			try {
 				Assert.assertEquals("Extra contract function return values!", 1, actualObjs.length);
 				String implicitContract = "contract" + new Random().nextInt();
-				ContractID contract = TxnUtils.asContractId((byte[]) actualObjs[0]);
+				ContractID contract = TxnUtils.asContractId((byte[])actualObjs[0]);
 				spec.registry().saveContractId(implicitContract, contract);
 				HapiGetContractInfo op = getContractInfo(implicitContract).has(theExpectedInfo);
 				Optional<Throwable> opError = op.execFor(spec);

@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	IS_DELETED {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, f) -> a.setDeleted((boolean) f);
+			return (a, f) -> a.setDeleted((boolean)f);
 		}
 
 		@Override
@@ -54,7 +54,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	IS_RECEIVER_SIG_REQUIRED {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, f) -> a.setReceiverSigRequired((boolean) f);
+			return (a, f) -> a.setReceiverSigRequired((boolean)f);
 		}
 
 		@Override
@@ -65,7 +65,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	IS_SMART_CONTRACT {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, f) -> a.setSmartContract((boolean) f);
+			return (a, f) -> a.setSmartContract((boolean)f);
 		}
 
 		@Override
@@ -78,8 +78,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@SuppressWarnings("unchecked")
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, v) -> {
-				var scopedV = (TokenScopedPropertyValue) v;
-				if ((boolean) scopedV.value()) {
+				var scopedV = (TokenScopedPropertyValue)v;
+				if ((boolean)scopedV.value()) {
 					a.grantKyc(scopedV.id(), scopedV.token());
 				} else {
 					a.revokeKyc(scopedV.id(), scopedV.token());
@@ -102,8 +102,8 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@SuppressWarnings("unchecked")
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, v) -> {
-				var scopedV = (TokenScopedPropertyValue) v;
-				if ((boolean) scopedV.value()) {
+				var scopedV = (TokenScopedPropertyValue)v;
+				if ((boolean)scopedV.value()) {
 					a.freeze(scopedV.id(), scopedV.token());
 				} else {
 					a.unfreeze(scopedV.id(), scopedV.token());
@@ -127,11 +127,11 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, v) -> {
 				if (v instanceof TokenScopedPropertyValue) {
-					var scopedV = (TokenScopedPropertyValue) v;
-					a.adjustTokenBalance(scopedV.id(), scopedV.token(), (long) scopedV.value());
+					var scopedV = (TokenScopedPropertyValue)v;
+					a.adjustTokenBalance(scopedV.id(), scopedV.token(), (long)scopedV.value());
 				} else {
 					try {
-						a.setBalance((long) v);
+						a.setBalance((long)v);
 					} catch (NegativeAccountBalanceException nabe) {
 						throw new IllegalArgumentException("Account balances must be nonnegative!");
 					}
@@ -152,7 +152,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	FUNDS_RECEIVED_RECORD_THRESHOLD {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setReceiverThreshold((long) v);
+			return (a, v) -> a.setReceiverThreshold((long)v);
 		}
 
 		@Override
@@ -163,7 +163,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	FUNDS_SENT_RECORD_THRESHOLD {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setSenderThreshold((long) v);
+			return (a, v) -> a.setSenderThreshold((long)v);
 		}
 
 		@Override
@@ -174,7 +174,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	AUTO_RENEW_PERIOD {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setAutoRenewSecs((long) v);
+			return (a, v) -> a.setAutoRenewSecs((long)v);
 		}
 
 		@Override
@@ -185,7 +185,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	EXPIRY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setExpiry((long) v);
+			return (a, v) -> a.setExpiry((long)v);
 		}
 
 		@Override
@@ -196,7 +196,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, k) -> a.setKey((JKey) k);
+			return (a, k) -> a.setKey((JKey)k);
 		}
 
 		@Override
@@ -207,7 +207,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	MEMO {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, s) -> a.setMemo((String) s);
+			return (a, s) -> a.setMemo((String)s);
 		}
 
 		@Override
@@ -218,7 +218,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	PROXY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, p) -> a.setProxy((EntityId) p);
+			return (a, p) -> a.setProxy((EntityId)p);
 		}
 
 		@Override
@@ -229,7 +229,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	PAYER_RECORDS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setPayerRecords((FCQueue<ExpirableTxnRecord>) r);
+			return (a, r) -> a.setPayerRecords((FCQueue<ExpirableTxnRecord>)r);
 		}
 
 		@Override
@@ -240,7 +240,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	HISTORY_RECORDS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>) r);
+			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>)r);
 		}
 
 		@Override

@@ -71,7 +71,7 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
 				.txns()
 				.<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
 						UncheckedSubmitBody.class, b -> {
-							b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
+								b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
 						}
 				);
 		return b -> b.setUncheckedSubmit(opBody);

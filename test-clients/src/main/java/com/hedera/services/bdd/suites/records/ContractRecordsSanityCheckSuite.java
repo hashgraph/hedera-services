@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,20 +25,16 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -128,7 +124,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		String[] CANONICAL_ACCOUNTS = { FUNDING, NODE, GENESIS };
 		String[] altruists = IntStream
 				.range(0, NUM_ALTRUISTS)
-				.mapToObj(i -> String.format("Altruist%s", new String(new char[] { (char) ('A' + i) })))
+				.mapToObj(i -> String.format("Altruist%s", new String(new char[] { (char)('A' + i) })))
 				.toArray(n -> new String[n]);
 
 		return defaultHapiSpec("CircularTransfersRecordSanityChecks")
@@ -140,14 +136,13 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						Stream.of(altruists)
 								.map(name ->
 										contractCall(
-												name,
-												SET_NODES_ABI,
-												spec -> new Object[] {
-														Stream.of(altruists)
-																.map(a -> spec.registry().getContractId(
-																		a).getContractNum())
-																.toArray()
-												}
+											name,
+											SET_NODES_ABI,
+											spec -> new Object[] {
+												Stream.of(altruists)
+														.map(a -> spec.registry().getContractId(a).getContractNum())
+														.toArray()
+											}
 										).via("txnFor" + name).sending(INIT_BALANCE_FN.apply(name))
 								).toArray(n -> new HapiSpecOperation[n]),
 						UtilVerbs.takeBalanceSnapshots(
@@ -170,9 +165,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 							int i = 0, divisor = INIT_KEEP_AMOUNT_DIVISOR;
 							while (true) {
 								long toKeep = finalBalances[i] / divisor;
-								if (toKeep < STOP_BALANCE.longValue()) {
-									break;
-								}
+								if (toKeep < STOP_BALANCE.longValue()) { break; }
 								int j = (i + 1) % NUM_ALTRUISTS;
 								finalBalances[j] += (finalBalances[i] - toKeep);
 								finalBalances[i] = toKeep;
@@ -211,15 +204,12 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 	}
 
 	final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}]," +
-			"\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\"," +
-			"\"type\":\"function\"}";
+	final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	final String PATH_TO_LOOKUP_BYTECODE = bytecodePath("BalanceLookup");
 
 	final String PATH_TO_CIRCULAR_TRANSFERS_BYTECODE = bytecodePath("CircularTransfers");
-	final String SET_NODES_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint64[]\"," +
-			"\"name\":\"accounts\"," +
+	final String SET_NODES_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint64[]\",\"name\":\"accounts\"," +
 			"\"type\":\"uint64[]\"}],\"name\":\"setNodes\",\"outputs\":[],\"payable\":false," +
 			"\"stateMutability\":\"nonpayable\"    ,\"type\":\"function\"}";
 	final String RECEIVE_AND_SEND_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +

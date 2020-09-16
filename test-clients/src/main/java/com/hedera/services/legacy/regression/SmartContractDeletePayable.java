@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,7 +59,6 @@ import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.file.LargeFileUploadIT;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -71,7 +70,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
-
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.lang3.StringUtils;
@@ -91,24 +89,12 @@ public class SmartContractDeletePayable {
 	private final Logger log = LogManager.getLogger(SmartContractPay.class);
 
 	private static final int MAX_RECEIPT_RETRIES = 60;
-	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
-			"\"type\":\"function\"}";
-	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}]," +
-			"\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-	private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
-			"\"type\":\"function\"}";
-	private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\"," +
-			"\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true," +
-			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
-	private static final String SC_GET_BALANCE_OF = "{\"constant\":true,\"inputs\":[{\"name\":\"accToCheck\"," +
-			"\"type\":\"address\"}],\"name\":\"getBalanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-	private static final String SC_SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\"," +
-			"\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[]," +
-			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	private static final String SC_GET_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"get\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	private static final String SC_SET_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	private static final String SC_GET_BALANCE = "{\"constant\":true,\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	private static final String SC_DEPOSIT = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	private static final String SC_GET_BALANCE_OF = "{\"constant\":true,\"inputs\":[{\"name\":\"accToCheck\",\"type\":\"address\"}],\"name\":\"getBalanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	private static final String SC_SEND_FUNDS = "{\"constant\":false,\"inputs\":[{\"name\":\"receiver\",\"type\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"sendFunds\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	private static final long MAX_TX_FEE = TestHelper.getContractMaxFee();
 	private static AccountID nodeAccount;
 	private static long node_account_number;
@@ -569,7 +555,7 @@ public class SmartContractDeletePayable {
 			if (simpleStorageFileId != null) {
 				log.info("Smart Contract file uploaded successfully");
 				ContractID payTestContractId = createContractWithKey(crAccount, simpleStorageFileId,
-						contractDuration, adminKeyPair);
+						contractDuration,	adminKeyPair);
 				Assert.assertNotNull(payTestContractId);
 				int expectedFeeDeduction = 120;// hardcoded for now , need to take the actual fee out.
 
@@ -611,16 +597,14 @@ public class SmartContractDeletePayable {
 				AccountAmount obtainerTransfer = AccountAmount.newBuilder().setAccountID(obtainerAcc)
 						.setAmount(currentBalanceAfterUpdate).build();
 				expectedTransfers.add(obtainerTransfer);
-				AccountAmount contractDebitTransfer = AccountAmount.newBuilder().setAccountID(
-						getAccountIDForContractID(payTestContractId))
-						.setAmount(currentBalanceAfterUpdate * -1).build();
+				AccountAmount contractDebitTransfer = AccountAmount.newBuilder().setAccountID(getAccountIDForContractID(payTestContractId))
+						.setAmount(currentBalanceAfterUpdate*-1).build();
 				expectedTransfers.add(contractDebitTransfer);
-
+				
 				TransferList trList = deleteTransactionRecord.getTransferList();
-				Assert.assertNotNull(trList);
-				Assert.assertNotNull(trList.getAccountAmountsList());
-				Assert.assertTrue("transfer list is not correct",
-						trList.getAccountAmountsList().containsAll(expectedTransfers));
+		        Assert.assertNotNull(trList);
+		        Assert.assertNotNull(trList.getAccountAmountsList());
+		        Assert.assertTrue("transfer list is not correct",trList.getAccountAmountsList().containsAll(expectedTransfers));
 
 				ContractInfo cntInf = getContractInfo(crAccount, payTestContractId, ResponseCodeEnum.CONTRACT_DELETED,
 						ResponseCodeEnum.SUCCESS);
@@ -815,7 +799,7 @@ public class SmartContractDeletePayable {
 		keyPairList.add(accountKeyPairs.get(payerAccount));
 
 		Transaction deleteContractRequest = TestHelper.getDeleteContractRequestSigMap(payerAccount, nodeAccount,
-				MAX_TX_FEE, timestamp, transactionDuration, true, "", contractId, transferAccount,
+				MAX_TX_FEE , timestamp, transactionDuration, true, "", contractId, transferAccount,
 				transferContractID, keyPairList);
 
 		TransactionResponse response = stub.deleteContract(deleteContractRequest);
@@ -894,7 +878,7 @@ public class SmartContractDeletePayable {
 		keyPairList.add(accountKeyPairs.get(payerAccount));
 
 		Transaction deleteContractRequest = TestHelper.getDeleteContractRequestSigMap(payerAccount, nodeAccount,
-				MAX_TX_FEE, timestamp, transactionDuration, true, "", contractId, transferAccount,
+				MAX_TX_FEE , timestamp, transactionDuration, true, "", contractId, transferAccount,
 				transferContractID, keyPairList);
 
 		TransactionResponse response = stub.deleteContract(deleteContractRequest);

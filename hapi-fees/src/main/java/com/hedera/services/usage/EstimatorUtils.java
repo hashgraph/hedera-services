@@ -21,8 +21,6 @@ public interface EstimatorUtils {
 	}
 
 	long baseNetworkRbs();
-
 	FeeData withDefaultPartitioning(FeeComponents usage, long networkRbh, int numPayerKeys);
-
 	UsageEstimate baseEstimate(TransactionBody txn, SigUsage sigUsage);
 }

@@ -36,7 +36,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -147,7 +146,6 @@ public class RecordStream implements Runnable {
 
 	/**
 	 * set `inFreeze` to be given value
-	 *
 	 * @param inFreeze
 	 */
 	public void setInFreeze(boolean inFreeze) {
@@ -222,9 +220,9 @@ public class RecordStream implements Runnable {
 			byte[] fileContentHash = mdForContent.digest(Arrays.copyOfRange(array, 57, array.length));
 			byte[] fileHash = md.digest(ArrayUtils.addAll(prevHashBytes, fileContentHash));
 
-			if (log.isDebugEnabled()) {
-				log.debug("Hash from stream record file " + Hex.encodeHexString(prevFileHash));
-				log.debug("Hash from read record file   " + Hex.encodeHexString(fileHash));
+			if(log.isDebugEnabled()){
+    			log.debug("Hash from stream record file " + Hex.encodeHexString(prevFileHash));
+    			log.debug("Hash from read record file   " + Hex.encodeHexString(fileHash));
 			}
 
 			if (!Arrays.equals(prevFileHash, fileHash)) {
@@ -325,8 +323,7 @@ public class RecordStream implements Runnable {
 
 		while (true) {
 			try {
-				// when the platform is in freeze period, and recordBuffer is empty, and stream is not null, which
-				// means the last record has been written into current RecordStream file, we should close and sign it.
+				// when the platform is in freeze period, and recordBuffer is empty, and stream is not null, which means the last record has been written into current RecordStream file, we should close and sign it.
 				if (inFreeze && recordBuffer.isEmpty() && stream != null) {
 					log.info("Finished writing the last record to file before restart.");
 					close();
@@ -465,7 +462,6 @@ public class RecordStream implements Runnable {
 
 	/**
 	 * Read the previous file hash from file system
-	 *
 	 * @param directory
 	 * @return
 	 */

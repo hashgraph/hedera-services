@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,9 +50,8 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType responseType) {
-		try {
-			MerkleTopic merkleTopic = view.topics().get(
-					MerkleEntityId.fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
+	    try {
+			MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 			int bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) +
 					BASIC_ENTITY_ID_SIZE +  // topicID
 					getTopicInfoSize(merkleTopic);
@@ -76,7 +75,6 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static int getTopicInfoSize(MerkleTopic merkleTopic) throws Exception {
 		return TX_HASH_SIZE + 3 * LONG_SIZE + // runningHash, sequenceNumber, expirationTime, autoRenewPeriod
 				ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage(JKey.mapJKey(merkleTopic.getAdminKey()),
-						JKey.mapJKey(merkleTopic.getSubmitKey()), merkleTopic.getMemo(),
-						merkleTopic.hasAutoRenewAccountId());
+						JKey.mapJKey(merkleTopic.getSubmitKey()), merkleTopic.getMemo(), merkleTopic.hasAutoRenewAccountId());
 	}
 }

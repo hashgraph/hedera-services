@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,21 +38,21 @@ import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleNode;
 
 public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, MerkleExternalLeaf {
-	static final int MERKLE_VERSION = (int) BinaryObject.CLASS_VERSION;
+	static final int MERKLE_VERSION = (int)BinaryObject.CLASS_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
-			(byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03,
-			(byte) 0x04, (byte) 0x05, (byte) 0x06, (byte) 0x07,
-			(byte) 0x08, (byte) 0x09, (byte) 0x0a, (byte) 0x0b,
-			(byte) 0x0c, (byte) 0x0d, (byte) 0x0e, (byte) 0x0f,
-			(byte) 0x10, (byte) 0x11, (byte) 0x12, (byte) 0x13,
-			(byte) 0x14, (byte) 0x15, (byte) 0x16, (byte) 0x17,
-			(byte) 0x18, (byte) 0x19, (byte) 0x1a, (byte) 0x1b,
-			(byte) 0x1c, (byte) 0x1d, (byte) 0x1e, (byte) 0x1f,
-			(byte) 0x20, (byte) 0x21, (byte) 0x22, (byte) 0x23,
-			(byte) 0x24, (byte) 0x25, (byte) 0x26, (byte) 0x27,
-			(byte) 0x28, (byte) 0x29, (byte) 0x2a, (byte) 0x2b,
-			(byte) 0x2c, (byte) 0x2d, (byte) 0x2e, (byte) 0x2f,
+			(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03,
+			(byte)0x04, (byte)0x05, (byte)0x06, (byte)0x07,
+			(byte)0x08, (byte)0x09, (byte)0x0a, (byte)0x0b,
+			(byte)0x0c, (byte)0x0d, (byte)0x0e, (byte)0x0f,
+			(byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13,
+			(byte)0x14, (byte)0x15, (byte)0x16, (byte)0x17,
+			(byte)0x18, (byte)0x19, (byte)0x1a, (byte)0x1b,
+			(byte)0x1c, (byte)0x1d, (byte)0x1e, (byte)0x1f,
+			(byte)0x20, (byte)0x21, (byte)0x22, (byte)0x23,
+			(byte)0x24, (byte)0x25, (byte)0x26, (byte)0x27,
+			(byte)0x28, (byte)0x29, (byte)0x2a, (byte)0x2b,
+			(byte)0x2c, (byte)0x2d, (byte)0x2e, (byte)0x2f,
 	});
 	static final byte[] NO_DATA = new byte[0];
 	static final BinaryObject MISSING_DELEGATE = null;
@@ -78,7 +78,7 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	public static class Provider implements SerializedObjectProvider {
 		@Override
 		public FastCopyable deserialize(DataInputStream _in) throws IOException {
-			var in = (SerializableDataInputStream) _in;
+			var in = (SerializableDataInputStream)_in;
 
 			in.readLong();
 			in.readLong();
@@ -144,8 +144,7 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	}
 
 	@Override
-	public void serializeAbbreviated(SerializableDataOutputStream out) {
-	}
+	public void serializeAbbreviated(SerializableDataOutputStream out) { }
 
 	@Override
 	public void deserializeAbbreviated(
@@ -183,7 +182,7 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 			return false;
 		}
 
-		var that = (MerkleOptionalBlob) o;
+		var that = (MerkleOptionalBlob)o;
 
 		return Objects.equals(this.delegate, that.delegate);
 	}

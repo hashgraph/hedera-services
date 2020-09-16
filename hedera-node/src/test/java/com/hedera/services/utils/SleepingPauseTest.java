@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,7 @@ package com.hedera.services.utils;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -47,8 +45,7 @@ public class SleepingPauseTest {
 		Thread wakingThread = new Thread(() -> {
 			try {
 				Thread.sleep(100L);
-			} catch (InterruptedException ignore) {
-			}
+			} catch (InterruptedException ignore) {}
 			sleepingThread.interrupt();
 		});
 
@@ -57,8 +54,7 @@ public class SleepingPauseTest {
 		wakingThread.start();
 		try {
 			sleepingThread.join();
-		} catch (InterruptedException ignore) {
-		}
+		} catch (InterruptedException ignore) {}
 
 		// then:
 		assertFalse(retValue.get());

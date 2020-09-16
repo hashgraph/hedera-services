@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-
 import static com.hedera.services.grpc.controllers.CryptoController.*;
 import static com.hedera.services.grpc.controllers.ConsensusController.*;
 import static com.hedera.services.grpc.controllers.TokenController.*;
@@ -82,7 +81,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 public class MiscUtils {
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
-
 	static {
 		queryFunctions.put(NETWORKGETVERSIONINFO, GetVersionInfo);
 		queryFunctions.put(GETBYKEY, GetByKey);
@@ -401,8 +399,7 @@ public class MiscUtils {
 			Key readable = null;
 			try {
 				readable = mapJKey(k);
-			} catch (Exception ignore) {
-			}
+			} catch (Exception ignore) { }
 			return String.valueOf(readable);
 		}
 	}

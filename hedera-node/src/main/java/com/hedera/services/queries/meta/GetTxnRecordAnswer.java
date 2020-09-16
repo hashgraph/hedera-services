@@ -9,9 +9,9 @@ package com.hedera.services.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -140,10 +140,10 @@ public class GetTxnRecordAnswer implements AnswerService {
 				response.setHeader(answerOnlyHeader(RECORD_NOT_FOUND));
 			} else {
 				response.setHeader(answerOnlyHeader(OK));
-				response.setTransactionRecord((TransactionRecord) ctx.get(PRIORITY_RECORD_CTX_KEY));
+				response.setTransactionRecord((TransactionRecord)ctx.get(PRIORITY_RECORD_CTX_KEY));
 				if (op.getIncludeDuplicates()) {
 					response.addAllDuplicateTransactionRecords(
-							(List<TransactionRecord>) ctx.get(DUPLICATE_RECORDS_CTX_KEY));
+							(List<TransactionRecord>)ctx.get(DUPLICATE_RECORDS_CTX_KEY));
 				}
 			}
 		} else {

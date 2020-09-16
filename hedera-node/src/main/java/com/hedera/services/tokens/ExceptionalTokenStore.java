@@ -9,9 +9,9 @@ package com.hedera.services.tokens;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -72,6 +72,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 
+
 	@Override
 	public void commitCreation() {
 		throw new UnsupportedOperationException();
@@ -88,12 +89,10 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
-	}
+	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
 
 	@Override
-	public void setHederaLedger(HederaLedger ledger) {
-	}
+	public void setHederaLedger(HederaLedger ledger) { }
 
 	@Override
 	public void apply(TokenID id, Consumer<MerkleToken> change) {

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.meta;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,7 +62,6 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	public HapiGetReceipt(String txn) {
 		this.txn = txn;
 	}
-
 	public HapiGetReceipt(TransactionID txnId) {
 		explicitTxnId = Optional.of(txnId);
 	}
@@ -125,16 +124,10 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 	protected boolean needsPayment() {
 		return false;
 	}
-
 	@Override
-	protected long costOnlyNodePayment(HapiApiSpec spec) {
-		return 0L;
-	}
-
+	protected long costOnlyNodePayment(HapiApiSpec spec) { return 0L; }
 	@Override
-	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) {
-		return 0L;
-	}
+	protected long lookupCostWith(HapiApiSpec spec, Transaction payment) { return 0L; }
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {

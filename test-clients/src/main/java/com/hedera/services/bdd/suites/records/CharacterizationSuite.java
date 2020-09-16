@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
@@ -103,7 +102,7 @@ public class CharacterizationSuite extends HapiApiSuite {
 				).when(
 						TxnVerbs.contractCall(
 								"testContract", VERBOSE_DEPOSIT,
-								TRANSFER_AMOUNT, 0, "So we out-danced thought...")
+									TRANSFER_AMOUNT, 0, "So we out-danced thought...")
 								.via("noLogsCallTxn").sending(TRANSFER_AMOUNT),
 						TxnVerbs.contractCall(
 								"testContract", VERBOSE_DEPOSIT,

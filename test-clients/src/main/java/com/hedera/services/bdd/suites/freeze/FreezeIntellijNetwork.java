@@ -40,7 +40,7 @@ public class FreezeIntellijNetwork extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[] {
+				new HapiApiSpec[]{
 						justFreeze(),
 				}
 		);
@@ -48,7 +48,7 @@ public class FreezeIntellijNetwork extends HapiApiSuite {
 
 	private HapiApiSpec justFreeze() {
 		return defaultHapiSpec("JustFreeze")
-				.given().when(
+				.given( ).when(
 				).then(
 						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);

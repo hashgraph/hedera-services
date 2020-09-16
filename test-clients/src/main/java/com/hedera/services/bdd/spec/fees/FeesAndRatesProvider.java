@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,6 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import org.junit.Assert;
-
 import static com.hedera.services.bdd.spec.queries.QueryUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
@@ -120,7 +119,7 @@ public class FeesAndRatesProvider {
 	private void downloadRateSet() throws Throwable {
 		long queryFee = lookupDownloadFee(setup.exchangeRatesId());
 		Transaction payment = genesisSponsored(queryFee);
-		FileGetContentsResponse response = downloadWith(payment, false, setup.exchangeRatesId());
+		FileGetContentsResponse response = downloadWith(payment,false, setup.exchangeRatesId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		rateSet = ExchangeRateSet.parseFrom(bytes);
 		lastRatesUpdate = Instant.now();
@@ -139,7 +138,7 @@ public class FeesAndRatesProvider {
 	private void downloadFeeSchedule() throws Throwable {
 		long queryFee = lookupDownloadFee(setup.feeScheduleId());
 		Transaction payment = genesisSponsored(queryFee);
-		FileGetContentsResponse response = downloadWith(payment, false, setup.feeScheduleId());
+		FileGetContentsResponse response = downloadWith(payment,false, setup.feeScheduleId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = wrapper.getCurrentFeeSchedule();

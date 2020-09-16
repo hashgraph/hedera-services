@@ -121,10 +121,10 @@ public class RegressionProviderFactory {
 													RandomTransfer.DEFAULT_NUM_STABLE_ACCOUNTS,
 													props)
 									).recordProbability(
-									doublePropOrElse(
-											"randomTransfer.recordProbability",
-											RandomTransfer.DEFAULT_RECORD_PROBABILITY,
-											props)),
+											doublePropOrElse(
+												   "randomTransfer.recordProbability",
+													RandomTransfer.DEFAULT_RECORD_PROBABILITY,
+													props)),
 							props.getInteger("randomTransfer.bias"))
 					.withOp(
 							new RandomAccountUpdate(keys, unstableAccounts),

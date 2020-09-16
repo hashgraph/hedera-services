@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -57,25 +56,25 @@ class MerkleEntityIdUtilsTest {
 	public void serializesExpectedSolidityAddress() {
 		// given:
 		byte[] shardBytes = {
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xAB,
 		};
 		int shard = Ints.fromByteArray(shardBytes);
 		byte[] realmBytes = {
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-				(byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xCD,
+				(byte)0xFE, (byte)0x00, (byte)0x00, (byte)0xFE,
 		};
 		long realm = Longs.fromByteArray(realmBytes);
 		byte[] numBytes = {
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-				(byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xDE,
+				(byte)0xBA, (byte)0x00, (byte)0x00, (byte)0xBA
 		};
 		long num = Longs.fromByteArray(numBytes);
 		byte[] expected = {
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-				(byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
-				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
-				(byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xAB,
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xCD,
+				(byte)0xFE, (byte)0x00, (byte)0x00, (byte)0xFE,
+				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xDE,
+				(byte)0xBA, (byte)0x00, (byte)0x00, (byte)0xBA
 		};
 		// and:
 		AccountID equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));

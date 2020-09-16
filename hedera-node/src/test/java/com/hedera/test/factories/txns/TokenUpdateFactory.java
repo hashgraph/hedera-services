@@ -37,8 +37,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 	private Optional<AccountID> newAutoRenew = Optional.empty();
 	private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
 
-	private TokenUpdateFactory() {
-	}
+	private TokenUpdateFactory() { }
 
 	public static TokenUpdateFactory newSignedTokenUpdate() {
 		return new TokenUpdateFactory();

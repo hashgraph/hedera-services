@@ -9,9 +9,9 @@ package com.hedera.test.factories.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,21 +22,12 @@ package com.hedera.test.factories.sigs;
 
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.swirlds.common.crypto.Signature;
-
 import java.util.List;
 
 import static com.hedera.test.factories.sigs.SigWrappers.asInvalid;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 
 public class SyncVerifiers {
-	public static final SyncVerifier NEVER_VALID = l -> {
-		List<Signature> lv = asInvalid(l);
-		l.clear();
-		l.addAll(lv);
-	};
-	public static final SyncVerifier ALWAYS_VALID = l -> {
-		List<Signature> lv = asValid(l);
-		l.clear();
-		l.addAll(lv);
-	};
+	public static final SyncVerifier NEVER_VALID = l -> { List<Signature> lv = asInvalid(l); l.clear(); l.addAll(lv); };
+	public static final SyncVerifier ALWAYS_VALID = l -> { List<Signature> lv = asValid(l); l.clear(); l.addAll(lv); };
 }

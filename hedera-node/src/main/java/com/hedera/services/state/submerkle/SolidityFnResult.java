@@ -119,8 +119,7 @@ public class SolidityFnResult implements SelfSerializable {
 		}
 	}
 
-	public SolidityFnResult() {
-	}
+	public SolidityFnResult() { }
 
 	public SolidityFnResult(
 			EntityId contractId,
@@ -184,7 +183,7 @@ public class SolidityFnResult implements SelfSerializable {
 		if (o == null || SolidityFnResult.class != o.getClass()) {
 			return false;
 		}
-		var that = (SolidityFnResult) o;
+		var that = (SolidityFnResult)o;
 		return gasUsed == that.gasUsed &&
 				Objects.equals(contractId, that.contractId) &&
 				Arrays.equals(result, that.result) &&

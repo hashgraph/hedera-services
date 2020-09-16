@@ -112,8 +112,7 @@ public class DuplicateManagementTest extends HapiApiSuite {
 							var cheapPrice = getDeduction(cheapRecord.getTransferList(), payer).orElse(0);
 							var costlyPrice = getDeduction(costlyRecord.getTransferList(), payer).orElse(0);
 							assertEquals(String.format(
-									"Costly (%d) should be 3x more expensive than cheap (%d)!", cheapPrice,
-									costlyPrice),
+									"Costly (%d) should be 3x more expensive than cheap (%d)!", cheapPrice, costlyPrice),
 									costlyPrice, 3 * cheapPrice);
 						})
 				);

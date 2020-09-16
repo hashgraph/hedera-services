@@ -31,8 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory> {
 	private TokenTransfers.Builder xfers = TokenTransfers.newBuilder();
 
-	private TokenTransactFactory() {
-	}
+	private TokenTransactFactory() {}
 
 	public static TokenTransactFactory newSignedTokenTransact() {
 		return new TokenTransactFactory();

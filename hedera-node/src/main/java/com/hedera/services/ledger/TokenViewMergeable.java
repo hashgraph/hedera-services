@@ -22,6 +22,5 @@ package com.hedera.services.ledger;
 
 public interface TokenViewMergeable<T> {
 	void mergeTokenPropertiesFrom(T viewSoFar);
-
 	String readableTokenRelationships();
 }

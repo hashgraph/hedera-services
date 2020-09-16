@@ -115,7 +115,7 @@ public class RunLoadTest extends UtilOp {
 			}
 		}
 		log.info("Total Ops submitted {}, actual TPS {}", totalOpsAllThread.get(),
-				totalOpsAllThread.get() / ((float) (testDuration.getAsLong() * 60)));
+				totalOpsAllThread.get() / ((float) (testDuration.getAsLong() * 60 )));
 		return false;
 	}
 

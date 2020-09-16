@@ -9,9 +9,9 @@ package com.hedera.services.files.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,14 +26,13 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.stream.LongStream;
-
 import static java.math.BigInteger.valueOf;
 
 
 public class PureRatesValidation {
 	private static BigInteger ONE_HUNDRED = BigInteger.valueOf(100);
 
-	PureRatesValidation() {
+	PureRatesValidation(){
 		throw new IllegalStateException();
 	}
 
@@ -47,9 +46,9 @@ public class PureRatesValidation {
 				midnightRates.getCurrCentEquiv(), midnightRates.getCurrHbarEquiv(),
 				proposedRates.getCurrentRate().getCentEquiv(), proposedRates.getCurrentRate().getHbarEquiv())
 				&& canonicalTest(
-				limitPercent,
-				midnightRates.getNextCentEquiv(), midnightRates.getNextHbarEquiv(),
-				proposedRates.getNextRate().getCentEquiv(), proposedRates.getNextRate().getHbarEquiv());
+						limitPercent,
+						midnightRates.getNextCentEquiv(), midnightRates.getNextHbarEquiv(),
+						proposedRates.getNextRate().getCentEquiv(), proposedRates.getNextRate().getHbarEquiv());
 	}
 
 	private static boolean canonicalTest(long bound, long oldC, long oldH, long newC, long newH) {

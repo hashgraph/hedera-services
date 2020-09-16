@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -133,7 +133,7 @@ public class Common {
 	public static TransactionGetReceiptResponse getReceiptByTransactionId(
 			CryptoServiceGrpc.CryptoServiceBlockingStub stub, TransactionID transactionId)
 			throws Exception {
-		while (true) {
+		while (true){
 			Response response = querySubmit(() -> {
 				try {
 					return Query.newBuilder()
@@ -145,17 +145,16 @@ public class Common {
 			}, stub::getTransactionReceipts);
 
 			ResponseCodeEnum code = response.getTransactionGetReceipt().getReceipt().getStatus();
-			ResponseCodeEnum preCheck =
-					response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
+			ResponseCodeEnum preCheck =  response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
 
-			if (preCheck == ResponseCodeEnum.RECEIPT_NOT_FOUND) {
+			if(preCheck == ResponseCodeEnum.RECEIPT_NOT_FOUND){
 				return null;
-			} else if (code == ResponseCodeEnum.UNKNOWN) {
+			}else if (code == ResponseCodeEnum.UNKNOWN ){
 				//retry
 				Thread.sleep(200);
-			} else if (code == ResponseCodeEnum.SUCCESS) {
+			}else if (code == ResponseCodeEnum.SUCCESS){
 				return response.getTransactionGetReceipt();
-			} else {
+			}else{
 				log.warn("Unexpected receipt response {} ", response);
 				return response.getTransactionGetReceipt();
 			}
@@ -166,7 +165,7 @@ public class Common {
 	public static Response getRawReceiptByTransactionId(
 			CryptoServiceGrpc.CryptoServiceBlockingStub stub, TransactionID transactionId)
 			throws Exception {
-		while (true) {
+		while (true){
 			Response response = querySubmit(() -> {
 				try {
 					return Query.newBuilder()
@@ -178,33 +177,30 @@ public class Common {
 			}, stub::getTransactionReceipts);
 
 			ResponseCodeEnum code = response.getTransactionGetReceipt().getReceipt().getStatus();
-			ResponseCodeEnum preCheck =
-					response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
+			ResponseCodeEnum preCheck =  response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
 
-			if (preCheck == ResponseCodeEnum.RECEIPT_NOT_FOUND) {
+			if(preCheck == ResponseCodeEnum.RECEIPT_NOT_FOUND){
 				return null;
-			} else if (code == ResponseCodeEnum.UNKNOWN) {
+			}else if (code == ResponseCodeEnum.UNKNOWN ){
 				//retry
 				Thread.sleep(200);
-			} else {
+			}else{
 				return response;
 			}
 		}
 	}
-
 	/**
 	 * A utility function used to submit transaction to different stub whether response handling and retry.
 	 * If response is BUSY or PLATFORM_TRANSACTION_NOT_CREATED then try build transaction again and resubmit,
 	 * otherwise assert as unexpected error (insufficient fee, invalid signature, etc)
 	 *
-	 * @param builder
-	 * 		the function call to create transaction to be submitted
-	 * @param stubFunc
-	 * 		the stub function entry to submit the request
+	 * @param builder the function call to create transaction to be submitted
+	 * @param stubFunc the stub function entry to submit the request
 	 * @return return the successfully submitted transactions.
 	 */
 	public static Transaction tranSubmit(BuildTransaction builder, Function<Transaction, TransactionResponse> stubFunc)
-			throws StatusRuntimeException {
+			throws StatusRuntimeException
+	{
 		Transaction transaction;
 		while (true) {
 			try {
@@ -223,10 +219,10 @@ public class Common {
 					log.error("Unexpected response {}", response);
 					break;
 				}
-			} catch (InterruptedException e) {
+			}catch (InterruptedException e){
 				log.error("Exception ", e);
 				return null;
-			} catch (io.grpc.StatusRuntimeException e) {
+			} catch (io.grpc.StatusRuntimeException e){
 				throw e;
 			}
 		}
@@ -235,14 +231,12 @@ public class Common {
 
 	/**
 	 * Keep send query if platform is busy
-	 *
-	 * @param builder
-	 * 		the function call to build query to be submitted
-	 * @param stubFunc
-	 * 		the stub function entry to submit the query
+	 * @param builder the function call to build query to be submitted
+	 * @param stubFunc the stub function entry to submit the query
 	 * @return response from server
 	 */
-	public static Response querySubmit(BuildQuery builder, Function<Query, Response> stubFunc) {
+	public static Response querySubmit(BuildQuery builder, Function<Query, Response> stubFunc)
+	{
 		Response response;
 		while (true) {
 			try {
@@ -251,7 +245,7 @@ public class Common {
 
 				ResponseCodeEnum preCheckCode = ResponseCodeEnum.UNKNOWN;
 
-				if (query.hasTransactionGetRecord()) {
+				if (query.hasTransactionGetRecord() ){
 					preCheckCode = response.getTransactionGetRecord()
 							.getHeader().getNodeTransactionPrecheckCode();
 				}
@@ -262,7 +256,7 @@ public class Common {
 				} else {
 					return response;
 				}
-			} catch (InterruptedException e) {
+			}catch (InterruptedException e) {
 				log.error("Exception ", e);
 				return null;
 			}
@@ -275,19 +269,19 @@ public class Common {
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 	}
 
-	public static Key PrivateKeyToKey(PrivateKey privateKey) {
+	public static Key PrivateKeyToKey(PrivateKey privateKey){
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		return key;
 	}
 
-	public static Key keyPairToKey(KeyPair pair) {
+	public static Key keyPairToKey(KeyPair pair){
 		byte[] pubKey = ((EdDSAPrivateKey) pair.getPrivate()).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		return key;
 	}
 
-	public static Key keyPairToPubKey(KeyPair pair) {
+	public static Key keyPairToPubKey(KeyPair pair){
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		return key;
@@ -435,14 +429,14 @@ public class Common {
 	public static Transaction buildCryptoDelete(AccountID payer, Key payerKey,
 			AccountID deleteAccount, Key accKey,
 			AccountID transferAccount,
-			AccountID nodeAccount, Map<String, PrivateKey> pubKey2privKeyMap) {
+			AccountID nodeAccount, Map<String, PrivateKey> pubKey2privKeyMap){
 		Duration transactionValidDuration = RequestBuilder.getDuration(100);
 		CryptoDeleteTransactionBody cryptoDeleteTransactionBody = CryptoDeleteTransactionBody
 				.newBuilder().setDeleteAccountID(deleteAccount).setTransferAccountID(transferAccount)
 				.build();
 		Timestamp timestamp = RequestBuilder
 				.getTimestamp(Instant.now(Clock.systemUTC()));
-		TransactionID transactionID = TransactionID.newBuilder().setAccountID(payer)
+		TransactionID  transactionID = TransactionID.newBuilder().setAccountID(payer)
 				.setTransactionValidStart(timestamp).build();
 		TransactionBody transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(transactionID)
@@ -538,9 +532,9 @@ public class Common {
 	}
 
 	public static Map<AccountID, Long> createBalanceMap(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
-			List<AccountID> accountIDList, AccountID payerAccount, KeyPair payerKeyPair, AccountID nodeAccount) {
+			List<AccountID> accountIDList, AccountID payerAccount, KeyPair payerKeyPair, AccountID nodeAccount){
 		Map<AccountID, Long> balanceMap = new HashMap<>();
-		for (AccountID entry : accountIDList) {
+		for(AccountID entry : accountIDList){
 			long currentBalance = 0;
 			try {
 				currentBalance = getAccountBalance(stub,
@@ -556,48 +550,48 @@ public class Common {
 
 	/**
 	 * Verify a list of account balance, whether changed according to transferList
-	 *
 	 * @param preBalance
 	 * @param transferList
 	 * @return
 	 */
 	public static boolean verifyAccountBalance(Map<AccountID, Long> preBalance, TransferList transferList,
-			Map<AccountID, Long> actualAfterBalance) {
+			Map<AccountID, Long> actualAfterBalance)
+	{
 		boolean checkResult = true;
 		Map<AccountID, Long> expectedAfterBalance = new HashMap<>();
 		expectedAfterBalance.putAll(preBalance);
 		List<AccountAmount> amountList = transferList.getAccountAmountsList();
 
 		// update account balance according to transferList
-		for (AccountAmount item : amountList) {
+		for(AccountAmount item : amountList){
 			AccountID accountID = item.getAccountID();
 			long value = item.getAmount();
-			if (expectedAfterBalance.get(accountID) != null) {
+			if(expectedAfterBalance.get(accountID)!=null){
 				expectedAfterBalance.put(accountID, expectedAfterBalance.get(accountID).longValue() + value);
-			} else {
+			}else{
 				log.error("Account {} not found in expectedAfterBalance, TransferList = {}", accountID, transferList);
 				fail();
 			}
 		}
 
-		for (Map.Entry<AccountID, Long> entry : expectedAfterBalance.entrySet()) {
+		for (Map.Entry<AccountID, Long> entry : expectedAfterBalance.entrySet()){
 			try {
 				long currentBalance = actualAfterBalance.get(entry.getKey());
 				long expectedBalance = entry.getValue();
-				if (expectedBalance != currentBalance) {
+				if (expectedBalance != currentBalance){
 					log.error("Error Account {}", entry);
 					log.error("Balance mismatch for Account {}, {} vs {}, diff = {}", entry.getKey(),
-							expectedBalance, currentBalance, (expectedBalance - currentBalance));
+							expectedBalance, currentBalance, (expectedBalance-currentBalance));
 					log.error("preBalance {} ", preBalance.get(entry.getKey()));
 					log.error("expectedAfterBalance {} ", expectedAfterBalance.get(entry.getKey()));
 
 					checkResult = false;
 				}
-			} catch (Exception e) {
+			}catch (Exception e){
 				log.error("Exception ", e);
 			}
 		}
-		if (!checkResult) {
+		if (!checkResult){
 			log.error("transferList {} ", transferList);
 			log.error("ERROR");
 			fail();
@@ -605,15 +599,15 @@ public class Common {
 		return checkResult;
 	}
 
-	public static void accountDiff(Map<AccountID, Long> before, Map<AccountID, Long> after) {
-		for (Map.Entry<AccountID, Long> entry : before.entrySet()) {
+	public static void accountDiff(Map<AccountID, Long> before, Map<AccountID, Long> after){
+		for (Map.Entry<AccountID, Long> entry : before.entrySet()){
 			try {
 				long afterBalance = after.get(entry.getKey());
 				long beforeBalance = entry.getValue();
-				if (beforeBalance != afterBalance) {
-					log.error("Balance change for Account {} = {}", entry.getKey(), (afterBalance - beforeBalance));
+				if (beforeBalance != afterBalance){
+					log.error("Balance change for Account {} = {}", entry.getKey(), (afterBalance-beforeBalance));
 				}
-			} catch (Exception e) {
+			}catch (Exception e){
 				log.error("Exception ", e);
 			}
 
@@ -623,12 +617,11 @@ public class Common {
 	/**
 	 * Encodes bytes to a hex string.
 	 *
-	 * @param bytes
-	 * 		data to be encoded
+	 * @param bytes data to be encoded
 	 * @return hex string
 	 */
 	public static String bytes2Hex(byte[] bytes) {
-		String str = Hex.encodeHexString(bytes);
-		return str;
+	  String str = Hex.encodeHexString(bytes);
+	  return str;
 	}
 }

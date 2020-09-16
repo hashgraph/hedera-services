@@ -196,7 +196,7 @@ class MerkleAccountStateTest {
 						tokenBalanceWith(firstToken, firstBalance),
 						tokenBalanceWith(secondToken, secondBalance),
 						tokenBalanceWith(thirdToken, thirdBalance)),
-				subject.getAllExplicitTokenBalances());
+						subject.getAllExplicitTokenBalances());
 	}
 
 	@Test

@@ -63,7 +63,6 @@ public class MerkleAccount extends AbstractMerkleInternal
 
 	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ =
 			new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
-
 	static {
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}

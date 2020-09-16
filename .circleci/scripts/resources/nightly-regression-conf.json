@@ -4,7 +4,7 @@
 	"build-artifact": true,
 	"regression-target-testnet": true,
 	"long-contract_txns6": false,
-	"long-crypto_txns300": false,
+	"long-crypto_txns300": false ,
 	"long-file_ops": false,
 	"long-consensus_ops": false,
 	"long-umbrella": false,
@@ -15,5 +15,5 @@
 	"short-consensus_ops": false,
 	"short-umbrella": false,
 	"regression-run-accessory-tests": true
-  }
+	}
 }

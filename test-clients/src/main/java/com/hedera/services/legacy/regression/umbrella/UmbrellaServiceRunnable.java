@@ -9,9 +9,9 @@ package com.hedera.services.legacy.regression.umbrella;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,640 +57,632 @@ import org.apache.logging.log4j.Logger;
  */
 public class UmbrellaServiceRunnable implements Runnable {
 
-	private static final Logger log = LogManager.getLogger(UmbrellaServiceRunnable.class);
-	protected static final String ALL_API_TAG = "ALL_API";
-	protected static boolean IS_FIRST_TIME = true;
-	protected int taskNum = 0;
-	protected SmartContractServiceTest fit = null;
-	protected Random random = new Random();
-	private int GRPC_UNAVAILABLE_WAIT_SEC = 1;
-	protected static int FILE_CREATE_SIZE = 1000;
-	protected static Map<String, AtomicCounter> activeSubmitCountMap = new ConcurrentHashMap<>();
-	protected static Map<String, AtomicCounter> activeFailCountMap = new ConcurrentHashMap<>();
-	protected static Map<String, Integer> allLimitMap = new LinkedHashMap<>();
-	protected static Set<String> activeAPIs = null;
-	public static boolean isSmallAccount = false;
+  private static final Logger log = LogManager.getLogger(UmbrellaServiceRunnable.class);
+  protected static final String ALL_API_TAG = "ALL_API";
+  protected static boolean IS_FIRST_TIME = true;
+  protected int taskNum = 0;
+  protected SmartContractServiceTest fit = null;
+  protected Random random = new Random();
+  private int GRPC_UNAVAILABLE_WAIT_SEC = 1;
+  protected static int FILE_CREATE_SIZE = 1000;
+  protected static Map<String, AtomicCounter> activeSubmitCountMap = new ConcurrentHashMap<>();
+  protected static Map<String, AtomicCounter> activeFailCountMap = new ConcurrentHashMap<>();
+  protected static Map<String, Integer> allLimitMap = new LinkedHashMap<>();
+  protected static Set<String> activeAPIs = null;
+  public static boolean isSmallAccount = false;
 
-	protected static enum ops {
-		fileUpload, fileGetInfo, fileGetContent, fileUpdate, fileDelete, cryptoCreate, cryptoTransfer, cryptoUpdate,
-		cryptoGetInfo, cryptoGetBalance, cryptoGetRecords, createContract, updateContract, contractCallMethod,
-		contractCallLocalMethod, contractGetBytecode, getContractInfo, getBySolidityID, getTxRecordByContractID,
-		getTxReceipt, getTxFastRecord, getTxRecord, fileCreate, fileAppend
-	}
+  protected static enum ops {
+    fileUpload, fileGetInfo, fileGetContent, fileUpdate, fileDelete, cryptoCreate, cryptoTransfer, cryptoUpdate,
+    cryptoGetInfo, cryptoGetBalance, cryptoGetRecords, createContract, updateContract, contractCallMethod,
+    contractCallLocalMethod, contractGetBytecode, getContractInfo, getBySolidityID, getTxRecordByContractID,
+    getTxReceipt, getTxFastRecord, getTxRecord, fileCreate, fileAppend
+  }
 
-	public UmbrellaServiceRunnable(int taskNum, SmartContractServiceTest fit) {
-		this.taskNum = taskNum;
-		this.fit = fit;
-	}
+  public UmbrellaServiceRunnable(int taskNum, SmartContractServiceTest fit) {
+    this.taskNum = taskNum;
+    this.fit = fit;
+  }
 
-	/**
-	 * Initialize active APIs and counters.
-	 *
-	 * @param allLimitMap2
-	 * 		mapping of active APIs and their call limits
-	 */
-	public static void init(Map<String, Integer> allLimitMap2) {
-		allLimitMap = allLimitMap2;
-		UmbrellaServiceRunnable.activeAPIs = new HashSet<String>();
+  /**
+   * Initialize active APIs and counters.
+   *
+   * @param allLimitMap2 mapping of active APIs and their call limits
+   */
+  public static void init(Map<String, Integer> allLimitMap2) {
+    allLimitMap = allLimitMap2;
+    UmbrellaServiceRunnable.activeAPIs = new HashSet<String>();
 
-		for (String op : allLimitMap.keySet()) {
-			if (allLimitMap.get(op) != 0) {
-				activeAPIs.add(op);
-				activeSubmitCountMap.put(op, new AtomicCounter());
-				activeFailCountMap.put(op, new AtomicCounter());
-			}
-		}
+    for (String op : allLimitMap.keySet()) {
+      if (allLimitMap.get(op) != 0) {
+        activeAPIs.add(op);
+        activeSubmitCountMap.put(op, new AtomicCounter());
+        activeFailCountMap.put(op, new AtomicCounter());
+      }
+    }
 
-		activeSubmitCountMap.put(ALL_API_TAG, new AtomicCounter());
-		activeFailCountMap.put(ALL_API_TAG, new AtomicCounter());
+    activeSubmitCountMap.put(ALL_API_TAG, new AtomicCounter());
+    activeFailCountMap.put(ALL_API_TAG, new AtomicCounter());
 
-		log.info("initial activeSubmitCountMap={}", activeSubmitCountMap);
-	}
+    log.info("initial activeSubmitCountMap={}", activeSubmitCountMap);
+  }
 
-	@Override
-	public void run() {
-		AccountID payerID = FileServiceTest.getRandomPayerAccount();
-		AccountID nodeID = FileServiceTest.getRandomNodeAccount();
+  @Override
+  public void run() {
+    AccountID payerID = FileServiceTest.getRandomPayerAccount();
+    AccountID nodeID = FileServiceTest.getRandomNodeAccount();
 
-		int[] op_and_total_counts = new int[2];
-		ops op = getRandomOp(op_and_total_counts);
-		if (op == null) {
-			if (IS_FIRST_TIME) {
-				log.info("activeSubmitCountMap={}", activeSubmitCountMap);
-				log.info("activeFailCountMap={}", activeFailCountMap);
-				log.info("No more active APIs.");
-				IS_FIRST_TIME = false;
-			}
-			return;
-		}
+    int[] op_and_total_counts = new int[2];
+    ops op = getRandomOp(op_and_total_counts);
+    if (op == null) {
+      if (IS_FIRST_TIME) {
+        log.info("activeSubmitCountMap={}", activeSubmitCountMap);
+        log.info("activeFailCountMap={}", activeFailCountMap);
+        log.info("No more active APIs.");
+        IS_FIRST_TIME = false;
+      }
+      return;
+    }
 
-		String msg = "task #" + taskNum + " ...op=" + op + " >>> " + Thread.currentThread().getName();
-		log.info("Begin {}", msg);
+    String msg = "task #" + taskNum + " ...op=" + op + " >>> " + Thread.currentThread().getName();
+    log.info("Begin {}", msg);
 
-		exec(op, payerID, nodeID);
-		msg += "-> op cnt = " + op_and_total_counts[0] + ", cumulated API call cnt = "
-				+ op_and_total_counts[1];
-		log.info("  End {}\n.. activeSubmitCountMap={}\n.. activeFailCountMap={}\n.. remainingAPIs={}",
-				msg, activeSubmitCountMap, activeFailCountMap, activeAPIs);
+    exec(op, payerID, nodeID);
+    msg += "-> op cnt = " + op_and_total_counts[0] + ", cumulated API call cnt = "
+        + op_and_total_counts[1];
+    log.info("  End {}\n.. activeSubmitCountMap={}\n.. activeFailCountMap={}\n.. remainingAPIs={}",
+            msg, activeSubmitCountMap, activeFailCountMap, activeAPIs);
 
-	}
+  }
 
-	/**
-	 * Executes a single API operation.
-	 *
-	 * @param op
-	 * 		api operation to be performed
-	 */
-	protected void exec(ops op, AccountID payerID, AccountID nodeID) {
-		// exec op based on type
-		String opn = op.name();
-		switch (op) {
-			case fileUpload:
-				int fileSizeK = getRandomFileSizeK();
-				String fileType = getRandomFileType();
-				log.info("\n>>> WORKING ON: fileSizesK={}; fileType={}", fileSizeK, fileType);
-				byte[] fileContents;
-				try {
-					fileContents = fit.genFileContent(fileSizeK, fileType);
-					List<Key> waclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
-					String savePath = fileSizeK + "K." + fileType;
-					FileID fid = fit.uploadFile(savePath, fileContents, payerID, nodeID, waclPubKeyList);
-					FileServiceTest.fid2waclMap.put(fid, waclPubKeyList);
-				} catch (Throwable e) {
-					log.warn("fileUpload error: ", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case fileCreate:
-				log.info("in fileCreate: file size = {}", FILE_CREATE_SIZE);
-				fileContents = new byte[FILE_CREATE_SIZE];
-				random.nextBytes(fileContents);
-				ByteString fileData = ByteString.copyFrom(fileContents);
-				try {
-					List<Key> waclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
-					fit.createFile(payerID, nodeID, fileData, waclPubKeyList, true, CryptoServiceTest.getReceipt);
-				} catch (Throwable e) {
-					log.warn("fileCreate error: ", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					handleGrpcException(e);
-				}
-				break;
-			case fileAppend:
-				FileID fid = fit.getRandomFileID();
-				Entry<FileID, List<Key>> entry = fit
-						.removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
-				log.info("in fileAppend: entry={}", entry);
-				if (entry == null) {
-					log.warn("fileAppend: no file available!");
-					break;
-				}
-				fid = entry.getKey();
-				List<Key> oldWaclPubKeyList = entry.getValue();
-				fileContents = new byte[FILE_CREATE_SIZE];
-				random.nextBytes(fileContents);
-				fileData = ByteString.copyFrom(fileContents);
+  /**
+   * Executes a single API operation.
+   *
+   * @param op api operation to be performed
+   */
+  protected void exec(ops op, AccountID payerID, AccountID nodeID) {
+    // exec op based on type
+    String opn = op.name();
+    switch (op) {
+      case fileUpload:
+        int fileSizeK = getRandomFileSizeK();
+        String fileType = getRandomFileType();
+        log.info("\n>>> WORKING ON: fileSizesK={}; fileType={}", fileSizeK, fileType);
+        byte[] fileContents;
+        try {
+          fileContents = fit.genFileContent(fileSizeK, fileType);
+          List<Key> waclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
+          String savePath = fileSizeK + "K." + fileType;
+          FileID fid = fit.uploadFile(savePath, fileContents, payerID, nodeID, waclPubKeyList);
+          FileServiceTest.fid2waclMap.put(fid, waclPubKeyList);
+        } catch (Throwable e) {
+          log.warn("fileUpload error: ", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case fileCreate:
+        log.info("in fileCreate: file size = {}", FILE_CREATE_SIZE);
+        fileContents = new byte[FILE_CREATE_SIZE];
+        random.nextBytes(fileContents);
+        ByteString fileData = ByteString.copyFrom(fileContents);
+        try {
+          List<Key> waclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
+          fit.createFile(payerID, nodeID, fileData, waclPubKeyList, true, CryptoServiceTest.getReceipt);
+        } catch (Throwable e) {
+          log.warn("fileCreate error: ", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          handleGrpcException(e);
+        }
+        break;
+      case fileAppend:
+        FileID fid = fit.getRandomFileID();
+        Entry<FileID, List<Key>> entry = fit
+            .removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
+        log.info("in fileAppend: entry={}", entry);
+        if (entry == null) {
+          log.warn("fileAppend: no file available!");
+          break;
+        }
+        fid = entry.getKey();
+        List<Key> oldWaclPubKeyList = entry.getValue();
+        fileContents = new byte[FILE_CREATE_SIZE];
+        random.nextBytes(fileContents);
+        fileData = ByteString.copyFrom(fileContents);
+        
+        try {
+          fit.appendFile(payerID, nodeID, fid, fileData, oldWaclPubKeyList);
+        } catch (Throwable e) {
+          log.warn("fileAppend error: ", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          handleGrpcException(e);
+        }
+        FileServiceTest.fid2waclMap.put(fid, oldWaclPubKeyList); //make fid available for file crud
+        break;
+      case fileGetInfo:
+        fid = fit.getRandomFileID();
+        log.info("in fileGetInfo: fid={}", fid);
+        if (fid == null) {
+          log.warn("fileGetInfo: no file available!");
+          break;
+        }
 
-				try {
-					fit.appendFile(payerID, nodeID, fid, fileData, oldWaclPubKeyList);
-				} catch (Throwable e) {
-					log.warn("fileAppend error: ", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					handleGrpcException(e);
-				}
-				FileServiceTest.fid2waclMap.put(fid, oldWaclPubKeyList); //make fid available for file crud
-				break;
-			case fileGetInfo:
-				fid = fit.getRandomFileID();
-				log.info("in fileGetInfo: fid={}", fid);
-				if (fid == null) {
-					log.warn("fileGetInfo: no file available!");
-					break;
-				}
+        try {
+          fit.getFileInfo(fid, payerID, nodeID);
+        } catch (Throwable e) {
+          if(FileServiceTest.fid2waclMap.containsKey(fid)){
+            incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          }
+          log.warn("fileGetInfo error! fid={}, payerID={}, nodeID={}: {}  ",
+                  fid, payerID, nodeID, e);
+          handleGrpcException(e);
+        }
+        break;
+      case fileGetContent:
+        fid = fit.getRandomFileID();
+        log.info("in fileGetContent: fid={}", fid);
+        if (fid == null) {
+          log.warn("fileGetContent: no file available!");
+          break;
+        }
 
-				try {
-					fit.getFileInfo(fid, payerID, nodeID);
-				} catch (Throwable e) {
-					if (FileServiceTest.fid2waclMap.containsKey(fid)) {
-						incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					}
-					log.warn("fileGetInfo error! fid={}, payerID={}, nodeID={}: {}  ",
-							fid, payerID, nodeID, e);
-					handleGrpcException(e);
-				}
-				break;
-			case fileGetContent:
-				fid = fit.getRandomFileID();
-				log.info("in fileGetContent: fid={}", fid);
-				if (fid == null) {
-					log.warn("fileGetContent: no file available!");
-					break;
-				}
+        try {
+          fit.getFileContent(fid, payerID, nodeID);
+        } catch (Throwable e) {
+          log.warn("fileGetContent error! fid={}, payerID={}, nodeID={}: {}  ",
+                  fid, payerID, nodeID, e);
 
-				try {
-					fit.getFileContent(fid, payerID, nodeID);
-				} catch (Throwable e) {
-					log.warn("fileGetContent error! fid={}, payerID={}, nodeID={}: {}  ",
-							fid, payerID, nodeID, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          handleGrpcException(e);
+        }
+        break;
+      case fileUpdate:
+        fileType = getRandomFileType();
+        entry = fit
+            .removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
+        log.info("in fileUpdate: entry={}", entry);
+        if (entry == null) {
+          log.warn("fileUpdate: no file available!");
+          break;
+        }
 
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					handleGrpcException(e);
-				}
-				break;
-			case fileUpdate:
-				fileType = getRandomFileType();
-				entry = fit
-						.removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
-				log.info("in fileUpdate: entry={}", entry);
-				if (entry == null) {
-					log.warn("fileUpdate: no file available!");
-					break;
-				}
+        fid = entry.getKey();
+        oldWaclPubKeyList = entry.getValue();
+        try {
+          List<Key> newWaclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
+          fit.updateFile(fid, fileType, payerID, nodeID, oldWaclPubKeyList, newWaclPubKeyList);
+          FileServiceTest.fid2waclMap
+              .put(fid, newWaclPubKeyList); //make fid available for file crud
+        } catch (Throwable e) {
+          log.warn("fileUpdate error! Error message = ", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          handleGrpcException(e);
+        }
+        break;
+      case fileDelete:
+        entry = fit
+            .removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
+        log.info("in fileDelete: entry={}", entry);
+        if (entry == null) {
+          log.warn("fileDelete: no file available!");
+          break;
+        }
 
-				fid = entry.getKey();
-				oldWaclPubKeyList = entry.getValue();
-				try {
-					List<Key> newWaclPubKeyList = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
-					fit.updateFile(fid, fileType, payerID, nodeID, oldWaclPubKeyList, newWaclPubKeyList);
-					FileServiceTest.fid2waclMap
-							.put(fid, newWaclPubKeyList); //make fid available for file crud
-				} catch (Throwable e) {
-					log.warn("fileUpdate error! Error message = ", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					handleGrpcException(e);
-				}
-				break;
-			case fileDelete:
-				entry = fit
-						.removeRandomFileID2waclEntry(); //remove fid so that it's unavailable for other file crud
-				log.info("in fileDelete: entry={}", entry);
-				if (entry == null) {
-					log.warn("fileDelete: no file available!");
-					break;
-				}
-
-				fid = entry.getKey();
-				List<Key> waclPubKeyList = entry.getValue();
-				try {
-					fit.deleteFile(fid, payerID, nodeID, waclPubKeyList);
-					// commenting the line out as file delete flag has been implemented
+        fid = entry.getKey();
+        List<Key> waclPubKeyList = entry.getValue();
+        try {
+          fit.deleteFile(fid, payerID, nodeID, waclPubKeyList);
+          // commenting the line out as file delete flag has been implemented
 //          FileServiceTest.fid2waclMap.put(fid, waclPubKeyList); //make fid available for file crud
-					FileServiceTest.fid2waclMap.remove(fid);
-				} catch (Throwable e) {
-					log.warn("fileDelete error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-					handleGrpcException(e);
-				}
-				break;
-			case cryptoCreate:
-				isSmallAccount = true;
-				try {
-					AccountID accountId = fit.createAccount(payerID, nodeID, true);
-					if (CryptoServiceTest.getReceipt) {
-						log.info("account created: account = {}", accountId);
-					}
-				} catch (Throwable e) {
-					log.warn("cryptoCreate error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				isSmallAccount = false;
-				break;
-			case getTxReceipt:
-				TransactionID txId = fit.cache.pollOldestTransactionID4Receipt();
-				if (txId == null) {
-					log.warn("getTxReceipt: no txId available!");
-					break;
-				}
-				try {
-					TransactionReceipt receipt = fit.getTxReceipt(txId);
-					log.info("getTxReceipt: txId = {} ==> receipt = {}", txId, receipt);
-				} catch (Throwable e) {
-					log.warn("getTxReceipt error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case getTxFastRecord:
-				txId = fit.cache.pollOldestTransactionID4Receipt();
-				if (txId == null) {
-					log.warn("getTxFastRecord: no txId available!");
-					break;
-				}
-				try {
-					TransactionReceipt receipt = fit.getTxFastRecord(txId);
-					log.info("getTxFastRecord: txId = {} ==> receipt = {}", txId, receipt);
+          FileServiceTest.fid2waclMap.remove(fid);
+        } catch (Throwable e) {
+          log.warn("fileDelete error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+          handleGrpcException(e);
+        }
+        break;
+      case cryptoCreate:
+        isSmallAccount = true;
+        try {
+          AccountID accountId = fit.createAccount(payerID, nodeID, true);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("account created: account = {}", accountId);
+		  }
+        } catch (Throwable e) {
+          log.warn("cryptoCreate error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        isSmallAccount = false;
+        break;
+      case getTxReceipt:
+        TransactionID txId = fit.cache.pollOldestTransactionID4Receipt();
+        if (txId == null) {
+          log.warn("getTxReceipt: no txId available!");
+          break;
+        }
+        try {
+          TransactionReceipt receipt = fit.getTxReceipt(txId);
+          log.info("getTxReceipt: txId = {} ==> receipt = {}", txId, receipt);
+        } catch (Throwable e) {
+          log.warn("getTxReceipt error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case getTxFastRecord:
+        txId = fit.cache.pollOldestTransactionID4Receipt();
+        if (txId == null) {
+          log.warn("getTxFastRecord: no txId available!");
+          break;
+        }
+        try {
+          TransactionReceipt receipt = fit.getTxFastRecord(txId);
+          log.info("getTxFastRecord: txId = {} ==> receipt = {}", txId, receipt);
 
-				} catch (Throwable e) {
-					log.warn("getTxFastRecord error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case getTxRecord:
-				txId = fit.cache.pollOldestTransactionID4Record();
-				if (txId == null) {
-					log.warn("getTxRecord: no txId available!");
-					break;
-				}
-				try {
-					TransactionRecord record = fit.getTransactionRecord(txId, payerID, nodeID);
-					log.info("getTxRecord: txId = {} ==> record = {}", txId, record);
-				} catch (Throwable e) {
-					log.warn("getTxRecord error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case cryptoTransfer:
-				AccountID fromAccountID = FileServiceTest.getRandomTransferAccount();
-				AccountID toAccountID = FileServiceTest.getRandomTransferAccount();
+        } catch (Throwable e) {
+          log.warn("getTxFastRecord error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case getTxRecord:
+        txId = fit.cache.pollOldestTransactionID4Record();
+        if (txId == null) {
+          log.warn("getTxRecord: no txId available!");
+          break;
+        }
+        try {
+          TransactionRecord record = fit.getTransactionRecord(txId, payerID, nodeID);
+          log.info("getTxRecord: txId = {} ==> record = {}", txId, record);
+        } catch (Throwable e) {
+          log.warn("getTxRecord error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case cryptoTransfer:
+        AccountID fromAccountID = FileServiceTest.getRandomTransferAccount();
+        AccountID toAccountID = FileServiceTest.getRandomTransferAccount();
 
-				if (fromAccountID.equals(toAccountID) && FileServiceTest.transferAccounts.length == 2) {
-					fromAccountID = FileServiceTest.transferAccounts[0];
-					toAccountID = FileServiceTest.transferAccounts[1];
-				}
+        if (fromAccountID.equals(toAccountID) && FileServiceTest.transferAccounts.length == 2) {
+          fromAccountID = FileServiceTest.transferAccounts[0];
+          toAccountID = FileServiceTest.transferAccounts[1];
+        }
 
-				if (fromAccountID.equals(toAccountID)) {
-					log.warn(
-							"Ignore transfer because from account is the same as to account: fromAccountID={}, " +
-									"toAccountID={}",
-							fromAccountID, toAccountID);
-					break;
-				}
+        if (fromAccountID.equals(toAccountID)) {
+          log.warn("Ignore transfer because from account is the same as to account: fromAccountID={}, toAccountID={}",
+                  fromAccountID, toAccountID);
+          break;
+        }
 
-				long amount = CryptoServiceTest.getRandomTransferAmount();
-				try {
-					TransactionReceipt receipt = fit.transfer(payerID, nodeID, fromAccountID, toAccountID, amount);
-				} catch (Throwable e) {
-					log.warn("cryptoTransfer error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case cryptoGetBalance:
-				AccountID accountID = FileServiceTest.getRandomPayerAccount();
-				try {
-					long balance = fit.getAccountBalance(accountID, payerID, nodeID);
-					log.info("cryptoGetBalance: balance = {}", balance);
-				} catch (Throwable e) {
-					log.warn("cryptoGetBalance error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case cryptoGetRecords:
-				accountID = FileServiceTest.getRandomPayerAccount();
-				try {
-					List<TransactionRecord> records = fit
-							.getTransactionRecordsByAccountId(accountID, payerID, nodeID);
-					log.info("cryptoGetRecords: records = {}", records);
-				} catch (Throwable e) {
-					log.warn("cryptoGetRecords error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case cryptoGetInfo:
-				accountID = FileServiceTest.getRandomPayerAccount();
-				try {
-					AccountInfo accInfo = fit.getAccountInfo(accountID, payerID, nodeID);
-					log.info("cryptoGetInfo: info = {}", accInfo);
-				} catch (Throwable e) {
-					log.warn("cryptoGetInfo error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case cryptoUpdate:
-				try {
-					AccountInfo accInfo = null;
-					// update auto renew period
-					accountID = FileServiceTest.getRandomPayerAccount();
-					if (accountID == null) {
-						log.warn("cryptoUpdate account auto renew: no accountID available!");
-						break;
-					}
-					accInfo = fit.updateAccount(accountID, payerID, nodeID);
-					if (CryptoServiceTest.getReceipt) {
-						log.info("cryptoUpdate: updated account info = {}", accInfo);
-					}
-				} catch (Throwable e) {
-					log.warn("cryptoUpdate error!", e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case createContract:
-				String fileName = fit.getRandomSmartContractFile();
-				try {
-					File file = new File(fileName);
-					if (!file.exists()) {
-						fileName = "src/main/resource/" + fileName;
-					}
-					Path path = Paths.get(fileName);
-					byte[] bytes = Files.readAllBytes(path);
-					log.info("createContract: upload contract file at: {}; size={}", fileName, bytes.length);
-					List<Key> waclKeys = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
-					String savePath = "saved" + FileSystems.getDefault().getSeparator() + fileName;
-					FileID contractFid = fit.uploadFile(savePath, bytes, payerID, nodeID, waclKeys);
+        long amount = CryptoServiceTest.getRandomTransferAmount();
+        try {
+          TransactionReceipt receipt = fit.transfer(payerID, nodeID, fromAccountID, toAccountID, amount);
+        } catch (Throwable e) {
+          log.warn("cryptoTransfer error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case cryptoGetBalance:
+        AccountID accountID = FileServiceTest.getRandomPayerAccount();
+        try {
+          long balance = fit.getAccountBalance(accountID, payerID, nodeID);
+          log.info("cryptoGetBalance: balance = {}", balance);
+        } catch (Throwable e) {
+          log.warn("cryptoGetBalance error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case cryptoGetRecords:
+        accountID = FileServiceTest.getRandomPayerAccount();
+        try {
+          List<TransactionRecord> records = fit
+              .getTransactionRecordsByAccountId(accountID, payerID, nodeID);
+          log.info("cryptoGetRecords: records = {}", records);
+        } catch (Throwable e) {
+          log.warn("cryptoGetRecords error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case cryptoGetInfo:
+        accountID = FileServiceTest.getRandomPayerAccount();
+        try {
+          AccountInfo accInfo = fit.getAccountInfo(accountID, payerID, nodeID);
+          log.info("cryptoGetInfo: info = {}", accInfo);
+        } catch (Throwable e) {
+          log.warn("cryptoGetInfo error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case cryptoUpdate:
+        try {
+          AccountInfo accInfo = null;
+          // update auto renew period
+          accountID = FileServiceTest.getRandomPayerAccount();
+          if (accountID == null) {
+            log.warn("cryptoUpdate account auto renew: no accountID available!");
+            break;
+          }
+          accInfo = fit.updateAccount(accountID, payerID, nodeID);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("cryptoUpdate: updated account info = {}", accInfo);
+		  }
+        } catch (Throwable e) {
+          log.warn("cryptoUpdate error!", e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case createContract:
+        String fileName = fit.getRandomSmartContractFile();
+        try {
+          File file = new File(fileName);
+          if(!file.exists()) {
+            fileName = "src/main/resource/" + fileName;
+          }
+          Path path = Paths.get(fileName);
+          byte[] bytes = Files.readAllBytes(path);
+          log.info("createContract: upload contract file at: {}; size={}", fileName, bytes.length);
+          List<Key> waclKeys = fit.genWaclComplex(FileServiceTest.NUM_WACL_KEYS);
+          String savePath = "saved" + FileSystems.getDefault().getSeparator() + fileName;
+          FileID contractFid = fit.uploadFile(savePath, bytes, payerID, nodeID, waclKeys);
 
-					ContractID contractID = fit.createContract(contractFid, fileName, payerID, nodeID, true);
-					if (CryptoServiceTest.getReceipt) {
-						log.info("createContract: contractID={}", contractID);
-					}
-				} catch (Throwable e) {
-					log.warn("createContract error! contract file name={}", fileName, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case updateContract:
-				ContractIDMapEntry toReplace = SmartContractServiceTest.takeRandomSmartContract();
-				ContractID contractId = (toReplace == null) ? null : toReplace.getId();
-				try {
-					if (toReplace == null) {
-						log.warn("updateContract: no smart contract available!");
-						break;
-					}
+          ContractID contractID = fit.createContract(contractFid, fileName, payerID, nodeID, true);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("createContract: contractID={}", contractID);
+		  }
+        } catch (Throwable e) {
+          log.warn("createContract error! contract file name={}", fileName, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case updateContract:
+        ContractIDMapEntry toReplace = SmartContractServiceTest.takeRandomSmartContract();
+        ContractID contractId = (toReplace == null) ? null : toReplace.getId();
+        try {
+          if (toReplace == null) {
+            log.warn("updateContract: no smart contract available!");
+            break;
+          }
 
-					TransactionReceipt receipt = fit.updateContract(payerID, contractId, nodeID);
-					if (CryptoServiceTest.getReceipt) {
-						log.info("updateContract: receipt = {}", receipt);
-					}
-				} catch (Throwable e) {
-					log.warn("updateContract error! contractId={}", contractId, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				if (toReplace != null) {
-					SmartContractServiceTest.replaceSmartContract(toReplace);
-				}
-				break;
-			case contractCallMethod:
-				contractId = SmartContractServiceTest.getRandomSmartContractID();
-				String contractFile = null;
-				try {
-					if (contractId == null) {
-						log.warn("contractCallMethod: no smart contract available!");
-						break;
-					}
-					contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
-					int valueToSet =
-							FileServiceTest.rand.nextInt(SmartContractServiceTest.CONTRACT_CALL_VALUE_BOUND) + 1;
-					//set value to simple storage smart contract
-					fit.callContract(payerID, nodeID, contractId, valueToSet);
-					log.info("contractCallMethod: contractId={}; contractFile={}; valueToSet={}",
-							contractId, contractFile, valueToSet);
+          TransactionReceipt receipt = fit.updateContract(payerID, contractId, nodeID);
+          if(CryptoServiceTest.getReceipt) {
+			  log.info("updateContract: receipt = {}", receipt);
+		  }
+        } catch (Throwable e) {
+          log.warn("updateContract error! contractId={}", contractId, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        if (toReplace != null) {
+          SmartContractServiceTest.replaceSmartContract(toReplace);
+        }
+        break;
+      case contractCallMethod:
+        contractId = SmartContractServiceTest.getRandomSmartContractID();
+        String contractFile = null;
+        try {
+          if (contractId == null) {
+            log.warn("contractCallMethod: no smart contract available!");
+            break;
+          }
+          contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
+          int valueToSet =
+              FileServiceTest.rand.nextInt(SmartContractServiceTest.CONTRACT_CALL_VALUE_BOUND) + 1;
+          //set value to simple storage smart contract
+          fit.callContract(payerID, nodeID, contractId, valueToSet);
+          log.info("contractCallMethod: contractId={}; contractFile={}; valueToSet={}",
+                  contractId, contractFile, valueToSet);
 
-				} catch (Throwable e) {
-					log.warn("contractCallMethod error! contractId={}; contractFile={}",
-							contractId, contractFile, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case contractCallLocalMethod:
-				contractId = SmartContractServiceTest.getRandomSmartContractID();
-				contractFile = null;
-				try {
-					if (contractId == null) {
-						log.warn("contractCallLocalMethod: no smart contract available!");
-						break;
-					}
-					contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
-					int result = fit.callContractLocal(payerID, nodeID, contractId);
-					log.info("contractCallLocalMethod: contractId={}; contractFile={}; result={}",
-							contractId, contractFile, result);
-				} catch (Throwable e) {
-					log.warn("contractCallLocalMethod error! contractId={}; contractFile={} ",
-							contractId, contractFile, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case contractGetBytecode:
-				contractId = SmartContractServiceTest.getRandomSmartContractID();
-				try {
-					if (contractId == null) {
-						log.warn("contractGetBytecode: no smart contract available!");
-						break;
-					}
-					String retData = fit.getContractByteCode(payerID, contractId, nodeID);
-					if (retData.length() == 0) {
-						log.warn("contractGetBytecode: returned data = {}", retData);
-					} else {
-						log.info("contractGetBytecode: returned data = {}", retData);
-					}
-				} catch (Throwable e) {
-					log.warn("contractGetBytecode error! contractId={}", contractId, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case getContractInfo:
-				contractId = SmartContractServiceTest.getRandomSmartContractID();
-				try {
-					if (contractId == null) {
-						log.warn("getContractInfo: no smart contract available!");
-						break;
-					}
-					ContractInfo retData = fit.getContractInfo(payerID, contractId, nodeID);
-					if (retData == null) {
-						log.warn("getContractInfo: returned data = {}", retData);
-					} else {
-						log.info("getContractInfo: returned data = {}", retData);
-					}
-				} catch (Throwable e) {
-					log.warn("getContractInfo error! contractId={}", contractId, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case getBySolidityID:
-				String solidityId = SmartContractServiceTest.getRandomSmartSolidityID();
-				try {
-					if (solidityId == null) {
-						log.warn("getBySolidityID: no smart contract available!");
-						break;
-					}
-					ContractID retData = fit.getBySolidityID(payerID, solidityId, nodeID);
-					log.info("getBySolidityID: solidity ID = {}, returned contract ID = {}",
-							solidityId, retData);
-				} catch (Throwable e) {
-					log.warn("getBySolidityID error! solidity ID={}", solidityId, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			case getTxRecordByContractID:
-				contractId = SmartContractServiceTest.getRandomSmartContractID();
-				try {
-					if (contractId == null) {
-						log.warn("getTxRecordByContractID: no smart contract available!");
-						break;
-					}
-					List<TransactionRecord> retData = fit
-							.getTxRecordByContractID(payerID, contractId, nodeID);
-					log.info(
-							"getTxRecordByContractID: contractId={}; returned data = ", contractId, retData);
-				} catch (Throwable e) {
-					log.warn("getTxRecordByContractID error! contractId={}", contractId, e);
-					incFailCountIfClientProbablyNotToBlameFor(opn, e);
-				}
-				break;
-			default:
-				break;
-		}
-	}
+        } catch (Throwable e) {
+          log.warn("contractCallMethod error! contractId={}; contractFile={}",
+                  contractId, contractFile, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case contractCallLocalMethod:
+        contractId = SmartContractServiceTest.getRandomSmartContractID();
+        contractFile = null;
+        try {
+          if (contractId == null) {
+            log.warn("contractCallLocalMethod: no smart contract available!");
+            break;
+          }
+          contractFile = SmartContractServiceTest.contractIDMap.get(contractId);
+          int result = fit.callContractLocal(payerID, nodeID, contractId);
+          log.info("contractCallLocalMethod: contractId={}; contractFile={}; result={}",
+                  contractId, contractFile, result);
+        } catch (Throwable e) {
+          log.warn("contractCallLocalMethod error! contractId={}; contractFile={} ",
+                  contractId, contractFile, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case contractGetBytecode:
+        contractId = SmartContractServiceTest.getRandomSmartContractID();
+        try {
+          if (contractId == null) {
+            log.warn("contractGetBytecode: no smart contract available!");
+            break;
+          }
+          String retData = fit.getContractByteCode(payerID, contractId, nodeID);
+          if (retData.length() == 0) {
+            log.warn("contractGetBytecode: returned data = {}", retData);
+          } else {
+            log.info("contractGetBytecode: returned data = {}", retData);
+          }
+        } catch (Throwable e) {
+          log.warn("contractGetBytecode error! contractId={}", contractId, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case getContractInfo:
+        contractId = SmartContractServiceTest.getRandomSmartContractID();
+        try {
+          if (contractId == null) {
+            log.warn("getContractInfo: no smart contract available!");
+            break;
+          }
+          ContractInfo retData = fit.getContractInfo(payerID, contractId, nodeID);
+          if (retData == null) {
+            log.warn("getContractInfo: returned data = {}", retData);
+          } else {
+            log.info("getContractInfo: returned data = {}", retData);
+          }
+        } catch (Throwable e) {
+          log.warn("getContractInfo error! contractId={}", contractId, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case getBySolidityID:
+        String solidityId = SmartContractServiceTest.getRandomSmartSolidityID();
+        try {
+          if (solidityId == null) {
+            log.warn("getBySolidityID: no smart contract available!");
+            break;
+          }
+          ContractID retData = fit.getBySolidityID(payerID, solidityId, nodeID);
+          log.info("getBySolidityID: solidity ID = {}, returned contract ID = {}",
+              solidityId, retData);
+        } catch (Throwable e) {
+          log.warn("getBySolidityID error! solidity ID={}", solidityId, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      case getTxRecordByContractID:
+        contractId = SmartContractServiceTest.getRandomSmartContractID();
+        try {
+          if (contractId == null) {
+            log.warn("getTxRecordByContractID: no smart contract available!");
+            break;
+          }
+          List<TransactionRecord> retData = fit
+              .getTxRecordByContractID(payerID, contractId, nodeID);
+          log.info(
+              "getTxRecordByContractID: contractId={}; returned data = ", contractId, retData);
+        } catch (Throwable e) {
+          log.warn("getTxRecordByContractID error! contractId={}", contractId, e);
+          incFailCountIfClientProbablyNotToBlameFor(opn, e);
+        }
+        break;
+      default:
+        break;
+    }
+  }
 
-	/**
-	 * Handles GRPC exceptions, in particular, wait some time if GRPC throws UNAVAILABLE exception.
-	 *
-	 * @param e
-	 */
-	private void handleGrpcException(Throwable e) {
-		if (e.getMessage() != null && e.getMessage().contains("UNAVAILABLE")) {
-			try {
-				CommonUtils.nap(GRPC_UNAVAILABLE_WAIT_SEC);
-			} catch (Exception e1) {
-				log.error("Error when handling GrpcException. ", e1);
-			}
-		}
-	}
+  /**
+   * Handles GRPC exceptions, in particular, wait some time if GRPC throws UNAVAILABLE exception.
+   * 
+   * @param e
+   */
+  private void handleGrpcException(Throwable e) {
+    if (e.getMessage() != null && e.getMessage().contains("UNAVAILABLE")) {
+      try {
+        CommonUtils.nap(GRPC_UNAVAILABLE_WAIT_SEC);
+      } catch (Exception e1) {
+        log.error("Error when handling GrpcException. ", e1);
+      }
+    }
+  }
 
-	/**
-	 * Increase API call count by 1.
-	 *
-	 * @param op
-	 * 		API call to be incremented
-	 */
-	protected void incOpCount(String op) {
-		activeSubmitCountMap.get(op).increment();
-	}
+  /**
+   * Increase API call count by 1.
+   *
+   * @param op API call to be incremented
+   */
+  protected void incOpCount(String op) {
+    activeSubmitCountMap.get(op).increment();
+  }
 
-	/**
-	 * Gets the current API call count.
-	 *
-	 * @param op
-	 * 		API call
-	 * @return count performed
-	 */
-	protected int getOpCount(String op) {
-		int rv = activeSubmitCountMap.get(op).value();
-		return rv;
-	}
+  /**
+   * Gets the current API call count.
+   *
+   * @param op API call
+   * @return count performed
+   */
+  protected int getOpCount(String op) {
+    int rv = activeSubmitCountMap.get(op).value();
+    return rv;
+  }
 
-	/**
-	 * Gets the random file size.
-	 */
-	private int getRandomFileSizeK() {
-		int index = FileServiceTest.rand.nextInt(FileServiceTest.fileSizesK.length);
-		return FileServiceTest.fileSizesK[index];
-	}
+  /**
+   * Gets the random file size.
+   */
+  private int getRandomFileSizeK() {
+    int index = FileServiceTest.rand.nextInt(FileServiceTest.fileSizesK.length);
+    return FileServiceTest.fileSizesK[index];
+  }
 
-	/**
-	 * Gets the random file size.
-	 */
-	private String getRandomFileType() {
-		int index = FileServiceTest.rand.nextInt(FileServiceTest.fileTypes.length);
-		return FileServiceTest.fileTypes[index];
-	}
+  /**
+   * Gets the random file size.
+   */
+  private String getRandomFileType() {
+    int index = FileServiceTest.rand.nextInt(FileServiceTest.fileTypes.length);
+    return FileServiceTest.fileTypes[index];
+  }
 
-	private void incFailCountIfClientProbablyNotToBlameFor(String op, Throwable t) {
-		if (!isLikelyClientError(t)) {
-			incFailCount(op);
-		}
-	}
+  private void incFailCountIfClientProbablyNotToBlameFor(String op, Throwable t) {
+    if (!isLikelyClientError(t)) {
+      incFailCount(op);
+    }
+  }
 
-	private boolean isLikelyClientError(Throwable t) {
-		return (t instanceof java.security.InvalidKeyException);
-	}
+  private boolean isLikelyClientError(Throwable t) {
+    return (t instanceof java.security.InvalidKeyException);
+  }
 
-	/**
-	 * Increase API call failure count by 1.
-	 *
-	 * @param op
-	 * 		API call and total call to be incremented
-	 */
-	private void incFailCount(String op) {
-		synchronized (activeFailCountMap) {
-			if (activeFailCountMap.containsKey(op)) {
-				activeFailCountMap.get(op).increment();
-				activeFailCountMap.get(ALL_API_TAG).increment();
-			}
-		}
-	}
+  /**
+   * Increase API call failure count by 1.
+   *
+   * @param op API call and total call to be incremented
+   */
+  private void incFailCount(String op) {
+    synchronized (activeFailCountMap) {
+      if (activeFailCountMap.containsKey(op)) {
+        activeFailCountMap.get(op).increment();
+        activeFailCountMap.get(ALL_API_TAG).increment();
+      }
+    }
+  }
 
-	/**
-	 * Gets a random operation.
-	 *
-	 * @param op_and_total_counts
-	 * 		2-element array tracks op count and total API count, respectively
-	 * @return a a random operation
-	 */
-	protected ops getRandomOp(int[] op_and_total_counts) {
-		synchronized (activeAPIs) {
-			ops op = null;
-			if (activeAPIs.isEmpty()) {
-				return null;
-			}
+  /**
+   * Gets a random operation.
+   *
+   * @param op_and_total_counts 2-element array tracks op count and total API count, respectively
+   * @return a a random operation
+   */
+  protected ops getRandomOp(int[] op_and_total_counts) {
+    synchronized (activeAPIs) {
+      ops op = null;
+      if (activeAPIs.isEmpty()) {
+        return null;
+      }
 
-			String[] opstrs = activeAPIs.toArray(new String[0]);
-			int index = FileServiceTest.rand.nextInt(opstrs.length);
-			String opstr = opstrs[index];
-			op = ops.valueOf(opstr);
+      String[] opstrs = activeAPIs.toArray(new String[0]);
+      int index = FileServiceTest.rand.nextInt(opstrs.length);
+      String opstr = opstrs[index];
+      op = ops.valueOf(opstr);
 
-			String opn = op.name();
-			// check limit
-			int limit = allLimitMap.get(opn);
-			int count = getOpCount(opn);
-			if ((limit >= 0) && (count >= (limit - 1))) {
-				log.info("API reached limit: op = {}, limit = {}, #calls = {}", opn, limit, count);
-				// remove api from active list
-				activeAPIs.remove(opn);
-			}
-			incOpCount(opn);
-			incOpCount(ALL_API_TAG);
-			op_and_total_counts[0] = getOpCount(opn);
-			op_and_total_counts[1] = getOpCount(ALL_API_TAG);
-			return op;
-		}
-	}
+      String opn = op.name();
+      // check limit
+      int limit = allLimitMap.get(opn);
+      int count = getOpCount(opn);
+      if ((limit >= 0) && (count >= (limit - 1))) {
+        log.info("API reached limit: op = {}, limit = {}, #calls = {}", opn, limit, count);
+        // remove api from active list
+        activeAPIs.remove(opn);
+      }
+      incOpCount(opn);
+      incOpCount(ALL_API_TAG);
+      op_and_total_counts[0] = getOpCount(opn);
+      op_and_total_counts[1] = getOpCount(ALL_API_TAG);
+      return op;
+    }
+  }
 
-	/**
-	 * Check if there is any more active API.
-	 *
-	 * @return true if no more active API, false otherwise
-	 */
-	public static boolean isActiveAPIEmpty() {
-		synchronized (activeAPIs) {
-			boolean rv = false;
-			rv = activeAPIs.isEmpty();
-			return rv;
-		}
-	}
+  /**
+   * Check if there is any more active API.
+   *
+   * @return true if no more active API, false otherwise
+   */
+  public static boolean isActiveAPIEmpty() {
+    synchronized (activeAPIs) {
+      boolean rv = false;
+      rv = activeAPIs.isEmpty();
+      return rv;
+    }
+  }
 }

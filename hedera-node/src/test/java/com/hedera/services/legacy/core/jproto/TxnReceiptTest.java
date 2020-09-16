@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,181 +36,181 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(JUnitPlatform.class)
 public class TxnReceiptTest {
-	private TopicID getTopicId(long shard, long realm, long num) {
-		return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
-	}
+  private TopicID getTopicId(long shard, long realm, long num) {
+    return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
+  }
 
-	private EntityId getTopicJAccountId(long shard, long realm, long num) {
-		return new EntityId(shard, realm, num);
-	}
+  private EntityId getTopicJAccountId(long shard, long realm, long num) {
+    return new EntityId(shard, realm, num);
+  }
 
-	private byte[] getSha384Hash() {
-		final var hash = new byte[48];
-		for (var i = 0; i < hash.length; ++i) {
-			hash[i] = (byte) i;
-		}
-		return hash;
-	}
+  private byte[] getSha384Hash() {
+    final var hash = new byte[48];
+    for (var i = 0; i < hash.length; ++i) {
+      hash[i] = (byte)i;
+    }
+    return hash;
+  }
 
-	@Test
-	public void constructorPostConsensusCreateTopic() {
-		final var topicId = getTopicJAccountId(1L, 22L, 333L);
-		final var sequenceNumber = 0L;
-		final var cut = new TxnReceipt(
-				null, null, null, null, null, null,
-				topicId, sequenceNumber, null);
+  @Test
+  public void constructorPostConsensusCreateTopic() {
+    final var topicId = getTopicJAccountId(1L, 22L, 333L);
+    final var sequenceNumber = 0L;
+    final var cut = new TxnReceipt(
+            null, null, null, null, null, null,
+            topicId, sequenceNumber, null);
 
-		assertAll(() -> assertEquals(topicId, cut.getTopicId()),
-				() -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
-				() -> assertNull(cut.getTopicRunningHash())
-		);
-	}
+    assertAll(() -> assertEquals(topicId, cut.getTopicId()),
+            () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
+            () -> assertNull(cut.getTopicRunningHash())
+    );
+  }
 
-	@Test
-	public void constructorPostConsensusSubmitMessage() {
-		final var sequenceNumber = 55555L;
-		final var cut = new TxnReceipt(
-				null, null, null, null, null, null, null,
-				sequenceNumber, getSha384Hash());
+  @Test
+  public void constructorPostConsensusSubmitMessage() {
+    final var sequenceNumber = 55555L;
+    final var cut = new TxnReceipt(
+            null, null, null, null, null, null, null,
+            sequenceNumber, getSha384Hash());
 
-		assertAll(() -> assertNull(cut.getTopicId()),
-				() -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
-				() -> assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash())
-		);
-	}
+    assertAll(() -> assertNull(cut.getTopicId()),
+            () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
+            () -> assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash())
+    );
+  }
 
-	@Test
-	public void setRunning() {
-		final var cut = new TxnReceipt();
-		cut.topicRunningHash = getSha384Hash();
-		assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash());
-	}
+  @Test
+  public void setRunning() {
+    final var cut = new TxnReceipt();
+    cut.topicRunningHash = getSha384Hash();
+    assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash());
+  }
 
-	@Test
-	public void convertToJTransactionReceiptPostConsensusCreateTopic() {
-		final var topicId = getTopicId(1L, 22L, 333L);
-		final var receipt = TransactionReceipt.newBuilder()
-				.setExchangeRate(new ExchangeRates().toGrpc())
-				.setTopicID(topicId).build();
-		final var cut = TxnReceipt.fromGrpc(receipt);
+  @Test
+  public void convertToJTransactionReceiptPostConsensusCreateTopic() {
+    final var topicId = getTopicId(1L, 22L, 333L);
+    final var receipt = TransactionReceipt.newBuilder()
+            .setExchangeRate(new ExchangeRates().toGrpc())
+            .setTopicID(topicId).build();
+    final var cut = TxnReceipt.fromGrpc(receipt);
 
-		assertAll(() -> assertEquals(EntityId.ofNullableTopicId(topicId), cut.getTopicId()),
-				() -> assertNull(cut.getAccountId()),
-				() -> assertNull(cut.getFileId()),
-				() -> assertNull(cut.getContractId()),
-				() -> assertEquals(new ExchangeRates(), cut.getExchangeRates()),
-				() -> assertEquals(0L, cut.getTopicSequenceNumber()),
-				() -> assertNull(cut.getTopicRunningHash())
-		);
-	}
+    assertAll(() -> assertEquals(EntityId.ofNullableTopicId(topicId), cut.getTopicId()),
+            () -> assertNull(cut.getAccountId()),
+            () -> assertNull(cut.getFileId()),
+            () -> assertNull(cut.getContractId()),
+            () -> assertEquals(new ExchangeRates(), cut.getExchangeRates()),
+            () -> assertEquals(0L, cut.getTopicSequenceNumber()),
+            () -> assertNull(cut.getTopicRunningHash())
+    );
+  }
 
-	@Test
-	public void postConsensusSubmitMessageInterconversionWorks() {
-		final var topicSequenceNumber = 4444L;
-		final var topicRunningHash = getSha384Hash();
+  @Test
+  public void postConsensusSubmitMessageInterconversionWorks() {
+    final var topicSequenceNumber = 4444L;
+    final var topicRunningHash = getSha384Hash();
 
-		final var receipt = TransactionReceipt.newBuilder()
-				.setExchangeRate(new ExchangeRates().toGrpc())
-				.setTopicSequenceNumber(topicSequenceNumber)
-				.setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
-				.setTopicRunningHashVersion(2L)
-				.build();
-		final var cut = TxnReceipt.fromGrpc(receipt);
-		final var back = TxnReceipt.convert(cut);
+    final var receipt = TransactionReceipt.newBuilder()
+            .setExchangeRate(new ExchangeRates().toGrpc())
+            .setTopicSequenceNumber(topicSequenceNumber)
+            .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
+            .setTopicRunningHashVersion(2L)
+            .build();
+    final var cut = TxnReceipt.fromGrpc(receipt);
+    final var back = TxnReceipt.convert(cut);
 
-		assertEquals(receipt, back);
-	}
+    assertEquals(receipt, back);
+  }
 
-	@Test
-	public void convertToJTransactionReceiptPostConsensusSubmitMessage() {
-		final var topicSequenceNumber = 4444L;
-		final var topicRunningHash = getSha384Hash();
+  @Test
+  public void convertToJTransactionReceiptPostConsensusSubmitMessage() {
+    final var topicSequenceNumber = 4444L;
+    final var topicRunningHash = getSha384Hash();
 
-		final var receipt = TransactionReceipt.newBuilder()
-				.setTopicSequenceNumber(topicSequenceNumber)
-				.setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
-				.setTopicRunningHashVersion(2L)
-				.build();
-		final var cut = TxnReceipt.fromGrpc(receipt);
+    final var receipt = TransactionReceipt.newBuilder()
+            .setTopicSequenceNumber(topicSequenceNumber)
+            .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
+            .setTopicRunningHashVersion(2L)
+            .build();
+    final var cut = TxnReceipt.fromGrpc(receipt);
 
-		assertAll(
-				() -> assertEquals(2L, cut.getRunningHashVersion()),
-				() -> assertNull(cut.getTopicId()),
-				() -> assertEquals(topicSequenceNumber, cut.getTopicSequenceNumber()),
-				() -> assertArrayEquals(topicRunningHash, cut.getTopicRunningHash())
-		);
-	}
+    assertAll(
+            () -> assertEquals(2L, cut.getRunningHashVersion()),
+            () -> assertNull(cut.getTopicId()),
+            () -> assertEquals(topicSequenceNumber, cut.getTopicSequenceNumber()),
+            () -> assertArrayEquals(topicRunningHash, cut.getTopicRunningHash())
+    );
+  }
 
-	@Test
-	public void convertToTransactionReceiptPostConsensusCreateTopic() {
-		final var topicId = getTopicJAccountId(1L, 22L, 333L);
-		final var receipt = new TxnReceipt();
-		receipt.status = "OK";
-		receipt.topicId = topicId;
-		final var cut = TxnReceipt.convert(receipt);
+  @Test
+  public void convertToTransactionReceiptPostConsensusCreateTopic() {
+    final var topicId = getTopicJAccountId(1L, 22L, 333L);
+    final var receipt = new TxnReceipt();
+    receipt.status = "OK";
+    receipt.topicId = topicId;
+    final var cut = TxnReceipt.convert(receipt);
 
-		assertAll(() -> assertEquals(topicId.shard(), cut.getTopicID().getShardNum()),
-				() -> assertEquals(topicId.realm(), cut.getTopicID().getRealmNum()),
-				() -> assertEquals(topicId.num(), cut.getTopicID().getTopicNum()),
-				() -> assertEquals(0L, cut.getTopicSequenceNumber()),
-				() -> assertEquals(0, cut.getTopicRunningHash().size())
-		);
-	}
+    assertAll(() -> assertEquals(topicId.shard(), cut.getTopicID().getShardNum()),
+            () -> assertEquals(topicId.realm(), cut.getTopicID().getRealmNum()),
+            () -> assertEquals(topicId.num(), cut.getTopicID().getTopicNum()),
+            () -> assertEquals(0L, cut.getTopicSequenceNumber()),
+            () -> assertEquals(0, cut.getTopicRunningHash().size())
+    );
+  }
 
-	@Test
-	public void convertToTransactionReceiptPostConsensusSubmitMessage() {
-		final var sequenceNumber = 666666L;
-		final var receipt = new TxnReceipt();
-		receipt.status = "OK";
-		receipt.topicSequenceNumber = sequenceNumber;
-		receipt.topicRunningHash = getSha384Hash();
-		final var cut = TxnReceipt.convert(receipt);
+  @Test
+  public void convertToTransactionReceiptPostConsensusSubmitMessage() {
+    final var sequenceNumber = 666666L;
+    final var receipt = new TxnReceipt();
+    receipt.status = "OK";
+    receipt.topicSequenceNumber = sequenceNumber;
+    receipt.topicRunningHash = getSha384Hash();
+    final var cut = TxnReceipt.convert(receipt);
 
-		assertAll(() -> assertFalse(cut.hasTopicID()),
-				() -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
-				() -> assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash().toByteArray())
-		);
-	}
+    assertAll(() -> assertFalse(cut.hasTopicID()),
+            () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
+            () -> assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash().toByteArray())
+    );
+  }
 
 
-	@Test
-	public void equalsDefaults() {
-		assertEquals(new TxnReceipt(), new TxnReceipt());
-	}
+  @Test
+  public void equalsDefaults() {
+    assertEquals(new TxnReceipt(), new TxnReceipt());
+  }
 
-	@Test
-	public void hashCodeWithNulls() {
-		final var cut = new TxnReceipt();
-		assertNull(cut.getTopicId());
-		assertNull(cut.getTopicRunningHash());
+  @Test
+  public void hashCodeWithNulls() {
+    final var cut = new TxnReceipt();
+    assertNull(cut.getTopicId());
+    assertNull(cut.getTopicRunningHash());
 
-		Assertions.assertDoesNotThrow(() -> cut.hashCode());
-	}
+    Assertions.assertDoesNotThrow(() -> cut.hashCode());
+  }
 
-	@Test
-	public void toStringWithNulls() {
-		final var cut = new TxnReceipt();
-		assertNull(cut.getTopicId());
-		assertNull(cut.getTopicRunningHash());
+  @Test
+  public void toStringWithNulls() {
+    final var cut = new TxnReceipt();
+    assertNull(cut.getTopicId());
+    assertNull(cut.getTopicRunningHash());
 
-		assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-				() -> assertNotNull(cut.toString()));
-	}
+    assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+            () -> assertNotNull(cut.toString()));
+  }
 
-	@Test
-	public void hcsConstructor() {
-		final var topicId = EntityId.ofNullableTopicId(TopicID.newBuilder().setTopicNum(1L).build());
-		final var sequenceNumber = 2L;
-		final var runningHash = new byte[3];
-		final var cut = new TxnReceipt(
-				"SUCCESS", null, null, null, null, null,
-				topicId, sequenceNumber, runningHash);
+  @Test
+  public void hcsConstructor() {
+    final var topicId = EntityId.ofNullableTopicId(TopicID.newBuilder().setTopicNum(1L).build());
+    final var sequenceNumber = 2L;
+    final var runningHash = new byte[3];
+    final var cut = new TxnReceipt(
+            "SUCCESS", null, null, null, null, null,
+            topicId, sequenceNumber, runningHash);
 
-		assertEquals(topicId, cut.getTopicId());
-		assertEquals(sequenceNumber, cut.getTopicSequenceNumber());
-		assertEquals(runningHash, cut.getTopicRunningHash());
+    assertEquals(topicId, cut.getTopicId());
+    assertEquals(sequenceNumber, cut.getTopicSequenceNumber());
+    assertEquals(runningHash, cut.getTopicRunningHash());
 
-		assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-				() -> assertNotNull(cut.toString()));
-	}
+    assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+            () -> assertNotNull(cut.toString()));
+  }
 }

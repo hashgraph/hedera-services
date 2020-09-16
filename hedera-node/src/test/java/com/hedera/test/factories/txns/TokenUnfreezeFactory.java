@@ -30,8 +30,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory> {
-	private TokenUnfreezeFactory() {
-	}
+	private TokenUnfreezeFactory() {}
 
 	private TokenRef ref;
 

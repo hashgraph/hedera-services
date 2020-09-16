@@ -9,9 +9,9 @@ package com.hedera.services.txns.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,7 +50,7 @@ public class PureValidation {
 		if (info.isEmpty()) {
 			return INVALID_FILE_ID;
 		} else {
-			return OK;
+			return  OK;
 		}
 	}
 
@@ -64,8 +64,7 @@ public class PureValidation {
 				.orElse(INVALID_ACCOUNT_ID);
 	}
 
-	public static ResponseCodeEnum queryableContractStatus(ContractID cid,
-			FCMap<MerkleEntityId, MerkleAccount> contracts) {
+	public static ResponseCodeEnum queryableContractStatus(ContractID cid, FCMap<MerkleEntityId, MerkleAccount> contracts) {
 		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
@@ -88,7 +87,7 @@ public class PureValidation {
 
 	public static Instant asCoercedInstant(Timestamp when) {
 		return Instant.ofEpochSecond(
-				Math.min(Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()), Instant.MAX.getEpochSecond()),
-				Math.min(Math.max(Instant.MIN.getNano(), when.getNanos()), Instant.MAX.getNano()));
+			Math.min(Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()), Instant.MAX.getEpochSecond()),
+			Math.min(Math.max(Instant.MIN.getNano(), when.getNanos()), Instant.MAX.getNano()));
 	}
 }

@@ -66,7 +66,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedSupplyKey = Optional.empty();
 	Optional<Boolean> expectedDeletion = Optional.empty();
 	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
-	Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
+	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -82,57 +82,46 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedFreezeDefault = Optional.of(s);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasKycDefault(TokenKycStatus s) {
 		expectedKycDefault = Optional.of(s);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasDivisibility(int d) {
 		expectedDivisibility = OptionalInt.of(d);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasFloat(long amount) {
 		expectedFloat = OptionalLong.of(amount);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasRegisteredId(String token) {
 		expectedId = Optional.of(token);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasFreezeKey(String name) {
 		expectedFreezeKey = Optional.of(name);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasAdminKey(String name) {
 		expectedAdminKey = Optional.of(name);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasKycKey(String name) {
 		expectedKycKey = Optional.of(name);
 		return this;
 	}
-
 	public HapiGetTokenInfo hasSupplyKey(String name) {
 		expectedSupplyKey = Optional.of(name);
 		return this;
 	}
-
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
 	}
-
 	public HapiGetTokenInfo isNotDeleted() {
 		expectedDeletion = Optional.of(Boolean.FALSE);
 		return this;

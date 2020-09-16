@@ -102,11 +102,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.createThresholdRecords")).willReturn((i % 2) == 0);
-		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
-		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long) i + 3);
-		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long) i + 4);
+		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
+		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long)i + 3);
+		given(properties.getLongProperty("contracts.defaultReceiveThreshold")).willReturn((long)i + 4);
 		given(properties.getIntProperty("files.maxSizeKb")).willReturn(i + 5);
-		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long) i + 6);
+		given(properties.getLongProperty("ledger.fundingAccount")).willReturn((long)i + 6);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(i + 7);
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,6 @@ import static java.util.stream.Collectors.*;
 
 import java.util.stream.Collector;
 import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.toList;
 
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
@@ -63,9 +62,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			BinaryOperator<List<AccountAmount>> reducer) {
 		return collectingAndThen(
 				reducing(Collections.EMPTY_LIST, TransferList::getAccountAmountsList, reducer),
-				aList -> TransferList.newBuilder().addAllAccountAmounts((List<AccountAmount>) aList).build());
+				aList -> TransferList.newBuilder().addAllAccountAmounts((List<AccountAmount>)aList).build());
 	}
-
 	private final static BinaryOperator<List<AccountAmount>> accountAppend = (a, b) ->
 			Stream.of(a, b).flatMap(List::stream).collect(toList());
 	private final static BinaryOperator<List<AccountAmount>> accountMerge = (a, b) ->
@@ -74,10 +72,10 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 					aMap -> aMap.entrySet()
 							.stream()
 							.map(entry ->
-									AccountAmount.newBuilder()
-											.setAccountID(entry.getKey())
-											.setAmount(entry.getValue().stream().mapToLong(l -> (long) l).sum())
-											.build())
+								AccountAmount.newBuilder()
+										.setAccountID(entry.getKey())
+										.setAmount(entry.getValue().stream().mapToLong(l -> (long)l).sum())
+										.build())
 							.collect(toList())));
 	private final static Collector<TransferList, ?, TransferList> mergingAccounts = transferCollector(accountMerge);
 	private final static Collector<TransferList, ?, TransferList> appendingAccounts = transferCollector(accountAppend);
@@ -122,9 +120,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			AccountID fromAccount = asId(from, spec);
 			return TransferList.newBuilder()
 					.addAllAccountAmounts(Arrays.asList(
-							AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
-							AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(
-									-1L * amount).build())).build();
+						AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
+						AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(-1L * amount).build())).build();
 		};
 	}
 
@@ -166,8 +163,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				helper.add(
 						"transfers",
 						TxnUtils.readableTransferList(txn.getCryptoTransfer().getTransfers()));
-			} catch (Exception ignore) {
-			}
+			} catch (Exception ignore) {}
 		}
 		return helper;
 	}

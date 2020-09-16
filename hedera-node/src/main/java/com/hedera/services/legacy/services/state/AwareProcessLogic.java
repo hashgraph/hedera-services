@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -118,7 +118,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
 		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
 			var msg = String.format("Catastrophic invariant failure! " +
-							"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
+					"Non-increasing consensus time %d.%d versus last-handled %d.%d for: %s",
 					consensusTime.getEpochSecond(),
 					consensusTime.getNano(),
 					lastHandled.getEpochSecond(),
@@ -260,7 +260,7 @@ public class AwareProcessLogic implements ProcessLogic {
 					accessor,
 					ctx.backedKeyOrder(),
 					IN_HANDLE_SUMMARY_FACTORY,
-					forTopLevelFile((JKeyList) wacl));
+					forTopLevelFile((JKeyList)wacl));
 		} else {
 			return otherPartySigsAreActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
 		}
@@ -330,7 +330,6 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.midnightRates().replaceWith(ctx.exchange().activeRates());
 		}
 	}
-
 	private boolean shouldUpdateMidnightRatesAt(Instant dataDrivenNow) {
 		return ctx.consensusTimeOfLastHandledTxn() != null &&
 				!inSameUtcDay(ctx.consensusTimeOfLastHandledTxn(), dataDrivenNow);
@@ -397,9 +396,9 @@ public class AwareProcessLogic implements ProcessLogic {
 				log.error("Error during delete contract", e);
 			}
 		} else if (txn.hasSystemDelete() && txn.getSystemDelete().hasContractID()) {
-			record = ctx.contracts().systemDelete(txn, consensusTime);
+				record = ctx.contracts().systemDelete(txn, consensusTime);
 		} else if (txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID()) {
-			record = ctx.contracts().systemUndelete(txn, consensusTime);
+				record = ctx.contracts().systemUndelete(txn, consensusTime);
 		} else if (txn.hasFreeze()) {
 			record = ctx.freeze().freeze(txn, consensusTime);
 		} else {
@@ -408,7 +407,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 		if (record.hasReceipt()) {
 			if (!record.getReceipt().hasExchangeRate()) {
-				if (log.isDebugEnabled()) {
+				if(log.isDebugEnabled()) {
 					log.debug("Receipt {} missing rates info!", TextFormat.shortDebugString(record));
 				}
 				TransactionReceipt.Builder receiptBuilder = record.getReceipt().toBuilder();

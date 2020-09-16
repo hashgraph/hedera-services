@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,7 +56,7 @@ public class FeeScheduleDeJson {
 
 	public static CurrentAndNextFeeSchedule fromJsonLiteral(String stylized) throws Exception {
 		var om = new ObjectMapper();
-		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>) om.readValue(stylized, List.class);
+		List<Map<String, Object>> rawFeeSchedules = (List<Map<String, Object>>)om.readValue(stylized, List.class);
 		return fromMapList(rawFeeSchedules);
 	}
 
@@ -74,7 +74,7 @@ public class FeeScheduleDeJson {
 					feeSchedules,
 					rawFeeSchedule,
 					FeeSchedule.class,
-					bindFeeScheduleFrom((List<Map<String, Object>>) mapList.get(i++).get(rawFeeSchedule)));
+					bindFeeScheduleFrom((List<Map<String, Object>>)mapList.get(i++).get(rawFeeSchedule)));
 		}
 		return feeSchedules.build();
 	}
@@ -82,7 +82,7 @@ public class FeeScheduleDeJson {
 	static List<Map<String, Object>> asMapList(String jsonLoc) {
 		ObjectMapper om = new ObjectMapper();
 		try (InputStream in = Files.newInputStream(Paths.get(jsonLoc))) {
-			return (List<Map<String, Object>>) om.readValue(in, List.class);
+			return (List<Map<String, Object>>)om.readValue(in, List.class);
 		} catch (Exception e) {
 			throw new IllegalStateException(String.format("Cannot load fee schedules '%s'!", jsonLoc), e);
 		}
@@ -97,7 +97,7 @@ public class FeeScheduleDeJson {
 				feeSchedule.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry));
 			} else {
 				feeSchedule.addTransactionFeeSchedule(bindTxnFeeScheduleFrom(
-						(Map<String, Object>) part.get(TXN_FEE_SCHEDULE_KEY)));
+						(Map<String, Object>)part.get(TXN_FEE_SCHEDULE_KEY)));
 			}
 		}
 
@@ -106,9 +106,9 @@ public class FeeScheduleDeJson {
 
 	static TransactionFeeSchedule bindTxnFeeScheduleFrom(Map<String, Object> rawTxnFeeSchedule) throws Exception {
 		TransactionFeeSchedule.Builder txnFeeSchedule = TransactionFeeSchedule.newBuilder();
-		var key = translateClaimFunction((String) rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
+		var key = translateClaimFunction((String)rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
 		txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
-		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>) rawTxnFeeSchedule.get(FEE_DATA_KEY)));
+		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY)));
 		return txnFeeSchedule.build();
 	}
 
@@ -133,7 +133,7 @@ public class FeeScheduleDeJson {
 					feeData,
 					feeComponent,
 					FeeComponents.class,
-					bindFeeComponentsFrom((Map<String, Object>) rawFeeData.get(feeComponent)));
+					bindFeeComponentsFrom((Map<String, Object>)rawFeeData.get(feeComponent)));
 		}
 
 		return feeData.build();
@@ -152,8 +152,7 @@ public class FeeScheduleDeJson {
 		return feeComponents.build();
 	}
 
-	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType,
-			T value) throws Exception {
+	static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType, T value) throws Exception {
 		Method setter = builderType.getDeclaredMethod(setterName(property), valueType);
 		setter.invoke(builder, value);
 	}

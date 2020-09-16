@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -82,8 +82,8 @@ public class BiasedDelegatingProvider implements OpProvider {
 	@Override
 	public List<HapiSpecOperation> suggestedInitializers() {
 		return Stream.concat(
-				globalInitializers.stream(),
-				delegates.stream().flatMap(d -> d.suggestedInitializers().stream()))
+					globalInitializers.stream(),
+					delegates.stream().flatMap(d -> d.suggestedInitializers().stream()))
 				.collect(toList());
 	}
 
@@ -94,7 +94,7 @@ public class BiasedDelegatingProvider implements OpProvider {
 		} else {
 			while (true) {
 				Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
-				if (op.isPresent()) {
+				if(op.isPresent()) {
 					op.ifPresent(this::configureDefaults);
 					return op;
 				}
@@ -116,14 +116,14 @@ public class BiasedDelegatingProvider implements OpProvider {
 		boolean isTxnOp = isTxnOp(op);
 
 		if (shouldAlwaysDefer && isTxnOp) {
-			((HapiTxnOp) op).deferStatusResolution();
+			((HapiTxnOp)op).deferStatusResolution();
 		}
 		if (!shouldLogNormalFlow) {
 			if (isTxnOp) {
-				((HapiTxnOp) op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
+				((HapiTxnOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
 
 			} else if (isQueryOp(op)) {
-				((HapiQueryOp) op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT);
+				((HapiQueryOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT);
 			}
 		}
 	}

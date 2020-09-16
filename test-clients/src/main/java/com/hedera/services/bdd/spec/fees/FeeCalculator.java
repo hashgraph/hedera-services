@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,12 +25,10 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import static com.hederahashgraph.fee.FeeBuilder.*;
-
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy	.proto.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,7 +64,7 @@ public class FeeCalculator {
 				.mapToLong(op ->
 						Optional.ofNullable(
 								opFeeData.get(op)).map(fd ->
-								fd.getServicedata().getMax()
+										fd.getServicedata().getMax()
 										+ fd.getNodedata().getMax()
 										+ fd.getNetworkdata().getMax()).orElse(0L))
 				.max()

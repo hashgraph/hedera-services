@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,18 +43,15 @@ import static com.hedera.services.fees.TxnFeeType.*;
  * @author Michael Tinker
  */
 public class TxnFeeChargingPolicy {
-	private final Consumer<ItemizableFeeCharging> NO_DISCOUNT = c -> {
-	};
+	private final Consumer<ItemizableFeeCharging> NO_DISCOUNT = c -> {};
 	private final Consumer<ItemizableFeeCharging> DUPLICATE_TXN_DISCOUNT = c -> c.setFor(SERVICE, 0);
 
 	/**
 	 * Apply the fee charging policy to a txn that was submitted responsibly, and
 	 * believed unique.
 	 *
-	 * @param charging
-	 * 		the charging facility to use
-	 * @param fee
-	 * 		the fee to charge
+	 * @param charging the charging facility to use
+	 * @param fee the fee to charge
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fee) {
@@ -65,10 +62,8 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that was submitted responsibly, but
 	 * is a duplicate of a txn already submitted by a different node.
 	 *
-	 * @param charging
-	 * 		the charging facility to use
-	 * @param fee
-	 * 		the fee to charge
+	 * @param charging the charging facility to use
+	 * @param fee the fee to charge
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForDuplicate(ItemizableFeeCharging charging, FeeObject fee) {
@@ -79,10 +74,8 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that looks to have been
 	 * submitted without performing basic due diligence.
 	 *
-	 * @param charging
-	 * 		the charging facility to use
-	 * @param fee
-	 * 		the fee to charge
+	 * @param charging the charging facility to use
+	 * @param fee the fee to charge
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fee) {
@@ -113,7 +106,7 @@ public class TxnFeeChargingPolicy {
 			ItemizableFeeCharging charging,
 			Consumer<ItemizableFeeCharging> discount
 	) {
-		if (!charging.isPayerWillingToCover(NETWORK_NODE_SERVICE_FEES)) {
+		if (!charging.isPayerWillingToCover(NETWORK_NODE_SERVICE_FEES))	{
 			penalizePayer(charging);
 			return INSUFFICIENT_TX_FEE;
 		} else if (!charging.canPayerAfford(NETWORK_NODE_SERVICE_FEES)) {

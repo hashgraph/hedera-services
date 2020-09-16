@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,7 +55,6 @@ public class AwareTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
 
 	public static final JKey EMPTY_KEY;
-
 	static {
 		try {
 			EMPTY_KEY = mapKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
@@ -66,10 +65,8 @@ public class AwareTransactionContext implements TransactionContext {
 
 	private final ServicesContext ctx;
 
-	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {
-	};
-	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {
-	};
+	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {};
+	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;

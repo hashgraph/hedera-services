@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -182,11 +182,11 @@ public class CryptoCreateTransitionLogicTest {
 		// and:
 		EnumMap<AccountProperty, Object> changes = captor.getValue().getChanges();
 		assertEquals(7, changes.size());
-		assertEquals(customAutoRenewPeriod, (long) changes.get(AUTO_RENEW_PERIOD));
-		assertEquals(customSendThreshold, (long) changes.get(FUNDS_SENT_RECORD_THRESHOLD));
-		assertEquals(customReceiveThreshold, (long) changes.get(FUNDS_RECEIVED_RECORD_THRESHOLD));
-		assertEquals(expiry, (long) changes.get(EXPIRY));
-		assertEquals(key, JKey.mapJKey((JKey) changes.get(KEY)));
+		assertEquals(customAutoRenewPeriod, (long)changes.get(AUTO_RENEW_PERIOD));
+		assertEquals(customSendThreshold, (long)changes.get(FUNDS_SENT_RECORD_THRESHOLD));
+		assertEquals(customReceiveThreshold, (long)changes.get(FUNDS_RECEIVED_RECORD_THRESHOLD));
+		assertEquals(expiry, (long)changes.get(EXPIRY));
+		assertEquals(key, JKey.mapJKey((JKey)changes.get(KEY)));
 		assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
 		assertEquals(EntityId.ofNullableAccountId(proxy), changes.get(PROXY));
 	}

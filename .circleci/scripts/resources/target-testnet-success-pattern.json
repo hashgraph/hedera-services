@@ -1,5 +1,5 @@
 {
-  "target-testnet-success-pattern": {
-	"Start testnet": ":50211 is available."
+    "target-testnet-success-pattern" : {
+        "Start testnet": ":50211 is available."
   }
 }

@@ -453,7 +453,7 @@ class MerkleTokenTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals("MerkleToken{" +
-						"deleted=" + isDeleted + ", " +
+					    "deleted=" + isDeleted + ", " +
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +

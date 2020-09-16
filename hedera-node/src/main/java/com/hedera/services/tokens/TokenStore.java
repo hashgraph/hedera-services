@@ -47,43 +47,27 @@ public interface TokenStore {
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
-
 	void setHederaLedger(HederaLedger ledger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
-
 	boolean exists(TokenID id);
-
 	boolean symbolExists(String symbol);
-
 	TokenID lookup(String symbol);
-
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
-
 	ResponseCodeEnum mint(TokenID tId, long amount);
-
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck);
-
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum update(TokenManagement changes, long now);
-
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
-
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now);
-
 	void commitCreation();
-
 	void rollbackCreation();
-
 	boolean isCreationPending();
 
 	default TokenID resolve(TokenRef ref) {

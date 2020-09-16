@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -119,11 +119,9 @@ public class HederaToPlatformSigOpsTest {
 	private void wellBehavedOrdersAndSigSourcesPreHandle() throws Exception {
 		wellBehavedOrdersAndSigSources(PRE_HANDLE_SUMMARY_FACTORY);
 	}
-
 	private void wellBehavedOrdersAndSigSourcesInHandle() throws Exception {
 		wellBehavedOrdersAndSigSources(IN_HANDLE_SUMMARY_FACTORY);
 	}
-
 	private void wellBehavedOrdersAndSigSources(SigStatusOrderResultFactory factory) throws Exception {
 		given(keyOrdering.keysForPayer(platformTxn.getTxn(), factory))
 				.willReturn(new SigningOrderResult<>(payerKey));
@@ -243,10 +241,10 @@ public class HederaToPlatformSigOpsTest {
 		// given:
 		wellBehavedOrdersAndSigSourcesInHandle();
 		platformTxn.getPlatformTxn().addAll(
-				asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new Signature[0]));
+			asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new Signature[0]));
 		// and:
 		SyncVerifier syncVerifier = l -> {
-			if (l.equals(expectedSigsWithNoErrors().subList(0, 1))) {
+			if (l.equals(expectedSigsWithNoErrors().subList(0, 1)))	{
 				throw new AssertionError("Payer sigs were verified async!");
 			} else {
 				ALWAYS_VALID.verifySync(l);
@@ -296,7 +294,7 @@ public class HederaToPlatformSigOpsTest {
 		assertEquals(asyncSuccessStatus.toString(), status.toString());
 		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn()).hasClearBeenCalled());
+		assertFalse(((PlatformTxnFactory.TransactionWithClearFlag)platformTxn.getPlatformTxn()).hasClearBeenCalled());
 	}
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
@@ -311,11 +309,9 @@ public class HederaToPlatformSigOpsTest {
 				dummyFor(otherKeys.get(0), "2"),
 				dummyFor(otherKeys.get(1), "3"));
 	}
-
 	private List<Signature> expectedSigsWithOtherPartiesCreationError() {
 		return expectedSigsWithNoErrors().subList(0, 1);
 	}
-
 	private Signature dummyFor(JKey key, String sig) {
 		return PlatformSigFactory.createEd25519(
 				key.getEd25519(),

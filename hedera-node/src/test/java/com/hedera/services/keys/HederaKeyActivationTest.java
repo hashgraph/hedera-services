@@ -9,9 +9,9 @@ package com.hedera.services.keys;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,6 @@ import org.junit.platform.runner.JUnitPlatform;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.runner.RunWith;
 
 import java.util.List;
@@ -73,20 +72,20 @@ public class HederaKeyActivationTest {
 						ed25519(),
 						list(
 								threshold(2,
-										ed25519(), ed25519(), ed25519())))).asJKey();
+										ed25519(), ed25519(),  ed25519())))).asJKey();
 	}
 
 	@BeforeEach
 	public void setup() {
-		sigsFn = (Function<byte[], Signature>) mock(Function.class);
-		tests = (BiPredicate<JKey, Signature>) mock(BiPredicate.class);
+		sigsFn = (Function<byte[], Signature>)mock(Function.class);
+		tests = (BiPredicate<JKey, Signature>)mock(BiPredicate.class);
 	}
 
 	@Test
 	public void revocationServiceActivatesWithOneTopLevelSig() {
 		// setup:
 		KeyActivationCharacteristics characteristics =
-				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+				RevocationServiceCharacteristics.forTopLevelFile((JKeyList)complexKey);
 
 		given(sigsFn.apply(any()))
 				.willReturn(VALID_SIG)
@@ -102,7 +101,7 @@ public class HederaKeyActivationTest {
 	public void revocationServiceiRequiresOneTopLevelSig() {
 		// setup:
 		KeyActivationCharacteristics characteristics =
-				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
+				RevocationServiceCharacteristics.forTopLevelFile((JKeyList)complexKey);
 
 		given(sigsFn.apply(any()))
 				.willReturn(INVALID_SIG)

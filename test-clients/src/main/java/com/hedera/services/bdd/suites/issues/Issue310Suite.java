@@ -52,7 +52,7 @@ public class Issue310Suite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return  List.of(
 				duplicatedTxnsSameTypeDetected(),
 				duplicatedTxnsDifferentTypesDetected(),
 				duplicatedTxnsSameTypeDifferntNodesDetected(),
@@ -152,7 +152,6 @@ public class Issue310Suite extends HapiApiSuite {
 
 				);
 	}
-
 	@Override
 	protected Logger getResultsLogger() {
 		return log;

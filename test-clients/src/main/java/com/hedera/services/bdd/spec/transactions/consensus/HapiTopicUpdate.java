@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,7 +77,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 	}
 
 	public HapiTopicUpdate adminKey(Key key) {
-		newAdminKey = Optional.of(key);
+	    newAdminKey = Optional.of(key);
 		return this;
 	}
 
@@ -135,7 +135,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 				spec.registry().saveKey(submitKeyName(), k);
 			}
 		});
-		try {
+		try{
 			TransactionBody txn = TransactionBody.parseFrom(txnSubmitted.getBodyBytes());
 			spec.registry().saveTopicMeta(topic, txn.getConsensusUpdateTopic());
 		} catch (Exception impossible) {
@@ -150,15 +150,15 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 		ConsensusUpdateTopicTransactionBody opBody = spec
 				.txns()
 				.<ConsensusUpdateTopicTransactionBody, ConsensusUpdateTopicTransactionBody.Builder>body(
-						ConsensusUpdateTopicTransactionBody.class, b -> {
-							b.setTopicID(asTopicId(topic, spec));
-							topicMemo.ifPresent(memo -> b.setMemo(StringValue.of(memo)));
-							newAdminKey.ifPresent(b::setAdminKey);
-							newSubmitKey.ifPresent(b::setSubmitKey);
-							newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
-							newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
-							newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
-						});
+					ConsensusUpdateTopicTransactionBody.class, b -> {
+						b.setTopicID(asTopicId(topic, spec));
+						topicMemo.ifPresent(memo -> b.setMemo(StringValue.of(memo)));
+						newAdminKey.ifPresent(b::setAdminKey);
+						newSubmitKey.ifPresent(b::setSubmitKey);
+						newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
+						newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
+						newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
+					});
 		return b -> b.setConsensusUpdateTopic(opBody);
 	}
 
@@ -167,8 +167,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
 		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 		signers.add(spec -> {
-			return spec.registry().hasKey(topic) ? spec.registry().getKey(
-					topic) : Key.getDefaultInstance();  // same as no key
+			return spec.registry().hasKey(topic) ? spec.registry().getKey(topic) : Key.getDefaultInstance();  // same as no key
 		});
 		newAdminKey.ifPresent(key -> {
 			if (key != EMPTY_KEY) {

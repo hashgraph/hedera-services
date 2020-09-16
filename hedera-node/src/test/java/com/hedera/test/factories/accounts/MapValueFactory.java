@@ -9,9 +9,9 @@ package com.hedera.test.factories.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,12 +56,7 @@ public class MapValueFactory {
 		MerkleAccount value = new MerkleAccount();
 		memo.ifPresent(s -> value.setMemo(s));
 		proxy.ifPresent(p -> value.setProxy(EntityId.ofNullableAccountId(p)));
-		balance.ifPresent(b -> {
-			try {
-				value.setBalance(b);
-			} catch (Exception ignore) {
-			}
-		});
+		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
 		deleted.ifPresent(b -> value.setDeleted(b));
 		accountKeys.ifPresent(k -> value.setKey(k));
 		expirationTime.ifPresent(l -> value.setExpiry(l));
@@ -79,13 +74,10 @@ public class MapValueFactory {
 		return value;
 	}
 
-	private MapValueFactory() {
-	}
-
+	private MapValueFactory() {}
 	public static MapValueFactory newAccount() {
 		return new MapValueFactory();
 	}
-
 	public static MapValueFactory newContract() {
 		return new MapValueFactory().isSmartContract(true);
 	}
@@ -99,65 +91,52 @@ public class MapValueFactory {
 		balance = Optional.of(amount);
 		return this;
 	}
-
 	public MapValueFactory tokenBalance(TokenID token, long amount) {
 		tokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount));
 		return this;
 	}
-
 	public MapValueFactory receiverThreshold(long v) {
 		receiverThreshold = Optional.of(v);
 		return this;
 	}
-
 	public MapValueFactory senderThreshold(long v) {
 		senderThreshold = Optional.of(v);
 		return this;
 	}
-
 	public MapValueFactory receiverSigRequired(boolean b) {
 		receiverSigRequired = Optional.of(b);
 		return this;
 	}
-
 	public MapValueFactory keyFactory(KeyFactory keyFactory) {
 		this.keyFactory = keyFactory;
 		return this;
 	}
-
 	public MapValueFactory accountKeys(KeyTree kt) throws Exception {
 		return accountKeys(kt.asKey(keyFactory));
 	}
-
 	public MapValueFactory accountKeys(Key k) throws Exception {
 		return accountKeys(JKey.mapKey(k));
 	}
-
 	public MapValueFactory accountKeys(JKey k) {
 		accountKeys = Optional.of(k);
 		return this;
 	}
-
 	public MapValueFactory autoRenewPeriod(long p) {
 		autoRenewPeriod = Optional.of(p);
 		return this;
 	}
-
 	public MapValueFactory deleted(boolean b) {
 		deleted = Optional.of(b);
 		return this;
 	}
-
 	public MapValueFactory expirationTime(long l) {
 		expirationTime = Optional.of(l);
 		return this;
 	}
-
 	public MapValueFactory memo(String s) {
 		memo = Optional.of(s);
 		return this;
 	}
-
 	public MapValueFactory isSmartContract(boolean b) {
 		isSmartContract = Optional.of(b);
 		return this;

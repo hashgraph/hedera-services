@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -181,7 +181,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		useBadlyEncodedWacl = true;
 		return this;
 	}
-
 	public HapiFileUpdate useEmptyWacl() {
 		useEmptyWacl = true;
 		return this;
@@ -199,8 +198,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 						file,
 						Timestamp.newBuilder().setSeconds(
 								spec.registry().getTimestamp(file).getSeconds() + extension).build());
-			} catch (Exception ignore) {
-			}
+			} catch (Exception ignore) { }
 		});
 		if (file.equals(spec.setup().exchangeRatesName()) && newContents.isPresent()) {
 			var newRateSet = ExchangeRateSet.parseFrom(newContents.get());
@@ -240,7 +238,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			overrides.keySet().stream().forEach(keys::add);
 
 			keys.forEach(key -> {
-				if (overrides.containsKey(key)) {
+				if (overrides.containsKey(key))	{
 					list.addNameValue(asSetting(key, overrides.get(key)));
 				} else {
 					list.addNameValue(asSetting(key, defaultPairs.get(key)));
@@ -255,8 +253,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			try {
 				var oldExpiry = spec.registry().getTimestamp(file).getSeconds();
 				nl = oldExpiry - Instant.now().getEpochSecond() + expiryExtension.getAsLong();
-			} catch (Exception ignore) {
-			}
+			} catch (Exception ignore) { }
 		} else if (lifetimeSecs.isPresent()) {
 			nl = lifetimeSecs.get();
 		}
@@ -318,8 +315,8 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 
 	private List<Function<HapiApiSpec, Key>> oldDefaults() {
 		return List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec)),
-				spec -> spec.registry().getKey(file));
+			spec -> spec.registry().getKey(effectivePayer(spec)),
+			spec -> spec.registry().getKey(file));
 	}
 
 	@Override

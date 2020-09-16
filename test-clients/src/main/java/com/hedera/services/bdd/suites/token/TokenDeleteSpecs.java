@@ -77,7 +77,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
-				).when().then(
+				).when( ).then(
 						tokenDelete("tbd")
 								.payingWith("payer")
 								.signedBy("payer")
@@ -139,7 +139,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletionValidatesRef")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
-				).when().then(
+				).when( ).then(
 						tokenDelete("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")

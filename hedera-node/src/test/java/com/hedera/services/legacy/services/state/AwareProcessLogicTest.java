@@ -101,7 +101,7 @@ class AwareProcessLogicTest {
 		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(now);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, now, 1);
+		subject.incorporateConsensusTxn(platformTxn, now,1);
 
 		// then:
 		verify(mockLog).error(argThat((String s) -> s.startsWith("Catastrophic invariant failure!")));

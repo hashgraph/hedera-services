@@ -9,9 +9,9 @@ package com.hedera.services.sigs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,15 +50,12 @@ public class PlatformSigsCreationResult {
 	public List<Signature> getPlatformSigs() {
 		return platformSigs;
 	}
-
 	public boolean hasFailed() {
 		return terminatingEx.isPresent();
 	}
-
 	public void setTerminatingEx(Exception terminatingEx) {
 		this.terminatingEx = Optional.of(terminatingEx);
 	}
-
 	public Exception getTerminatingEx() {
 		return terminatingEx.get();
 	}
@@ -66,11 +63,9 @@ public class PlatformSigsCreationResult {
 	/**
 	 * Represent this result as a {@link SignatureStatus}.
 	 *
-	 * @param inHandleDynamicContext
-	 * 		a flag giving whether this result occurred in the dynamic context of
-	 *        {@link ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, Address)}
-	 * @param txnId
-	 * 		the id of the related gRPC txn.
+	 * @param inHandleDynamicContext a flag giving whether this result occurred in the dynamic context of
+	 * {@link ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction, Address)}
+	 * @param txnId the id of the related gRPC txn.
 	 * @return the desired representation.
 	 */
 	public SignatureStatus asSignatureStatus(boolean inHandleDynamicContext, TransactionID txnId) {

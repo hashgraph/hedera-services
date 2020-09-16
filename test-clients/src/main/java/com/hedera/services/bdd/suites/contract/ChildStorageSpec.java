@@ -54,8 +54,8 @@ public class ChildStorageSpec extends HapiApiSuite {
 	private static final String GROW_CHILD_ABI =
 			"{\"constant\":false," +
 					"\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_childId\",\"type\":\"uint256\"}," +
-					"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
-					"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}]," +
+						"{\"internalType\":\"uint256\",\"name\":\"_howManyKB\",\"type\":\"uint256\"}," +
+						"{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}]," +
 					"\"name\":\"growChild\"," +
 					"\"outputs\":[]," +
 					"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}\n";
@@ -100,8 +100,8 @@ public class ChildStorageSpec extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
-								)),
+								"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
+						)),
 						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
 						contractCreate("childStorage").bytecode("bytecode")
 				).when(
@@ -119,9 +119,9 @@ public class ChildStorageSpec extends HapiApiSuite {
 						})
 				).then(flattened(
 						valuesMatch(19, 17, 19),
-						contractCall("childStorage", SET_ZERO_READ_ONE_ABI, 23),
+						contractCall( "childStorage", SET_ZERO_READ_ONE_ABI, 23),
 						valuesMatch(23, 23, 19),
-						contractCall("childStorage", SET_BOTH_ABI, 29)
+						contractCall( "childStorage", SET_BOTH_ABI, 29)
 								.hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED),
 						valuesMatch(23, 23, 19)
 				));
@@ -131,18 +131,18 @@ public class ChildStorageSpec extends HapiApiSuite {
 		return new HapiSpecOperation[] {
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 0)
 						.has(resultWith().resultThruAbi(
-								GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(child0) })))
+						GET_CHILD_VALUE_ABI,
+						isLiteralResult(new Object[] { BigInteger.valueOf(child0) })))
 						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 1)
 						.has(resultWith().resultThruAbi(
-								GET_CHILD_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(child1) })))
+						GET_CHILD_VALUE_ABI,
+						isLiteralResult(new Object[] { BigInteger.valueOf(child1) })))
 						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_MY_VALUE_ABI)
 						.has(resultWith().resultThruAbi(
-								GET_MY_VALUE_ABI,
-								isLiteralResult(new Object[] { BigInteger.valueOf(parent) })))
+						GET_MY_VALUE_ABI,
+						isLiteralResult(new Object[] { BigInteger.valueOf(parent) })))
 						.expectStrictCostAnswer(),
 		};
 	}

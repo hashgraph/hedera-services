@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,17 +69,14 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		sendThreshold = OptionalLong.of(v);
 		return this;
 	}
-
 	public HapiCryptoUpdate lifetime(long secs) {
 		lifetimeSecs = Optional.of(secs);
 		return this;
 	}
-
 	public HapiCryptoUpdate key(String name) {
 		updKeyName = Optional.of(name);
 		return this;
 	}
-
 	public HapiCryptoUpdate receiverSigRequired(boolean isRequired) {
 		updSigRequired = Optional.of(isRequired);
 		return this;
@@ -102,8 +99,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		try {
 			updKey = updKeyName.map(spec.registry()::getKey);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) { }
 		var id = TxnUtils.asId(account, spec);
 		CryptoUpdateTransactionBody opBody = spec
 				.txns()

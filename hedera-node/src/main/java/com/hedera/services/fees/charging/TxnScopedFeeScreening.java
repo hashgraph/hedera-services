@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,8 +36,7 @@ public interface TxnScopedFeeScreening {
 	/**
 	 * Flags if the payer of the in-scope txn can afford the given fees.
 	 *
-	 * @param fees
-	 * 		the fees in question
+	 * @param fees the fees in question
 	 * @return if the payer can afford them
 	 */
 	boolean canPayerAfford(EnumSet<TxnFeeType> fees);
@@ -45,12 +44,10 @@ public interface TxnScopedFeeScreening {
 	/**
 	 * Flags if the payer of the in-scope txn is willing to pay the given fees.
 	 *
-	 * @param fees
-	 * 		the fees in question
+	 * @param fees the fees in question
 	 * @return if the payer is willing to pay them
 	 */
 	boolean isPayerWillingToCover(EnumSet<TxnFeeType> fees);
-
 	/**
 	 * Flags if the payer of the in-scope txn is able to pay all fees
 	 * it has advertised willingness to supply.
@@ -62,8 +59,7 @@ public interface TxnScopedFeeScreening {
 	/**
 	 * Flags if the given participant in the in-scope txn can afford the given fees.
 	 *
-	 * @param fees
-	 * 		the fees in question
+	 * @param fees the fees in question
 	 * @return if the participant can afford them
 	 */
 	boolean canParticipantAfford(AccountID participant, EnumSet<TxnFeeType> fees);

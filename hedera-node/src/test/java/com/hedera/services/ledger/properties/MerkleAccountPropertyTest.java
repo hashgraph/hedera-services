@@ -9,9 +9,9 @@ package com.hedera.services.ledger.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -155,10 +155,10 @@ public class MerkleAccountPropertyTest {
 		var tokenRevokeKyc = new TokenScopedPropertyValue(unfrozenTokenId, unfrozenToken, false);
 
 		// expect:
-		assertFalse((boolean) IS_FROZEN.scopedGetter().apply(account, unfrozenTokenScope));
-		assertTrue((boolean) IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
-		assertTrue((boolean) IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
-		assertFalse((boolean) IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
+		assertFalse((boolean)IS_FROZEN.scopedGetter().apply(account, unfrozenTokenScope));
+		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		assertTrue((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
+		assertFalse((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
 		// and when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
@@ -195,20 +195,20 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newPayerRecords, PAYER_RECORDS.getter().apply(account));
 		// and:
 		assertEquals(newTokenBalance, BALANCE.scopedGetter().apply(account, unfrozenTokenScope));
-		assertFalse((boolean) IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		assertFalse((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
 		// and when:
 		IS_FROZEN.setter().accept(account, tokenFreeze);
 		// then:
-		assertTrue((boolean) IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
-		assertFalse((boolean) IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
-		assertTrue((boolean) IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
+		assertTrue((boolean)IS_FROZEN.scopedGetter().apply(account, frozenTokenScope));
+		assertFalse((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, unfrozenTokenScope));
+		assertTrue((boolean)IS_KYC_GRANTED.scopedGetter().apply(account, frozenTokenScope));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
 		return ExpirableTxnRecord.fromGprc(
 				TransactionRecord.newBuilder()
-						.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
-						.build()
+					.setReceipt(TransactionReceipt.newBuilder().setStatus(status))
+				.build()
 		);
 	}
 

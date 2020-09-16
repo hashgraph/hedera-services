@@ -9,9 +9,9 @@ package com.hedera.services.files.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -149,7 +149,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void propagatesNullFromGet() {
-		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA.getPath())))).willReturn(null);
+		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(null);
 
 		// when:
 		byte[] blob = subject.get(pathA.getPath());
@@ -160,7 +160,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void delegatesGet() {
-		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA.getPath())))).willReturn(blobA);
+		given(pathedBlobs.get(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath())))).willReturn(blobA);
 
 		// when:
 		byte[] blob = subject.get(pathA.getPath());
@@ -171,7 +171,7 @@ class FcBlobsBytesStoreTest {
 
 	@Test
 	public void delegatesContainsKey() {
-		given(pathedBlobs.containsKey(argThat(sk -> ((MerkleBlobMeta) sk).getPath().equals(pathA.getPath()))))
+		given(pathedBlobs.containsKey(argThat(sk -> ((MerkleBlobMeta)sk).getPath().equals(pathA.getPath()))))
 				.willReturn(true);
 
 		// when:
@@ -236,8 +236,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDeletesReplacedValueIfNoCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(),
-				new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));
@@ -252,8 +251,7 @@ class FcBlobsBytesStoreTest {
 	@Test
 	public void putDoesNotDeleteReplacedValueIfCopyIsHeld() {
 		// setup:
-		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(),
-				new MerkleOptionalBlob.Provider());
+		FCMap<MerkleBlobMeta, MerkleOptionalBlob> blobs = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
 
 		// given:
 		blobs.put(at("path"), new MerkleOptionalBlob("FIRST".getBytes()));

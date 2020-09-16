@@ -9,9 +9,9 @@ package com.hedera.services.throttling.bucket;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,7 +66,7 @@ class BucketConfigTest {
 		);
 		// and:
 		List<String> expected = List.of(
-				"zero", "one", "three", "four", "five", "six", "seven").stream().sorted().collect(Collectors.toList());
+			"zero", "one", "three", "four", "five", "six", "seven").stream().sorted().collect(Collectors.toList());
 
 		given(properties.getStringProperty(DEFAULT_QUERY_BUCKET_PROPERTY)).willReturn("zero");
 		given(properties.getStringProperty(DEFAULT_TXN_BUCKET_PROPERTY)).willReturn("six");

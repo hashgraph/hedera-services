@@ -176,7 +176,7 @@ public class SSHService {
 			log.info(MARKER, "total files found:{}", foundFiles.size());
 			List<String> localFiles = new LinkedList<>();
 			for (String file : foundFiles) {
-				if (file.isEmpty()) {
+				if (file.isEmpty()){
 					continue;
 				}
 				String currentLine = file;

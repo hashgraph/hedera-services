@@ -105,7 +105,7 @@ public class GlobalDynamicProperties {
 
 	public int ratesIntradayChangeLimitPercent() {
 		return ratesIntradayChangeLimitPercent;
-	}
+        }
 
 	public boolean shouldCreateThresholdRecords() {
 		return shouldCreateThresholdRecords;

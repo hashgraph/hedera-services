@@ -33,7 +33,7 @@ public class SigUsage {
 		if (o == null || o.getClass() != SigUsage.class) {
 			return false;
 		}
-		SigUsage that = (SigUsage) o;
+		SigUsage that = (SigUsage)o;
 		return this.numSigs == that.numSigs && this.sigsSize == that.sigsSize && this.numPayerKeys == that.numPayerKeys;
 	}
 

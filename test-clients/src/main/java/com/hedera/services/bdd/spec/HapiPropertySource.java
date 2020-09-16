@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 public interface HapiPropertySource {
 	String get(String property);
-
 	boolean has(String property);
 
 	static HapiPropertySource inPriorityOrder(HapiPropertySource... sources) {
@@ -67,83 +66,63 @@ public interface HapiPropertySource {
 	default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
 		return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
 	}
-
-	default HapiApiSpec.UTF8Mode getUTF8Mode(String property) {
+	default HapiApiSpec.UTF8Mode getUTF8Mode(String property){
 		return HapiApiSpec.UTF8Mode.valueOf(get(property));
 	}
-
 	default FileID getFile(String property) {
 		try {
 			return asFile(get(property));
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) {}
 		return FileID.getDefaultInstance();
 	}
-
 	default AccountID getAccount(String property) {
 		try {
 			return asAccount(get(property));
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) {}
 		return AccountID.getDefaultInstance();
 	}
-
 	default ContractID getContract(String property) {
 		try {
 			return asContract(get(property));
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) {}
 		return ContractID.getDefaultInstance();
 	}
-
 	default RealmID getRealm(String property) {
 		return RealmID.newBuilder().setRealmNum(Long.parseLong(get(property))).build();
 	}
-
 	default ShardID getShard(String property) {
 		return ShardID.newBuilder().setShardNum(Long.parseLong(get(property))).build();
 	}
-
 	default TimeUnit getTimeUnit(String property) {
 		return TimeUnit.valueOf(get(property));
 	}
-
 	default double getDouble(String property) {
 		return Double.parseDouble(get(property));
 	}
-
 	default long getLong(String property) {
 		return Long.parseLong(get(property));
 	}
-
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
 	}
-
 	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
 	}
-
 	default int getInteger(String property) {
 		return Integer.parseInt(get(property));
 	}
-
 	default Duration getDurationFromSecs(String property) {
 		return Duration.newBuilder().setSeconds(getInteger(property)).build();
 	}
-
 	default boolean getBoolean(String property) {
 		return Boolean.parseBoolean(get(property));
 	}
-
 	default byte[] getBytes(String property) {
 		return get(property).getBytes();
 	}
-
 	default KeyFactory.KeyType getKeyType(String property) {
 		return KeyFactory.KeyType.valueOf(get(property));
 	}
-
 	default HapiApiSpec.SpecStatus getSpecStatus(String property) {
 		return HapiApiSpec.SpecStatus.valueOf(get(property));
 	}
@@ -151,8 +130,8 @@ public interface HapiPropertySource {
 	static HapiPropertySource[] asSources(Object... sources) {
 		return Stream.of(sources)
 				.map(s -> (s instanceof HapiPropertySource) ? s
-						: ((s instanceof Map) ? new MapPropertySource((Map) s)
-						: new JutilPropertySource((String) s)))
+						: ((s instanceof Map) ? new MapPropertySource((Map)s)
+						: new JutilPropertySource((String)s)))
 				.toArray(n -> new HapiPropertySource[n]);
 	}
 
@@ -164,20 +143,18 @@ public interface HapiPropertySource {
 				.setTokenNum(nativeParts[2])
 				.build();
 	}
-
 	static String asTokenString(TokenID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getTokenNum());
 	}
 
 	static AccountID asAccount(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return AccountID.newBuilder()
-				.setShardNum(nativeParts[0])
-				.setRealmNum(nativeParts[1])
-				.setAccountNum(nativeParts[2])
-				.build();
+		 long[] nativeParts = asDotDelimitedLongArray(v);
+		 return AccountID.newBuilder()
+				 .setShardNum(nativeParts[0])
+				 .setRealmNum(nativeParts[1])
+				 .setAccountNum(nativeParts[2])
+				 .build();
 	}
-
 	static String asAccountString(AccountID account) {
 		return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
 	}
@@ -190,7 +167,6 @@ public interface HapiPropertySource {
 				.setTopicNum(nativeParts[2])
 				.build();
 	}
-
 	static String asTopicString(TopicID topic) {
 		return String.format("%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
 	}
@@ -207,9 +183,9 @@ public interface HapiPropertySource {
 	static SemanticVersion asSemVer(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return SemanticVersion.newBuilder()
-				.setMajor((int) nativeParts[0])
-				.setMinor((int) nativeParts[1])
-				.setPatch((int) nativeParts[2])
+				.setMajor((int)nativeParts[0])
+				.setMinor((int)nativeParts[1])
+				.setPatch((int)nativeParts[2])
 				.build();
 	}
 
