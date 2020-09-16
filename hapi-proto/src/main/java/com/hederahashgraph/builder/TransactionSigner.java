@@ -362,10 +362,21 @@ public class TransactionSigner {
       } else {
         bodyBytes = transaction.getBodyBytes().toByteArray();
       }
-      
+
       if(pubKeysList.size() != privKeysList.size()) {
-        new Exception(
-                "public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
+        throw new Exception("public and private keys size mismtach! pubKeysList size = " +
+                pubKeysList.size() +
+                ", privKeysList size = " +
+                privKeysList.size());
+      }
+
+      final List<SignaturePair> pairs = buildSignaturePairs(privKeysList, pubKeysList, bodyBytes);
+
+      SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
+      if(transaction.hasBody()) {
+        rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
+      }else {
+        rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
       }
       return rv;
     }
