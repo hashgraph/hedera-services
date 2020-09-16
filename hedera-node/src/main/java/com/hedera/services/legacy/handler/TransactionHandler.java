@@ -526,6 +526,7 @@ public class TransactionHandler {
       feeRequired = localResp.getRequiredFee();
     }
 
+    // Additional validations on query payment transfer transactions
     if(returnCode == OK && isQueryPayment && txn.hasCryptoTransfer()){
       returnCode = queryFeeCheck.validateQueryPaymentTransaction(txn);
     }

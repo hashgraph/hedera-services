@@ -140,13 +140,13 @@ public class QueryFeeCheck {
 			return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 		}
 
-		ResponseCodeEnum response = checkNodeAndPayerAccounts(transfers,
+		ResponseCodeEnum response = validateTransferList(transfers,
 				payerAccount, txn.getNodeAccountID());
 		if (response != OK) {
 			return response;
 		}
 
-		response = checkPayerBalance(payerAccount, transfers, suppliedFee);
+		response = validatePayerBalance(payerAccount, transfers, suppliedFee);
 		if (response != OK) {
 			return response;
 		}
@@ -161,7 +161,7 @@ public class QueryFeeCheck {
 	 * @param suppliedFee
 	 * @return
 	 */
-	private ResponseCodeEnum checkPayerBalance(AccountID payerAccount, List<AccountAmount> transfers,
+	private ResponseCodeEnum validatePayerBalance(AccountID payerAccount, List<AccountAmount> transfers,
 			long suppliedFee) {
 		Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
 				.map(MerkleAccount::getBalance)
@@ -188,7 +188,7 @@ public class QueryFeeCheck {
 	 * @param node
 	 * @return
 	 */
-	ResponseCodeEnum checkNodeAndPayerAccounts(List<AccountAmount> transfers, AccountID payer, AccountID node) {
+	ResponseCodeEnum validateTransferList(List<AccountAmount> transfers, AccountID payer, AccountID node) {
 		for (AccountAmount accountAmount : transfers) {
 			var id = accountAmount.getAccountID();
 			long amount = accountAmount.getAmount();
