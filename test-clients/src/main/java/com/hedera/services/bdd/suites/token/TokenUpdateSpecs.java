@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
+	private static final int MAX_NAME_LENGTH = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
 
@@ -61,7 +62,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
-						nameChangeFails(),
+						tooLongNameCheckHolds(),
 						nameChanges()
 				}
 		);
@@ -256,11 +257,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec nameChangeFails() {
-		var emptyName = "";
-		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(101);
+	public HapiApiSpec tooLongNameCheckHolds() {
+		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH+1);
 
-		return defaultHapiSpec("NameChangeFails")
+		return defaultHapiSpec("TooLongNameCheckHolds")
 				.given(
 						newKeyNamed("adminKey"),
 						cryptoCreate(TOKEN_TREASURY)

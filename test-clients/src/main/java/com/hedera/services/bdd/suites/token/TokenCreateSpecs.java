@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +42,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
 
 	private static String TOKEN_TREASURY = "treasury";
+	private static final int MAX_NAME_LENGTH = 100;
 
 	public static void main(String... args) {
 		new TokenCreateSpecs().runSuiteSync();
@@ -56,9 +56,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
+						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
-						creationFailsFaultyName()
+						creationValidatesName()
 				}
 		);
 	}
@@ -113,8 +114,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("CreationSetsExpectedName")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						newKeyNamed("freeze")
+						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						tokenCreate("primary")
 								.name(saltedName)
@@ -128,12 +128,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 
-	public HapiApiSpec creationFailsFaultyName() {
-		return defaultHapiSpec("CreationFailsFaultyName")
+	public HapiApiSpec creationValidatesName() {
+		String longName = "a";
+		return defaultHapiSpec("CreationValidatesName")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY),
-						newKeyNamed("freeze")
+						cryptoCreate(TOKEN_TREASURY)
 				).when(
 				).then(
 						tokenCreate("primary")
@@ -141,7 +141,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.logged()
 								.hasKnownStatus(MISSING_TOKEN_NAME),
 						tokenCreate("primary")
-								.name("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+								.name(longName.repeat(MAX_NAME_LENGTH + 1))
 								.logged()
 								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);

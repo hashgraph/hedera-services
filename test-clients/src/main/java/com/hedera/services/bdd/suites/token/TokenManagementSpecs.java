@@ -106,6 +106,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
+						getTokenInfo(wipeableToken)
+								.hasFloat(500),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getTxnRecord("wipeTxn").logged()
@@ -124,14 +126,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						tokenCreate(unwipeableToken)
-								.name(salted("name"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(wipeableToken)
-								.name(salted("name"))
 								.treasury(TOKEN_TREASURY)
 								.wipeKey("wipeKey"),
 						tokenCreate(anotherWipeableToken)
-								.name(salted("name"))
 								.treasury(TOKEN_TREASURY)
 								.initialFloat(1_000)
 								.wipeKey("wipeKey"),

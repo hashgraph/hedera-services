@@ -63,8 +63,8 @@ public abstract class HapiApiSuite {
 
 	private static final Random r = new Random();
 
-	public static String salted(String plain) {
-		return plain + r.nextInt(1_234_567);
+	public static String salted(String str) {
+		return str + r.nextInt(1_234_567);
 	}
 
 	public static final long ONE_HBAR = 100_000_000L;
