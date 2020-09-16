@@ -37,6 +37,7 @@ import java.util.Map;
 public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory> {
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
 
+	private boolean adjustmentsAreSet = false;
 	private TokenTransfers.Builder xfers = TokenTransfers.newBuilder();
 
 	private TokenTransactFactory() {}
@@ -66,11 +67,14 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		adjustments.entrySet().stream()
-				.forEach(entry -> xfers.addTokenTransfers(TokenRefTransferList.newBuilder()
-						.setToken(TokenRef.newBuilder().setTokenId(entry.getKey()).build())
-						.addAllTransfers(entry.getValue())
-						.build()));
+		if (!adjustmentsAreSet) {
+			adjustments.entrySet().stream()
+					.forEach(entry -> xfers.addTokenTransfers(TokenRefTransferList.newBuilder()
+							.setToken(TokenRef.newBuilder().setTokenId(entry.getKey()).build())
+							.addAllTransfers(entry.getValue())
+							.build()));
+			adjustmentsAreSet = true;
+		}
 		txn.setTokenTransfers(xfers);
 	}
 }
