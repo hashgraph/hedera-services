@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -87,7 +88,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.refWith;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -138,25 +141,44 @@ public class HederaLedgerTest {
 	TokenID missingId = IdUtils.tokenWith(333);
 
 	TokenTransfers multipleValidTokenTransfers = TokenTransfers.newBuilder()
-			.addAllTransfers(List.of(
-					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
-					IdUtils.fromRef(otherSymbol, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
-			)).build();
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith(frozenSymbol))
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith(otherSymbol))
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.build();
+
 	TokenTransfers missingSymbolTokenTransfers = TokenTransfers.newBuilder()
-			.addAllTransfers(List.of(
-					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
-					IdUtils.fromRef(missingSymbol, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
-			)).build();
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith(missingSymbol))
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.build();
 	TokenTransfers missingIdTokenTransfers = TokenTransfers.newBuilder()
-			.addAllTransfers(List.of(
-					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
-					IdUtils.fromId(missingId, misc, +1_000), IdUtils.fromId(tokenId, rand, -1_000)
-			)).build();
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith(missingId))
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +1_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.build();
 	TokenTransfers unmatchedTokenTransfers = TokenTransfers.newBuilder()
-			.addAllTransfers(List.of(
-					IdUtils.fromRef(frozenSymbol, misc, +1_000), IdUtils.fromId(frozenId, rand, -1_000),
-					IdUtils.fromRef(frozenSymbol, misc, +2_000), IdUtils.fromId(frozenId, rand, -1_000)
-			)).build();
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith(otherSymbol))
+					.addAllTransfers(List.of(
+							adjustFrom(misc, +2_000),
+							adjustFrom(rand, -1_000)
+					)))
+			.build();
 
 	FCMapBackingAccounts backingAccounts;
 	FCMap<MerkleEntityId, MerkleAccount> backingMap;

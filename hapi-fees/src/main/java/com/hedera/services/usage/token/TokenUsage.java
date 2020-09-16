@@ -35,12 +35,8 @@ public abstract class TokenUsage<T extends TokenUsage<T>> {
 		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
 	}
 
-	protected long refBpt(TokenRef ref) {
-		return ref.hasTokenId() ? BASIC_ENTITY_ID_SIZE : ref.getSymbolBytes().size();
-	}
-
 	protected void addRefBpt(TokenRef ref) {
-		usageEstimator.addBpt(refBpt(ref));
+		usageEstimator.addBpt(TokenUsageUtils.refBpt(ref));
 	}
 
 	protected void addNetworkRecordRb(long rb) {

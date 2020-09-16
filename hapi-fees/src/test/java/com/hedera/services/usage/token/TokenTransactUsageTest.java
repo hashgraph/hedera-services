@@ -4,12 +4,12 @@ import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -19,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
+import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -35,9 +38,9 @@ public class TokenTransactUsageTest {
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	String symbol = "ABCDEFGH";
 
-	AccountID a = IdUtils.asAccount("1.2.3");
-	AccountID b = IdUtils.asAccount("2.3.4");
-	AccountID c = IdUtils.asAccount("3.4.5");
+	AccountID a = asAccount("1.2.3");
+	AccountID b = asAccount("2.3.4");
+	AccountID c = asAccount("3.4.5");
 	TokenID anId = IdUtils.asToken("0.0.75231");
 	String aSymbol = "ABCDEFGH";
 	String anotherSymbol = "HGFEDCBA";
@@ -72,11 +75,12 @@ public class TokenTransactUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addBpt(3 * aSymbol.length()
-				+ 2 * FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * anotherSymbol.length()
-				+ 7 * FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 7 * 8);
+		verify(base).addBpt(aSymbol.length()
+				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ anotherSymbol.length()
+				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(3, 7) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
@@ -84,13 +88,25 @@ public class TokenTransactUsageTest {
 
 	private void givenOp() {
 		op = TokenTransfers.newBuilder()
-				.addTransfers(symbolXfer(aSymbol, -50, a))
-				.addTransfers(symbolXfer(aSymbol, 25, b))
-				.addTransfers(symbolXfer(aSymbol, 25, c))
-				.addTransfers(idXfer(anId, -100, b))
-				.addTransfers(idXfer(anId, 100, c))
-				.addTransfers(symbolXfer(anotherSymbol, -15, c))
-				.addTransfers(symbolXfer(anotherSymbol, 15, a))
+				.addTokenTransfers(TokenRefTransferList.newBuilder()
+						.setToken(TokenRef.newBuilder().setSymbol(aSymbol).build())
+						.addAllTransfers(List.of(
+								adjustFrom(a, -50),
+								adjustFrom(b, 25),
+								adjustFrom(c, 25)
+						)))
+				.addTokenTransfers(TokenRefTransferList.newBuilder()
+						.setToken(TokenRef.newBuilder().setTokenId(anId).build())
+						.addAllTransfers(List.of(
+								adjustFrom(b, -100),
+								adjustFrom(c, 100)
+						)))
+				.addTokenTransfers(TokenRefTransferList.newBuilder()
+						.setToken(TokenRef.newBuilder().setSymbol(anotherSymbol).build())
+						.addAllTransfers(List.of(
+								adjustFrom(a, -15),
+								adjustFrom(b, 15)
+						)))
 				.build();
 
 		setTxn();
@@ -105,19 +121,10 @@ public class TokenTransactUsageTest {
 				.build();
 	}
 
-	private TokenTransfer idXfer(TokenID id, long amount, AccountID account) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(id).build())
+	private AccountAmount adjustFrom(AccountID account, long amount) {
+		return AccountAmount.newBuilder()
 				.setAmount(amount)
-				.setAccount(account)
-				.build();
-	}
-
-	private TokenTransfer symbolXfer(String symbol, long amount, AccountID account) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol).build())
-				.setAmount(amount)
-				.setAccount(account)
+				.setAccountID(account)
 				.build();
 	}
 }

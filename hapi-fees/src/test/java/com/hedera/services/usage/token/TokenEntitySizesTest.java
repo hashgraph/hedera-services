@@ -13,17 +13,33 @@ public class TokenEntitySizesTest {
 	TokenEntitySizes subject = TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
 	@Test
+	public void sizesFixedAsExpected() {
+		// setup:
+		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
+				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
+				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
+
+		// given:
+		long actual = subject.fixedBytesUsed();
+
+		// expect:
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	public void sizesAsExpected() {
 		// setup:
 		var symbol = "ABCDEFGH";
+		var name = "WhyWouldINameItThis";
 		long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
 				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
 				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-				+ symbol.getBytes().length;
+				+ symbol.getBytes().length + name.getBytes().length;
 
 		// given:
-		long actual = subject.baseBytesUsed(symbol);
+		long actual = subject.baseBytesUsed(symbol, name);
 
 		// expect:
 		assertEquals(expected, actual);

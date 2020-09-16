@@ -21,7 +21,12 @@ package com.hedera.services.fees.calculation.token.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
+import com.hedera.services.usage.token.TokenGetInfoUsage;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -36,8 +41,8 @@ import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.Function;
 
-import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.MOCK_TOKEN_GET_INFO_USAGE;
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
@@ -46,16 +51,43 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 class GetTokenInfoResourceUsageTest {
+	public static final FeeData MOCK_TOKEN_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
+			FeeComponents.newBuilder()
+					.setMin(1)
+					.setMax(1_000_000)
+					.setConstant(1)
+					.setBpt(1)
+					.setVpt(1)
+					.setRbh(1)
+					.setSbh(1)
+					.setGas(1)
+					.setTv(1)
+					.setBpr(1)
+					.setSbpr(1)
+					.build(), 1);
+
+	String symbol = "HEYMAOK";
+	String name = "IsItReallyOk";
 	TokenRef target = TokenRef.newBuilder().setSymbol("TARGET").build();
 
+	TokenGetInfoUsage estimator;
+	Function<Query, TokenGetInfoUsage> factory;
+
 	StateView view;
-	TokenInfo info = TokenInfo.getDefaultInstance();
+	TokenInfo info = TokenInfo.newBuilder()
+			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
+			.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
+			.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
+			.setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
+			.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
+			.setSymbol(symbol)
+			.setName(name)
+			.setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
+			.build();
 
 	Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
 	Query satisfiableCostAnswer = tokenInfoQuery(target, ANSWER_STATE_PROOF);
@@ -65,6 +97,21 @@ class GetTokenInfoResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
+		estimator = mock(TokenGetInfoUsage.class);
+		factory = mock(Function.class);
+		given(factory.apply(any())).willReturn(estimator);
+
+		GetTokenInfoResourceUsage.factory = factory;
+
+		given(estimator.givenCurrentAdminKey(any())).willReturn(estimator);
+		given(estimator.givenCurrentWipeKey(any())).willReturn(estimator);
+		given(estimator.givenCurrentKycKey(any())).willReturn(estimator);
+		given(estimator.givenCurrentSupplyKey(any())).willReturn(estimator);
+		given(estimator.givenCurrentFreezeKey(any())).willReturn(estimator);
+		given(estimator.givenCurrentSymbol(any())).willReturn(estimator);
+		given(estimator.givenCurrentName(any())).willReturn(estimator);
+		given(estimator.givenCurrentlyUsingAutoRenewAccount()).willReturn(estimator);
+		given(estimator.get()).willReturn(MOCK_TOKEN_GET_INFO_USAGE);
 
 		given(view.infoForToken(target)).willReturn(Optional.of(info));
 
@@ -83,34 +130,25 @@ class GetTokenInfoResourceUsageTest {
 	}
 
 	@Test
-	public void invokesEstimatorAsExpectedForType() throws Exception {
-		// when:
-		FeeData answerOnlyEstimate = subject.usageGiven(satisfiableAnswerOnly, view);
-		FeeData plusStateProofEstimate = subject.usageGiven(satisfiableCostAnswer, view);
-
-		// then:
-		assertSame(answerOnlyEstimate, MOCK_TOKEN_GET_INFO_USAGE);
-		assertSame(plusStateProofEstimate, MOCK_TOKEN_GET_INFO_USAGE);
-
-		// and when:
-		answerOnlyEstimate = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
-		plusStateProofEstimate = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_STATE_PROOF);
-
-		// then:
-		assertSame(answerOnlyEstimate, MOCK_TOKEN_GET_INFO_USAGE);
-		assertSame(plusStateProofEstimate, MOCK_TOKEN_GET_INFO_USAGE);
-	}
-
-	@Test
 	public void setsInfoInQueryCxtIfPresent() {
 		// setup:
 		var queryCtx = new HashMap<String, Object>();
 
 		// when:
-		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
 		assertSame(info, queryCtx.get(TOKEN_INFO_CTX_KEY));
+		assertSame(MOCK_TOKEN_GET_INFO_USAGE, usage);
+		// and:
+		verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
+		verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
+		verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
+		verify(estimator).givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
+		verify(estimator).givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
+		verify(estimator).givenCurrentSymbol(symbol);
+		verify(estimator).givenCurrentName(name);
+		verify(estimator).givenCurrentlyUsingAutoRenewAccount();
 	}
 
 	@Test
@@ -121,10 +159,12 @@ class GetTokenInfoResourceUsageTest {
 		given(view.infoForToken(target)).willReturn(Optional.empty());
 
 		// when:
-		subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
 		assertFalse(queryCtx.containsKey(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY));
+		// and:
+		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
 	@Test
