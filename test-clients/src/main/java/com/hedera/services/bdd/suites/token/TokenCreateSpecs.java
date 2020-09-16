@@ -129,7 +129,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 
 	public HapiApiSpec creationValidatesName() {
-		String longName = "a";
+		String longName = "a".repeat(MAX_NAME_LENGTH + 1);
 		return defaultHapiSpec("CreationValidatesName")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
@@ -141,7 +141,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.logged()
 								.hasKnownStatus(MISSING_TOKEN_NAME),
 						tokenCreate("primary")
-								.name(longName.repeat(MAX_NAME_LENGTH + 1))
+								.name(longName)
 								.logged()
 								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);
