@@ -84,6 +84,7 @@ import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TokenUnfreeze;
 import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -98,6 +99,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -130,6 +132,8 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
@@ -603,6 +607,22 @@ public class MiscUtilsTest {
 				throw new IllegalStateException(uhf);
 			}
 		});
+	}
+
+	@Test
+	public void hashCorrectly() throws DecoderException {
+		byte[] testBytes = "test bytes".getBytes();
+		byte[] expectedHash = Hex.decodeHex(
+				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
+		);
+		Transaction transaction = mock(Transaction.class);
+		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+		given(transaction.toByteArray()).willReturn(testBytes);
+		given(accessor.getSignedTxn()).willReturn(transaction);
+
+		assertArrayEquals(expectedHash, uncheckedSha384Hash(testBytes));
+		assertArrayEquals(expectedHash, sha384HashOf(testBytes).toByteArray());
+		assertArrayEquals(expectedHash, sha384HashOf(accessor).toByteArray());
 	}
 
 	public static class BodySetter<T> {
