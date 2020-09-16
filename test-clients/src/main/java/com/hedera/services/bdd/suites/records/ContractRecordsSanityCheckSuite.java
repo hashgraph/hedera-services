@@ -75,7 +75,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 								.balance(1_000L),
 						takeBalanceSnapshots("toBeDeleted", FUNDING, NODE, GENESIS)
 				)).when(
-						contractDelete("toBeDeleted").via("txn")
+						contractDelete("toBeDeleted").via("txn").saveTransaction()
 				).then(
 						validateTransferListForBalances(
 								"txn",
@@ -95,6 +95,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 								.bytecode("bytecode")
 								.balance(1_000L)
 								.via("txn")
+								.saveTransaction()
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
 						validateRecordTransactionFees("txn")
@@ -108,7 +109,10 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						contractCreate("test").bytecode("bytecode"),
 						UtilVerbs.takeBalanceSnapshots("test", FUNDING, NODE, GENESIS)
 				)).when(
-						contractCall("test", DEPOSIT_ABI, 1_000L).via("txn").sending(1_000L)
+						contractCall("test", DEPOSIT_ABI, 1_000L)
+								.via("txn")
+								.saveTransaction()
+								.sending(1_000L)
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
 						validateRecordTransactionFees("txn")
@@ -152,6 +156,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 				)).when(
 						contractCall(altruists[0], RECEIVE_AND_SEND_ABI, INIT_KEEP_AMOUNT_DIVISOR, STOP_BALANCE)
 								.via("altruisticTxn")
+								.saveTransaction()
 				).then(
 						validateTransferListForBalances(
 								"altruisticTxn",
@@ -190,7 +195,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						contractCreate("test").bytecode("bytecode").balance(1_000L),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				)).when(
-						contractUpdate("test").newKey("newKey").via("txn").fee(95_000_000L)
+						contractUpdate("test").newKey("newKey").via("txn").saveTransaction().fee(95_000_000L)
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
