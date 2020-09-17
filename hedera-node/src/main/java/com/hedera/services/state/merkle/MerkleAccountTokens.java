@@ -1,0 +1,249 @@
+package com.hedera.services.state.merkle;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.google.common.base.MoreObjects;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLeaf {
+	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
+
+	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = 3_000;
+
+	static final long[] NO_ASSOCIATIONS = new long[0];
+	static final int NUM_ID_PARTS = 3;
+	static final int NUM_OFFSET = 0;
+	static final int REALM_OFFSET = 1;
+	static final int SHARD_OFFSET = 2;
+
+	static final int RELEASE_090_VERSION = 1;
+	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4dd9cde14aae5f8eL;
+
+	long[] tokenIds = NO_ASSOCIATIONS;
+
+	public MerkleAccountTokens() { }
+
+	public MerkleAccountTokens(long[] tokenIds) {
+		if (tokenIds.length % NUM_ID_PARTS != 0) {
+			throw new IllegalArgumentException(
+					"The token ids array length must be divisible by " + NUM_ID_PARTS + "!");
+		}
+		this.tokenIds = tokenIds;
+	}
+
+	/* --- MerkleLeaf --- */
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return MERKLE_VERSION;
+	}
+
+	@Override
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		tokenIds = in.readLongArray(MAX_CONCEIVABLE_TOKEN_ID_PARTS);
+	}
+
+	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeLongArray(tokenIds);
+	}
+
+	/* --- Copyable --- */
+	public MerkleAccountTokens copy() {
+		return new MerkleAccountTokens(tokenIds);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || MerkleAccountTokens.class != o.getClass()) {
+			return false;
+		}
+
+		var that = (MerkleAccountTokens) o;
+
+		return Arrays.equals(this.tokenIds, that.tokenIds);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(tokenIds);
+	}
+
+	/* --- Bean --- */
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("tokens", readableTokenIds())
+				.toString();
+	}
+
+	public String readableTokenIds() {
+		var sb = new StringBuilder("[");
+		for (int i = 0, n = numAssociations(); i < n; i++) {
+			if (i > 0) {
+				sb.append(", ");
+			}
+			sb.append(String.format(
+					"%d.%d.%d",
+					tokenIds[shard(i)],
+					tokenIds[realm(i)],
+					tokenIds[num(i)]));
+		}
+		sb.append("]");
+
+		return sb.toString();
+	}
+
+	long[] getTokenIds() {
+		return tokenIds;
+	}
+
+	public void setTokenIds(long[] tokenIds) {
+		this.tokenIds = tokenIds;
+	}
+
+	/* --- Association Manipulation --- */
+	public int numAssociations() {
+		return tokenIds.length / NUM_ID_PARTS;
+	}
+
+	public boolean isAssociatedWith(TokenID id) {
+		return logicalIndexOf(id) >= 0;
+	}
+
+	public void associate(TokenID id) {
+		int i = logicalIndexOf(id);
+		if (i < 0) {
+			insert(id, -i - 1);
+		}
+	}
+
+	public void disassociate(TokenID id) {
+		int i = logicalIndexOf(id);
+		if (i >= 0) {
+			remove(i);
+		}
+	}
+
+	/* --- Helpers --- */
+	private void insert(TokenID id, int at) {
+		int newNumTokens = tokenIds.length / NUM_ID_PARTS + 1;
+
+		long[] newTokenIds = new long[newNumTokens * NUM_ID_PARTS];
+		if (at != 0) {
+			System.arraycopy(tokenIds, 0, newTokenIds, 0, at * NUM_ID_PARTS);
+		}
+
+		newTokenIds[num(at)] = id.getTokenNum();
+		newTokenIds[realm(at)] = id.getRealmNum();
+		newTokenIds[shard(at)] = id.getShardNum();
+
+		if (at != newNumTokens) {
+			System.arraycopy(
+					tokenIds,
+					at * NUM_ID_PARTS,
+					newTokenIds,
+					(at + 1) * NUM_ID_PARTS,
+					(newNumTokens - at - 1) * NUM_ID_PARTS);
+		}
+		tokenIds = newTokenIds;
+	}
+
+	private void remove(int at) {
+		int n;
+		if ((n = numAssociations()) == 1) {
+			tokenIds = NO_ASSOCIATIONS;
+			return;
+		}
+		long[] newTokenIds = new long[(n - 1) * NUM_ID_PARTS];
+		if (at != 0) {
+			System.arraycopy(tokenIds, 0, newTokenIds, 0, at * NUM_ID_PARTS);
+		}
+		if (at < (n - 1)) {
+			System.arraycopy(
+					tokenIds,
+					(at + 1) * NUM_ID_PARTS,
+					newTokenIds,
+					at * NUM_ID_PARTS,
+					(n - at - 1) * NUM_ID_PARTS);
+		}
+		tokenIds = newTokenIds;
+	}
+
+	private int num(int i) {
+		return i * NUM_ID_PARTS + NUM_OFFSET;
+	}
+
+	private int realm(int i) {
+		return i * NUM_ID_PARTS + REALM_OFFSET;
+	}
+
+	private int shard(int i) {
+		return i * NUM_ID_PARTS + SHARD_OFFSET;
+	}
+
+	int logicalIndexOf(TokenID token) {
+		int lo = 0, hi = tokenIds.length / NUM_ID_PARTS - 1;
+		while (lo <= hi) {
+			int mid = (lo + (hi - lo) / NUM_ID_PARTS);
+			int comparison = compareImplied(mid, token);
+			if (comparison == 0) {
+				return mid;
+			} else if (comparison < 0) {
+				lo = mid + 1;
+			} else {
+				hi = mid - 1;
+			}
+		}
+		return -(lo + 1);
+	}
+
+	private int compareImplied(int at, TokenID to) {
+		long numA = tokenIds[num(at)], numB = to.getTokenNum();
+		if (numA == numB) {
+			long realmA = tokenIds[realm(at)], realmB = to.getRealmNum();
+			if (realmA == realmB) {
+				return Long.compare(tokenIds[shard(at)], to.getShardNum());
+			} else {
+				return Long.compare(realmA, realmB);
+			}
+		} else {
+			return Long.compare(numA, numB);
+		}
+	}
+}
