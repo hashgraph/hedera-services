@@ -1207,11 +1207,11 @@
         
           
           <li>
-            <a href="#TokenBurnCoins.proto">TokenBurnCoins.proto</a>
+            <a href="#TokenBurn.proto">TokenBurn.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenBurnCoins"><span class="badge">M</span>TokenBurnCoins</a>
+                  <a href="#proto.TokenBurnTransactionBody"><span class="badge">M</span>TokenBurnTransactionBody</a>
                 </li>
               
               
@@ -1305,11 +1305,11 @@
         
           
           <li>
-            <a href="#TokenMintCoins.proto">TokenMintCoins.proto</a>
+            <a href="#TokenMint.proto">TokenMint.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenMintCoins"><span class="badge">M</span>TokenMintCoins</a>
+                  <a href="#proto.TokenMintTransactionBody"><span class="badge">M</span>TokenMintTransactionBody</a>
                 </li>
               
               
@@ -8577,13 +8577,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenBurnCoins.proto">TokenBurnCoins.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenBurn.proto">TokenBurn.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenBurnCoins">TokenBurnCoins</h3>
-        <p></p>
+        <h3 id="proto.TokenBurnTransactionBody">TokenBurnTransactionBody</h3>
+        <p>Burns tokens from the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.</p><p>The operation decreases the Total Supply of the Token. Total supply cannot go below zero.</p>
 
         
           <table class="field-table">
@@ -8596,14 +8596,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which to burn tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>amount</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The amount to burn from the Treasury Account. Amount must be a positive non-zero number, not bigger than the token balance of the treasury account (0; balance] </p></td>
                 </tr>
               
             </tbody>
@@ -9091,13 +9091,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenMintCoins.proto">TokenMintCoins.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenMint.proto">TokenMint.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenMintCoins">TokenMintCoins</h3>
-        <p></p>
+        <h3 id="proto.TokenMintTransactionBody">TokenMintTransactionBody</h3>
+        <p>Mints tokens to the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.</p><p>The operation increases the Total Supply of the Token. The maximum total supply a token can have is 2^63.</p>
 
         
           <table class="field-table">
@@ -9110,14 +9110,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which to mint tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>amount</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The amount to mint to the Treasury Account. Amount must be a positive non-zero number, such that the new supply supply is lower than 2^63 </p></td>
                 </tr>
               
             </tbody>
@@ -9933,14 +9933,14 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenMint</td>
-                  <td><a href="#proto.TokenMintCoins">TokenMintCoins</a></td>
+                  <td><a href="#proto.TokenMintTransactionBody">TokenMintTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenBurn</td>
-                  <td><a href="#proto.TokenBurnCoins">TokenBurnCoins</a></td>
+                  <td><a href="#proto.TokenBurnTransactionBody">TokenBurnTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

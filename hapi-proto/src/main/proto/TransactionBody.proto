@@ -64,8 +64,8 @@ import "TokenGrantKyc.proto";
 import "TokenRevokeKyc.proto";
 import "TokenDelete.proto";
 import "TokenUpdate.proto";
-import "TokenMintCoins.proto";
-import "TokenBurnCoins.proto";
+import "TokenMint.proto";
+import "TokenBurn.proto";
 import "TokenWipeAccount.proto";
 
 /* A single transaction. All transaction types are possible here. */
@@ -112,8 +112,8 @@ message TransactionBody {
     TokenRevokeKycTransactionBody tokenRevokeKyc = 34;
     TokenDeletion tokenDeletion = 35;
     TokenUpdateTransactionBody tokenUpdate = 36;
-    TokenMintCoins tokenMint = 37;
-    TokenBurnCoins tokenBurn = 38;
+    TokenMintTransactionBody tokenMint = 37;
+    TokenBurnTransactionBody tokenBurn = 38;
     TokenWipeAccountTransactionBody tokenWipe = 39;
   }
 }
