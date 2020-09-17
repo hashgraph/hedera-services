@@ -126,23 +126,23 @@ public class TxnFactory {
 		return (T)opBuilder.build();
 	}
 
-	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccount() {
+	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccountTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenRevokeKycTransactionBody.Builder> defaultDef_TokenRevokeKyc() {
+	public Consumer<TokenRevokeKycTransactionBody.Builder> defaultDef_TokenRevokeKycTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenGrantKycTransactionBody.Builder> defaultDef_TokenGrantKyc() {
+	public Consumer<TokenGrantKycTransactionBody.Builder> defaultDef_TokenGrantKycTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenBurnTransactionBody.Builder> defaultDef_TokenBurnCoins() {
+	public Consumer<TokenBurnTransactionBody.Builder> defaultDef_TokenBurnTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenMintTransactionBody.Builder> defaultDef_TokenMintCoins() {
+	public Consumer<TokenMintTransactionBody.Builder> defaultDef_TokenMintTransactionBody() {
 		return builder -> {};
 	}
 
@@ -150,11 +150,11 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenFreezeAccountTransactionBody.Builder> defaultDef_TokenFreeze() {
+	public Consumer<TokenFreezeAccountTransactionBody.Builder> defaultDef_TokenFreezeAccountTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenUnfreezeAccountTransactionBody.Builder> defaultDef_TokenUnfreeze() {
+	public Consumer<TokenUnfreezeAccountTransactionBody.Builder> defaultDef_TokenUnfreezeAccountTransactionBody() {
 		return builder -> {};
 	}
 
