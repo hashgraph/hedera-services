@@ -1324,7 +1324,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenRevokeKyc"><span class="badge">M</span>TokenRevokeKyc</a>
+                  <a href="#proto.TokenRevokeKycTransactionBody"><span class="badge">M</span>TokenRevokeKycTransactionBody</a>
                 </li>
               
               
@@ -9141,8 +9141,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenRevokeKyc">TokenRevokeKyc</h3>
-        <p></p>
+        <h3 id="proto.TokenRevokeKycTransactionBody">TokenRevokeKycTransactionBody</h3>
+        <p>Revokes KYC to the account for the given token. Must be signed by the Token's kycKey. If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.</p><p>Once executed the Account is marked as KYC Revoked</p>
 
         
           <table class="field-table">
@@ -9155,14 +9155,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be KYC Revoked </p></td>
                 </tr>
               
             </tbody>
@@ -9912,7 +9912,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenRevokeKyc</td>
-                  <td><a href="#proto.TokenRevokeKyc">TokenRevokeKyc</a></td>
+                  <td><a href="#proto.TokenRevokeKycTransactionBody">TokenRevokeKycTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

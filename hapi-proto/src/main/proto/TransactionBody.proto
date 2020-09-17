@@ -109,7 +109,7 @@ message TransactionBody {
     TokenFreezeAccountTransactionBody tokenFreeze = 31;
     TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32;
     TokenGrantKycTransactionBody tokenGrantKyc = 33;
-    TokenRevokeKyc tokenRevokeKyc = 34;
+    TokenRevokeKycTransactionBody tokenRevokeKyc = 34;
     TokenDeletion tokenDeletion = 35;
     TokenUpdateTransactionBody tokenUpdate = 36;
     TokenMintCoins tokenMint = 37;
