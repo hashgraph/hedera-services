@@ -66,7 +66,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private String name;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
-	private boolean accountKycGrantedByDefault;
+	private boolean accountsKycGrantedByDefault;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = UNUSED_AUTO_RENEW_ACCOUNT;
 
@@ -97,7 +97,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.symbol = symbol;
 		this.name = name;
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
-		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
+		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
 		this.treasury = treasury;
 	}
 
@@ -118,7 +118,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				this.tokenFloat == that.tokenFloat &&
 				this.divisibility == that.divisibility &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
-				this.accountKycGrantedByDefault == that.accountKycGrantedByDefault &&
+				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.treasury, that.treasury) &&
@@ -145,7 +145,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				symbol,
 				name,
 				accountsFrozenByDefault,
-				accountKycGrantedByDefault,
+				accountsKycGrantedByDefault,
 				treasury,
 				autoRenewAccount,
 				autoRenewPeriod);
@@ -169,7 +169,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				.add("wipeKey", describe(wipeKey))
 				.add("supplyKey", describe(supplyKey))
 				.add("freezeKey", describe(freezeKey))
-				.add("accountKycGrantedByDefault", accountKycGrantedByDefault)
+				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
 				.toString();
 	}
@@ -201,7 +201,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		tokenFloat = in.readLong();
 		divisibility = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
-		accountKycGrantedByDefault = in.readBoolean();
+		accountsKycGrantedByDefault = in.readBoolean();
 		adminKey = serdes.readNullable(in, serdes::deserializeKey);
 		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
@@ -221,7 +221,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		out.writeLong(tokenFloat);
 		out.writeInt(divisibility);
 		out.writeBoolean(accountsFrozenByDefault);
-		out.writeBoolean(accountKycGrantedByDefault);
+		out.writeBoolean(accountsKycGrantedByDefault);
 		serdes.writeNullable(adminKey, out, serdes::serializeKey);
 		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
@@ -239,7 +239,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				symbol,
 				name,
 				accountsFrozenByDefault,
-				accountKycGrantedByDefault,
+				accountsKycGrantedByDefault,
 				treasury);
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
@@ -367,8 +367,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return accountsFrozenByDefault;
 	}
 
-	public boolean accountKycGrantedByDefault() {
-		return accountKycGrantedByDefault;
+	public boolean accountsKycGrantedByDefault() {
+		return accountsKycGrantedByDefault;
 	}
 
 	public EntityId treasury() {
@@ -415,7 +415,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
-	void setAccountKycGrantedByDefault(boolean accountKycGrantedByDefault) {
-		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
+	void setAccountsKycGrantedByDefault(boolean accountKycGrantedByDefault) {
+		this.accountsKycGrantedByDefault = accountKycGrantedByDefault;
 	}
 }

@@ -58,12 +58,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						keysChange(),
 						treasuryEvolves(),
-						validatesMissingRef(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
-						nameChanges()
+						nameChanges(),
+						validatesMissingRef(),
 				}
 		);
 	}
@@ -107,7 +107,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 				).when().then(
 						tokenUpdate("tbd")
@@ -131,7 +130,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
-								.kycDefault(false)
 								.freezeDefault(true)
 								.initialFloat(10)
 								.adminKey("adminKey")
@@ -176,7 +174,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("newTreasury"),
 						tokenCreate("tbu")
 								.adminKey("adminKey")
-								.kycDefault(false)
 								.freezeDefault(true)
 								.kycKey("kycKey")
 								.freezeKey("freezeKey")

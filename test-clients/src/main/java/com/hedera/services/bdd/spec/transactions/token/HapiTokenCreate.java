@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -68,7 +68,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
-	private Optional<Boolean> kycDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
@@ -89,11 +88,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate divisibility(int divisibility) {
 		this.divisibility = OptionalInt.of(divisibility);
-		return this;
-	}
-
-	public HapiTokenCreate kycDefault(boolean knownByDefault) {
-		kycDefault = Optional.of(knownByDefault);
 		return this;
 	}
 
@@ -190,16 +184,15 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		if (nameFn.isPresent()) {
 			name = Optional.of(nameFn.get().apply(spec));
 		}
-		TokenCreation opBody = spec
+		TokenCreateTransactionBody opBody = spec
 				.txns()
-				.<TokenCreation, TokenCreation.Builder>body(
-						TokenCreation.class, b -> {
+				.<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
+						TokenCreateTransactionBody.class, b -> {
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
-							initialFloat.ifPresent(b::setFloat);
-							divisibility.ifPresent(b::setDivisibility);
+							initialFloat.ifPresent(b::setInitialSupply);
+							divisibility.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
-							kycDefault.ifPresent(b::setKycDefault);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));

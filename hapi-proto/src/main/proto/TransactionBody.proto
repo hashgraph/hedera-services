@@ -104,7 +104,7 @@ message TransactionBody {
 
     UncheckedSubmitBody uncheckedSubmit = 28;
 
-    TokenCreation tokenCreation = 29;
+    TokenCreateTransactionBody tokenCreation = 29;
     TokenTransfers tokenTransfers = 30;
     TokenFreeze tokenFreeze = 31;
     TokenUnfreeze tokenUnfreeze = 32;

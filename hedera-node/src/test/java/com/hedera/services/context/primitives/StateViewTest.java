@@ -214,8 +214,8 @@ class StateViewTest {
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
-		assertEquals(token.tokenFloat(), info.getCurrentFloat());
-		assertEquals(token.divisibility(), info.getDivisibility());
+		assertEquals(token.tokenFloat(), info.getTotalSupply());
+		assertEquals(token.divisibility(), info.getDecimals());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
@@ -232,8 +232,8 @@ class StateViewTest {
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
-		assertEquals(token.tokenFloat(), info.getCurrentFloat());
-		assertEquals(token.divisibility(), info.getDivisibility());
+		assertEquals(token.tokenFloat(), info.getTotalSupply());
+		assertEquals(token.divisibility(), info.getDecimals());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());

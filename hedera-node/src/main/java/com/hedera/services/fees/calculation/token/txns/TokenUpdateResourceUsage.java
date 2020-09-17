@@ -23,27 +23,23 @@ package com.hedera.services.fees.calculation.token.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenTransactUsage;
+import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import java.util.function.BiFunction;
+
+import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
+import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
+
 public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
-	public static final FeeData MOCK_TOKEN_UPDATE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(3)
-					.setBpt(3)
-					.setVpt(3)
-					.setRbh(3)
-					.setSbh(3)
-					.setGas(3)
-					.setTv(3)
-					.setBpr(3)
-					.setSbpr(3)
-					.build(), 3);
+	static BiFunction<TransactionBody, SigUsage, TokenUpdateUsage> factory = TokenUpdateUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
@@ -51,7 +47,27 @@ public class TokenUpdateResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-		return MOCK_TOKEN_UPDATE_USAGE;
+	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var op = txn.getTokenUpdate();
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		var optionalInfo = view.infoForToken(op.getToken());
+		if (optionalInfo.isPresent()) {
+			var info = optionalInfo.get();
+			var estimate = factory.apply(txn, sigUsage)
+					.givenCurrentExpiry(info.getExpiry())
+					.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+					.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+					.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+					.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+					.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+					.givenCurrentName(info.getName())
+					.givenCurrentSymbol(info.getSymbol());
+			if (info.hasAutoRenewAccount()) {
+				estimate.givenCurrentlyUsingAutoRenewAccount();
+			}
+			return estimate.get();
+		} else {
+			return FeeData.getDefaultInstance();
+		}
 	}
 }

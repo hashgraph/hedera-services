@@ -26,13 +26,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreation;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +69,7 @@ class TokenCreateResourceUsageTest {
 
 		tokenCreateTxn = mock(TransactionBody.class);
 		given(tokenCreateTxn.hasTokenCreation()).willReturn(true);
-		var tokenCreation = TokenCreation.newBuilder().setTreasury(treasury).build();
+		var tokenCreation = TokenCreateTransactionBody.newBuilder().setTreasury(treasury).build();
 		given(tokenCreateTxn.getTokenCreation()).willReturn(tokenCreation);
 		given(tokenCreateTxn.getTransactionID()).willReturn(txnId);
 
