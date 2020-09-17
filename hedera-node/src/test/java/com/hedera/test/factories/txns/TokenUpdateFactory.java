@@ -22,7 +22,7 @@ package com.hedera.test.factories.txns;
 
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -90,7 +90,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenManagement.newBuilder();
+		var op = TokenUpdateTransactionBody.newBuilder();
 		op.setToken(ref);
 		newAdminKt.ifPresent(kt -> op.setAdminKey(kt.asKey()));
 		if (replaceFreeze) {

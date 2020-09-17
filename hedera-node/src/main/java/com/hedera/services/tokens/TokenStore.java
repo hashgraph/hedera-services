@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
 import java.util.function.Consumer;
@@ -60,7 +60,7 @@ public interface TokenStore {
 	ResponseCodeEnum mint(TokenID tId, long amount);
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
-	ResponseCodeEnum update(TokenManagement changes, long now);
+	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);

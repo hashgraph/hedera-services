@@ -31,7 +31,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +80,7 @@ class TokenUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private Predicate<TokenManagement> expiryOnlyCheck;
+	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
 
 	private TokenUpdateTransitionLogic subject;
 
@@ -98,7 +98,7 @@ class TokenUpdateTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		expiryOnlyCheck = (Predicate<TokenManagement>) mock(Predicate.class);
+		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
 		subject = new TokenUpdateTransitionLogic(store, ledger, txnCtx, expiryOnlyCheck);
@@ -335,7 +335,7 @@ class TokenUpdateTransitionLogicTest {
 
 	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
 		var builder = TransactionBody.newBuilder()
-				.setTokenUpdate(TokenManagement.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setToken(targetRef));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
