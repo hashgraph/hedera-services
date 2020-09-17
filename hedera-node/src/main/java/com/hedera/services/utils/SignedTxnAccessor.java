@@ -68,7 +68,7 @@ public class SignedTxnAccessor {
 	public SignedTxnAccessor(byte[] signedTxnBytes) throws InvalidProtocolBufferException {
 		this.signedTxnBytes = signedTxnBytes;
 		signedTxn = Transaction.parseFrom(signedTxnBytes);
-		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn).toByteArray();
+		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn);
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
 		if (signedTxn.getSignedTransactionBytes().isEmpty()) {

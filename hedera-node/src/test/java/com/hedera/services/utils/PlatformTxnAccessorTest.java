@@ -200,7 +200,7 @@ public class PlatformTxnAccessorTest {
 		Transaction signedTxn4Log = subject.getSignedTxn4Log();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
-				.setBodyBytes(CommonUtils.extractTransactionBodyBytes(signedTxn4Log))
+				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
 				.build();
 
 		// then:
@@ -229,7 +229,7 @@ public class PlatformTxnAccessorTest {
 		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
-				.setSignedTransactionBytes(CommonUtils.extractTransactionBodyBytes(signedTxn4Log))
+				.setSignedTransactionBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
 				.build();
 
 		// then:

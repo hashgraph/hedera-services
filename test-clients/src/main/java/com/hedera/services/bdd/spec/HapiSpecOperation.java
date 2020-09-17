@@ -261,7 +261,7 @@ public abstract class HapiSpecOperation {
 		}
 
 		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-				.setBodyBytes(CommonUtils.extractTransactionBodyBytes(txn))
+				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
 				.setSigMap(CommonUtils.extractSignatureMap(txn))
 				.build();
 

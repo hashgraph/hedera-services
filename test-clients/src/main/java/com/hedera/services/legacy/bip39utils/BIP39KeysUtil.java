@@ -308,7 +308,7 @@ public class BIP39KeysUtil {
    */
   public static Transaction signTransactionNewWithSignatureMap(Transaction transaction,
       EDKeyPair edKeyPair) throws Exception {
-    byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction).toByteArray();
+    byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
 
     SignaturePair sig = signAsSignaturePair(edKeyPair, bodyBytes);
     List<SignaturePair> pairs = new ArrayList<>();
