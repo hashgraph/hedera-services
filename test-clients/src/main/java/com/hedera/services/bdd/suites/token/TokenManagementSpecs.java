@@ -143,40 +143,38 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec kycMgmtFailureCasesWork() {
-		var unknowableToken = "without";
-		var knowableToken = "withPlusDefaultTrue";
+		var withoutKycKey = "withoutKycKey";
+		var withKycKey = "withKycKey";
 
 		return defaultHapiSpec("KycMgmtFailureCasesWork")
 				.given(
 						newKeyNamed("oneKyc"),
 						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(unknowableToken)
-								.name(salted("name"))
+						tokenCreate(withoutKycKey)
 								.treasury(TOKEN_TREASURY),
-						tokenCreate(knowableToken)
-								.kycDefault(false)
+						tokenCreate(withKycKey)
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY)
 				).when(
-						grantTokenKyc(unknowableToken, TOKEN_TREASURY)
+						grantTokenKyc(withoutKycKey, TOKEN_TREASURY)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
-						grantTokenKyc(knowableToken, "1.2.3")
+						grantTokenKyc(withKycKey, "1.2.3")
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						grantTokenKyc(knowableToken, TOKEN_TREASURY)
+						grantTokenKyc(withKycKey, TOKEN_TREASURY)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),
-						grantTokenKyc(unknowableToken, TOKEN_TREASURY)
+						grantTokenKyc(withoutKycKey, TOKEN_TREASURY)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_KYC_KEY),
-						revokeTokenKyc(knowableToken, "1.2.3")
+						revokeTokenKyc(withKycKey, "1.2.3")
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
-						revokeTokenKyc(knowableToken, TOKEN_TREASURY)
+						revokeTokenKyc(withKycKey, TOKEN_TREASURY)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE)
 				).then(
-						getTokenInfo(unknowableToken)
-								.hasRegisteredId(unknowableToken)
+						getTokenInfo(withoutKycKey)
+								.hasRegisteredId(withoutKycKey)
 								.logged()
 				);
 	}
@@ -257,8 +255,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec kycMgmtSuccessCasesWork() {
-		var withPlusDefaultTrue = "withPlusDefaultTrue";
-		var withPlusDefaultFalse = "withPlusDefaultFalse";
+		var withKycKey = "withKycKey";
+		var withoutKycKey = "withoutKycKey";
 
 		return defaultHapiSpec("KycMgmtSuccessCasesWork")
 				.given(
@@ -266,27 +264,28 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						newKeyNamed("oneKyc"),
 						newKeyNamed("twoKyc"),
-						tokenCreate(withPlusDefaultTrue)
-								.kycDefault(true)
+						tokenCreate(withKycKey)
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY),
-						tokenCreate(withPlusDefaultFalse)
-								.kycDefault(false)
-								.kycKey("twoKyc")
+						tokenCreate(withoutKycKey)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						tokenTransact(
-								moving(1, withPlusDefaultTrue)
-										.between(TOKEN_TREASURY, "misc")),
-						revokeTokenKyc(withPlusDefaultTrue, "misc"),
-						tokenTransact(
-								moving(1, withPlusDefaultTrue)
+								moving(1, withKycKey)
 										.between(TOKEN_TREASURY, "misc"))
 								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
 						getAccountInfo("misc").logged(),
-						grantTokenKyc(withPlusDefaultFalse, "misc"),
+						grantTokenKyc(withKycKey, "misc"),
 						tokenTransact(
-								moving(1, withPlusDefaultFalse)
+								moving(1, withKycKey)
+										.between(TOKEN_TREASURY, "misc")),
+						revokeTokenKyc(withKycKey, "misc"),
+						tokenTransact(
+								moving(1, withKycKey)
+										.between(TOKEN_TREASURY, "misc"))
+								.hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+						tokenTransact(
+								moving(1, withoutKycKey)
 										.between(TOKEN_TREASURY, "misc"))
 				).then(
 						getAccountInfo("misc").logged()

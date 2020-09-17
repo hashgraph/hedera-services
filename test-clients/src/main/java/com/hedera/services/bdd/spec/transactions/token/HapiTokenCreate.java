@@ -66,7 +66,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
-	private Optional<Boolean> kycDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
@@ -87,11 +86,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate divisibility(int divisibility) {
 		this.divisibility = OptionalInt.of(divisibility);
-		return this;
-	}
-
-	public HapiTokenCreate kycDefault(boolean knownByDefault) {
-		kycDefault = Optional.of(knownByDefault);
 		return this;
 	}
 
@@ -210,7 +204,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							initialFloat.ifPresent(b::setInitialSupply);
 							divisibility.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
-							kycDefault.ifPresent(b::setKycDefault);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));

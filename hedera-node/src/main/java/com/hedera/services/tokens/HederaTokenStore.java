@@ -229,7 +229,7 @@ public class HederaTokenStore implements TokenStore {
 				value,
 				TOKEN_HAS_NO_KYC_KEY,
 				IS_KYC_GRANTED,
-				MerkleToken::accountKycGrantedByDefault,
+				MerkleToken::accountsKycGrantedByDefault,
 				MerkleToken::kycKey);
 	}
 
@@ -394,7 +394,7 @@ public class HederaTokenStore implements TokenStore {
 				request.getSymbol(),
 				request.getName(),
 				request.getFreezeDefault(),
-				kycKey.isEmpty() || request.getKycDefault(),
+				kycKey.isEmpty(),
 				ofNullableAccountId(request.getTreasury()));
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);

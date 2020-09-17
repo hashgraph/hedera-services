@@ -184,7 +184,7 @@ public class StateView {
 
 			var kycCandidate = token.kycKey();
 			kycCandidate.ifPresentOrElse(k -> {
-				info.setDefaultKycStatus(tksFor(token.accountKycGrantedByDefault()));
+				info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
 				info.setKycKey(asKeyUnchecked(k));
 			}, () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
 
