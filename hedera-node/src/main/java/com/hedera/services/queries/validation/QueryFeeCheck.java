@@ -44,7 +44,7 @@ public class QueryFeeCheck {
 		this.accounts = accounts;
 	}
 
-	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long fee, AccountID node) {
+	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
 		var plausibility = transfersPlausibility(transfers);
 		if (plausibility != OK) {
 			return plausibility;
@@ -54,18 +54,16 @@ public class QueryFeeCheck {
 				.mapToLong(AccountAmount::getAmount)
 				.filter(amount -> amount < 0)
 				.sum();
-		if (netPayment < fee) {
+		if (netPayment < queryFee) {
 			return INSUFFICIENT_TX_FEE;
 		}
-
-		var numBeneficiaries = transfers.stream()
-				.filter(adjustment -> adjustment.getAmount() > 0)
-				.count();
-		if (numBeneficiaries != 1) {
+		// number of beneficiaries in query transfer transaction can be greater than one.
+		// validate if node gets the required query payment
+		if (transfers.stream().noneMatch(adj -> adj.getAmount() > 0 && adj.getAccountID().equals(node))) {
 			return INVALID_RECEIVING_NODE_ACCOUNT;
 		}
-		if (transfers.stream().noneMatch(adj -> adj.getAmount() == netPayment && adj.getAccountID().equals(node))) {
-			return INVALID_RECEIVING_NODE_ACCOUNT;
+		if (transfers.stream().noneMatch(adj -> adj.getAccountID().equals(node) && adj.getAmount() != queryFee)) {
+			return INSUFFICIENT_TX_FEE;
 		}
 
 		return OK;
@@ -123,87 +121,54 @@ public class QueryFeeCheck {
 	}
 
 	/**
-	 * Validates query payment transaction before reaching consensus.
-	 * Query payment transaction should have only two account amounts in transfer list,
-	 * where payer account is transferring to node account
+	 * Validates query payment transfer transaction before reaching consensus.
+	 * Validate each payer has enough balance that is needed for transfer.
+	 * If one of the payer for query is also paying transactionFee validate the payer has balance to pay both
 	 *
 	 * @param txn
 	 * @return
 	 */
-	public ResponseCodeEnum validateQueryPaymentTransaction(TransactionBody txn) {
-		AccountID payerAccount = txn.getTransactionID().getAccountID();
+	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
+		AccountID transactionPayer = txn.getTransactionID().getAccountID();
 		TransferList transferList = txn.getCryptoTransfer().getTransfers();
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
-		long suppliedFee = txn.getTransactionFee();
+		long transactionFee = txn.getTransactionFee();
 
-		if (Optional.ofNullable(transfers).map(List::size).orElse(0) != 2) {
-			return INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
-		}
-
-		ResponseCodeEnum response = validateTransferList(transfers,
-				payerAccount, txn.getNodeAccountID());
-		if (response != OK) {
-			return response;
-		}
-
-		response = validatePayerBalance(payerAccount, transfers, suppliedFee);
-		if (response != OK) {
-			return response;
-		}
-		return OK;
-	}
-
-	/**
-	 * Check if payer can afford transaction fee and transfer amount
-	 *
-	 * @param payerAccount
-	 * @param transfers
-	 * @param suppliedFee
-	 * @return
-	 */
-	private ResponseCodeEnum validatePayerBalance(AccountID payerAccount, List<AccountAmount> transfers,
-			long suppliedFee) {
-		Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
-				.map(MerkleAccount::getBalance)
-				.orElse(null);
-		long transferAmount = -1 * transfers.stream()
-				.mapToLong(AccountAmount::getAmount)
-				.filter(amount -> amount < 0)
-				.sum();
-		try {
-			if (payerAccountBalance < Math.addExact(transferAmount, suppliedFee)) {
-				return INSUFFICIENT_PAYER_BALANCE;
-			}
-		} catch (ArithmeticException e) {
-			return INSUFFICIENT_PAYER_BALANCE;
-		}
-		return OK;
-	}
-
-	/**
-	 * Check payer account and node accounts in transfer list of query payment transaction
-	 *
-	 * @param transfers
-	 * @param payer
-	 * @param node
-	 * @return
-	 */
-	ResponseCodeEnum validateTransferList(List<AccountAmount> transfers, AccountID payer, AccountID node) {
 		for (AccountAmount accountAmount : transfers) {
 			var id = accountAmount.getAccountID();
 			long amount = accountAmount.getAmount();
 
 			if (amount < 0) {
-				if (!id.equals(payer)) {
-					return INVALID_PAYER_ACCOUNT_ID;
+				amount = -1 * amount;
+				if (id.equals(transactionPayer)) {
+					try {
+						amount = Math.addExact(amount, transactionFee);
+					} catch (ArithmeticException e) {
+						return INSUFFICIENT_PAYER_BALANCE;
+					}
 				}
-			} else {
-				if (!id.equals(node)) {
-					return INVALID_RECEIVING_NODE_ACCOUNT;
+				if (!hasPayerEnoughBalance(id, amount)) {
+					return INSUFFICIENT_PAYER_BALANCE;
 				}
 			}
 		}
 		return OK;
 	}
 
+	/**
+	 * Check if each payer in transfer list of query payment transfer transaction has enough balance for transfer
+	 *
+	 * @param payerAccount
+	 * @param amount
+	 * @return
+	 */
+	private boolean hasPayerEnoughBalance(AccountID payerAccount, long amount) {
+		Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
+				.map(MerkleAccount::getBalance)
+				.orElse(null);
+		if (payerAccountBalance < amount) {
+			return false;
+		}
+		return true;
+	}
 }

@@ -21,51 +21,60 @@ package com.hedera.services.queries.validation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class QueryFeeCheckTest {
 	AccountID aMissing = asAccount("1.2.3");
 	AccountID aRich = asAccount("0.0.2");
 	AccountID aNode = asAccount("0.0.3");
+	AccountID anotherNode = asAccount("0.0.4");
 	AccountID aBroke = asAccount("0.0.13257");
+	AccountID aQueryPayer = asAccount("0.0.13258");
+	AccountID aTestPayer = asAccount("0.0.13259");
 
 	TransactionID txnId = TransactionID.newBuilder().setAccountID(aRich).build();
 	long feeRequired = 1234L;
 
-	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L;
-	MerkleAccount broke, rich;
+	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L, aFew = 100L;
+	MerkleAccount broke, rich, testPayer, queryPayer;
 	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
 	MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
 	MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
 	MerkleEntityId nodeKey = MerkleEntityId.fromAccountId(aNode);
+	MerkleEntityId anotherNodeKey = MerkleEntityId.fromAccountId(anotherNode);
+
+	MerkleEntityId queryPayerKey = MerkleEntityId.fromAccountId(aQueryPayer);
+	MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
 
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
@@ -78,14 +87,31 @@ class QueryFeeCheckTest {
 		rich = mock(MerkleAccount.class);
 		given(rich.getBalance()).willReturn(aLot);
 
+
+		broke = mock(MerkleAccount.class);
+		given(broke.getBalance()).willReturn(aLittle);
+		rich = mock(MerkleAccount.class);
+		given(rich.getBalance()).willReturn(aLot);
+
+		testPayer = mock(MerkleAccount.class);
+		given(testPayer.getBalance()).willReturn(aFew);
+		queryPayer = mock(MerkleAccount.class);
+		given(queryPayer.getBalance()).willReturn(aLot);
+
 		accounts = mock(FCMap.class);
 		given(accounts.get(argThat(missingKey::equals))).willReturn(null);
 		given(accounts.get(argThat(richKey::equals))).willReturn(rich);
 		given(accounts.get(argThat(brokeKey::equals))).willReturn(broke);
+		given(accounts.get(argThat(testPayerKey::equals))).willReturn(testPayer);
+		given(accounts.get(argThat(queryPayerKey::equals))).willReturn(queryPayer);
+
 		given(accounts.containsKey(argThat(missingKey::equals))).willReturn(false);
 		given(accounts.containsKey(argThat(richKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(brokeKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(nodeKey::equals))).willReturn(true);
+		given(accounts.containsKey(argThat(anotherNodeKey::equals))).willReturn(true);
+		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
+		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
 
 		subject = new QueryFeeCheck(() -> accounts);
 	}
@@ -122,7 +148,7 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
-	public void rejectsMultipleRecipients() {
+	public void rejectsWhenNodeIsMissing() {
 		// expect:
 		assertEquals(
 				INVALID_RECEIVING_NODE_ACCOUNT,
@@ -130,7 +156,33 @@ class QueryFeeCheckTest {
 						transfersWith(
 								adjustmentWith(aRich, -aLittle * 2),
 								adjustmentWith(aBroke, aLittle),
+								adjustmentWith(aBroke, aLittle)),
+						aLittle - 1, aNode));
+	}
+
+	@Test
+	public void allowsMultipleRecipients() {
+		// expect:
+		assertEquals(
+				OK,
+				subject.nodePaymentValidity(
+						transfersWith(
+								adjustmentWith(aRich, -aLittle * 2),
+								adjustmentWith(aBroke, aLittle),
 								adjustmentWith(aNode, aLittle)),
+						aLittle - 1, aNode));
+	}
+
+	@Test
+	public void rejectsInsufficientNodePayment() {
+		// expect:
+		assertEquals(
+				INSUFFICIENT_TX_FEE,
+				subject.nodePaymentValidity(
+						transfersWith(
+								adjustmentWith(aRich, -aLittle * 2),
+								adjustmentWith(aBroke, aLittle + aLittle / 2),
+								adjustmentWith(aNode, aLittle / 2)),
 						aLittle - 1, aNode));
 	}
 
@@ -244,25 +296,37 @@ class QueryFeeCheckTest {
 		// setup:
 		long amount = 8;
 		// given :
-		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, null);
+		TransactionBody body = getPaymentTxnBody(amount, null);
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), OK);
+		assertEquals(body.getTransactionID().getAccountID(), aRich);
+		assertTrue(checkPayerInTransferList(body, aRich));
+		assertEquals(subject.validateQueryPaymentTransfers(body), OK);
 	}
 
 	@Test
-	public void queryPaymentFailsWithException() {
+	public void paymentFailsWithQueryPayerBalance() {
 		// setup:
-		long amount = Long.MAX_VALUE;
+		long amount = 5000L;
 		// given :
-		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, null);
+		TransferList transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
+				.build();
+		TransactionBody body = TransactionBody.newBuilder()
+				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+				.setTransactionID(txnId)
+				.setNodeAccountID(aNode)
+				.setTransactionFee(feeRequired).build();
 
 		// then:
-		assertEquals(subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody), INSUFFICIENT_PAYER_BALANCE);
+		assertEquals(body.getTransactionID().getAccountID(), aRich);
+		assertFalse(checkPayerInTransferList(body, aRich));
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
-	public void queryPaymentFailsWithInsufficientBalance() {
+	public void paymentFailsWithBrokenPayer() {
 		// setup:
 		long amount = 5000L;
 		// given :
@@ -277,58 +341,55 @@ class QueryFeeCheckTest {
 				.setTransactionFee(feeRequired).build();
 
 		// then:
-		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransaction(body));
+		assertEquals(body.getTransactionID().getAccountID(), aBroke);
+		assertTrue(checkPayerInTransferList(body, aBroke));
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
 	@Test
-	public void queryPaymentInvalidAccountAmount() {
+	public void queryPaymentMultiPayerMultiNodeSucceeds() {
 		// setup:
 		long amount = 200L;
 
 		// given :
 		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount/4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount/4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount/2))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount/2))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(anotherNode).setAmount(amount/2))
+				.build();
+		TransactionBody body = getPaymentTxnBody(amount, transList);
+
+		// then:
+		assertEquals(3, body.getCryptoTransfer().getTransfers()
+				.getAccountAmountsList().stream()
+				.filter(aa -> aa.getAmount() < 0)
+				.collect(Collectors.toList()).size());
+		assertEquals(OK, subject.validateQueryPaymentTransfers(body));
+	}
+
+	@Test
+	public void queryPaymentMultiTransferFails() {
+		// setup:
+		long amount = 200L;
+
+		// given :
+		TransferList transList = TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount/4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount/4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount/4))
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount/4))
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(asAccount("0.0.6")).setAmount(amount))
 				.build();
-		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
+		TransactionBody body = getPaymentTxnBody(amount, transList);
 
 		// then:
-		assertEquals(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS,
-				subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
-	}
-
-	@Test
-	public void queryPaymentInvalidPayerId() {
-		// setup:
-		long amount = 200L;
-
-		// given :
-		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount))
-				.build();
-		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
-
-		// then:
-		assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
-	}
-
-	@Test
-	public void queryPaymentInvalidNodeId() {
-		// setup:
-		long amount = 200L;
-
-		// given :
-		TransferList transList = TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(aBroke).setAmount(amount))
-				.build();
-		TransactionBody signedQueryPaymentTxnBody = getPaymentTxnBody(amount, transList);
-
-		// then:
-		assertEquals(INVALID_RECEIVING_NODE_ACCOUNT,
-				subject.validateQueryPaymentTransaction(signedQueryPaymentTxnBody));
+		assertEquals(4, body.getCryptoTransfer().getTransfers()
+				.getAccountAmountsList().stream()
+				.filter(aa -> aa.getAmount() < 0)
+				.collect(Collectors.toList()).size());
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
 	}
 
 	private AccountAmount adjustmentWith(AccountID id, long amount) {
@@ -365,7 +426,17 @@ class QueryFeeCheckTest {
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
 				.setTransactionID(txnId)
 				.setNodeAccountID(aNode)
-				.setTransactionFee(feeRequired).build();
+				.setTransactionFee(feeRequired)
+				.build();
 		return body;
+	}
+
+	private boolean checkPayerInTransferList(TransactionBody body, AccountID payer){
+		AccountAmount  payerTransfer = body.getCryptoTransfer().
+				getTransfers().
+				getAccountAmountsList().
+				stream().filter(aa -> aa.getAccountID() == payer).findAny().orElse(null);
+		return payerTransfer != null ? true : false;
+
 	}
 }
