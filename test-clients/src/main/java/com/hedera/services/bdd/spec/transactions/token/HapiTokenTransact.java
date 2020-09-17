@@ -24,6 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.token.TokenMintUsage;
+import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -47,6 +49,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
@@ -152,24 +155,11 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenTransact, this::mockTokenTransactUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenTransact, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockTokenTransactUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(2)
-						.setBpt(2)
-						.setVpt(2)
-						.setRbh(2)
-						.setSbh(2)
-						.setGas(2)
-						.setTv(2)
-						.setBpr(2)
-						.setSbpr(2)
-						.build(), 2);
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return TokenTransactUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override

@@ -20,11 +20,21 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenRevokeKycUsage;
+import com.hedera.services.usage.token.TokenTransactUsage;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,19 +44,37 @@ import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class TokenTransactResourceUsageTest {
-
 	private TokenTransactResourceUsage subject;
 
 	private TransactionBody nonTokenTransactTxn;
 	private TransactionBody tokenTransactTxn;
 
+	StateView view;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+
+	TokenTransactUsage usage;
+	BiFunction<TransactionBody, SigUsage, TokenTransactUsage> factory;
+
 	@BeforeEach
 	private void setup() throws Throwable {
+		view = mock(StateView.class);
+
 		tokenTransactTxn = mock(TransactionBody.class);
 		given(tokenTransactTxn.hasTokenTransfers()).willReturn(true);
 
 		nonTokenTransactTxn = mock(TransactionBody.class);
 		given(nonTokenTransactTxn.hasTokenTransfers()).willReturn(false);
+
+		factory = (BiFunction<TransactionBody, SigUsage, TokenTransactUsage>)mock(BiFunction.class);
+		given(factory.apply(tokenTransactTxn, sigUsage)).willReturn(usage);
+
+		usage = mock(TokenTransactUsage.class);
+		given(usage.get()).willReturn(MOCK_TOKEN_TRANSACT_USAGE);
+
+		TokenTransactResourceUsage.factory = factory;
+		given(factory.apply(tokenTransactTxn, sigUsage)).willReturn(usage);
 
 		subject = new TokenTransactResourceUsage();
 	}
@@ -62,7 +90,23 @@ class TokenTransactResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				TokenTransactResourceUsage.MOCK_TOKEN_TRANSACT_USAGE,
-				subject.usageGiven(null, null, null));
+				MOCK_TOKEN_TRANSACT_USAGE,
+				subject.usageGiven(tokenTransactTxn, obj, view));
 	}
+
+	public static final FeeData MOCK_TOKEN_TRANSACT_USAGE = UsageEstimatorUtils.defaultPartitioning(
+			FeeComponents.newBuilder()
+					.setMin(1)
+					.setMax(1_000_000)
+					.setConstant(2)
+					.setBpt(2)
+					.setVpt(2)
+					.setRbh(2)
+					.setSbh(2)
+					.setGas(2)
+					.setTv(2)
+					.setBpr(2)
+					.setSbpr(2)
+					.build(), 2);
+
 }

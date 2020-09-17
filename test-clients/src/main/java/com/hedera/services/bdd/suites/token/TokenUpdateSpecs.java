@@ -58,12 +58,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						keysChange(),
 						treasuryEvolves(),
-						validatesMissingRef(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
-						nameChanges()
+						nameChanges(),
+						validatesMissingRef(),
 				}
 		);
 	}
