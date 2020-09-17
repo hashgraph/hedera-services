@@ -22,17 +22,19 @@ package com.hedera.services.fees.calculation.token.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hedera.services.usage.token.TokenGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
@@ -40,20 +42,7 @@ import static com.hedera.services.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CT
 public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetTokenInfoResourceUsage.class);
 
-	public static final FeeData MOCK_TOKEN_GET_INFO_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
+	static Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(Query query) {
@@ -82,16 +71,32 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
 		try {
 			var op = query.getTokenGetInfo();
-			var info = view.infoForToken(op.getToken());
-			if (info.isPresent()) {
-				queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info.get()));
-				return MOCK_TOKEN_GET_INFO_USAGE;
+			var optionalInfo = view.infoForToken(op.getToken());
+			if (optionalInfo.isPresent()) {
+				var info = optionalInfo.get();
+				queryCtx.ifPresent(ctx -> ctx.put(TOKEN_INFO_CTX_KEY, info));
+				var estimate = factory.apply(query)
+						.givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+						.givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+						.givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+						.givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+						.givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+						.givenCurrentName(info.getName())
+						.givenCurrentSymbol(info.getSymbol());
+				if (info.hasAutoRenewAccount()) {
+					estimate.givenCurrentlyUsingAutoRenewAccount();
+				}
+				return estimate.get();
 			} else {
-				return MOCK_TOKEN_GET_INFO_USAGE;
+				return FeeData.getDefaultInstance();
 			}
 		} catch (Exception e) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, e);
 			throw new IllegalArgumentException(e);
 		}
+	}
+
+	private Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
 	}
 }

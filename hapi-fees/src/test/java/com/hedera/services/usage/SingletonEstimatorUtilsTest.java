@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import java.time.Instant;
 
 import static com.hedera.services.test.IdUtils.asAccount;
+import static com.hedera.services.test.UsageUtils.A_QUERY_USAGES_MATRIX;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.test.UsageUtils.A_USAGE_VECTOR;
 import static com.hedera.services.test.UsageUtils.NETWORK_RBH;
@@ -43,7 +44,15 @@ class SingletonEstimatorUtilsTest {
 		// expect:
 		assertEquals(
 				A_USAGES_MATRIX,
-				ESTIMATOR_UTILS.withDefaultPartitioning(A_USAGE_VECTOR, NETWORK_RBH, NUM_PAYER_KEYS));
+				ESTIMATOR_UTILS.withDefaultTxnPartitioning(A_USAGE_VECTOR, NETWORK_RBH, NUM_PAYER_KEYS));
+	}
+
+	@Test
+	public void partitionsQueriesAsExpected() {
+		// expect:
+		assertEquals(
+				A_QUERY_USAGES_MATRIX,
+				ESTIMATOR_UTILS.withDefaultQueryPartitioning(A_USAGE_VECTOR));
 	}
 
 	@Test

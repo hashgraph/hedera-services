@@ -52,7 +52,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 	}
 
 	@Override
-	public FeeData withDefaultPartitioning(FeeComponents usage, long networkRbh, int numPayerKeys) {
+	public FeeData withDefaultTxnPartitioning(FeeComponents usage, long networkRbh, int numPayerKeys) {
 		var usages = FeeData.newBuilder();
 
 		var network = FeeComponents.newBuilder()
@@ -75,6 +75,19 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 				.setNetworkdata(network)
 				.setNodedata(node)
 				.setServicedata(service)
+				.build();
+	}
+
+	@Override
+	public FeeData withDefaultQueryPartitioning(FeeComponents usage) {
+		var usages = FeeData.newBuilder();
+		var node = FeeComponents.newBuilder()
+				.setConstant(FEE_MATRICES_CONST)
+				.setBpt(usage.getBpt())
+				.setBpr(usage.getBpr())
+				.setSbpr(usage.getSbpr());
+		return usages
+				.setNodedata(node)
 				.build();
 	}
 
