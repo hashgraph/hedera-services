@@ -42,5 +42,5 @@ message TokenUpdateTransactionBody {
     Key supplyKey = 9; // The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
     AccountID autoRenewAccount = 10; // The new account which will be automatically charged to renew the token's expiration, at autoRenewPeriod interval.
     uint64 autoRenewPeriod = 11; // The new interval at which the auto-renew account will be charged to extend the token's expiry.
-    uint64 expiry = 12;
+    uint64 expiry = 12; // The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME
 }
