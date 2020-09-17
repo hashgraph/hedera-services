@@ -49,7 +49,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
-import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -167,6 +166,7 @@ public class AwareTransactionContextTest {
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getSignedTxn()).willReturn(signedTxn);
 		given(accessor.getPayer()).willReturn(payer);
+		given(accessor.getHash()).willReturn(hash);
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
