@@ -24,9 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenDeleteUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -66,10 +64,10 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenDelete, this::mockTokenDeleteUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockTokenDeleteUsage(TransactionBody txn, SigValueObj svo) {
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		return TokenDeleteUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
