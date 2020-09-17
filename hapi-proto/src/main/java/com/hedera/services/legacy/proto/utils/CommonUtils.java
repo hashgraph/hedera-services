@@ -240,7 +240,7 @@ public class CommonUtils {
     return rv;
   }
 
-  public static ByteString extractTransactionBodyBytes(TransactionOrBuilder transaction)
+  public static ByteString extractTransactionBodyByteString(TransactionOrBuilder transaction)
       throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
     if (!signedTransactionBytes.isEmpty()) {
@@ -250,9 +250,14 @@ public class CommonUtils {
     return transaction.getBodyBytes();
   }
 
+  public static byte[] extractTransactionBodyBytes(TransactionOrBuilder transaction)
+          throws InvalidProtocolBufferException {
+    return extractTransactionBodyByteString(transaction).toByteArray();
+  }
+
   public static TransactionBody extractTransactionBody(TransactionOrBuilder transaction)
           throws InvalidProtocolBufferException {
-    return TransactionBody.parseFrom(extractTransactionBodyBytes(transaction));
+    return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
   }
 
   public static SignatureMap extractSignatureMap(TransactionOrBuilder transaction)

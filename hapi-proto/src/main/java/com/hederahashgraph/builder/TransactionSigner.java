@@ -139,7 +139,7 @@ public class TransactionSigner {
 
   public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap, boolean appendSigMap) throws Exception {
-    byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction).toByteArray();
+    byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
     SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
 
     if (appendSigMap) {
@@ -236,7 +236,7 @@ public class TransactionSigner {
    */
     public static Transaction signTransactionNewWithSignatureMap(Transaction transaction,
         List<List<PrivateKey>> privKeysList, List<List<PublicKey>> pubKeysList) throws Exception {
-      byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction).toByteArray();
+      byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
 
       if(pubKeysList.size() != privKeysList.size()) {
         new Exception("public and private keys size mismtach! pubKeysList size = " + pubKeysList.size() + ", privKeysList size = " + privKeysList.size());
