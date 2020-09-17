@@ -5,7 +5,7 @@
 #
 set -eE
 
-function updateServiceMainJava
+updateServiceMainJava()
 {
     # replace a line in ServicesMain.java
     sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
