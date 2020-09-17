@@ -25,7 +25,6 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -38,9 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -61,10 +58,33 @@ public class TokenTransactSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						txnsAreAtomic(),
-						senderSigsAreChecked(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreChecked(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						nonZeroNetTransfersRejected(),
 				}
 		);
+	}
+	public HapiApiSpec balancesAreChecked() {
+		return defaultHapiSpec("BalancesAreChecked")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("secondTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialFloat(100)
+								.treasury("firstTreasury")
+				).then(
+						tokenTransact(
+								moving(100_000_000_000_000L, A_TOKEN)
+										.between("firstTreasury", "beneficiary")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury")
+								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
+				);
 	}
 
 	public HapiApiSpec accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue() {
@@ -123,6 +143,29 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec senderSigsAreValid() {
+		return defaultHapiSpec("SenderSigsAreValid")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("secondTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialFloat(123)
+								.treasury("firstTreasury"),
+						tokenCreate(B_TOKEN)
+								.initialFloat(234)
+								.treasury("secondTreasury")
+				).then(
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary")
+						).payingWith("payer")
+								.signedBy("firstTreasury","payer")
+								.hasKnownStatus(SUCCESS)
+				);
+	}
+
 	public HapiApiSpec txnsAreAtomic() {
 		final int MONOGAMOUS_NETWORK = 1;
 		final int ADVENTUROUS_NETWORK = 1_000;
@@ -158,6 +201,26 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 						))
+				);
+	}
+
+	public HapiApiSpec nonZeroNetTransfersRejected() {
+		return defaultHapiSpec("NonZeroNetTransfersRejected")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialFloat(100)
+								.treasury("firstTreasury")
+				).then(
+						tokenTransact(
+								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(1, A_TOKEN).from("firstTreasury")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury")
+								.hasKnownStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
 				);
 	}
 

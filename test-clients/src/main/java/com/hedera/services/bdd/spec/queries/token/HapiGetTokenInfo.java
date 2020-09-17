@@ -60,6 +60,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	OptionalLong expectedFloat = OptionalLong.empty();
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
+	Optional<String> expectedName = Optional.empty();
 	Optional<String> expectedAdminKey = Optional.empty();
 	Optional<String> expectedKycKey = Optional.empty();
 	Optional<String> expectedFreezeKey = Optional.empty();
@@ -102,6 +103,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
+	public HapiGetTokenInfo hasName(String name) {
+		expectedName = Optional.of(name);
+		return this;
+	}
 	public HapiGetTokenInfo hasFreezeKey(String name) {
 		expectedFreezeKey = Optional.of(name);
 		return this;
@@ -133,6 +138,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
 		if (expectedSymbol.isPresent()) {
 			Assert.assertEquals("Wrong symbol!", expectedSymbol.get(), actualInfo.getSymbol());
+		}
+
+		if (expectedName.isPresent()) {
+			Assert.assertEquals("Wrong name!", expectedName.get(), actualInfo.getName());
 		}
 
 		var registry = spec.registry();

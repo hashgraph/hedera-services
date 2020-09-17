@@ -26,13 +26,13 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "BasicTypes.proto";
+import "CryptoTransfer.proto";
 
-message TokenTransfer {
-    AccountID account = 1;
-    sint64 amount = 2;
-    TokenRef token = 3;
+message TokenRefTransferList {
+    TokenRef token = 1;
+    repeated AccountAmount transfers = 2;
 }
 
 message TokenTransfers {
-    repeated TokenTransfer transfers = 1;
+    repeated TokenRefTransferList tokenTransfers = 1;
 }

@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -99,14 +100,16 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getAccountInfo("misc").logged(),
-						wipeTokenAccount(wipeableToken, "misc")
+						wipeTokenAccount(wipeableToken, "misc", 500)
 								.via("wipeTxn"),
 						getAccountInfo("misc").logged()
 				).then(
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
+						getTokenInfo(wipeableToken)
+								.hasFloat(500),
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(wipeableToken, 1_000),
+								.hasTokenBalance(wipeableToken, 500),
 						getTxnRecord("wipeTxn").logged()
 				);
 	}
@@ -114,6 +117,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	public HapiApiSpec wipeAccountFailureCasesWork() {
 		var unwipeableToken = "without";
 		var wipeableToken = "with";
+		var anotherWipeableToken = "anotherWith";
 
 		return defaultHapiSpec("WipeAccountFailureCasesWork")
 				.given(
@@ -125,18 +129,30 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(wipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.wipeKey("wipeKey")
+								.wipeKey("wipeKey"),
+						tokenCreate(anotherWipeableToken)
+								.treasury(TOKEN_TREASURY)
+								.initialFloat(1_000)
+								.wipeKey("wipeKey"),
+						tokenTransact(
+								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
-						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY)
+						wipeTokenAccount(unwipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
-						wipeTokenAccount(wipeableToken, "misc")
+						wipeTokenAccount(wipeableToken, "misc", 1)
 								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
-						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),
-						wipeTokenAccount(wipeableToken, TOKEN_TREASURY)
-								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT)
+						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
+								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
+						wipeTokenAccount(anotherWipeableToken, "misc", 501)
+								.hasKnownStatus(INVALID_WIPING_AMOUNT),
+						wipeTokenAccount(anotherWipeableToken, "misc", -1)
+								.hasKnownStatus(INVALID_WIPING_AMOUNT),
+						wipeTokenAccount(anotherWipeableToken, "misc", 0)
+								.hasKnownStatus(INVALID_WIPING_AMOUNT)
 				);
 	}
 
@@ -149,6 +165,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						newKeyNamed("oneKyc"),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(unknowableToken)
+								.name(salted("name"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(knowableToken)
 								.kycDefault(false)

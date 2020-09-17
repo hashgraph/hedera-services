@@ -110,6 +110,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean nameExists(String name) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public TokenID lookup(String symbol) {
 		throw new UnsupportedOperationException();
 	}
@@ -130,7 +135,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
 

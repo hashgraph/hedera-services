@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -112,7 +113,9 @@ public class TxnVerbs {
 
 	/* TOKEN */
 	public static HapiTokenCreate tokenCreate(String token) {
-		return new HapiTokenCreate(token);
+		HapiTokenCreate hapiToken = new HapiTokenCreate(token);
+		hapiToken.name(HapiApiSuite.salted(token));
+		return hapiToken;
 	}
 	public static HapiTokenUpdate tokenUpdate(String token) {
 		return new HapiTokenUpdate(token);
@@ -135,8 +138,8 @@ public class TxnVerbs {
 	public static HapiTokenKycRevoke revokeTokenKyc(String token, String account) {
 		return new HapiTokenKycRevoke(token, account);
 	}
-	public static HapiTokenWipe wipeTokenAccount(String token, String account) {
-		return new HapiTokenWipe(token, account);
+	public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
+		return new HapiTokenWipe(token, account, amount);
 	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);

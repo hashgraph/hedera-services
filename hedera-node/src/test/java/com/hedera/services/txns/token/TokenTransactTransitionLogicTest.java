@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,9 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
+import static com.hedera.test.utils.IdUtils.adjustFrom;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.refWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -46,11 +50,14 @@ import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class TokenTransactTransitionLogicTest {
-	private TokenTransfers xfers = TokenTransfers.newBuilder()
-			.addAllTransfers(List.of(
-					IdUtils.fromRef("sponsor", IdUtils.asAccount("0.0.2"), -11),
-					IdUtils.fromRef("beneficiary", IdUtils.asAccount("0.0.3"), 11)
-			)).build();
+	TokenTransfers xfers = TokenTransfers.newBuilder()
+			.addTokenTransfers(TokenRefTransferList.newBuilder()
+					.setToken(refWith("NOTHBAR"))
+					.addAllTransfers(List.of(
+							adjustFrom(asAccount("0.0.2"), -1_000),
+							adjustFrom(asAccount("0.0.3"), +1_000)
+					)))
+			.build();
 
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
