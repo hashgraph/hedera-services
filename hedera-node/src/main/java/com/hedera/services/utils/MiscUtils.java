@@ -176,10 +176,6 @@ public class MiscUtils {
 		}
 	}
 
-	public static ByteString sha384HashOf(PlatformTxnAccessor accessor) {
-		return sha384HashOf(accessor.getSignedTxn().toByteArray());
-	}
-
 	public static ByteString sha384HashOf(byte[] byteArray) {
 		return ByteString.copyFrom(uncheckedSha384Hash(byteArray));
 	}

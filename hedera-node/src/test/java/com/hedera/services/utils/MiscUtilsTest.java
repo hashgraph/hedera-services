@@ -622,7 +622,6 @@ public class MiscUtilsTest {
 
 		assertArrayEquals(expectedHash, uncheckedSha384Hash(testBytes));
 		assertArrayEquals(expectedHash, sha384HashOf(testBytes).toByteArray());
-		assertArrayEquals(expectedHash, sha384HashOf(accessor).toByteArray());
 	}
 
 	public static class BodySetter<T> {
