@@ -25,12 +25,10 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
-import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.MiscUtils.functionOf;
