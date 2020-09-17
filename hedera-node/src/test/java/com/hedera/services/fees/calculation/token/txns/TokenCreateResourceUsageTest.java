@@ -52,7 +52,6 @@ import static org.mockito.Mockito.verify;
 @RunWith(JUnitPlatform.class)
 class TokenCreateResourceUsageTest {
 	long now = 1_000_000L;
-	long expiry = now + 1_234_567L;
 	TransactionBody nonTokenCreateTxn;
 	TransactionBody tokenCreateTxn;
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
@@ -66,7 +65,6 @@ class TokenCreateResourceUsageTest {
 	BiFunction<TransactionBody, SigUsage, TokenCreateUsage> factory;
 
 	StateView view;
-	MerkleAccount account;
 	TokenCreateUsage usage;
 
 	TokenCreateResourceUsage subject;
@@ -74,9 +72,6 @@ class TokenCreateResourceUsageTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		view = mock(StateView.class);
-
-		usage = mock(TokenCreateUsage.class);
-		given(usage.get()).willReturn(MOCK_TOKEN_CREATE_USAGE);
 
 		tokenCreateTxn = mock(TransactionBody.class);
 		given(tokenCreateTxn.hasTokenCreation()).willReturn(true);
@@ -86,6 +81,9 @@ class TokenCreateResourceUsageTest {
 
 		nonTokenCreateTxn = mock(TransactionBody.class);
 		given(nonTokenCreateTxn.hasTokenCreation()).willReturn(false);
+
+		usage = mock(TokenCreateUsage.class);
+		given(usage.get()).willReturn(MOCK_TOKEN_CREATE_USAGE);
 
 		factory = (BiFunction<TransactionBody, SigUsage, TokenCreateUsage>)mock(BiFunction.class);
 		given(factory.apply(tokenCreateTxn, sigUsage)).willReturn(usage);

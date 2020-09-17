@@ -20,11 +20,21 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenBurnUsage;
+import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,13 +49,32 @@ class TokenBurnResourceUsageTest {
 	private TransactionBody nonTokenBurnTxn;
 	private TransactionBody tokenBurnTxn;
 
+	StateView view;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+
+	TokenBurnUsage usage;
+	BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory;
+
 	@BeforeEach
 	private void setup() throws Throwable {
+		view = mock(StateView.class);
+
 		tokenBurnTxn = mock(TransactionBody.class);
 		given(tokenBurnTxn.hasTokenBurn()).willReturn(true);
 
 		nonTokenBurnTxn = mock(TransactionBody.class);
 		given(nonTokenBurnTxn.hasTokenBurn()).willReturn(false);
+
+		factory = (BiFunction<TransactionBody, SigUsage, TokenBurnUsage>)mock(BiFunction.class);
+		given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
+
+		usage = mock(TokenBurnUsage.class);
+		given(usage.get()).willReturn(MOCK_TOKEN_BURN_USAGE);
+
+		TokenBurnResourceUsage.factory = factory;
+		given(factory.apply(tokenBurnTxn, sigUsage)).willReturn(usage);
 
 		subject = new TokenBurnResourceUsage();
 	}
@@ -61,7 +90,22 @@ class TokenBurnResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				TokenBurnResourceUsage.MOCK_TOKEN_BURN_USAGE,
-				subject.usageGiven(null, null, null));
+				MOCK_TOKEN_BURN_USAGE,
+				subject.usageGiven(tokenBurnTxn, obj, view));
 	}
+
+	public static final FeeData MOCK_TOKEN_BURN_USAGE = UsageEstimatorUtils.defaultPartitioning(
+			FeeComponents.newBuilder()
+					.setMin(1)
+					.setMax(1_000_000)
+					.setConstant(1)
+					.setBpt(1)
+					.setVpt(1)
+					.setRbh(1)
+					.setSbh(1)
+					.setGas(1)
+					.setTv(1)
+					.setBpr(1)
+					.setSbpr(1)
+					.build(), 1);
 }
