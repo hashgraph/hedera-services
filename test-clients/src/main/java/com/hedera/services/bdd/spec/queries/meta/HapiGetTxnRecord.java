@@ -149,7 +149,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			rethrowSummaryError(log, "Bad duplicate records!", errors);
 		}
 		if (validateTxnHash) {
-			var expectedHash = MessageDigest.getInstance("SHA-384").digest(spec.registry().getBytes(txn));
+			Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
+			var expectedHash = MessageDigest.getInstance("SHA-384")
+					.digest(transaction.getSignedTransactionBytes().toByteArray());
 			assertArrayEquals("Bad transaction hash!", expectedHash,
 					actualRecord.getTransactionHash().toByteArray());
 		}

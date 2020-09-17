@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -45,6 +46,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -258,7 +260,12 @@ public abstract class HapiSpecOperation {
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
 		}
 
-		return txn;
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(CommonUtils.extractTransactionBodyBytes(txn))
+				.setSigMap(CommonUtils.extractSignatureMap(txn))
+				.build();
+
+		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
 	}
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {
