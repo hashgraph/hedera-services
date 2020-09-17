@@ -335,7 +335,7 @@
     <repository>
       <id>ossrh-swirlds-staging</id>
       <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1167</url>
+      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1185</url>
     </repository>
     <repository>
       <snapshots>

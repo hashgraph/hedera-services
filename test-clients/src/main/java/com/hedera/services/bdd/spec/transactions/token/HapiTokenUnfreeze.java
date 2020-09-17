@@ -24,6 +24,8 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.token.TokenFreezeUsage;
+import com.hedera.services.usage.token.TokenUnfreezeUsage;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -39,6 +41,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	static final Logger log = LogManager.getLogger(HapiTokenUnfreeze.class);
@@ -67,21 +71,8 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 				HederaFunctionality.TokenUnfreezeAccount, this::mockUnfreezeAccountUsage, txn, numPayerKeys);
 	}
 
-	private FeeData mockUnfreezeAccountUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(1)
-						.setBpt(1)
-						.setVpt(1)
-						.setRbh(1)
-						.setSbh(1)
-						.setGas(1)
-						.setTv(1)
-						.setBpr(1)
-						.setSbpr(1)
-						.build(), 1);
+	private FeeData mockUnfreezeAccountUsage(TransactionBody txn, SigValueObj svo) {
+		return TokenUnfreezeUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override

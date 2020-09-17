@@ -59,8 +59,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						deletionValidatesRef(),
-						deletionWorksAsExpected(),
 						deletionValidatesMissingAdminKey(),
+						deletionWorksAsExpected(),
 				}
 		);
 	}

@@ -671,15 +671,17 @@ public class HederaSigningOrder {
 	) {
 		List<JKey> required = EMPTY_LIST;
 
-		for (TokenTransfer transfer : op.getTransfersList()) {
-			if (transfer.getAmount() < 0) {
-				var account = transfer.getAccount();
-				var result = sigMetaLookup.accountSigningMetaFor(account);
-				if (result.succeeded()) {
-					required = mutable(required);
-					required.add(result.metadata().getKey());
-				} else {
-					return factory.forMissingAccount(account, txnId);
+		for (TokenRefTransferList xfers : op.getTokenTransfersList()) {
+			for (AccountAmount adjust : xfers.getTransfersList()) {
+				if (adjust.getAmount() < 0) {
+					var account = adjust.getAccountID();
+					var result = sigMetaLookup.accountSigningMetaFor(account);
+					if (result.succeeded()) {
+						required = mutable(required);
+						required.add(result.metadata().getKey());
+					} else {
+						return factory.forMissingAccount(account, txnId);
+					}
 				}
 			}
 		}
