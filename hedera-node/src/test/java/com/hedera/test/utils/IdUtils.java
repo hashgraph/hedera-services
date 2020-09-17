@@ -20,19 +20,31 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
 import java.util.stream.Stream;
 
 public class IdUtils {
+	public static TokenRef refWith(String symbol) {
+		return TokenRef.newBuilder()
+				.setSymbol(symbol)
+				.build();
+	}
+
+	public static TokenRef refWith(TokenID id) {
+		return TokenRef.newBuilder()
+				.setTokenId(id)
+				.build();
+	}
+
 	public static TokenID tokenWith(long num) {
 		return TokenID.newBuilder()
 				.setShardNum(0)
@@ -121,18 +133,9 @@ public class IdUtils {
 				.build();
 	}
 
-	public static TokenTransfer fromRef(String symbol, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.setAccount(account)
-				.setAmount(amount)
-				.build();
-	}
-
-	public static TokenTransfer fromId(TokenID token, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(token))
-				.setAccount(account)
+	public static AccountAmount adjustFrom(AccountID account, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
 				.setAmount(amount)
 				.build();
 	}

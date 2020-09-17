@@ -167,6 +167,7 @@ public class StateView {
 					.setTokenId(id)
 					.setIsDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
+					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setCurrentFloat(token.tokenFloat())
 					.setDivisibility(token.divisibility())

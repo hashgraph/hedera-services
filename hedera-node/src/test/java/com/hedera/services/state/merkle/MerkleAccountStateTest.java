@@ -117,15 +117,15 @@ class MerkleAccountStateTest {
 
 	MerkleToken alwaysUsable = new MerkleToken(
 			Long.MAX_VALUE, 100, 1,
-			"UnfrozenToken", false, true,
+			"UnfrozenToken", "UnfrozenTokenName", false, true,
 			new EntityId(1, 2, 3));
 	MerkleToken unusableAtFirst = new MerkleToken(
 			Long.MAX_VALUE, 100, 1,
-			"FrozenToken", true, false,
+			"FrozenToken", "UnusableFrozenTokenName", true, false,
 			new EntityId(1, 2, 4));
 	MerkleToken usableAtFirst = new MerkleToken(
 			Long.MAX_VALUE, 100, 1,
-			"FrozenToken", false, true,
+			"FrozenToken", "UsableFrozenToken", false, true,
 			new EntityId(1, 2, 4));
 
 	DomainSerdes serdes;

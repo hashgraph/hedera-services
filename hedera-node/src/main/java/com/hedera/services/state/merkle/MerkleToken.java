@@ -40,8 +40,8 @@ import java.util.Optional;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.MiscUtils.describe;
 
-public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleLeaf {
-	static final int MAX_CONCEIVABLE_SYMBOL_LENGTH = 256;
+public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleLeaf  {
+	static final int MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH = 256;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 	static DomainSerdes serdes = new DomainSerdes();
@@ -63,6 +63,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private JKey supplyKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
+	private String name;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountKycGrantedByDefault;
@@ -85,6 +86,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 			long tokenFloat,
 			int divisibility,
 			String symbol,
+			String name,
 			boolean accountsFrozenByDefault,
 			boolean accountKycGrantedByDefault,
 			EntityId treasury
@@ -93,6 +95,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.tokenFloat = tokenFloat;
 		this.divisibility = divisibility;
 		this.symbol = symbol;
+		this.name = name;
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 		this.accountKycGrantedByDefault = accountKycGrantedByDefault;
 		this.treasury = treasury;
@@ -117,6 +120,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountKycGrantedByDefault == that.accountKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
+				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.treasury, that.treasury) &&
 				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
 				equalUpToDecodability(this.wipeKey, that.wipeKey) &&
@@ -139,6 +143,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				wipeKey,
 				supplyKey,
 				symbol,
+				name,
 				accountsFrozenByDefault,
 				accountKycGrantedByDefault,
 				treasury,
@@ -153,6 +158,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				.add("deleted", deleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
+				.add("name", name)
 				.add("treasury", treasury.toAbbrevString())
 				.add("float", tokenFloat)
 				.add("divisibility", divisibility)
@@ -189,7 +195,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		expiry = in.readLong();
 		autoRenewAccount = serdes.readNullableSerializable(in);
 		autoRenewPeriod = in.readLong();
-		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_LENGTH);
+		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
+		name = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
 		treasury = in.readSerializable();
 		tokenFloat = in.readLong();
 		divisibility = in.readInt();
@@ -209,6 +216,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		serdes.writeNullableSerializable(autoRenewAccount, out);
 		out.writeLong(autoRenewPeriod);
 		out.writeNormalisedString(symbol);
+		out.writeNormalisedString(name);
 		out.writeSerializable(treasury, true);
 		out.writeLong(tokenFloat);
 		out.writeInt(divisibility);
@@ -229,6 +237,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				tokenFloat,
 				divisibility,
 				symbol,
+				name,
 				accountsFrozenByDefault,
 				accountKycGrantedByDefault,
 				treasury);
@@ -336,6 +345,14 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	public void setSymbol(String symbol) {
 		this.symbol = symbol;
+	}
+
+	public String name() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public void setTreasury(EntityId treasury) {

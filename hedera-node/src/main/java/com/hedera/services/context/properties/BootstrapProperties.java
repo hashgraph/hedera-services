@@ -198,7 +198,8 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.maxAccountNum",
 			"rates.intradayChangeLimitPercent",
 			"tokens.maxPerAccount",
-			"tokens.maxSymbolLength"
+			"tokens.maxSymbolLength",
+			"tokens.maxTokenNameLength"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -258,6 +259,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("ledger.totalTinyBarFloat", AS_LONG),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolLength", AS_INT),
+			entry("tokens.maxTokenNameLength", AS_INT),
 			entry("contracts.defaultReceiveThreshold", AS_LONG),
 			entry("contracts.defaultSendThreshold", AS_LONG),
 			entry("contracts.maxStorageKb", AS_INT),

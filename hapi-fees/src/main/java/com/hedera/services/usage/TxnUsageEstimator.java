@@ -21,7 +21,7 @@ public class TxnUsageEstimator {
 	public FeeData get() {
 		var usage = utils.baseEstimate(txn, sigUsage);
 		customize(usage);
-		return utils.withDefaultPartitioning(
+		return utils.withDefaultTxnPartitioning(
 				usage.build(),
 				utils.nonDegenerateDiv(networkRbs, HRS_DIVISOR),
 				sigUsage.numPayerKeys());

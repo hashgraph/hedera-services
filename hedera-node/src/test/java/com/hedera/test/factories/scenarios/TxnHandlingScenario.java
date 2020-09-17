@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -173,7 +173,7 @@ public interface TxnHandlingScenario {
 
 		var immutableToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"ImmutableToken", false, false,
+				"ImmutableToken", "ImmutableTokenName", false, false,
 				new EntityId(1, 2, 3));
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_IMMUTABLE_ID)))
 				.willReturn(KNOWN_TOKEN_IMMUTABLE);
@@ -181,7 +181,7 @@ public interface TxnHandlingScenario {
 
 		var vanillaToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"VanillaToken", false, false,
+				"VanillaToken", "TOKENNAME", false, false,
 				new EntityId(1, 2, 3));
 		vanillaToken.setAdminKey(adminKey);
 		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS)))
@@ -190,7 +190,7 @@ public interface TxnHandlingScenario {
 
 		var frozenToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"FrozenToken", true, false,
+				"FrozenToken", "FRZNTKN", true, false,
 				new EntityId(1, 2, 4));
 		frozenToken.setAdminKey(adminKey);
 		frozenToken.setFreezeKey(optionalFreezeKey);
@@ -200,7 +200,7 @@ public interface TxnHandlingScenario {
 
 		var kycToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"KycToken", false, true,
+				"KycToken","KYCTOKENNAME", false, true,
 				new EntityId(1, 2, 4));
 		kycToken.setAdminKey(adminKey);
 		kycToken.setKycKey(optionalKycKey);
@@ -210,7 +210,7 @@ public interface TxnHandlingScenario {
 
 		var supplyToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"SupplyToken", false, false,
+				"SupplyToken", "SUPPLYTOKENNAME", false, false,
 				new EntityId(1, 2, 4));
 		supplyToken.setAdminKey(adminKey);
 		supplyToken.setSupplyKey(optionalSupplyKey);
@@ -220,7 +220,7 @@ public interface TxnHandlingScenario {
 
 		var wipeToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
-				"WipeToken", false, false,
+				"WipeToken", "WIPETOKENNAME", false, false,
 				new EntityId(1, 2, 4));
 		wipeToken.setAdminKey(adminKey);
 		wipeToken.setWipeKey(optionalWipeKey);

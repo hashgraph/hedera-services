@@ -30,6 +30,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -59,6 +60,7 @@ import static com.hedera.services.tokens.TokenCreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -77,6 +79,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -84,6 +88,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_ALREADY_IN_USE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -107,6 +113,7 @@ public class HederaTokenStore implements TokenStore {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
 
 	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
+	Map<String, TokenID> nameKeyedIds = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
@@ -124,6 +131,9 @@ public class HederaTokenStore implements TokenStore {
 
 		tokens.get().entrySet().forEach(entry ->
 				symbolKeyedIds.put(entry.getValue().symbol(), entry.getKey().toTokenId()));
+
+		tokens.get().entrySet().forEach(entry ->
+				nameKeyedIds.put(entry.getValue().name(), entry.getKey().toTokenId()));
 	}
 
 	@Override
@@ -149,6 +159,11 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public boolean symbolExists(String symbol) {
 		return symbolKeyedIds.containsKey(symbol);
+	}
+
+	@Override
+	public boolean nameExists(String name) {
+		return nameKeyedIds.containsKey(name);
 	}
 
 	@Override
@@ -252,7 +267,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
 		return sanityChecked(aId, tId, token -> {
 			if (!skipKeyCheck && !token.hasWipeKey()) {
 				return TOKEN_HAS_NO_WIPE_KEY;
@@ -260,19 +275,24 @@ public class HederaTokenStore implements TokenStore {
 			if (ofNullableAccountId(aId).equals(token.treasury())) {
 				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 			}
-			var account = ledger.getTokenRef(aId);
-			var balance = account.getTokenBalance(tId);
-			var outcome = account.wipeTokenRelationship(tId);
-			if (outcome == OK) {
-				ledger.markForMerge(aId);
-				if (balance > 0) {
-					var treasury = token.treasury().toGrpcAccountId();
-					adjustUnchecked(treasury, tId, token, balance);
-					hederaLedger.updateTokenXfers(tId, aId, -balance);
-					hederaLedger.updateTokenXfers(tId, treasury, balance);
-				}
+			if (amount <= 0) {
+				return INVALID_WIPING_AMOUNT;
 			}
-			return outcome;
+
+			var account = ledger.getTokenRef(aId);
+			if (!account.hasRelationshipWith(tId)) {
+				return ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+			}
+			var balance = account.getTokenBalance(tId);
+			if (amount > balance) {
+				return INVALID_WIPING_AMOUNT;
+			}
+
+			adjustUnchecked(aId, tId, token, -amount);
+			hederaLedger.updateTokenXfers(tId, aId, -amount);
+			apply(tId, t -> t.adjustFloatBy(-amount));
+
+			return OK;
 		});
 	}
 
@@ -330,6 +350,10 @@ public class HederaTokenStore implements TokenStore {
 		if (validity != OK) {
 			return failure(validity);
 		}
+		validity = nameCheck(request.getName());
+		if (validity != OK) {
+			return failure(validity);
+		}
 		validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
@@ -368,6 +392,7 @@ public class HederaTokenStore implements TokenStore {
 				request.getFloat(),
 				request.getDivisibility(),
 				request.getSymbol(),
+				request.getName(),
 				request.getFreezeDefault(),
 				kycKey.isEmpty() || request.getKycDefault(),
 				ofNullableAccountId(request.getTreasury()));
@@ -400,6 +425,7 @@ public class HederaTokenStore implements TokenStore {
 
 		tokens.get().put(fromTokenId(pendingId), pendingCreation);
 		symbolKeyedIds.put(pendingCreation.symbol(), pendingId);
+		nameKeyedIds.put(pendingCreation.name(), pendingId);
 
 		resetPendingCreation();
 	}
@@ -427,6 +453,13 @@ public class HederaTokenStore implements TokenStore {
 				return validity;
 			}
 		}
+		var hasNewTokenName = changes.getName().length() > 0;
+		if (hasNewTokenName) {
+			validity = nameCheck(changes.getName());
+			if (validity != OK) {
+				return validity;
+			}
+		}
 		var hasAutoRenewAccount = changes.hasAutoRenewAccount();
 		if (hasAutoRenewAccount) {
 			validity = accountCheck(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
@@ -434,6 +467,7 @@ public class HederaTokenStore implements TokenStore {
 				return validity;
 			}
 		}
+
 
 		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
 		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
@@ -504,6 +538,12 @@ public class HederaTokenStore implements TokenStore {
 				token.setSymbol(newSymbol);
 				symbolKeyedIds.put(newSymbol, tId);
 			}
+			if (hasNewTokenName) {
+				var newName = changes.getName();
+				nameKeyedIds.remove(token.name());
+				token.setName(newName);
+				nameKeyedIds.put(newName, tId);
+			}
 			if (changes.hasTreasury()) {
 				var treasuryId = ofNullableAccountId(changes.getTreasury());
 				token.setTreasury(treasuryId);
@@ -524,6 +564,7 @@ public class HederaTokenStore implements TokenStore {
 				!op.hasTreasury() &&
 				!op.hasAutoRenewAccount() &&
 				op.getSymbol().length() == 0 &&
+				op.getName().length() == 0 &&
 				op.getAutoRenewPeriod() == 0;
 	}
 
@@ -576,6 +617,12 @@ public class HederaTokenStore implements TokenStore {
 		}
 	}
 
+	private void throwIfNameMissing(String name) {
+		if (!nameExists(name)) {
+			throw new IllegalArgumentException(String.format("No such name '%s'!", name));
+		}
+	}
+
 	private ResponseCodeEnum freezeSemanticsCheck(Optional<JKey> candidate, boolean freezeDefault) {
 		if (candidate.isEmpty() && freezeDefault) {
 			return TOKEN_HAS_NO_FREEZE_KEY;
@@ -616,6 +663,19 @@ public class HederaTokenStore implements TokenStore {
 		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
 				? OK
 				: INVALID_TOKEN_SYMBOL;
+	}
+
+	private ResponseCodeEnum nameCheck(String name) {
+		if (nameKeyedIds.containsKey(name)) {
+			return TOKEN_NAME_ALREADY_IN_USE;
+		}
+		if (name.length() < 1) {
+			return MISSING_TOKEN_NAME;
+		}
+		if (name.length() > properties.maxTokensNameLength()) {
+			return TOKEN_NAME_TOO_LONG;
+		}
+		return OK;
 	}
 
 	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {

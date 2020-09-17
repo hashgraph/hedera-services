@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.stream.Stream;
@@ -76,8 +75,8 @@ public class IdUtils {
 				.build();
 	}
 
-	public static TokenRef asIdRef(String v) {
-		return TokenRef.newBuilder().setTokenId(asToken(v)).build();
+	public static TokenRef asSymbolRef(String v) {
+		return TokenRef.newBuilder().setSymbol(v).build();
 	}
 
 	public static TokenRef asIdRef(TokenID id) {
@@ -113,22 +112,6 @@ public class IdUtils {
 		return TokenBalance.newBuilder()
 				.setTokenId(id)
 				.setBalance(balance)
-				.build();
-	}
-
-	public static TokenTransfer fromRef(String symbol, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.setAccount(account)
-				.setAmount(amount)
-				.build();
-	}
-
-	public static TokenTransfer fromId(TokenID token, AccountID account, long amount) {
-		return TokenTransfer.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(token))
-				.setAccount(account)
-				.setAmount(amount)
 				.build();
 	}
 }

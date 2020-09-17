@@ -109,7 +109,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
-			outcome = store.wipe(replacedTreasury.get(), id, true);
+			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
+			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);

@@ -6,7 +6,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 public class UsageUtils {
 	public static final int NUM_PAYER_KEYS = 2;
 
-	public static final long CONSTANT = 1;
+	public static final long ONE = 1;
 	public static final long BPT = 2;
 	public static final long VPT = 3;
 	public static final long RBH = 4;
@@ -18,7 +18,7 @@ public class UsageUtils {
 	public static final long NETWORK_RBH = 10;
 
 	public static final FeeComponents A_USAGE_VECTOR = FeeComponents.newBuilder()
-			.setConstant(CONSTANT)
+			.setConstant(ONE)
 			.setBpt(BPT)
 			.setVpt(VPT)
 			.setRbh(RBH)
@@ -30,14 +30,20 @@ public class UsageUtils {
 			.build();
 
 	public static final FeeData A_USAGES_MATRIX;
+	public static final FeeData A_QUERY_USAGES_MATRIX;
 	static {
 		var usagesBuilder = FeeData.newBuilder();
 		usagesBuilder.setNetworkdata(FeeComponents.newBuilder()
-				.setConstant(CONSTANT).setBpt(BPT).setVpt(VPT).setRbh(NETWORK_RBH));
+				.setConstant(ONE).setBpt(BPT).setVpt(VPT).setRbh(NETWORK_RBH));
 		usagesBuilder.setNodedata(FeeComponents.newBuilder()
-				.setConstant(CONSTANT).setBpt(BPT).setVpt(NUM_PAYER_KEYS).setBpr(BPR).setSbpr(SBPR));
+				.setConstant(ONE).setBpt(BPT).setVpt(NUM_PAYER_KEYS).setBpr(BPR).setSbpr(SBPR));
 		usagesBuilder.setServicedata(FeeComponents.newBuilder()
-				.setConstant(CONSTANT).setRbh(RBH).setSbh(SBH).setTv(TV));
+				.setConstant(ONE).setRbh(RBH).setSbh(SBH).setTv(TV));
 		A_USAGES_MATRIX = usagesBuilder.build();
+
+		usagesBuilder = FeeData.newBuilder();
+		usagesBuilder.setNodedata(FeeComponents.newBuilder()
+				.setConstant(ONE).setBpt(BPT).setSbpr(SBPR).setBpr(BPR));
+		A_QUERY_USAGES_MATRIX = usagesBuilder.build();
 	}
 }
