@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -100,12 +99,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
 						cryptoCreate("a").balance(1_234L),
 						cryptoCreate("b").balance(1_234L)
 				).when().then(
-						getAccountInfo(GENESIS)
-								.withPayment(
-										cryptoTransfer(spec ->
-												invalidMultiAccountPaymentToNode003(
-														spec, "a", "b", 1_000L))
-								).hasAnswerOnlyPrecheck(INVALID_QUERY_PAYMENT_ACCOUNT_AMOUNTS),
 						getAccountInfo(GENESIS)
 								.withPayment(
 										cryptoTransfer(spec ->
