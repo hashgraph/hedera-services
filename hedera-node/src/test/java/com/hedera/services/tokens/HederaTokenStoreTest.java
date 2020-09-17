@@ -38,7 +38,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -114,7 +114,7 @@ class HederaTokenStoreTest {
 	TokenID misc = IdUtils.asToken("3.2.1");
 	TokenRef miscRef = IdUtils.asIdRef(misc);
 	boolean freezeDefault = true;
-	boolean kycDefault = true;
+	boolean accountsKycGrantedByDefault = false;
 	long autoRenewPeriod = 500_000;
 	long newAutoRenewPeriod = 2_000_000;
 	AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
@@ -1339,9 +1339,9 @@ class HederaTokenStoreTest {
 		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
 	}
 
-	private void givenTokenWithKycKey(boolean kycDefault) {
+	private void givenTokenWithKycKey(boolean accountsKycGrantedByDefault) {
 		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
-		given(token.accountKycGrantedByDefault()).willReturn(kycDefault);
+		given(token.accountsKycGrantedByDefault()).willReturn(accountsKycGrantedByDefault);
 	}
 
 	@Test
@@ -1482,7 +1482,7 @@ class HederaTokenStoreTest {
 				symbol,
 				name,
 				freezeDefault,
-				kycDefault,
+				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenewAccount));
 		expected.setAutoRenewPeriod(autoRenewPeriod);
@@ -1520,7 +1520,7 @@ class HederaTokenStoreTest {
 				symbol,
 				name,
 				freezeDefault,
-				kycDefault,
+				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
 		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
@@ -1729,8 +1729,8 @@ class HederaTokenStoreTest {
 	public void allowsZeroFloatAndDivisibility() {
 		// given:
 		var req = fullyValidAttempt()
-				.setFloat(0L)
-				.setDivisibility(0)
+				.setInitialSupply(0L)
+				.setDecimals(0)
 				.build();
 
 		// when:
@@ -1744,8 +1744,8 @@ class HederaTokenStoreTest {
 	public void allowsToCreateTokenWithTheBiggestAmountInLong() {
 		// given:
 		var req = fullyValidAttempt()
-				.setFloat(9)
-				.setDivisibility(18)
+				.setInitialSupply(9)
+				.setDecimals(18)
 				.build();
 
 		// when:
@@ -1762,15 +1762,15 @@ class HederaTokenStoreTest {
 
 		// given:
 		var req = fullyValidAttempt()
-				.setFloat(initialFloat)
-				.setDivisibility(divisibility)
+				.setInitialSupply(initialFloat)
+				.setDecimals(divisibility)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
@@ -1780,60 +1780,75 @@ class HederaTokenStoreTest {
 
 		// given:
 		var req = fullyValidAttempt()
-				.setFloat(initialFloat)
-				.setDivisibility(divisibility)
+				.setInitialSupply(initialFloat)
+				.setDecimals(divisibility)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
 	public void rejectsInvalidDivisibility() {
 		// given:
 		var req = fullyValidAttempt()
-				.setDivisibility(1 << 30)
-				.setFloat(1L << 34)
+				.setDecimals(1 << 30)
+				.setInitialSupply(1L << 34)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
 	public void rejectsOverflowingDivisibility() {
 		// given:
 		var req = fullyValidAttempt()
-				.setDivisibility(19)
-				.setFloat(0L)
+				.setDecimals(19)
+				.setInitialSupply(0L)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
 	}
 
 	@Test
 	public void rejectsInvalidAmountForDivisibility() {
 		// given:
 		var req = fullyValidAttempt()
-				.setDivisibility(18)
-				.setFloat(10)
+				.setDecimals(18)
+				.setInitialSupply(10)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY, result.getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
+	}
+
+	@Test
+	public void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
+		// given:
+		var req = fullyValidAttempt()
+				.clearKycKey()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
 	}
 
 	@Test
@@ -1850,24 +1865,8 @@ class HederaTokenStoreTest {
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
-	@Test
-	public void forcesToTrueKycDefaultWithoutKycKey() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearKycKey()
-				.setKycDefault(false)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, result.getStatus());
-		assertTrue(subject.pendingCreation.accountKycGrantedByDefault());
-	}
-
-	TokenCreation.Builder fullyValidAttempt() {
-		return TokenCreation.newBuilder()
+	TokenCreateTransactionBody.Builder fullyValidAttempt() {
+		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(expiry)
 				.setAdminKey(adminKey)
 				.setKycKey(kycKey)
@@ -1876,10 +1875,9 @@ class HederaTokenStoreTest {
 				.setSupplyKey(supplyKey)
 				.setSymbol(symbol)
 				.setName(name)
-				.setFloat(tokenFloat)
+				.setInitialSupply(tokenFloat)
 				.setTreasury(treasury)
-				.setDivisibility(divisibility)
-				.setFreezeDefault(freezeDefault)
-				.setKycDefault(kycDefault);
+				.setDecimals(divisibility)
+				.setFreezeDefault(freezeDefault);
 	}
 }

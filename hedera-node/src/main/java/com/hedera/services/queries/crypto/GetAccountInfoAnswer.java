@@ -98,7 +98,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 				List<TokenRelationship> relationships = account.explicitTokenRels()
 						.stream()
 						.map(raw -> new AbstractMap.SimpleEntry<>(raw, tokenStore.get(raw.id())))
-						.filter(entry -> !entry.getValue().isDeleted())
+						.filter(entry -> !entry.getValue().isDeleted() && entry.getKey().getBalance() != 0)
 						.map(entry -> entry.getKey().asGrpcFor(entry.getValue()))
 						.collect(toList());
 				if (!relationships.isEmpty()) {

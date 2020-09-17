@@ -28,7 +28,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,9 +242,9 @@ class TokenCreateTransitionLogicTest {
 
 	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
 		var builder = TransactionBody.newBuilder()
-				.setTokenCreation(TokenCreation.newBuilder()
-						.setFloat(initialFloat)
-						.setDivisibility(divisibility)
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setInitialSupply(initialFloat)
+						.setDecimals(divisibility)
 						.setTreasury(treasury));
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());

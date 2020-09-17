@@ -74,6 +74,7 @@ message TopicID {
     int64 topicNum = 3; // Unique topic identifier within a realm (nonnegative).
 }
 
+/* Unique identifier for a token */
 message TokenID {
     int64 shardNum = 1; // A nonnegative shard number
     int64 realmNum = 2; // A nonnegative realm number

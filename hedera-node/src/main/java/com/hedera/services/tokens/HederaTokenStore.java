@@ -35,7 +35,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.swirlds.fcmap.FCMap;
@@ -71,8 +71,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DIVISIBILITY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_FLOAT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
@@ -229,7 +229,7 @@ public class HederaTokenStore implements TokenStore {
 				value,
 				TOKEN_HAS_NO_KYC_KEY,
 				IS_KYC_GRANTED,
-				MerkleToken::accountKycGrantedByDefault,
+				MerkleToken::accountsKycGrantedByDefault,
 				MerkleToken::kycKey);
 	}
 
@@ -345,7 +345,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now) {
+	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		var validity = symbolCheck(request.getSymbol());
 		if (validity != OK) {
 			return failure(validity);
@@ -371,7 +371,7 @@ public class HederaTokenStore implements TokenStore {
 				return failure(INVALID_EXPIRATION_TIME);
 			}
 		}
-		validity = floatAndDivisibilityCheck(request.getFloat(), request.getDivisibility());
+		validity = floatAndDivisibilityCheck(request.getInitialSupply(), request.getDecimals());
 		if (validity != OK) {
 			return failure(validity);
 		}
@@ -389,12 +389,12 @@ public class HederaTokenStore implements TokenStore {
 		pendingId = ids.newTokenId(sponsor);
 		pendingCreation = new MerkleToken(
 				expiry,
-				request.getFloat(),
-				request.getDivisibility(),
+				request.getInitialSupply(),
+				request.getDecimals(),
 				request.getSymbol(),
 				request.getName(),
 				request.getFreezeDefault(),
-				kycKey.isEmpty() || request.getKycDefault(),
+				kycKey.isEmpty(),
 				ofNullableAccountId(request.getTreasury()));
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
@@ -413,7 +413,7 @@ public class HederaTokenStore implements TokenStore {
 		return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 	}
 
-	private long expiryOf(TokenCreation request, long now) {
+	private long expiryOf(TokenCreateTransactionBody request, long now) {
 		return request.hasAutoRenewAccount()
 				? now + request.getAutoRenewPeriod()
 				: request.getExpiry();
@@ -632,21 +632,21 @@ public class HederaTokenStore implements TokenStore {
 
 	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
 		if (tokenFloat < 0) {
-			return INVALID_TOKEN_FLOAT;
+			return INVALID_INITIAL_SUPPLY;
 		}
 
 		try {
 			var divisibilityFloat = BigInteger.valueOf(10)
 					.pow(divisibility);
 			if (divisibilityFloat.longValue() < 0) {
-				return INVALID_TOKEN_DIVISIBILITY;
+				return INVALID_TOKEN_DECIMALS;
 			}
 
 			var tinyTokenFloat = divisibilityFloat
 					.multiply(BigInteger.valueOf(tokenFloat));
-			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DIVISIBILITY;
+			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DECIMALS;
 		} catch (ArithmeticException ignore) {
-			return INVALID_TOKEN_DIVISIBILITY;
+			return INVALID_TOKEN_DECIMALS;
 		}
 	}
 

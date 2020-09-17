@@ -269,7 +269,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void willNotSetNewBalanceIfTokenFreezesByDefault() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setAccountsKycGrantedByDefault(true);
 		// and:
 		var result = subject.validityOfAdjustment(
 				tokenWith(firstToken - 1), unusableAtFirst, firstBalance + 1);
@@ -336,7 +336,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void unfreezeCreatesRelationshipIfTokenFreezesByDefault() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setAccountsKycGrantedByDefault(true);
 
 		// when:
 		subject.unfreeze(tokenWith(firstToken - 1), unusableAtFirst);
@@ -407,7 +407,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void grantKycIsNoopForNewRelWithDefaultKycToken() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setAccountsKycGrantedByDefault(true);
 
 		// when:
 		subject.grantKyc(tokenWith(firstToken - 1), unusableAtFirst);
@@ -419,7 +419,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void unfreezeForDefaultFrozenUsesCorrectKycStatusSafely() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(false);
+		unusableAtFirst.setAccountsKycGrantedByDefault(false);
 		unusableAtFirst.setKycKey(MerkleToken.UNUSED_KEY);
 
 		// when:
@@ -433,7 +433,7 @@ class MerkleAccountStateTest {
 	public void freezeForDefaultUnfrozenUsesCorrectKycStatusSafely() {
 		// given:
 		unusableAtFirst.setAccountsFrozenByDefault(false);
-		unusableAtFirst.setAccountKycGrantedByDefault(false);
+		unusableAtFirst.setAccountsKycGrantedByDefault(false);
 		unusableAtFirst.setKycKey(MerkleToken.UNUSED_KEY);
 
 		// when:
@@ -446,7 +446,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void revokeKycForDefaultGrantedUsesCorrectFreezeStatus() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setAccountsKycGrantedByDefault(true);
 
 		// when:
 		subject.revokeKyc(tokenWith(firstToken - 1), unusableAtFirst);
@@ -458,7 +458,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void revokeKycForDefaultGrantedUsesCorrectFreezeStatusWithSafety() {
 		// given:
-		unusableAtFirst.setAccountKycGrantedByDefault(true);
+		unusableAtFirst.setAccountsKycGrantedByDefault(true);
 		unusableAtFirst.setFreezeKey(MerkleToken.UNUSED_KEY);
 
 		// when:

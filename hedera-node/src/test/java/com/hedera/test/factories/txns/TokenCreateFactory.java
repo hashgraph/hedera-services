@@ -22,7 +22,7 @@ package com.hedera.test.factories.txns;
 
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -66,7 +66,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenCreation.newBuilder();
+		var op = TokenCreateTransactionBody.newBuilder();
 		if (!omitAdmin) {
 			op.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey());
 		}

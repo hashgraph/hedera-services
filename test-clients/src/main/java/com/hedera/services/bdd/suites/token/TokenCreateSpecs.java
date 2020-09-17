@@ -232,26 +232,26 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("sinking")
 								.payingWith("payer")
 								.initialFloat(-1L)
-								.hasKnownStatus(INVALID_TOKEN_FLOAT),
+								.hasKnownStatus(INVALID_INITIAL_SUPPLY),
 						tokenCreate("indivisible")
 								.payingWith("payer")
 								.divisibility(-1)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("indivisible")
 								.payingWith("payer")
 								.divisibility(1)
 								.initialFloat(1L << 62)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("toobigdivisibility")
 								.payingWith("payer")
 								.initialFloat(0)
 								.divisibility(19)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("toobigdivisibility")
 								.payingWith("payer")
 								.initialFloat(10)
 								.divisibility(18)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY)
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS)
 				);
 	}
 

@@ -25,7 +25,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,7 +69,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(TokenCreation op) {
+	private void transitionFor(TokenCreateTransactionBody op) {
 		var result = store.createProvisionally(op, txnCtx.activePayer(), txnCtx.consensusTime().getEpochSecond());
 		if (result.getStatus() != OK) {
 			abortWith(result.getStatus());
@@ -78,7 +78,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
-		var scaledInitialFloat = initialTinyFloat(op.getFloat(), op.getDivisibility());
+		var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
 
 		var status = OK;
 		if (op.hasFreezeKey()) {

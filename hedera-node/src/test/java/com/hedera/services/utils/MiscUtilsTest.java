@@ -73,7 +73,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnCoins;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
@@ -319,7 +319,7 @@ public class MiscUtilsTest {
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
-			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreation.class));
+			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfers.class));
 			put(TokenController.TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreeze.class));
 			put(TokenController.TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreeze.class));
@@ -574,7 +574,7 @@ public class MiscUtilsTest {
 			put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
-			put(TokenCreate, new BodySetter<>(TokenCreation.class));
+			put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TokenTransact, new BodySetter<>(TokenTransfers.class));
 			put(TokenFreezeAccount, new BodySetter<>(TokenFreeze.class));
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreeze.class));

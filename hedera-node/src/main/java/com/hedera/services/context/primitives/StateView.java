@@ -169,8 +169,8 @@ public class StateView {
 					.setSymbol(token.symbol())
 					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())
-					.setCurrentFloat(token.tokenFloat())
-					.setDivisibility(token.divisibility())
+					.setTotalSupply(token.tokenFloat())
+					.setDecimals(token.divisibility())
 					.setExpiry(token.expiry());
 
 			var adminCandidate = token.adminKey();
@@ -184,7 +184,7 @@ public class StateView {
 
 			var kycCandidate = token.kycKey();
 			kycCandidate.ifPresentOrElse(k -> {
-				info.setDefaultKycStatus(tksFor(token.accountKycGrantedByDefault()));
+				info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
 				info.setKycKey(asKeyUnchecked(k));
 			}, () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
 
