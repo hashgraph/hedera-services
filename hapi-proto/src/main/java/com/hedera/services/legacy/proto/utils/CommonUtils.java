@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
@@ -239,7 +240,7 @@ public class CommonUtils {
     return rv;
   }
 
-  public static ByteString extractTransactionBodyBytes(Transaction transaction)
+  public static ByteString extractTransactionBodyBytes(TransactionOrBuilder transaction)
       throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
     if (!signedTransactionBytes.isEmpty()) {
@@ -249,12 +250,12 @@ public class CommonUtils {
     return transaction.getBodyBytes();
   }
 
-  public static TransactionBody extractTransactionBody(Transaction transaction)
+  public static TransactionBody extractTransactionBody(TransactionOrBuilder transaction)
           throws InvalidProtocolBufferException {
     return TransactionBody.parseFrom(extractTransactionBodyBytes(transaction));
   }
 
-  public static SignatureMap extractSignatureMap(Transaction transaction)
+  public static SignatureMap extractSignatureMap(TransactionOrBuilder transaction)
           throws InvalidProtocolBufferException {
     ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
     if (!signedTransactionBytes.isEmpty()) {
@@ -264,7 +265,7 @@ public class CommonUtils {
     return transaction.getSigMap();
   }
 
-  public static SignatureMap extractSignatureMapOrUseDefault(Transaction transaction) {
+  public static SignatureMap extractSignatureMapOrUseDefault(TransactionOrBuilder transaction) {
     try {
       return extractSignatureMap(transaction);
     } catch (InvalidProtocolBufferException ignoreToReturnDefault) { }
