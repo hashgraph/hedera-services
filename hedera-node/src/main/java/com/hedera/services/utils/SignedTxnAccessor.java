@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -47,6 +48,7 @@ public class SignedTxnAccessor {
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
+	private ByteString hash;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -69,6 +71,7 @@ public class SignedTxnAccessor {
 		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn).toByteArray();
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
+		hash = MiscUtils.sha384HashOf(signedTxnBytes);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {
@@ -117,5 +120,9 @@ public class SignedTxnAccessor {
 
 	public byte[] getSignedTxnBytes() {
 		return signedTxnBytes;
+	}
+
+	public ByteString getHash() {
+		return hash;
 	}
 }

@@ -58,5 +58,6 @@ public class SignedTxnAccessorTest {
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
+		assertArrayEquals(MiscUtils.uncheckedSha384Hash(transaction.toByteArray()), accessor.getHash().toByteArray());
 	}
 }
