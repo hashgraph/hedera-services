@@ -58,7 +58,7 @@ import "UncheckedSubmit.proto";
 
 import "TokenCreate.proto";
 import "TokenTransact.proto";
-import "TokenFreeze.proto";
+import "TokenFreezeAccount.proto";
 import "TokenUnfreeze.proto";
 import "TokenGrantKyc.proto";
 import "TokenRevokeKyc.proto";
