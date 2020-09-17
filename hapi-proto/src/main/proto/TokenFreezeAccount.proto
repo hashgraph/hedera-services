@@ -31,6 +31,6 @@ import "BasicTypes.proto";
  Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen. The operation is idempotent.
  */
 message TokenFreezeAccountTransactionBody {
-    TokenRef token = 1; // The token for which this account will be frozen
+    TokenRef token = 1; // The token for which this account will be frozen. If token does not exist, transaction results in INVALID_TOKEN_ID
     AccountID account = 2; // The account to be frozen
 }

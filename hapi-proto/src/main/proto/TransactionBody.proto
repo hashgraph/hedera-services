@@ -114,6 +114,6 @@ message TransactionBody {
     TokenUpdateTransactionBody tokenUpdate = 36;
     TokenMintCoins tokenMint = 37;
     TokenBurnCoins tokenBurn = 38;
-    TokenWipeAccount tokenWipe = 39;
+    TokenWipeAccountTransactionBody tokenWipe = 39;
   }
 }
