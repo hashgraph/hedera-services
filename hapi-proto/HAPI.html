@@ -1252,11 +1252,11 @@
         
           
           <li>
-            <a href="#TokenFreeze.proto">TokenFreeze.proto</a>
+            <a href="#TokenFreezeAccount.proto">TokenFreezeAccount.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenFreeze"><span class="badge">M</span>TokenFreeze</a>
+                  <a href="#proto.TokenFreezeAccountTransactionBody"><span class="badge">M</span>TokenFreezeAccountTransactionBody</a>
                 </li>
               
               
@@ -1369,11 +1369,11 @@
         
           
           <li>
-            <a href="#TokenUnfreeze.proto">TokenUnfreeze.proto</a>
+            <a href="#TokenUnfreezeAccount.proto">TokenUnfreezeAccount.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenUnfreeze"><span class="badge">M</span>TokenUnfreeze</a>
+                  <a href="#proto.TokenUnfreezeAccountTransactionBody"><span class="badge">M</span>TokenUnfreezeAccountTransactionBody</a>
                 </li>
               
               
@@ -8789,13 +8789,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenFreeze.proto">TokenFreeze.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenFreezeAccount.proto">TokenFreezeAccount.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenFreeze">TokenFreeze</h3>
-        <p></p>
+        <h3 id="proto.TokenFreezeAccountTransactionBody">TokenFreezeAccountTransactionBody</h3>
+        <p>Freezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.</p><p>Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen. The operation is idempotent.</p>
 
         
           <table class="field-table">
@@ -8808,14 +8808,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be frozen </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be frozen </p></td>
                 </tr>
               
             </tbody>
@@ -9367,13 +9367,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenUnfreeze.proto">TokenUnfreeze.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenUnfreezeAccount.proto">TokenUnfreezeAccount.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenUnfreeze">TokenUnfreeze</h3>
-        <p></p>
+        <h3 id="proto.TokenUnfreezeAccountTransactionBody">TokenUnfreezeAccountTransactionBody</h3>
+        <p>Unfreezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.</p><p>Once executed the Account is marked as Unfrozen and will be able to receive or send tokens. The operation is idempotent.</p>
 
         
           <table class="field-table">
@@ -9386,14 +9386,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be unfrozen </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be unfrozen </p></td>
                 </tr>
               
             </tbody>
@@ -9891,14 +9891,14 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenFreeze</td>
-                  <td><a href="#proto.TokenFreeze">TokenFreeze</a></td>
+                  <td><a href="#proto.TokenFreezeAccountTransactionBody">TokenFreezeAccountTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenUnfreeze</td>
-                  <td><a href="#proto.TokenUnfreeze">TokenUnfreeze</a></td>
+                  <td><a href="#proto.TokenUnfreezeAccountTransactionBody">TokenUnfreezeAccountTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

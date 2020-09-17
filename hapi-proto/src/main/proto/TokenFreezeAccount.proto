@@ -27,10 +27,10 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-/* Freezes Account transfers for the specified Token. Must be signed by the Token's freezeKey.
- Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen.
+/* Freezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.
+ Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen. The operation is idempotent.
  */
 message TokenFreezeAccountTransactionBody {
-    TokenRef token = 1;
-    AccountID account = 2;
+    TokenRef token = 1; // The token for which this account will be frozen
+    AccountID account = 2; // The account to be frozen
 }
