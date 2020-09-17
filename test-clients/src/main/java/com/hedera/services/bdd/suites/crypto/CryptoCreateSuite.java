@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
@@ -93,24 +94,78 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		);
 	}
 
+	/**
+	 * test cases verified
+	 * 1. multiple payers pay amount to node
+	 * 2. multiple payers pay amount to node as well as one more beneficiary. But node gets correct query payment fee
+	 * 3. multiple payers pay amount to node as well as one more beneficiary. But node gets less query payment fee
+	 * 4. TransactionPayer will pay for query payment to node and payer has enough balance
+	 * 5. TransactionPayer will pay for query payment to node and payer has less balance
+	 * 6. Transaction payer is not involved in transfers for query payment to node and all payers have enough balance
+	 * 7. Transaction payer is not involved in transfers for query payment to node and one or more have less balance
+	 * @return
+	 */
 	private HapiApiSpec queryPaymentsAreSanityChecked() {
 		return defaultHapiSpec("QueryPaymentsAreSanityChecked")
 				.given(
 						cryptoCreate("a").balance(1_234L),
-						cryptoCreate("b").balance(1_234L)
+						cryptoCreate("b").balance(1_234L),
+						cryptoCreate("c").balance(1_234L)
 				).when().then(
 						getAccountInfo(GENESIS)
 								.withPayment(
 										cryptoTransfer(spec ->
-												invalidPayer(
+												multiAccountPaymentToNode003(
 														spec, "a", "b", 1_000L))
-								).hasAnswerOnlyPrecheck(INVALID_PAYER_ACCOUNT_ID),
+								).hasAnswerOnlyPrecheck(OK),
 						getAccountInfo(GENESIS)
 								.withPayment(
 										cryptoTransfer(spec ->
-												invalidPayer(
-														spec, GENESIS, "b", 1_000L))
-								).hasAnswerOnlyPrecheck(INVALID_RECEIVING_NODE_ACCOUNT),
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", "b", "c",
+														1_000L, 200L))
+								).setNode("0.0.3")
+								.hasAnswerOnlyPrecheck(OK),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", "b", "c", 1_000L, 2L))
+								).setNode("0.0.3")
+								.payingWith("a")
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", "b", "c", 900, 200L))
+								).setNode("0.0.3")
+								.payingWith("a")
+								.hasAnswerOnlyPrecheck(OK),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", GENESIS, "c", 5000, 200L))
+								).setNode("0.0.3")
+								.payingWith("a")
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", "b", "c", 1200, 200L))
+								).setNode("0.0.3")
+								.payingWith("a")
+								.fee(10L)
+								.hasAnswerOnlyPrecheck(OK),
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												multiAccountPaymentToNode003AndBeneficiary(
+														spec, "a", "b", "c", 5000, 200L))
+								).setNode("0.0.3")
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountInfo(GENESIS)
 								.fee(100L)
 								.setNode("0.0.3")
@@ -122,7 +177,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	private TransferList invalidMultiAccountPaymentToNode003(
+	private TransferList multiAccountPaymentToNode003(
 			HapiApiSpec spec,
 			String first,
 			String second,
@@ -135,15 +190,19 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				.build();
 	}
 
-	private TransferList invalidPayer(
+	private TransferList multiAccountPaymentToNode003AndBeneficiary(
 			HapiApiSpec spec,
 			String first,
 			String second,
-			long amount
+			String beneficiary,
+			long amount,
+			long queryFee
 	) {
 		return TransferList.newBuilder()
 				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
-				.addAccountAmounts(adjust(spec.registry().getAccountID(second), amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(second), -amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(beneficiary), amount-queryFee))
+				.addAccountAmounts(adjust(asAccount("0.0.3"), queryFee))
 				.build();
 	}
 
