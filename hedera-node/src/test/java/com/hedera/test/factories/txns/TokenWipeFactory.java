@@ -22,7 +22,7 @@ package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -54,7 +54,7 @@ public class TokenWipeFactory extends SignedTxnFactory<TokenWipeFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenWipeAccount.newBuilder()
+		var op = TokenWipeAccountTransactionBody.newBuilder()
 				.setAccount(target)
 				.setToken(ref);
 		txn.setTokenWipe(op);

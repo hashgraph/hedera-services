@@ -26,9 +26,9 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,7 +122,7 @@ class TokenRevokeKycTransitionLogicTest {
 
 	private void givenValidTxnCtx() {
 		tokenRevokeKycTxn = TransactionBody.newBuilder()
-				.setTokenRevokeKyc(TokenRevokeKyc.newBuilder()
+				.setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
 						.setAccount(account)
 						.setToken(token))
 				.build();

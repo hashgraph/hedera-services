@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenBurnCoins;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -87,10 +87,10 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenBurnCoins opBody = spec
+		TokenBurnTransactionBody opBody = spec
 				.txns()
-				.<TokenBurnCoins, TokenBurnCoins.Builder>body(
-						TokenBurnCoins.class, b -> {
+				.<TokenBurnTransactionBody, TokenBurnTransactionBody.Builder>body(
+						TokenBurnTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
 							b.setAmount(amount);
 						});

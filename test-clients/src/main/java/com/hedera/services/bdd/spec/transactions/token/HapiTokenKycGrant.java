@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -88,10 +88,10 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenGrantKyc opBody = spec
+		TokenGrantKycTransactionBody opBody = spec
 				.txns()
-				.<TokenGrantKyc, TokenGrantKyc.Builder>body(
-						TokenGrantKyc.class, b -> {
+				.<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(
+						TokenGrantKycTransactionBody.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});
