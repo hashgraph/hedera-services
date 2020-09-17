@@ -78,7 +78,7 @@ import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenFreeze;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKyc;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintCoins;
 import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
@@ -326,7 +326,7 @@ public class MiscUtilsTest {
 			put(TokenController.TOKEN_GRANT_KYC_METRIC, new BodySetter<>(TokenGrantKyc.class));
 			put(TokenController.TOKEN_REVOKE_KYC_METRIC, new BodySetter<>(TokenRevokeKyc.class));
 			put(TokenController.TOKEN_DELETE_METRIC, new BodySetter<>(TokenDeletion.class));
-			put(TokenController.TOKEN_UPDATE_METRIC, new BodySetter<>(TokenManagement.class));
+			put(TokenController.TOKEN_UPDATE_METRIC, new BodySetter<>(TokenUpdateTransactionBody.class));
 			put(TokenController.TOKEN_MINT_METRIC, new BodySetter<>(TokenMintCoins.class));
 			put(TokenController.TOKEN_BURN_METRIC, new BodySetter<>(TokenBurnCoins.class));
 			put(TokenController.TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccount.class));
@@ -581,7 +581,7 @@ public class MiscUtilsTest {
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKyc.class));
 			put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKyc.class));
 			put(TokenDelete, new BodySetter<>(TokenDeletion.class));
-			put(TokenUpdate, new BodySetter<>(TokenManagement.class));
+			put(TokenUpdate, new BodySetter<>(TokenUpdateTransactionBody.class));
 			put(TokenMint, new BodySetter<>(TokenMintCoins.class));
 			put(TokenBurn, new BodySetter<>(TokenBurnCoins.class));
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccount.class));

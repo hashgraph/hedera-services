@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.function.Consumer;
 
@@ -57,7 +57,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenManagement changes, long now) {
+	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		throw new UnsupportedOperationException();
 	}
 
