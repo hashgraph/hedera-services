@@ -23,6 +23,8 @@ package com.hedera.services.utils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -59,5 +61,37 @@ public class SignedTxnAccessorTest {
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(MiscUtils.uncheckedSha384Hash(transaction.toByteArray()), accessor.getHash().toByteArray());
+	}
+
+	@Test
+	public void parseNewTransactionCorrectly() throws Exception {
+		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
+				3l, 0l, 0l,
+				100_000_000l,
+				Timestamp.getDefaultInstance(),
+				Duration.getDefaultInstance(),
+				false,
+				"test memo",
+				5678l, -70000l,
+				5679l, 70000l);
+		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(body.toByteString())
+				.setSigMap(SignatureMap.getDefaultInstance())
+				.build();
+		Transaction newTransaction = Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTransaction.toByteString())
+				.build();
+		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
+
+		assertEquals(newTransaction, accessor.getSignedTxn());
+		assertEquals(newTransaction, accessor.getSignedTxn4Log());
+		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnBytes());
+		assertEquals(body, accessor.getTxn());
+		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
+		assertEquals(body.getTransactionID(), accessor.getTxnId());
+		assertEquals(1234l, accessor.getPayer().getAccountNum());
+		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
+		assertArrayEquals(MiscUtils.uncheckedSha384Hash(signedTransaction.toByteArray()), accessor.getHash().toByteArray());
 	}
 }
