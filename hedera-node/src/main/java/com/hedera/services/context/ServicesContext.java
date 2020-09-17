@@ -64,7 +64,9 @@ import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.StandardizedPropertySources;
@@ -298,7 +300,6 @@ import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defa
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
-import static io.grpc.ServerInterceptors.intercept;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toMap;
 
@@ -410,6 +411,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
+	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -443,6 +445,7 @@ public class ServicesContext {
 		queryableTopics().set(topics());
 		queryableStorage().set(storage());
 		queryableTokens().set(tokens());
+		queryableTokenAssociations().set(tokenAssociations());
 	}
 
 	public CurrentPlatformStatus platformStatus() {
@@ -480,6 +483,7 @@ public class ServicesContext {
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
+					() -> queryableTokenAssociations().get(),
 					properties());
 		}
 		return stateViews;
@@ -487,7 +491,13 @@ public class ServicesContext {
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(tokenStore(), this::topics, this::accounts, this::storage, properties());
+			currentView = new StateView(
+					tokenStore(),
+					this::topics,
+					this::accounts,
+					this::storage,
+					this::tokenAssociations,
+					properties());
 		}
 		return currentView;
 	}
@@ -1463,6 +1473,13 @@ public class ServicesContext {
 		return queryableTokens;
 	}
 
+	public AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
+		if (queryableTokenAssociations == null) {
+			queryableTokenAssociations = new AtomicReference<>(tokenAssociations());
+		}
+		return queryableTokenAssociations;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -1552,5 +1569,9 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return state.tokens();
+	}
+
+	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+		return state.tokenAssociations();
 	}
 }

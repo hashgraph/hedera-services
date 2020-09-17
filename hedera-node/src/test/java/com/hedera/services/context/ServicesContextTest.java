@@ -188,11 +188,13 @@ public class ServicesContextTest {
 		var newTopics = mock(FCMap.class);
 		var newStorage = mock(FCMap.class);
 		var newTokens = mock(FCMap.class);
+		var newTokenRels = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
 		given(newState.tokens()).willReturn(newTokens);
 		given(newState.storage()).willReturn(newStorage);
+		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		// given:
 		var subject = new ServicesContext(id, platform, state, propertySources);
 		// and:
@@ -200,6 +202,7 @@ public class ServicesContextTest {
 		var topicsRef = subject.queryableTopics();
 		var storageRef = subject.queryableStorage();
 		var tokensRef = subject.queryableTokens();
+		var tokenRelsRef = subject.queryableTokenAssociations();
 
 		// when:
 		subject.update(newState);
@@ -210,11 +213,13 @@ public class ServicesContextTest {
 		assertSame(topicsRef, subject.queryableTopics());
 		assertSame(storageRef, subject.queryableStorage());
 		assertSame(tokensRef, subject.queryableTokens());
+		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
 		assertSame(newStorage, subject.queryableStorage().get());
 		assertSame(newTokens, subject.queryableTokens().get());
+		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 	}
 
 	@Test
