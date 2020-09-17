@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -36,7 +37,6 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -106,7 +106,7 @@ public class NegativeCryptoDeleteTest {
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     TransactionReceipt txReceipt1 = TestHelper.getTxReceipt(body.getTransactionID(), stub);
     AccountID newlyCreateAccountId1 = txReceipt1.getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
@@ -123,7 +123,7 @@ public class NegativeCryptoDeleteTest {
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
     log.info("Pre Check Response of Create second account :: " + response
         .getNodeTransactionPrecheckCode().name());
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);

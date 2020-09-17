@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -118,7 +119,7 @@ public class CryptoDeleteTest {
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     TransactionReceipt txReceipt1 = TestHelper.getTxReceipt(body.getTransactionID(), stub);
     AccountID newlyCreateAccountId1 = txReceipt1.getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
@@ -146,7 +147,7 @@ public class CryptoDeleteTest {
             "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
                 .name());
 
-        body = TransactionBody.parseFrom(transaction.getBodyBytes());
+        body = CommonUtils.extractTransactionBody(transaction);
         txReceipt1 = TestHelper.getTxReceipt(body.getTransactionID(), stub);
         AccountID transferAccountID = txReceipt1.getAccountID();
 
@@ -225,7 +226,7 @@ public class CryptoDeleteTest {
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
     log.info("Pre Check Response of Create second account :: " + response
         .getNodeTransactionPrecheckCode().name());
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);
@@ -249,7 +250,7 @@ public class CryptoDeleteTest {
     log.info(
         "Pre Check Response of Create Third account :: " + response.getNodeTransactionPrecheckCode()
             .name());
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId3 =
         TestHelper.getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId3);
@@ -287,7 +288,7 @@ public class CryptoDeleteTest {
 
     log.info(
         "Pre Check Response transfer :: " + transferRes.getNodeTransactionPrecheckCode().name());
-    TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
+    TransactionBody transferBody = CommonUtils.extractTransactionBody(transfer1);
     txReceipt = TestHelper
         .getTxReceipt(transferBody.getTransactionID(), stub);
     Assert.assertNotNull(txReceipt);
@@ -310,7 +311,7 @@ public class CryptoDeleteTest {
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
     log.info(
         "Pre Check Response account update :: " + response.getNodeTransactionPrecheckCode().name());
-    TransactionBody updateAccountBody = TransactionBody.parseFrom(updateaccount1.getBodyBytes());
+    TransactionBody updateAccountBody = CommonUtils.extractTransactionBody(updateaccount1);
     txReceipt = TestHelper.getTxReceipt(updateAccountBody.getTransactionID(), stub);
     Assert.assertNotNull(txReceipt);
     log.info(txReceipt);

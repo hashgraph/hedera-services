@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -135,7 +136,7 @@ public class CryptoLiveHashTest {
             .name());
 
     AccountID newlyCreateAccountId1 = null;
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     try {
       newlyCreateAccountId1 = TestHelper
           .getTxReceipt(body.getTransactionID(), stub).getAccountID();

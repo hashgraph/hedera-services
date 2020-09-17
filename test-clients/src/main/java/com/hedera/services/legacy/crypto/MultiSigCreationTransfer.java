@@ -20,6 +20,7 @@ package com.hedera.services.legacy.crypto;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -142,7 +143,7 @@ public class MultiSigCreationTransfer {
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId1 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
@@ -172,7 +173,7 @@ public class MultiSigCreationTransfer {
     log.info("Pre Check Response of Create second multiSig account :: " + response
         .getNodeTransactionPrecheckCode().name());
 
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);
@@ -194,7 +195,7 @@ public class MultiSigCreationTransfer {
         "Pre Check Response of Create Third account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId4 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId4);
@@ -224,7 +225,7 @@ public class MultiSigCreationTransfer {
     Assert.assertEquals(ResponseCodeEnum.OK, transferRes.getNodeTransactionPrecheckCode());
     log.info(
         "Pre Check Response transfer :: " + transferRes.getNodeTransactionPrecheckCode().name());
-    TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
+    TransactionBody transferBody = CommonUtils.extractTransactionBody(transfer1);
     TransactionReceipt txReceipt = TestHelper
         .getTxReceipt(transferBody.getTransactionID(), stub);
     Assert.assertNotNull(txReceipt);

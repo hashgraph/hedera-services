@@ -112,7 +112,7 @@ public class FastTxRecordTest {
     log.info(
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     TransactionRecord fastTxRecord = getFastTransactionRecord(
         body.getTransactionID());
     AccountID newlyCreateAccountId1 = fastTxRecord.getReceipt().getAccountID();
@@ -164,7 +164,7 @@ public class FastTxRecordTest {
         .createAccount(payerAccount, defaultNodeAccount, secondPair, 100000, createAccountFee,
             TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
             TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     TransactionBody.Builder txBody = body.toBuilder();
     txBody.setGenerateRecord(false);
     Transaction transaction1 = transaction.toBuilder().setBodyBytes(txBody.build().toByteString()).build();
@@ -193,7 +193,7 @@ public class FastTxRecordTest {
         .getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode().name());
     Assert.assertEquals(ResponseCodeEnum.RECORD_NOT_FOUND,
         transactionRecord.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode());
-    TransactionBody bodyTr = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody bodyTr = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     // Skip fee data, since there was no Tx it will be zero.
 //		  txRecordFee = transactionRecord.getTransactionGetRecord().getHeader().getCost();
     query = TestHelper.getTxRecordByTxId(bodyTr.getTransactionID(), payerAccount,
