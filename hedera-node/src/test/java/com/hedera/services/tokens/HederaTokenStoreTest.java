@@ -1837,6 +1837,21 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void forcesToTrueKycDefaultWithoutKycKey() {
+		// given:
+		var req = fullyValidAttempt()
+				.clearKycKey()
+				.build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, thisSecond);
+
+		// then:
+		assertEquals(ResponseCodeEnum.OK, result.getStatus());
+		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
+	}
+
+	@Test
 	public void rejectsFreezeDefaultWithoutFreezeKey() {
 		// given:
 		var req = fullyValidAttempt()
