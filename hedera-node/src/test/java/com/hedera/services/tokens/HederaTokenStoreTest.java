@@ -114,7 +114,7 @@ class HederaTokenStoreTest {
 	TokenID misc = IdUtils.asToken("3.2.1");
 	TokenRef miscRef = IdUtils.asIdRef(misc);
 	boolean freezeDefault = true;
-	boolean kycDefault = false;
+	boolean accountsKycGrantedByDefault = false;
 	long autoRenewPeriod = 500_000;
 	long newAutoRenewPeriod = 2_000_000;
 	AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
@@ -1339,9 +1339,9 @@ class HederaTokenStoreTest {
 		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
 	}
 
-	private void givenTokenWithKycKey(boolean kycDefault) {
+	private void givenTokenWithKycKey(boolean accountsKycGrantedByDefault) {
 		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
-		given(token.accountsKycGrantedByDefault()).willReturn(kycDefault);
+		given(token.accountsKycGrantedByDefault()).willReturn(accountsKycGrantedByDefault);
 	}
 
 	@Test
@@ -1482,7 +1482,7 @@ class HederaTokenStoreTest {
 				symbol,
 				name,
 				freezeDefault,
-				kycDefault,
+				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenewAccount));
 		expected.setAutoRenewPeriod(autoRenewPeriod);
@@ -1520,7 +1520,7 @@ class HederaTokenStoreTest {
 				symbol,
 				name,
 				freezeDefault,
-				kycDefault,
+				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
 		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
@@ -1837,7 +1837,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void forcesToTrueKycDefaultWithoutKycKey() {
+	public void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
 		// given:
 		var req = fullyValidAttempt()
 				.clearKycKey()
