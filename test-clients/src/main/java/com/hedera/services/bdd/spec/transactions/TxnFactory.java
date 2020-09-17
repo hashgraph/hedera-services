@@ -162,7 +162,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenManagement() {
+	public Consumer<TokenUpdateTransactionBody.Builder> defaultDef_TokenUpdateTransactionBody() {
 		return builder -> {};
 	}
 
