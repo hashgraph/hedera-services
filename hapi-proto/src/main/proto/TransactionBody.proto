@@ -108,7 +108,7 @@ message TransactionBody {
     TokenTransfers tokenTransfers = 30;
     TokenFreezeAccountTransactionBody tokenFreeze = 31;
     TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32;
-    TokenGrantKyc tokenGrantKyc = 33;
+    TokenGrantKycTransactionBody tokenGrantKyc = 33;
     TokenRevokeKyc tokenRevokeKyc = 34;
     TokenDeletion tokenDeletion = 35;
     TokenUpdateTransactionBody tokenUpdate = 36;

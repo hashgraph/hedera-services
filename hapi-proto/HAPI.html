@@ -1294,7 +1294,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenGrantKyc"><span class="badge">M</span>TokenGrantKyc</a>
+                  <a href="#proto.TokenGrantKycTransactionBody"><span class="badge">M</span>TokenGrantKycTransactionBody</a>
                 </li>
               
               
@@ -9051,8 +9051,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenGrantKyc">TokenGrantKyc</h3>
-        <p></p>
+        <h3 id="proto.TokenGrantKycTransactionBody">TokenGrantKycTransactionBody</h3>
+        <p>Grants KYC to the account for the given token. Must be signed by the Token's kycKey. If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.</p><p>Once executed the Account is marked as KYC Granted.</p>
 
         
           <table class="field-table">
@@ -9065,14 +9065,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be granted KYC. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be KYCed </p></td>
                 </tr>
               
             </tbody>
@@ -9905,7 +9905,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenGrantKyc</td>
-                  <td><a href="#proto.TokenGrantKyc">TokenGrantKyc</a></td>
+                  <td><a href="#proto.TokenGrantKycTransactionBody">TokenGrantKycTransactionBody</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
