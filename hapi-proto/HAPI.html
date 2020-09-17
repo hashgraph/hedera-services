@@ -9425,7 +9425,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</h3>
-        <p>Updates an already created Token. If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in whic case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.</p>
+        <p>Updates an already created Token.</p><p>If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.</p>
 
         
           <table class="field-table">
@@ -9438,84 +9438,84 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>treasury</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>adminKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>freezeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>wipeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>supplyKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>The Token to be updated </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The new Symbol of the Token. Must be a unique, case-insensitive UTF-8 alphanumeric string identifying the token. </p></td>
                 </tr>
               
                 <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The new Name of the Token. Must be a unique string of ASCII characters. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>treasury</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kycKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>freezeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Freeze key of the Token. If the Token does not have currently a Freeze key, transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>wipeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>supplyKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY. </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The new account which will be automatically charged to renew the token&#39;s expiration, at autoRenewPeriod interval. </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewPeriod</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The new interval at which the auto-renew account will be charged to extend the token&#39;s expiry. </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME </p></td>
                 </tr>
               
             </tbody>
