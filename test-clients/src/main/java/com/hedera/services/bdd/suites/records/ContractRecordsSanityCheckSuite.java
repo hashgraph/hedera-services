@@ -75,7 +75,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 								.balance(1_000L),
 						takeBalanceSnapshots("toBeDeleted", FUNDING, NODE, GENESIS)
 				)).when(
-						contractDelete("toBeDeleted").via("txn")
+						contractDelete("toBeDeleted").via("txn").transferAccount(GENESIS)
 				).then(
 						validateTransferListForBalances(
 								"txn",

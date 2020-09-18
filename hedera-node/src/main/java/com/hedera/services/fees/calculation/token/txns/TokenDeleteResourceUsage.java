@@ -23,27 +23,18 @@ package com.hedera.services.fees.calculation.token.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import java.util.function.BiFunction;
+
 public class TokenDeleteResourceUsage implements TxnResourceUsageEstimator {
-	public static final FeeData MOCK_TOKEN_DELETE_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(5)
-					.setBpt(5)
-					.setVpt(5)
-					.setRbh(5)
-					.setSbh(5)
-					.setGas(5)
-					.setTv(5)
-					.setBpr(5)
-					.setSbpr(5)
-					.build(), 5);
+	static BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory = TokenDeleteUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
@@ -51,7 +42,9 @@ public class TokenDeleteResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-		return MOCK_TOKEN_DELETE_USAGE;
+	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		var estimate = factory.apply(txn, sigUsage);
+		return estimate.get();
 	}
 }

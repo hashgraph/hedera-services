@@ -129,20 +129,20 @@ networks:
     defaultNode: 3
     ensureScenarioPayerHbars: 200
     nodes:
-    - {account: 3, ipv4Addr: 35.237.182.66}
-    - {account: 4, ipv4Addr: 35.245.226.22}
-    - {account: 5, ipv4Addr: 34.68.9.203}
-    - {account: 6, ipv4Addr: 34.83.131.197}
-    - {account: 7, ipv4Addr: 34.94.236.63}
-    - {account: 8, ipv4Addr: 35.203.26.115}
-    - {account: 9, ipv4Addr: 34.77.3.213}
-    - {account: 10, ipv4Addr: 35.197.237.44}
-    - {account: 11, ipv4Addr: 35.246.250.176}
-    - {account: 12, ipv4Addr: 34.90.117.105}
-    - {account: 13, ipv4Addr: 35.200.57.21}
-    - {account: 14, ipv4Addr: 34.92.120.143}
-    - {account: 15, ipv4Addr: 34.87.47.168}
-    scenarioPayer: 44762
+    - {account: 3, ipv4Addr: 35.237.208.135}
+    - {account: 4, ipv4Addr: 35.236.222.232}
+    - {account: 5, ipv4Addr: 34.68.193.194}
+    - {account: 6, ipv4Addr: 34.83.9.37}
+    - {account: 7, ipv4Addr: 34.94.94.224}
+    - {account: 8, ipv4Addr: 35.203.83.23}
+    - {account: 9, ipv4Addr: 34.77.100.22}
+    - {account: 10, ipv4Addr: 35.242.186.231}
+    - {account: 11, ipv4Addr: 35.246.141.12}
+    - {account: 12, ipv4Addr: 34.90.168.32}
+    - {account: 13, ipv4Addr: 35.200.13.38}
+    - {account: 14, ipv4Addr: 34.92.103.251}
+    - {account: 15, ipv4Addr: 35.198.224.198}
+    scenarioPayer: 53186
     scenarios:
       consensus: {persistent: 39286}
       contract:
@@ -150,4 +150,7 @@ networks:
       crypto: {receiver: 44771, sender: 44770}
       file:
         persistent: {contents: MrBleaney.txt, num: 39283}
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [121]
 sleepMsBeforeNextNode: 2000

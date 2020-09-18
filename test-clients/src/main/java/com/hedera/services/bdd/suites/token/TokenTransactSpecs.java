@@ -25,7 +25,6 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -63,7 +62,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						senderSigsAreChecked(),
 						senderSigsAreValid(),
 						balancesAreChecked(),
-						negativeBalanceTransactionChecked()
+						nonZeroNetTransfersRejected(),
 				}
 		);
 	}
@@ -80,30 +79,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("firstTreasury")
 				).then(
 						tokenTransact(
-								moving(100_000_000_000_000L, A_TOKEN).between("firstTreasury", "beneficiary")
+								moving(100_000_000_000_000L, A_TOKEN)
+										.between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
-				);
-	}
-
-	public HapiApiSpec negativeBalanceTransactionChecked() {
-		return defaultHapiSpec("BalancesAreChecked")
-				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
-						cryptoCreate("firstTreasury"),
-						cryptoCreate("secondTreasury"),
-						cryptoCreate("beneficiary")
-				).when(
-						tokenCreate(A_TOKEN)
-								.initialFloat(100)
-								.treasury("firstTreasury")
-				).then(
-						tokenTransact(
-								moving(-1, A_TOKEN).between("firstTreasury", "beneficiary")
-						).payingWith("payer")
-								.signedBy("payer", "firstTreasury")
-								.hasKnownStatus(INVALID_TOKEN_TRANSFER_AMOUNT)
 				);
 	}
 
@@ -221,6 +201,26 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 						))
+				);
+	}
+
+	public HapiApiSpec nonZeroNetTransfersRejected() {
+		return defaultHapiSpec("NonZeroNetTransfersRejected")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate("firstTreasury"),
+						cryptoCreate("beneficiary")
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialFloat(100)
+								.treasury("firstTreasury")
+				).then(
+						tokenTransact(
+								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(1, A_TOKEN).from("firstTreasury")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury")
+								.hasKnownStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
 				);
 	}
 
