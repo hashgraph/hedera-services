@@ -641,7 +641,8 @@ public class KeyExpansion {
         for (Key aKey : tKeys) {
           if(i++ >= thd) // if threshold is reached, stop expanding keys
 		  {
-			  break;
+		    log.debug("Threshold reached, stopping key expansion.");
+            break;
 		  }
           expandKeyMinimum4Signing(aKey, depth, expandedKeys);
         }
