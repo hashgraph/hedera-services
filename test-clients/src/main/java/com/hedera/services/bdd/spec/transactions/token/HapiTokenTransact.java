@@ -24,13 +24,15 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.token.TokenMintUsage;
+import com.hedera.services.usage.token.TokenTransactUsage;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,7 +49,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toList;
@@ -83,37 +86,25 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 					: List.of(senderEntry);
 		}
 
-		public List<TokenTransfer> specializedFor(HapiApiSpec spec) {
-			List<TokenTransfer> transfers = new ArrayList<>();
+		public TokenRefTransferList specializedFor(HapiApiSpec spec) {
+			var scopedTransfers = TokenRefTransferList.newBuilder();
 			if (useSymbols)	 {
 				var symbol = spec.registry().getSymbol(token);
-				transfers.add(symbolicTransfer(sender, symbol, -amount, spec));
-				if (receiver.isPresent()) {
-					transfers.add(symbolicTransfer(receiver.get(), symbol, +amount, spec));
-				}
+				scopedTransfers.setToken(TokenRef.newBuilder().setSymbol(symbol).build());
 			} else {
 				var id = spec.registry().getTokenID(token);
-				transfers.add(idTransfer(sender, id, -amount, spec));
-				if (receiver.isPresent()) {
-					transfers.add(idTransfer(receiver.get(), id, +amount, spec));
-				}
+				scopedTransfers.setToken(TokenRef.newBuilder().setTokenId(id).build());
 			}
-
-			return transfers;
+			scopedTransfers.addTransfers(adjustment(sender, -amount, spec));
+			if (receiver.isPresent()) {
+				scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
+			}
+			return scopedTransfers.build();
 		}
 
-		private TokenTransfer idTransfer(String name, TokenID id, long value, HapiApiSpec spec) {
-			return TokenTransfer.newBuilder()
-					.setAccount(spec.registry().getAccountID(name))
-					.setToken(TokenRef.newBuilder().setTokenId(id))
-					.setAmount(value)
-					.build();
-		}
-
-		private TokenTransfer symbolicTransfer(String name, String symbol, long value, HapiApiSpec spec) {
-			return TokenTransfer.newBuilder()
-					.setAccount(spec.registry().getAccountID(name))
-					.setToken(TokenRef.newBuilder().setSymbol(symbol))
+		private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
+			return AccountAmount.newBuilder()
+					.setAccountID(spec.registry().getAccountID(name))
 					.setAmount(value)
 					.build();
 		}
@@ -164,24 +155,11 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenTransact, this::mockTokenTransactUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenTransact, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockTokenTransactUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(2)
-						.setBpt(2)
-						.setVpt(2)
-						.setRbh(2)
-						.setSbh(2)
-						.setGas(2)
-						.setTv(2)
-						.setBpr(2)
-						.setSbpr(2)
-						.build(), 2);
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return TokenTransactUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override
@@ -190,7 +168,7 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 				.txns()
 				.<TokenTransfers, TokenTransfers.Builder>body(
 						TokenTransfers.class, b -> {
-							b.addAllTransfers(transfersFor(spec));
+							b.addAllTokenTransfers(transfersFor(spec));
 						});
 		return b -> b.setTokenTransfers(opBody);
 	}
@@ -215,8 +193,18 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		};
 	}
 
-	private List<TokenTransfer> transfersFor(HapiApiSpec spec) {
-		return providers.stream().map(p -> p.specializedFor(spec)).flatMap(List::stream).collect(toList());
+	private List<TokenRefTransferList> transfersFor(HapiApiSpec spec) {
+		Map<TokenRef, List<AccountAmount>> aggregated = providers.stream()
+				.map(p -> p.specializedFor(spec))
+				.collect(groupingBy(
+						TokenRefTransferList::getToken,
+						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
+		return aggregated.entrySet().stream()
+				.map(entry -> TokenRefTransferList.newBuilder()
+						.setToken(entry.getKey())
+						.addAllTransfers(entry.getValue())
+						.build())
+				.collect(toList());
 	}
 
 	@Override

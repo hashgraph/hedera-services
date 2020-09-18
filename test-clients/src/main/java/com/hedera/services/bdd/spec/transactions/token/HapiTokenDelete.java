@@ -24,7 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	static final Logger log = LogManager.getLogger(HapiTokenDelete.class);
@@ -63,24 +64,11 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenDelete, this::mockTokenDeleteUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockTokenDeleteUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(5)
-						.setBpt(5)
-						.setVpt(5)
-						.setRbh(5)
-						.setSbh(5)
-						.setGas(5)
-						.setTv(5)
-						.setBpr(5)
-						.setSbpr(5)
-						.build(), 5);
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return TokenDeleteUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override

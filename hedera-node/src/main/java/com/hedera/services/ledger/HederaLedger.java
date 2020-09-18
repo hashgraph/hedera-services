@@ -36,8 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -278,13 +277,19 @@ public class HederaLedger {
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
 		var validity = OK;
 
-		for (TokenTransfer transfer : transfers.getTransfersList())	{
-			var id = tokenStore.resolve(transfer.getToken());
+		for (TokenRefTransferList xfers : transfers.getTokenTransfersList())	{
+			var id = tokenStore.resolve(xfers.getToken());
 			if (id == TokenStore.MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
 			}
 			if (validity == OK) {
-				validity = adjustTokenBalance(transfer.getAccount(), id, transfer.getAmount());
+				var adjustments = xfers.getTransfersList();
+				for (AccountAmount adjustment : adjustments) {
+					validity = adjustTokenBalance(adjustment.getAccountID(), id, adjustment.getAmount());
+					if (validity != OK) {
+						break;
+					}
+				}
 			}
 			if (validity != OK) {
 				break;
