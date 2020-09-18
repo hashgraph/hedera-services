@@ -42,17 +42,17 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenBurnCoins;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
-import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -126,35 +126,35 @@ public class TxnFactory {
 		return (T)opBuilder.build();
 	}
 
-	public Consumer<TokenWipeAccount.Builder> defaultDef_TokenWipeAccount() {
+	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccountTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenRevokeKyc.Builder> defaultDef_TokenRevokeKyc() {
+	public Consumer<TokenRevokeKycTransactionBody.Builder> defaultDef_TokenRevokeKycTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenGrantKyc.Builder> defaultDef_TokenGrantKyc() {
+	public Consumer<TokenGrantKycTransactionBody.Builder> defaultDef_TokenGrantKycTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenBurnCoins.Builder> defaultDef_TokenBurnCoins() {
+	public Consumer<TokenBurnTransactionBody.Builder> defaultDef_TokenBurnTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenMintCoins.Builder> defaultDef_TokenMintCoins() {
+	public Consumer<TokenMintTransactionBody.Builder> defaultDef_TokenMintTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenDeletion.Builder> defaultDef_TokenDeletion() {
+	public Consumer<TokenDeleteTransactionBody.Builder> defaultDef_TokenDeleteTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenFreeze.Builder> defaultDef_TokenFreeze() {
+	public Consumer<TokenFreezeAccountTransactionBody.Builder> defaultDef_TokenFreezeAccountTransactionBody() {
 		return builder -> {};
 	}
 
-	public Consumer<TokenUnfreeze.Builder> defaultDef_TokenUnfreeze() {
+	public Consumer<TokenUnfreezeAccountTransactionBody.Builder> defaultDef_TokenUnfreezeAccountTransactionBody() {
 		return builder -> {};
 	}
 

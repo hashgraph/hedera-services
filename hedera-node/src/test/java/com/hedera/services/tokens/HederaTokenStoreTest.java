@@ -31,9 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -254,7 +252,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.delete(miscRef);
 
 		// then:
-		assertEquals(ResponseCodeEnum.UNAUTHORIZED, outcome);
+		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
 	}
 
 	@Test

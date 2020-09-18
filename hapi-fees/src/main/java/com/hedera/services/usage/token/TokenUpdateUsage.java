@@ -5,7 +5,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeBuilder;
 
@@ -87,11 +87,11 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 		var op = tokenOp.getTokenUpdate();
 
 		long newMutableRb = 0;
-		newMutableRb += keySizeIfPresent(op, TokenManagement::hasKycKey, TokenManagement::getKycKey);
-		newMutableRb += keySizeIfPresent(op, TokenManagement::hasWipeKey, TokenManagement::getWipeKey);
-		newMutableRb += keySizeIfPresent(op, TokenManagement::hasAdminKey, TokenManagement::getAdminKey);
-		newMutableRb += keySizeIfPresent(op, TokenManagement::hasSupplyKey, TokenManagement::getSupplyKey);
-		newMutableRb += keySizeIfPresent(op, TokenManagement::hasFreezeKey, TokenManagement::getFreezeKey);
+		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
+		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasWipeKey, TokenUpdateTransactionBody::getWipeKey);
+		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey);
+		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
+		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
 		if (!removesAutoRenewAccount(op) && (currentlyUsingAutoRenew || op.hasAutoRenewAccount())) {
 			newMutableRb += BASIC_ENTITY_ID_SIZE;
 		}
@@ -110,14 +110,14 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 		return usageEstimator.get();
 	}
 
-	private long noRbImpactBytes(TokenManagement op) {
+	private long noRbImpactBytes(TokenUpdateTransactionBody op) {
 		return ((op.getExpiry() > 0) ? AMOUNT_REPR_BYTES : 0) +
 				((op.getAutoRenewPeriod() > 0) ? AMOUNT_REPR_BYTES : 0) +
 				(op.hasTreasury() ? BASIC_ENTITY_ID_SIZE : 0) +
 				(op.hasAutoRenewAccount() ? BASIC_ENTITY_ID_SIZE : 0);
 	}
 
-	private boolean removesAutoRenewAccount(TokenManagement op) {
+	private boolean removesAutoRenewAccount(TokenUpdateTransactionBody op) {
 		return op.hasAutoRenewAccount() && op.getAutoRenewAccount().equals(AccountID.getDefaultInstance());
 	}
 

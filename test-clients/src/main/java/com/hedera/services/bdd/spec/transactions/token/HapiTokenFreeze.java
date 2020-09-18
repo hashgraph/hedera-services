@@ -28,7 +28,7 @@ import com.hedera.services.usage.token.TokenFreezeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -77,10 +77,10 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenFreeze opBody = spec
+		TokenFreezeAccountTransactionBody opBody = spec
 				.txns()
-				.<TokenFreeze, TokenFreeze.Builder>body(
-						TokenFreeze.class, b -> {
+				.<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(
+						TokenFreezeAccountTransactionBody.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});
