@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import org.apache.commons.codec.DecoderException;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -132,23 +133,27 @@ public class TransactionSigner {
    * private keys.
    * @return transaction with signatures as a SignatureMap object
    */
-  public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
+  public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
     return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap, false);
   }
 
-  public static Transaction signTransactionComplexWithSigMap(Transaction transaction, List<Key> keys,
+  public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap, boolean appendSigMap) throws Exception {
     byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
     SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
 
+    Transaction.Builder builder = (transaction instanceof Transaction)
+            ? ((Transaction) transaction).toBuilder()
+            : ((Transaction.Builder) transaction);
+
     if (appendSigMap) {
       SignatureMap currentSigMap = CommonUtils.extractSignatureMapOrUseDefault(transaction);
       SignatureMap sigMapToSet = currentSigMap.toBuilder().addAllSigPair(sigsMap.getSigPairList()).build();
-      return transaction.toBuilder().setSigMap(sigMapToSet).build();
+      return builder.setSigMap(sigMapToSet).build();
     }
 
-    return transaction.toBuilder().setSigMap(sigsMap).build();
+    return builder.setSigMap(sigsMap).build();
   }
 
   /**
