@@ -198,6 +198,7 @@ public abstract class HapiSpecOperation {
 		if (txnSubmitted != Transaction.getDefaultInstance()) {
 			TransactionID txnId = extractTxnId(txnSubmitted);
 			spec.registry().saveTxnId(txnName, txnId);
+			spec.registry().saveBytes(txnName, txnSubmitted.toByteString());
 		}
 	}
 

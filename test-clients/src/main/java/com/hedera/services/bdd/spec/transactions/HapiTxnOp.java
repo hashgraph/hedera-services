@@ -83,7 +83,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	private long submitTime = 0L;
 	private TxnObs stats;
 	private boolean deferStatusResolution = false;
-	private boolean saveTransaction = false;
 
 	protected boolean acceptAnyStatus = false;
 	protected boolean acceptAnyPrecheck = false;
@@ -158,9 +157,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 			/* Used by superclass to perform standard housekeeping. */
 			txnSubmitted = txn;
-			if (saveTransaction) {
-				spec.registry().saveBytes(txnName, txn.toByteString());
-			}
 
 			actualPrecheck = response.getNodeTransactionPrecheckCode();
 			if (retryPrechecks.isPresent() && retryPrechecks.get().contains(actualPrecheck)) {
@@ -444,7 +440,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxnId = true;
-		saveTransaction = true;
 		return self();
 	}
 
@@ -535,11 +530,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T deferStatusResolution() {
 		deferStatusResolution = true;
-		return self();
-	}
-
-	public T saveTransaction() {
-		saveTransaction = true;
 		return self();
 	}
 

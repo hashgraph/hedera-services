@@ -58,7 +58,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 						fileCreate("test"),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				)).when(
-						fileAppend("test").via("txn").saveTransaction().fee(95_000_000L)
+						fileAppend("test").via("txn").fee(95_000_000L)
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
@@ -70,7 +70,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				).when(
-						fileCreate("test").via("txn").saveTransaction()
+						fileCreate("test").via("txn")
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
@@ -83,7 +83,7 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 						fileCreate("test"),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
 				)).when(
-						fileDelete("test").via("txn").saveTransaction()
+						fileDelete("test").via("txn")
 				).then(
 						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
 						validateRecordTransactionFees("txn")
@@ -99,7 +99,6 @@ public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 						fileUpdate("test")
 								.contents("Here are some new contents!")
 								.via("txn")
-								.saveTransaction()
 								.fee(95_000_000L)
 				).then(
 						getFileInfo("test").expectStrictCostAnswer(),
