@@ -87,9 +87,7 @@ public class KeyFactory implements Serializable {
 	}
 
 	public Transaction getSigned(Transaction.Builder txn, List<Key> signers) throws Exception {
-		SignatureMap sigMap = TransactionSigner.signAsSignatureMap(txn.getBodyBytes().toByteArray(), signers, pkMap);
-		txn.setSigMap(sigMap);
-		return txn.build();
+		return TransactionSigner.signTransactionComplexWithSigMap(txn, signers, pkMap);
 	}
 
 	public void exportSimpleKey(
@@ -183,7 +181,8 @@ public class KeyFactory implements Serializable {
 			Transaction.Builder txn,
 			SigMapGenerator.Nature sigMapGen,
 			List<Entry<Key, SigControl>> authors) throws Throwable {
-		Ed25519Signing signing = new Ed25519Signing(txn.getBodyBytes().toByteArray(), authors);
+		Ed25519Signing signing = new Ed25519Signing(
+				com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes(txn), authors);
 		List<Entry<byte[], byte[]>> keySigs = signing.completed();
 		SignatureMap sigMap = TrieSigMapGenerator.withNature(sigMapGen).forEd25519Sigs(keySigs);
 		txn.setSigMap(sigMap);
