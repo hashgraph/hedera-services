@@ -254,19 +254,22 @@ public class ProtectedAccountUpdateTests extends ProtectedEntityTests {
       for(int j = 0; j < accounts.length; j++) {
         AccountID account = genAccountID(accounts[j]);
         if(payerID.equals(account)) {// self update is NOT OK
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED, null, true, null);
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED,
+                  null, true, null);
           log.info("update failed: payer=" + payerID.getAccountNum() + ", target acount=" + account);
-        }
-        else if(account.getAccountNum() >= 51 && account.getAccountNum() <= 80)  // master can update protected accounts 51 through 80 without needing sig of updated account
-		{
-			updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false, null);
-		} else if(account.getAccountNum() <= 1000) { // master can NOT update protected accounts other than 51 through 80
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED, null, false, null);
+        } else if(account.getAccountNum() >= 51 && account.getAccountNum() <= 80) {
+          // master can update protected accounts 51 through 80 without needing sig of updated account
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  false, null);
+		} else if(account.getAccountNum() <= 1000) {
+          // master can NOT update protected accounts other than 51 through 80
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED,
+                  null, false, null);
           log.info("update failed: payer=" + payerID.getAccountNum() + ", target acount=" + account);
-        }
-        else // can update non-protected accounts but need sig of the existing account
-		{
-			updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, true, null);
+        } else {
+          // can update non-protected accounts but need sig of the existing account
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  true, null);
 		}
         log.info("update success: payer=" + payerID.getAccountNum() + ", target acount=" + account);
       }
@@ -301,16 +304,19 @@ public class ProtectedAccountUpdateTests extends ProtectedEntityTests {
         
       for(int j = 0; j < accounts.length; j++) {
         AccountID account = genAccountID(accounts[j]);
-        if(payerID.equals(account)) {// self update is OK
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, true, null);
-        }
-        else if(account.getAccountNum() <= 1000) { // can NOT update protected accounts except self
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED, null, false, null);
+        if(payerID.equals(account)) {
+          // self update is OK
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  true, null);
+        } else if(account.getAccountNum() <= 1000) {
+          // can NOT update protected accounts except self
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED,
+                  null, false, null);
           log.info("update failed: payer=" + payerID.getAccountNum() + ", target acount=" + account);
-        }
-        else // can update non-protected accounts but need sig of the existing account
-		{
-			updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, true, null);
+        } else {
+          // can update non-protected accounts but need sig of the existing account
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  true, null);
 		}
         log.info("update success: payer=" + payerID.getAccountNum() + ", target acount=" + account);
       }
@@ -345,16 +351,19 @@ public class ProtectedAccountUpdateTests extends ProtectedEntityTests {
         
       for(int j = 0; j < accounts.length; j++) {
         AccountID account = genAccountID(accounts[j]);
-        if(payerID.equals(account)) {// self update is OK
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, true, null);
-        }
-        else if(account.getAccountNum() <= 1000) { // can NOT update protected accounts
-          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED, null, false, null);
+        if(payerID.equals(account)) {
+          // self update is OK
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  true, null);
+        } else if(account.getAccountNum() <= 1000) {
+          // can NOT update protected accounts
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.AUTHORIZATION_FAILED,
+                  null, false, null);
           log.info("update failed: payer=" + payerID.getAccountNum() + ", target acount=" + account);
-        }
-        else // can update non-protected accounts but need sig of the existing account
-		{
-			updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, true, null);
+        } else {
+          // can update non-protected accounts but need sig of the existing account
+          updateAccount(account, payerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS,
+                  true, null);
 		}
         log.info("update success: payer=" + payerID.getAccountNum() + ", target acount=" + account);
       }

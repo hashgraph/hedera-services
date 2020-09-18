@@ -75,12 +75,12 @@ public class ThreadPerAPITest extends UmbrellaTest {
         String op_batchStr, int threadCounts, int maxTpsDesiredPerThread, boolean retrieveTxReceipt,
         int markerWindow, long retryFreq, boolean isExponentialBackoff) throws Throwable {
 
-    if(op_batchStr != null) // use command line to config test
-	{
-		initTest(op_batchStr, threadCounts, maxTpsDesiredPerThread);
-	} else // use umbrellaTest.properties to config
-	{
-		initTest();
+    if(op_batchStr != null) {
+      // use command line to config test
+      initTest(op_batchStr, threadCounts, maxTpsDesiredPerThread);
+	} else {
+      // use umbrellaTest.properties to config
+      initTest();
 	}
     SmartContractServiceTest rt = new SmartContractServiceTest(null);
     int apiCnt = UmbrellaServiceRunnable.activeAPIs.size(); // non get receipt apis

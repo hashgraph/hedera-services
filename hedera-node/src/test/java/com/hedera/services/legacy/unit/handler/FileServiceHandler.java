@@ -145,8 +145,7 @@ public class FileServiceHandler {
       if((entity instanceof AccountID) &&
           isMasterAccount((AccountID) entity)) { // master account cannot update itself
         return false;
-      }
-      else if (seq >= 50 && seq <= 80) {
+      } else if (seq >= 50 && seq <= 80) {
         rv = true;
       } else if(seq == 101 || seq == 102 || seq == 111 || seq == 112
     		  || seq == 121 || seq == 122 ) {
