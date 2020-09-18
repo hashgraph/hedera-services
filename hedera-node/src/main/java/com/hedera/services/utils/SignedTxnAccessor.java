@@ -70,11 +70,7 @@ public class SignedTxnAccessor {
 		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn);
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
-		if (signedTxn.getSignedTransactionBytes().isEmpty()) {
-			hash = MiscUtils.sha384HashOf(signedTxnBytes);
-		} else {
-			hash = MiscUtils.sha384HashOf(signedTxn.getSignedTransactionBytes().toByteArray());
-		}
+		hash = CommonUtils.sha384HashOf(signedTxn);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {

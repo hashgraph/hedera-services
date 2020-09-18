@@ -620,8 +620,8 @@ public class MiscUtilsTest {
 		given(transaction.toByteArray()).willReturn(testBytes);
 		given(accessor.getSignedTxn()).willReturn(transaction);
 
-		assertArrayEquals(expectedHash, uncheckedSha384Hash(testBytes));
-		assertArrayEquals(expectedHash, sha384HashOf(testBytes).toByteArray());
+		assertArrayEquals(expectedHash, CommonUtils.uncheckedSha384Hash(testBytes));
+		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
 	}
 
 	public static class BodySetter<T> {

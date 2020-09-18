@@ -43,6 +43,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 /**
@@ -283,6 +285,26 @@ public class CommonUtils {
     } else {
       return (Transaction.Builder) transactionOrBuilder;
     }
+  }
+
+  public static byte[] uncheckedSha384Hash(byte[] data) {
+    try {
+      return MessageDigest.getInstance("SHA-384").digest(data);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  public static ByteString sha384HashOf(byte[] byteArray) {
+    return ByteString.copyFrom(uncheckedSha384Hash(byteArray));
+  }
+
+  public static ByteString sha384HashOf(Transaction transaction) {
+    if (transaction.getSignedTransactionBytes().isEmpty()) {
+      return sha384HashOf(transaction.toByteArray());
+    }
+
+    return sha384HashOf(transaction.getSignedTransactionBytes().toByteArray());
   }
 
   public static void writeTxId2File(String txIdString) throws IOException {
