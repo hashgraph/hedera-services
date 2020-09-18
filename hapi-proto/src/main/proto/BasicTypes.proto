@@ -88,12 +88,14 @@ message TokenRef {
     }
 }
 
+/* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenFreezeStatus {
     FreezeNotApplicable = 0;
     Frozen = 1;
     Unfrozen = 2;
 }
 
+/* Possible KYC statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenKycStatus {
     KycNotApplicable = 0;
     Granted = 1;
