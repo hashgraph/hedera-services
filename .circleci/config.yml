@@ -1945,7 +1945,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git submodule update --init --recursive --checkout
             cd /swirlds-platform; git checkout 83d6374; git submodule update
-            cd /swirlds-platform/regression;   git checkout 334-D-Test-Update-Freeze;
+            cd /swirlds-platform/regression;   git checkout 334-D-Test-Update-Freeze; git log -2
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
