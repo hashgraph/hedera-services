@@ -14,7 +14,7 @@ updateServiceMainJava()
     cd ../hedera-node
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
     sleep 1
-    mvn install -DskipTests
+    mvn --no-transfer-progress install -DskipTests
     sleep 1
     afterTime=`date +'%Y-%m-%d %H:%M:%S'`
 
@@ -31,7 +31,7 @@ updateServiceMainJava()
     git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
     # rebuild after checkout to recover binary
-    mvn install -DskipTests
+    mvn --no-transfer-progress install -DskipTests
 
     cd -
 
