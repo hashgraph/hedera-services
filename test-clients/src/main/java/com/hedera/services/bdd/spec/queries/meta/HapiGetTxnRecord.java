@@ -58,7 +58,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	String txn;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
-	boolean validateTxnHash = false;
+	boolean validateTxnHash = true;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
