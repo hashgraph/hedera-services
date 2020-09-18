@@ -72,7 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hedera.services.utils.MiscUtils.uncheckedSha384Hash;
 
 @RunWith(JUnitPlatform.class)
 public class AwareTransactionContextTest {
@@ -116,7 +115,7 @@ public class AwareTransactionContextTest {
 	private TransactionBody txn;
 	private TransactionRecord record;
 	private String memo = "Hi!";
-	private ByteString hash = ByteString.copyFrom(uncheckedSha384Hash(memo.getBytes()));
+	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
 	private TransactionID txnId = TransactionID.newBuilder()
 					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 					.setAccountID(payer)
