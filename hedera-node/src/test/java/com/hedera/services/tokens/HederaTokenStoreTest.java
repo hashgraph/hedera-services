@@ -481,7 +481,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustFloatBy(-adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
 		verify(ledger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
@@ -510,7 +510,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustFloatBy(-adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
 		verify(ledger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
@@ -1178,7 +1178,7 @@ class HederaTokenStoreTest {
 		assertSame(token, captor.getValue().token());
 		assertEquals(-oldSupply, (long) captor.getValue().value());
 		// and:
-		verify(token).adjustFloatBy(-oldSupply);
+		verify(token).adjustTotalSupplyBy(-oldSupply);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, treasury, -oldSupply);
 	}
@@ -1213,7 +1213,7 @@ class HederaTokenStoreTest {
 		assertEquals(adjustment, (long) captor.getValue().value());
 		// and:
 		verify(tokens).getForModify(fromTokenId(misc));
-		verify(token).adjustFloatBy(adjustment);
+		verify(token).adjustTotalSupplyBy(adjustment);
 		verify(tokens).replace(fromTokenId(misc), token);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment);

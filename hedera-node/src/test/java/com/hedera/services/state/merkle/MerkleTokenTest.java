@@ -506,7 +506,7 @@ class MerkleTokenTest {
 	@Test
 	public void adjustsFloatWhenValid() {
 		// when:
-		subject.adjustFloatBy(500_000);
+		subject.adjustTotalSupplyBy(500_000);
 
 		// then:
 		assertEquals(1_500_000, subject.totalSupply());
@@ -515,6 +515,6 @@ class MerkleTokenTest {
 	@Test
 	public void throwsIaeIfFloatGoesNegative() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.adjustFloatBy(-1_500_000));
+		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(-1_500_000));
 	}
 }

@@ -403,7 +403,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.autoRenewAccount = autoRenewAccount;
 	}
 
-	public void adjustFloatBy(long amount) {
+	public void adjustTotalSupplyBy(long amount) {
 		var newFloat = totalSupply + amount;
 		if (newFloat < 0) {
 			throw new IllegalArgumentException(String.format("Cannot set token float to %d!", newFloat));

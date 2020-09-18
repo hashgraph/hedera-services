@@ -290,7 +290,7 @@ public class HederaTokenStore implements TokenStore {
 
 			adjustUnchecked(aId, tId, token, -amount);
 			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustFloatBy(-amount));
+			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
@@ -335,7 +335,7 @@ public class HederaTokenStore implements TokenStore {
 		if (toBeUpdatedTotalSupply < 0) {
 			return failure;
 		}
-		apply(tId, t -> t.adjustFloatBy(change));
+		apply(tId, t -> t.adjustTotalSupplyBy(change));
 		return adjustBalance(token.treasury().toGrpcAccountId(), tId, change);
 	}
 
