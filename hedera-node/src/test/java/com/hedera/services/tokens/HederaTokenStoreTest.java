@@ -25,11 +25,13 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -50,6 +52,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -90,7 +93,8 @@ class HederaTokenStoreTest {
 	EntityIdSource ids;
 	GlobalDynamicProperties properties;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
-	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	HederaLedger hederaLedger;
 
 	MerkleToken token;
@@ -152,15 +156,17 @@ class HederaTokenStoreTest {
 
 		hederaLedger = mock(HederaLedger.class);
 
-		ledger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
-		given(ledger.exists(treasury)).willReturn(true);
-		given(ledger.exists(autoRenewAccount)).willReturn(true);
-		given(ledger.exists(newAutoRenewAccount)).willReturn(true);
-		given(ledger.exists(sponsor)).willReturn(true);
-		given(ledger.get(treasury, IS_DELETED)).willReturn(false);
-		given(ledger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
-		given(ledger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
-		given(ledger.getTokenRef(treasury)).willReturn(account);
+		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
+		tokenRelsLedger = (TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>)
+				mock(TransactionalLedger.class);
+		given(accountsLedger.exists(treasury)).willReturn(true);
+		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
+		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
+		given(accountsLedger.exists(sponsor)).willReturn(true);
+		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
+		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
+		given(accountsLedger.getTokenRef(treasury)).willReturn(account);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
@@ -173,9 +179,15 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenSymbolLength()).willReturn(MAX_TOKEN_SYMBOL_LENGTH);
 		given(properties.maxTokensNameLength()).willReturn(MAX_TOKEN_NAME_LENGTH);
 
-		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens);
-		subject.setLedger(ledger);
+		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
+		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
+	}
+
+	@Test
+	public void injectsTokenRelsLedger() {
+		// expect:
+		verify(hederaLedger).setTokenRelsLedger(tokenRelsLedger);
 	}
 
 	@Test
@@ -331,7 +343,7 @@ class HederaTokenStoreTest {
 		given(bToken.name()).willReturn("name2");
 
 		// when:
-		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens);
+		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 
 		// then:
 		assertEquals(2, subject.symbolKeyedIds.size());
@@ -372,7 +384,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void freezingRejectsMissingAccount() {
-		given(ledger.exists(sponsor)).willReturn(false);
+		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
 		var status = subject.freeze(sponsor, misc);
@@ -383,7 +395,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void grantingKycRejectsMissingAccount() {
-		given(ledger.exists(sponsor)).willReturn(false);
+		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
 		var status = subject.grantKyc(sponsor, misc);
@@ -394,7 +406,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void revokingKycRejectsMissingAccount() {
-		given(ledger.exists(sponsor)).willReturn(false);
+		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
 		var status = subject.revokeKyc(sponsor, misc);
@@ -405,7 +417,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void wipingRejectsMissingAccount() {
-		given(ledger.exists(sponsor)).willReturn(false);
+		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
 		var status = subject.wipe(sponsor, misc, adjustment, false);
@@ -446,7 +458,7 @@ class HederaTokenStoreTest {
 		// setup:
 		long balance = 1_234L;
 		given(token.hasWipeKey()).willReturn(false);
-		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.getTokenBalance(misc)).willReturn(balance);
@@ -466,7 +478,7 @@ class HederaTokenStoreTest {
 		long balance = 1_234L;
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
 		given(token.hasWipeKey()).willReturn(false);
-		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.getTokenBalance(misc)).willReturn(balance);
@@ -480,7 +492,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
 		verify(token).adjustFloatBy(-adjustment);
-		verify(ledger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
+		verify(accountsLedger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -493,7 +505,7 @@ class HederaTokenStoreTest {
 		long balance = 1_234L;
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
 		given(token.hasWipeKey()).willReturn(true);
-		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
@@ -509,7 +521,7 @@ class HederaTokenStoreTest {
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
 		verify(token).adjustFloatBy(-adjustment);
-		verify(ledger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
+		verify(accountsLedger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -523,7 +535,7 @@ class HederaTokenStoreTest {
 		long wipe = 1_235L;
 
 		given(token.hasWipeKey()).willReturn(true);
-		given(ledger.getTokenRef(sponsor)).willReturn(account);
+		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.hasRelationshipWith(misc)).willReturn(true);
@@ -572,7 +584,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void adjustingRejectsMissingAccount() {
-		given(ledger.exists(sponsor)).willReturn(false);
+		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
 		var status = subject.adjustBalance(sponsor, misc, 1);
@@ -656,7 +668,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void updateRejectsInvalidNewAutoRenew() {
-		given(ledger.exists(newAutoRenewAccount)).willReturn(false);
+		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		// and:
 		var op = updateWith(NO_KEYS, true, true, false, true, false);
 
@@ -1172,7 +1184,7 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(ResponseCodeEnum.OK, status);
 		// and:
-		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		verify(accountsLedger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -1207,7 +1219,7 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(ResponseCodeEnum.OK, status);
 		// and:
-		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		verify(accountsLedger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -1325,7 +1337,7 @@ class HederaTokenStoreTest {
 		subject.freeze(treasury, misc);
 
 		// then:
-		verify(ledger).set(argThat(treasury::equals), argThat(IS_FROZEN::equals), captor.capture());
+		verify(accountsLedger).set(argThat(treasury::equals), argThat(IS_FROZEN::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -1418,7 +1430,7 @@ class HederaTokenStoreTest {
 		subject.adjustBalance(treasury, misc, -1);
 
 		// then:
-		verify(ledger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
+		verify(accountsLedger).set(argThat(treasury::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
@@ -1542,7 +1554,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsInvalidAutoRenewAccount() {
-		given(ledger.exists(autoRenewAccount)).willReturn(false);
+		given(accountsLedger.exists(autoRenewAccount)).willReturn(false);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1696,7 +1708,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsMissingTreasury() {
-		given(ledger.exists(treasury)).willReturn(false);
+		given(accountsLedger.exists(treasury)).willReturn(false);
 		// and:
 		var req = fullyValidAttempt()
 				.build();
@@ -1710,7 +1722,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsDeletedTreasuryAccount() {
-		given(ledger.get(treasury, IS_DELETED)).willReturn(true);
+		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(true);
 
 		// and:
 		var req = fullyValidAttempt()

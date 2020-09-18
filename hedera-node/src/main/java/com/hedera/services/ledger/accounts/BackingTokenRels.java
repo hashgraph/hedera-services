@@ -47,7 +47,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
  * @author Michael Tinker
  */
 public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> {
-	static final Comparator<Map.Entry<AccountID, TokenID>> RELATIONSHIP_COMPARATOR = Comparator
+	public static final Comparator<Map.Entry<AccountID, TokenID>> RELATIONSHIP_COMPARATOR = Comparator
 			.<Map.Entry<AccountID, TokenID>, AccountID>comparing(Map.Entry::getKey, ACCOUNT_ID_COMPARATOR)
 			.thenComparing(Map.Entry::getValue, TOKEN_ID_COMPARATOR);
 

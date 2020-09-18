@@ -25,12 +25,13 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -108,9 +109,14 @@ public class HederaTokenStore implements TokenStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final TransactionalLedger<
+			Map.Entry<AccountID, TokenID>,
+			TokenRelProperty,
+			MerkleTokenRelStatus> tokenRelsLedger;
 
 	private HederaLedger hederaLedger;
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+
 
 	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
 	Map<String, TokenID> nameKeyedIds = new HashMap<>();
@@ -122,16 +128,17 @@ public class HederaTokenStore implements TokenStore {
 			EntityIdSource ids,
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
-			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens
+			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.ids = ids;
 		this.tokens = tokens;
 		this.validator = validator;
 		this.properties = properties;
+		this.tokenRelsLedger = tokenRelsLedger;
 
 		tokens.get().entrySet().forEach(entry ->
 				symbolKeyedIds.put(entry.getValue().symbol(), entry.getKey().toTokenId()));
-
 		tokens.get().entrySet().forEach(entry ->
 				nameKeyedIds.put(entry.getValue().name(), entry.getKey().toTokenId()));
 	}
@@ -143,12 +150,13 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public void setHederaLedger(HederaLedger hederaLedger) {
+		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
 		this.hederaLedger = hederaLedger;
 	}
 
 	@Override
-	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
-		this.ledger = ledger;
+	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		this.accountsLedger = accountsLedger;
 	}
 
 	@Override
@@ -251,7 +259,7 @@ public class HederaTokenStore implements TokenStore {
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		return sanityChecked(aId, tId, token -> {
-			var account = ledger.getTokenRef(aId);
+			var account = accountsLedger.getTokenRef(aId);
 			if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
 				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			}
@@ -279,7 +287,7 @@ public class HederaTokenStore implements TokenStore {
 				return INVALID_WIPING_AMOUNT;
 			}
 
-			var account = ledger.getTokenRef(aId);
+			var account = accountsLedger.getTokenRef(aId);
 			if (!account.hasRelationshipWith(tId)) {
 				return ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 			}
@@ -308,7 +316,7 @@ public class HederaTokenStore implements TokenStore {
 
 	private void adjustUnchecked(AccountID aId, TokenID tId, MerkleToken token, long amount) {
 		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, amount);
-		ledger.set(aId, BALANCE, scopedAdjustment);
+		accountsLedger.set(aId, BALANCE, scopedAdjustment);
 	}
 
 	private ResponseCodeEnum changeSupply(
@@ -679,7 +687,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {
-		if (!ledger.exists(id) || (boolean) ledger.get(id, AccountProperty.IS_DELETED)) {
+		if (!accountsLedger.exists(id) || (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED)) {
 			return failure;
 		}
 		return OK;
@@ -699,13 +707,13 @@ public class HederaTokenStore implements TokenStore {
 				return keyFailure;
 			}
 
-			var account = ledger.getTokenRef(aId);
+			var account = accountsLedger.getTokenRef(aId);
 			if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
 				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			}
 
 			var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
-			ledger.set(aId, flagProperty, scopedFreeze);
+			accountsLedger.set(aId, flagProperty, scopedFreeze);
 			return OK;
 		});
 	}
@@ -729,7 +737,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
-		var validity = ledger.exists(aId)
+		var validity = accountsLedger.exists(aId)
 				? OK
 				: INVALID_ACCOUNT_ID;
 		if (validity != OK) {

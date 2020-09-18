@@ -23,14 +23,17 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
@@ -89,10 +92,14 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
+	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		/* No-op */
+	}
 
 	@Override
-	public void setHederaLedger(HederaLedger ledger) { }
+	public void setHederaLedger(HederaLedger ledger) {
+		/* No-op */
+	}
 
 	@Override
 	public void apply(TokenID id, Consumer<MerkleToken> change) {
@@ -138,6 +145,4 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
-
-
 }
