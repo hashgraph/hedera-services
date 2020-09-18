@@ -91,7 +91,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(wipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.initialFloat(1_000)
+								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
 						tokenTransact(
 								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
@@ -132,7 +132,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.wipeKey("wipeKey"),
 						tokenCreate(anotherWipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.initialFloat(1_000)
+								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
 						tokenTransact(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
@@ -313,8 +313,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						newKeyNamed("supplyKey"),
 						tokenCreate("supple")
 								.supplyKey("supplyKey")
-								.initialFloat(10)
-								.divisibility(1)
+								.initialSupply(10)
+								.decimals(1)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						getTokenInfo("supple").logged(),
@@ -337,8 +337,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						tokenCreate("rigid"),
 						tokenCreate("supple")
 								.supplyKey("supplyKey")
-								.divisibility(16)
-								.initialFloat(1)
+								.decimals(16)
+								.initialSupply(1)
 				).then(
 						mintToken("rigid", 1)
 								.signedBy(GENESIS)
@@ -346,7 +346,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						burnToken("rigid", 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-						mintToken("supple", 1_000)
+						mintToken("supple", Long.MAX_VALUE)
 								.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
 						burnToken("supple", 2)
 								.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)

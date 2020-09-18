@@ -169,8 +169,8 @@ public class TxnFactory {
 	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
 		return builder -> {
 			builder.setTreasury(setup.defaultPayer());
-			builder.setDecimals(setup.defaultTokenDivisibility());
-			builder.setInitialSupply(setup.defaultTokenFloat());
+			builder.setDecimals(setup.defaultTokenDecimals());
+			builder.setInitialSupply(setup.defaultTokenInitialSupply());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
 			builder.setExpiry(defaultExpiry().getSeconds());
 		};

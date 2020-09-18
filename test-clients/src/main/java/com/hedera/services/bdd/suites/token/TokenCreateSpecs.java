@@ -54,7 +54,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
-						initialFloatMustBeSane(),
+						initialSupplyMustBeSane(),
 						numAccountsAllowedIsDynamic(),
 						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
@@ -97,8 +97,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("freeze")
 				).when(
 						tokenCreate("primary")
-								.initialFloat(123)
-								.divisibility(4)
+								.initialSupply(123)
+								.decimals(4)
 								.freezeDefault(true)
 								.freezeKey("freeze")
 								.treasury(TOKEN_TREASURY)
@@ -223,43 +223,36 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec initialFloatMustBeSane() {
-		return defaultHapiSpec("InitialFloatMustBeSane")
+	public HapiApiSpec initialSupplyMustBeSane() {
+		return defaultHapiSpec("InitialSupplyMustBeSane")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
 				).when(
 				).then(
 						tokenCreate("sinking")
 								.payingWith("payer")
-								.initialFloat(-1L)
+								.initialSupply(-1L)
 								.hasKnownStatus(INVALID_INITIAL_SUPPLY),
-						tokenCreate("indivisible")
+						tokenCreate("bad decimals")
 								.payingWith("payer")
-								.divisibility(-1)
+								.decimals(-1)
 								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("indivisible")
+						tokenCreate("bad decimals")
 								.payingWith("payer")
-								.divisibility(1)
-								.initialFloat(1L << 62)
+								.decimals(1 << 31)
 								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("toobigdivisibility")
+						tokenCreate("bad initial supply")
 								.payingWith("payer")
-								.initialFloat(0)
-								.divisibility(19)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("toobigdivisibility")
-								.payingWith("payer")
-								.initialFloat(10)
-								.divisibility(18)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS)
+								.initialSupply(1L << 63)
+								.hasKnownStatus(INVALID_INITIAL_SUPPLY)
 				);
 	}
 
 	public HapiApiSpec treasuryHasCorrectBalance() {
 		String token = salted("myToken");
 
-		int divisibility = 1;
-		long tokenFloat = 100_000;
+		int decimals = 1;
+		long initialSupply = 100_000;
 
 		return defaultHapiSpec("TreasuryHasCorrectBalance")
 				.given(
@@ -268,13 +261,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(token)
 								.treasury(TOKEN_TREASURY)
-								.divisibility(divisibility)
-								.initialFloat(tokenFloat)
+								.decimals(decimals)
+								.initialSupply(initialSupply)
 								.payingWith("payer")
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTinyBars(A_HUNDRED_HBARS)
-								.hasTokenBalance(token, tokenFloat * 10)
+								.hasTokenBalance(token, initialSupply)
 				);
 	}
 

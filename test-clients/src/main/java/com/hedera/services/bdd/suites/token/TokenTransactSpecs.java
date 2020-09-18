@@ -75,7 +75,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(100)
+								.initialSupply(100)
 								.treasury("firstTreasury")
 				).then(
 						tokenTransact(
@@ -128,10 +128,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(234)
+								.initialSupply(234)
 								.treasury("secondTreasury")
 				).then(
 						tokenTransact(
@@ -152,10 +152,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(234)
+								.initialSupply(234)
 								.treasury("secondTreasury")
 				).then(
 						tokenTransact(
@@ -180,10 +180,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
 						)),
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(234)
+								.initialSupply(234)
 								.treasury("secondTreasury"),
 						tokenTransact(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
@@ -212,7 +212,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(100)
+								.initialSupply(100)
 								.treasury("firstTreasury")
 				).then(
 						tokenTransact(
@@ -232,10 +232,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate(SECOND_USER),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.initialFloat(FLOAT)
+								.initialSupply(FLOAT)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
-								.initialFloat(FLOAT)
+								.initialSupply(FLOAT)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						tokenTransact(
