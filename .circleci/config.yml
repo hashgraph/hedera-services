@@ -1904,7 +1904,7 @@ jobs:
     steps:
       - run:
           name: Run Software Update regression tests
-          no_output_timeout: 20m
+          no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo

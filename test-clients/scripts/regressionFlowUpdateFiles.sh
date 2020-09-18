@@ -25,20 +25,26 @@ updateServiceMainJava()
 
     cd ../hedera-node
 
-    #install rsync
-    sudo apt update; sudo apt --assume-yes install rsync grsync
-    
+    if [[ -n "${CI_AWS}" ]]; then
+        echo "Installing rsync"
+        sudo apt update; sudo apt --assume-yes install rsync grsync
+    fi
+
     # only copy updated jar files to target directory
     TARGET_DIR=../test-clients/updateFiles
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
     find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync  {} $TARGET_DIR \;
 
+    if [[ -n "${CI_AWS}" ]]; then
+        echo "Running on CIRCLECI, no need to restore"
+    else
+        echo "Restore source code and jar files"
+        git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
-    git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
-
-    # rebuild after checkout to recover binary
-    mvn --no-transfer-progress install -DskipTests
+        # rebuild after checkout to recover binary
+        mvn --no-transfer-progress install -DskipTests
+    fi
 
     cd -
 
