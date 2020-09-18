@@ -27,17 +27,11 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-message TokenManagement {
-    TokenRef token = 1;
-    AccountID treasury = 2;
-    Key adminKey = 3;
-    Key kycKey = 4;
-    Key freezeKey = 5;
-    Key wipeKey = 6;
-    Key supplyKey = 7;
-    string symbol = 8;
-    string name = 9;
-    AccountID autoRenewAccount = 10;
-    uint64 autoRenewPeriod = 11;
-    uint64 expiry = 12;
+/*
+Burns tokens from the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
+The operation decreases the Total Supply of the Token. Total supply cannot go below zero.
+ */
+message TokenBurnTransactionBody {
+    TokenRef token = 1; // The token for which to burn tokens. If token does not exist, transaction results in INVALID_TOKEN_ID
+    uint64 amount = 2; // The amount to burn from the Treasury Account. Amount must be a positive non-zero number, not bigger than the token balance of the treasury account (0; balance]
 }

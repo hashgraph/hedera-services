@@ -27,7 +27,10 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-message TokenRevokeKyc {
-    TokenRef token = 1;
-    AccountID account = 2;
+/* Revokes KYC to the account for the given token. Must be signed by the Token's kycKey. If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.
+ Once executed the Account is marked as KYC Revoked
+ */
+message TokenRevokeKycTransactionBody {
+    TokenRef token = 1; // The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID
+    AccountID account = 2; // The account to be KYC Revoked
 }

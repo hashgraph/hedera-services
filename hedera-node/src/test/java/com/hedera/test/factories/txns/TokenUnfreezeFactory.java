@@ -20,8 +20,8 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -51,7 +51,7 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenUnfreeze.newBuilder().setToken(ref);
+		var op = TokenUnfreezeAccountTransactionBody.newBuilder().setToken(ref);
 		txn.setTokenUnfreeze(op);
 	}
 }

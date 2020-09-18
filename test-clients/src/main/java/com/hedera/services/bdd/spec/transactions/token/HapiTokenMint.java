@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -78,10 +78,10 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenMintCoins opBody = spec
+		TokenMintTransactionBody opBody = spec
 				.txns()
-				.<TokenMintCoins, TokenMintCoins.Builder>body(
-						TokenMintCoins.class, b -> {
+				.<TokenMintTransactionBody, TokenMintTransactionBody.Builder>body(
+						TokenMintTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
 							b.setAmount(amount);
 						});

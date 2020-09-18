@@ -26,16 +26,13 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
-import org.bouncycastle.crypto.general.IDEA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -44,7 +41,6 @@ import org.junit.runner.RunWith;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.fees.calculation.token.txns.TokenTransactResourceUsageTest.MOCK_TOKEN_TRANSACT_USAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,7 +85,7 @@ class TokenUpdateResourceUsageTest {
 		tokenUpdateTxn = mock(TransactionBody.class);
 		given(tokenUpdateTxn.hasTokenUpdate()).willReturn(true);
 		given(tokenUpdateTxn.getTokenUpdate())
-				.willReturn(TokenManagement.newBuilder()
+				.willReturn(TokenUpdateTransactionBody.newBuilder()
 						.setToken(target)
 						.build());
 
