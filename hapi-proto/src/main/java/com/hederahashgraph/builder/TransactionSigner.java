@@ -143,9 +143,7 @@ public class TransactionSigner {
     byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
     SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
 
-    Transaction.Builder builder = (transaction instanceof Transaction)
-            ? ((Transaction) transaction).toBuilder()
-            : ((Transaction.Builder) transaction);
+    Transaction.Builder builder = CommonUtils.toTransactionBuilder(transaction);
 
     if (appendSigMap) {
       SignatureMap currentSigMap = CommonUtils.extractSignatureMapOrUseDefault(transaction);

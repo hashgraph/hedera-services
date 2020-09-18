@@ -277,6 +277,14 @@ public class CommonUtils {
     return SignatureMap.getDefaultInstance();
   }
 
+  public static Transaction.Builder toTransactionBuilder(TransactionOrBuilder transactionOrBuilder) {
+    if (transactionOrBuilder instanceof Transaction) {
+      return ((Transaction) transactionOrBuilder).toBuilder();
+    } else {
+      return (Transaction.Builder) transactionOrBuilder;
+    }
+  }
+
   public static void writeTxId2File(String txIdString) throws IOException {
     writeToFileUTF8("output/txIds.txt", ProtoCommonUtils.getCurrentInstantUTC() + "-->" + txIdString + "\n", true);
   }
