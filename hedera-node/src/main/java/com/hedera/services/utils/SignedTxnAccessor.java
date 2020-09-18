@@ -43,7 +43,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 public class SignedTxnAccessor {
 	private byte[] txnBytes;
 	private byte[] signedTxnBytes;
-	private Transaction signedTxn4Log;
 	private Transaction signedTxn;
 	private TransactionID txnId;
 	private TransactionBody txn;
@@ -90,15 +89,6 @@ public class SignedTxnAccessor {
 	}
 
 	public Transaction getSignedTxn4Log() {
-//		if (signedTxn4Log == null) {
-//			try {
-//				signedTxn4Log = signedTxn.hasBody() ? signedTxn : signedTxn.toBuilder()
-//						.setBody(TransactionBody.parseFrom(signedTxn.getBodyBytes()))
-//						.clearBodyBytes()
-//						.build();
-//			} catch (InvalidProtocolBufferException ignore) { }
-//		}
-//		return signedTxn4Log;
 		return signedTxn;
 	}
 
