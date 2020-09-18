@@ -37,6 +37,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.Map;
 
 public class MerkleEntityAssociation extends AbstractMerkleNode implements FCMKey, MerkleLeaf {
 	static final int MERKLE_VERSION = 1;
@@ -67,6 +69,20 @@ public class MerkleEntityAssociation extends AbstractMerkleNode implements FCMKe
 		return new MerkleEntityAssociation(
 				account.getShardNum(), account.getRealmNum(), account.getAccountNum(),
 				token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+	}
+
+	public Map.Entry<AccountID, TokenID> asAccountTokenRel() {
+		return new AbstractMap.SimpleImmutableEntry<>(
+				AccountID.newBuilder()
+						.setShardNum(fromShard)
+						.setRealmNum(fromRealm)
+						.setAccountNum(fromNum)
+						.build(),
+				TokenID.newBuilder()
+						.setShardNum(toShard)
+						.setRealmNum(toRealm)
+						.setTokenNum(toNum)
+						.build());
 	}
 
 	@Deprecated
