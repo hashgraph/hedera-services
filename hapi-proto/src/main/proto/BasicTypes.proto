@@ -236,24 +236,24 @@ enum HederaFunctionality {
     ContractAutoRenew = 34; // Contract Auto Renew
     GetVersionInfo = 35; //Get Version
     TransactionGetReceipt = 36; // Transaction Get Receipt
-    ConsensusCreateTopic = 50;
-    ConsensusUpdateTopic = 51;
-    ConsensusDeleteTopic = 52;
-    ConsensusGetTopicInfo = 53;
-    ConsensusSubmitMessage = 54;
+    ConsensusCreateTopic = 50; // Create Topic
+    ConsensusUpdateTopic = 51; // Update Topic
+    ConsensusDeleteTopic = 52; // Delete Topic
+    ConsensusGetTopicInfo = 53; // Get Topic information
+    ConsensusSubmitMessage = 54; // Submit message to topic
     UncheckedSubmit = 55;
-    TokenCreate = 56;
-    TokenTransact = 57;
-    TokenGetInfo = 58;
-    TokenFreezeAccount = 59;
-    TokenUnfreezeAccount = 60;
-    TokenGrantKycToAccount = 61;
-    TokenRevokeKycFromAccount = 62;
-    TokenDelete = 63;
-    TokenUpdate = 64;
-    TokenMint = 65;
-    TokenBurn = 66;
-    TokenAccountWipe = 67;
+    TokenCreate = 56; // Create Token
+    TokenTransact = 57; // Transfer Tokens
+    TokenGetInfo = 58; // Get token information
+    TokenFreezeAccount = 59; // Freeze Account
+    TokenUnfreezeAccount = 60; // Unfreeze Account
+    TokenGrantKycToAccount = 61; // Grant KYC to Account
+    TokenRevokeKycFromAccount = 62; // Revoke KYC from Account
+    TokenDelete = 63; // Delete Token
+    TokenUpdate = 64; // Update Token
+    TokenMint = 65; // Mint tokens to treasury
+    TokenBurn = 66; // Burn tokens from treasury
+    TokenAccountWipe = 67; // Wipe token amount from Account holder
 }
 
 /*

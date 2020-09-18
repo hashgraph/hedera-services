@@ -1241,7 +1241,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenDeletion"><span class="badge">M</span>TokenDeletion</a>
+                  <a href="#proto.TokenDeleteTransactionBody"><span class="badge">M</span>TokenDeleteTransactionBody</a>
                 </li>
               
               
@@ -2825,31 +2825,31 @@
               <tr>
                 <td>ConsensusCreateTopic</td>
                 <td>50</td>
-                <td><p></p></td>
+                <td><p>Create Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusUpdateTopic</td>
                 <td>51</td>
-                <td><p></p></td>
+                <td><p>Update Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusDeleteTopic</td>
                 <td>52</td>
-                <td><p></p></td>
+                <td><p>Delete Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusGetTopicInfo</td>
                 <td>53</td>
-                <td><p></p></td>
+                <td><p>Get Topic information</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusSubmitMessage</td>
                 <td>54</td>
-                <td><p></p></td>
+                <td><p>Submit message to topic</p></td>
               </tr>
             
               <tr>
@@ -2861,73 +2861,73 @@
               <tr>
                 <td>TokenCreate</td>
                 <td>56</td>
-                <td><p></p></td>
+                <td><p>Create Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenTransact</td>
                 <td>57</td>
-                <td><p></p></td>
+                <td><p>Transfer Tokens</p></td>
               </tr>
             
               <tr>
                 <td>TokenGetInfo</td>
                 <td>58</td>
-                <td><p></p></td>
+                <td><p>Get token information</p></td>
               </tr>
             
               <tr>
                 <td>TokenFreezeAccount</td>
                 <td>59</td>
-                <td><p></p></td>
+                <td><p>Freeze Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenUnfreezeAccount</td>
                 <td>60</td>
-                <td><p></p></td>
+                <td><p>Unfreeze Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenGrantKycToAccount</td>
                 <td>61</td>
-                <td><p></p></td>
+                <td><p>Grant KYC to Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenRevokeKycFromAccount</td>
                 <td>62</td>
-                <td><p></p></td>
+                <td><p>Revoke KYC from Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenDelete</td>
                 <td>63</td>
-                <td><p></p></td>
+                <td><p>Delete Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenUpdate</td>
                 <td>64</td>
-                <td><p></p></td>
+                <td><p>Update Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenMint</td>
                 <td>65</td>
-                <td><p></p></td>
+                <td><p>Mint tokens to treasury</p></td>
               </tr>
             
               <tr>
                 <td>TokenBurn</td>
                 <td>66</td>
-                <td><p></p></td>
+                <td><p>Burn tokens from treasury</p></td>
               </tr>
             
               <tr>
                 <td>TokenAccountWipe</td>
                 <td>67</td>
-                <td><p></p></td>
+                <td><p>Wipe token amount from Account holder</p></td>
               </tr>
             
           </tbody>
@@ -7017,7 +7017,7 @@ If unspecified, no change. </p></td>
                   <td>tokenGetInfo</td>
                   <td><a href="#proto.TokenGetInfoQuery">TokenGetInfoQuery</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get all information about a token </p></td>
                 </tr>
               
             </tbody>
@@ -7261,7 +7261,7 @@ If unspecified, no change. </p></td>
                   <td>tokenGetInfo</td>
                   <td><a href="#proto.TokenGetInfoResponse">TokenGetInfoResponse</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get all information about a token </p></td>
                 </tr>
               
             </tbody>
@@ -8032,13 +8032,13 @@ by HAPI.</p></td>
               <tr>
                 <td>ACCOUNT_FROZEN_FOR_TOKEN</td>
                 <td>165</td>
-                <td><p></p></td>
+                <td><p>Account is frozen and cannot transact with the token</p></td>
               </tr>
             
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p></p></td>
+                <td><p>Maximum number of token relations for agiven account is exceeded</p></td>
               </tr>
             
               <tr>
@@ -8062,43 +8062,43 @@ by HAPI.</p></td>
               <tr>
                 <td>INVALID_TREASURY_ACCOUNT_FOR_TOKEN</td>
                 <td>170</td>
-                <td><p></p></td>
+                <td><p>Treasury Account does not exist or is deleted</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_SYMBOL</td>
                 <td>171</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is not UTF-8 alphanumeric uppercase string</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_FREEZE_KEY</td>
                 <td>172</td>
-                <td><p></p></td>
+                <td><p>Freeze key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN</td>
                 <td>173</td>
-                <td><p></p></td>
+                <td><p>Amounts in transfer list are not net zero</p></td>
               </tr>
             
               <tr>
                 <td>MISSING_TOKEN_SYMBOL</td>
                 <td>174</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_TOO_LONG</td>
                 <td>175</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is too long</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_ALREADY_IN_USE</td>
                 <td>176</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is already used</p></td>
               </tr>
             
               <tr>
@@ -8110,37 +8110,37 @@ by HAPI.</p></td>
               <tr>
                 <td>ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</td>
                 <td>178</td>
-                <td><p></p></td>
+                <td><p>KYC must be granted and account does not have KYC granted</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_KYC_KEY</td>
                 <td>179</td>
-                <td><p></p></td>
+                <td><p>KYC key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>INSUFFICIENT_TOKEN_BALANCE</td>
                 <td>180</td>
-                <td><p></p></td>
+                <td><p>Token balance is not sufficient for the transaction</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_WAS_DELETED</td>
                 <td>181</td>
-                <td><p></p></td>
+                <td><p>Token transactions cannot be executed on deleted token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_SUPPLY_KEY</td>
                 <td>182</td>
-                <td><p></p></td>
+                <td><p>Supply key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_WIPE_KEY</td>
                 <td>183</td>
-                <td><p></p></td>
+                <td><p>Wipe key is not set on token</p></td>
               </tr>
             
               <tr>
@@ -8164,7 +8164,7 @@ by HAPI.</p></td>
               <tr>
                 <td>CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</td>
                 <td>187</td>
-                <td><p></p></td>
+                <td><p>Cannot execute wipe operation on treasury account</p></td>
               </tr>
             
               <tr>
@@ -8192,51 +8192,33 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>INVALID_TOKEN_TRANSFER_AMOUNT</td>
-                <td>192</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>TOKEN_NAME_ALREADY_IN_USE</td>
-                <td>193</td>
-                <td><p></p></td>
+                <td>192</td>
+                <td><p>Token Name is already used</p></td>
               </tr>
             
               <tr>
                 <td>MISSING_TOKEN_NAME</td>
-                <td>194</td>
-                <td><p></p></td>
+                <td>193</td>
+                <td><p>Token Name is not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_NAME_TOO_LONG</td>
-                <td>195</td>
-                <td><p></p></td>
+                <td>194</td>
+                <td><p>Token name is too long</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_WIPING_AMOUNT</td>
-                <td>196</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>INVALID_TOKEN_EXPIRY</td>
-                <td>197</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TOKEN_HAS_EXPIRED</td>
-                <td>198</td>
-                <td><p></p></td>
+                <td>195</td>
+                <td><p>The provided wipe amount must not be negative, zero or bigger than the token holder balance</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_IS_IMMUTABlE</td>
-                <td>199</td>
-                <td><p></p></td>
+                <td>196</td>
+                <td><p>Token does not have Admin key set, thus update/delete transactions cannot be performed</p></td>
               </tr>
             
           </tbody>
@@ -8756,8 +8738,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenDeletion">TokenDeletion</h3>
-        <p></p>
+        <h3 id="proto.TokenDeleteTransactionBody">TokenDeleteTransactionBody</h3>
+        <p>Marks a token as deleted, though it will remain in the ledger.</p><p>The operation must be signed by the specified Admin Key of the Token. If admin key is not set, Transaction will result in TOKEN_IS_IMMUTABlE.</p><p>Once deleted update, mint, burn, wipe, freeze, unfreeze, grant kyc, revoke kyc and token transfer transactions will resolve to TOKEN_WAS_DELETED.</p>
 
         
           <table class="field-table">
@@ -8770,7 +8752,7 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token to be deleted. If invalid token is specified, transaction will result in INVALID_TOKEN_REF </p></td>
                 </tr>
               
             </tbody>
@@ -9837,28 +9819,28 @@ by HAPI.</p></td>
                   <td>consensusCreateTopic</td>
                   <td><a href="#proto.ConsensusCreateTopicTransactionBody">ConsensusCreateTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Creates a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusUpdateTopic</td>
                   <td><a href="#proto.ConsensusUpdateTopicTransactionBody">ConsensusUpdateTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Updates a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusDeleteTopic</td>
                   <td><a href="#proto.ConsensusDeleteTopicTransactionBody">ConsensusDeleteTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deletes a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusSubmitMessage</td>
                   <td><a href="#proto.ConsensusSubmitMessageTransactionBody">ConsensusSubmitMessageTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Submits message to a topic </p></td>
                 </tr>
               
                 <tr>
@@ -9872,77 +9854,77 @@ by HAPI.</p></td>
                   <td>tokenCreation</td>
                   <td><a href="#proto.TokenCreateTransactionBody">TokenCreateTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Creates a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenTransfers</td>
                   <td><a href="#proto.TokenTransfers">TokenTransfers</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Transfers tokens between accounts </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenFreeze</td>
                   <td><a href="#proto.TokenFreezeAccountTransactionBody">TokenFreezeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Freezes account not to be able to transact with a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenUnfreeze</td>
                   <td><a href="#proto.TokenUnfreezeAccountTransactionBody">TokenUnfreezeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Unfreezes account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenGrantKyc</td>
                   <td><a href="#proto.TokenGrantKycTransactionBody">TokenGrantKycTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Grants KYC to an account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenRevokeKyc</td>
                   <td><a href="#proto.TokenRevokeKycTransactionBody">TokenRevokeKycTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Revokes KYC of an account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenDeletion</td>
-                  <td><a href="#proto.TokenDeletion">TokenDeletion</a></td>
+                  <td><a href="#proto.TokenDeleteTransactionBody">TokenDeleteTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deletes a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenUpdate</td>
                   <td><a href="#proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Updates a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenMint</td>
                   <td><a href="#proto.TokenMintTransactionBody">TokenMintTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Mints new tokens to a token&#39;s treasury account </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenBurn</td>
                   <td><a href="#proto.TokenBurnTransactionBody">TokenBurnTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Burns tokens from a token&#39;s treasury account </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenWipe</td>
                   <td><a href="#proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Wipes amount of tokens from an account </p></td>
                 </tr>
               
             </tbody>

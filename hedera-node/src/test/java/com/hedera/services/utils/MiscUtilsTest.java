@@ -74,7 +74,7 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
@@ -325,7 +325,7 @@ public class MiscUtilsTest {
 			put(TokenController.TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_GRANT_KYC_METRIC, new BodySetter<>(TokenGrantKycTransactionBody.class));
 			put(TokenController.TOKEN_REVOKE_KYC_METRIC, new BodySetter<>(TokenRevokeKycTransactionBody.class));
-			put(TokenController.TOKEN_DELETE_METRIC, new BodySetter<>(TokenDeletion.class));
+			put(TokenController.TOKEN_DELETE_METRIC, new BodySetter<>(TokenDeleteTransactionBody.class));
 			put(TokenController.TOKEN_UPDATE_METRIC, new BodySetter<>(TokenUpdateTransactionBody.class));
 			put(TokenController.TOKEN_MINT_METRIC, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenController.TOKEN_BURN_METRIC, new BodySetter<>(TokenBurnTransactionBody.class));
@@ -580,7 +580,7 @@ public class MiscUtilsTest {
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
 			put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKycTransactionBody.class));
-			put(TokenDelete, new BodySetter<>(TokenDeletion.class));
+			put(TokenDelete, new BodySetter<>(TokenDeleteTransactionBody.class));
 			put(TokenUpdate, new BodySetter<>(TokenUpdateTransactionBody.class));
 			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));

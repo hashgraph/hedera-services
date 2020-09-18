@@ -97,23 +97,23 @@ message TransactionBody {
     SystemUndeleteTransactionBody systemUndelete = 21; //To undelete an entity deleted by SystemDelete
     FreezeTransactionBody freeze = 23; // Freeze the nodes
 
-    ConsensusCreateTopicTransactionBody consensusCreateTopic = 24;
-    ConsensusUpdateTopicTransactionBody consensusUpdateTopic = 25;
-    ConsensusDeleteTopicTransactionBody consensusDeleteTopic = 26;
-    ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27;
+    ConsensusCreateTopicTransactionBody consensusCreateTopic = 24; // Creates a topic
+    ConsensusUpdateTopicTransactionBody consensusUpdateTopic = 25; // Updates a topic
+    ConsensusDeleteTopicTransactionBody consensusDeleteTopic = 26; // Deletes a topic
+    ConsensusSubmitMessageTransactionBody consensusSubmitMessage = 27; // Submits message to a topic
 
     UncheckedSubmitBody uncheckedSubmit = 28;
 
-    TokenCreateTransactionBody tokenCreation = 29;
-    TokenTransfers tokenTransfers = 30;
-    TokenFreezeAccountTransactionBody tokenFreeze = 31;
-    TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32;
-    TokenGrantKycTransactionBody tokenGrantKyc = 33;
-    TokenRevokeKycTransactionBody tokenRevokeKyc = 34;
-    TokenDeletion tokenDeletion = 35;
-    TokenUpdateTransactionBody tokenUpdate = 36;
-    TokenMintTransactionBody tokenMint = 37;
-    TokenBurnTransactionBody tokenBurn = 38;
-    TokenWipeAccountTransactionBody tokenWipe = 39;
+    TokenCreateTransactionBody tokenCreation = 29; // Creates a token instance
+    TokenTransfers tokenTransfers = 30; // Transfers tokens between accounts
+    TokenFreezeAccountTransactionBody tokenFreeze = 31; // Freezes account not to be able to transact with a token
+    TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32; // Unfreezes account for a token
+    TokenGrantKycTransactionBody tokenGrantKyc = 33; // Grants KYC to an account for a token
+    TokenRevokeKycTransactionBody tokenRevokeKyc = 34; // Revokes KYC of an account for a token
+    TokenDeleteTransactionBody tokenDeletion = 35; // Deletes a token instance
+    TokenUpdateTransactionBody tokenUpdate = 36; // Updates a token instance
+    TokenMintTransactionBody tokenMint = 37; // Mints new tokens to a token's treasury account
+    TokenBurnTransactionBody tokenBurn = 38; // Burns tokens from a token's treasury account
+    TokenWipeAccountTransactionBody tokenWipe = 39; // Wipes amount of tokens from an account
   }
 }

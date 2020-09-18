@@ -89,7 +89,7 @@ public interface TokenStore {
 
 		var token = get(id);
 		if (token.adminKey().isEmpty()) {
-			return UNAUTHORIZED;
+			return TOKEN_IS_IMMUTABlE;
 		}
 
 		apply(id, DELETION);

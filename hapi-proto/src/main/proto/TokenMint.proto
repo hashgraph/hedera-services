@@ -29,9 +29,9 @@ import "BasicTypes.proto";
 
 /*
 Mints tokens to the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
-The operation increases the Total Supply of the Token. The maximum total supply a token can have is 2^63.
+The operation increases the Total Supply of the Token. The maximum total supply a token can have is 2^63-1.
  */
 message TokenMintTransactionBody {
     TokenRef token = 1; // The token for which to mint tokens. If token does not exist, transaction results in INVALID_TOKEN_ID
-    uint64 amount = 2; // The amount to mint to the Treasury Account. Amount must be a positive non-zero number, such that the new supply supply is lower than 2^63
+    uint64 amount = 2; // The amount to mint to the Treasury Account. Amount must be a positive non-zero number, such that the new supply is lower than 2^63
 }

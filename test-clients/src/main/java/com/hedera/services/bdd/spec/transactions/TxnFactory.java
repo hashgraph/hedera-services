@@ -44,7 +44,7 @@ import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
@@ -146,7 +146,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenDeletion.Builder> defaultDef_TokenDeletion() {
+	public Consumer<TokenDeleteTransactionBody.Builder> defaultDef_TokenDeleteTransactionBody() {
 		return builder -> {};
 	}
 
