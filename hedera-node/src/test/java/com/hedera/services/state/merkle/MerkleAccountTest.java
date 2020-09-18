@@ -112,6 +112,7 @@ public class MerkleAccountTest {
 	MerkleAccountState otherState;
 	FCQueue<ExpirableTxnRecord> records;
 	FCQueue<ExpirableTxnRecord> payerRecords;
+	MerkleAccountTokens tokens;
 	DomainSerdes serdes;
 
 	MerkleAccount subject;
@@ -138,6 +139,9 @@ public class MerkleAccountTest {
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
 
+		tokens = mock(MerkleAccountTokens.class);
+		given(tokens.copy()).willReturn(tokens);
+
 		delegate = mock(MerkleAccountState.class);
 
 		state = new MerkleAccountState(
@@ -155,7 +159,7 @@ public class MerkleAccountTest {
 				otherProxy,
 				otherTokenRels);
 
-		subject = new MerkleAccount(List.of(state, records, payerRecords));
+		subject = new MerkleAccount(List.of(state, records, payerRecords, tokens));
 	}
 
 	@AfterEach
@@ -221,7 +225,12 @@ public class MerkleAccountTest {
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccount.NUM_V1_CHILDREN, subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
+		assertEquals(
+				MerkleAccount.ChildIndices.NUM_V1_CHILDREN,
+				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION - 1));
+		assertEquals(
+				MerkleAccount.ChildIndices.NUM_V2_CHILDREN,
+				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertFalse(subject.isLeaf());
@@ -231,12 +240,15 @@ public class MerkleAccountTest {
 	public void toStringWorks() {
 		given(records.size()).willReturn(2);
 		given(payerRecords.size()).willReturn(3);
+		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
 		// expect:
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
 						+ ", # records=" + 2
-						+ ", # payer records=" + 3 + "}",
+						+ ", # payer records=" + 3
+						+ ", tokens=" + "[1.2.3, 2.3.4]"
+						+ "}",
 				subject.toString());
 	}
 
@@ -254,6 +266,7 @@ public class MerkleAccountTest {
 		assertEquals(state.memo(), subject.getMemo());
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getKey()));
+		assertSame(tokens, subject.tokens());
 	}
 
 	@Test
@@ -435,12 +448,13 @@ public class MerkleAccountTest {
 	public void objectContractMet() {
 		// given:
 		var one = new MerkleAccount();
-		var two = new MerkleAccount(List.of(state, payerRecords, records));
+		var two = new MerkleAccount(List.of(state, payerRecords, records, tokens));
 		var three = two.copy();
 
 		// then:
 		verify(records).copy();
 		verify(payerRecords).copy();
+		verify(tokens).copy();
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
