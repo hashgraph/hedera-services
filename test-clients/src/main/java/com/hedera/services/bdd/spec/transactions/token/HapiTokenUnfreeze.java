@@ -24,9 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenFreezeUsage;
 import com.hedera.services.usage.token.TokenUnfreezeUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -68,10 +66,10 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenUnfreezeAccount, this::mockUnfreezeAccountUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenUnfreezeAccount, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockUnfreezeAccountUsage(TransactionBody txn, SigValueObj svo) {
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		return TokenUnfreezeUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 

@@ -25,8 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.token.TokenBurnUsage;
-import com.hedera.services.usage.token.TokenCreateUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -68,10 +66,10 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenBurn, this::mockTokenBurnUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenBurn, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockTokenBurnUsage(TransactionBody txn, SigValueObj svo) {
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		return TokenBurnUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
