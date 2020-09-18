@@ -344,8 +344,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
           if(transferRes.getNodeTransactionPrecheckCode() == ResponseCodeEnum.TRANSACTION_OVERSIZE){
             badTransList.add(transfer1);
           }
-          else {
-          }
         }
         te = System.currentTimeMillis();
         tm = te - ts;
