@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class QueryPaymentSuite extends HapiApiSuite {
@@ -47,6 +48,7 @@ public class QueryPaymentSuite extends HapiApiSuite {
 	public static void main(String... args) {
 		new QueryPaymentSuite().runSuiteSync();
 	}
+
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
@@ -59,21 +61,18 @@ public class QueryPaymentSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> queryPaymentTests() {
 		return List.of(new HapiApiSpec[] {
-				queryPaymentsFailsWithInsufficientFunds(),
-				queryPaymentsSingleBeneficiaryChecked(),
-				queryPaymentsMultiBeneficiarySucceeds()
+						queryPaymentsFailsWithInsufficientFunds(),
+						queryPaymentsSingleBeneficiaryChecked(),
+						queryPaymentsMultiBeneficiarySucceeds(),
+						queryPaymentsNotToNodeFails()
 				}
 		);
 	}
 
-	/**
-	 * test cases verified
-	 *
+	/*
 	 * 1. multiple payers pay amount to node as well as one more beneficiary. But node gets less query payment fee
 	 * 2. TransactionPayer will pay for query payment to node and payer has less balance
 	 * 3. Transaction payer is not involved in transfers for query payment to node and one or more have less balance
-	 *
-	 * @return
 	 */
 	private HapiApiSpec queryPaymentsFailsWithInsufficientFunds() {
 		return defaultHapiSpec("queryPaymentsFailsWithInsufficientFunds")
@@ -110,13 +109,11 @@ public class QueryPaymentSuite extends HapiApiSuite {
 				);
 	}
 
-	/**
+	/*
 	 * Tests verified
 	 * 1. multiple payers pay amount to node as well as one more beneficiary. But node gets correct query payment fee
 	 * 2. TransactionPayer will pay for query payment to node and payer has enough balance
 	 * 3. Transaction payer is not involved in transfers for query payment to node and all payers have enough balance
-	 *
-	 * @return
 	 */
 	private HapiApiSpec queryPaymentsMultiBeneficiarySucceeds() {
 		return defaultHapiSpec("queryPaymentsMultiBeneficiarySucceeds")
@@ -154,11 +151,8 @@ public class QueryPaymentSuite extends HapiApiSuite {
 				);
 	}
 
-	/**
-	 * Check if multiple payers or single payer pay amount to node
-	 *
-	 * @return
-	 */
+
+	//Check if multiple payers or single payer pay amount to node
 	private HapiApiSpec queryPaymentsSingleBeneficiaryChecked() {
 		return defaultHapiSpec("queryPaymentsSingleBeneficiaryChecked")
 				.given(
@@ -183,6 +177,27 @@ public class QueryPaymentSuite extends HapiApiSuite {
 				);
 	}
 
+	// Check if payment is not done to node
+	private HapiApiSpec queryPaymentsNotToNodeFails() {
+		return defaultHapiSpec("queryPaymentsNotToNodeFails")
+				.given(
+						cryptoCreate("a").balance(1_234L),
+						cryptoCreate("b").balance(1_234L),
+						cryptoCreate("c").balance(1_234L)
+				).when().then(
+						getAccountInfo(GENESIS)
+								.withPayment(
+										cryptoTransfer(spec ->
+												invalidPaymentToNode(
+														spec, "a", "b", "c",
+														1200))
+								).setNode("0.0.3")
+								.payingWith("a")
+								.fee(10L)
+								.hasAnswerOnlyPrecheck(INVALID_RECEIVING_NODE_ACCOUNT)
+				);
+	}
+
 	private TransferList multiAccountPaymentToNode003(
 			HapiApiSpec spec,
 			String first,
@@ -193,6 +208,20 @@ public class QueryPaymentSuite extends HapiApiSuite {
 				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
 				.addAccountAmounts(adjust(spec.registry().getAccountID(second), -amount / 2))
 				.addAccountAmounts(adjust(asAccount("0.0.3"), amount))
+				.build();
+	}
+
+	private TransferList invalidPaymentToNode(
+			HapiApiSpec spec,
+			String first,
+			String second,
+			String node,
+			long amount
+	) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(adjust(spec.registry().getAccountID(first), -amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(second), -amount / 2))
+				.addAccountAmounts(adjust(spec.registry().getAccountID(node), amount))
 				.build();
 	}
 
