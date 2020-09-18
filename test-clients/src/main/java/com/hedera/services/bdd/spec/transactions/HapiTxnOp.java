@@ -444,6 +444,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxnId = true;
+		saveTransaction = true;
 		return self();
 	}
 
