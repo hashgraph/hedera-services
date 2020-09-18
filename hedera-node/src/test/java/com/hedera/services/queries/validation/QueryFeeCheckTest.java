@@ -183,7 +183,7 @@ class QueryFeeCheckTest {
 								adjustmentWith(aRich, -aLittle * 2),
 								adjustmentWith(aBroke, aLittle + aLittle / 2),
 								adjustmentWith(aNode, aLittle / 2)),
-						aLittle - 1, aNode));
+						aLittle , aNode));
 	}
 
 	@Test
