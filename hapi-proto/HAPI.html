@@ -275,10 +275,6 @@
                 </li>
               
                 <li>
-                  <a href="#proto.TokenRelationship"><span class="badge">M</span>TokenRelationship</a>
-                </li>
-              
-                <li>
                   <a href="#proto.TopicID"><span class="badge">M</span>TopicID</a>
                 </li>
               
@@ -690,6 +686,10 @@
               
                 <li>
                   <a href="#proto.CryptoGetInfoResponse.AccountInfo"><span class="badge">M</span>CryptoGetInfoResponse.AccountInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.TokenRelationship"><span class="badge">M</span>TokenRelationship</a>
                 </li>
               
               
@@ -2460,7 +2460,7 @@
         
       
         <h3 id="proto.TokenRef">TokenRef</h3>
-        <p></p>
+        <p>Reference for a Token. Tokens can be referenced with either TokenID or by Symbol</p>
 
         
           <table class="field-table">
@@ -2473,66 +2473,14 @@
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The ID of the Token </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="proto.TokenRelationship">TokenRelationship</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tokenId</td>
-                  <td><a href="#proto.TokenID">TokenID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>balance</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>symbol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycStatus</td>
-                  <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>freezeStatus</td>
-                  <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>The Symbol of the Token </p></td>
                 </tr>
               
             </tbody>
@@ -5118,7 +5066,7 @@ If unspecified, no change. </p></td>
                   <td>tokenRelationships</td>
                   <td><a href="#proto.TokenRelationship">TokenRelationship</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>All tokens related to this account </p></td>
                 </tr>
               
             </tbody>
@@ -5150,6 +5098,58 @@ If unspecified, no change. </p></td>
               </tbody>
             </table>
             
+          
+
+        
+      
+        <h3 id="proto.TokenRelationship">TokenRelationship</h3>
+        <p>Token's information related to the given Account</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tokenId</td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
+                  <td></td>
+                  <td><p>The ID of the token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>symbol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The Symbol of the token </p></td>
+                </tr>
+              
+                <tr>
+                  <td>balance</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The balance that the Account holds in the smallest denomination </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kycStatus</td>
+                  <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
+                  <td></td>
+                  <td><p>The KYC status of the account (KycNotApplicable, Granted or Revoked). If the token does not have KYC key, KycNotApplicable is returned </p></td>
+                </tr>
+              
+                <tr>
+                  <td>freezeStatus</td>
+                  <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
+                  <td></td>
+                  <td><p>The Freeze status of the account (FreezeNotApplicable, Frozen or Unfrozen). If the token does not have Freeze key, FreezeNotApplicable is returned </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
           
 
         

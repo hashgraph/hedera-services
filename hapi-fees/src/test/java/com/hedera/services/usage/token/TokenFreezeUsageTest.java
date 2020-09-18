@@ -5,7 +5,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -32,7 +32,7 @@ public class TokenFreezeUsageTest {
 	String symbol = "ABCDEFGHIJKL";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenFreeze op;
+	TokenFreezeAccountTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -82,14 +82,14 @@ public class TokenFreezeUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenFreeze.newBuilder()
+		op = TokenFreezeAccountTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenFreeze.newBuilder()
+		op = TokenFreezeAccountTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

@@ -7,7 +7,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -35,7 +35,7 @@ public class TokenWipeUsageTest {
 	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TransactionBody txn;
-	TokenWipeAccount op;
+	TokenWipeAccountTransactionBody op;
 
 	EstimatorFactory factory;
 	TxnUsageEstimator base;
@@ -92,14 +92,14 @@ public class TokenWipeUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenWipeAccount.newBuilder()
+		op = TokenWipeAccountTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenWipeAccount.newBuilder()
+		op = TokenWipeAccountTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

@@ -8,7 +8,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -51,7 +51,7 @@ public class TokenUpdateUsageTest {
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID autoRenewAccount = IdUtils.asAccount("3.2.1");
 
-	TokenManagement op;
+	TokenUpdateTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -201,7 +201,7 @@ public class TokenUpdateUsageTest {
 	}
 
 	private void givenOp() {
-		op = TokenManagement.newBuilder()
+		op = TokenUpdateTransactionBody.newBuilder()
 				.setToken(IdUtils.asSymbolRef(oldSymbol))
 				.setExpiry(expiry)
 				.setTreasury(treasury)

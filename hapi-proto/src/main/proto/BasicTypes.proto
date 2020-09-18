@@ -81,10 +81,11 @@ message TokenID {
     int64 tokenNum = 3; // A nonnegative token number
 }
 
+/* Reference for a Token. Tokens can be referenced with either TokenID or by Symbol */
 message TokenRef {
     oneof ref {
-        TokenID tokenId = 1;
-        string symbol = 2;
+        TokenID tokenId = 1; // The ID of the Token
+        string symbol = 2; // The Symbol of the Token
     }
 }
 
@@ -100,14 +101,6 @@ enum TokenKycStatus {
     KycNotApplicable = 0;
     Granted = 1;
     Revoked = 2;
-}
-
-message TokenRelationship {
-    TokenID tokenId = 1;
-    uint64 balance = 2;
-    string symbol = 3;
-    TokenKycStatus kycStatus = 4;
-    TokenFreezeStatus freezeStatus = 5;
 }
 
 /* A Key can be a public key from one of the three supported systems (ed25519, RSA-3072,  ECDSA with p384). Or, it can be the ID of a smart contract instance, which is authorized to act as if it had a key. If an account has an ed25519 key associated with it, then the corresponding private key must sign any transaction to transfer cryptocurrency out of it. And similarly for RSA and ECDSA.
