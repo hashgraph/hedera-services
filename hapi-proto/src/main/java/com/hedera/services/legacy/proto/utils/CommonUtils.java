@@ -282,9 +282,9 @@ public class CommonUtils {
   public static Transaction.Builder toTransactionBuilder(TransactionOrBuilder transactionOrBuilder) {
     if (transactionOrBuilder instanceof Transaction) {
       return ((Transaction) transactionOrBuilder).toBuilder();
-    } else {
-      return (Transaction.Builder) transactionOrBuilder;
     }
+
+    return (Transaction.Builder) transactionOrBuilder;
   }
 
   public static byte[] uncheckedSha384Hash(byte[] data) {
