@@ -25,7 +25,7 @@ updateServiceMainJava()
 
     cd ../hedera-node
 
-    if [[ -n "${CI_AWS}" ]]; then
+    if [[ -n "${CI}" ]]; then
         echo "Installing rsync"
         sudo apt update; sudo apt --assume-yes install rsync grsync
     fi
