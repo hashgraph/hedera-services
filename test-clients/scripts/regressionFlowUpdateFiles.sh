@@ -25,6 +25,9 @@ updateServiceMainJava()
 
     cd ../hedera-node
 
+    #install rsync
+    sudo apt update; sudo apt --assume-yes install rsync grsync
+    
     # only copy updated jar files to target directory
     TARGET_DIR=../test-clients/updateFiles
     rm -rf $TARGET_DIR
