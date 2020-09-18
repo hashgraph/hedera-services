@@ -11,7 +11,7 @@ updateServiceMainJava()
     sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
     # rebuild jar files and use timestamp to tell which jar files have been updated
-    cd ../hedera-node
+    cd ..
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
     sleep 1
     mvn --no-transfer-progress install -DskipTests
@@ -20,6 +20,10 @@ updateServiceMainJava()
 
     echo "beforeTime $beforeTime"
     echo "afterTime $afterTime"
+
+    cd -
+
+    cd ../hedera-node
 
     # only copy updated jar files to target directory
     TARGET_DIR=../test-clients/updateFiles
