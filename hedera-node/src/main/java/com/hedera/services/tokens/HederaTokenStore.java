@@ -331,8 +331,8 @@ public class HederaTokenStore implements TokenStore {
 			return TOKEN_HAS_NO_SUPPLY_KEY;
 		}
 		var change = sign * amount;
-		var proposedFloat = token.totalSupply() + change;
-		if (proposedFloat < 0) {
+		var toBeUpdatedTotalSupply = token.totalSupply() + change;
+		if (toBeUpdatedTotalSupply < 0) {
 			return failure;
 		}
 		apply(tId, t -> t.adjustFloatBy(change));
