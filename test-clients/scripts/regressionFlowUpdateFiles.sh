@@ -14,7 +14,7 @@ updateServiceMainJava()
     cd ..
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
     sleep 1
-    mvn --no-transfer-progress install -DskipTests
+    mvn -T 2C --no-transfer-progress install -DskipTests
     sleep 1
     afterTime=`date +'%Y-%m-%d %H:%M:%S'`
 
@@ -27,7 +27,7 @@ updateServiceMainJava()
 
     if [[ -n "${CI}" ]]; then
         echo "Installing rsync"
-        sudo apt update; sudo apt --assume-yes install rsync grsync
+        sudo apt update; sudo apt --assume-yes install rsync
     fi
 
     # only copy updated jar files to target directory
@@ -43,7 +43,7 @@ updateServiceMainJava()
         git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
         # rebuild after checkout to recover binary
-        mvn --no-transfer-progress install -DskipTests
+        mvn -T 2C  --no-transfer-progress install -DskipTests
     fi
 
     cd -
