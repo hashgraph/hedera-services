@@ -275,7 +275,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 	public T via(String name) {
 		txnName = name;
-		shouldRegisterTxnId = true;
+		shouldRegisterTxn = true;
 		return self();
 	}
 	public T fee(long amount) {

@@ -85,7 +85,7 @@ public abstract class HapiSpecOperation {
 	protected boolean loggingOff = false;
 	protected boolean suppressStats = false;
 	protected boolean verboseLoggingOn = false;
-	protected boolean shouldRegisterTxnId = false;
+	protected boolean shouldRegisterTxn = false;
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
@@ -168,8 +168,8 @@ public abstract class HapiSpecOperation {
 				spec.incrementNumLedgerOps();
 			}
 
-			if (shouldRegisterTxnId) {
-				saveTxnId(spec);
+			if (shouldRegisterTxn) {
+				registerTxnSubmitted(spec);
 			}
 
 			if (hasCompleteLifecycle) {
@@ -194,11 +194,11 @@ public abstract class HapiSpecOperation {
 		});
 	}
 
-	private void saveTxnId(HapiApiSpec spec) throws Throwable {
+	private void registerTxnSubmitted(HapiApiSpec spec) throws Throwable {
 		if (txnSubmitted != Transaction.getDefaultInstance()) {
+			spec.registry().saveBytes(txnName, txnSubmitted.toByteString());
 			TransactionID txnId = extractTxnId(txnSubmitted);
 			spec.registry().saveTxnId(txnName, txnId);
-			spec.registry().saveBytes(txnName, txnSubmitted.toByteString());
 		}
 	}
 
