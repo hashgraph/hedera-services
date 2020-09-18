@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * @author Michael Tinker
  */
-public interface BackingAccounts<K, A> {
+public interface BackingStore<K, A> {
 	/**
 	 * Alerts this {@code BackingAccounts} it should flush any cached mutable references.
 	 */

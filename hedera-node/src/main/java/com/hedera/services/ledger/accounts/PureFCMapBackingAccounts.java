@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static java.util.stream.Collectors.toSet;
 
-public class PureFCMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount>  {
+public class PureFCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
 	public PureFCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {

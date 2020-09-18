@@ -65,6 +65,10 @@ public class MerkleEntityAssociation extends AbstractMerkleNode implements FCMKe
 		this.toNum = toNum;
 	}
 
+	public static MerkleEntityAssociation fromAccountTokenRel(Map.Entry<AccountID, TokenID> key) {
+		return fromAccountTokenRel(key.getKey(), key.getValue());
+	}
+
 	public static MerkleEntityAssociation fromAccountTokenRel(AccountID account, TokenID token) {
 		return new MerkleEntityAssociation(
 				account.getShardNum(), account.getRealmNum(), account.getAccountNum(),

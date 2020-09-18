@@ -113,6 +113,32 @@ public class MerkleTokenRelStatus extends AbstractMerkleNode implements FCMValue
 				.toHashCode();
 	}
 
+	/* --- Bean --- */
+
+	public long getBalance() {
+		return balance;
+	}
+
+	public void setBalance(long balance) {
+		this.balance = balance;
+	}
+
+	public boolean isFrozen() {
+		return frozen;
+	}
+
+	public void setFrozen(boolean frozen) {
+		this.frozen = frozen;
+	}
+
+	public boolean isKycGranted() {
+		return kycGranted;
+	}
+
+	public void setKycGranted(boolean kycGranted) {
+		this.kycGranted = kycGranted;
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {

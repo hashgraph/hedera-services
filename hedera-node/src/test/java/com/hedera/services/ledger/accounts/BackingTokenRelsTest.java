@@ -82,7 +82,7 @@ class BackingTokenRelsTest {
 	@Test
 	public void delegatesPutForNewRelIfMissing() {
 		// when:
-		subject.createRelationship(c, ct, cValue);
+		subject.put(asKey(c, ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
@@ -93,7 +93,7 @@ class BackingTokenRelsTest {
 	@Test
 	public void delegatesPutForNewRel() {
 		// when:
-		subject.createRelationship(c, ct, cValue);
+		subject.put(asKey(c, ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
@@ -102,13 +102,13 @@ class BackingTokenRelsTest {
 	@Test
 	public void throwsOnReplacingUnsafeRef() {
 		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.createRelationship(a, at, aValue));
+		assertThrows(IllegalArgumentException.class, () -> subject.put(asKey(a, at), aValue));
 	}
 
 	@Test
 	public void removeUpdatesBothCacheAndDelegate() {
 		// when:
-		subject.endRelationship(a, at);
+		subject.remove(asKey(a, at));
 
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
@@ -124,8 +124,8 @@ class BackingTokenRelsTest {
 		given(rels.getForModify(fromAccountTokenRel(b, bt))).willReturn(bValue);
 
 		// when:
-		subject.getRelationshipStatus(a, at);
-		subject.getRelationshipStatus(b, bt);
+		subject.getRef(asKey(a, at));
+		subject.getRef(asKey(b, bt));
 		// and:
 		subject.flushMutableRefs();
 
@@ -146,8 +146,8 @@ class BackingTokenRelsTest {
 	@Test
 	public void containsWorks() {
 		// expect:
-		assertTrue(subject.inRelationship(a, at));
-		assertTrue(subject.inRelationship(b, bt));
+		assertTrue(subject.contains(asKey(a, at)));
+		assertTrue(subject.contains(asKey(b, bt)));
 	}
 
 	@Test
@@ -157,8 +157,8 @@ class BackingTokenRelsTest {
 		given(rels.getForModify(aKey)).willReturn(aValue);
 
 		// when:
-		var firstStatus = subject.getRelationshipStatus(a, at);
-		var secondStatus = subject.getRelationshipStatus(a, at);
+		var firstStatus = subject.getRef(asKey(a, at));
+		var secondStatus = subject.getRef(asKey(a, at));
 
 		// then:
 		assertSame(aValue, firstStatus);
@@ -167,6 +167,14 @@ class BackingTokenRelsTest {
 		assertSame(aValue, subject.cache.get(asKey(a, at)));
 		// and:
 		verify(rels, times(1)).getForModify(any());
+	}
+
+	@Test
+	public void irrelevantMethodsNotSupported() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.getTokenCopy(null));
+		assertThrows(UnsupportedOperationException.class, () -> subject.getUnsafeRef(null));
+		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 
 	private void setupMocked() {

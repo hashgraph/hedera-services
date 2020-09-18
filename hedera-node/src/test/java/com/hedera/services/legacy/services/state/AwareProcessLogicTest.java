@@ -27,7 +27,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -98,7 +98,7 @@ class AwareProcessLogicTest {
 		final FeeCalculator fees = mock(FeeCalculator.class);
 		final TxnIdRecentHistory recentHistory = mock(TxnIdRecentHistory.class);
 		final Map<TransactionID, TxnIdRecentHistory> histories = mock(Map.class);
-		final BackingAccounts<AccountID, MerkleAccount> backingAccounts = mock(BackingAccounts.class);
+		final BackingStore<AccountID, MerkleAccount> backingAccounts = mock(BackingStore.class);
 		final AccountID accountID = mock(AccountID.class);
 		final OptionValidator validator = mock(OptionValidator.class);
 		final TxnFeeChargingPolicy policy = mock(TxnFeeChargingPolicy.class);

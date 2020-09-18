@@ -50,7 +50,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
@@ -1043,7 +1043,7 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingAccounts<AccountID, MerkleAccount> backingAccounts() {
+	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
 			backingAccounts = new FCMapBackingAccounts(this::accounts);
 		}

@@ -20,10 +20,7 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,8 +37,6 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.utils.EntityIdUtils.asDotDelimitedLongArray;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
  * A store that provides efficient access to the mutable representations
@@ -51,7 +46,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  *
  * @author Michael Tinker
  */
-public class BackingTokenRels {
+public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> {
 	static final Comparator<Map.Entry<AccountID, TokenID>> RELATIONSHIP_COMPARATOR = Comparator
 			.<Map.Entry<AccountID, TokenID>, AccountID>comparing(Map.Entry::getKey, ACCOUNT_ID_COMPARATOR)
 			.thenComparing(Map.Entry::getValue, TOKEN_ID_COMPARATOR);
@@ -69,6 +64,7 @@ public class BackingTokenRels {
 				.forEach(existingRels::add);
 	}
 
+	@Override
 	public void flushMutableRefs() {
 		cache.keySet().stream()
 				.sorted(RELATIONSHIP_COMPARATOR)
@@ -77,34 +73,52 @@ public class BackingTokenRels {
 		cache.clear();
 	}
 
-	public boolean inRelationship(AccountID account, TokenID token) {
-		return existingRels.contains(asKey(account, token));
+	@Override
+	public boolean contains(Map.Entry<AccountID, TokenID> key) {
+		return existingRels.contains(key);
 	}
 
-	public MerkleTokenRelStatus getRelationshipStatus(AccountID account, TokenID token) {
+	@Override
+	public MerkleTokenRelStatus getRef(Map.Entry<AccountID, TokenID> key) {
 		return cache.computeIfAbsent(
-				asKey(account, token),
-				ignore -> delegate.get().getForModify(fromAccountTokenRel(account, token)));
+				key,
+				ignore -> delegate.get().getForModify(fromAccountTokenRel(key.getKey(), key.getValue())));
 	}
 
-	public void createRelationship(AccountID account, TokenID token, MerkleTokenRelStatus status) {
-		var key = asKey(account, token);
+	@Override
+	public void put(Map.Entry<AccountID, TokenID> key, MerkleTokenRelStatus status) {
 		if (!existingRels.contains(key)) {
-			delegate.get().put(fromAccountTokenRel(account, token), status);
+			delegate.get().put(fromAccountTokenRel(key), status);
 			existingRels.add(key);
 		} else if (!cache.containsKey(key) || cache.get(key) != status) {
 			throw new IllegalArgumentException(String.format(
 					"Existing relationship status '%s' can only be changed using a mutable ref!",
-					fromAccountTokenRel(account, token).toAbbrevString()));
+					fromAccountTokenRel(key).toAbbrevString()));
 		}
 	}
 
-	public void endRelationship(AccountID account, TokenID token) {
-		existingRels.remove(asKey(account, token));
-		delegate.get().remove(fromAccountTokenRel(account, token));
+	@Override
+	public void remove(Map.Entry<AccountID, TokenID> key) {
+		existingRels.remove(key);
+		delegate.get().remove(fromAccountTokenRel(key));
 	}
 
-	static Map.Entry<AccountID, TokenID> asKey(AccountID account, TokenID token) {
+	@Override
+	public MerkleTokenRelStatus getTokenCopy(Map.Entry<AccountID, TokenID> id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public MerkleTokenRelStatus getUnsafeRef(Map.Entry<AccountID, TokenID> id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Set<Map.Entry<AccountID, TokenID>> idSet() {
+		throw new UnsupportedOperationException();
+	}
+
+	public static Map.Entry<AccountID, TokenID> asKey(AccountID account, TokenID token) {
 		return new AbstractMap.SimpleImmutableEntry<>(account, token);
 	}
 }

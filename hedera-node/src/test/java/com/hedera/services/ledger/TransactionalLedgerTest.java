@@ -20,7 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
@@ -53,7 +53,7 @@ import org.mockito.InOrder;
 @RunWith(JUnitPlatform.class)
 public class TransactionalLedgerTest {
 	Supplier<TestAccount> newAccountFactory;
-	BackingAccounts<Long, TestAccount> backingAccounts;
+	BackingStore<Long, TestAccount> backingAccounts;
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
@@ -67,7 +67,7 @@ public class TransactionalLedgerTest {
 	private void setup() {
 		token = mock(MerkleToken.class);
 
-		backingAccounts = mock(BackingAccounts.class);
+		backingAccounts = mock(BackingStore.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 		given(backingAccounts.getTokenCopy(1L)).willReturn(account1TokenCopy);
