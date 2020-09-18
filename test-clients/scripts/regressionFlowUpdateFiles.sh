@@ -12,6 +12,8 @@ updateServiceMainJava()
 
     # rebuild jar files and use timestamp to tell which jar files have been updated
     cd ..
+    mvn -T 2C --no-transfer-progress install -DskipTests
+
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
     sleep 1
     mvn -T 2C --no-transfer-progress install -DskipTests
@@ -36,7 +38,7 @@ updateServiceMainJava()
     mkdir -p $TARGET_DIR
     find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync  {} $TARGET_DIR \;
 
-    if [[ -n "${CI_AWS}" ]]; then
+    if [[ -n "${CI}" ]]; then
         echo "Running on CIRCLECI, no need to restore"
     else
         echo "Restore source code and jar files"
