@@ -28,7 +28,7 @@ import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -74,10 +74,10 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenDeletion opBody = spec
+		TokenDeleteTransactionBody opBody = spec
 				.txns()
-				.<TokenDeletion, TokenDeletion.Builder>body(
-						TokenDeletion.class, b -> {
+				.<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
+						TokenDeleteTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
 						});
 		return b -> b.setTokenDeletion(opBody);

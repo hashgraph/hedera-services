@@ -20,7 +20,7 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -51,7 +51,7 @@ public class TokenDeleteFactory extends SignedTxnFactory<TokenDeleteFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenDeletion.newBuilder()
+		var op = TokenDeleteTransactionBody.newBuilder()
 				.setToken(ref);
 		txn.setTokenDeletion(op);
 	}

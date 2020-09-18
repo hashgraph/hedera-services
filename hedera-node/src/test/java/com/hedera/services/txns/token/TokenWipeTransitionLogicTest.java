@@ -27,7 +27,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,7 +123,7 @@ class TokenWipeTransitionLogicTest {
 
     private void givenValidTxnCtx() {
         tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccount.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
                         .setToken(token)
                         .setAccount(account)
                         .setAmount(wipeAmount))

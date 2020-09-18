@@ -6,7 +6,7 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenBurnCoins;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -34,7 +34,7 @@ public class TokenBurnUsageTest {
 	TokenID id = IdUtils.asToken("0.0.75231");
 	TokenRef token;
 
-	TokenBurnCoins op;
+	TokenBurnTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -91,14 +91,14 @@ public class TokenBurnUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenBurnCoins.newBuilder()
+		op = TokenBurnTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenBurnCoins.newBuilder()
+		op = TokenBurnTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

@@ -25,7 +25,7 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -119,7 +119,7 @@ class TokenDeleteTransitionLogicTest {
 
 	private void givenValidTxnCtx() {
 		tokenDeleteTxn = TransactionBody.newBuilder()
-				.setTokenDeletion(TokenDeletion.newBuilder()
+				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder()
 						.setToken(token))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
