@@ -7,18 +7,22 @@ set -eE
 
 updateServiceMainJava()
 {
+    rm -rf updateFiles
+
     if [[ -n "${CI}" ]]; then
         MVN_OPTION="--no-transfer-progress"
     fi
 
-    # rebuild jar files and use timestamp to tell which jar files have been updated
+    # rebuild all jar files and use timestamp to tell which jar files have been updated
     cd ..
     mvn -T 2C $MVN_OPTION install -DskipTests
 
     # replace a line in ServicesMain.java
     sed -i -e s/'init finished'/'new version jar'/g  hedera-node/src/main/java/com/hedera/services/ServicesMain.java
-
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
+
+    cd hedera-node/ # only build service
+
     sleep 1
     mvn -T 2C $MVN_OPTION install -DskipTests
     sleep 1
@@ -26,10 +30,6 @@ updateServiceMainJava()
 
     echo "beforeTime $beforeTime"
     echo "afterTime $afterTime"
-
-    cd -
-
-    cd ../hedera-node
 
     if [[ -n "${CI}" ]]; then
         echo "Installing rsync"
@@ -46,17 +46,16 @@ updateServiceMainJava()
         echo "Running on CIRCLECI, no need to restore"
     else
         echo "Restore source code and jar files"
-        git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+        git checkout src/main/java/com/hedera/services/ServicesMain.java
 
         # rebuild after checkout to recover binary
         mvn -T 2C $MVN_OPTION install -DskipTests
     fi
 
-    cd -
-
     echo "Update files after build have been copied to $TARGET_DIR"
 
     ls -ltr $TARGET_DIR
+    cd ../test-clients
 
 }
 
