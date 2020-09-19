@@ -32,6 +32,7 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,6 +61,28 @@ class MerkleAccountTokensTest {
 	@BeforeEach
 	private void setup() {
 		subject = new MerkleAccountTokens(initialIds);
+	}
+
+	@Test
+	public void purgeWorks() {
+		// setup:
+		subject = new MerkleAccountTokens();
+		subject.associate(a);
+		subject.associate(b);
+		subject.associate(c);
+		subject.associate(d);
+		subject.associate(e);
+		// and:
+		Predicate<TokenID> isGone = id -> b.equals(id);
+		Predicate<TokenID> isDeleted = id -> a.equals(id) || e.equals(id);
+
+		// when:
+		int effectiveAssociations = subject.purge(isGone, isDeleted);
+
+		// then:
+		assertEquals("[0.0.1, 0.0.2, 1.1.2, 0.0.3]", subject.readableTokenIds());
+		// and:
+		assertEquals(2, effectiveAssociations);
 	}
 
 	@Test

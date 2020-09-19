@@ -295,6 +295,10 @@ public class MiscUtils {
 			return TOKEN_BURN_METRIC;
 		} else if (txn.hasTokenWipe()) {
 			return TOKEN_WIPE_ACCOUNT_METRIC;
+		} else if (txn.hasTokenAssociate()) {
+			return TOKEN_ASSOCIATE_METRIC;
+		} else if (txn.hasTokenDissociate()) {
+			return TOKEN_DISSOCIATE_METRIC;
 		} else {
 			return "NotImplemented";
 		}
@@ -365,6 +369,10 @@ public class MiscUtils {
 			return TokenBurn;
 		} else if (txn.hasTokenWipe()) {
 			return TokenAccountWipe;
+		} else if (txn.hasTokenAssociate()) {
+			return TokenAssociateToAccount;
+		} else if (txn.hasTokenDissociate()) {
+			return TokenDissociateFromAccount;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {

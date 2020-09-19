@@ -197,7 +197,7 @@ enum ResponseCodeEnum {
   TOKEN_HAS_NO_WIPE_KEY = 183; // Wipe key is not set on token
   INVALID_TOKEN_MINT_AMOUNT = 184;
   INVALID_TOKEN_BURN_AMOUNT = 185;
-  ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP = 186;
+  TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = 186;
   CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 187; // Cannot execute wipe operation on treasury account
   INVALID_KYC_KEY = 188;
   INVALID_WIPE_KEY = 189;
@@ -208,4 +208,5 @@ enum ResponseCodeEnum {
   TOKEN_NAME_TOO_LONG = 194; // Token name is too long
   INVALID_WIPING_AMOUNT = 195; // The provided wipe amount must not be negative, zero or bigger than the token holder balance
   TOKEN_IS_IMMUTABlE = 196; // Token does not have Admin key set, thus update/delete transactions cannot be performed
+  TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT = 197;
 }

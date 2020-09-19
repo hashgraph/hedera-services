@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
@@ -133,10 +134,6 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		return tokenIds;
 	}
 
-	public void setTokenIds(long[] tokenIds) {
-		this.tokenIds = tokenIds;
-	}
-
 	/* --- Association Manipulation --- */
 	public int numAssociations() {
 		return tokenIds.length / NUM_ID_PARTS;
@@ -158,6 +155,43 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		if (i >= 0) {
 			remove(i);
 		}
+	}
+
+	public int purge(Predicate<TokenID> isGone, Predicate<TokenID> isDeleted) {
+		int effectiveAssociations = 0, meaningfulAssociations = 0, n = numAssociations();
+		for (int i = 0; i < n; i++) {
+			var id = idAt(i);
+			if (isGone.test(id)) {
+				continue;
+			}
+			meaningfulAssociations++;
+			if (isDeleted.test(id)) {
+				continue;
+			}
+			effectiveAssociations++;
+		}
+
+		if (meaningfulAssociations != n) {
+			long[] newTokenIds = new long[meaningfulAssociations * NUM_ID_PARTS];
+			for (int i = 0, j = 0; i < n; i++) {
+				var id = idAt(i);
+				if (isGone.test(id)) {
+					continue;
+				}
+				System.arraycopy(tokenIds, i * NUM_ID_PARTS, newTokenIds, j * NUM_ID_PARTS, NUM_ID_PARTS);
+				j++;
+			}
+			this.tokenIds = newTokenIds;
+		}
+		return effectiveAssociations;
+	}
+
+	private TokenID idAt(int i) {
+		return TokenID.newBuilder()
+				.setShardNum(tokenIds[shard(i)])
+				.setRealmNum(tokenIds[realm(i)])
+				.setTokenNum(tokenIds[num(i)])
+				.build();
 	}
 
 	/* --- Helpers --- */

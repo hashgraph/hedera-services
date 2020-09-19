@@ -34,17 +34,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
- * Provides the state transition for wiping [part of] a token balance.
+ * Provides the state transition for associating tokens to an account.
  *
  * @author Michael Tinker
  */
-public class TokenWipeTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenWipeTransitionLogic.class);
+public class TokenAssociateTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(TokenAssociateTransitionLogic.class);
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
 
-	public TokenWipeTransitionLogic(
+	public TokenAssociateTransitionLogic(
 			TokenStore store,
 			TransactionContext txnCtx
 	) {
@@ -55,8 +55,8 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var op = txnCtx.accessor().getTxn().getTokenWipe();
-			var outcome = store.wipe(op.getAccount(), store.resolve(op.getToken()), op.getAmount(),false);
+			var op = txnCtx.accessor().getTxn().getTokenAssociate();
+			var outcome = store.associate(op.getAccount(), op.getTokensList());
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
@@ -67,6 +67,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
-		return TransactionBody::hasTokenWipe;
+		return TransactionBody::hasTokenAssociate;
 	}
 }

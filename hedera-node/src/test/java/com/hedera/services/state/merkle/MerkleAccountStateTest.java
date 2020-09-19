@@ -52,9 +52,9 @@ import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELAT
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.IdUtils.tokenWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -558,7 +558,7 @@ class MerkleAccountStateTest {
 		var outcome = subject.wipeTokenRelationship(tokenWith(firstToken - 1));
 
 		// expect:
-		assertEquals(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP, outcome);
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, outcome);
 		// and:
 		assertEquals(tokenRels, subject.tokenRels);
 	}

@@ -72,9 +72,12 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenAssociate;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
@@ -330,6 +333,8 @@ public class MiscUtilsTest {
 			put(TokenController.TOKEN_MINT_METRIC, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenController.TOKEN_BURN_METRIC, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenController.TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenController.TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenController.TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
 		}};
 
 		// expect:
@@ -585,6 +590,8 @@ public class MiscUtilsTest {
 			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

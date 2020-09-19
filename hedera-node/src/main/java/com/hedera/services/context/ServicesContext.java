@@ -185,9 +185,11 @@ import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.services.txns.token.TokenAssociateTransitionLogic;
 import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
+import com.hedera.services.txns.token.TokenDissociateTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
@@ -978,6 +980,10 @@ public class ServicesContext {
 						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenAssociateToAccount,
+						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenDissociateFromAccount,
+						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),

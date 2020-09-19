@@ -34,11 +34,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -67,6 +67,8 @@ public interface TokenStore {
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum associate(AccountID aId, List<TokenRef> tokens);
+	ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);

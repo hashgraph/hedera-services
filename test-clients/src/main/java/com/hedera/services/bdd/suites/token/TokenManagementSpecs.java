@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -57,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -141,7 +141,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
 						wipeTokenAccount(wipeableToken, "misc", 1)
-								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),

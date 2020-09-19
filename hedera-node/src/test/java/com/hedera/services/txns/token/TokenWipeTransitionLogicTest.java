@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -75,13 +75,13 @@ class TokenWipeTransitionLogicTest {
     public void capturesInvalidWipe() {
         givenValidTxnCtx();
         // and:
-        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(txnCtx).setStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+        verify(txnCtx).setStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 
     @Test

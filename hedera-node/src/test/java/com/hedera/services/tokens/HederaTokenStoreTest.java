@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -52,6 +53,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -394,6 +396,120 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void associatingRejectsDeletedTokens() {
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
+	public void associatingRejectsMissingToken() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(INVALID_TOKEN_REF, status);
+	}
+
+	@Test
+	public void associatingRejectsMissingAccounts() {
+		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void dissociatingRejectsUnassociatedTokens() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	public void associatingRejectsAlreadyAssociatedTokens() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	public void associatingRejectsIfCappedAssociationsEvenAfterPurging() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+		// and:
+		verify(tokens, never()).associate(misc);
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+	}
+
+	@Test
+	public void associatingHappyPathWorks() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+
+		// when:
+		var status = subject.associate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).associate(misc);
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+	}
+
+	@Test
+	public void dissociatingHappyPathWorks() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(tokens).disassociate(misc);
+		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+	}
+
+	@Test
 	public void grantingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
@@ -402,6 +518,18 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void grantingKycRejectsDeletedAccount() {
+		given(accountsLedger.exists(sponsor)).willReturn(true);
+		given(hederaLedger.isDeleted(sponsor)).willReturn(true);
+
+		// when:
+		var status = subject.grantKyc(sponsor, misc);
+
+		// expect:
+		assertEquals(ACCOUNT_DELETED, status);
 	}
 
 	@Test
@@ -468,7 +596,7 @@ class HederaTokenStoreTest {
 		var status = subject.wipe(sponsor, misc, adjustment, true);
 
 		// expect:
-		assertEquals(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP, status);
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
 		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
 	}
 

@@ -31,6 +31,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
@@ -63,7 +64,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECO
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.tokens.TokenScope.idScopeOf;
+import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -255,6 +258,14 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
+	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
+		return (MerkleAccountTokens)accountsLedger.get(aId, TOKENS);
+	}
+
+	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
+		accountsLedger.set(aId, TOKENS, tokens);
+	}
+
 	public long getTokenBalance(AccountID aId, TokenID tId) {
 		return (long) accountsLedger.get(aId, BALANCE, idScopeOf(tId));
 	}
@@ -284,8 +295,13 @@ public class HederaLedger {
 		clearNetTokenTransfers();
 	}
 
-	public ResponseCodeEnum doTokenTransfer(TokenID tId, AccountID from, AccountID to, long adjustment,
-			boolean skipTokenCheck) {
+	public ResponseCodeEnum doTokenTransfer(
+			TokenID tId,
+			AccountID from,
+			AccountID to,
+			long adjustment,
+			boolean skipTokenCheck
+	) {
 		if (!skipTokenCheck && !tokenStore.exists(tId)) {
 			return INVALID_TOKEN_ID;
 		}
@@ -306,7 +322,7 @@ public class HederaLedger {
 
 		for (TokenRefTransferList xfers : transfers.getTokenTransfersList()) {
 			var id = tokenStore.resolve(xfers.getToken());
-			if (id == TokenStore.MISSING_TOKEN) {
+			if (id == MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
 			}
 			if (validity == OK) {

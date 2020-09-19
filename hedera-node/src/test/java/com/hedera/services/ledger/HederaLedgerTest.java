@@ -40,6 +40,7 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -65,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -91,6 +93,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECO
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -1009,6 +1012,32 @@ public class HederaLedgerTest {
 
 		// then:
 		verify(accountsLedger).get(genesis, IS_DELETED);
+	}
+
+	@Test
+	public void delegatesToGetTokens() {
+		// setup:
+		var tokens = new MerkleAccountTokens();
+
+		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
+
+		// when:
+		var actual = subject.getAssociatedTokens(genesis);
+
+		// then:
+		Assertions.assertSame(actual, tokens);
+	}
+
+	@Test
+	public void delegatesToSetTokens() {
+		// setup:
+		var tokens = new MerkleAccountTokens();
+
+		// when:
+		subject.setAssociatedTokens(genesis, tokens);
+
+		// then:
+		verify(accountsLedger).set(genesis, TOKENS, tokens);
 	}
 
 	@Test

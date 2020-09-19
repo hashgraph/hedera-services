@@ -31,8 +31,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -51,6 +53,16 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum associate(AccountID aId, List<TokenRef> tokens) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens) {
 		throw new UnsupportedOperationException();
 	}
 
