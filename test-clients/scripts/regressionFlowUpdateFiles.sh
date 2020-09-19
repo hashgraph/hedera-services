@@ -7,16 +7,16 @@ set -eE
 
 updateServiceMainJava()
 {
+    # rebuild jar files and use timestamp to tell which jar files have been updated
+    cd ..
+    mvn -T 2C install -DskipTests
+
     # replace a line in ServicesMain.java
     sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
-    # rebuild jar files and use timestamp to tell which jar files have been updated
-    cd ..
-    mvn -T 2C --no-transfer-progress install -DskipTests
-
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
     sleep 1
-    mvn -T 2C --no-transfer-progress install -DskipTests
+    mvn -T 2C install -DskipTests
     sleep 1
     afterTime=`date +'%Y-%m-%d %H:%M:%S'`
 
@@ -45,7 +45,7 @@ updateServiceMainJava()
         git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
 
         # rebuild after checkout to recover binary
-        mvn -T 2C  --no-transfer-progress install -DskipTests
+        mvn -T 2C  install -DskipTests
     fi
 
     cd -
