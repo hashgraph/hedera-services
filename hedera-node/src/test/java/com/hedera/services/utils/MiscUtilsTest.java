@@ -620,7 +620,7 @@ public class MiscUtilsTest {
 		given(transaction.toByteArray()).willReturn(testBytes);
 		given(accessor.getSignedTxn()).willReturn(transaction);
 
-		assertArrayEquals(expectedHash, CommonUtils.uncheckedSha384Hash(testBytes));
+		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
 		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
 	}
 

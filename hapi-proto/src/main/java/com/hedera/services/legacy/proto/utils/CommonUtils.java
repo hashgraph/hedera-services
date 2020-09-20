@@ -287,16 +287,19 @@ public class CommonUtils {
     return (Transaction.Builder) transactionOrBuilder;
   }
 
-  public static byte[] uncheckedSha384Hash(byte[] data) {
+  public static MessageDigest getSha384Hash() throws NoSuchAlgorithmException {
+    return MessageDigest.getInstance("SHA-384");
+  }
+
+  public static byte[] noThrowSha384HashOf(byte[] byteArray) {
     try {
-      return MessageDigest.getInstance("SHA-384").digest(data);
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException(e);
-    }
+      return getSha384Hash().digest(byteArray);
+    } catch (NoSuchAlgorithmException ignoreToReturnEmptyByteArray) { }
+    return new byte[0];
   }
 
   public static ByteString sha384HashOf(byte[] byteArray) {
-    return ByteString.copyFrom(uncheckedSha384Hash(byteArray));
+    return ByteString.copyFrom(noThrowSha384HashOf(byteArray));
   }
 
   public static ByteString sha384HashOf(Transaction transaction) {
