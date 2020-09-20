@@ -36,9 +36,11 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
@@ -737,6 +739,8 @@ public class ServicesContext {
 				entry(TokenMint, List.of(new TokenMintResourceUsage())),
 				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
 				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
+				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
+				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),

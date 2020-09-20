@@ -118,7 +118,7 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 		throw new UnsupportedOperationException();
 	}
 
-	public static Map.Entry<AccountID, TokenID> asKey(AccountID account, TokenID token) {
+	public static Map.Entry<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
 		return new AbstractMap.SimpleImmutableEntry<>(account, token);
 	}
 }

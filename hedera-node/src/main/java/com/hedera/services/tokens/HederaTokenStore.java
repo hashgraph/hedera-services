@@ -55,6 +55,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_KYC_GRANTED;
@@ -181,6 +182,17 @@ public class HederaTokenStore implements TokenStore {
 			} else {
 				for (TokenID id : tokenIds) {
 					accountTokens.associate(id);
+					var relationship = asTokenRel(aId, id);
+					tokenRelsLedger.create(relationship);
+					var token = get(id);
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_FROZEN,
+							token.hasFreezeKey() && token.accountsAreFrozenByDefault());
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_KYC_GRANTED,
+							!token.hasKycKey());
 				}
 			}
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
@@ -197,7 +209,10 @@ public class HederaTokenStore implements TokenStore {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
-			tokenIds.forEach(accountTokens::disassociate);
+			tokenIds.forEach(id -> {
+				accountTokens.disassociate(id);
+				tokenRelsLedger.destroy(asTokenRel(aId, id));
+			});
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
 			return OK;
 		});

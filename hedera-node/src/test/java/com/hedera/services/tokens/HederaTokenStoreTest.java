@@ -23,6 +23,7 @@ package com.hedera.services.tokens;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -478,9 +479,15 @@ class HederaTokenStoreTest {
 	public void associatingHappyPathWorks() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
+		var key = BackingTokenRels.asTokenRel(sponsor, misc);
+
 		given(tokens.isAssociatedWith(misc)).willReturn(false);
 		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(token.hasKycKey()).willReturn(true);
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
 		// when:
 		var status = subject.associate(sponsor, List.of(miscRef));
@@ -490,12 +497,17 @@ class HederaTokenStoreTest {
 		// and:
 		verify(tokens).associate(misc);
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).create(key);
+		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
+		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 	}
 
 	@Test
 	public void dissociatingHappyPathWorks() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
+		var key = BackingTokenRels.asTokenRel(sponsor, misc);
+
 		given(tokens.isAssociatedWith(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
@@ -507,6 +519,7 @@ class HederaTokenStoreTest {
 		// and:
 		verify(tokens).disassociate(misc);
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger).destroy(key);
 	}
 
 	@Test

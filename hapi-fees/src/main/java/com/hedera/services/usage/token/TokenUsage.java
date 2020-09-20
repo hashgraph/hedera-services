@@ -71,8 +71,8 @@ public abstract class TokenUsage<T extends TokenUsage<T>> {
 		addRecordRb(tokenEntitySizes.bytesUsedToRecordTransfers(numTokens, numTransfers));
 	}
 
-	public T novelRelLasting(long secs) {
-		usageEstimator.addRbs(tokenEntitySizes.bytesUsedPerAccountRelationship() * secs);
+	public T novelRelsLasting(int n, long secs) {
+		usageEstimator.addRbs(n * tokenEntitySizes.bytesUsedPerAccountRelationship() * secs);
 		return self();
 	}
 }

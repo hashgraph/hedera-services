@@ -22,6 +22,8 @@ package com.hedera.services.usage.token;
 
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum TokenEntitySizes {
 	TOKEN_ENTITY_SIZES;
@@ -51,6 +53,6 @@ public enum TokenEntitySizes {
 	}
 
 	public int bytesUsedPerAccountRelationship() {
-		return 3 * 8;
+		return 3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * BOOL_SIZE;
 	}
 }

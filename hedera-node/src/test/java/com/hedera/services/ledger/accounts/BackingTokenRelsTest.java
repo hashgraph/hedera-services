@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Collections;
 
-import static com.hedera.services.ledger.accounts.BackingTokenRels.asKey;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -82,18 +82,18 @@ class BackingTokenRelsTest {
 	@Test
 	public void delegatesPutForNewRelIfMissing() {
 		// when:
-		subject.put(asKey(c, ct), cValue);
+		subject.put(asTokenRel(c, ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
 		// and:
-		assertTrue(subject.existingRels.contains(asKey(c, ct)));
+		assertTrue(subject.existingRels.contains(asTokenRel(c, ct)));
 	}
 
 	@Test
 	public void delegatesPutForNewRel() {
 		// when:
-		subject.put(asKey(c, ct), cValue);
+		subject.put(asTokenRel(c, ct), cValue);
 
 		// then:
 		assertEquals(cValue, rels.get(fromAccountTokenRel(c, ct)));
@@ -102,18 +102,18 @@ class BackingTokenRelsTest {
 	@Test
 	public void throwsOnReplacingUnsafeRef() {
 		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.put(asKey(a, at), aValue));
+		assertThrows(IllegalArgumentException.class, () -> subject.put(asTokenRel(a, at), aValue));
 	}
 
 	@Test
 	public void removeUpdatesBothCacheAndDelegate() {
 		// when:
-		subject.remove(asKey(a, at));
+		subject.remove(asTokenRel(a, at));
 
 		// then:
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
 		// and:
-		assertFalse(subject.existingRels.contains(asKey(a, at)));
+		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
 	}
 
 	@Test
@@ -124,8 +124,8 @@ class BackingTokenRelsTest {
 		given(rels.getForModify(fromAccountTokenRel(b, bt))).willReturn(bValue);
 
 		// when:
-		subject.getRef(asKey(a, at));
-		subject.getRef(asKey(b, bt));
+		subject.getRef(asTokenRel(a, at));
+		subject.getRef(asTokenRel(b, bt));
 		// and:
 		subject.flushMutableRefs();
 
@@ -139,15 +139,15 @@ class BackingTokenRelsTest {
 	@Test
 	public void syncsFromInjectedMap() {
 		// expect:
-		assertTrue(subject.existingRels.contains(asKey(a, at)));
-		assertTrue(subject.existingRels.contains(asKey(b, bt)));
+		assertTrue(subject.existingRels.contains(asTokenRel(a, at)));
+		assertTrue(subject.existingRels.contains(asTokenRel(b, bt)));
 	}
 
 	@Test
 	public void containsWorks() {
 		// expect:
-		assertTrue(subject.contains(asKey(a, at)));
-		assertTrue(subject.contains(asKey(b, bt)));
+		assertTrue(subject.contains(asTokenRel(a, at)));
+		assertTrue(subject.contains(asTokenRel(b, bt)));
 	}
 
 	@Test
@@ -157,14 +157,14 @@ class BackingTokenRelsTest {
 		given(rels.getForModify(aKey)).willReturn(aValue);
 
 		// when:
-		var firstStatus = subject.getRef(asKey(a, at));
-		var secondStatus = subject.getRef(asKey(a, at));
+		var firstStatus = subject.getRef(asTokenRel(a, at));
+		var secondStatus = subject.getRef(asTokenRel(a, at));
 
 		// then:
 		assertSame(aValue, firstStatus);
 		assertSame(aValue, secondStatus);
 		// and:
-		assertSame(aValue, subject.cache.get(asKey(a, at)));
+		assertSame(aValue, subject.cache.get(asTokenRel(a, at)));
 		// and:
 		verify(rels, times(1)).getForModify(any());
 	}

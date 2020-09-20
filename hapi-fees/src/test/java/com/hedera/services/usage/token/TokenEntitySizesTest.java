@@ -20,11 +20,13 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static com.hedera.services.usage.token.TokenEntitySizes.*;
 
@@ -80,6 +82,8 @@ public class TokenEntitySizesTest {
 	@Test
 	public void returnsRequiredBytesForRel() {
 		// expect:
-		assertEquals(3 * 8, subject.bytesUsedPerAccountRelationship());
+		assertEquals(
+				3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * FeeBuilder.BOOL_SIZE,
+				subject.bytesUsedPerAccountRelationship());
 	}
 }

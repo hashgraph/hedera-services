@@ -3,6 +3,92 @@
     "currentFeeSchedule": [
        {
         "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenDissociateFromAccount",
+          "feeData": {
+            "nodedata": {
+              "constant": 1094986245,
+              "bpt": 1750555,
+              "vpt": 4376387182,
+              "rbh": 1167,
+              "sbh": 88,
+              "gas": 11670,
+              "bpr": 1750555,
+              "sbpr": 43764,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+       {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenAssociateToAccount",
+          "feeData": {
+            "nodedata": {
+              "constant": 1094986245,
+              "bpt": 1750555,
+              "vpt": 4376387182,
+              "rbh": 1167,
+              "sbh": 88,
+              "gas": 11670,
+              "bpr": 1750555,
+              "sbpr": 43764,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+       {
+        "transactionFeeSchedule": {
           "hederaFunctionality": "TokenAccountWipe",
           "feeData": {
             "nodedata": {
@@ -2115,6 +2201,92 @@
   },
   {
     "nextFeeSchedule": [
+       {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenDissociateFromAccount",
+          "feeData": {
+            "nodedata": {
+              "constant": 1094986245,
+              "bpt": 1750555,
+              "vpt": 4376387182,
+              "rbh": 1167,
+              "sbh": 88,
+              "gas": 11670,
+              "bpr": 1750555,
+              "sbpr": 43764,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+       {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenAssociateToAccount",
+          "feeData": {
+            "nodedata": {
+              "constant": 1094986245,
+              "bpt": 1750555,
+              "vpt": 4376387182,
+              "rbh": 1167,
+              "sbh": 88,
+              "gas": 11670,
+              "bpr": 1750555,
+              "sbpr": 43764,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 14234821187,
+              "bpt": 22757213,
+              "vpt": 56893033369,
+              "rbh": 15171,
+              "sbh": 1138,
+              "gas": 151715,
+              "bpr": 22757213,
+              "sbpr": 568930,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
        {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TokenAccountWipe",
