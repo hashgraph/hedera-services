@@ -34,6 +34,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_REPL
 public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 	private TokenRef ref;
 	private Optional<KeyTree> newAdminKt = Optional.empty();
+	private Optional<AccountID> newTreasury = Optional.empty();
 	private Optional<AccountID> newAutoRenew = Optional.empty();
 	private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
 
@@ -55,6 +56,11 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 
 	public TokenUpdateFactory newAutoRenew(AccountID account) {
 		newAutoRenew = Optional.of(account);
+		return this;
+	}
+
+	public TokenUpdateFactory newTreasury(AccountID account) {
+		newTreasury = Optional.of(account);
 		return this;
 	}
 
@@ -106,6 +112,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 			op.setWipeKey(TOKEN_REPLACE_KT.asKey());
 		}
 		newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
+		newTreasury.ifPresent(op::setTreasury);
 		txn.setTokenUpdate(op);
 	}
 }

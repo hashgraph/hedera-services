@@ -1454,6 +1454,20 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
+	public void getsUpdateWithNewTreasury() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_TREASURY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
+	}
+
+	@Test
 	public void getsUpdateWithFreeze() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
