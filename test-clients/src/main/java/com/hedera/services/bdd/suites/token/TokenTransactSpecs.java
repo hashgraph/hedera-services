@@ -57,15 +57,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
-						txnsAreAtomic(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreChecked(),
 						senderSigsAreValid(),
 						balancesAreChecked(),
 						nonZeroNetTransfersRejected(),
+						allRequiredSigsAreChecked(),
+						txnsAreAtomic(),
 				}
 		);
 	}
+
 	public HapiApiSpec balancesAreChecked() {
 		return defaultHapiSpec("BalancesAreChecked")
 				.given(
@@ -119,13 +120,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec senderSigsAreChecked() {
+	public HapiApiSpec allRequiredSigsAreChecked() {
 		return defaultHapiSpec("SenderSigsAreChecked")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate("firstTreasury"),
 						cryptoCreate("secondTreasury"),
-						cryptoCreate("beneficiary")
+						cryptoCreate("beneficiary").receiverSigRequired(true)
 				).when(
 						tokenCreate(A_TOKEN)
 								.initialFloat(123)
@@ -138,8 +139,19 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
 						).payingWith("payer")
-								.signedBy("payer", "firstTreasury")
-								.hasKnownStatus(INVALID_SIGNATURE)
+								.signedBy("payer", "firstTreasury", "beneficiary")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury", "secondTreasury")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).payingWith("payer")
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 
@@ -161,7 +173,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenTransact(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
-								.signedBy("firstTreasury","payer")
+								.signedBy("firstTreasury", "payer")
 								.hasKnownStatus(SUCCESS)
 				);
 	}
