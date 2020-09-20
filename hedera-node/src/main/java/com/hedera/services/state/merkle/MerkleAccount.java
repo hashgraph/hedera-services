@@ -173,10 +173,6 @@ public class MerkleAccount extends AbstractMerkleInternal
 		state().setTokenRels(viewSoFar.state().getTokenRels());
 	}
 
-	public List<RawTokenRelationship> explicitTokenRels() {
-		return state().explicitTokenRels();
-	}
-
 	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
 		return state().wipeTokenRelationship(id);
 	}

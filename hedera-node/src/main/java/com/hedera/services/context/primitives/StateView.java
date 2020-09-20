@@ -46,6 +46,7 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -164,6 +165,12 @@ public class StateView {
 
 	public Optional<byte[]> storageOf(ContractID id) {
 		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
+	}
+
+	public Optional<MerkleToken> tokenWith(TokenID id) {
+		return !tokenStore.exists(id)
+				? Optional.empty()
+				: Optional.of(tokenStore.get(id));
 	}
 
 	public Optional<TokenInfo> infoForToken(TokenRef ref) {
@@ -311,5 +318,9 @@ public class StateView {
 
 	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
 		return accounts.get();
+	}
+
+	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
+		return tokenAssociations;
 	}
 }

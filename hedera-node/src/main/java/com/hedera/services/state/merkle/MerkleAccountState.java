@@ -247,16 +247,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.toString();
 	}
 
-	public List<RawTokenRelationship> explicitTokenRels() {
-		return IntStream.range(0, numTokenRelationships())
-				.mapToObj(i -> new RawTokenRelationship(
-						tokenRels[balance(i)],
-						tokenRels[num(i)],
-						isFrozen(i),
-						isKycGranted(i)))
-				.collect(toList());
-	}
-
 	public String readableTokenRels() {
 		var sb = new StringBuilder("[");
 		for (int i = 0, n = numTokenRelationships(); i < n; i++) {

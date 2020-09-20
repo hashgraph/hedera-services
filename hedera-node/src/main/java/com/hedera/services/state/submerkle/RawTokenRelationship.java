@@ -40,12 +40,23 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 
 public class RawTokenRelationship {
 	private final long balance;
+	private final long shardNum;
+	private final long realmNum;
 	private final long tokenNum;
 	private final boolean frozen;
 	private final boolean kycGranted;
 
-	public RawTokenRelationship(long balance, long tokenNum, boolean frozen, boolean kycGranted) {
+	public RawTokenRelationship(
+			long balance,
+			long shardNum,
+			long realmNum,
+			long tokenNum,
+			boolean frozen,
+			boolean kycGranted
+	) {
 		this.balance = balance;
+		this.shardNum = shardNum;
+		this.realmNum = realmNum;
 		this.tokenNum = tokenNum;
 		this.frozen = frozen;
 		this.kycGranted = kycGranted;
@@ -77,7 +88,10 @@ public class RawTokenRelationship {
 		return TokenRelationship.newBuilder()
 				.setBalance(balance)
 				.setSymbol(token.symbol())
-				.setTokenId(TokenID.newBuilder().setTokenNum(tokenNum))
+				.setTokenId(TokenID.newBuilder()
+						.setShardNum(shardNum)
+						.setRealmNum(realmNum)
+						.setTokenNum(tokenNum))
 				.setFreezeStatus(freezeStatusFor(token))
 				.setKycStatus(kycStatusFor(token))
 				.build();
@@ -118,7 +132,7 @@ public class RawTokenRelationship {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("tokenNum", tokenNum)
+				.add("token", String.format("%d.%d.%d", shardNum, realmNum, tokenNum))
 				.add("balance", balance)
 				.add("frozen", frozen)
 				.add("kycGranted", kycGranted)

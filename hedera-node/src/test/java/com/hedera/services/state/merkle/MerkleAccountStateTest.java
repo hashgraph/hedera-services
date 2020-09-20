@@ -172,23 +172,6 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void returnsExplicitRelationships() {
-		// given:
-		subject.revokeKyc(tokenWith(secondToken), usableAtFirst);
-
-		// when:
-		var explicitly = subject.explicitTokenRels();
-
-		// expect:
-		assertEquals(
-				List.of(
-						new RawTokenRelationship(firstBalance, firstToken, false, true),
-						new RawTokenRelationship(secondBalance, secondToken, false, false),
-						new RawTokenRelationship(thirdBalance, thirdToken, true, true)),
-				explicitly);
-	}
-
-	@Test
 	public void returnsExplicitBalances() {
 		// expect:
 		assertEquals(

@@ -294,23 +294,6 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void explicitRelsDelegates() {
-		// setup:
-		List<RawTokenRelationship> l = (List<RawTokenRelationship>) mock(List.class);
-
-		given(delegate.explicitTokenRels()).willReturn(l);
-
-		// and:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-
-		// when:
-		var a = subject.explicitTokenRels();
-
-		// expect:
-		assertSame(l, a);
-	}
-
-	@Test
 	public void tokenSettersDelegate() {
 		// setup:
 		var id = IdUtils.tokenWith(secondToken);

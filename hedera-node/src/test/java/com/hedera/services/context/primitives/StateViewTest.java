@@ -182,6 +182,23 @@ class StateViewTest {
 	}
 
 	@Test
+	public void tokenWithWorks() {
+		given(tokenStore.exists(tokenId)).willReturn(true);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
+		// expect:
+		assertSame(token, subject.tokenWith(tokenId).get());
+	}
+
+	@Test
+	public void tokenWithWorksForMissing() {
+		given(tokenStore.exists(tokenId)).willReturn(false);
+
+		// expect:
+		assertTrue(subject.tokenWith(tokenId).isEmpty());
+	}
+
+	@Test
 	public void recognizesMissingToken() {
 		// when:
 		var info = subject.infoForToken(missingToken);
