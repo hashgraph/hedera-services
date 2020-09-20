@@ -21,14 +21,17 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -36,8 +39,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -60,31 +68,66 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
+						associateHasExpectedSemantics(),
 				}
 		);
+	}
+
+	public HapiApiSpec associateHasExpectedSemantics() {
+		return defaultHapiSpec("AssociateHasExpectedSemantics")
+				.given(flattened(
+						basicKeysAndTokens(),
+						cryptoCreate("payer")
+				)).when(
+						cryptoCreate("misc"),
+						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("payer"),
+						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("payer")
+								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate("misc", "1.2.3")
+								.hasKnownStatus(INVALID_TOKEN_REF),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.maxPerAccount", "" + 1
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.maxPerAccount", "" + 1000
+						)).payingWith(ADDRESS_BOOK_CONTROL),
+						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+						tokenAssociate("misc", KNOWABLE_TOKEN, VANILLA_TOKEN)
+				).then(
+						getAccountInfo("misc")
+								.hasToken(
+										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+												.balance(0)
+												.kyc(KycNotApplicable)
+												.freeze(Frozen))
+								.hasToken(
+										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+												.balance(0)
+												.kyc(KycNotApplicable)
+												.freeze(Unfrozen))
+								.hasToken(
+										relationshipWith(KNOWABLE_TOKEN)
+												.balance(0)
+												.kyc(Revoked)
+												.freeze(FreezeNotApplicable))
+								.hasToken(
+										relationshipWith(VANILLA_TOKEN)
+												.balance(0)
+												.kyc(KycNotApplicable)
+												.freeze(FreezeNotApplicable))
+								.logged()
+				);
 	}
 
 	public HapiApiSpec treasuryAssociationIsAutomatic() {
 		return defaultHapiSpec("TreasuryAssociationIsAutomatic")
 				.given(
-						newKeyNamed("kycKey"),
-						newKeyNamed("freezeKey")
-				).when(
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.treasury(TOKEN_TREASURY)
-								.freezeKey("freezeKey")
-								.freezeDefault(true),
-						tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-								.treasury(TOKEN_TREASURY)
-								.freezeKey("freezeKey")
-								.freezeDefault(false),
-						tokenCreate(KNOWABLE_TOKEN)
-								.treasury(TOKEN_TREASURY)
-								.kycKey("kycKey"),
-						tokenCreate(VANILLA_TOKEN)
-								.treasury(TOKEN_TREASURY)
-				).then(
+						basicKeysAndTokens()
+				).when( ).then(
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
@@ -108,6 +151,27 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 												.freeze(FreezeNotApplicable))
 								.logged()
 				);
+	}
+
+	private HapiSpecOperation[] basicKeysAndTokens() {
+		return new HapiSpecOperation[] {
+				newKeyNamed("kycKey"),
+				newKeyNamed("freezeKey"),
+				cryptoCreate(TOKEN_TREASURY),
+				tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+						.treasury(TOKEN_TREASURY)
+						.freezeKey("freezeKey")
+						.freezeDefault(true),
+				tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+						.treasury(TOKEN_TREASURY)
+						.freezeKey("freezeKey")
+						.freezeDefault(false),
+				tokenCreate(KNOWABLE_TOKEN)
+						.treasury(TOKEN_TREASURY)
+						.kycKey("kycKey"),
+				tokenCreate(VANILLA_TOKEN)
+						.treasury(TOKEN_TREASURY)
+		};
 	}
 
 	@Override
