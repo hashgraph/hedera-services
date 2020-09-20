@@ -23,6 +23,7 @@ package com.hedera.services.queries.crypto;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.tokens.TokenStore;
@@ -82,7 +83,8 @@ class GetAccountInfoAnswerTest {
 	TokenID firstToken = tokenWith(555),
 			secondToken = tokenWith(666),
 			thirdToken = tokenWith(777),
-			fourthToken = tokenWith(888);
+			fourthToken = tokenWith(888),
+			missingToken = tokenWith(999);
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
 
 	private long fee = 1_234L;
@@ -103,12 +105,18 @@ class GetAccountInfoAnswerTest {
 		given(deletedToken.isDeleted()).willReturn(true);
 
 		tokenStore = mock(TokenStore.class);
+		given(tokenStore.exists(firstToken)).willReturn(true);
+		given(tokenStore.exists(secondToken)).willReturn(true);
+		given(tokenStore.exists(thirdToken)).willReturn(true);
+		given(tokenStore.exists(fourthToken)).willReturn(true);
+		given(tokenStore.exists(missingToken)).willReturn(false);
 		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
 		given(tokenStore.get(firstToken)).willReturn(token);
 		given(tokenStore.get(secondToken)).willReturn(token);
 		given(tokenStore.get(thirdToken)).willReturn(token);
 		given(token.symbol()).willReturn("HEYMA");
 
+		var tokens = new MerkleAccountTokens();
 		payerAccount = MapValueFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("1.2.3"))

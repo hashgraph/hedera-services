@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -90,8 +91,8 @@ public class MerkleAccountPropertyTest {
 		long origAutoRenew = 1L;
 		long origExpiry = 1L;
 		MerkleAccountTokens origTokens = new MerkleAccountTokens();
-		origTokens.associate(IdUtils.asToken("1.2.3"));
-		origTokens.associate(IdUtils.asToken("3.2.1"));
+		origTokens.associateAll(Set.of(IdUtils.asToken("1.2.3")));
+		origTokens.associateAll(Set.of(IdUtils.asToken("3.2.1")));
 		Key origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 		String origMemo = "a";
 		AccountID origProxy = AccountID.getDefaultInstance();
@@ -111,8 +112,8 @@ public class MerkleAccountPropertyTest {
 		long newAutoRenew = 2L;
 		long newExpiry = 2L;
 		MerkleAccountTokens newTokens = origTokens.copy();
-		newTokens.disassociate(IdUtils.asToken("1.2.3"));
-		newTokens.associate(IdUtils.asToken("8.9.10"));
+		newTokens.dissociateAll(Set.of(IdUtils.asToken("1.2.3")));
+		newTokens.associateAll(Set.of(IdUtils.asToken("8.9.10")));
 		JKey newKey = new JKeyList();
 		String newMemo = "b";
 		EntityId newProxy = new EntityId(0, 0, 2);

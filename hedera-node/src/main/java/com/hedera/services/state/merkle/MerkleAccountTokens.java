@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -30,8 +31,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
+import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
@@ -50,7 +61,8 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 
 	long[] tokenIds = NO_ASSOCIATIONS;
 
-	public MerkleAccountTokens() { }
+	public MerkleAccountTokens() {
+	}
 
 	public MerkleAccountTokens(long[] tokenIds) {
 		if (tokenIds.length % NUM_ID_PARTS != 0) {
@@ -130,6 +142,19 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		return sb.toString();
 	}
 
+	public List<TokenID> asIds() {
+		int n;
+		if ((n = numAssociations()) == 0) {
+			return Collections.emptyList();
+		} else {
+			List<TokenID> ids = new ArrayList<>();
+			for (int i = 0; i < n; i++) {
+				ids.add(idAt(i));
+			}
+			return ids;
+		}
+	}
+
 	long[] getTokenIds() {
 		return tokenIds;
 	}
@@ -143,18 +168,41 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		return logicalIndexOf(id) >= 0;
 	}
 
-	public void associate(TokenID id) {
-		int i = logicalIndexOf(id);
-		if (i < 0) {
-			insert(id, -i - 1);
+	public void associateAll(Set<TokenID> ids) {
+		List<TokenID> allTogether = Stream.concat(
+				ids.stream(),
+				IntStream.range(0, numAssociations()).mapToObj(this::idAt)).sorted(TOKEN_ID_COMPARATOR).collect(toList());
+		int newN = numAssociations() + ids.size();
+		long[] newTokenIds = new long[newN * NUM_ID_PARTS];
+		for (int i = 0; i < newN; i++) {
+			set(newTokenIds, i, allTogether.get(i));
+		}
+		tokenIds = newTokenIds;
+	}
+
+	public void dissociateAll(Set<TokenID> ids) {
+		int n = numAssociations(), newN = 0;
+		for (int i = 0; i < n; i++) {
+			if (!ids.contains(idAt(i))) {
+				newN++;
+			}
+		}
+		if (newN != n) {
+			long[] newTokenIds = new long[newN * NUM_ID_PARTS];
+			for (int i = 0, j = 0; i < n; i++) {
+				var id = idAt(i);
+				if (!ids.contains(id)) {
+					set(newTokenIds, j++, id);
+				}
+			}
+			tokenIds = newTokenIds;
 		}
 	}
 
-	public void disassociate(TokenID id) {
-		int i = logicalIndexOf(id);
-		if (i >= 0) {
-			remove(i);
-		}
+	private void set(long[] someTokenIds, int i, TokenID id) {
+		someTokenIds[shard(i)] = id.getShardNum();
+		someTokenIds[realm(i)] = id.getRealmNum();
+		someTokenIds[num(i)] = id.getTokenNum();
 	}
 
 	public int purge(Predicate<TokenID> isGone, Predicate<TokenID> isDeleted) {
@@ -195,50 +243,6 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 	}
 
 	/* --- Helpers --- */
-	private void insert(TokenID id, int at) {
-		int newNumTokens = tokenIds.length / NUM_ID_PARTS + 1;
-
-		long[] newTokenIds = new long[newNumTokens * NUM_ID_PARTS];
-		if (at != 0) {
-			System.arraycopy(tokenIds, 0, newTokenIds, 0, at * NUM_ID_PARTS);
-		}
-
-		newTokenIds[num(at)] = id.getTokenNum();
-		newTokenIds[realm(at)] = id.getRealmNum();
-		newTokenIds[shard(at)] = id.getShardNum();
-
-		if (at != newNumTokens) {
-			System.arraycopy(
-					tokenIds,
-					at * NUM_ID_PARTS,
-					newTokenIds,
-					(at + 1) * NUM_ID_PARTS,
-					(newNumTokens - at - 1) * NUM_ID_PARTS);
-		}
-		tokenIds = newTokenIds;
-	}
-
-	private void remove(int at) {
-		int n;
-		if ((n = numAssociations()) == 1) {
-			tokenIds = NO_ASSOCIATIONS;
-			return;
-		}
-		long[] newTokenIds = new long[(n - 1) * NUM_ID_PARTS];
-		if (at != 0) {
-			System.arraycopy(tokenIds, 0, newTokenIds, 0, at * NUM_ID_PARTS);
-		}
-		if (at < (n - 1)) {
-			System.arraycopy(
-					tokenIds,
-					(at + 1) * NUM_ID_PARTS,
-					newTokenIds,
-					at * NUM_ID_PARTS,
-					(n - at - 1) * NUM_ID_PARTS);
-		}
-		tokenIds = newTokenIds;
-	}
-
 	private int num(int i) {
 		return i * NUM_ID_PARTS + NUM_OFFSET;
 	}

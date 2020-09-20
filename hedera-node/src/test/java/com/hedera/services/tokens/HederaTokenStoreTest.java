@@ -57,6 +57,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -471,7 +472,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 		// and:
-		verify(tokens, never()).associate(misc);
+		verify(tokens, never()).associateAll(any());
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 	}
 
@@ -495,7 +496,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).associate(misc);
+		verify(tokens).associateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
@@ -517,7 +518,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		// and:
-		verify(tokens).disassociate(misc);
+		verify(tokens).dissociateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
 	}

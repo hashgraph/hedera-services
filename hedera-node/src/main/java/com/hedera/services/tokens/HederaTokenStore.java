@@ -45,6 +45,7 @@ import com.swirlds.fcmap.FCMap;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,8 +181,8 @@ public class HederaTokenStore implements TokenStore {
 			if ((effectiveRelationships + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 			} else {
+				accountTokens.associateAll(new HashSet<>(tokenIds));
 				for (TokenID id : tokenIds) {
-					accountTokens.associate(id);
 					var relationship = asTokenRel(aId, id);
 					tokenRelsLedger.create(relationship);
 					var token = get(id);
@@ -209,10 +210,8 @@ public class HederaTokenStore implements TokenStore {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
-			tokenIds.forEach(id -> {
-				accountTokens.disassociate(id);
-				tokenRelsLedger.destroy(asTokenRel(aId, id));
-			});
+			accountTokens.dissociateAll(new HashSet<>(tokenIds));
+			tokenIds.forEach(id -> tokenRelsLedger.destroy(asTokenRel(aId, id)));
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
 			return OK;
 		});

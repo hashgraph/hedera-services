@@ -115,8 +115,8 @@ public class HederaLedger {
 			.thenComparingLong(AccountID::getRealmNum);
 	public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator
 			.comparingLong(TokenID::getTokenNum)
-			.thenComparingLong(TokenID::getShardNum)
-			.thenComparingLong(TokenID::getRealmNum);
+			.thenComparingLong(TokenID::getRealmNum)
+			.thenComparingLong(TokenID::getShardNum);
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;

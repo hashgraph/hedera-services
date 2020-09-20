@@ -169,6 +169,7 @@ public class BucketThrottling implements FunctionalityThrottling {
 			FileGetInfo,
 			TransactionGetReceipt,
 			TransactionGetRecord,
-			GetVersionInfo
+			GetVersionInfo,
+			TokenGetInfo
 	);
 }

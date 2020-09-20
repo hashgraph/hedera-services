@@ -32,6 +32,9 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -67,11 +70,7 @@ class MerkleAccountTokensTest {
 	public void purgeWorks() {
 		// setup:
 		subject = new MerkleAccountTokens();
-		subject.associate(a);
-		subject.associate(b);
-		subject.associate(c);
-		subject.associate(d);
-		subject.associate(e);
+		subject.associateAll(Set.of(a, b, c, d, e));
 		// and:
 		Predicate<TokenID> isGone = id -> b.equals(id);
 		Predicate<TokenID> isDeleted = id -> a.equals(id) || e.equals(id);
@@ -86,11 +85,21 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void dissociateWorks() {
+	public void asIdsWorks() {
+		// expect:
+		assertEquals(
+				List.of(a, b, c),
+				subject.asIds());
+		// and when:
+		subject = new MerkleAccountTokens();
+		// then:
+		assertSame(Collections.emptyList(), subject.asIds());
+	}
+
+	@Test
+	public void dissociateAllWorks() {
 		// when:
-		subject.disassociate(a);
-		// and:
-		subject.disassociate(e);
+		subject.dissociateAll(Set.of(a, e));
 
 		// then:
 		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
@@ -99,27 +108,14 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void associateWorks() {
+	public void associateAllWorks() {
 		// when:
-		subject.associate(e);
+		subject.associateAll(Set.of(d, e));
 
 		// then:
 		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
-
-		// and when:
-		subject.associate(d);
-
-		// then:
+		// and:
 		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 12, 15));
-	}
-
-	@Test
-	public void associateWorksWithDuplicate() {
-		// when:
-		subject.associate(a);
-
-		// then:
-		assertSame(initialIds, subject.getTokenIds());
 	}
 
 	@Test
@@ -127,9 +123,7 @@ class MerkleAccountTokensTest {
 		// given:
 		var one = new MerkleAccountTokens();
 		var two = new MerkleAccountTokens();
-		two.associate(a);
-		two.associate(b);
-		two.associate(c);
+		two.associateAll(Set.of(a, b, c));
 
 		// then:
 		assertNotEquals(one, null);
