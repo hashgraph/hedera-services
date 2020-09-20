@@ -67,6 +67,7 @@ import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
@@ -130,6 +131,7 @@ public class SuiteRunner {
 //				new CryptoRecordsSanityCheckSuite(),
 //				new Issue2144Spec()));
 		put("CiTokenJob", aof(
+				new TokenAssociationSpecs(),
 				new TokenCreateSpecs(),
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),

@@ -524,7 +524,7 @@ public class HederaSigningOrder {
 				ConsensusCreateTopicTransactionBody::hasAdminKey,
 				ConsensusCreateTopicTransactionBody::getAdminKey,
 				required);
-		if (!addAutoRenew(
+		if (!addAccount(
 				op,
 				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
@@ -542,11 +542,26 @@ public class HederaSigningOrder {
 	) {
 		List<JKey> required = new ArrayList<>();
 
-		if (!addAutoRenew(op, TokenCreateTransactionBody::hasAutoRenewAccount,
-				TokenCreateTransactionBody::getAutoRenewAccount, required)) {
+		var couldAddTreasury = addAccount(
+				op,
+				TokenCreateTransactionBody::hasTreasury,
+				TokenCreateTransactionBody::getTreasury,
+				required);
+		if (!couldAddTreasury) {
+			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+		}
+		var couldAddAutoRenew = addAccount(
+				op,
+				TokenCreateTransactionBody::hasAutoRenewAccount,
+				TokenCreateTransactionBody::getAutoRenewAccount,
+				required);
+		if (!couldAddAutoRenew) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
-		addToMutableReqIfPresent(op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey,
+		addToMutableReqIfPresent(
+				op,
+				TokenCreateTransactionBody::hasAdminKey,
+				TokenCreateTransactionBody::getAdminKey,
 				required);
 
 		return factory.forValidOrder(required);
@@ -592,7 +607,7 @@ public class HederaSigningOrder {
 		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
 		var basic = tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
 		var required = basic.getOrderedKeys();
-		if (!addAutoRenew(
+		if (!addAccount(
 				op,
 				TokenUpdateTransactionBody::hasAutoRenewAccount,
 				TokenUpdateTransactionBody::getAutoRenewAccount,
@@ -604,7 +619,7 @@ public class HederaSigningOrder {
 		return basic;
 	}
 
-	private <T> boolean addAutoRenew(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
+	private <T> boolean addAccount(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
 		if (isPresent.test(op)) {
 			var result = sigMetaLookup.accountSigningMetaFor(getter.apply(op));
 			if (result.succeeded()) {

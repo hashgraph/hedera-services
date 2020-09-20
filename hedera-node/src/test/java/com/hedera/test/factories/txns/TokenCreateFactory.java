@@ -31,6 +31,7 @@ import java.util.Optional;
 public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean frozen = false;
 	private boolean omitAdmin = false;
+	private boolean omitTreasury = false;
 	private Optional<AccountID> autoRenew = Optional.empty();
 
 	private TokenCreateFactory() {}
@@ -46,6 +47,11 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 
 	public TokenCreateFactory autoRenew(AccountID account) {
 		autoRenew = Optional.of(account);
+		return this;
+	}
+
+	public TokenCreateFactory missingTreasury() {
+		omitTreasury = true;
 		return this;
 	}
 
@@ -69,6 +75,9 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		var op = TokenCreateTransactionBody.newBuilder();
 		if (!omitAdmin) {
 			op.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey());
+		}
+		if (!omitTreasury) {
+			op.setTreasury(TxnHandlingScenario.TOKEN_TREASURY);
 		}
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());

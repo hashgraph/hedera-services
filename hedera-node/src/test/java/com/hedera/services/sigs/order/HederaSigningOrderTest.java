@@ -58,7 +58,6 @@ import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1110,7 +1109,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1124,7 +1123,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1136,7 +1135,9 @@ public class HederaSigningOrderTest {
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey()));
 	}
 
 	@Test
@@ -1516,7 +1517,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(MISC_ACCOUNT_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
 	}
 
 	@Test

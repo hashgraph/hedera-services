@@ -66,7 +66,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CARELESS_SIGNING_PAYER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -1487,12 +1487,12 @@ class HederaTokenStoreTest {
 	}
 
 	private void givenTokenWithFreezeKey(boolean freezeDefault) {
-		given(token.freezeKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
+		given(token.freezeKey()).willReturn(Optional.of(TOKEN_TREASURY_KT.asJKeyUnchecked()));
 		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
 	}
 
 	private void givenTokenWithKycKey(boolean accountsKycGrantedByDefault) {
-		given(token.kycKey()).willReturn(Optional.of(CARELESS_SIGNING_PAYER_KT.asJKeyUnchecked()));
+		given(token.kycKey()).willReturn(Optional.of(TOKEN_TREASURY_KT.asJKeyUnchecked()));
 		given(token.accountsKycGrantedByDefault()).willReturn(accountsKycGrantedByDefault);
 	}
 
