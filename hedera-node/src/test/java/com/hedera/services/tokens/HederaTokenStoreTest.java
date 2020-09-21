@@ -1219,15 +1219,15 @@ class HederaTokenStoreTest {
 
 
 	@Test
-	public void burningRejectsInvalidNewSupply() {
-		long halfwayToOverflow = (1L << 62) / 2;
+	public void burningRejectsAmountMoreThanFound() {
+		long amount = 1;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.totalSupply()).willReturn(halfwayToOverflow);
+		given(token.totalSupply()).willReturn(amount);
 		given(token.decimals()).willReturn(1);
 
 		// when:
-		var status = subject.burn(misc, halfwayToOverflow + 1);
+		var status = subject.burn(misc, amount + 1);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);

@@ -63,7 +63,7 @@ class MerkleTokenTest {
 	JKey kycKey, otherKycKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
 	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
-	int decimals = 2, otherdecimals = 3;
+	int decimals = 2, otherDecimals = 3;
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
 	long totalSupply = 1_000_000, otherTotalSupply = 1_000_001;
@@ -208,10 +208,10 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentdecimals() {
+	public void objectContractHoldsForDifferentDecimals() {
 		// given:
 		other = new MerkleToken(
-				expiry, totalSupply, otherdecimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+				expiry, totalSupply, otherDecimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -448,7 +448,7 @@ class MerkleTokenTest {
 
 		// and:
 		other = new MerkleToken(
-				otherExpiry, otherTotalSupply, otherdecimals, otherSymbol, otherName,
+				otherExpiry, otherTotalSupply, otherDecimals, otherSymbol, otherName,
 				otherFreezeDefault, otherAccountsKycGrantedByDefault, otherTreasury);
 
 		// expect:
