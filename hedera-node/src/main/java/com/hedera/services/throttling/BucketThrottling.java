@@ -94,9 +94,10 @@ public class BucketThrottling implements FunctionalityThrottling {
 		var throttleProps = getThrottleProps.apply(properties, book.get().getSize());
 		var config = getBuckets.apply(throttleProps);
 		var throttles = throttlesGiven(throttleProps, config);
-		capacities.clear();
+		var newCapacities = new EnumMap<HederaFunctionality, CapacityTest>(HederaFunctionality.class);
 		Arrays.stream(functions)
-				.forEach(function -> capacities.put(function, testGiven(throttleProps, function, throttles)));
+				.forEach(function -> newCapacities.put(function, testGiven(throttleProps, function, throttles)));
+		capacities = newCapacities;
 		var sb = new StringBuilder("Resolved node-level throttling:");
 		List.of(functions).stream()
 				.sorted(comparing(HederaFunctionality::toString))

@@ -21,9 +21,13 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountAmountOrBuilder;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.TransferListOrBuilder;
 
 import java.math.BigInteger;
+import java.util.HashSet;
 
 import static java.math.BigInteger.ZERO;
 import static java.util.stream.Collectors.toSet;
@@ -35,17 +39,19 @@ import static java.util.stream.Collectors.toSet;
  * @author Michael Tinker
  */
 public class TransferListChecks {
-	public static boolean isNetZeroAdjustment(TransferList wrapper) {
-		return wrapper.getAccountAmountsList()
-				.stream()
-				.map(aa -> BigInteger.valueOf(aa.getAmount()))
-				.reduce(ZERO, BigInteger::add)
-				.equals(ZERO);
+	public static boolean isNetZeroAdjustment(TransferListOrBuilder wrapper) {
+		var net = ZERO;
+		for (AccountAmountOrBuilder adjustment : wrapper.getAccountAmountsOrBuilderList()) {
+			net = net.add(BigInteger.valueOf(adjustment.getAmount()));
+		}
+		return net.equals(ZERO);
 	}
 
 	public static boolean hasRepeatedAccount(TransferList wrapper) {
-		int numUniq = wrapper.getAccountAmountsList().stream().map(AccountAmount::getAccountID).collect(toSet()).size();
-
-		return numUniq < wrapper.getAccountAmountsCount();
+		var unique = new HashSet<AccountID>();
+		for (AccountAmount adjustment : wrapper.getAccountAmountsList()) {
+			unique.add(adjustment.getAccountID());
+		}
+		return unique.size() < wrapper.getAccountAmountsCount();
 	}
 }

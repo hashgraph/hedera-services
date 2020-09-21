@@ -71,11 +71,7 @@ public class LoadTestIT extends FileServiceIT {
   private static String getSenderRecverBalances(AccountID senderId, AccountID recvId,
       CryptoServiceBlockingStub cstub) throws Exception {
     long fromBal = getAccountBalance(cstub, senderId);
-//    long toBal = getAccountBalance(cstub, recvId); 
-    String msg = "sender: " + senderId.getAccountNum() + ", " + fromBal 
-//        + "; recver: " + recvId.getAccountNum() + ", " + toBal
-        ;
-    return msg;
+    return "sender: " + senderId.getAccountNum() + ", " + fromBal;
   }
 
   /**

@@ -37,6 +37,8 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartContractServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc.NetworkServiceBlockingStub;
+import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
+import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
@@ -61,6 +63,7 @@ public class HapiApiClients {
 
 	private static Map<String, FileServiceBlockingStub> fileSvcStubs = new HashMap<>();
 	private static Map<String, CryptoServiceBlockingStub> cryptoSvcStubs = new HashMap<>();
+	private static Map<String, TokenServiceBlockingStub> tokenSvcStubs = new HashMap<>();
 	private static Map<String, FreezeServiceBlockingStub> freezeSvcStubs = new HashMap<>();
 	private static Map<String, NetworkServiceBlockingStub> networkSvcStubs = new HashMap<>();
 	private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
@@ -77,7 +80,6 @@ public class HapiApiClients {
 			ManagedChannel channel;
 			String[] protocols = new String[] { "TLSv1.2", "TLSv1.3" };
 			List<String> ciphers = Arrays.asList(
-//					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
 					"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"
 			);
 			SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
@@ -122,6 +124,7 @@ public class HapiApiClients {
 			scSvcStubs.computeIfAbsent(stubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(channel));
 			consSvcStubs.computeIfAbsent(stubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(channel));
 			fileSvcStubs.computeIfAbsent(stubsId, ignore -> FileServiceGrpc.newBlockingStub(channel));
+			tokenSvcStubs.computeIfAbsent(stubsId, ignore -> TokenServiceGrpc.newBlockingStub(channel));
 			cryptoSvcStubs.computeIfAbsent(stubsId, ignore -> CryptoServiceGrpc.newBlockingStub(channel));
 			freezeSvcStubs.computeIfAbsent(stubsId, ignore -> FreezeServiceGrpc.newBlockingStub(channel));
 			networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(channel));
@@ -131,6 +134,7 @@ public class HapiApiClients {
 			scSvcStubs.computeIfAbsent(tlsStubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(tlsChannel));
 			consSvcStubs.computeIfAbsent(tlsStubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(tlsChannel));
 			fileSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FileServiceGrpc.newBlockingStub(tlsChannel));
+			tokenSvcStubs.computeIfAbsent(tlsStubsId, ignore -> TokenServiceGrpc.newBlockingStub(tlsChannel));
 			cryptoSvcStubs.computeIfAbsent(tlsStubsId, ignore -> CryptoServiceGrpc.newBlockingStub(tlsChannel));
 			freezeSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FreezeServiceGrpc.newBlockingStub(tlsChannel));
 			networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(tlsChannel));
@@ -146,6 +150,7 @@ public class HapiApiClients {
 		return scSvcStubs.size() +
 				consSvcStubs.size() +
 				fileSvcStubs.size() +
+				tokenSvcStubs.size() +
 				cryptoSvcStubs.size() +
 				freezeSvcStubs.size() +
 				networkSvcStubs.size();
@@ -157,6 +162,10 @@ public class HapiApiClients {
 
 	public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
 		return fileSvcStubs.get(stubId(nodeId, useTls));
+	}
+
+	public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls) {
+		return tokenSvcStubs.get(stubId(nodeId, useTls));
 	}
 
 	public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {

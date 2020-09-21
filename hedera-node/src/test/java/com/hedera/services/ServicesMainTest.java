@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
@@ -29,7 +30,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.ledger.accounts.BackingAccounts;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -104,10 +104,10 @@ public class ServicesMainTest {
 	AccountsExporter accountsExporter;
 	PropertySources propertySources;
 	BalancesExporter balancesExporter;
-	PropertySanitizer propertySanitizer;
 	StateMigrations stateMigrations;
 	HederaNodeStats stats;
 	GrpcServerManager grpc;
+	NodeLocalProperties nodeLocalProps;
 	SystemFilesManager systemFilesManager;
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
@@ -133,10 +133,10 @@ public class ServicesMainTest {
 		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
+		nodeLocalProps = mock(NodeLocalProperties.class);
 		recordsHistorian = mock(AccountRecordsHistorian.class);
 		ledgerValidator = mock(LedgerValidator.class);
 		accountsExporter = mock(AccountsExporter.class);
-		propertySanitizer = mock(PropertySanitizer.class);
 		platformStatus = mock(CurrentPlatformStatus.class);
 		properties = mock(PropertySource.class);
 		propertySources = mock(PropertySources.class);
@@ -147,10 +147,13 @@ public class ServicesMainTest {
 
 		ServicesMain.log = mockLog;
 
+		given(nodeLocalProps.port()).willReturn(50211);
+		given(nodeLocalProps.tlsPort()).willReturn(50212);
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
 		given(ctx.pause()).willReturn(pause);
+		given(ctx.nodeLocalProperties()).willReturn(nodeLocalProps);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.id()).willReturn(new NodeId(false, NODE_ID));
 		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
@@ -166,7 +169,6 @@ public class ServicesMainTest {
 		given(ctx.properties()).willReturn(properties);
 		given(ctx.recordStream()).willReturn(recordStream);
 		given(ctx.stateMigrations()).willReturn(stateMigrations);
-		given(ctx.propertySanitizer()).willReturn(propertySanitizer);
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.backingAccounts()).willReturn(backingAccounts);
 		given(ctx.systemFilesManager()).willReturn(systemFilesManager);
@@ -259,8 +261,7 @@ public class ServicesMainTest {
 				recordStreamThread,
 				recordsHistorian,
 				fees,
-				grpc,
-				propertySanitizer);
+				grpc);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -275,7 +276,6 @@ public class ServicesMainTest {
 		inOrder.verify(ledgerValidator).hasExpectedTotalBalance(accounts);
 		inOrder.verify(recordsHistorian).reviewExistingRecords();
 		inOrder.verify(fees).init();
-		inOrder.verify(propertySanitizer).sanitize(propertySources);
 
 		// cleanup:
 		TimerUtils.stopStatsDumpTimer();
@@ -283,9 +283,7 @@ public class ServicesMainTest {
 
 	@Test
 	public void runsOnDefaultPortInProduction() {
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.PROD);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.PROD);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -299,9 +297,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
@@ -319,8 +315,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
 		given(properties.getStringProperty("dev.defaultListeningNodeAccount")).willReturn("0.0.3");
@@ -338,9 +333,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.3");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
@@ -359,9 +352,7 @@ public class ServicesMainTest {
 		// setup:
 		Address address = mock(Address.class);
 
-		given(properties.getIntProperty("grpc.port")).willReturn(50211);
-		given(properties.getIntProperty("grpc.tlsPort")).willReturn(50212);
-		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(Profile.DEV);
+		given(nodeLocalProps.activeProfile()).willReturn(Profile.DEV);
 		given(address.getMemo()).willReturn("0.0.4");
 		given(address.getPortExternalIpv4()).willReturn(50001);
 		given(addressBook.getAddress(NODE_ID)).willReturn(address);
@@ -390,7 +381,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void createsSystemAccountsIfRequested() throws Exception {
+	public void createsSystemAccountsIfRequested() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -570,7 +561,7 @@ public class ServicesMainTest {
 
 		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
-		willThrow(InvalidTotalAccountBalanceException.class).given(balancesExporter).toCsvFile(signedState, when);
+		willThrow(IllegalStateException.class).given(balancesExporter).toCsvFile(signedState, when);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);

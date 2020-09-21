@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import java.time.Instant;
 
-import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.newSignedConsensusCreateTopic;
 import static com.hedera.test.factories.txns.ConsensusUpdateTopicFactory.newSignedConsensusUpdateTopic;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
@@ -46,14 +45,14 @@ public enum ConsensusUpdateTopicScenarios implements TxnHandlingScenario {
 	CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID).adminKey(UPDATE_TOPIC_ADMIN_KEY).get()
+					newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID).adminKey(UPDATE_TOPIC_ADMIN_KT).get()
 			));
 		}
 	},
 	CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID).adminKey(UPDATE_TOPIC_ADMIN_KEY)
+					newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID).adminKey(UPDATE_TOPIC_ADMIN_KT)
 							.autoRenewAccountId(MISC_ACCOUNT_ID).get()
 			));
 		}

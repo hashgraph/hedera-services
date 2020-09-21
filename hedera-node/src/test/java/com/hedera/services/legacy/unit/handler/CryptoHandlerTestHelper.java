@@ -36,8 +36,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InsufficientBalanceException;
-import com.hedera.services.legacy.exception.InvalidTransactionException;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 
 import java.time.Instant;
@@ -262,8 +260,6 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 					.setStatus(ResponseCodeEnum.ACCOUNT_DELETED).build();
 		} else {
 			try {
-       /* storeLiveHash(claim, attachedAccountID, consensusTime, fcFileSystem,
-            (int) durationSeconds);*/
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.SUCCESS).build();
 			} catch (Exception e) {

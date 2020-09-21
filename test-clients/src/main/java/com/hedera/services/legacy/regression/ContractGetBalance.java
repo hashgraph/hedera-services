@@ -127,9 +127,6 @@ public class ContractGetBalance {
 		localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
 
 		int numberOfReps = 1;
-		// if ((args.length) > 0) {
-		// numberOfReps = Integer.parseInt(args[0]);
-		// }
 		for (int i = 0; i < numberOfReps; i++) {
 			ContractGetBalance scSs = new ContractGetBalance();
 			scSs.demo();
@@ -161,30 +158,9 @@ public class ContractGetBalance {
 	}
 
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
-		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-		Duration transactionDuration = RequestBuilder.getDuration(30);
-
-		// KeyPair pair = new KeyPairGenerator().generateKeyPair();
-		// byte[] pubKeyBytes = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		// String pubKey = HexUtils.bytes2Hex(pubKeyBytes);
-		// Key key =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey.getBytes())).build();
-		// // used later
-		SignatureList sigList = SignatureList.getDefaultInstance();
-		/*
-		 * Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
-		 * payer.getAccountNum(), payer.getRealmNum(), payer.getShardNum(),
-		 * nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
-		 * nodeAccount.getShardNum(), 50, timestamp, transactionDuration, false, "test",
-		 * sigList, payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
-		 */
-
 		Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-		// transferTx = TransactionSigner.signTransaction(transferTx,
-		// accountKeys.get(payer));
 		return transferTx;
-
 	}
 
 	private AccountID createAccount(AccountID payerAccount, long initialBalance) throws Exception {
@@ -198,8 +174,6 @@ public class ContractGetBalance {
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeys.get(payerAccount));
-		// Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-		// accountKeys.get(payerAccount));
 		TransactionResponse response = stub.createAccount(transaction);
 		Assert.assertNotNull(response);
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -613,7 +587,6 @@ public class ContractGetBalance {
 
 				int currValueToDeposit = ThreadLocalRandom.current().nextInt(1, 10000 + 1);
 				depositToContract(crAccount, payTestContractId, currValueToDeposit);
-				// Thread.sleep(10000);
 				int currentBalanceAfterUpdate = getBalanceFromContract(crAccount, payTestContractId);
 				// getting contract balance using contract Id
 				Response getBalanceResp = getBalance(crAccount, null, payTestContractId);
@@ -859,8 +832,6 @@ public class ContractGetBalance {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 
 		byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
-		// Key adminPubKey =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		// note the admin key should be wrapped in a KeyList to match the signing
 		Key adminPubKey = Key.newBuilder().setKeyList(
 				KeyList.newBuilder().addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build()).build())

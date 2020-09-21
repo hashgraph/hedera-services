@@ -56,7 +56,9 @@ public class TxnReceiptTest {
   public void constructorPostConsensusCreateTopic() {
     final var topicId = getTopicJAccountId(1L, 22L, 333L);
     final var sequenceNumber = 0L;
-    final var cut = new TxnReceipt(null, null, null, null, null, topicId, sequenceNumber, null);
+    final var cut = new TxnReceipt(
+            null, null, null, null, null, null,
+            topicId, sequenceNumber, null);
 
     assertAll(() -> assertEquals(topicId, cut.getTopicId()),
             () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
@@ -67,7 +69,9 @@ public class TxnReceiptTest {
   @Test
   public void constructorPostConsensusSubmitMessage() {
     final var sequenceNumber = 55555L;
-    final var cut = new TxnReceipt(null, null, null, null, null, null, sequenceNumber, getSha384Hash());
+    final var cut = new TxnReceipt(
+            null, null, null, null, null, null, null,
+            sequenceNumber, getSha384Hash());
 
     assertAll(() -> assertNull(cut.getTopicId()),
             () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
@@ -198,7 +202,8 @@ public class TxnReceiptTest {
     final var topicId = EntityId.ofNullableTopicId(TopicID.newBuilder().setTopicNum(1L).build());
     final var sequenceNumber = 2L;
     final var runningHash = new byte[3];
-    final var cut = new TxnReceipt("SUCCESS", null, null, null, null,
+    final var cut = new TxnReceipt(
+            "SUCCESS", null, null, null, null, null,
             topicId, sequenceNumber, runningHash);
 
     assertEquals(topicId, cut.getTopicId());

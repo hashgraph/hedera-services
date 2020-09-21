@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.HbarAdjustments;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.test.forensics.domain.PojoFs;
 import com.hedera.test.forensics.domain.PojoLedger;
@@ -94,7 +94,7 @@ public class FcmToJsonUtil {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(TxnId.class, TxnId::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(HbarAdjustments.class, HbarAdjustments::new));
+				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
 

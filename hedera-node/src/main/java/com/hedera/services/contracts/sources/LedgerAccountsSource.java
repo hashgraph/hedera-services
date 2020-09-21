@@ -20,7 +20,7 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
@@ -44,12 +44,12 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	static Logger log = LogManager.getLogger(LedgerAccountsSource.class);
 
 	private final HederaLedger ledger;
-	private final PropertySource properties;
+	private final GlobalDynamicProperties properties;
 	private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 	private final ALock rLock = new ALock(rwLock.readLock());
 	private final ALock wLock = new ALock(rwLock.writeLock());
 
-	public LedgerAccountsSource(HederaLedger ledger, PropertySource properties) {
+	public LedgerAccountsSource(HederaLedger ledger, GlobalDynamicProperties properties) {
 		this.ledger = ledger;
 		this.properties = properties;
 	}
@@ -63,9 +63,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	public AccountState get(byte[] key) {
 		try (ALock ignored = rLock.lock()) {
 			var id = accountParsedFromSolidityAddress(key);
-//			if (SingletonContextsManager.CONTEXTS.lookup(0L).accountSource() == this) {
-//				log.info("Getting " + EntityIdUtils.readableId(id));
-//			}
 			if (!ledger.exists(id)) {
 				return null;
 			}
@@ -99,9 +96,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	@Override
 	public void put(byte[] key, AccountState evmState) {
 		var id = accountParsedFromSolidityAddress(key);
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).accountSource() == this) {
-//			log.info("Putting " + evmState +  " @ " + EntityIdUtils.readableId(id));
-//		}
 
 		if (evmState == null) {
 			String id_str = asLiteralString(id);
@@ -136,10 +130,10 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				evmState.getProxyAccountRealm(),
 				evmState.getProxyAccountNum());
 		long fundsSentRecordThreshold = (evmState.getSenderThreshold() == 0)
-				? properties.getLongProperty("contracts.defaultSendThreshold")
+				? properties.defaultContractSendThreshold()
 				: evmState.getSenderThreshold();
 		long fundsReceivedRecordThreshold = (evmState.getReceiverThreshold() == 0)
-				? properties.getLongProperty("contracts.defaultReceiveThreshold")
+				? properties.defaultContractReceiveThreshold()
 				: evmState.getReceiverThreshold();
 		var key = new JContractIDKey(asContract(id));
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()

@@ -36,7 +36,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesNodeType;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
@@ -57,6 +59,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
@@ -93,7 +96,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.unit.handler.StoragePersistenceImpl;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
@@ -224,11 +226,12 @@ public class SmartContractServiceImplTest {
 				new FCMapBackingAccounts(() -> accountFCMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
+				mock(TokenStore.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
 				mock(AccountRecordsHistorian.class),
 				delegate);
-		ledgerSource = new LedgerAccountsSource(ledger, TestProperties.TEST_PROPERTIES);
+		ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
 		Source<byte[], AccountState> accountSource = ledgerSource;
 		repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 		repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));
@@ -270,6 +273,7 @@ public class SmartContractServiceImplTest {
 		var policies = new SystemOpPolicies(new MockEntityNumbers());
 		var platformStatus = new ContextPlatformStatus();
 		platformStatus.set(PlatformStatus.ACTIVE);
+		PropertySource propertySource = mock(PropertySource.class);
 		transactionHandler = new TransactionHandler(
 				recordCache,
 				() -> accountFCMap,
@@ -278,7 +282,7 @@ public class SmartContractServiceImplTest {
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),
@@ -336,40 +340,13 @@ public class SmartContractServiceImplTest {
 	 * Prepares a test case specific transaction & returns it
 	 */
 	public Transaction getDummyTransaction(String action) {
-
-		// Long payerAccountNum = 111l;
-		Long payerRealmNum = 0l;
-		Long payerShardNum = 0l;
-		// Long nodeAccountNum=123l;
-		Long nodeRealmNum = 0l;
-		Long nodeShardNum = 0l;
-		long transactionFee = 0l;
-		Timestamp startTime =
-				RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
 		Duration transactionDuration = RequestBuilder.getDuration(100);
-		boolean generateRecord = false;
-		String memo = "UnitTesting";
-		int thresholdValue = 10;
 		List<Key> keyList = new ArrayList<>();
 		KeyPair pair = new KeyPairGenerator().generateKeyPair();
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 		Key akey =
 				Key.newBuilder().setEd25519(ByteString.copyFromUtf8((MiscUtils.commonsBytesToHex(pubKey)))).build();
-		PrivateKey priv = pair.getPrivate();
 		keyList.add(akey);
-		long initBal = 100;
-		long sendRecordThreshold = 5;
-		long receiveRecordThreshold = 5;
-		boolean receiverSign = false;
-		Duration autoRenew = RequestBuilder.getDuration(100);
-		;
-		long proxyAccountNum = 12345l;
-		long proxyRealmNum = 0l;
-		long proxyShardNum = 0l;
-		int proxyFraction = 10;
-		int maxReceiveProxyFraction = 10;
-		long shardID = 0l;
-		long realmID = 0l;
 
 		Transaction trx = null;
 		SignatureList sigList = SignatureList.getDefaultInstance();
@@ -390,7 +367,6 @@ public class SmartContractServiceImplTest {
 					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 800, timestamp,
 					transactionDuration, false, "test", sigList, payerAccountId.getAccountNum(), -100l,
 					nodeAccountId.getAccountNum(), 100l);
-			// trx = TransactionSigner.signTransaction(trx, account2keyMap.get(payerAccountId));
 		}
 
 		if ("createContract".equalsIgnoreCase(action)) {
@@ -407,25 +383,7 @@ public class SmartContractServiceImplTest {
 					"");
 		}
 
-		// if("SolidityIDQuery".equalsIgnoreCase(action)) {
-		// long durationInSeconds = DAY_SEC * 30;
-		// * Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
-		// * Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-		// * Duration transactionDuration = RequestBuilder.getDuration(30, 0);
-		// * Transaction createContractRequest =
-		// RequestBuilder.getCreateContractRequest(payerAccountId.getAccountNum(),
-		// * payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
-		// * nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 100l, timestamp,
-		// transactionDuration, true, "createContract",
-		// * DEFAULT_CONTRACT_OP_GAS, contractFile, ByteString.EMPTY, 0, contractAutoRenew,
-		// * SignatureList.newBuilder()
-		// *
-		// .addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-		// * .build());
-		// }
-
 		return trx;
-
 	}
 
 	/**

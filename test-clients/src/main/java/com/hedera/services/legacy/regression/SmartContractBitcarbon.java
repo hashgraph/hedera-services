@@ -559,7 +559,6 @@ public class SmartContractBitcarbon {
       ResponseCodeEnum expectedStatus, String minter, String name, byte[] jurisdiction)
       throws Exception {
     byte[] dataToSet = encodeMintersAdd(minter, name, jurisdiction);
-//    byte[] dataToSet = encodeMintersAdd(minter, name);
     TransactionRecord txRec = callContract(payerAccount, contractId, dataToSet, expectedStatus);
     return txRec;
   }

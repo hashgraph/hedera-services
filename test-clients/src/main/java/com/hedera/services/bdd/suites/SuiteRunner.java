@@ -36,7 +36,6 @@ import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
@@ -69,6 +68,11 @@ import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
+import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
+import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
+import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
+import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
+import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,11 +110,13 @@ public class SuiteRunner {
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
+	private static final String DEFAULT_PAYER_ID = "2";
 
 	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
+/*
 		put("CiConsensusAndCryptoJob", aof(
 				new DuplicateManagementTest(),
 				new TopicCreateSuite(),
@@ -125,6 +131,11 @@ public class SuiteRunner {
 				new CryptoTransferSuite(),
 				new CryptoRecordsSanityCheckSuite(),
 				new Issue2144Spec()));
+		put("CiTokenJob", aof(
+				new TokenCreateSpecs(),
+				new TokenDeleteSpecs(),
+				new TokenManagementSpecs(),
+				new TokenTransactSpecs()));
 		put("CiFileJob", aof(
 				new FileRecordsSanityCheckSuite(),
 				new VersionInfoSpec(),
@@ -139,6 +150,7 @@ public class SuiteRunner {
 				new DeprecatedContractKeySuite(),
 				new ThresholdRecordCreationSuite(),
 				new ContractRecordsSanityCheckSuite()));
+*/
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
@@ -161,6 +173,12 @@ public class SuiteRunner {
 		/* Functional tests - FILE */
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
+		/* Functional tests - TOKEN */
+		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
+		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
+		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
+		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
+		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		/* Functional tests - CRYPTO */
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
@@ -211,6 +229,8 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
+	/* The instance id of the suiteRunner running on the client. */
+	private static final String PAYER_ID_ARG = "-PAYER";
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -225,8 +245,13 @@ public class SuiteRunner {
 					NETWORK_SIZE_ARG,
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
+
+			String payer_id = "0.0." + overrideOrDefault(effArgs,
+					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
+
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
+					payer_id,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),

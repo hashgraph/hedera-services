@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.hedera.services</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.7.0</version>
+    <version>0.8.0</version>
   </parent>
 
   <properties>
@@ -148,11 +148,6 @@
 
   <repositories>
     <repository>
-      <id>ossrh-staging</id>
-      <name>Staging repo</name>
-      <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1161</url>
-    </repository>
-    <repository>
       <id>Ethereum</id>
       <name>Ethereum</name>
       <url>https://dl.bintray.com/ethereum/maven/</url>
@@ -199,6 +194,10 @@
     <dependency>
       <groupId>com.hedera.services</groupId>
       <artifactId>hapi-proto</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.hedera.services</groupId>
+      <artifactId>hapi-fees</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

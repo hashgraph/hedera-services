@@ -121,15 +121,12 @@ public class UmbrellaTest {
     log.info("transfer account balances:  pre-run = " + preTransferAccountsTotalBalance);
     log.info("transfer account balances: post-run = " + postTransferAccountsTotalBalance);
     
-    if(preTransferAccountsTotalBalance.get("total").equals(postTransferAccountsTotalBalance.get("total")))
+    if(preTransferAccountsTotalBalance.get("total").equals(postTransferAccountsTotalBalance.get("total"))) {
       log.info(":) pre- and post- total balance of all transfer accounts match.");
-    else
+    } else {
       log.warn("(: pre- and post- total balance of all transfer accounts DO NOT match!");
-      
-//    AtomicCounter allApiSuccessCount = UmbrellaServiceRunnable.activeFailCountMap.get("ALL_API");
-//    if(allApiSuccessCount.value()==0) {
-//      CryptoServiceTest.tallyBalances();
-//    }
+    }
+    
     if (rt.changeGenesisKey) {
       rt.revertGenesisKey();
     }

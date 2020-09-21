@@ -39,4 +39,6 @@ public interface AccountSigMetaLookup {
 	 * @throws Exception if no appropriate metadata exists.
 	 */
 	AccountSigningMetadata lookup(AccountID account) throws Exception;
+
+	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
 }

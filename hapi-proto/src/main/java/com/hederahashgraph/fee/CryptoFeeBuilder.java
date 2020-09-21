@@ -70,7 +70,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     vpt = sigValObj.getTotalSigCount();
     rbs = getCryptoRBS(txBody, cryptoCreateSize)
         + getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC; // TxRecord
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ACCTID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
+    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECIEPT_STORAGE_TIME_SEC);
 
     bpr = INT_SIZE;
 
@@ -108,7 +108,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + 2 * BASIC_ACCTID_SIZE + sigValObj.getSignatureSize();
+    bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     // TxRecord
     rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
@@ -147,9 +147,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
-
-    // tv - Transfer Value
-    // tv = getTV(txBody);
 
     bpr = INT_SIZE;
 
@@ -239,14 +236,14 @@ public class CryptoFeeBuilder extends FeeBuilder {
    */
   private int getCryptoUpdateBodyTxSize(TransactionBody txBody) {
     /*
-     * AccountID accountIDToUpdate - 3 * LONG_SIZE Key - calculated bytes AccountID proxyAccountID -
-     * 3 * LONG_SIZE google.protobuf.UInt64Value sendRecordThreshold - LONG_SIZE
+     * AccountID accountIDToUpdate - BASIC_ENTITY_ID_SIZE Key - calculated bytes AccountID proxyAccountID -
+     * BASIC_ENTITY_ID_SIZE google.protobuf.UInt64Value sendRecordThreshold - LONG_SIZE
      * google.protobuf.UInt64Value receiveRecordThreshold - LONG_SIZE Duration autoRenewPeriod -
      * (LONG_SIZE + INT_SIZE) Timestamp expirationTime - (LONG_SIZE + INT_SIZE) bytes
      * google.protobuf.BoolValue receiverSigRequired - BOOL_VALUE
      */
 
-    int cryptoAcctUpdateBodySize = 3 * LONG_SIZE;
+    int cryptoAcctUpdateBodySize = BASIC_ENTITY_ID_SIZE;
 
     CryptoUpdateTransactionBody crUpdateTxBody = txBody.getCryptoUpdateAccount();
 
@@ -255,7 +252,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     }
 
     if (crUpdateTxBody.hasProxyAccountID()) {
-      cryptoAcctUpdateBodySize += (3 * LONG_SIZE);
+      cryptoAcctUpdateBodySize += (BASIC_ENTITY_ID_SIZE);
     }
     if (crUpdateTxBody.getSendRecordThreshold() != 0
         || crUpdateTxBody.hasSendRecordThresholdWrapper()) {
@@ -293,7 +290,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     /*
      * AccountID => 3 LONG_SIZE long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long
      * senderThreshold - LONG_SIZE boolean receiverSigRequired - BOOL_SIZE Key accountKeys -
-     * calculated size AccountID proxyAccount - 3 * LONG_SIZE long autoRenewPeriod - LONG_SIZE
+     * calculated size AccountID proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE
      * boolean deleted - BOOL_SIZE
      */
 
@@ -339,24 +336,15 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getCryptoTransferBodyTxSize(TransactionBody txBody) {
 
     /*
-     * TransferList transfers repeated AccountAmount AccountID - (3 * LONG_SIZE) sint64 amount -
+     * TransferList transfers repeated AccountAmount AccountID - (BASIC_ENTITY_ID_SIZE) sint64 amount -
      * LONG_SIZE
      */
     int accountAmountCount = txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount();
-    int cryptoTransfertBodySize = (BASIC_ACCT_AMT_SIZE) * accountAmountCount;
+    int cryptoTransfertBodySize = (BASIC_ACCOUNT_AMT_SIZE) * accountAmountCount;
     return cryptoTransfertBodySize;
   }
 
-  /*
-   * private long getTV(TransactionBody txBody) { long amount = 0; TransferList transferList =
-   * txBody.getCryptoTransfer().getTransfers(); List<AccountAmount> accountAmounts =
-   * transferList.getAccountAmountsList(); for (AccountAmount actAmt : accountAmounts) { if
-   * (actAmt.getAmount() > 0) { amount = amount + actAmt.getAmount(); } } return Math.round(amount /
-   * 1000); }
-   */
-
-  ////////////////////////////////////////////////////////////////////////// Query Fee
-  ////////////////////////////////////////////////////////////////////////// //////////////////////////////////////////////////////////////////////////
+  // Query Fee
 
   /**
    * This method returns the Fee Matrices for balance query
@@ -375,21 +363,16 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetAccountBalanceQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE AccountID - 3 * LONG_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
      */
-    bpt = INT_SIZE + BASIC_ACCTID_SIZE;
+    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
     /*
      * CryptoGetAccountBalanceResponse Response header NodeTransactionPrecheckCode - 4 bytes
      * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
      * long value)
      */
-
-    bpr = BASIC_QUERY_RES_HEADER + BASIC_ACCTID_SIZE + LONG_SIZE + getStateProofSize(responseType);
-
-   /* FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-    return getQueryFeeDataMatrices(feeMatrices);*/
+    bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
     
     return FeeData.getDefaultInstance();
   }
@@ -411,11 +394,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CostTransactionGetRecordQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - 3 *
-     * LONG_SIZE bytes Timestamp transactionValidStart - (LONG_SIZE + INT_SIZE) bytes
+     * in Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITY_ID_SIZE
+     * bytes Timestamp transactionValidStart - (LONG_SIZE + INT_SIZE) bytes
      */
 
-    bpt = INT_SIZE + BASIC_ACCTID_SIZE + LONG_SIZE;
+    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -428,7 +411,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-   /* return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
 
   }
@@ -454,11 +436,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * TransactionGetRecordQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - 3 *
-     * LONG_SIZE bytes Timestamp transactionValidStart - (LONG_SIZE) bytes
+     * Transaction processing) ResponseType - INT_SIZE TransactionID AccountID accountID - BASIC_ENTITY_ID_SIZE
+     * bytes Timestamp transactionValidStart - (LONG_SIZE) bytes
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE + LONG_SIZE;
+    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -496,11 +478,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetInfoQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE AccountID accountID - 3 * LONG_SIZE bytes
+     * Transaction processing) ResponseType - INT_SIZE AccountID accountID - BASIC_ENTITY_ID_SIZE bytes
      *
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ACCTID_SIZE;
+    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
 
     /*
      * bpr = CryptoGetInfoResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -536,7 +518,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     /*
      * CryptoGetAccountRecordsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE AccountID - 3 * LONG_SIZE
+     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
      *
      */
 
@@ -583,13 +565,13 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getAccountInfoSize(Key accountKey, List<LiveHash> liveHashes) {
 
     /*
-     * AccountID accountID - 3 * LONG_SIZE string contractAccountID - SOLIDITY_ADDRESS bool deleted
-     * - BOOL_SIZE AccountID proxyAccountID - 3 * LONG_SIZE int32 proxyFraction - INT_SIZE int64
+     * AccountID accountID - BASIC_ENTITY_ID_SIZE string contractAccountID - SOLIDITY_ADDRESS bool deleted
+     * - BOOL_SIZE AccountID proxyAccountID - BASIC_ENTITY_ID_SIZE int32 proxyFraction - INT_SIZE int64
      * proxyReceived - INT_SIZE Key key - calculated value uint64 balance - LONG_SIZE uint64
      * generateSendRecordThreshold - LONG_SIZE uint64 generateReceiveRecordThreshold - LONG_SIZE
      * bool receiverSigRequired - BOOL_SIZE Timestamp expirationTime - LONG_SIZE Duration
-     * autoRenewPeriod - LONG_SIZE repeated LiveHash claims - calculated value AccountID accountID - 3
-     * * LONG_SIZE bytes hash - 48 byte SHA-384 hash (presumably of some kind of credential or
+     * autoRenewPeriod - LONG_SIZE repeated LiveHash claims - calculated value AccountID accountID - BASIC_ENTITY_ID_SIZE
+     * bytes hash - 48 byte SHA-384 hash (presumably of some kind of credential or
      * certificate) KeyList keys - calculated value
      *
      */
@@ -607,7 +589,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private int getAccountTransactionRecordSize(TransactionRecord transRecord) {
 
     /*
-     * TransactionReceipt - 4 bytes + 3 * LONG_SIZE bytes transactionHash - 96 bytes Timestamp
+     * TransactionReceipt - 4 bytes + BASIC_ENTITY_ID_SIZE bytes transactionHash - 96 bytes Timestamp
      * consensusTimestamp - 8 bytes TransactionID - 32 bytes (AccountID - 24 + Timestamp - 8) string
      * memo - get from the record uint64 transactionFee - 8 bytes TransferList transferList - get
      * from actual transaction record
@@ -621,8 +603,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int acountAmountSize = 0;
     if (transRecord.hasTransferList()) {
       int accountAmountCount = transRecord.getTransferList().getAccountAmountsCount();
-      acountAmountSize = accountAmountCount * (4 * LONG_SIZE); // (24 bytes AccountID and 8
-      // bytes Amount)
+      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8 bytes Amount)
     }
 
     int txRecordSize = BASIC_TX_RECORD_SIZE + memoBytesSize + acountAmountSize;
@@ -653,7 +634,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     int txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (3 * LONG_SIZE)
+    bpt = txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
         + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
@@ -718,20 +699,20 @@ public class CryptoFeeBuilder extends FeeBuilder {
     }
     int claimHashSize = getLiveHashHashSize();
 
-    int cryptoAddLiveHashBodySize = keyListSize + (3 * LONG_SIZE) + claimHashSize;
+    int cryptoAddLiveHashBodySize = keyListSize + (BASIC_ENTITY_ID_SIZE) + claimHashSize;
 
     return cryptoAddLiveHashBodySize;
   }
 
   private int getCryptoDeleteLiveHashBodyBodyTxSize() {
     int claimHashSize = getLiveHashHashSize();
-    int cryptoDeleteLiveHashBodySize = +(3 * LONG_SIZE) + claimHashSize;
+    int cryptoDeleteLiveHashBodySize = +(BASIC_ENTITY_ID_SIZE) + claimHashSize;
     return cryptoDeleteLiveHashBodySize;
   }
 
   private int getCryptoGetLiveHashBodyTxSize() {
     int claimHashSize = getLiveHashHashSize();
-    int cryptoGetLiveHashBodySize = (3 * LONG_SIZE) + claimHashSize;
+    int cryptoGetLiveHashBodySize = (BASIC_ENTITY_ID_SIZE) + claimHashSize;
     return cryptoGetLiveHashBodySize;
   }
 
@@ -742,15 +723,8 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   private long getCryptoLiveHashStorageBytesSec(TransactionBody txBody) {
 
-    long storageSize = (3 * LONG_SIZE) + TX_HASH_SIZE
+    long storageSize = (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
         + +txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
-    // get expiration time storage
-    // Instant expirationTime = RequestBuilder
-    // .convertProtoTimeStampSeconds(txBody.getCryptoAddLiveHash().getLiveHash().getLiveHashExpiration());
-    // Timestamp txValidStartTimestamp = txBody.getTransactionID()
-    // .getTransactionValidStart();
-    // Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-    // Duration duration = Duration.between(txValidStartTime, expirationTime);
     long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
     storageSize = storageSize * seconds;
     return storageSize;
@@ -799,7 +773,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     /*
      * long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long senderThreshold - LONG_SIZE
      * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - calculated size AccountID
-     * proxyAccount - 3 * LONG_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
+     * proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
      */
 
     rbs = (BASIC_ACCOUNT_SIZE + getAccountKeyStorageSize(key)) * autoRenewal;

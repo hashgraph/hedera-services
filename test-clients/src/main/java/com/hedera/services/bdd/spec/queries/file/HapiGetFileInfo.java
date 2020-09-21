@@ -51,6 +51,8 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	private Optional<LongPredicate> expiryTest = Optional.empty();
 	private Optional<Supplier<String>> fileSupplier = Optional.empty();
 
+	private FileID fileId;
+
 	@Override
 	public HederaFunctionality type() {
 		return HederaFunctionality.FileGetInfo;
@@ -135,6 +137,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
 		file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
 		var id = TxnUtils.asFileId(file, spec);
+		fileId = id;
 		FileGetInfoQuery infoQuery = FileGetInfoQuery.newBuilder()
 			.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
 			.setFileID(id)
@@ -150,6 +153,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper()
-				.add("file", file);
+				.add("file", file)
+				.add("fileId", fileId);
 	}
 }

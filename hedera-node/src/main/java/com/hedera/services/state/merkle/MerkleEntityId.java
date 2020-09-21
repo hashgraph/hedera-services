@@ -23,6 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.FCMKey;
 import com.swirlds.common.FastCopyable;
@@ -55,6 +56,10 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 
 	public static MerkleEntityId fromAccountId(AccountID grpc) {
 		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
+	}
+
+	public static MerkleEntityId fromTokenId(TokenID grpc) {
+		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getTokenNum());
 	}
 
 	public static MerkleEntityId fromTopicId(TopicID grpc) {
@@ -198,6 +203,14 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
+				.build();
+	}
+
+	public TokenID toTokenId() {
+		return TokenID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTokenNum(num)
 				.build();
 	}
 }

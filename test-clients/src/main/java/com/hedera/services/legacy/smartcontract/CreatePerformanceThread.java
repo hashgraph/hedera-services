@@ -229,8 +229,6 @@ public class CreatePerformanceThread implements Runnable {
     while (attempts <= MAX_RECEIPT_RETRIES &&
         (transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().equals(ResponseCodeEnum.UNKNOWN) ||
             transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().equals(ResponseCodeEnum.BUSY))) {
-//      System.out.println("waiting to getTransactionReceipts as not Unknown..." +
-//          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().name());
       Thread.sleep(500);
       transactionReceipts = cstub.getTransactionReceipts(query);
       attempts++;
@@ -245,10 +243,6 @@ public class CreatePerformanceThread implements Runnable {
 
   private TransactionID createContractOnly(AccountID payerAccount, FileID contractFile,
       long durationInSeconds) throws Exception {
-    ContractID createdContract = null;
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-        .usePlaintext(true)
-        .build();
 
     Duration contractAutoRenew = Duration.newBuilder().setSeconds(durationInSeconds).build();
 

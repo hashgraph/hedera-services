@@ -67,6 +67,22 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
+	public void tokenCopyAsExpected() {
+		// setup:
+		var account = mock(MerkleAccount.class);
+		var expected = mock(MerkleAccount.class);
+
+		given(account.tokenCopy()).willReturn(expected);
+		given(map.getForModify(aKey)).willReturn(account);
+
+		// when:
+		var tokenCopy = subject.getTokenCopy(a);
+
+		// then:
+		assertSame(expected, tokenCopy);
+	}
+
+	@Test
 	public void syncsFromInjectedMap() {
 		// setup:
 		map = new FCMap<>();

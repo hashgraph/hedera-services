@@ -39,6 +39,8 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
+import com.hedera.services.tokens.TokenScope;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +56,11 @@ import org.apache.logging.log4j.Logger;
  *
  * @author Michael Tinker
  */
-public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
+public class TransactionalLedger<
+		K,
+		P extends Enum<P> & BeanProperty<A>,
+		A extends TokenViewMergeable<A>> implements Ledger<K, P, A> {
+
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadAccounts = new HashSet<>();
@@ -64,6 +70,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
+	final Map<K, A> tokenRefs = new HashMap<>();
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
@@ -97,10 +104,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
+		accounts.flushMutableRefs();
+
 		changes.clear();
 		deadAccounts.clear();
-		accounts.flushMutableRefs();
+		tokenRefs.clear();
+
 		isInTransaction = false;
+	}
+
+	void dropPendingTokenChanges() {
+		tokenRefs.clear();
 	}
 
 	void commit() {
@@ -109,16 +123,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 
 		log.debug("Changes to be committed: {}", this::changeSetSoFar);
-
 		try {
 			Stream<K> changedKeys = keyComparator.isPresent()
 					? changes.keySet().stream().sorted(keyComparator.get())
 					: changes.keySet().stream();
-			/* Only explicitly update new accounts. */
 			changedKeys
 					.filter(id -> !deadAccounts.contains(id))
 					.forEach(id -> accounts.put(id, get(id)));
 			changes.clear();
+			tokenRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
 					? deadAccounts.stream().sorted(keyComparator.get())
@@ -133,15 +146,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			String changeDesc = "<N/A>";
 			try {
 				changeDesc = changeSetSoFar();
-			} catch (Exception ignore) {
-				log.warn(ignore.getMessage());
+			} catch (Exception f) {
+				log.warn("Unable to describe pending change set!", f);
 			}
 			log.error("Catastrophic failure during commit of {}!", changeDesc);
 			throw e;
 		}
 	}
 
-	String changeSetSoFar() {
+	public String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {
@@ -161,6 +174,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 					change.getValue().entrySet().stream()
 							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
 							.collect(joining(", ")));
+			if (tokenRefs.containsKey(id)) {
+				if (change.getValue().size() > 0) {
+					desc.append(", ");
+				}
+				desc.append("TOKENS -> ");
+				var view = tokenRefs.get(id);
+				desc.append(view.readableTokenRelationships());
+			}
 			desc.append("]");
 			isFirstChange.set(false);
 		});
@@ -189,7 +210,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public void set(K id, P property, Object value) {
 		assertIsSettable(id);
-		changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
+
+		if (value instanceof TokenScopedPropertyValue) {
+			var viewSoFar = tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
+			property.setter().accept(viewSoFar, value);
+			changes.computeIfAbsent(id, changeFactory);
+		} else {
+			changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
+		}
 	}
 
 	@Override
@@ -202,32 +230,58 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
+
+		var viewSoFar = tokenRefs.get(id);
+		if (viewSoFar != null) {
+			account.mergeTokenPropertiesFrom(viewSoFar);
+		}
+
 		return account;
+	}
+
+	@Override
+	public A getTokenRef(K id) {
+		throwIfMissing(id);
+
+		return tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
+	}
+
+	public void markForMerge(K id) {
+		changes.computeIfAbsent(id, changeFactory);
 	}
 
 	@Override
 	public Object get(K id, P property) {
 		throwIfMissing(id);
 
-		if (hasPendingChange(id, property)) {
-			EnumMap<P, Object> changeSet = changes.get(id);
-			if (changeSet != null) {
-				return changeSet.get(property);
-			}
+		var changeSet = changes.get(id);
+		if (changeSet != null && changeSet.containsKey(property)) {
+			return changeSet.get(property);
+		} else {
+			return property.getter().apply(toGetterTarget(id));
 		}
+	}
 
-		return property.getter().apply(isPendingCreation(id) ? newAccount.get() : accounts.getRef(id));
+	@Override
+	public Object get(K id, P property, TokenScope scope) {
+		throwIfMissing(id);
+
+		var viewSoFar = tokenRefs.get(id);
+		viewSoFar = (viewSoFar != null) ? viewSoFar : toGetterTarget(id);
+		return property.scopedGetter().apply(viewSoFar, scope);
 	}
 
 	@Override
 	public void create(K id) {
 		assertIsCreatable(id);
+
 		changes.put(id, new EnumMap<>(propertyType));
 	}
 
 	@Override
 	public void destroy(K id) {
 		throwIfNotInTxn();
+
 		deadAccounts.add(id);
 	}
 
@@ -235,13 +289,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		return isInTransaction;
 	}
 
-	private boolean isPendingCreation(K id) {
-		return !accounts.contains(id) && changes.containsKey(id);
+	private A toGetterTarget(K id) {
+		return isPendingCreation(id) ? newAccount.get() : accounts.getRef(id);
 	}
 
-	private boolean hasPendingChange(K id, P property) {
-		EnumMap<P, Object> changeSet = changes.get(id);
-		return (changeSet != null) && changeSet.containsKey(property);
+	private A toTokenTarget(K id) {
+		return isPendingCreation(id) ? newAccount.get() : accounts.getTokenCopy(id);
+	}
+
+	private boolean isPendingCreation(K id) {
+		return !accounts.contains(id) && changes.containsKey(id);
 	}
 
 	private void assertIsSettable(K id) {

@@ -42,7 +42,6 @@ enum ResponseCodeEnum {
   BUSY = 12; //If API is throttled out
   NOT_SUPPORTED = 13; //The API is not currently supported
 
-
   INVALID_FILE_ID = 14; //The file id is invalid or does not exist
   INVALID_ACCOUNT_ID = 15; //The account id is invalid or does not exist
   INVALID_CONTRACT_ID = 16; //The contract id is invalid or does not exist
@@ -134,8 +133,8 @@ enum ResponseCodeEnum {
   CONTRACT_FILE_EMPTY = 83; // File to create a smart contract was of length zero
   CONTRACT_BYTECODE_EMPTY = 84; // Bytecode for smart contract is of length zero
   INVALID_INITIAL_BALANCE=85; // Attempt to set negative initial balance
-  INVALID_RECEIVE_RECORD_THRESHOLD=86; // attempt to set negative receive record threshold
-  INVALID_SEND_RECORD_THRESHOLD=87; // attempt to set negative send record threshold
+  INVALID_RECEIVE_RECORD_THRESHOLD=86 [deprecated=true]; // [Deprecated]. attempt to set negative receive record threshold
+  INVALID_SEND_RECORD_THRESHOLD=87 [deprecated=true]; // [Deprecated]. attempt to set negative send record threshold
   ACCOUNT_IS_NOT_GENESIS_ACCOUNT = 88; // Special Account Operations should be performed by only Genesis account, return this code if it is not Genesis Account
   PAYER_ACCOUNT_UNAUTHORIZED = 89; // The fee payer account doesn't have permission to submit such Transaction
   INVALID_FREEZE_TRANSACTION_BODY = 90; // FreezeTransactionBody is invalid
@@ -176,4 +175,37 @@ enum ResponseCodeEnum {
   TOPIC_EXPIRED = 162;
   INVALID_CHUNK_NUMBER = 163; // chunk number must be from 1 to total (chunks) inclusive.
   INVALID_CHUNK_TRANSACTION_ID = 164; // For every chunk, the payer account that is part of initialTransactionID must match the Payer Account of this transaction. The entire initialTransactionID should match the transactionID of the first chunk, but this is not checked or enforced by Hedera except when the chunk number is 1.
+
+  ACCOUNT_FROZEN_FOR_TOKEN = 165; // Account is frozen and cannot transact with the token
+  TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED = 166; // Maximum number of token relations for agiven account is exceeded
+  INVALID_TOKEN_ID = 167; //
+  INVALID_TOKEN_DECIMALS = 168;
+  INVALID_INITIAL_SUPPLY = 169;
+  INVALID_TREASURY_ACCOUNT_FOR_TOKEN = 170; // Treasury Account does not exist or is deleted
+  INVALID_TOKEN_SYMBOL = 171; // Token Symbol is not UTF-8 alphanumeric uppercase string
+  TOKEN_HAS_NO_FREEZE_KEY = 172; // Freeze key is not set on token
+  TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN = 173; // Amounts in transfer list are not net zero
+  MISSING_TOKEN_SYMBOL = 174; // Token Symbol is not provided
+  TOKEN_SYMBOL_TOO_LONG = 175; // Token Symbol is too long
+  TOKEN_SYMBOL_ALREADY_IN_USE = 176; // Token Symbol is already used
+  INVALID_TOKEN_REF = 177;
+  ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN = 178; // KYC must be granted and account does not have KYC granted
+  TOKEN_HAS_NO_KYC_KEY = 179; // KYC key is not set on token
+  INSUFFICIENT_TOKEN_BALANCE = 180; // Token balance is not sufficient for the transaction
+  TOKEN_WAS_DELETED = 181; // Token transactions cannot be executed on deleted token
+  TOKEN_HAS_NO_SUPPLY_KEY = 182; // Supply key is not set on token
+  TOKEN_HAS_NO_WIPE_KEY = 183; // Wipe key is not set on token
+  INVALID_TOKEN_MINT_AMOUNT = 184;
+  INVALID_TOKEN_BURN_AMOUNT = 185;
+  ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP = 186;
+  CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT = 187; // Cannot execute wipe operation on treasury account
+  INVALID_KYC_KEY = 188;
+  INVALID_WIPE_KEY = 189;
+  INVALID_FREEZE_KEY = 190;
+  INVALID_SUPPLY_KEY = 191;
+  TOKEN_NAME_ALREADY_IN_USE = 192; // Token Name is already used
+  MISSING_TOKEN_NAME = 193; // Token Name is not provided
+  TOKEN_NAME_TOO_LONG = 194; // Token name is too long
+  INVALID_WIPING_AMOUNT = 195; // The provided wipe amount must not be negative, zero or bigger than the token holder balance
+  TOKEN_IS_IMMUTABlE = 196; // Token does not have Admin key set, thus update/delete transactions cannot be performed
 }

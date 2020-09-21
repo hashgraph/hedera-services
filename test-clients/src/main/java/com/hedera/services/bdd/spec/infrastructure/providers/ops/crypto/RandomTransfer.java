@@ -50,7 +50,7 @@ public class RandomTransfer implements OpProvider {
 	private static final Logger log = LogManager.getLogger(RandomTransfer.class);
 
 	private static final int NUM_INVOLVED_PARTIES = 2;
-	public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 500;
+	public static final int DEFAULT_NUM_STABLE_ACCOUNTS = 200;
 	public static final double DEFAULT_RECORD_PROBABILITY = 0.0;
 
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
@@ -90,7 +90,12 @@ public class RandomTransfer implements OpProvider {
 	public List<HapiSpecOperation> suggestedInitializers() {
 		return stableAccounts(numStableAccounts).stream()
 						.map(account ->
-								cryptoCreate(my(account)).noLogging().balance(INITIAL_BALANCE).deferStatusResolution())
+								cryptoCreate(my(account))
+										.noLogging()
+										.balance(INITIAL_BALANCE)
+										.deferStatusResolution()
+										.payingWith(UNIQUE_PAYER_ACCOUNT)
+						)
 						.collect(toList());
 	}
 

@@ -36,11 +36,11 @@ public enum TestProperties implements PropertySource {
 	@Override
 	public Object getProperty(String name) {
 		if (name.equals("contracts.defaultSendThreshold")) {
-			return PropertiesLoader.getDefaultContractSenderThreshold();
+			return 5000000000000000000L;
 		} else if (name.equals("contracts.defaultReceiveThreshold")) {
-			return PropertiesLoader.getDefaultContractReceiverThreshold();
+			return 5000000000000000000L;
 		} else if (name.equals("contracts.maxStorageKb")) {
-			return PropertiesLoader.getMaxContractStateSize();
+			return 1024;
 		} else if (name.equals("hedera.transaction.minValidityBufferSecs")) {
 			return 10;
 		} else {

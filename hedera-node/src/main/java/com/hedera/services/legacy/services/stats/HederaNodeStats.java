@@ -93,7 +93,7 @@ public class HederaNodeStats {
 			FileController.CREATE_FILE_METRIC,
 			FileController.UPDATE_FILE_METRIC,
 			FileController.DELETE_FILE_METRIC,
-			FileController.APPEND_METRIC,
+			FileController.FILE_APPEND_METRIC,
 			FileController.FILE_SYSDEL_METRIC,
 			FileController.FILE_SYSUNDEL_METRIC
 	);
@@ -337,8 +337,9 @@ public class HederaNodeStats {
 					previousCounts.put(statName, currentCount);
 				}
 			} catch (InterruptedException e) {
-				if (log.isDebugEnabled())
+				if (log.isDebugEnabled()) {
 					log.debug("Interruption error when trying to sleep in HGCAppStats... ignore and continue");
+				}
 			}
 		}
 	}
@@ -375,7 +376,23 @@ public class HederaNodeStats {
 		updateCountStat(type, RECEIVED_SUFFIX);
 	}
 
-	public void networkTxnSubmited(String type) {
+	public void networkTxnSubmitted(String type) {
+		updateCountStat(type, SUBMITTED_SUFFIX);
+	}
+
+	public void tokenTxnReceived(String type) {
+		updateCountStat(type, RECEIVED_SUFFIX);
+	}
+
+	public void tokenTxnSubmitted(String type) {
+		updateCountStat(type, SUBMITTED_SUFFIX);
+	}
+
+	public void tokenQueryReceived(String type) {
+		updateCountStat(type, RECEIVED_SUFFIX);
+	}
+
+	public void tokenQueryAnswered(String type) {
 		updateCountStat(type, SUBMITTED_SUFFIX);
 	}
 

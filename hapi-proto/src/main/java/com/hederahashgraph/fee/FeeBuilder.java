@@ -49,9 +49,9 @@ public class FeeBuilder {
   public static final int FEE_DIVISOR_FACTOR = 1000;
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
-  public static final int BASIC_ACCT_AMT_SIZE = (4 * LONG_SIZE);
-  public static final int BASIC_ACCTID_SIZE = (3 * LONG_SIZE);
-  public static final int BASIC_TX_ID_SIZE = BASIC_ACCTID_SIZE + LONG_SIZE;
+  public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
+  public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+  public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
   /**
    * Fields included: status, exchangeRate.
@@ -61,19 +61,19 @@ public class FeeBuilder {
    * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration, generateRecord
    */
   public static final int BASIC_TX_BODY_SIZE =
-      BASIC_ACCTID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
+      BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
   public static final int STATE_PROOF_SIZE = 2000;
   public static final int BASE_FILEINFO_SIZE =
-      BASIC_ACCTID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
+      BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
   public static final int BASIC_ACCOUNT_SIZE = 8 * LONG_SIZE + BOOL_SIZE;
   /**
    * Fields included: nodeTransactionPrecheckCode, responseType, cost
    */
   public static final int BASIC_QUERY_RES_HEADER = 2 * INT_SIZE + LONG_SIZE;
   public static final int BASIC_QUERY_HEADER = 212;
-  public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ACCTID_SIZE + 6 * LONG_SIZE;
+  public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
   public static final int BASIC_CONTRACT_INFO_SIZE =
-      2 * BASIC_ACCTID_SIZE + SOLIDITY_ADDRESS + 4 * LONG_SIZE;
+      2 * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
   /**
    * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp, transactionID
    * transactionFee.
@@ -143,8 +143,8 @@ public class FeeBuilder {
    * Common fields in all transaction:
    * <p>
    * <ul>
-   *     <li>TransactionID transactionID - 3 * LONG_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
-   *     <li>AccountID nodeAccountID - 3 * LONG_SIZE</li>
+   *     <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
+   *     <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE</li>
    *     <li>uint64 transactionFee - LONG_SIZE</li>
    *     <li>Duration transactionValidDuration - (LONG_SIZE)</li>
    *     <li>bool generateRecord - BOOL_SIZE</li>
@@ -284,11 +284,11 @@ public class FeeBuilder {
 
     /*
      * Query QueryHeader Transaction - CryptoTransfer - (will be taken care in Transaction
-     * processing) ResponseType - INT_SIZE ID - 3 * LONG_SIZE
+     * processing) ResponseType - INT_SIZE ID - BASIC_ENTITY_ID_SIZE
      *
      */
 
-    bpt = INT_SIZE + BASIC_ACCTID_SIZE;
+    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
     /*
      * bpr = Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64
@@ -299,9 +299,7 @@ public class FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-    /*return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
-
   }
 
 
@@ -415,29 +413,6 @@ public class FeeBuilder {
   public static long getDefaultRBHNetworkSize() {
     return (BASIC_RECEIPT_SIZE) * (RECIEPT_STORAGE_TIME_SEC);
   }
-  
- /* public FeeData getCreateTransactionRecordFeeMatrices(int txRecordSize, int time) {
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    
-    rbs = (txRecordSize) * time;
-    // sbs - Stoarge bytes seconds
-    sbs = 0; // Transaction Record fee is charged when they are saved!, so no fee is required at
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, DEFAULT_PAYER_ACC_SIG_COUNT);
-
-  }*/
 
   // does not account for transferlist due to threshold record generation
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {
@@ -449,13 +424,15 @@ public class FeeBuilder {
     if (txBody.hasCryptoTransfer()) {
       txRecordSize = txRecordSize
           + txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount()
-          * (BASIC_ACCT_AMT_SIZE);
+          * (BASIC_ACCOUNT_AMT_SIZE);
     }
     return txRecordSize;
   }
 
   public static long getTxRecordUsageRBH(TransactionRecord txRecord, int timeInSeconds) {
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	long txRecordSize = getTransactionRecordSize(txRecord);    
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
@@ -468,7 +445,9 @@ public class FeeBuilder {
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
 	
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
@@ -482,7 +461,7 @@ public class FeeBuilder {
     if (txRecord.hasTransferList()) {
       txRecordSize =
           txRecordSize
-              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCT_AMT_SIZE);
+              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCOUNT_AMT_SIZE);
     }
 
     int memoBytesSize = 0;
@@ -516,7 +495,9 @@ public class FeeBuilder {
   
   
   public static long getTransactionRecordFeeInTinyCents(TransactionRecord txRecord,long feeCoeffRBH, int timeInSec) {
-	  if(txRecord == null) return 0;
+	  if(txRecord == null) {
+        return 0;
+      }
 	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
 	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  
@@ -525,9 +506,8 @@ public class FeeBuilder {
 
   public static int getQueryTransactionSize() {
     int commonTxBodyBytes =
-        3 * LONG_SIZE + (LONG_SIZE) + 3 * LONG_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
-    int commonTransferListSize = 4 * LONG_SIZE;
-    return (commonTxBodyBytes + commonTransferListSize + SIGNATURE_SIZE + INT_SIZE);
+            BASIC_ENTITY_ID_SIZE + (LONG_SIZE) + BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
+    return (commonTxBodyBytes + BASIC_TX_ID_SIZE + SIGNATURE_SIZE + INT_SIZE);
   }
 
   public static int liveHashSize(List<LiveHash> liveHashes) {
@@ -538,7 +518,7 @@ public class FeeBuilder {
     if (liveHashes != null) {
       int liveHashsListSize = liveHashes.size();
       liveHashDataSize = TX_HASH_SIZE * liveHashsListSize;
-      liveHashsAccountID = (3 * LONG_SIZE) * liveHashsListSize;
+      liveHashsAccountID = (BASIC_ENTITY_ID_SIZE) * liveHashsListSize;
       for (LiveHash liveHashs : liveHashes) {
         List<Key> keyList = liveHashs.getKeys().getKeysList();
         for (Key key : keyList) {

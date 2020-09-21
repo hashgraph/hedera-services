@@ -9,9 +9,9 @@ package com.hedera.test.factories.scenarios;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,18 +20,23 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -57,6 +62,17 @@ public interface TxnHandlingScenario {
 
 	default FCMap<MerkleEntityId, MerkleAccount> accounts() throws Exception {
 		return newAccounts()
+				.withAccount(FIRST_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(FIRST_TOKEN_SENDER_KT).get())
+				.withAccount(SECOND_TOKEN_SENDER_ID,
+						newAccount()
+								.balance(10_000L)
+								.accountKeys(SECOND_TOKEN_SENDER_KT).get())
+				.withAccount(TOKEN_RECEIVER_ID,
+						newAccount()
+								.balance(0L).get())
 				.withAccount(DEFAULT_NODE_ID,
 						newAccount()
 								.balance(0L)
@@ -144,6 +160,78 @@ public interface TxnHandlingScenario {
 		var topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
 		given(topics.get(EXISTING_TOPIC)).willReturn(new MerkleTopic());
 		return topics;
+	}
+
+	default TokenStore tokenStore() {
+		var tokenStore = mock(TokenStore.class);
+
+		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
+		var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
+		var optionalWipeKey = TOKEN_WIPE_KT.asJKeyUnchecked();
+		var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
+		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
+
+		var immutableToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"ImmutableToken", "ImmutableTokenName", false, false,
+				new EntityId(1, 2, 3));
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_IMMUTABLE_ID)))
+				.willReturn(KNOWN_TOKEN_IMMUTABLE);
+		given(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).willReturn(immutableToken);
+
+		var vanillaToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"VanillaToken", "TOKENNAME", false, false,
+				new EntityId(1, 2, 3));
+		vanillaToken.setAdminKey(adminKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS)))
+				.willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
+		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
+
+		var frozenToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"FrozenToken", "FRZNTKN", true, false,
+				new EntityId(1, 2, 4));
+		frozenToken.setAdminKey(adminKey);
+		frozenToken.setFreezeKey(optionalFreezeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
+				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
+
+		var kycToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"KycToken","KYCTOKENNAME", false, true,
+				new EntityId(1, 2, 4));
+		kycToken.setAdminKey(adminKey);
+		kycToken.setKycKey(optionalKycKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_KYC)))
+				.willReturn(KNOWN_TOKEN_WITH_KYC);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
+
+		var supplyToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"SupplyToken", "SUPPLYTOKENNAME", false, false,
+				new EntityId(1, 2, 4));
+		supplyToken.setAdminKey(adminKey);
+		supplyToken.setSupplyKey(optionalSupplyKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_SUPPLY)))
+				.willReturn(KNOWN_TOKEN_WITH_SUPPLY);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(supplyToken);
+
+		var wipeToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"WipeToken", "WIPETOKENNAME", false, false,
+				new EntityId(1, 2, 4));
+		wipeToken.setAdminKey(adminKey);
+		wipeToken.setWipeKey(optionalWipeKey);
+		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_WIPE)))
+				.willReturn(KNOWN_TOKEN_WITH_WIPE);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).willReturn(wipeToken);
+
+		given(tokenStore.resolve(IdUtils.asIdRef(UNKNOWN_TOKEN)))
+				.willReturn(TokenStore.MISSING_TOKEN);
+
+		return tokenStore;
 	}
 
 	String MISSING_ACCOUNT_ID = "1.2.3";
@@ -237,7 +325,38 @@ public interface TxnHandlingScenario {
 	String MISSING_TOPIC_ID = "0.0.12121";
 	TopicID MISSING_TOPIC = asTopic(MISSING_TOPIC_ID);
 
-	KeyTree MISC_TOPIC_SUBMIT_KEY = withRoot(ed25519());
-	KeyTree MISC_TOPIC_ADMIN_KEY = withRoot(ed25519());
-	KeyTree UPDATE_TOPIC_ADMIN_KEY = withRoot(ed25519());
+	String KNOWN_TOKEN_IMMUTABLE_ID = "0.0.534";
+	TokenID KNOWN_TOKEN_IMMUTABLE = asToken(KNOWN_TOKEN_IMMUTABLE_ID);
+	String KNOWN_TOKEN_NO_SPECIAL_KEYS_ID = "0.0.535";
+	TokenID KNOWN_TOKEN_NO_SPECIAL_KEYS = asToken(KNOWN_TOKEN_NO_SPECIAL_KEYS_ID);
+	String KNOWN_TOKEN_WITH_FREEZE_ID = "0.0.777";
+	TokenID KNOWN_TOKEN_WITH_FREEZE = asToken(KNOWN_TOKEN_WITH_FREEZE_ID);
+	String KNOWN_TOKEN_WITH_KYC_ID = "0.0.776";
+	TokenID KNOWN_TOKEN_WITH_KYC = asToken(KNOWN_TOKEN_WITH_KYC_ID);
+	String KNOWN_TOKEN_WITH_SUPPLY_ID = "0.0.775";
+	TokenID KNOWN_TOKEN_WITH_SUPPLY = asToken(KNOWN_TOKEN_WITH_SUPPLY_ID);
+	String KNOWN_TOKEN_WITH_WIPE_ID = "0.0.774";
+	TokenID KNOWN_TOKEN_WITH_WIPE = asToken(KNOWN_TOKEN_WITH_WIPE_ID);
+
+	String FIRST_TOKEN_SENDER_ID = "0.0.888";
+	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
+	String SECOND_TOKEN_SENDER_ID = "0.0.999";
+	AccountID SECOND_TOKEN_SENDER = asAccount(SECOND_TOKEN_SENDER_ID);
+	String TOKEN_RECEIVER_ID = "0.0.1111";
+	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
+
+	String UNKNOWN_TOKEN_ID = "0.0.666";
+	TokenID UNKNOWN_TOKEN = asToken(UNKNOWN_TOKEN_ID);
+
+	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
+	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());
+	KeyTree TOKEN_ADMIN_KT = withRoot(ed25519());
+	KeyTree TOKEN_FREEZE_KT = withRoot(ed25519());
+	KeyTree TOKEN_SUPPLY_KT = withRoot(ed25519());
+	KeyTree TOKEN_WIPE_KT = withRoot(ed25519());
+	KeyTree TOKEN_KYC_KT = withRoot(ed25519());
+	KeyTree TOKEN_REPLACE_KT = withRoot(ed25519());
+	KeyTree MISC_TOPIC_SUBMIT_KT = withRoot(ed25519());
+	KeyTree MISC_TOPIC_ADMIN_KT = withRoot(ed25519());
+	KeyTree UPDATE_TOPIC_ADMIN_KT = withRoot(ed25519());
 }

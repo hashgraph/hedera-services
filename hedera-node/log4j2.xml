@@ -140,6 +140,7 @@
         <MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="DENY"/>
       </Filters>
       <!-- <AppenderRef ref="Console"/> -->

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.records;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 /* --------------------------- SPEC STATIC IMPORTS --------------------------- */
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
@@ -54,15 +55,16 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-			new HapiApiSpec[] {
-					newlyCreatedContractGetsRecord(),
-					cacheRecordPersistenceIsAsExpected(),
-					successfullyCalledContractGetsRecord(),
-					unsuccessfullyCalledContractGetsRecord(),
-					onlyNetAdjustmentIsComparedToThreshold(),
-					bothSendAndReceiveThresholdsAreConsidered(),
-					newlyCreatedAccountReceiveThresholdIsIgnored(),
-			}
+				new HapiApiSpec[] {
+						newlyCreatedContractGetsRecord(),
+						cacheRecordPersistenceIsAsExpected(),
+						successfullyCalledContractGetsRecord(),
+						unsuccessfullyCalledContractGetsRecord(),
+						onlyNetAdjustmentIsComparedToThresholdWhenCreating(),
+						bothSendAndReceiveThresholdsAreConsideredWhenCreating(),
+						newlyCreatedAccountReceiveThresholdIsIgnored(),
+						neitherSendAndReceiveThresholdsAreConsideredWhenNotCreating(),
+				}
 		);
 	}
 
@@ -88,6 +90,23 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 				).then(finalClause);
 	}
 
+	private HapiApiSpec neitherSendAndReceiveThresholdsAreConsideredWhenNotCreating() {
+		long A_LOW_THRESHOLD = 100L;
+
+		return defaultHapiSpec("NeitherSendAndReceiveThresholdsAreConsideredWhenNotCreating")
+				.given(
+						cryptoCreate("lowSend").sendThreshold(A_LOW_THRESHOLD),
+						cryptoCreate("lowReceive").receiveThreshold(A_LOW_THRESHOLD)
+				).when(
+						cryptoTransfer(
+								tinyBarsFromTo("lowSend", "lowReceive", A_LOW_THRESHOLD + 1L)
+						).via("transferTxn")
+				).then(
+						getAccountRecords("lowSend").has(inOrder()),
+						getAccountRecords("lowReceive").has(inOrder())
+				);
+	}
+
 	/**
 	 * Builds a spec in which we do a CryptoTransfer from an account with
 	 * a low send threshold, to an account with a low receive threshold.
@@ -95,11 +114,16 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 	 *
 	 * @return the spec.
 	 */
-	private HapiApiSpec bothSendAndReceiveThresholdsAreConsidered() {
+	private HapiApiSpec bothSendAndReceiveThresholdsAreConsideredWhenCreating() {
 		long A_LOW_THRESHOLD = 100L;
 
 		return defaultHapiSpec("BothSendAndReceiveThresholdsAreConsidered")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+								"ledger.createThresholdRecords", "true"
+						)),
 						cryptoCreate("lowSend").sendThreshold(A_LOW_THRESHOLD),
 						cryptoCreate("lowReceive").receiveThreshold(A_LOW_THRESHOLD)
 				).when(
@@ -112,6 +136,11 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						)),
 						getAccountRecords("lowReceive").has(inOrder(
 								recordWith().txnId("transferTxn")
+						)),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+								"ledger.createThresholdRecords", "false"
 						))
 				);
 	}
@@ -129,7 +158,7 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 				).when(
 						contractCreate("contract").bytecode("bytecode").via("createTxn"),
 						contractCall("contract", DEPOSIT_ABI, 1_000L).via("callTxn").sending(1L)
-							.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				).then(
 						getContractRecords("contract").has(inOrder(
 								recordWith().txnId("createTxn"),
@@ -173,7 +202,7 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 						contractCreate("contract").bytecode("bytecode").via("createTxn")
 				).then(
 						getContractRecords("contract").has(inOrder(
-							recordWith().txnId("createTxn")
+								recordWith().txnId("createTxn")
 						))
 				);
 	}
@@ -199,10 +228,10 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 	/**
 	 * Creates a spec in which we pay for two CryptoTransfers using a payer
 	 * with a very low send threshold and a very high receive threshold.
-	 *   1. In the first CryptoTransfer, the payer is a net sender of funds; hence
-	 *   should get a long-lived record of the transfer.
-	 *   2. In the second CryptoTransfer, the payer is a net receiver of funds,
-	 *   and should thus not get a long-lived record.
+	 * 1. In the first CryptoTransfer, the payer is a net sender of funds; hence
+	 * should get a long-lived record of the transfer.
+	 * 2. In the second CryptoTransfer, the payer is a net receiver of funds,
+	 * and should thus not get a long-lived record.
 	 *
 	 * In particular, the payer should have exactly one more record with the
 	 * txnId of the first transfer than the txnId of the second transfer (no
@@ -210,12 +239,17 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 	 *
 	 * @return the spec.
 	 */
-	private HapiApiSpec onlyNetAdjustmentIsComparedToThreshold() {
+	private HapiApiSpec onlyNetAdjustmentIsComparedToThresholdWhenCreating() {
 		final long WAY_LESS_THAN_A_TRANSFER_FEE = 1L;
 		final long WAY_MORE_THAN_A_TRANSFER_FEE = 1_000_000_000L;
 
-		return defaultHapiSpec("OnlyNetAdjustmentIsComparedToThresholds")
+		return defaultHapiSpec("OnlyNetAdjustmentIsComparedToThresholdWhenCreating")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+								"ledger.createThresholdRecords", "true"
+						)),
 						cryptoCreate("lowSendThreshPayer")
 								.sendThreshold(1L),
 						cryptoCreate("misc")
@@ -243,12 +277,17 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 									"Wrong difference in records generated!",
 									1,
 									numForThresholdRecordTxn - numForNoThresholdRecordTxn);
-						})
+						}),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+								"ledger.createThresholdRecords", "false"
+						))
 				);
 	}
 
 	private int numRecordsWithTxnId(List<TransactionRecord> records, TransactionID txnId) {
-		return (int)records
+		return (int) records
 				.stream()
 				.filter(r -> r.getTransactionID().equals(txnId))
 				.count();
@@ -260,5 +299,6 @@ public class ThresholdRecordCreationSuite extends HapiApiSuite {
 	}
 
 	private final String PATH_TO_PAYABLE_CONTRACT_BYTECODE = "src/main/resource/PayReceivable.bin";
-	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	private final String DEPOSIT_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}]," +
+			"\"name\":\"deposit\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 }

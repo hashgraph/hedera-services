@@ -183,8 +183,9 @@ public class ProtectedEntityTests extends BaseClient {
     Key accKey = acc2ComplexKeyMap.get(accountID);
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
-    if(requireExistingKey)
-      keys.add(accKey);
+    if(requireExistingKey) {
+		keys.add(accKey);
+	}
     Transaction updateTx = updateAccount(accountID, payerAccountID,
         nodeAccountID, autoRenew);
     
@@ -240,13 +241,12 @@ public class ProtectedEntityTests extends BaseClient {
   public static void main(String[] args) throws Throwable {
     ProtectedEntityTests tester = new ProtectedEntityTests(testConfigFilePath);
     long[] sysAccountToFund = {3, 49, 50, 51, 55, 56, 57, 58, 59, 60, 80, 81, 100, 45, 46};
-//    long[] sysAccountToFund = {};
     tester.init(sysAccountToFund);
-    TransactionSigner.TX_BODY_FORMAT = "Body";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureList";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.Body;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
     tester.runTests();
-    TransactionSigner.TX_BODY_FORMAT = "BodyBytes";
-    TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.BodyBytes;
+    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     tester.runTests();
   }
 
@@ -292,10 +292,11 @@ public class ProtectedEntityTests extends BaseClient {
       for (int j = 0; j < files.length; j++) {
         fid = genFileID(files[j]);
         List<Key> wacl = null;
-        if(fid2waclMap.contains(fid))
-          wacl = fid2waclMap.get(fid);
-        else
-          wacl = acc2ComplexKeyMap.get(genesisAccountID).getKeyList().getKeysList(); // note: same key is used for genesis account and system file wacl
+        if(fid2waclMap.contains(fid)) {
+			wacl = fid2waclMap.get(fid);
+		} else {
+			wacl = acc2ComplexKeyMap.get(genesisAccountID).getKeyList().getKeysList(); // note: same key is used for genesis account and system file wacl
+		}
         deleteFile(fid, payer, nodeID, wacl, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE, null);
       }
     }
@@ -345,31 +346,39 @@ public class ProtectedEntityTests extends BaseClient {
       for (int i1 = 0; i1 < unauthAccounts.length; i1++) {
         AccountID unauthPayerID = genAccountID(unauthAccounts[i1]);
         ResponseCodeEnum code = ResponseCodeEnum.NOT_SUPPORTED; // result of api permissions check
-        if(unauthPayerID.getAccountNum() < 59)
-          code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+        if(unauthPayerID.getAccountNum() < 59) {
+			code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+		}
         systemDelete(fid, unauthPayerID, nodeID, waclPubKeyList, code, null);
       }
       
       // authorized system delete will succeed
       if(authDeletePayerID.getAccountNum() == 59) // no wacl needed
-        systemDelete(fid, authDeletePayerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
-      else // need wacl
-        systemDelete(fid, authDeletePayerID, nodeID, waclPubKeyList, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  {
+		  systemDelete(fid, authDeletePayerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  } else // need wacl
+	  {
+		  systemDelete(fid, authDeletePayerID, nodeID, waclPubKeyList, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  }
       
       // unauthorized system undelete will fail
       for (int i1 = 0; i1 < unauthAccounts.length; i1++) {
         AccountID unauthPayerID = genAccountID(unauthAccounts[i1]);
         ResponseCodeEnum code = ResponseCodeEnum.NOT_SUPPORTED;
-        if(unauthPayerID.getAccountNum() < 60)
-          code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+        if(unauthPayerID.getAccountNum() < 60) {
+			code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+		}
         systemUndelete(fid, unauthPayerID, nodeID, waclPubKeyList, code , null);
       }
       
       // authorized system undelete will succeed
       if(undeletePayerID.getAccountNum() == 60) // no wacl needed
-        systemUndelete(fid, undeletePayerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
-      else // need wacl
-        systemUndelete(fid, undeletePayerID, nodeID, waclPubKeyList, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  {
+		  systemUndelete(fid, undeletePayerID, nodeID, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  } else // need wacl
+	  {
+		  systemUndelete(fid, undeletePayerID, nodeID, waclPubKeyList, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+	  }
     }
     log.info(header + "system deletes and undelete a file");
     
@@ -391,8 +400,9 @@ public class ProtectedEntityTests extends BaseClient {
       for (int i1 = 0; i1 < unauthAccounts.length; i1++) {
         AccountID unauthPayerID = genAccountID(unauthAccounts[i1]);
         ResponseCodeEnum code = ResponseCodeEnum.NOT_SUPPORTED;
-        if(unauthPayerID.getAccountNum() <= 59)
-          code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+        if(unauthPayerID.getAccountNum() <= 59) {
+			code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+		}
         systemDelete(contractID, unauthPayerID , nodeID, code, null);
       }
       
@@ -403,8 +413,9 @@ public class ProtectedEntityTests extends BaseClient {
       for (int i1 = 0; i1 < unauthAccounts.length; i1++) {
         AccountID unauthPayerID = genAccountID(unauthAccounts[i1]);
         ResponseCodeEnum code = ResponseCodeEnum.NOT_SUPPORTED;
-        if(unauthPayerID.getAccountNum() <= 60)
-          code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+        if(unauthPayerID.getAccountNum() <= 60) {
+			code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+		}
         systemUndelete(contractID, unauthPayerID, nodeID, code, null);
       }
       
@@ -648,10 +659,11 @@ public class ProtectedEntityTests extends BaseClient {
         .newBuilder()
         .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(10000000l));
     
-    if(entityID instanceof FileID)
-      systemDeleteTransactionBodyBuilder.setFileID((FileID) entityID);
-    else
-      systemDeleteTransactionBodyBuilder.setContractID((ContractID) entityID);
+    if(entityID instanceof FileID) {
+		systemDeleteTransactionBodyBuilder.setFileID((FileID) entityID);
+	} else {
+		systemDeleteTransactionBodyBuilder.setContractID((ContractID) entityID);
+	}
       
     SystemDeleteTransactionBody systemDeleteTransactionBody = systemDeleteTransactionBodyBuilder.build();
 
@@ -691,10 +703,11 @@ public class ProtectedEntityTests extends BaseClient {
         .signTransactionComplex(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
-    if(entityID instanceof FileID)
-      response = stub.systemDelete(signTx);
-    else
-      response = scstub.systemDelete(signTx);
+    if(entityID instanceof FileID) {
+		response = stub.systemDelete(signTx);
+	} else {
+		response = scstub.systemDelete(signTx);
+	}
       
     log.info("systemDelete Response :: " + response.getNodeTransactionPrecheckCodeValue() 
       + ", transactionBody=" + transactionBody);
@@ -707,7 +720,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
- //     Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
     }
   }
 
@@ -743,10 +755,11 @@ public class ProtectedEntityTests extends BaseClient {
     com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody.Builder systemUndeleteTransactionBodyBuilder = SystemUndeleteTransactionBody
         .newBuilder();
     
-    if(entityID instanceof FileID)
-      systemUndeleteTransactionBodyBuilder.setFileID((FileID) entityID);
-    else
-      systemUndeleteTransactionBodyBuilder.setContractID((ContractID) entityID);
+    if(entityID instanceof FileID) {
+		systemUndeleteTransactionBodyBuilder.setFileID((FileID) entityID);
+	} else {
+		systemUndeleteTransactionBodyBuilder.setContractID((ContractID) entityID);
+	}
       
     SystemUndeleteTransactionBody systemUndeleteTransactionBody = systemUndeleteTransactionBodyBuilder.build();
   
@@ -786,10 +799,11 @@ public class ProtectedEntityTests extends BaseClient {
         .signTransactionComplex(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
-    if(entityID instanceof FileID)
-      response = stub.systemDelete(signTx);
-    else
-      response = scstub.systemDelete(signTx);
+    if(entityID instanceof FileID) {
+		response = stub.systemDelete(signTx);
+	} else {
+		response = scstub.systemDelete(signTx);
+	}
       
     log.info("systemUndelete Response :: " + response.getNodeTransactionPrecheckCodeValue());
     
@@ -801,7 +815,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
-//      Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
     }
   }
 
@@ -892,8 +905,9 @@ public class ProtectedEntityTests extends BaseClient {
     for (int i1 = 0; i1 < unauthAccounts.length; i1++) {
       AccountID unauthorizedPayerID = genAccountID(unauthAccounts[i1]);
       ResponseCodeEnum code = ResponseCodeEnum.NOT_SUPPORTED;
-      if(unauthorizedPayerID.getAccountNum() <= 58)
-        code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+      if(unauthorizedPayerID.getAccountNum() <= 58) {
+		  code = ResponseCodeEnum.AUTHORIZATION_FAILED;
+	  }
       dynamicRestart(unauthorizedPayerID, nodeID, code, null);
     }
     log.info(header + "dynamic restart with unauthorized accounts fails");
@@ -928,13 +942,15 @@ public class ProtectedEntityTests extends BaseClient {
       ResponseCodeEnum expectedPostcheckCode, boolean isFree, ByteString fileData) throws Throwable {
     Timestamp fileExp = null;
     KeyList wacl = null;
-    if(newWaclKeyList != null)
-      wacl = KeyList.newBuilder().addAllKeys(newWaclKeyList).build();
+    if(newWaclKeyList != null) {
+		wacl = KeyList.newBuilder().addAllKeys(newWaclKeyList).build();
+	}
     
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     long fee = 0l;
-    if(!isFree)
-      fee = TestHelper.getFileMaxFee();
+    if(!isFree) {
+		fee = TestHelper.getFileMaxFee();
+	}
     Transaction FileUpdateRequest = getFileUpdateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), fee , timestamp, fileExp, transactionDuration, true,
@@ -979,7 +995,6 @@ public class ProtectedEntityTests extends BaseClient {
     if(ResponseCodeEnum.OK == expectedPrecheckCode) {
       TransactionReceipt fastRecord = getTxFastRecord(transactionID);
       Assert.assertNotNull(fastRecord);
-//      Assert.assertEquals(expectedPostcheckCode, fastRecord.getStatus());
   
       checkFeeCharge(transactionID, payerID, nodeID, isFree);
       
@@ -1179,8 +1194,9 @@ public class ProtectedEntityTests extends BaseClient {
     List<Key> feeFileWacl = (acc2ComplexKeyMap.get(genesisAccountID)).getKeyList().getKeysList(); // fee schedul file share keys with genesis
     for (int i = 0; i < feeScheduleAccounts.length; i++) {
       AccountID payer = genAccountID(feeScheduleAccounts[i]);
-      if(!acc2ComplexKeyMap.containsKey(payer))
-        acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+      if(!acc2ComplexKeyMap.containsKey(payer)) {
+		  acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+	  }
       
       if(payer.getAccountNum() == 50 || payer.getAccountNum() == 56) {//no wacl needed, also free
         // success with no wacl signing and no fee
@@ -1197,9 +1213,9 @@ public class ProtectedEntityTests extends BaseClient {
             ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
 
         // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, false);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
         } 
@@ -1213,8 +1229,9 @@ public class ProtectedEntityTests extends BaseClient {
     // update feeSchedule with un-authorized accounts
     for (int i = 0; i < feeScheduleAccountsUnauth.length; i++) {
       AccountID payer = genAccountID(feeScheduleAccountsUnauth[i]);
-      if(!acc2ComplexKeyMap.containsKey(payer))
-        acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+      if(!acc2ComplexKeyMap.containsKey(payer)) {
+		  acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+	  }
       updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, feeFileWacl, ResponseCodeEnum.AUTHORIZATION_FAILED, null, ResponseCodeEnum.AUTHORIZATION_FAILED, null, false);
     }
     log.info(header + "update feeSchedule with un-authorized accounts");
@@ -1303,11 +1320,11 @@ public class ProtectedEntityTests extends BaseClient {
         updateFileWithFee(addressBook102, payer, nodeID, addressFileWacl, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
 
         // fails without wacl
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           //Tiru
           updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
           updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and address files share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
           updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
@@ -1330,8 +1347,9 @@ public class ProtectedEntityTests extends BaseClient {
     // update address book with un-authorized accounts
     for (int i = 0; i < addressAccountsUnauth.length; i++) {
       AccountID payer = genAccountID(addressAccountsUnauth[i]);
-      if(!acc2ComplexKeyMap.containsKey(payer))
-        acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+      if(!acc2ComplexKeyMap.containsKey(payer)) {
+		  acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+	  }
       updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.AUTHORIZATION_FAILED, null);
       updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.AUTHORIZATION_FAILED, null);
     }
@@ -1361,8 +1379,9 @@ public class ProtectedEntityTests extends BaseClient {
     // update exchangeRate with authorized accounts
     for (int i = 0; i < exchangeRateAccounts.length; i++) {
       AccountID payer = genAccountID(exchangeRateAccounts[i]);
-      if(!acc2ComplexKeyMap.containsKey(payer))
-        acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+      if(!acc2ComplexKeyMap.containsKey(payer)) {
+		  acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+	  }
       
       if(payer.getAccountNum() == 50) {//no wacl needed, also free
         // success with no wacl signing and no fee
@@ -1394,9 +1413,9 @@ public class ProtectedEntityTests extends BaseClient {
         isSmallExchangeRateUpdate = true; // reset flag
 
         // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureList")) {
+        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
           updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals("SignatureMap")) {
+        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
           // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
           updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
         } 
@@ -1410,8 +1429,9 @@ public class ProtectedEntityTests extends BaseClient {
     // update exchangeRate with un-authorized accounts
     for (int i = 0; i < exchangeRateAccountsUnauth.length; i++) {
       AccountID payer = genAccountID(exchangeRateAccountsUnauth[i]);
-      if(!acc2ComplexKeyMap.containsKey(payer))
-        acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+      if(!acc2ComplexKeyMap.containsKey(payer)) {
+		  acc2ComplexKeyMap.put(payer, acc2ComplexKeyMap.get(genesisAccountID));
+	  }
       updateFileWithFee(exchangeRate112, payer, nodeID, exchangeRateFileWacl, null, ResponseCodeEnum.AUTHORIZATION_FAILED, null);
     }
     log.info(header + "update exchangeRate with un-authorized accounts");
@@ -1454,11 +1474,13 @@ public class ProtectedEntityTests extends BaseClient {
         .setContents(data)
         .setFileID(fid);
     
-    if(fileExpTime != null)
-      builder.setExpirationTime(fileExpTime);
+    if(fileExpTime != null) {
+		builder.setExpirationTime(fileExpTime);
+	}
 
-    if(keys != null)
-      builder.setKeys(keys);
+    if(keys != null) {
+		builder.setKeys(keys);
+	}
 
     TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
         nodeAccountNum,
@@ -1533,10 +1555,11 @@ public class ProtectedEntityTests extends BaseClient {
     
     int B = 1; // 1 percent bound
     int b = 0;
-    if(isSmallExchangeRateUpdate)
-      b = B;
-    else
-      b = 100;
+    if(isSmallExchangeRateUpdate) {
+		b = B;
+	} else {
+		b = 100;
+	}
 
     long c0n = c0 + c0 * b / 100;
     long c1n = c1 + c1 * b / 100;
@@ -1599,16 +1622,6 @@ public class ProtectedEntityTests extends BaseClient {
     log.info("c0=" + c0 + ", c0Change=" + c0Change + "; c1=" + c1 + ", c1Change=" + c1Change);
     Assert.assertEquals(c0n <= (c0 + c0*B/100), c0Change);
     Assert.assertEquals(c1n <= (c1 + c1*B/100), c1Change);
-    
-//    for(int b=0; b < 100; b++) {
-//      long c0n = c0 + c0 * b / 100;
-//      long c1n = c1 + c1 * b / 100;
-//      boolean c0Change = isSmallChange(B, c0, 1, c0n, 1);
-//      boolean c1Change = isSmallChange(B, c1, 1, c1n, 1);
-//      log.info("b=" + b + ", B=" + B + "; c0=" + c0 + ", c0Change=" + c0Change + "; c1=" + c1 + ", c1Change=" + c1Change);
-//      Assert.assertEquals(b <= B, c0Change);
-//      Assert.assertEquals(b <= B, c1Change);
-//    }
   }
 
   /**
@@ -1720,8 +1733,9 @@ public class ProtectedEntityTests extends BaseClient {
   public ByteString modAddressBookFile(FileID fid, NodeAddressBook sourceAddressBook, boolean isRandom) throws Throwable {
     List<NodeAddress> addressList = new ArrayList<>(sourceAddressBook.getNodeAddressList());
     int index = addressList.size() - 1;
-    if(isRandom)
-      index = (new Random()).nextInt(addressList.size());
+    if(isRandom) {
+		index = (new Random()).nextInt(addressList.size());
+	}
     
     addressList.remove(index);
     NodeAddressBook mod = NodeAddressBook.newBuilder().addAllNodeAddress(addressList).build();

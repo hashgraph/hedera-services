@@ -83,8 +83,6 @@ public class TxRecordTest {
     int port = Integer.parseInt(properties.getProperty("port"));
     TxRecordTest txRecordTest = new TxRecordTest(port, host);
     txRecordTest.demo();
-    //txRecordTest.TxRecordTest();
-    //txRecordTest.testAccountRecords(RequestBuilder.getAccountIdBuild(1029L, 0l, 0l));
   }
 
   public void TxRecordTest() throws Exception {

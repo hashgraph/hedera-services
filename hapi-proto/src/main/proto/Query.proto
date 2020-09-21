@@ -49,6 +49,7 @@ import "TransactionGetFastRecord.proto";
 import "ConsensusGetTopicInfo.proto";
 
 import "NetworkGetVersionInfo.proto";
+import "TokenGetInfo.proto";
 
 /* A single query, which is sent from the client to a node. This includes all possible queries. Each Query should not have more than 50 levels. */
 message Query {
@@ -75,5 +76,7 @@ message Query {
         ConsensusGetTopicInfoQuery consensusGetTopicInfo = 50; // Get the parameters of and state of a consensus topic.
 
         NetworkGetVersionInfoQuery networkGetVersionInfo = 51;
+
+        TokenGetInfoQuery tokenGetInfo = 52; // Get all information about a token
     }
 }

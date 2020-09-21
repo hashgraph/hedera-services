@@ -25,29 +25,25 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.StandardizedPropertySources;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.FastCopyable;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldState;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
 import com.swirlds.fcmap.FCMap;
@@ -71,7 +67,9 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_070_VERSION = 1;
+	static final int RELEASE_080_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_080_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -80,14 +78,16 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	NodeId nodeId = null;
 	boolean immutable = true;
 
-	/* Order of v1 Merkle node children */
+	/* Order of Merkle node children */
 	static class ChildIndices {
 		static final int ADDRESS_BOOK = 0;
 		static final int NETWORK_CTX = 1;
 		static final int TOPICS = 2;
 		static final int STORAGE = 3;
 		static final int ACCOUNTS = 4;
-		static final int NUM_V1_CHILDREN = 5;
+		static final int NUM_070_CHILDREN = 5;
+		static final int TOKENS = 5;
+		static final int NUM_080_CHILDREN = 6;
 	}
 
 	ServicesContext ctx;
@@ -96,7 +96,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_V1_CHILDREN);
+		super(ChildIndices.NUM_080_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -122,7 +122,18 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		return ChildIndices.NUM_V1_CHILDREN;
+		return (version == RELEASE_070_VERSION)
+				? ChildIndices.NUM_070_CHILDREN
+				: ChildIndices.NUM_080_CHILDREN;
+	}
+
+	@Override
+	public void initialize(MerkleInternal previous) {
+		if (tokens() == null) {
+			setChild(ChildIndices.TOKENS,
+					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
+			log.info("Created tokens FCMap after 0.7.0 state restoration");
+		}
 	}
 
 	/* --- SwirldState --- */
@@ -135,17 +146,21 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		if (getNumberOfChildren() < ChildIndices.NUM_V1_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_080_CHILDREN) {
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
 					new SequenceNumber(seqStart),
 					new ExchangeRates());
 			setChild(ChildIndices.NETWORK_CTX, networkCtx);
-			setChild(ChildIndices.TOPICS, new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
+			setChild(ChildIndices.TOPICS,
+					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
 			setChild(ChildIndices.STORAGE,
 					new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider()));
-			setChild(ChildIndices.ACCOUNTS, new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
+			setChild(ChildIndices.ACCOUNTS,
+					new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
+			setChild(ChildIndices.TOKENS,
+					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -154,7 +169,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		}
 
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext( nodeId, platform, this, properties);
+		ctx = new ServicesContext(nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
@@ -200,7 +215,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				networkCtx().copy(),
 				topics().copy(),
 				storage().copy(),
-				accounts().copy()));
+				accounts().copy(),
+				tokens().copy()));
 	}
 
 	@Override
@@ -208,6 +224,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		storage().delete();
 		accounts().delete();
 		topics().delete();
+		tokens().delete();
 	}
 
 	@Override
@@ -259,12 +276,14 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  Accounts       :: %s\n" +
 						"  Storage        :: %s\n" +
 						"  Topics         :: %s\n" +
+						"  Tokens         :: %s\n" +
 						"  NetworkContext :: %s\n" +
 						"  AddressBook    :: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
 				topics().getHash(),
+				tokens().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash()));
 	}
@@ -279,6 +298,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
 		return getChild(ChildIndices.TOPICS);
+	}
+
+	public FCMap<MerkleEntityId, MerkleToken> tokens() {
+		return getChild(ChildIndices.TOKENS);
 	}
 
 	public MerkleNetworkContext networkCtx() {

@@ -25,6 +25,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,8 +36,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static java.util.Collections.unmodifiableSet;
-import static java.util.Set.of;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -55,14 +57,17 @@ public class BootstrapProperties implements PropertySource {
 		}
 		return in;
 	};
+	static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
 	String BOOTSTRAP_PROPS_RESOURCE = "bootstrap.properties";
+	String BOOTSTRAP_OVERRIDE_PROPS_LOC = "data/config/bootstrap.properties";
 
 	Map<String, Object> bootstrapProps = MISSING_PROPS;
 
 	void initPropsFromResource() {
 		var resourceProps = new Properties();
 		load(BOOTSTRAP_PROPS_RESOURCE, resourceProps);
+		loadOverride(BOOTSTRAP_OVERRIDE_PROPS_LOC, resourceProps, fileStreamProvider, log);
 
 		Set<String> unrecognizedProps = new HashSet<>(resourceProps.stringPropertyNames());
 		unrecognizedProps.removeAll(BOOTSTRAP_PROP_NAMES);
@@ -90,10 +95,10 @@ public class BootstrapProperties implements PropertySource {
 				.stream()
 				.forEach(prop -> bootstrapProps.put(
 						prop,
-						BOOTSTRAP_PROP_TRANSFORMS.getOrDefault(prop, s -> s)
+						PROP_TRANSFORMS.getOrDefault(prop, s -> s)
 								.apply(resourceProps.getProperty(prop))));
 
-		var msg = "Resolved bootstrap and global/static properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
+		var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
 				.map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
 				.collect(Collectors.joining("\n  "));
@@ -138,7 +143,7 @@ public class BootstrapProperties implements PropertySource {
 		return BOOTSTRAP_PROP_NAMES;
 	}
 
-	private static final Set<String> BOOTSTRAP_PROPS = Set.of(
+	static final Set<String> BOOTSTRAP_PROPS = Set.of(
 			"bootstrap.feeSchedulesJson.resource",
 			"bootstrap.genesisB64Keystore.keyName",
 			"bootstrap.genesisB64Keystore.path",
@@ -158,7 +163,7 @@ public class BootstrapProperties implements PropertySource {
 			"bootstrap.system.entityExpiry"
 	);
 
-	private static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
+	static final Set<String> GLOBAL_STATIC_PROPS = Set.of(
 			"accounts.addressBookAdmin",
 			"accounts.exchangeRatesAdmin",
 			"accounts.feeSchedulesAdmin",
@@ -182,12 +187,35 @@ public class BootstrapProperties implements PropertySource {
 			"ledger.totalTinyBarFloat"
 	);
 
+	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"cache.records.ttl",
+			"contracts.defaultReceiveThreshold",
+			"contracts.defaultSendThreshold",
+			"contracts.maxStorageKb",
+			"files.maxSizeKb",
+			"ledger.createThresholdRecords",
+			"ledger.fundingAccount",
+			"ledger.maxAccountNum",
+			"rates.intradayChangeLimitPercent",
+			"tokens.maxPerAccount",
+			"tokens.maxSymbolLength",
+			"tokens.maxTokenNameLength"
+	);
+
+	static final Set<String> NODE_PROPS = Set.of(
+			"grpc.port",
+			"grpc.tlsPort",
+			"hedera.profiles.active",
+			"precheck.account.maxLookupRetries",
+			"precheck.account.lookupRetryBackoffIncrementMs"
+	);
+
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
-			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS)
+			Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS, NODE_PROPS)
 					.flatMap(Set::stream)
 					.collect(toSet()));
 
-	private static final Map<String, Function<String, Object>> BOOTSTRAP_PROP_TRANSFORMS = Map.ofEntries(
+	static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
 			entry("accounts.exchangeRatesAdmin", AS_LONG),
 			entry("accounts.feeSchedulesAdmin", AS_LONG),
@@ -198,15 +226,21 @@ public class BootstrapProperties implements PropertySource {
 			entry("accounts.systemAdmin.firstManaged", AS_LONG),
 			entry("accounts.systemAdmin.lastManaged", AS_LONG),
 			entry("accounts.treasury", AS_LONG),
+			entry("cache.records.ttl", AS_INT),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),
 			entry("files.feeSchedules", AS_LONG),
 			entry("files.hapiPermissions", AS_LONG),
 			entry("files.nodeDetails", AS_LONG),
+			entry("grpc.port", AS_INT),
+			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
+			entry("hedera.profiles.active", AS_PROFILE),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.shard", AS_LONG),
+			entry("precheck.account.maxLookupRetries", AS_INT),
+			entry("precheck.account.lookupRetryBackoffIncrementMs", AS_INT),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
 			entry("bootstrap.ledger.systemAccounts.initialBalance", AS_LONG),
 			entry("bootstrap.ledger.systemAccounts.recordThresholds", AS_LONG),
@@ -217,7 +251,18 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.rates.nextCentEquiv", AS_INT),
 			entry("bootstrap.rates.nextExpiry", AS_LONG),
 			entry("bootstrap.system.entityExpiry", AS_LONG),
+			entry("files.maxSizeKb", AS_INT),
+			entry("ledger.fundingAccount", AS_LONG),
+			entry("ledger.createThresholdRecords", AS_BOOLEAN),
+			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
-			entry("ledger.totalTinyBarFloat", AS_LONG)
+			entry("ledger.totalTinyBarFloat", AS_LONG),
+			entry("tokens.maxPerAccount", AS_INT),
+			entry("tokens.maxSymbolLength", AS_INT),
+			entry("tokens.maxTokenNameLength", AS_INT),
+			entry("contracts.defaultReceiveThreshold", AS_LONG),
+			entry("contracts.defaultSendThreshold", AS_LONG),
+			entry("contracts.maxStorageKb", AS_INT),
+			entry("rates.intradayChangeLimitPercent", AS_INT)
 	);
 }

@@ -469,7 +469,10 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation validateRecordTransactionFees(String txn, Set<AccountID> feeRecipients) {
 		return assertionsHold((spec, assertLog) -> {
-			HapiGetTxnRecord subOp = getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL);
+			HapiGetTxnRecord subOp = getTxnRecord(txn)
+					.logged()
+					.payingWith(EXCHANGE_RATE_CONTROL)
+					.expectStrictCostAnswer();
 			allRunFor(spec, subOp);
 			TransactionRecord record = subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
 			long realFee = record.getTransferList().getAccountAmountsList()

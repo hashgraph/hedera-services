@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -60,8 +61,8 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 
 	private final FileNumbers fileNums;
 	private final AccountNumbers accountNums;
-	private final PropertySource properties;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties properties;
 	private final Supplier<ExchangeRates> midnightRates;
 	private final Consumer<ExchangeRateSet> postUpdateCb;
 	private final IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory;
@@ -69,7 +70,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	public TxnAwareRatesManager(
 			FileNumbers fileNums,
 			AccountNumbers accountNums,
-			PropertySource properties,
+			GlobalDynamicProperties properties,
 			TransactionContext txnCtx,
 			Supplier<ExchangeRates> midnightRates,
 			Consumer<ExchangeRateSet> postUpdateCb,
@@ -104,7 +105,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 	}
 
 	private Map.Entry<ResponseCodeEnum, Boolean> checkBound(Optional<ExchangeRateSet> rates){
-		var bound = properties.getIntProperty("exchangeRates.intradayChange.limitPercent");
+		var bound = properties.ratesIntradayChangeLimitPercent();
 		var intradayLimit = intradayLimitFactory.apply(bound);
 		if (isSudoer() || (rates.isPresent() && intradayLimit.test(midnightRates.get(), rates.get()))) {
 			return YES_VERDICT;

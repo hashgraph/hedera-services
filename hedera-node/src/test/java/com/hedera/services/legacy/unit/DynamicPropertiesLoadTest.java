@@ -108,21 +108,18 @@ public class DynamicPropertiesLoadTest {
 		serviceConfigList = getAppPropertiesProto("180", "90000");
 		TransactionBody txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		Assert.assertEquals(180, PropertiesLoader.getTxReceiptTTL());
 		assertEquals(90000, PropertiesLoader.getThresholdTxRecordTTL());
 		
 		// now update the file with changed Proto
 		serviceConfigList = getAppPropertiesProto("280", "80000");
 		txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		assertEquals(280, PropertiesLoader.getTxReceiptTTL());
 		assertEquals(80000, PropertiesLoader.getThresholdTxRecordTTL());
 		
 		// change back the value of receipt time to 180
 		serviceConfigList = getAppPropertiesProto("180", "90000");
 		txBody = getTxBody(serviceConfigList.toByteArray());
 		fileServiceHandler.updateFile(txBody, Instant.now());
-		assertEquals(180, PropertiesLoader.getTxReceiptTTL());
 		assertEquals(90000, PropertiesLoader.getThresholdTxRecordTTL());
 	}
 	

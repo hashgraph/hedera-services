@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -39,7 +40,6 @@ import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NoFeeScheduleExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -92,6 +92,7 @@ class UsageBasedFeeCalculatorTest {
 	Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
 	PropertySource properties;
+	GlobalDynamicProperties dynamicProperties;
 	UsageBasedFeeCalculator subject;
 	/* Has nine simple keys. */
 	KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -117,6 +118,7 @@ class UsageBasedFeeCalculatorTest {
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		properties = mock(PropertySource.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>)mock(Function.class);
 
@@ -124,6 +126,7 @@ class UsageBasedFeeCalculatorTest {
 				properties,
 				exchange,
 				usagePrices,
+				dynamicProperties,
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -139,7 +142,7 @@ class UsageBasedFeeCalculatorTest {
 
 	@Test
 	public void throwsIseOnBadScheduleInFcfs() throws Exception {
-		willThrow(NoFeeScheduleExistsException.class).given(usagePrices).loadPriceSchedules();
+		willThrow(IllegalStateException.class).given(usagePrices).loadPriceSchedules();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.init());
@@ -170,7 +173,7 @@ class UsageBasedFeeCalculatorTest {
 
 		given(exchange.activeRate()).willReturn(currentRate);
 		given(usagePrices.activePrices()).willReturn(mockFeeData);
-		given(properties.getIntProperty("cache.records.ttl")).willReturn(ttl);
+		given(dynamicProperties.cacheRecordsTtl()).willReturn(ttl);
 		// and:
 		long shouldBe = expectedPriceForStorage(record, ttl);
 

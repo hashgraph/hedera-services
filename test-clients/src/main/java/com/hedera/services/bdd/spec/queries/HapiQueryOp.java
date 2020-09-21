@@ -49,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.OFF;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
@@ -62,6 +63,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private String nodePaymentName;
 	protected boolean recordsNodePayment = false;
 	protected boolean stopAfterCostAnswer = false;
+	protected boolean expectStrictCostAnswer = false;
 	protected Response response = null;
 	protected Optional<Long> nodePayment = Optional.empty();
 	protected Optional<ResponseCodeEnum> costAnswerPrecheck = Optional.empty();
@@ -200,6 +202,13 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			if (!loggingOff) {
 				log.info(spec.logPrefix() + "--> Node payment for " + this + " is " + realNodePayment + " tinyBars.");
 			}
+			if (expectStrictCostAnswer) {
+				Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
+				submitWith(spec, insufficientPayment);
+				Assert.assertEquals("Strict cost of answer!", INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
+				log.info("Query with node payment of {} tinyBars got INSUFFICIENT_TX_FEE as expected!",
+						realNodePayment - 1);
+			}
 			return finalizedTxn(spec, opDef(spec, realNodePayment));
 		}
 	}
@@ -261,6 +270,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		stopAfterCostAnswer = true;
 		return self();
 	}
+	public T expectStrictCostAnswer() {
+		expectStrictCostAnswer = true;
+		return self();
+	}
 	public T via(String name) {
 		txnName = name;
 		shouldRegisterTxnId = true;
@@ -319,6 +332,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		loggingOff = true;
 		return self();
 	}
+	public T logging() {
+		loggingOff = false;
+		return self();
+	}
+
 	public T recordNodePaymentAs(String s) {
 		recordsNodePayment = true;
 		nodePaymentName = s;

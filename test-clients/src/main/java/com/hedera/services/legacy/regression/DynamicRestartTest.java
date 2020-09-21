@@ -104,9 +104,8 @@ public class DynamicRestartTest extends TestHelperComplex {
         accountDuration = Long.parseLong(properties.getProperty("ACCOUNT_DURATION"));
         fileDuration = Long.parseLong(properties.getProperty("FILE_DURATION"));
         contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
-        //   fit = new SmartContractServiceTest(testConfigFilePath);
         account55 = RequestBuilder.getAccountIdBuild(55l, 0l, 0l);
-        TransactionSigner.SIGNATURE_FORMAT = "SignatureMap";
+        TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
         nodeID = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
         readGenesisInfo();
         createStubs();
@@ -312,12 +311,10 @@ public class DynamicRestartTest extends TestHelperComplex {
     }
 
     public static FileGetInfoResponse.FileInfo createFileAndGetInfo(AccountID payerAccount, AccountID nodeAccount, int size, long durationSeconds) throws Throwable {
-        // long durationSeconds = 30 * 24 * 60 * 60; //30 Day
         byte[] fileContents = new byte[size];
         Random random = new Random();
         random.nextBytes(fileContents);
         ByteString fileData = ByteString.copyFrom(fileContents);
-        // List<Key> waclPubKeyList = fit.genWaclComplex(1, "single");
         List<Key> waclPubKeyList = new ArrayList<Key>();
         Key key = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pubKey2privKeyMap);
         waclPubKeyList.add(key);
@@ -336,7 +333,6 @@ public class DynamicRestartTest extends TestHelperComplex {
                                                           List<Key> waclKeyList, Timestamp fileExp, String memo) throws Throwable {
         log.info("@@@ upload file: file size in byte = " + fileData.size());
         Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-        // Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC);
         SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
         Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),

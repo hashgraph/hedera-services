@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
@@ -36,14 +37,20 @@ public class ExpiringCreations implements EntityCreator {
 	private ExpirableTxnRecord currentExpirableRecord = null;
 
 	private final PropertySource properties;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private ObjLongConsumer<AccountID> payerTracker;
 	private ObjLongConsumer<AccountID> historicalTracker;
 	private ToLongBiFunction<AccountID, ExpirableTxnRecord> payerRecordFn;
 	private ToLongBiFunction<AccountID, ExpirableTxnRecord> historicalRecordFn;
 
-	public ExpiringCreations(ExpiryManager expiries, PropertySource properties) {
+	public ExpiringCreations(
+			ExpiryManager expiries,
+			PropertySource properties,
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.properties = properties;
+		this.dynamicProperties = dynamicProperties;
 
 		payerTracker = expiries::trackPayerRecord;
 		historicalTracker = expiries::trackHistoricalRecord;
@@ -62,7 +69,7 @@ public class ExpiringCreations implements EntityCreator {
 			long submittingMember
 	) {
 		return createExpiringRecord(
-				now + properties.getIntProperty("cache.records.ttl"),
+				now + dynamicProperties.cacheRecordsTtl(),
 				submittingMember,
 				id,
 				record,

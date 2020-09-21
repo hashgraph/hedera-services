@@ -21,6 +21,8 @@ package com.hedera.services.state.validation;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
@@ -49,6 +51,7 @@ class BasedLedgerValidatorTest {
 
 	HederaNumbers hederaNums;
 	PropertySource properties;
+	GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	BasedLedgerValidator subject;
 
@@ -59,10 +62,9 @@ class BasedLedgerValidatorTest {
 		given(hederaNums.shard()).willReturn(shard);
 
 		properties = mock(PropertySource.class);
-		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn(5L);
 		given(properties.getLongProperty("ledger.totalTinyBarFloat")).willReturn(100L);
 
-		subject = new BasedLedgerValidator(hederaNums, properties);
+		subject = new BasedLedgerValidator(hederaNums, properties, dynamicProperties);
 	}
 
 	@Test
@@ -97,7 +99,9 @@ class BasedLedgerValidatorTest {
 	@Test
 	public void throwsOnIdWithInvalidShard() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard - 1, realm, 3L), expectedWith(100L));
+		accounts.put(
+				new MerkleEntityId(shard - 1, realm, 3L),
+				expectedWith(dynamicProperties.maxAccountNum()));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));
@@ -115,7 +119,9 @@ class BasedLedgerValidatorTest {
 	@Test
 	public void throwsOnIdWithNumTooLarge() throws NegativeAccountBalanceException {
 		// given:
-		accounts.put(new MerkleEntityId(shard, realm, 6L), expectedWith(100L));
+		accounts.put(
+				new MerkleEntityId(shard, realm, dynamicProperties.maxAccountNum() + 1),
+				expectedWith(100L));
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.assertIdsAreValid(accounts));

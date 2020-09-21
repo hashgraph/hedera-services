@@ -59,9 +59,6 @@ public class AsyncPropertiesObject {
 	private static long accountBalanceExportPeriodMinutes = ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES;
 	
 	// Server Properties
-	private static int port = ApplicationConstants.APP_PORT;
-	private static int tlsPort = ApplicationConstants.APP_TLS_PORT;
-	private static int environment;
 	private static String defaultListeningNodeAccount = ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT;
 	private static int uniqueListeningPortFlag;
 	
@@ -84,11 +81,11 @@ public class AsyncPropertiesObject {
 	private static boolean startStatsDumpTimer = false;
 	private static int     statsDumpTimerValue = 60; // in seconds
 
+	// Re-try times for querying binary object store (for file services)
+	private static int binaryObjectQueryRetryTimes = ApplicationConstants.BINARY_OBJECT_QUERY_RETRY_TIMES;
+
 	public static void loadAsynchProperties(CustomProperties appConfig) {
 		// Server properties
-		port = appConfig.getInt("port", ApplicationConstants.APP_PORT);
-		tlsPort = appConfig.getInt("tlsPort", ApplicationConstants.APP_TLS_PORT);
-		environment = appConfig.getInt("environment", ApplicationConstants.ZERO);
 		defaultListeningNodeAccount = appConfig.getString("defaultListeningNodeAccount",ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT);
 		uniqueListeningPortFlag = appConfig.getInt("uniqueListeningPortFlag", ApplicationConstants.ZERO);
 		
@@ -139,6 +136,9 @@ public class AsyncPropertiesObject {
 		// properties for timers
 		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
 		statsDumpTimerValue = appConfig.getInt("statsDumpTimerValue",60);
+
+		// Re-try times for querying binary object store (for file services)
+		binaryObjectQueryRetryTimes = appConfig.getInt("binary.object.query.retry.times", 3);
 
 	}
 
@@ -237,18 +237,6 @@ public class AsyncPropertiesObject {
 		return accountBalanceExportPeriodMinutes;
 	}
 
-	static int getPort() {
-		return port;
-	}
-
-	static int getTlsPort() {
-		return tlsPort;
-	}
-
-	static int getEnvironment() {
-		return environment;
-	}
-
 	static String getDefaultListeningNodeAccount() {
 		return defaultListeningNodeAccount;
 	}
@@ -303,5 +291,8 @@ public class AsyncPropertiesObject {
 
 	static int getStatsDumpTimerValue() {
 		return statsDumpTimerValue;
+	}
+	static int getBinaryObjectQueryRetryTimes() {
+		return binaryObjectQueryRetryTimes;
 	}
 }

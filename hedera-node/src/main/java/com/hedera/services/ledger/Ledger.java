@@ -20,6 +20,10 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.tokens.TokenScope;
+
+import java.util.Optional;
+
 /**
  * Defines a ledger type with minimal semantics for manipulating
  * accounts and a given family of their properties. It is presumed
@@ -66,6 +70,16 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	A get(K id);
 
 	/**
+	 * Gets a mutable ref encapsulating all token-scoped changes
+	 * to the account so far. Any non-token changes to this account
+	 * will be ignored.
+	 *
+	 * @param id the id of the relevant account.
+	 * @return the account.
+	 */
+	A getTokenRef(K id);
+
+	/**
 	 * Gets the current property value of the specified account. This value
 	 * need not be persisted to a durable backing store.
 	 *
@@ -74,6 +88,17 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * @return the value of the property.
 	 */
 	Object get(K id, P property);
+
+	/**
+	 * Gets the current property value of the specified account relative to
+	 * the scoping token. This value need not be persisted to a durable backing
+	 * store.
+	 *
+	 * @param id the id of the relevant account.
+	 * @param property which property to fetch.
+	 * @return the value of the property.
+	 */
+	Object get(K id, P property, TokenScope scope);
 
 	/**
 	 * Indicates whether an account is present (in either a saved or transient

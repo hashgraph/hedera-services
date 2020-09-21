@@ -20,6 +20,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -72,6 +73,7 @@ class GetTxnRecordResourceUsageTest {
 	Query satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
 	Query unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
 
+	PropertySource propertySource;
 	StateView view;
 	RecordCache recordCache;
 	CryptoFeeBuilder usageEstimator;
@@ -87,7 +89,8 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		accounts = mock(FCMap.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts);
+		propertySource = mock(PropertySource.class);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, view, satisfiableAnswerOnly))

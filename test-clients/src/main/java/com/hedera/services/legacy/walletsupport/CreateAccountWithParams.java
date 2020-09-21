@@ -91,7 +91,6 @@ public class CreateAccountWithParams {
     public static void main(String args[]) throws InterruptedException, IOException, URISyntaxException, InvalidNodeTransactionPrecheckCode, DecoderException {
         Properties properties = TestHelper.getApplicationProperties();
         String host = "localhost" ;//properties.getProperty("host");
-        // String host ="dummy";
         int port = 50211;//Integer.parseInt(properties.getProperty("port"));
 
         if ((args.length) > 0) {

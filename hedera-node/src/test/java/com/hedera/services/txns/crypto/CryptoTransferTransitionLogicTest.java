@@ -68,8 +68,8 @@ public class CryptoTransferTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
-		given(validator.hasOnlyCryptoAccounts(any())).willReturn(true);
 		withRubberstampingValidator();
+		given(ledger.isSmartContract(any())).willReturn(false);
 
 		subject = new CryptoTransferTransitionLogic(ledger, validator, txnCtx);
 	}
@@ -77,7 +77,7 @@ public class CryptoTransferTransitionLogicTest {
 	@Test
 	public void requiresOnlyCryptoAccounts() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		given(validator.hasOnlyCryptoAccounts(any())).willReturn(false);
+		given(ledger.isSmartContract(any())).willReturn(true);
 
 		// when:
 		subject.doStateTransition();
@@ -212,6 +212,5 @@ public class CryptoTransferTransitionLogicTest {
 
 	private void withRubberstampingValidator() {
 		given(validator.isAcceptableLength(any())).willReturn(true);
-		given(validator.hasOnlyCryptoAccounts(any())).willReturn(true);
 	}
 }

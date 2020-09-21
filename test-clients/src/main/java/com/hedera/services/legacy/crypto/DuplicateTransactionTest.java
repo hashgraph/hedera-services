@@ -193,64 +193,13 @@ public class DuplicateTransactionTest {
 
     // same transaction ID but parameters in request are different. create account request
     // same transaction IDs being passed to two different nodes . 2 transactions differ in balance
-    Timestamp timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-//        Transaction transaction2 = createAccountSameTxnIDDiffReq1(timestamp,payerAccount,defaultNodeAccount,firstPair,1000l,Collections.singletonList(genesisPrivateKey));
-//        Transaction transaction3 = createAccountSameTxnIDDiffReq1(timestamp,payerAccount,defaultNodeAccount,firstPair,10l,Collections.singletonList(genesisPrivateKey));
-
-//        ExecutorService threads23 = Executors.newFixedThreadPool(size);
-//        torun = new ArrayList<>(size);
-//        torun.add(() -> stub.createAccount(transaction2));
-//        torun.add(() -> stub.createAccount(transaction3));
-//        // all tasks executed in different threads, at 'once'.
-//        List<Future<TransactionResponse>> futures23 = threads23.invokeAll(torun);
-//        // no more need for the threadpool
-//        threads23.shutdown();
-//
-//        try {
-//            TransactionResponse response2 = futures23.get(0).get();
-//            Assert.assertNotNull(response2);
-//            System.out.println("The transaction response is ::");
-//            System.out.println(response2.getNodeTransactionPrecheckCode());
-//            Assert.assertEquals(ResponseCodeEnum.OK, response2.getNodeTransactionPrecheckCode());
-//            AccountID newlyCreatedAccoundID2 = TestHelper.getTxReceipt(transaction2.getBody().getTransactionID(),stub).getAccountID();
-//            Assert.assertNotNull(newlyCreatedAccoundID2);
-//            log.info("The newly created account id is ::"+ newlyCreatedAccoundID2.getAccountNum());
-//            Response accountInfo2 = TestHelper.getCryptoGetAccountInfo(stub,newlyCreatedAccoundID2,payerAccount,genesisPrivateKey,defaultNodeAccount);
-//            Assert.assertNotNull(accountInfo2);
-//
-//
-//            TransactionResponse response3 = futures23.get(1).get();
-//            Assert.assertNotNull(response3);
-//            Assert.assertEquals(ResponseCodeEnum.OK, response3.getNodeTransactionPrecheckCode());
-//            AccountID newlyCreatedAccoundID3 = TestHelper.getTxReceipt(transaction3.getBody().getTransactionID(),stub).getAccountID();
-//            Assert.assertNotNull(newlyCreatedAccoundID3);
-//            log.info("The newly created account ID is ::" + newlyCreatedAccoundID3.getAccountNum());
-//            Response accountInfo3 = TestHelper.getCryptoGetAccountInfo(stub,newlyCreatedAccoundID3,payerAccount,genesisPrivateKey,defaultNodeAccount);
-//            Assert.assertNotNull(accountInfo3);
-//
-//            if ((accountInfo2.getCryptoGetInfo().getAccountInfo().getBalance())==10){
-//                log.info("request for balance 10l is picked first");
-//                Assert.assertEquals(10l,accountInfo2.getCryptoGetInfo().getAccountInfo().getBalance());
-//                log.info("request for balance 1000l is rejected by the platform");
-//                Assert.assertNotEquals(1000l,accountInfo3.getCryptoGetInfo().getAccountInfo().getBalance());
-//            }else{
-//                log.info("request for balance 1000l is picked first");
-//                Assert.assertEquals(1000l,accountInfo2.getCryptoGetInfo().getAccountInfo().getBalance());
-//                log.info("request for balance 10l is rejected by the platform");
-//                Assert.assertNotEquals(10l,accountInfo3.getCryptoGetInfo().getAccountInfo().getBalance());
-//            }
-//        } catch (ExecutionException e) {
-//            e.printStackTrace();
-//        }
-
     // duplicate transaction tests for crypto transfers
 
     long genesisbalancebeforeTransfer = TestHelper
         .getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
             defaultNodeAccount).getCryptoGetInfo().getAccountInfo().getBalance();
 
-    timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
+    Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Transaction transaction4 = createTransfer(timestamp, payerAccount, genKeyPair,
         newlyCreateAccountId1, payerAccount, genKeyPair, defaultNodeAccount, 100l);
     Transaction transaction5 = createTransfer(timestamp, payerAccount, genKeyPair,
@@ -275,8 +224,6 @@ public class DuplicateTransactionTest {
       TransactionReceipt txReceipt4 = TestHelper
           .getTxReceipt(transactionBody4.getTransactionID(), stub);
       Assert.assertNotNull(txReceipt4);
-
-//            System.out.println(txReceipt4);
 
       long genesisbalanceAfterTransfer = TestHelper
           .getCryptoGetAccountInfo(stub, payerAccount, payerAccount, genKeyPair,
@@ -343,26 +290,6 @@ public class DuplicateTransactionTest {
         payerKeyPair, nodeAccount, amount);
     return rv;
   }
-
-
-//  public static Transaction createAccountWithFee(AccountID payerAccount, AccountID nodeAccount,
-//      KeyPair pair, long initialBalance, List<PrivateKey> privKey) throws Exception {
-//
-//    Transaction transaction = TestHelper
-//        .createAccount(payerAccount, nodeAccount, pair, initialBalance, 0,
-//            TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
-//            TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-//    Transaction signTransaction = TransactionSigner.signTransaction(transaction, privKey);
-//    long createAccountFee = FeeClient.getCreateAccountFee(signTransaction,privKey.size());
-//    transaction = TestHelper
-//        .createAccount(payerAccount, nodeAccount, pair, initialBalance, createAccountFee,
-//            TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
-//            TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-//    signTransaction = TransactionSigner.signTransaction(transaction, privKey);
-//    return signTransaction;
-//
-//
-//  }
 
   public static Transaction createAccountSameTxnIDDiffReq1(Timestamp timestamp,
       AccountID payerAccount, AccountID nodeAccount, KeyPair pair, long initialBalance,

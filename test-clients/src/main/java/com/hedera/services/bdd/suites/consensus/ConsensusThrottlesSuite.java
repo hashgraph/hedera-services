@@ -63,7 +63,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 		return defaultHapiSpec("ThrottlesCreateTopicAsExpected")
 				.given(
 						cryptoCreate("civilian"),
-						fileUpdate(APP_PROPERTIES)
+						fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.buckets.createTopicBucket.capacity",
 										"0.0"))
@@ -72,6 +72,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasPrecheck(BUSY),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.buckets.createTopicBucket.capacity",
 										"1300.0"))
@@ -88,6 +89,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic(SUBMIT_MESSAGE_TOPIC_NAME),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
 										UNACHIEVABLE_CAPACITY))
@@ -97,6 +99,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 								.message("throttled")
 								.hasPrecheck(BUSY),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
 										"1.67"))
@@ -114,6 +117,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic(UPDATE_TOPIC_TOPIC_NAME),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
 										UNACHIEVABLE_CAPACITY))
@@ -123,6 +127,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 								.memo("throttled")
 								.hasPrecheck(BUSY),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
 										"1.67"))
@@ -140,6 +145,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic(DELETE_TOPIC_TOPIC_NAME),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusDeleteTopic.capacityRequired",
 										UNACHIEVABLE_CAPACITY))
@@ -148,6 +154,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasPrecheck(BUSY),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusDeleteTopic.capacityRequired",
 										"1.67"))
@@ -165,6 +172,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 						cryptoCreate("civilian"),
 						createTopic(GET_TOPIC_INFO_TOPIC_NAME),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
 										UNACHIEVABLE_CAPACITY))
@@ -174,6 +182,7 @@ public class ConsensusThrottlesSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.hasAnswerOnlyPrecheck(BUSY),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
 										"1.67"))

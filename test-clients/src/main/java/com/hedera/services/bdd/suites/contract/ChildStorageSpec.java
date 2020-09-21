@@ -32,18 +32,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 
 public class ChildStorageSpec extends HapiApiSuite {
@@ -96,19 +93,20 @@ public class ChildStorageSpec extends HapiApiSuite {
 	}
 
 	HapiApiSpec childStorage() {
-		Map<String, String> props = new HashMap<>();
-
-		var MAX_GAS_LIMIT_PROP = "maxGasLimit";
-		var MAX_CONTRACT_SIZE_KB_PROP = "maxContractStateSize";
+		var MAX_CONTRACT_STORAGE_ALLOWED = 1024;
 
 		return defaultHapiSpec("ChildStorage")
 				.given(
-						getFileContents(APP_PROPERTIES).addingConfigListTo(props),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+								"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
+						)),
 						fileCreate("bytecode").path(PATH_TO_CHILD_STORAGE_BYTECODE),
 						contractCreate("childStorage").bytecode("bytecode")
 				).when(
 						withOpContext((spec, opLog) -> {
-							int almostFullKb = Integer.parseInt(props.get(MAX_CONTRACT_SIZE_KB_PROP)) * 3 / 4;
+							int almostFullKb = MAX_CONTRACT_STORAGE_ALLOWED * 3 / 4;
 							long kbPerStep = 16;
 
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
@@ -134,15 +132,18 @@ public class ChildStorageSpec extends HapiApiSuite {
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 0)
 						.has(resultWith().resultThruAbi(
 						GET_CHILD_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(child0) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(child0) })))
+						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_CHILD_VALUE_ABI, 1)
 						.has(resultWith().resultThruAbi(
 						GET_CHILD_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(child1) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(child1) })))
+						.expectStrictCostAnswer(),
 				contractCallLocal("childStorage", GET_MY_VALUE_ABI)
 						.has(resultWith().resultThruAbi(
 						GET_MY_VALUE_ABI,
-						isLiteralResult(new Object[] { BigInteger.valueOf(parent) }))),
+						isLiteralResult(new Object[] { BigInteger.valueOf(parent) })))
+						.expectStrictCostAnswer(),
 		};
 	}
 

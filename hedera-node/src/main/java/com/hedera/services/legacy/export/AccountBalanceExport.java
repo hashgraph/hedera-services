@@ -9,9 +9,9 @@ package com.hedera.services.legacy.export;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.state.exports.AccountBalance;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidTotalAccountBalanceException;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.swirlds.common.Address;
@@ -33,6 +32,7 @@ import com.swirlds.common.Platform;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -40,7 +40,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,7 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class AccountBalanceExport {
-  
+
   static final Logger log = LogManager.getLogger(AccountBalanceExport.class);
   static final String lineSperator = "line.separator";
 
@@ -117,7 +116,10 @@ public class AccountBalanceExport {
   /**
    * This method is invoked during start up and executed based upon the configuration settings. It exports all the existing accounts balance and write it in a file
    */
-  public String exportAccountsBalanceCSVFormat(ServicesState servicesState, Instant consensusTimestamp) throws InvalidTotalAccountBalanceException {
+  public String exportAccountsBalanceCSVFormat(
+          ServicesState servicesState,
+          Instant consensusTimestamp
+  ) {
     // get the export path from Properties
     log.debug("exportAccountsBalanceCSVFormat called. {}", consensusTimestamp);
     FCMap<MerkleEntityId, MerkleAccount> accountMap = servicesState.accounts();
@@ -141,12 +143,12 @@ public class AccountBalanceExport {
     if(log.isDebugEnabled()){
       log.debug("Size of accountMap :: {}", accountMap.size());
     }
-    long totalBalance = 0L;
+    BigInteger totalBalance = BigInteger.ZERO;
 
     for (Map.Entry<MerkleEntityId, MerkleAccount> item : accountMap.entrySet()) {
       MerkleEntityId currKey = item.getKey();
       MerkleAccount currMv = item.getValue();
-      totalBalance += currMv.getBalance();
+      totalBalance = totalBalance.add(BigInteger.valueOf(currMv.getBalance()));
       exAccObj = new AccountBalance(
               currKey.getShard(), currKey.getRealm(), currKey.getNum(), currMv.getBalance());
       acctObjList.add(exAccObj);
@@ -161,9 +163,9 @@ public class AccountBalanceExport {
       }
     }
     //validate that total node balance is equal to initial money supply
-    if(totalBalance != initialGenesisCoins) {
+    if(!totalBalance.equals(BigInteger.valueOf(initialGenesisCoins))) {
       String  errorMessage = "Total balance " + totalBalance + " is different from " + initialGenesisCoins;
-      throw new InvalidTotalAccountBalanceException(errorMessage);
+      throw new IllegalStateException(errorMessage);
     }
     Collections.sort(acctObjList);
     try (FileWriter file = new FileWriter(fileName)) {
@@ -227,9 +229,7 @@ public class AccountBalanceExport {
 
   public void signAccountBalanceFile(Platform platform, String balanceFileName) {
     byte[] fileHash = getFileHash(balanceFileName);
-    //log.info("fileHash of {}: {}", balanceFileName, fileHash);
     byte[] signature = platform.sign(fileHash);
-    //log.info("signature of {}: {}", balanceFileName, signature);
 
     String sigFileName = RecordStream.generateSigFile(balanceFileName, signature, fileHash);
     if (sigFileName != null) {

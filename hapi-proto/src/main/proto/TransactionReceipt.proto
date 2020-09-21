@@ -97,4 +97,7 @@ message TransactionReceipt {
 
     // In the receipt of a ConsensusSubmitMessage, the version of the SHA-384 digest used to update the running hash.
     uint64 topicRunningHashVersion = 9;
+
+    // In the receipt of a CreateToken, the id of the newly created token
+    TokenID tokenId = 10;
 }
