@@ -381,7 +381,7 @@ commands:
             - provision-testnet-hosts:
                 liveness-timeout-secs: 120
                 var-file: '<< parameters.var-file >>'
-                var-region: "us-east-1"
+                var-region: "us-west-2"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
