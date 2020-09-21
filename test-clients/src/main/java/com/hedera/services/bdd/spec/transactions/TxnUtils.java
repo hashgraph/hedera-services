@@ -34,7 +34,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -349,7 +349,7 @@ public class TxnUtils {
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-	public static String readableTokenTransferList(TokenTransfers xfers) {
+	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
 		return xfers.getTokenTransfersList().stream()
 				.map(scopedXfers -> String.format("%s(%s)",
 						readableRef(scopedXfers.getToken()),

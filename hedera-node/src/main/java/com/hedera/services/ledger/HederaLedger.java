@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
@@ -274,7 +274,7 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
+	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
 		var validity = OK;
 
 		for (TokenRefTransferList xfers : transfers.getTokenTransfersList())	{

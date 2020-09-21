@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -38,7 +38,7 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
 
 	private boolean adjustmentsAreSet = false;
-	private TokenTransfers.Builder xfers = TokenTransfers.newBuilder();
+	private TokenTransfersTransactionBody.Builder xfers = TokenTransfersTransactionBody.newBuilder();
 
 	private TokenTransactFactory() {}
 

@@ -187,7 +187,7 @@ import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
-import com.hedera.services.txns.token.TokenTransactTransitionLogic;
+import com.hedera.services.txns.token.TokenTransferTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
@@ -945,7 +945,7 @@ public class ServicesContext {
 								txnCtx(),
 								HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenTransact,
-						List.of(new TokenTransactTransitionLogic(ledger(), txnCtx()))),
+						List.of(new TokenTransferTransitionLogic(ledger(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
