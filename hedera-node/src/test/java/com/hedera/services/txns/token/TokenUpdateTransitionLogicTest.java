@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -247,6 +248,19 @@ class TokenUpdateTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(TOKEN_IS_IMMUTABlE);
+	}
+
+	@Test
+	public void abortsOnAlreadyDeletedToken() {
+		givenValidTxnCtx(true);
+		// and:
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
 	}
 
 	@Test
