@@ -56,13 +56,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						symbolChanges(),
-//						keysChange(),
 //						standardImmutabilitySemanticsHold(),
 //						validAutoRenewWorks(),
 //						validatesMissingAdminKey(),
 //						tooLongNameCheckHolds(),
 //						nameChanges(),
 //						validatesMissingRef(),
+//						keysChange(),
 						treasuryEvolves(),
 				}
 		);
@@ -144,7 +144,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("freezeThenKycKey")
 								.freezeKey("kycThenFreezeKey")
 								.wipeKey("supplyThenWipeKey")
-								.supplyKey("wipeThenSupplyKey")
+								.supplyKey("wipeThenSupplyKey"),
+						tokenAssociate("misc", "tbu")
 				).then(
 						getTokenInfo("tbu").logged(),
 						grantTokenKyc("tbu", "misc")
@@ -235,6 +236,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.symbol(hopefullyUnique)
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
+						tokenAssociate(GENESIS, "tbu"),
 						tokenTransact(
 								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
 				);
