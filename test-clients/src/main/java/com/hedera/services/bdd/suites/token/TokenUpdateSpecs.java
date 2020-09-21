@@ -75,8 +75,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed("adminKey"),
 						cryptoCreate(TOKEN_TREASURY),
-						cryptoCreate("payer")
-								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
 								.adminKey("adminKey")
 								.treasury(TOKEN_TREASURY),
