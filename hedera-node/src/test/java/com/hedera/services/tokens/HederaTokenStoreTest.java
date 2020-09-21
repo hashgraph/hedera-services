@@ -256,6 +256,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void rejectsDeletionTokenAlreadyDeleted() {
+		// given:
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var outcome = subject.delete(miscRef);
+
+		// then:
+		assertEquals(TOKEN_WAS_DELETED, outcome);
+	}
+
+	@Test
 	public void rejectsMissingDeletion() {
 		// given:
 		var mockSubject = mock(TokenStore.class);

@@ -61,8 +61,24 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						deletionValidatesRef(),
 						deletionValidatesMissingAdminKey(),
 						deletionWorksAsExpected(),
+						deletionValidatesAlreadyDeletedToken(),
 				}
 		);
+	}
+
+	private HapiApiSpec deletionValidatesAlreadyDeletedToken() {
+		return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
+				.given(
+						newKeyNamed("multiKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("tbd")
+								.adminKey("multiKey")
+								.treasury(TOKEN_TREASURY),
+						tokenDelete("tbd")
+				).when().then(
+						tokenDelete("tbd")
+								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
 	}
 
 	private HapiApiSpec deletionValidatesMissingAdminKey() {

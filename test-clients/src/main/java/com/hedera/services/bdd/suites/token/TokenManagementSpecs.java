@@ -389,11 +389,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 									.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
 							mintToken("supple", Long.MAX_VALUE)
 									.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-							mintToken("supply", 0)
+							mintToken("supple", 0)
 									.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
 							burnToken("supple", 2)
 									.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-							burnToken("supply", 0)
+							burnToken("supple", 0)
 									.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
 					),
 				burnTokenFailsDueToInsufficientTreasuryBalance()
