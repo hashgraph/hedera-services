@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCT_AMT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
@@ -98,7 +98,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 	}
 
 	private int transferListBytes(TransferList transfers) {
-		return BASIC_ACCT_AMT_SIZE * transfers.getAccountAmountsCount();
+		return BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
 	}
 
 }

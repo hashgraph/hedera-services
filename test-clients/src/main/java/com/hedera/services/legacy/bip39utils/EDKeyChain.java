@@ -28,13 +28,11 @@ public final class EDKeyChain implements KeyChain {
   
   public KeyPair keyAtIndex(int index) {
     byte[] var10000 = CryptoUtils.deriveKey(this.servicesSeed.getEntropy(), (long)index, 32);
- //   Intrinsics.checkExpressionValueIsNotNull(var10000, "CryptoUtils.deriveKey(hg…ropy, index.toLong(), 32)");
     byte[] edSeed = var10000;
     return (KeyPair)(new EDKeyPair(edSeed));
   }
 
   public EDKeyChain( ServicesSeed servicesSeed) {
-  //  Intrinsics.checkParameterIsNotNull(hgcSeed, "hgcSeed");
     super();
     this.servicesSeed = servicesSeed;
   }

@@ -100,9 +100,6 @@ public class SmartContractCRUD {
         .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
 
     int numberOfReps = 1;
-//    if ((args.length) > 0) {
-//      numberOfReps = Integer.parseInt(args[0]);
-//    }
     for (int i = 0; i < numberOfReps; i++) {
       SmartContractCRUD scc = new SmartContractCRUD();
       scc.demo();

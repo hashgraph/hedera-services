@@ -315,14 +315,8 @@ public class JkeySerializerTest {
   @DisplayName("01.Generate JThreshold & Test")
   public void aa_buildJThresholdKeys() {
     JKey threshold = getSpecificJKeysMade("JThresholdKey", 3, 3);
-    //System.out.println("**MADE KEYS**");
-    //System.out.println(threshold);
     JKeyList beforeKeyList = threshold.getThresholdKey().getKeys();
     int beforeJKeyListSize = beforeKeyList.getKeysList().size();
-    String before_JkeysList = beforeKeyList.toString();
-    // System.out.println("**SIZE**" + beforeJKeyListSize);
-    // System.out.println("Before" + before_JkeysList);
-
     byte[] serial_thkey = null;
     try {
       serial_thkey = threshold.serialize();
@@ -330,7 +324,6 @@ public class JkeySerializerTest {
       System.out.println("Serialization Failed " + ex.getMessage());
     }
     assertNotNull(serial_thkey);
-    //System.out.println("Length:"+ serial_thkey.length);
     // Now take the bytearray and build it back
 
     ByteArrayInputStream in = null;
@@ -356,8 +349,6 @@ public class JkeySerializerTest {
       );
 
       int afterJkeysListSize = afterJkeysList.getKeysList().size();
-      String after_JkeysList = afterJkeysList.toString();
-      // System.out.println("after" + after_JkeysList);
 
       assertAll("JKeyRebornChecks2",
           () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
@@ -413,8 +404,6 @@ public class JkeySerializerTest {
       );
 
       int afterJkeysListSize = afterJkeysList.getKeysList().size();
-      String after_JkeysList = afterJkeysList.toString();
-      // System.out.println("after" + after_JkeysList);
 
       assertAll("JKeyRebornChecks2",
           () -> assertEquals(afterJkeysListSize, beforeJKeyListSize));
@@ -486,7 +475,6 @@ public class JkeySerializerTest {
         assertEquals(jListAft.get(i), jListBef.get(i));
       }
 
-      //dis.close();
       in.close();
 
     } catch (Exception ex) {

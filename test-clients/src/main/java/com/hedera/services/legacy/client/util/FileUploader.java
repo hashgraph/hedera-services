@@ -114,8 +114,6 @@ public class FileUploader {
 
 		resultTxList.add(transaction);
 
-		//getFileInfo(fileStub, payerAccount, payerPrivateKey, nodeAccountNumber, fileID);
-
 		//append the rest of the parts
 		int i = 1;
 		while (remainder > 0) {
@@ -124,10 +122,7 @@ public class FileUploader {
 			transaction = appendFile(fileStub, payerAccount, payerPrivateKey, accessKeys,
 					fileID, partBytes, nodeAccountNumber, transactionFee, pubKey2PrivateKeyMap);
 			log.info("@@@ append file count = " + i);
-			//getFileInfo(fileStub, payerAccount, payerPrivateKey, nodeAccountNumber, fileID);
 			resultTxList.add(transaction);
-
-			//log.info("last append result {}", getReceiptByTransactionId(stub, TransactionBody.parseFrom(transaction.getBodyBytes()).getTransactionID()));
 
 			i++;
 			remainder = remainder - FILE_PART_SIZE;
@@ -164,7 +159,6 @@ public class FileUploader {
 		Transaction transferTx = Common.createTransfer(payer, payerKey,
 				nodeAccount, payer,
 				payerKey, nodeAccount, transferAmt, memo);
-		//transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
 		return transferTx;
 
 	}
@@ -314,7 +308,6 @@ public class FileUploader {
 			final Map<String, PrivateKey> pubKey2PrivateKeyMap,
 			FileID fileID)
 	{
-		//log.info("@@@ upload file at: " + localPath + "; file size in byte = " + fileData.size());
 		Timestamp timestamp = RequestBuilder
 				.getTimestamp(Instant.now(Clock.systemUTC()));
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);

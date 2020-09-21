@@ -147,7 +147,9 @@ public class CreateAccountPemFile extends ClientBaseThread {
 
 
 				} catch (StatusRuntimeException e) {
-					if (!tryReconnect(e)) return;
+					if (!tryReconnect(e)) {
+						return;
+					}
 				} catch (Exception e) {
 					log.error("Unexpected error ", e);
 					return;

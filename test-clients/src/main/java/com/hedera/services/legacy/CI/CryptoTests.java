@@ -809,8 +809,9 @@ public class CryptoTests extends BaseClient {
     log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
     Assert.assertNotNull(response);
     Assert.assertEquals(preCode, response.getNodeTransactionPrecheckCode());
-    if(preCode != ResponseCodeEnum.OK)
-      return null;
+    if(preCode != ResponseCodeEnum.OK) {
+		return null;
+	}
     
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
         .extractTransactionBody(transferTxSigned);

@@ -102,8 +102,6 @@ public class CryptoTransferandUpdateParallel {
     result = r.nextInt(High - Low) + Low;
 
     Properties properties = TestHelper.getApplicationProperties();
-
-//        String host = properties.getProperty("host" + Integer.toString(result));
     String host = properties.getProperty("host");
     int port = Integer.parseInt(properties.getProperty("port"));
 
@@ -369,9 +367,6 @@ public class CryptoTransferandUpdateParallel {
     torun1.add(() -> stub.cryptoTransfer(transfer10));
     // all tasks executed in different threads, at 'once'.
     List<Future<TransactionResponse>> futures1 = threads1.invokeAll(torun1);
-    // no more need for the threadpool
-//        Thread.sleep(20000);
-//        threads1.shutdown();
 
     log.info("Transfering between 10 accounts in parallel");
 
@@ -551,10 +546,6 @@ public class CryptoTransferandUpdateParallel {
 
     // all tasks executed in different threads, at 'once'.
     List<Future<TransactionResponse>> futures2 = threads2.invokeAll(torun2);
-//        Thread.sleep(20000);
-    // no more need for the threadpool
-//        threads2.shutdown();
-
     response = futures2.get(0).get();
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -570,7 +561,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(1).get();
@@ -587,7 +577,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     log.info("updating successful" + "\n");
@@ -606,7 +595,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(3).get();
@@ -623,7 +611,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(4).get();
@@ -640,7 +627,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(5).get();
@@ -657,7 +643,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(6).get();
@@ -674,7 +659,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(7).get();
@@ -691,7 +675,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(8).get();
@@ -708,7 +691,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     response = futures2.get(9).get();
@@ -725,7 +707,6 @@ public class CryptoTransferandUpdateParallel {
     Assert.assertNotNull(accountInfoResponse);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo());
 
-    //	  Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getAutoRenewPeriod().getSeconds());
     log.info("updating successful" + "\n");
 
     threads1.shutdown();
@@ -769,13 +750,10 @@ public class CryptoTransferandUpdateParallel {
     log.info(accountInfo1);
     Assert.assertNotNull(accountInfo1);
     Assert.assertEquals(newlyCreateAccountId1, accountInfo1.getAccountID());
-    //  Assert.assertEquals(firstPair.getPublic().toString(), accountInfo1.getKey().getKeyList().getKeys(0).getEd25519().toStringUtf8());
     Assert.assertEquals(100l, accountInfo1.getGenerateReceiveRecordThreshold());
     Assert.assertEquals(100l, accountInfo1.getGenerateSendRecordThreshold());
     Assert.assertFalse(accountInfo1.getReceiverSigRequired());
     Duration renewal = RequestBuilder.getDuration(5000);
-    //  Assert.assertEquals(renewal, accountInfo1.getAutoRenewPeriod());
-    //z  Assert.assertEquals(RequestBuilder.getExpirationTime(renewal), accountInfo1.getExpirationTime());
   }
 
 }

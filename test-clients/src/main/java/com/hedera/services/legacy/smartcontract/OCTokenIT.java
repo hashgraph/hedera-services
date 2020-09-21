@@ -145,20 +145,17 @@ public class OCTokenIT {
 
     KeyPair tokenIssureKeyPair = new KeyPairGenerator().generateKeyPair();
     AccountID tokenIssuer = createAccount(tokenIssureKeyPair, genesisAccount, 10000000000000L);
-    //Thread.sleep(4000);
     System.out.println("Token Isssuer account created");
     AccountInfo crAccInfo = getCryptoGetAccountInfo(tokenIssuer);
 
     String tokenIssuerEthAddress = crAccInfo.getContractAccountID();
 
     AccountID alice = createAccount(tokenIssuer, 10000000000L);
-    //Thread.sleep(4000);
     System.out.println("Alice  account created");
     AccountInfo accInfoAlice = getCryptoGetAccountInfo(alice);
     String aliceEthAddress = accInfoAlice.getContractAccountID();
 
     AccountID bob = createAccount(tokenIssuer, 10000000000L);
-    //Thread.sleep(4000);
     System.out.println("Bob  account created");
     AccountInfo accInfoBob = getCryptoGetAccountInfo(bob);
     String bobEthAddress = accInfoBob.getContractAccountID();
@@ -172,7 +169,6 @@ public class OCTokenIT {
     if (tokenIssuer != null) {
 
       FileID ocTokenCode = LargeFileUploadIT.uploadFile(tokenIssuer, fileName, tokenIssureKeyPair);
-      // uploadFile(tokenIssuer, fileName);
       if (ocTokenCode != null) {
 
         long initialSupply = 1000_000L;
@@ -212,7 +208,6 @@ public class OCTokenIT {
 
         //adding new token owner Carol
         AccountID carol = createAccount(tokenIssuer, 100000000000L);
-        //Thread.sleep(2000);
         System.out.println("Carol account created");
         AccountInfo accInfoCarol = getCryptoGetAccountInfo(carol);
         String carolEthAddress = accInfoCarol.getContractAccountID();
@@ -229,7 +224,6 @@ public class OCTokenIT {
 
         //Create new account Dave
         AccountID dave = createAccount(tokenIssuer, 100000000000L);
-        //Thread.sleep(2000);
         System.out.println("Dave account created");
         AccountInfo accInfoDave = getCryptoGetAccountInfo(dave);
         String daveEthAddress = accInfoDave.getContractAccountID();
@@ -398,13 +392,11 @@ public class OCTokenIT {
     System.out.println(
         " call contract  Pre Check Response :: " + response.getNodeTransactionPrecheckCode()
             .name());
-    //Thread.sleep(10000);
     TransactionBody callContractBody = TransactionBody.parseFrom(callContractRequest.getBodyBytes());
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(
     		callContractBody.getTransactionID());
     if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
         .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
-      //Thread.sleep(6000);
       TransactionRecord trRecord = getTransactionRecord(payerAccount,
           callContractBody.getTransactionID());
       if (trRecord != null && trRecord.hasContractCallResult()) {

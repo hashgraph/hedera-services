@@ -109,10 +109,10 @@ public class HederaClientStateX implements Serializable {
         try {
             sb.append(" Account Id: ").append(this.accountID);
             sb.append(" Account Balance: ").append(this.accountBalance);
-          //  sb.append(" Account KeyPair Pub").append(this.pubKey);
             sb.append(" Created TimeS ").append(this.createdTime);
-            if(this.originalTx !=null)
-            sb.append(" Original Byte Size ").append(this.originalTx.length);
+            if(this.originalTx !=null) {
+				sb.append(" Original Byte Size ").append(this.originalTx.length);
+			}
         }catch(Exception sbx){ sb.append("Invalid Content Err");}
 
         return sb.toString();

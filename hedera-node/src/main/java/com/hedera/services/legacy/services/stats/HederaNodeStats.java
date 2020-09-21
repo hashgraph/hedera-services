@@ -337,8 +337,9 @@ public class HederaNodeStats {
 					previousCounts.put(statName, currentCount);
 				}
 			} catch (InterruptedException e) {
-				if (log.isDebugEnabled())
+				if (log.isDebugEnabled()) {
 					log.debug("Interruption error when trying to sleep in HGCAppStats... ignore and continue");
+				}
 			}
 		}
 	}
