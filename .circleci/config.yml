@@ -937,11 +937,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "30 17,4 * * *"
+          cron: "28 13 * * *"
           filters:
             branches:
               only:
-                - master
+                - services-regression
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1942,7 +1942,8 @@ jobs:
           command: |
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /swirlds-platform; git submodule update --init --recursive --checkout
+            cd /swirlds-platform; git checkout services-regression;
+            cd git submodule update --init --recursive --checkout
             cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
