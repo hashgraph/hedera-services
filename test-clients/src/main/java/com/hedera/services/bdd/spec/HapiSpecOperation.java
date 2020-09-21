@@ -261,12 +261,13 @@ public abstract class HapiSpecOperation {
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
 		}
 
-		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
-				.setSigMap(CommonUtils.extractSignatureMap(txn))
-				.build();
+//		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+//				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
+//				.setSigMap(CommonUtils.extractSignatureMap(txn))
+//				.build();
 
-		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
+//		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
+		return txn;
 	}
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {
