@@ -83,8 +83,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenDelete("tbd")
 				).when().then(
 						tokenUpdate("tbd")
-								.autoRenewAccount(GENESIS)
-								.payingWith("payer")
 								.hasKnownStatus(TOKEN_WAS_DELETED)
 				);
 	}
