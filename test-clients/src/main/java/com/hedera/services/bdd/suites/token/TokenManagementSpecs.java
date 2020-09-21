@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
@@ -93,6 +94,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialFloat(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", wipeableToken),
 						tokenTransact(
 								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
@@ -134,6 +136,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialFloat(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", anotherWipeableToken),
 						tokenTransact(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
@@ -232,7 +235,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec freezeMgmtSuccessCasesWork() {
-		var withPlusDefaultTrue = "withPlusDefaultTrue";
 		var withPlusDefaultFalse = "withPlusDefaultFalse";
 
 		return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
@@ -241,14 +243,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						newKeyNamed("oneFreeze"),
 						newKeyNamed("twoFreeze"),
-						tokenCreate(withPlusDefaultTrue)
-								.freezeDefault(true)
-								.freezeKey("oneFreeze")
-								.treasury(TOKEN_TREASURY),
 						tokenCreate(withPlusDefaultFalse)
 								.freezeDefault(false)
 								.freezeKey("twoFreeze")
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withPlusDefaultFalse)
 				).when(
 						tokenTransact(
 								moving(1, withPlusDefaultFalse)
@@ -282,7 +281,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(withoutKycKey)
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withKycKey, withoutKycKey)
 				).when(
 						tokenTransact(
 								moving(1, withKycKey)

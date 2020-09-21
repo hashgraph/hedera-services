@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -55,6 +54,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
 	private final String account;
+	private List<String> absentRelationships = new ArrayList<>();
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
 	Optional<AccountInfoAsserts> expectations = Optional.empty();
 	Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
@@ -79,6 +79,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
 		relationships.add(relationship);
+		return this;
+	}
+
+	public HapiGetAccountInfo hasNoTokenRelationship(String token) {
+		absentRelationships.add(token);
 		return this;
 	}
 
@@ -112,6 +117,18 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 						"Account '%s' had no relationship with token '%s'!",
 						account,
 						rel.getToken()));
+			}
+		}
+		for (String unexpectedToken : absentRelationships) {
+			var actualRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
+			for (TokenRelationship actualRel : actualRels) {
+				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
+				if (actualRel.getTokenId().equals(unexpectedId)) {
+					Assert.fail(String.format(
+							"Account '%s' should have had no relationship with token '%s'!",
+							account,
+							unexpectedToken));
+				}
 			}
 		}
 	}

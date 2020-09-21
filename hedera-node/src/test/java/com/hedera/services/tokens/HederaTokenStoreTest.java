@@ -161,8 +161,6 @@ class HederaTokenStoreTest {
 		hederaLedger = mock(HederaLedger.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
-		tokenRelsLedger = (TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>)
-				mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
@@ -171,6 +169,10 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.getTokenRef(treasury)).willReturn(account);
+
+		tokenRelsLedger = mock(TransactionalLedger.class);
+		given(tokenRelsLedger.exists(BackingTokenRels.asTokenRel(treasury, misc))).willReturn(true);
+		given(tokenRelsLedger.exists(BackingTokenRels.asTokenRel(sponsor, misc))).willReturn(true);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
@@ -434,7 +436,7 @@ class HederaTokenStoreTest {
 	public void dissociatingRejectsUnassociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -448,7 +450,7 @@ class HederaTokenStoreTest {
 	public void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -462,7 +464,7 @@ class HederaTokenStoreTest {
 	public void associatingRejectsIfCappedAssociationsEvenAfterPurging() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
@@ -482,7 +484,7 @@ class HederaTokenStoreTest {
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = BackingTokenRels.asTokenRel(sponsor, misc);
 
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
@@ -509,7 +511,7 @@ class HederaTokenStoreTest {
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = BackingTokenRels.asTokenRel(sponsor, misc);
 
-		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -1374,7 +1376,6 @@ class HederaTokenStoreTest {
 		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment * 10);
 	}
 
-
 	@Test
 	public void burningRejectsInvalidNewSupply() {
 		long halfwayToOverflow = (1L << 62) / 2;
@@ -1391,19 +1392,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void grantingRejectsSaturatedAccountIfExplicitGrantRequired() {
-		givenTokenWithKycKey(false);
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.grantKyc(treasury, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-	}
-
-	@Test
 	public void freezingRejectsDeletedToken() {
 		givenTokenWithFreezeKey(true);
 		given(token.isDeleted()).willReturn(true);
@@ -1416,55 +1404,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void freezingPermitsSaturatedAccountIfNoExplicitFreezeRequired() {
-		givenTokenWithFreezeKey(true);
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.freeze(treasury, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, status);
-		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
 	public void unfreezingInvalidWithoutFreezeKey() {
 		// when:
 		var status = subject.unfreeze(treasury, misc);
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, status);
-	}
-
-
-	@Test
-	public void unfreezingRejectsSaturatedAccountIfExplicitUnfreezeRequired() {
-		givenTokenWithFreezeKey(true);
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.unfreeze(treasury, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
-	public void freezingPermitsForSaturatedAccountIfFreezeIsImplicit() {
-		givenTokenWithFreezeKey(true);
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.freeze(treasury, misc);
-
-		// then:
-		assertEquals(ResponseCodeEnum.OK, status);
-		verify(account).hasRelationshipWith(misc);
 	}
 
 	@Test
@@ -1508,19 +1453,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustingRejectsSaturatedAccount() {
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
-		given(account.hasRelationshipWith(misc)).willReturn(false);
-
-		// when:
-		var status = subject.adjustBalance(treasury, misc, 1);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		verify(account).hasRelationshipWith(misc);
-	}
-
-	@Test
 	public void allowsNewTokenForUndersaturatedAccount() {
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(account.validityOfAdjustment(misc, token, 1)).willReturn(OK);
@@ -1531,20 +1463,6 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(OK, status);
 		verify(account, never()).hasRelationshipWith(misc);
-	}
-
-	@Test
-	public void allowsAdjustingOldRelationships() {
-		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT + 1);
-		given(account.hasRelationshipWith(misc)).willReturn(true);
-		given(account.validityOfAdjustment(misc, token, 1)).willReturn(OK);
-
-		// when:
-		var status = subject.adjustBalance(treasury, misc, 1);
-
-		// then:
-		assertEquals(OK, status);
-		verify(account).hasRelationshipWith(misc);
 	}
 
 	@Test

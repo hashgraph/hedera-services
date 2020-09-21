@@ -23,6 +23,7 @@ package com.hedera.services.tokens;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -53,7 +54,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -125,7 +125,6 @@ public class HederaTokenStore implements TokenStore {
 	private HederaLedger hederaLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-
 	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
 	Map<String, TokenID> nameKeyedIds = new HashMap<>();
 
@@ -172,7 +171,7 @@ public class HederaTokenStore implements TokenStore {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
-				if (accountTokens.isAssociatedWith(id)) {
+				if (accountTokens.includes(id)) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
@@ -206,7 +205,7 @@ public class HederaTokenStore implements TokenStore {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
-				if (!accountTokens.isAssociatedWith(id)) {
+				if (!accountTokens.includes(id)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
@@ -215,30 +214,6 @@ public class HederaTokenStore implements TokenStore {
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
 			return OK;
 		});
-	}
-
-	private ResponseCodeEnum fullySanityChecked(
-			AccountID aId,
-			List<TokenRef> tokens,
-			BiFunction<AccountID, List<TokenID>, ResponseCodeEnum> action
-	) {
-		var validity = checkAccountExistence(aId);
-		if (validity != OK) {
-			return validity;
-		}
-		List<TokenID> tokenIds = new ArrayList<>();
-		for (TokenRef refs : tokens) {
-			var id = resolve(refs);
-			if (id == MISSING_TOKEN) {
-				return INVALID_TOKEN_REF;
-			}
-			var token = get(id);
-			if (token.isDeleted()) {
-				return TOKEN_WAS_DELETED;
-			}
-			tokenIds.add(id);
-		}
-		return action.apply(aId, tokenIds);
 	}
 
 	@Override
@@ -319,7 +294,6 @@ public class HederaTokenStore implements TokenStore {
 				value,
 				TOKEN_HAS_NO_KYC_KEY,
 				IS_KYC_GRANTED,
-				MerkleToken::accountsKycGrantedByDefault,
 				MerkleToken::kycKey);
 	}
 
@@ -334,7 +308,6 @@ public class HederaTokenStore implements TokenStore {
 				value,
 				TOKEN_HAS_NO_FREEZE_KEY,
 				IS_FROZEN,
-				MerkleToken::accountsAreFrozenByDefault,
 				MerkleToken::freezeKey);
 	}
 
@@ -342,10 +315,6 @@ public class HederaTokenStore implements TokenStore {
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
 		return sanityChecked(aId, tId, token -> {
 			var account = accountsLedger.getTokenRef(aId);
-			if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
-				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-			}
-
 			var validity = account.validityOfAdjustment(tId, token, adjustment);
 			if (validity != OK) {
 				return validity;
@@ -558,7 +527,6 @@ public class HederaTokenStore implements TokenStore {
 			}
 		}
 
-
 		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
 		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
 		Optional<JKey> newAdminKey = changes.hasAdminKey() ? asUsableFcKey(changes.getAdminKey()) : Optional.empty();
@@ -656,6 +624,30 @@ public class HederaTokenStore implements TokenStore {
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
 				op.getAutoRenewPeriod() == 0;
+	}
+
+	private ResponseCodeEnum fullySanityChecked(
+			AccountID aId,
+			List<TokenRef> tokens,
+			BiFunction<AccountID, List<TokenID>, ResponseCodeEnum> action
+	) {
+		var validity = checkAccountExistence(aId);
+		if (validity != OK) {
+			return validity;
+		}
+		List<TokenID> tokenIds = new ArrayList<>();
+		for (TokenRef refs : tokens) {
+			var id = resolve(refs);
+			if (id == MISSING_TOKEN) {
+				return INVALID_TOKEN_REF;
+			}
+			var token = get(id);
+			if (token.isDeleted()) {
+				return TOKEN_WAS_DELETED;
+			}
+			tokenIds.add(id);
+		}
+		return action.apply(aId, tokenIds);
 	}
 
 	private ResponseCodeEnum keyValidity(
@@ -775,19 +767,12 @@ public class HederaTokenStore implements TokenStore {
 			boolean value,
 			ResponseCodeEnum keyFailure,
 			AccountProperty flagProperty,
-			Predicate<MerkleToken> defaultValueCheck,
 			Function<MerkleToken, Optional<JKey>> controlKeyFn
 	) {
 		return sanityChecked(aId, tId, token -> {
 			if (controlKeyFn.apply(token).isEmpty()) {
 				return keyFailure;
 			}
-
-			var account = accountsLedger.getTokenRef(aId);
-			if (!account.hasRelationshipWith(tId) && saturated(account) && defaultValueCheck.test(token) != value) {
-				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-			}
-
 			var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
 			accountsLedger.set(aId, flagProperty, scopedFreeze);
 			return OK;
@@ -807,6 +792,11 @@ public class HederaTokenStore implements TokenStore {
 		var token = get(tId);
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
+		}
+
+		var key = BackingTokenRels.asTokenRel(aId, tId);
+		if (!tokenRelsLedger.exists(key)) {
+			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
 
 		return action.apply(token);

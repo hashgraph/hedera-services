@@ -42,10 +42,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -69,8 +71,31 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
 						associateHasExpectedSemantics(),
+						dissociateHasExpectedSemantics(),
 				}
 		);
+	}
+
+	public HapiApiSpec dissociateHasExpectedSemantics() {
+		return defaultHapiSpec("DissociateHasExpectedSemantics")
+				.given(flattened(
+						basicKeysAndTokens(),
+						cryptoCreate("payer")
+				)).when(
+						cryptoCreate("misc"),
+						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("misc")
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN)
+								.payingWith("payer"),
+						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("misc")
+				).then(
+						getAccountInfo("misc")
+								.hasToken(relationshipWith(KNOWABLE_TOKEN))
+								.hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.logged()
+				);
 	}
 
 	public HapiApiSpec associateHasExpectedSemantics() {
@@ -127,7 +152,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 		return defaultHapiSpec("TreasuryAssociationIsAutomatic")
 				.given(
 						basicKeysAndTokens()
-				).when( ).then(
+				).when().then(
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)

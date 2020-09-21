@@ -55,11 +55,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						treasuryHasCorrectBalance(),
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
-						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
 						creationValidatesName(),
 						creationRequiresAppropriateSigs(),
+						autoRenewValidationWorks(),
 				}
 		);
 	}
