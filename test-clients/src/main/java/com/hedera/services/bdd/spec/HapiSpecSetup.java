@@ -78,6 +78,7 @@ public class HapiSpecSetup {
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
+	public enum TxnConfig { NEW, OLD, ALTERNATE }
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
