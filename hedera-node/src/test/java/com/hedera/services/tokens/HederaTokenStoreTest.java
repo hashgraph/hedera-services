@@ -1102,6 +1102,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void mintingRejectsZeroAmount() {
+		given(token.hasSupplyKey()).willReturn(true);
+
+		// when:
+		var status = subject.mint(misc, 0);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
+	}
+
+	@Test
 	public void burningRejectsNegativeAmount() {
 		given(token.hasSupplyKey()).willReturn(true);
 
@@ -1110,6 +1121,36 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
+	}
+
+	@Test
+	public void burningRejectsZeroAmount() {
+		given(token.hasSupplyKey()).willReturn(true);
+
+		// when:
+		var status = subject.burn(misc, 0);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
+	}
+
+	@Test
+	public void burningRejectsDueToInsufficientFundsInTreasury() {
+		long targetSupply = 100;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(targetSupply);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, -targetSupply)).willReturn(INSUFFICIENT_TOKEN_BALANCE);
+
+		// when:
+		var status = subject.burn(misc, targetSupply);
+
+		// then:
+		assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
 	}
 
 	@Test

@@ -250,20 +250,7 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		return sanityChecked(aId, tId, token -> {
-			var account = ledger.getTokenRef(aId);
-			if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
-				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-			}
-
-			var validity = account.validityOfAdjustment(tId, token, adjustment);
-			if (validity != OK) {
-				return validity;
-			}
-			adjustUnchecked(aId, tId, token, adjustment);
-			hederaLedger.updateTokenXfers(tId, aId, adjustment);
-			return OK;
-		});
+		return sanityChecked(aId, tId, token -> validateAndAdjustUnchecked(token, aId, tId, adjustment));
 	}
 
 	@Override
@@ -317,26 +304,30 @@ public class HederaTokenStore implements TokenStore {
 			long sign,
 			ResponseCodeEnum failure
 	) {
-		if (amount < 0) {
-			return failure;
-		}
-		if (!exists(tId)) {
-			return INVALID_TOKEN_ID;
-		}
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
-		if (!token.hasSupplyKey()) {
-			return TOKEN_HAS_NO_SUPPLY_KEY;
-		}
-		var change = sign * amount;
-		var toBeUpdatedTotalSupply = token.totalSupply() + change;
-		if (toBeUpdatedTotalSupply < 0) {
-			return failure;
-		}
-		apply(tId, t -> t.adjustTotalSupplyBy(change));
-		return adjustBalance(token.treasury().toGrpcAccountId(), tId, change);
+		return tokenSanityCheck(tId, token -> {
+			if (amount <= 0) {
+				return failure;
+			}
+			if (!token.hasSupplyKey()) {
+				return TOKEN_HAS_NO_SUPPLY_KEY;
+			}
+
+			var change = sign * amount;
+			var toBeUpdatedTotalSupply = token.totalSupply() + change;
+			if (toBeUpdatedTotalSupply < 0) {
+				return failure;
+			}
+
+			var accountId = token.treasury().toGrpcAccountId();
+			var validity = validateAndAdjustUnchecked(token, accountId, tId, change);
+			if (validity != OK) {
+				return validity;
+			}
+
+			apply(tId, t -> t.adjustTotalSupplyBy(change));
+
+			return OK;
+		});
 	}
 
 	@Override
@@ -402,6 +393,21 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		return success(pendingId);
+	}
+
+	private ResponseCodeEnum validateAndAdjustUnchecked(MerkleToken token, AccountID aId, TokenID tId, long adjustment) {
+		var account = ledger.getTokenRef(aId);
+		if (!unsaturated(account) && !account.hasRelationshipWith(tId)) {
+			return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+		}
+
+		var validity = account.validityOfAdjustment(tId, token, adjustment);
+		if (validity != OK) {
+			return validity;
+		}
+		adjustUnchecked(aId, tId, token, adjustment);
+		hederaLedger.updateTokenXfers(tId, aId, adjustment);
+		return OK;
 	}
 
 	private ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
@@ -698,6 +704,23 @@ public class HederaTokenStore implements TokenStore {
 			Function<MerkleToken, ResponseCodeEnum> action
 	) {
 		var validity = checkExistence(aId, tId);
+		if (validity != OK) {
+			return validity;
+		}
+
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
+
+		return action.apply(token);
+	}
+
+	private ResponseCodeEnum tokenSanityCheck(
+			TokenID tId,
+			Function<MerkleToken, ResponseCodeEnum> action
+	) {
+		var validity = exists(tId) ? OK : INVALID_TOKEN_ID;
 		if (validity != OK) {
 			return validity;
 		}
