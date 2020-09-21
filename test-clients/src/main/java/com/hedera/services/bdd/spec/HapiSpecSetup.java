@@ -279,11 +279,12 @@ public class HapiSpecSetup {
 
 	public AccountID fundingAccount() { return props.getAccount("funding.account"); }
 	public String fundingAccountName() { return props.get("funding.account.name"); }
+	public AccountID genesisAccount() { return props.getAccount("genesis.account"); }
 	public String genesisAccountName() {
-		return props.get("genesisAccount.name");
+		return props.get("genesis.account.name");
 	}
 	public String genesisStartupKey() {
-		return props.get("genesisAccount.startupKey");
+		return props.get("genesis.account.startupKey");
 	}
 	public long hbarFloat() {
 		return props.getLong("hbar.float");

@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -237,7 +238,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 		};
 		HapiSpecOperation[] opsArray = {
 				validateOp,
-				UtilVerbs.updateLargeFile(GENESIS, fileName, fileName),
+				UtilVerbs.updateLargeFile(account, fileName, fileName),
 				getFileContents(fileName).hasContents(fileName)
 		};
 		if (account.equals(GENESIS) || !isFree) {

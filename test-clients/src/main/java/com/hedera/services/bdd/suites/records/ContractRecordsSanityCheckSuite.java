@@ -73,13 +73,13 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						contractCreate("toBeDeleted")
 								.bytecode("bytecodeWithPayableConstructor")
 								.balance(1_000L),
-						takeBalanceSnapshots("toBeDeleted", FUNDING, NODE, GENESIS)
+						takeBalanceSnapshots("toBeDeleted", FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						contractDelete("toBeDeleted").via("txn").transferAccount(GENESIS)
+						contractDelete("toBeDeleted").via("txn").transferAccount(DEFAULT_PAYER)
 				).then(
 						validateTransferListForBalances(
 								"txn",
-								List.of(FUNDING, NODE, GENESIS, "toBeDeleted"),
+								List.of(FUNDING, NODE, DEFAULT_PAYER, "toBeDeleted"),
 								Set.of("toBeDeleted")),
 						validateRecordTransactionFees("txn")
 				);
@@ -89,14 +89,14 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCreateRecordSanityChecks")
 				.given(flattened(
 						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractCreate("test")
 								.bytecode("bytecode")
 								.balance(1_000L)
 								.via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -106,11 +106,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						fileCreate("bytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
 						contractCreate("test").bytecode("bytecode"),
-						UtilVerbs.takeBalanceSnapshots("test", FUNDING, NODE, GENESIS)
+						UtilVerbs.takeBalanceSnapshots("test", FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractCall("test", DEPOSIT_ABI, 1_000L).via("txn").sending(1_000L)
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -121,7 +121,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		int INIT_KEEP_AMOUNT_DIVISOR = 2;
 		BigInteger STOP_BALANCE = BigInteger.valueOf(399_999L);
 
-		String[] CANONICAL_ACCOUNTS = { FUNDING, NODE, GENESIS };
+		String[] CANONICAL_ACCOUNTS = { FUNDING, NODE, DEFAULT_PAYER };
 		String[] altruists = IntStream
 				.range(0, NUM_ALTRUISTS)
 				.mapToObj(i -> String.format("Altruist%s", new String(new char[] { (char)('A' + i) })))
@@ -188,11 +188,11 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
 						fileCreate("bytecode").path(PATH_TO_LOOKUP_BYTECODE),
 						contractCreate("test").bytecode("bytecode").balance(1_000L),
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractUpdate("test").newKey("newKey").via("txn").fee(95_000_000L)
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS)),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")
 				);
 	}
