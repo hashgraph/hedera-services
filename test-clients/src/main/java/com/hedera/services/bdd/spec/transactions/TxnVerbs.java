@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -57,6 +58,8 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static com.hedera.services.bdd.suites.HapiApiSuite.salted;
 
 public class TxnVerbs {
 	/* CRYPTO */
@@ -112,10 +115,11 @@ public class TxnVerbs {
 	}
 
 	/* TOKEN */
+	public static HapiTokenAssociate tokenAssociate(String account, String... tokens) {
+		return new HapiTokenAssociate(account, tokens);
+	}
 	public static HapiTokenCreate tokenCreate(String token) {
-		HapiTokenCreate hapiToken = new HapiTokenCreate(token);
-		hapiToken.name(HapiApiSuite.salted(token));
-		return hapiToken;
+		return new HapiTokenCreate(token).name(salted(token));
 	}
 	public static HapiTokenUpdate tokenUpdate(String token) {
 		return new HapiTokenUpdate(token);

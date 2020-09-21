@@ -21,9 +21,8 @@ package com.hedera.services.sigs.metadata;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.BackedAccountLookup;
@@ -69,7 +68,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
 			HederaFs hfs,
-			BackingAccounts<AccountID, MerkleAccount> backingAccounts,
+			BackingStore<AccountID, MerkleAccount> backingAccounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenRefLookup

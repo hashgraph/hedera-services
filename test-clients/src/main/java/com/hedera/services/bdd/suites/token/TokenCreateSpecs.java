@@ -53,13 +53,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
-						creationRequiresAppropriateSigs(),
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
 						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
-						creationValidatesName()
+						creationValidatesName(),
+						creationRequiresAppropriateSigs(),
 				}
 		);
 	}
@@ -216,9 +216,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("adminKey")
 				).when().then(
 						tokenCreate("shouldntWork")
+								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						/* treasury must sign */
+						tokenCreate("shouldntWorkEither")
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+								.adminKey("adminKey")
+								.signedBy("payer", "adminKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}

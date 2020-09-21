@@ -55,15 +55,15 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						symbolChanges(),
-						keysChange(),
+//						symbolChanges(),
+//						keysChange(),
+//						standardImmutabilitySemanticsHold(),
+//						validAutoRenewWorks(),
+//						validatesMissingAdminKey(),
+//						tooLongNameCheckHolds(),
+//						nameChanges(),
+//						validatesMissingRef(),
 						treasuryEvolves(),
-						standardImmutabilitySemanticsHold(),
-						validAutoRenewWorks(),
-						validatesMissingAdminKey(),
-						tooLongNameCheckHolds(),
-						nameChanges(),
-						validatesMissingRef(),
 				}
 		);
 	}
@@ -181,6 +181,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when(
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
+						tokenUpdate("tbu")
+								.signedBy(GENESIS, "adminKey")
+								.treasury("newTreasury")
+								.hasKnownStatus(INVALID_SIGNATURE),
 						tokenUpdate("tbu")
 								.treasury("newTreasury")
 								.via("treasuryUpdateTxn")

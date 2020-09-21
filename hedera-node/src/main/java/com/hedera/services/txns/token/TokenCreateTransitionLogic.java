@@ -24,15 +24,19 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.function.Predicate;
 
+import static com.hedera.services.utils.MiscUtils.asRef;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -78,9 +82,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
-		var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
-
 		var status = OK;
+		status = store.associate(treasury, List.of(asRef(created)));
+		if (status != OK) {
+			abortWith(status);
+			return;
+		}
 		if (op.hasFreezeKey()) {
 			status = ledger.unfreeze(treasury, created);
 		}
@@ -88,6 +95,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			status = ledger.grantKyc(treasury, created);
 		}
 		if (status == OK) {
+			var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
 			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
 		}
 

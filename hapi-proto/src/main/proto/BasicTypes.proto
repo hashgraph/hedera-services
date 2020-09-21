@@ -254,6 +254,8 @@ enum HederaFunctionality {
     TokenMint = 65; // Mint tokens to treasury
     TokenBurn = 66; // Burn tokens from treasury
     TokenAccountWipe = 67; // Wipe token amount from Account holder
+    TokenAssociateToAccount = 68; // Associate tokens to an account
+    TokenDissociateFromAccount = 69; // Dissociate tokens from an account
 }
 
 /*

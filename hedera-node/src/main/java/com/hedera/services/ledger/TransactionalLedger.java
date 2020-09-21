@@ -36,7 +36,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static java.util.stream.Collectors.joining;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
@@ -51,8 +51,8 @@ import org.apache.logging.log4j.Logger;
  * upon a rollback.
  *
  * @param <K> the type of id used by the ledger.
- * @param <P> the family of properties associated to accounts in the ledger.
- * @param <A> the type of a ledger account.
+ * @param <P> the family of properties associated to entities in the ledger.
+ * @param <A> the type of a ledger entity.
  *
  * @author Michael Tinker
  */
@@ -63,10 +63,10 @@ public class TransactionalLedger<
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
-	private final Set<K> deadAccounts = new HashSet<>();
+	private final Set<K> deadEntities = new HashSet<>();
 	private final Class<P> propertyType;
-	private final Supplier<A> newAccount;
-	private final BackingAccounts<K, A> accounts;
+	private final Supplier<A> newEntity;
+	private final BackingStore<K, A> entities;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
@@ -78,13 +78,13 @@ public class TransactionalLedger<
 
 	public TransactionalLedger(
 			Class<P> propertyType,
-			Supplier<A> newAccount,
-			BackingAccounts<K, A> accounts,
+			Supplier<A> newEntity,
+			BackingStore<K, A> accounts,
 			ChangeSummaryManager<A, P> changeManager
 	) {
 		this.propertyType = propertyType;
-		this.newAccount = newAccount;
-		this.accounts = accounts;
+		this.newEntity = newEntity;
+		this.entities = accounts;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
 	}
@@ -104,10 +104,10 @@ public class TransactionalLedger<
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
-		accounts.flushMutableRefs();
+		entities.flushMutableRefs();
 
 		changes.clear();
-		deadAccounts.clear();
+		deadEntities.clear();
 		tokenRefs.clear();
 
 		isInTransaction = false;
@@ -128,18 +128,18 @@ public class TransactionalLedger<
 					? changes.keySet().stream().sorted(keyComparator.get())
 					: changes.keySet().stream();
 			changedKeys
-					.filter(id -> !deadAccounts.contains(id))
-					.forEach(id -> accounts.put(id, get(id)));
+					.filter(id -> !deadEntities.contains(id))
+					.forEach(id -> entities.put(id, get(id)));
 			changes.clear();
 			tokenRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
-					? deadAccounts.stream().sorted(keyComparator.get())
-					: deadAccounts.stream();
-			deadKeys.forEach(accounts::remove);
-			deadAccounts.clear();
+					? deadEntities.stream().sorted(keyComparator.get())
+					: deadEntities.stream();
+			deadKeys.forEach(entities::remove);
+			deadEntities.clear();
 
-			accounts.flushMutableRefs();
+			entities.flushMutableRefs();
 
 			isInTransaction = false;
 		} catch (Exception e) {
@@ -162,9 +162,9 @@ public class TransactionalLedger<
 				desc.append(", ");
 			}
 			K id = change.getKey();
-			var accountInDeadAccounts = deadAccounts.contains(id) ? "*DEAD* " : "";
-			var accountNotInDeadAccounts = deadAccounts.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			var prefix = accounts.contains(id)
+			var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
+			var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			var prefix = entities.contains(id)
 					? accountInDeadAccounts
 					: accountNotInDeadAccounts;
 			desc.append(prefix)
@@ -185,7 +185,7 @@ public class TransactionalLedger<
 			desc.append("]");
 			isFirstChange.set(false);
 		});
-		deadAccounts.stream()
+		deadEntities.stream()
 				.filter(id -> !changes.containsKey(id))
 				.forEach(id -> {
 					if (!isFirstChange.get()) {
@@ -226,7 +226,7 @@ public class TransactionalLedger<
 
 		EnumMap<P, Object> changeSet = changes.get(id);
 		boolean hasPendingChanges = changeSet != null;
-		A account = accounts.contains(id) ? accounts.getRef(id) : newAccount.get();
+		A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
@@ -282,7 +282,7 @@ public class TransactionalLedger<
 	public void destroy(K id) {
 		throwIfNotInTxn();
 
-		deadAccounts.add(id);
+		deadEntities.add(id);
 	}
 
 	boolean isInTransaction() {
@@ -290,15 +290,15 @@ public class TransactionalLedger<
 	}
 
 	private A toGetterTarget(K id) {
-		return isPendingCreation(id) ? newAccount.get() : accounts.getRef(id);
+		return isPendingCreation(id) ? newEntity.get() : entities.getRef(id);
 	}
 
 	private A toTokenTarget(K id) {
-		return isPendingCreation(id) ? newAccount.get() : accounts.getTokenCopy(id);
+		return isPendingCreation(id) ? newEntity.get() : entities.getTokenCopy(id);
 	}
 
 	private boolean isPendingCreation(K id) {
-		return !accounts.contains(id) && changes.containsKey(id);
+		return !entities.contains(id) && changes.containsKey(id);
 	}
 
 	private void assertIsSettable(K id) {
@@ -328,10 +328,10 @@ public class TransactionalLedger<
 	}
 
 	private boolean existsOrIsPendingCreation(K id) {
-		return accounts.contains(id) || changes.containsKey(id);
+		return entities.contains(id) || changes.containsKey(id);
 	}
 
 	private boolean isZombie(K id) {
-		return deadAccounts.contains(id);
+		return deadEntities.contains(id);
 	}
 }

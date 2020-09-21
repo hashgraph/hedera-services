@@ -20,7 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,9 +29,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 
 public class BackedAccountLookup implements AccountSigMetaLookup {
-	private final BackingAccounts<AccountID, MerkleAccount> accounts;
+	private final BackingStore<AccountID, MerkleAccount> accounts;
 
-	public BackedAccountLookup(BackingAccounts<AccountID, MerkleAccount> accounts) {
+	public BackedAccountLookup(BackingStore<AccountID, MerkleAccount> accounts) {
 		this.accounts = accounts;
 	}
 

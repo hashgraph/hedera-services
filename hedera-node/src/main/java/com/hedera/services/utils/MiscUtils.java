@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -295,6 +297,10 @@ public class MiscUtils {
 			return TOKEN_BURN_METRIC;
 		} else if (txn.hasTokenWipe()) {
 			return TOKEN_WIPE_ACCOUNT_METRIC;
+		} else if (txn.hasTokenAssociate()) {
+			return TOKEN_ASSOCIATE_METRIC;
+		} else if (txn.hasTokenDissociate()) {
+			return TOKEN_DISSOCIATE_METRIC;
 		} else {
 			return "NotImplemented";
 		}
@@ -365,6 +371,10 @@ public class MiscUtils {
 			return TokenBurn;
 		} else if (txn.hasTokenWipe()) {
 			return TokenAccountWipe;
+		} else if (txn.hasTokenAssociate()) {
+			return TokenAssociateToAccount;
+		} else if (txn.hasTokenDissociate()) {
+			return TokenDissociateFromAccount;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {
@@ -390,6 +400,10 @@ public class MiscUtils {
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	public static TokenRef asRef(TokenID id) {
+		return TokenRef.newBuilder().setTokenId(id).build();
 	}
 
 	public static String describe(JKey k) {

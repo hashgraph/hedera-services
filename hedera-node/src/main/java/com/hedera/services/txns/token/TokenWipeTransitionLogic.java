@@ -34,7 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
- * Provides the state transition for token minting.
+ * Provides the state transition for wiping [part of] a token balance.
  *
  * @author Michael Tinker
  */

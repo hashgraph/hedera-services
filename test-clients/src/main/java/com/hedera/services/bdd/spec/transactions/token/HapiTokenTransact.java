@@ -183,9 +183,8 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 					.collect(groupingBy(
 							Map.Entry::getKey,
 							summingLong(Map.Entry<String, Long>::getValue)));
-			System.out.println(partyInvolvements);
 			partyInvolvements.entrySet().forEach(entry -> {
-				if (entry.getValue() < 0) {
+				if (entry.getValue() < 0 || spec.registry().isSigRequired(entry.getKey())) {
 					partyKeys.add(spec.registry().getKey(entry.getKey()));
 				}
 			});
