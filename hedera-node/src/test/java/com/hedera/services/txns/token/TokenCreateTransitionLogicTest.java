@@ -48,11 +48,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 class TokenCreateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
-	private int divisibility = 2;
-	private long initialFloat = 1_000_000L;
-	private long tinyFloat = BigInteger.valueOf(initialFloat)
-			.multiply(BigInteger.valueOf(10).pow(divisibility))
-			.longValueExact();
+	private int decimals = 2;
+	private long initialSupply = 1_000_000L;
 	private AccountID payer = IdUtils.asAccount("1.2.3");
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private TokenID created = IdUtils.asToken("1.2.666");
@@ -116,13 +113,13 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfFloatAdjustFails() {
+	public void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
@@ -165,7 +162,7 @@ class TokenCreateTransitionLogicTest {
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
 
 		// when:
@@ -188,7 +185,7 @@ class TokenCreateTransitionLogicTest {
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
 
 		// when:
@@ -211,7 +208,7 @@ class TokenCreateTransitionLogicTest {
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(TokenCreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.adjustTokenBalance(treasury, created, tinyFloat))
+		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
 
 		// when:
@@ -243,8 +240,8 @@ class TokenCreateTransitionLogicTest {
 	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
-						.setInitialSupply(initialFloat)
-						.setDecimals(divisibility)
+						.setInitialSupply(initialSupply)
+						.setDecimals(decimals)
 						.setTreasury(treasury));
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());

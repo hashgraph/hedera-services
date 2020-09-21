@@ -131,7 +131,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
 								.freezeDefault(true)
-								.initialFloat(10)
+								.initialSupply(10)
 								.adminKey("adminKey")
 								.kycKey("kycThenFreezeKey")
 								.freezeKey("freezeThenKycKey")

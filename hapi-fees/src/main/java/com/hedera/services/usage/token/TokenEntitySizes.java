@@ -8,9 +8,9 @@ public enum TokenEntitySizes {
 
 	/* { deleted, accountsFrozenByDefault } */
 	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 2;
-	/* { divisibility } */
+	/* { decimals } */
 	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
-	/* { expiry, tokenFloat, autoRenewPeriod } */
+	/* { expiry, totalSupply, autoRenewPeriod } */
 	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
 	/* { treasury } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;

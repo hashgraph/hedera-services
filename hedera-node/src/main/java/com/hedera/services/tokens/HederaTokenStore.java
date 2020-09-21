@@ -290,7 +290,7 @@ public class HederaTokenStore implements TokenStore {
 
 			adjustUnchecked(aId, tId, token, -amount);
 			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustFloatBy(-amount));
+			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
@@ -331,17 +331,12 @@ public class HederaTokenStore implements TokenStore {
 			return TOKEN_HAS_NO_SUPPLY_KEY;
 		}
 		var change = sign * amount;
-		var divisibility = token.divisibility();
-		var proposedFloat = token.tokenFloat() + change;
-		var validity = floatAndDivisibilityCheck(proposedFloat, divisibility);
-		if (validity != OK) {
+		var toBeUpdatedTotalSupply = token.totalSupply() + change;
+		if (toBeUpdatedTotalSupply < 0) {
 			return failure;
 		}
-		apply(tId, t -> t.adjustFloatBy(change));
-		long tinyAdjustment = BigInteger.valueOf(change)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
-		return adjustBalance(token.treasury().toGrpcAccountId(), tId, tinyAdjustment);
+		apply(tId, t -> t.adjustTotalSupplyBy(change));
+		return adjustBalance(token.treasury().toGrpcAccountId(), tId, change);
 	}
 
 	@Override
@@ -371,7 +366,7 @@ public class HederaTokenStore implements TokenStore {
 				return failure(INVALID_EXPIRATION_TIME);
 			}
 		}
-		validity = floatAndDivisibilityCheck(request.getInitialSupply(), request.getDecimals());
+		validity = initialSupplyAndDecimalsCheck(request.getInitialSupply(), request.getDecimals());
 		if (validity != OK) {
 			return failure(validity);
 		}
@@ -407,6 +402,13 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		return success(pendingId);
+	}
+
+	private ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
+		if (initialSupply < 0) {
+			return INVALID_INITIAL_SUPPLY;
+		}
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
 	}
 
 	private boolean isValidAutoRenewPeriod(long secs) {
@@ -628,26 +630,6 @@ public class HederaTokenStore implements TokenStore {
 			return TOKEN_HAS_NO_FREEZE_KEY;
 		}
 		return OK;
-	}
-
-	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
-		if (tokenFloat < 0) {
-			return INVALID_INITIAL_SUPPLY;
-		}
-
-		try {
-			var divisibilityFloat = BigInteger.valueOf(10)
-					.pow(divisibility);
-			if (divisibilityFloat.longValue() < 0) {
-				return INVALID_TOKEN_DECIMALS;
-			}
-
-			var tinyTokenFloat = divisibilityFloat
-					.multiply(BigInteger.valueOf(tokenFloat));
-			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DECIMALS;
-		} catch (ArithmeticException ignore) {
-			return INVALID_TOKEN_DECIMALS;
-		}
 	}
 
 	private ResponseCodeEnum symbolCheck(String symbol) {

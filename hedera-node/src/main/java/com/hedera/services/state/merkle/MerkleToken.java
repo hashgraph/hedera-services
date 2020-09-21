@@ -53,9 +53,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Deprecated
 	public static final MerkleToken.Provider LEGACY_PROVIDER = new MerkleToken.Provider();
 
-	private int divisibility;
+	private int decimals;
 	private long expiry;
-	private long tokenFloat;
+	private long totalSupply;
 	private long autoRenewPeriod = UNUSED_AUTO_RENEW_PERIOD;
 	private JKey adminKey = UNUSED_KEY;
 	private JKey kycKey = UNUSED_KEY;
@@ -83,8 +83,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	public MerkleToken(
 			long expiry,
-			long tokenFloat,
-			int divisibility,
+			long totalSupply,
+			int decimals,
 			String symbol,
 			String name,
 			boolean accountsFrozenByDefault,
@@ -92,8 +92,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 			EntityId treasury
 	) {
 		this.expiry = expiry;
-		this.tokenFloat = tokenFloat;
-		this.divisibility = divisibility;
+		this.totalSupply = totalSupply;
+		this.decimals = decimals;
 		this.symbol = symbol;
 		this.name = name;
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
@@ -115,8 +115,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return this.expiry == that.expiry &&
 				this.autoRenewPeriod == that.autoRenewPeriod &&
 				this.deleted == that.deleted &&
-				this.tokenFloat == that.tokenFloat &&
-				this.divisibility == that.divisibility &&
+				this.totalSupply == that.totalSupply &&
+				this.decimals == that.decimals &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
@@ -135,8 +135,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		return Objects.hash(
 				expiry,
 				deleted,
-				tokenFloat,
-				divisibility,
+				totalSupply,
+				decimals,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -160,8 +160,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				.add("symbol", symbol)
 				.add("name", name)
 				.add("treasury", treasury.toAbbrevString())
-				.add("float", tokenFloat)
-				.add("divisibility", divisibility)
+				.add("totalSupply", totalSupply)
+				.add("decimals", decimals)
 				.add("autoRenewAccount", readableAutoRenewAccount())
 				.add("autoRenewPeriod", autoRenewPeriod)
 				.add("adminKey", describe(adminKey))
@@ -198,8 +198,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		symbol = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
 		name = in.readNormalisedString(MAX_CONCEIVABLE_SYMBOL_NAME_LENGTH);
 		treasury = in.readSerializable();
-		tokenFloat = in.readLong();
-		divisibility = in.readInt();
+		totalSupply = in.readLong();
+		decimals = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountsKycGrantedByDefault = in.readBoolean();
 		adminKey = serdes.readNullable(in, serdes::deserializeKey);
@@ -218,8 +218,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		out.writeNormalisedString(symbol);
 		out.writeNormalisedString(name);
 		out.writeSerializable(treasury, true);
-		out.writeLong(tokenFloat);
-		out.writeInt(divisibility);
+		out.writeLong(totalSupply);
+		out.writeInt(decimals);
 		out.writeBoolean(accountsFrozenByDefault);
 		out.writeBoolean(accountsKycGrantedByDefault);
 		serdes.writeNullable(adminKey, out, serdes::serializeKey);
@@ -234,8 +234,8 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	public MerkleToken copy() {
 		var fc = new MerkleToken(
 				expiry,
-				tokenFloat,
-				divisibility,
+				totalSupply,
+				decimals,
 				symbol,
 				name,
 				accountsFrozenByDefault,
@@ -267,12 +267,12 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	}
 
 	/* --- Bean --- */
-	public long tokenFloat() {
-		return tokenFloat;
+	public long totalSupply() {
+		return totalSupply;
 	}
 
-	public int divisibility() {
-		return divisibility;
+	public int decimals() {
+		return decimals;
 	}
 
 	public boolean hasAdminKey() {
@@ -403,12 +403,12 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.autoRenewAccount = autoRenewAccount;
 	}
 
-	public void adjustFloatBy(long amount) {
-		var newFloat = tokenFloat + amount;
-		if (newFloat < 0) {
-			throw new IllegalArgumentException(String.format("Cannot set token float to %d!", newFloat));
+	public void adjustTotalSupplyBy(long amount) {
+		var newTotalSupply = totalSupply + amount;
+		if (newTotalSupply < 0) {
+			throw new IllegalArgumentException(String.format("Cannot set token totalSupply to %d!", newTotalSupply));
 		}
-		tokenFloat += amount;
+		totalSupply += amount;
 	}
 
 	void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
