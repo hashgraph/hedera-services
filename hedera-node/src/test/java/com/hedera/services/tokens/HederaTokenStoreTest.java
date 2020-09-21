@@ -1187,11 +1187,11 @@ class HederaTokenStoreTest {
 	public void validMintChangesTokenSupplyAndAdjustsTreasury() {
 		// setup:
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
-		long oldFloat = 1_000;
+		long oldTotalSupply = 1_000;
 		long adjustment = 500;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.totalSupply()).willReturn(oldFloat);
+		given(token.totalSupply()).willReturn(oldTotalSupply);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
@@ -1723,7 +1723,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void allowsZeroFloatAnddecimals() {
+	public void allowsZeroInitialSupplyAndDecimals() {
 		// given:
 		var req = fullyValidAttempt()
 				.setInitialSupply(0L)
@@ -1753,7 +1753,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsJustOverflowingFloat() {
+	public void rejectsJustOverflowingInitialSupply() {
 		long initialSupply = 1L << 63;
 
 		// given:

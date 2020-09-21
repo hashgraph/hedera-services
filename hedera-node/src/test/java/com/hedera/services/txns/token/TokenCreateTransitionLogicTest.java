@@ -113,7 +113,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfFloatAdjustFails() {
+	public void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))

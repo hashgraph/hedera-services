@@ -107,7 +107,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
 						getTokenInfo(wipeableToken)
-								.hasFloat(500),
+								.hasTotalSupply(500),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getTxnRecord("wipeTxn").logged()

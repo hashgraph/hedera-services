@@ -57,7 +57,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	}
 
 	OptionalInt expectedDecimals = OptionalInt.empty();
-	OptionalLong expectedFloat = OptionalLong.empty();
+	OptionalLong expectedTotalSupply = OptionalLong.empty();
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
 	Optional<String> expectedName = Optional.empty();
@@ -91,8 +91,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedDecimals = OptionalInt.of(d);
 		return this;
 	}
-	public HapiGetTokenInfo hasFloat(long amount) {
-		expectedFloat = OptionalLong.of(amount);
+	public HapiGetTokenInfo hasTotalSupply(long amount) {
+		expectedTotalSupply = OptionalLong.of(amount);
 		return this;
 	}
 	public HapiGetTokenInfo hasRegisteredId(String token) {

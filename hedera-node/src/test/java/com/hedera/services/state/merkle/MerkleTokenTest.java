@@ -66,7 +66,7 @@ class MerkleTokenTest {
 	int decimals = 2, otherdecimals = 3;
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
-	long totalSupply = 1_000_000, otherFloat = 1_000_001;
+	long totalSupply = 1_000_000, otherTotalSupply = 1_000_001;
 	boolean freezeDefault = true, otherFreezeDefault = false;
 	boolean accountsKycGrantedByDefault = true, otherAccountsKycGrantedByDefault = false;
 	EntityId treasury = new EntityId(1, 2, 3),
@@ -195,10 +195,10 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentFloats() {
+	public void objectContractHoldsForDifferentTotalSupplies() {
 		// given:
 		other = new MerkleToken(
-				expiry, otherFloat, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+				expiry, otherTotalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -448,7 +448,7 @@ class MerkleTokenTest {
 
 		// and:
 		other = new MerkleToken(
-				otherExpiry, otherFloat, otherdecimals, otherSymbol, otherName,
+				otherExpiry, otherTotalSupply, otherdecimals, otherSymbol, otherName,
 				otherFreezeDefault, otherAccountsKycGrantedByDefault, otherTreasury);
 
 		// expect:
@@ -504,7 +504,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void adjustsFloatWhenValid() {
+	public void adjustsTotalSupplyWhenValid() {
 		// when:
 		subject.adjustTotalSupplyBy(500_000);
 
@@ -513,7 +513,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void throwsIaeIfFloatGoesNegative() {
+	public void throwsIaeIfTotalSupplyGoesNegative() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(-1_500_000));
 	}
