@@ -436,7 +436,7 @@ class HederaTokenStoreTest {
 	public void dissociatingRejectsUnassociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -450,7 +450,7 @@ class HederaTokenStoreTest {
 	public void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:
@@ -464,7 +464,7 @@ class HederaTokenStoreTest {
 	public void associatingRejectsIfCappedAssociationsEvenAfterPurging() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
@@ -484,7 +484,7 @@ class HederaTokenStoreTest {
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = BackingTokenRels.asTokenRel(sponsor, misc);
 
-		given(tokens.isAssociatedWith(misc)).willReturn(false);
+		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.purge(any(), any())).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
@@ -511,7 +511,7 @@ class HederaTokenStoreTest {
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = BackingTokenRels.asTokenRel(sponsor, misc);
 
-		given(tokens.isAssociatedWith(misc)).willReturn(true);
+		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
 		// when:

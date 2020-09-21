@@ -40,6 +40,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -51,10 +52,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -94,6 +97,7 @@ class TokenUpdateTransitionLogicTest {
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
 		given(store.resolve(targetRef)).willReturn(target);
 		given(store.get(target)).willReturn(token);
+		given(store.associate(newTreasury, List.of(targetRef))).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
 
@@ -164,6 +168,23 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
+	}
+
+	@Test
+	public void rollsbackNewTreasuryChangesIfAssociateFails() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(store.associate(any(), anyList())).willReturn(INVALID_TOKEN_REF);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).dropPendingTokenChanges();
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
+		// and:
+		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
 	}
 
 	@Test
@@ -276,6 +297,7 @@ class TokenUpdateTransitionLogicTest {
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
 		given(store.update(any(), anyLong())).willReturn(OK);
+		given(store.associate(any(), anyList())).willReturn(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
 		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true)).willReturn(OK);
 

@@ -903,6 +903,11 @@ public class HederaLedgerTest {
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
+		tokenStore.associate(a, List.of(refWith(tA), refWith(tB)));
+		tokenStore.associate(b, List.of(refWith(tA), refWith(tB)));
+		tokenStore.associate(c, List.of(refWith(tA), refWith(tB)));
+		tokenStore.associate(d, List.of(refWith(tA), refWith(tB)));
+		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
 		subject.adjustBalance(c, 1_000L);

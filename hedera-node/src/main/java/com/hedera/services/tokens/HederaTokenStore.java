@@ -54,7 +54,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
@@ -172,7 +171,7 @@ public class HederaTokenStore implements TokenStore {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
-				if (accountTokens.isAssociatedWith(id)) {
+				if (accountTokens.includes(id)) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
@@ -206,7 +205,7 @@ public class HederaTokenStore implements TokenStore {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
 			for (TokenID id : tokenIds) {
-				if (!accountTokens.isAssociatedWith(id)) {
+				if (!accountTokens.includes(id)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
 			}

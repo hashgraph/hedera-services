@@ -104,7 +104,7 @@ class MerkleAccountTokensTest {
 		// then:
 		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
 		// and:
-		assertFalse(subject.isAssociatedWith(a));
+		assertFalse(subject.includes(a));
 	}
 
 	@Test

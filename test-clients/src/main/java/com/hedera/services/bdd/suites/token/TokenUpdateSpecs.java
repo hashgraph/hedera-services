@@ -55,14 +55,14 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						symbolChanges(),
-//						standardImmutabilitySemanticsHold(),
-//						validAutoRenewWorks(),
-//						validatesMissingAdminKey(),
-//						tooLongNameCheckHolds(),
-//						nameChanges(),
-//						validatesMissingRef(),
-//						keysChange(),
+						symbolChanges(),
+						standardImmutabilitySemanticsHold(),
+						validAutoRenewWorks(),
+						validatesMissingAdminKey(),
+						tooLongNameCheckHolds(),
+						nameChanges(),
+						validatesMissingRef(),
+						keysChange(),
 						treasuryEvolves(),
 				}
 		);

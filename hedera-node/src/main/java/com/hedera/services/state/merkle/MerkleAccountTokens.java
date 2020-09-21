@@ -164,7 +164,7 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		return tokenIds.length / NUM_ID_PARTS;
 	}
 
-	public boolean isAssociatedWith(TokenID id) {
+	public boolean includes(TokenID id) {
 		return logicalIndexOf(id) >= 0;
 	}
 
