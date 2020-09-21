@@ -937,11 +937,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "29 13 * * *"
+          cron: "30 13 * * *"
           filters:
             branches:
               only:
-                - services-regression
+                - temp-fix-regression
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -1527,7 +1527,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - services-regression
+                - temp-fix-regression
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
