@@ -91,7 +91,7 @@ public abstract class HapiSpecOperation {
 	protected boolean usePresetTimestamp = false;
 
 	protected boolean useTls = false;
-	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.NEW;
+	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
 	protected boolean useRandomNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();

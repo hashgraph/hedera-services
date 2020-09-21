@@ -104,7 +104,7 @@ public class SuiteRunner {
 	private static final int SUITE_NAME_WIDTH = 32;
 
 	private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
-	private static final HapiSpecSetup.TxnConfig DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnConfig.NEW;
+	private static final HapiSpecSetup.TxnConfig DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnConfig.ALTERNATE;
 	private static final HapiSpecSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
