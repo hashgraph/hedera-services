@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -64,8 +65,28 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tooLongNameCheckHolds(),
 						nameChanges(),
 						validatesMissingRef(),
+						validatesAlreadyDeletedToken(),
 				}
 		);
+	}
+
+	private HapiApiSpec validatesAlreadyDeletedToken() {
+		return defaultHapiSpec("ValidatesAlreadyDeletedToken")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("payer")
+								.balance(A_HUNDRED_HBARS),
+						tokenCreate("tbd")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenDelete("tbd")
+				).when().then(
+						tokenUpdate("tbd")
+								.autoRenewAccount(GENESIS)
+								.payingWith("payer")
+								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
 	}
 
 	private HapiApiSpec standardImmutabilitySemanticsHold() {
