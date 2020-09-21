@@ -21,6 +21,7 @@ package com.hedera.services.legacy.export;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.exports.AccountBalance;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -34,8 +35,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -207,23 +206,13 @@ public class AccountBalanceExport {
    * @return byte array of hash value
    */
   public static byte[] getFileHash(String fileName) {
-    MessageDigest md;
+    byte[] array = new byte[0];
     try {
-      md = MessageDigest.getInstance("SHA-384");
-
-      byte[] array = new byte[0];
-      try {
-        array = Files.readAllBytes(Paths.get(fileName));
-      } catch (IOException e) {
-        log.error("Exception ", e);
-      }
-      byte[] fileHash = md.digest(array);
-      return fileHash;
-
-    } catch (NoSuchAlgorithmException e) {
+      array = Files.readAllBytes(Paths.get(fileName));
+    } catch (IOException e) {
       log.error("Exception ", e);
-      return null;
     }
+    return CommonUtils.noThrowSha384HashOf(array);
   }
 
   public void signAccountBalanceFile(Platform platform, String balanceFileName) {

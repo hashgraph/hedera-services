@@ -20,7 +20,6 @@ package com.hedera.services.legacy.CI;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.client.util.Common;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -41,7 +40,6 @@ import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.security.KeyPair;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.util.Collections;
 import java.util.HashMap;
@@ -199,8 +197,7 @@ public class TxRecordTest {
     Assert.assertEquals(body.getMemo(), transactionRecordResponse.getMemo());
     Assert.assertNotNull(transactionRecordResponse.getTransactionHash());
     Assert.assertEquals(transactionRecordResponse.getTransactionHash(),
-        ByteString
-            .copyFrom(MessageDigest.getInstance("SHA-384").digest(transaction.toByteArray())));
+            com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf(transaction));
     Assert.assertTrue(transactionRecordResponse.getTransactionFee() >= 0);
     log.info("Tx Record is successfully retrieve and asserted. record....");
 
@@ -256,8 +253,7 @@ public class TxRecordTest {
     Assert.assertEquals(body.getMemo(), txRecordObject.getMemo());
     Assert.assertNotNull(txRecordObject.getTransactionHash());
     Assert.assertEquals(txRecordObject.getTransactionHash(),
-        ByteString
-            .copyFrom(MessageDigest.getInstance("SHA-384").digest(transaction.toByteArray())));
+            com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf(transaction));
     Assert.assertTrue(txRecordObject.getTransactionFee() >= 0);
     log.info("Tx record is retrieved from FCM...");
 

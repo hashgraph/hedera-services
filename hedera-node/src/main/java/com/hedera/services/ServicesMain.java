@@ -81,6 +81,12 @@ public class ServicesMain implements SwirldMain {
 			systemExits.fail(1);
 		}
 		try {
+			CommonUtils.getSha384Hash();
+		} catch (NoSuchAlgorithmException nsae) {
+			log.error(nsae);
+			systemExits.fail(1);
+		}
+		try {
 			Locale.setDefault(Locale.US);
 			ctx = CONTEXTS.lookup(nodeId.getId());
 			logInfoWithConsoleEcho(String.format(START_INIT_MSG_PATTERN, ctx.id().getId()));
@@ -88,12 +94,6 @@ public class ServicesMain implements SwirldMain {
 			log.info("init finished.");
 		} catch (IllegalStateException ise) {
 			log.error("Fatal precondition violated in HederaNode#{}!", ctx.id(), ise);
-			systemExits.fail(1);
-		}
-		try {
-			CommonUtils.getSha384Hash();
-		} catch (NoSuchAlgorithmException nsae) {
-			log.error(nsae);
 			systemExits.fail(1);
 		}
 	}

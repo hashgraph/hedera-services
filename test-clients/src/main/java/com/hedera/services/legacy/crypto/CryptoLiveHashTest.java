@@ -54,7 +54,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
@@ -148,18 +147,10 @@ public class CryptoLiveHashTest {
     log.info("--------------------------------------");
 
     // creating the request for crypto claims
-    byte[] messageDigest = null;
-
-    MessageDigest md = MessageDigest.getInstance("SHA-384");
-    messageDigest = md.digest("achal".getBytes());
-    log.info(messageDigest + " :: are the claim bytes");
-
     List<Key> waclPubKeyList = new ArrayList<>();
 
     waclPrivKeyList = new ArrayList<>();
     genWacl(5, waclPubKeyList, waclPrivKeyList);
-
-    List<PrivateKey> privKeys = Collections.singletonList(firstPair.getPrivate());
 
     byte[] pubKey = ((EdDSAPublicKey) firstPair.getPublic()).getAbyte();
     Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -170,29 +161,20 @@ public class CryptoLiveHashTest {
     log.info(key1);
     KeyList keyList1 = KeyList.newBuilder().addKeys(key1).build();
     log.info(keyList1);
-//    LiveHash claim = LiveHash.newBuilder().setKeys(keyList1).build();
-//    log.info(claim);
-////    KeyList tester = KeyList.newBuilder().addKeys(key).build();
-//
-//    log.info(key);
-////    Key keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyList).build())
-////        .build();
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionValidDuration = RequestBuilder.getDuration(100);
     AccountID nodeAccountID = AccountID.newBuilder().setAccountNum(3l).build();
     long transactionFee = 100000;
     boolean generateRecord = false;
     String memo = "add claims";
-//    KeyList test = KeyList.newBuilder().addKeys(key).build();
-//
-    ByteString claimbyteString = ByteString.copyFrom(messageDigest);
-    LiveHash claim = LiveHash.newBuilder().setHash(claimbyteString).setAccountId(newlyCreateAccountId1)
+
+    ByteString liveHashBS = CommonUtils.sha384HashOf("liveHash".getBytes());
+    LiveHash liveHash = LiveHash.newBuilder().setHash(liveHashBS).setAccountId(newlyCreateAccountId1)
         .setKeys(KeyList.newBuilder().addAllKeys(waclPubKeyList).build()).setDuration(
             Duration.newBuilder().setSeconds(timestamp.getSeconds() + 10000000000l).build())
         .build();
-//            TimestampSeconds.newBuilder().setSeconds(100).build()).build();
     CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = CryptoAddLiveHashTransactionBody.
-        newBuilder().setLiveHash(claim).build();
+        newBuilder().setLiveHash(liveHash).build();
 
     TransactionID transactionID = TransactionID.newBuilder().setAccountID(newlyCreateAccountId1)
         .setTransactionValidStart(timestamp).build();
@@ -248,7 +230,7 @@ public class CryptoLiveHashTest {
 
     CryptoGetLiveHashQuery cryptoGetLiveHashQuery = CryptoGetLiveHashQuery.newBuilder()
         .setAccountID(newlyCreateAccountId1)
-        .setHeader(queryHeader).setHash(claimbyteString).build();
+        .setHeader(queryHeader).setHash(liveHashBS).build();
     Query query = Query.newBuilder().setCryptoGetLiveHash(cryptoGetLiveHashQuery).build();
 
     Response cryptoGetLiveHashResponse = stub.getLiveHash(query);
@@ -276,7 +258,7 @@ public class CryptoLiveHashTest {
 
     CryptoDeleteLiveHashTransactionBody cryptoDeleteLiveHashTransactionBody = CryptoDeleteLiveHashTransactionBody
         .newBuilder()
-        .setAccountOfLiveHash(newlyCreateAccountId1).setLiveHashToDelete(claimbyteString).build();
+        .setAccountOfLiveHash(newlyCreateAccountId1).setLiveHashToDelete(liveHashBS).build();
     TransactionBody transactionBodyDeleteLiveHash = TransactionBody.newBuilder()
         .setTransactionID(transactionID1)
         .setNodeAccountID(nodeAccountID)
@@ -313,7 +295,7 @@ public class CryptoLiveHashTest {
 
     CryptoGetLiveHashQuery cryptoGetLiveHashQuery2 = CryptoGetLiveHashQuery.newBuilder()
         .setAccountID(newlyCreateAccountId1)
-        .setHeader(queryHeader2).setHash(claimbyteString).build();
+        .setHeader(queryHeader2).setHash(liveHashBS).build();
     Query query2 = Query.newBuilder().setCryptoGetLiveHash(cryptoGetLiveHashQuery2).build();
 
     Response cryptoGetLiveHashResponse2 = stub.getLiveHash(query2);

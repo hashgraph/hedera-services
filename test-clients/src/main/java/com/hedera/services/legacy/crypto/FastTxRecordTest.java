@@ -20,7 +20,6 @@ package com.hedera.services.legacy.crypto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -44,7 +43,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import java.security.KeyPair;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.util.Collections;
 import java.util.List;
@@ -143,8 +141,7 @@ public class FastTxRecordTest {
     Assert.assertEquals(body.getMemo(), transactionRecordResponse.getMemo());
     Assert.assertNotNull(transactionRecordResponse.getTransactionHash());
     Assert.assertEquals(transactionRecordResponse.getTransactionHash(),
-        ByteString
-            .copyFrom(MessageDigest.getInstance("SHA-384").digest(transaction.toByteArray())));
+            com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf(transaction));
     Assert.assertTrue(transactionRecordResponse.getTransactionFee() >= 0);
     Assert.assertEquals(fastTxRecord, transactionRecordResponse);
     log.info(

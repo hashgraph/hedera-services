@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
@@ -47,8 +48,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -298,17 +297,18 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
      * Increment the sequence number if this is not the initial transaction on the topic (the create), and update the
      * running hash of the Transactions on this topic (submitted messages and modifications of the topic).
      *
+     * @param payer
      * @param message
      * @param topicId
      * @param consensusTimestamp
-     * @throws NoSuchAlgorithmException If the crypto library on this system doesn't support the SHA384 algorithm
+     * @throws IOException
      */
     public void updateRunningHashAndSequenceNumber(
             AccountID payer,
             @Nullable byte[] message,
             @Nullable TopicID topicId,
             @Nullable Instant consensusTimestamp
-    ) throws NoSuchAlgorithmException, IOException {
+    ) throws IOException {
         if (null == message) {
             message = new byte[0];
         }
@@ -333,9 +333,9 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
             out.writeInt(consensusTimestamp.getNano());
             ++sequenceNumber;
             out.writeLong(sequenceNumber);
-            out.writeObject(MessageDigest.getInstance("SHA-384").digest(message));
+            out.writeObject(CommonUtils.noThrowSha384HashOf(message));
             out.flush();
-            runningHash = MessageDigest.getInstance("SHA-384").digest(boas.toByteArray());
+            runningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
         }
     }
 

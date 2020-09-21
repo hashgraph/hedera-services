@@ -24,7 +24,6 @@ import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
