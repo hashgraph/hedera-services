@@ -352,6 +352,17 @@ public class HapiSpecSetup {
 		return useTls;
 	}
 
+	public TxnConfig txnConfig() {
+		TxnConfig config = props.getTxnConfig("txn");
+		if (TxnConfig.ALTERNATE == config) {
+			if (r.nextBoolean()) {
+				return TxnConfig.NEW;
+			} else {
+				return TxnConfig.OLD;
+			}
+		}
+		return config;
+	}
 	public long txnStartOffsetSecs() {
 		return props.getLong("txn.start.offset.secs");
 	}

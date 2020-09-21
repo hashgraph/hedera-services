@@ -91,6 +91,7 @@ public abstract class HapiSpecOperation {
 	protected boolean usePresetTimestamp = false;
 
 	protected boolean useTls = false;
+	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.NEW;
 	protected boolean useRandomNode = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();
@@ -139,6 +140,10 @@ public abstract class HapiSpecOperation {
 		useTls = spec.setup().getConfigTLS();
 	}
 
+	protected void configureTxnFor(HapiApiSpec spec) {
+		txnConfig = spec.setup().txnConfig();
+	}
+
 	protected void fixNodeFor(HapiApiSpec spec) {
 		if (node.isPresent()) {
 			return;
@@ -161,6 +166,7 @@ public abstract class HapiSpecOperation {
 
 	public Optional<Throwable> execFor(HapiApiSpec spec) {
 		pauseIfRequested();
+		configureTxnFor(spec);
 		try {
 			boolean hasCompleteLifecycle = submitOp(spec);
 
@@ -261,13 +267,15 @@ public abstract class HapiSpecOperation {
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
 		}
 
-//		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-//				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
-//				.setSigMap(CommonUtils.extractSignatureMap(txn))
-//				.build();
+		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
+			return txn;
+		}
 
-//		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
-		return txn;
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
+				.setSigMap(CommonUtils.extractSignatureMap(txn))
+				.build();
+		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
 	}
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {
