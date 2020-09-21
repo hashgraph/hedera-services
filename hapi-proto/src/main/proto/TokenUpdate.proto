@@ -32,7 +32,7 @@ import "BasicTypes.proto";
  */
 message TokenUpdateTransactionBody {
     TokenRef token = 1; // The Token to be updated
-    string symbol = 2; // The new Symbol of the Token. Must be a unique, case-insensitive UTF-8 alphanumeric string identifying the token.
+    string symbol = 2; // The new Symbol of the Token. Must be a unique, UTF-8 capitalized alphabetical string identifying the token.
     string name = 3; // The new Name of the Token. Must be a unique string of ASCII characters.
     AccountID treasury = 4; // The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one.
     Key adminKey = 5; // The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE.

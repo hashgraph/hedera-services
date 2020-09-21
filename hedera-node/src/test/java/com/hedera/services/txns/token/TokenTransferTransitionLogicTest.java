@@ -23,9 +23,8 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,8 +48,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
-class TokenTransactTransitionLogicTest {
-	TokenTransfers xfers = TokenTransfers.newBuilder()
+class TokenTransferTransitionLogicTest {
+	TokenTransfersTransactionBody xfers = TokenTransfersTransactionBody.newBuilder()
 			.addTokenTransfers(TokenRefTransferList.newBuilder()
 					.setToken(refWith("NOTHBAR"))
 					.addAllTransfers(List.of(
@@ -64,7 +63,7 @@ class TokenTransactTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 
 	private TransactionBody tokenTransactTxn;
-	private TokenTransactTransitionLogic subject;
+	private TokenTransferTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -73,7 +72,7 @@ class TokenTransactTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenTransactTransitionLogic(ledger, txnCtx);
+		subject = new TokenTransferTransitionLogic(ledger, txnCtx);
 	}
 
 	@Test

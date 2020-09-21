@@ -28,7 +28,7 @@ option java_multiple_files = true;
 import "BasicTypes.proto";
 
 /* Freezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.
- Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen. The operation is idempotent.
+ Once executed the Account is marked as Frozen and will not be able to receive or send tokens unless unfrozen. The operation is idempotent.
  */
 message TokenFreezeAccountTransactionBody {
     TokenRef token = 1; // The token for which this account will be frozen. If token does not exist, transaction results in INVALID_TOKEN_ID

@@ -182,7 +182,7 @@ enum ResponseCodeEnum {
   INVALID_TOKEN_DECIMALS = 168;
   INVALID_INITIAL_SUPPLY = 169;
   INVALID_TREASURY_ACCOUNT_FOR_TOKEN = 170; // Treasury Account does not exist or is deleted
-  INVALID_TOKEN_SYMBOL = 171; // Token Symbol is not UTF-8 alphanumeric uppercase string
+  INVALID_TOKEN_SYMBOL = 171; // Token Symbol is not UTF-8 capitalized alphabetical string
   TOKEN_HAS_NO_FREEZE_KEY = 172; // Freeze key is not set on token
   TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN = 173; // Amounts in transfer list are not net zero
   MISSING_TOKEN_SYMBOL = 174; // Token Symbol is not provided
