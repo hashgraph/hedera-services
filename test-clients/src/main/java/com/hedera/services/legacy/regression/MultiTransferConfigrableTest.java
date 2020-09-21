@@ -227,8 +227,6 @@ public class MultiTransferConfigrableTest {
         transfer1 = TestHelper
             .createTransferSigMap(newlyCreateAccountId1, secondPair,
                 newlyCreateAccountId2, newlyCreateAccountId1, firstPair, nodeAccount3, 999l);
-        //  log.info("Transfer #" + i
-        //      + ": Transferring 999 coin from 2nd account to genesis account....");
         sentAmtToAcc2 += 999l;
       }
 
@@ -248,7 +246,6 @@ public class MultiTransferConfigrableTest {
               txReceipt = TestHelper.getTxReceipt(transferBody.getTransactionID(), stub);
             } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
               log.info("InvalidNodeTransactionPrecheckCode" + invalidNodeTransactionPrecheckCode);
-              //git stinvalidNodeTransactionPrecheckCode.printStackTrace();
               totalBadReceipts++;
             }
             Assert.assertNotNull(txReceipt);

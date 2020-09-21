@@ -51,8 +51,6 @@ import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
-//import org.perf4j.StopWatch;
-//import org.perf4j.log4j.Log4JStopWatch;
 
 /**
  * Creates accounts in a batch and then fetches receipt for last account created. This test is
@@ -145,9 +143,7 @@ public class BatchThreadCreate {
     TransactionReceipt txReceipt = null;
 
     try {
-//      StopWatch stopWatch = new Log4JStopWatch("RoundTrip:receipt for create account");
       txReceipt = TestHelper.getTxReceipt(txList.get(i), stub);
-//      stopWatch.stop();
       Assert.assertEquals(txReceipt.getStatus(), ResponseCodeEnum.SUCCESS);
     } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
       invalidNodeTransactionPrecheckCode.printStackTrace();
@@ -179,11 +175,9 @@ public class BatchThreadCreate {
       signTransaction = TransactionSigner
           .signTransaction(transaction, Collections.singletonList(pair.getPrivate()));
 
-//      StopWatch stopWatch = new Log4JStopWatch("RoundTrip: create account");
       TransactionResponse response = stub.createAccount(signTransaction);
       Assert.assertNotNull(response);
       Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-//      stopWatch.stop();
       log.info("Pre Check Response of Create first account :: " + response
           .getNodeTransactionPrecheckCode().name());
       TransactionBody body = TransactionBody.parseFrom(signTransaction.getBodyBytes());
@@ -208,7 +202,6 @@ public class BatchThreadCreate {
 
     TestHelper.initializeFeeClient(channel, payerAccount, genesisKeyPair, nodeAccount3);
 
-//        KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
     Transaction transaction = TestHelper.createAccount(payerAccount, nodeAccount3, firstPair,
         100000000000000000L, 1000000L, TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
         TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD);

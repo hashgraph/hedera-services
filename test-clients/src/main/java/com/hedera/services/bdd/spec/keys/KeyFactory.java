@@ -315,12 +315,6 @@ public class KeyFactory implements Serializable {
 	}
 
 	private static KeyPairObj firstKpFrom(Object keyStore, String name) {
-//		var tmpAcklo = ((Map<String, List<com.opencrowd.core.AccountKeyListObj>>)keyStore)
-//				.get(name)
-//				.get(0);
-//		System.out.println(HapiPropertySource.asAccountString(tmpAcklo.getAccountId()));
-//		var tmp = tmpAcklo.getKeyPairList().get(0);
-//		return new KeyPairObj(tmp.getPublicKeyStr(), tmp.getPrivateKeyStr());
 		return ((Map<String, List<AccountKeyListObj>>)keyStore)
 				.get(name)
 				.get(0)

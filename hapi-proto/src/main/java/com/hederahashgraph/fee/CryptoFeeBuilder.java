@@ -148,9 +148,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
-    // tv - Transfer Value
-    // tv = getTV(txBody);
-
     bpr = INT_SIZE;
 
     rbs = getBaseTransactionRecordSize(txBody) * RECIEPT_STORAGE_TIME_SEC;
@@ -343,20 +340,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * LONG_SIZE
      */
     int accountAmountCount = txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount();
-    int cryptoTransfertBodySize = (BASIC_ACCT_AMT_SIZE) * accountAmountCount;
+    int cryptoTransfertBodySize = (BASIC_ACCOUNT_AMT_SIZE) * accountAmountCount;
     return cryptoTransfertBodySize;
   }
 
-  /*
-   * private long getTV(TransactionBody txBody) { long amount = 0; TransferList transferList =
-   * txBody.getCryptoTransfer().getTransfers(); List<AccountAmount> accountAmounts =
-   * transferList.getAccountAmountsList(); for (AccountAmount actAmt : accountAmounts) { if
-   * (actAmt.getAmount() > 0) { amount = amount + actAmt.getAmount(); } } return Math.round(amount /
-   * 1000); }
-   */
-
-  ////////////////////////////////////////////////////////////////////////// Query Fee
-  ////////////////////////////////////////////////////////////////////////// //////////////////////////////////////////////////////////////////////////
+  // Query Fee
 
   /**
    * This method returns the Fee Matrices for balance query
@@ -384,12 +372,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
      * long value)
      */
-
     bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
-
-   /* FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-    return getQueryFeeDataMatrices(feeMatrices);*/
     
     return FeeData.getDefaultInstance();
   }
@@ -428,7 +411,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-   /* return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
 
   }
@@ -621,8 +603,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     int acountAmountSize = 0;
     if (transRecord.hasTransferList()) {
       int accountAmountCount = transRecord.getTransferList().getAccountAmountsCount();
-      acountAmountSize = accountAmountCount * (BASIC_ACCT_AMT_SIZE); // (24 bytes AccountID and 8
-      // bytes Amount)
+      acountAmountSize = accountAmountCount * (BASIC_ACCOUNT_AMT_SIZE); // (24 bytes AccountID and 8 bytes Amount)
     }
 
     int txRecordSize = BASIC_TX_RECORD_SIZE + memoBytesSize + acountAmountSize;
@@ -744,13 +725,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     long storageSize = (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
         + +txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
-    // get expiration time storage
-    // Instant expirationTime = RequestBuilder
-    // .convertProtoTimeStampSeconds(txBody.getCryptoAddLiveHash().getLiveHash().getLiveHashExpiration());
-    // Timestamp txValidStartTimestamp = txBody.getTransactionID()
-    // .getTransactionValidStart();
-    // Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-    // Duration duration = Duration.between(txValidStartTime, expirationTime);
     long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
     storageSize = storageSize * seconds;
     return storageSize;

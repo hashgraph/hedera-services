@@ -73,8 +73,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
-    /*// sbs - Stoarge bytes seconds
-    sbs = getContractCreateStorageBytesSec(txBody);*/
 
 
     bpr = INT_SIZE;

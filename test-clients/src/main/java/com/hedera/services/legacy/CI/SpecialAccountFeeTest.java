@@ -157,8 +157,6 @@ public class SpecialAccountFeeTest {
         .getCryptoGetAccountInfo(stub, AccountID.newBuilder().setAccountNum(50l).build(),
             newlyCreateAccountId1,
             firstPair, defaultNodeAccount);
-    long balanceAccount50 = accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance();
-//    Assert.assertEquals(10000000000000000l, balanceAccount50);
 
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
 
@@ -186,8 +184,6 @@ public class SpecialAccountFeeTest {
             newlyCreateAccountId1,
             firstPair, defaultNodeAccount);
     log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
-//    Assert.assertEquals(balanceAccount50 + 1000l,
-//        accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
 
     // send duplicate transaction for account 50
 
@@ -203,8 +199,6 @@ public class SpecialAccountFeeTest {
               newlyCreateAccountId1,
               firstPair, defaultNodeAccount);
       log.info(accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
-//      Assert.assertEquals(balanceAccount50 + 1000l,
-//          accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
     }
 
     Thread.sleep(180000);

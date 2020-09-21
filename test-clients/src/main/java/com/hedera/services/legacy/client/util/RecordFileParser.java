@@ -153,8 +153,9 @@ public class RecordFileParser {
 			log.error(MARKER, "Parsing Error");
 		} finally {
 			try {
-				if (stream != null)
+				if (stream != null) {
 					stream.close();
+				}
 			} catch (IOException ex) {
 				log.error("Exception in close the stream {}", ex);
 			}
@@ -277,8 +278,9 @@ public class RecordFileParser {
 			log.error(MARKER, "readPrevFileHash :: Parsing Error, file name = {}",  fileName);
 		} finally {
 			try {
-				if (stream != null)
+				if (stream != null) {
 					stream.close();
+				}
 			} catch (IOException ex) {
 				log.error("readPrevFileHash :: Exception in close the stream {}", ex);
 			}

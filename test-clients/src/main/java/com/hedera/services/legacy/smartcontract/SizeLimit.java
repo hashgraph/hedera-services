@@ -128,9 +128,6 @@ public class SizeLimit {
     gasLimit = serverConfig.getMaxGasLimit() - 1;
 
     int numberOfReps = 1;
-//    if ((args.length) > 0) {
-//      numberOfReps = Integer.parseInt(args[0]);
-//    }
     for (int i = 0; i < numberOfReps; i++) {
       SizeLimit scSs = new SizeLimit();
       scSs.demo();
@@ -160,28 +157,10 @@ public class SizeLimit {
 
   }
 
-  private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt)
-      throws Exception {
-    Timestamp timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-    //KeyPair pair = new KeyPairGenerator().generateKeyPair();
-    //byte[] pubKeyBytes = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-    //String pubKey = HexUtils.bytes2Hex(pubKeyBytes);
-    //Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey.getBytes())).build(); // used later
-    SignatureList sigList = SignatureList.getDefaultInstance();
-		 /* Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
-					 payer.getAccountNum(), payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-					 50, timestamp, transactionDuration, false, "test", sigList,
-					 payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);*/
-
-    Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
+  private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) {
+    return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeAccount, payer,
         accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-    //transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
-    return transferTx;
-
   }
 
   private AccountID createAccount(AccountID payerAccount, long initialBalance) throws Exception {
@@ -199,7 +178,6 @@ public class SizeLimit {
     Transaction transaction = TestHelper
         .createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
             accountKeys.get(payerAccount));
-    //	Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
     TransactionResponse response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

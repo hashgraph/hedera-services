@@ -246,7 +246,6 @@ public class CryptoFeeTest {
 
     log.info("Get Tx record by Tx Id...");
 
-    //  Thread.sleep(5000);
     query = TestHelper.getTxRecordByTxId(body.getTransactionID(), payerAccount,
         genKeyPair, defaultNodeAccount, TestHelper.getCryptoMaxFee(),
         ResponseType.ANSWER_ONLY);

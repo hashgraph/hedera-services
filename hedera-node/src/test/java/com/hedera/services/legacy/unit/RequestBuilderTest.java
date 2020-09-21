@@ -39,14 +39,5 @@ public class RequestBuilderTest {
     Timestamp expirationTime = RequestBuilder.getExpirationTime(Instant.now(), duration);
     Assert.assertNotNull(expirationTime);
     Instant timeStamp = RequestBuilder.convertProtoTimeStamp(expirationTime);
-    //Assert.assertTrue(timeStamp.toEpochMilli() > Instant.now().toEpochMilli());
   }
-	 
-/*	 public static void main(String args[]) {
-		 RequestBuilderTest t = new RequestBuilderTest();
-		 t.testMapValueSerialization();
-	 }
-*/
-
-
 }
