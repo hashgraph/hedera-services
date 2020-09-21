@@ -404,9 +404,9 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	}
 
 	public void adjustTotalSupplyBy(long amount) {
-		var newFloat = totalSupply + amount;
-		if (newFloat < 0) {
-			throw new IllegalArgumentException(String.format("Cannot set token float to %d!", newFloat));
+		var newTotalSupply = totalSupply + amount;
+		if (newTotalSupply < 0) {
+			throw new IllegalArgumentException(String.format("Cannot set token totalSupply to %d!", newTotalSupply));
 		}
 		totalSupply += amount;
 	}
