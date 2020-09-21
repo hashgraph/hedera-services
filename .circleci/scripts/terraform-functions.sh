@@ -147,7 +147,7 @@ function tf_destroy {
     cd $TF_DIR
     if [[ -z $USE_EXISTING_NETWORK ]]; then
 
-      echo ">>>> [CI] >> Destroying ($VAR_FILE) with hosts ${TF_HOSTS[@]}..."
+      echo ">>>> [CI] >> Destroying ($VAR_FILE) with hosts" "${TF_HOSTS[@]}..."
       TF_WORKSPACE=$(ls -1 $TF_DIR/nets | grep test)
       ci_echo "Current workspace : $TF_WORKSPACE"
       NUM_NODES=${#TF_HOSTS[@]}

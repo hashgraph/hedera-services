@@ -209,7 +209,6 @@ public class Common {
 				TransactionResponse response = stubFunc.apply(transaction);
 
 				if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.OK) {
-					//log.info("Create OK");
 					break;
 				} else if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.BUSY ||
 						response.getNodeTransactionPrecheckCode()
@@ -412,7 +411,6 @@ public class Common {
 						receiverSigRequired, autoRenewPeriod,
 						SignatureList.newBuilder().getDefaultInstanceForType());
 		List<Key> keys = new ArrayList<Key>();
-		//Key payerKey = acc2ComplexKeyMap.get(payerAccount);
 		keys.add(payerKey);
 		if (receiverSigRequired) {
 			keys.add(key);
@@ -608,7 +606,6 @@ public class Common {
 				long beforeBalance = entry.getValue();
 				if (beforeBalance != afterBalance){
 					log.error("Balance change for Account {} = {}", entry.getKey(), (afterBalance-beforeBalance));
-					//Assert.assertEquals(expectedBalance, currentBalance);
 				}
 			}catch (Exception e){
 				log.error("Exception ", e);

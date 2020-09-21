@@ -20,7 +20,7 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -51,7 +51,7 @@ public class TokenMintFactory extends SignedTxnFactory<TokenMintFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenMintCoins.newBuilder()
+		var op = TokenMintTransactionBody.newBuilder()
 				.setToken(ref);
 		txn.setTokenMint(op);
 	}

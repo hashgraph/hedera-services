@@ -5,9 +5,8 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreation;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -35,7 +34,7 @@ public class TokenMintUsageTest {
 	TokenID id = IdUtils.asToken("0.0.75231");
 	TokenRef token;
 
-	TokenMintCoins op;
+	TokenMintTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -90,14 +89,14 @@ public class TokenMintUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenMintCoins.newBuilder()
+		op = TokenMintTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenMintCoins.newBuilder()
+		op = TokenMintTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

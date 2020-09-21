@@ -22,28 +22,17 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.fees.calculation.UsageEstimatorUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenRevokeKycUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import java.util.function.BiFunction;
+
 public class TokenRevokeKycResourceUsage implements TxnResourceUsageEstimator {
-	public static final FeeData MOCK_TOKEN_REVOKE_KYC_USAGE = UsageEstimatorUtils.defaultPartitioning(
-			FeeComponents.newBuilder()
-					.setMin(1)
-					.setMax(1_000_000)
-					.setConstant(1)
-					.setBpt(1)
-					.setVpt(1)
-					.setRbh(1)
-					.setSbh(1)
-					.setGas(1)
-					.setTv(1)
-					.setBpr(1)
-					.setSbpr(1)
-					.build(), 1);
+	static BiFunction<TransactionBody, SigUsage, TokenRevokeKycUsage> factory = TokenRevokeKycUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(TransactionBody txn) {
@@ -51,7 +40,9 @@ public class TokenRevokeKycResourceUsage implements TxnResourceUsageEstimator {
 	}
 
 	@Override
-	public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-		return MOCK_TOKEN_REVOKE_KYC_USAGE;
+	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		var estimate = factory.apply(txn, sigUsage);
+		return estimate.get();
 	}
 }

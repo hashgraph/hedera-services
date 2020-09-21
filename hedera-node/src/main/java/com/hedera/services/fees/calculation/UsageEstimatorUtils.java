@@ -30,7 +30,7 @@ import com.hederahashgraph.fee.SigValueObj;
 
 import java.util.List;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCT_AMT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
@@ -81,7 +81,7 @@ public class UsageEstimatorUtils {
 	}
 
 	public static int transferListBytes(TransferList transfers) {
-		return BASIC_ACCT_AMT_SIZE * transfers.getAccountAmountsCount();
+		return BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
 	}
 
 	public static int memoBytesUtf8(TransactionBody txn) {

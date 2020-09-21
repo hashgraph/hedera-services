@@ -74,7 +74,6 @@ public class RecordPurgeSuite extends HapiApiSuite {
 						).payingWith("target").via("txn")
 				).then(
 						getAccountRecords("target").has(inOrder(
-//								recordWith().txnId("txn"),
 								recordWith().txnId("txn")
 						)),
 						sleepFor(CACHE_RECORD_TTL_MS + EPSILON_MS),

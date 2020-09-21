@@ -447,7 +447,6 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       validationCode = ResponseCodeEnum.INVALID_CONTRACT_ID;
     }
 
-    // validationCode = txHandler.postFeeValidation(query.getAccountID());
     if (OK != validationCode) {
       String errorMsg = "Fail to get contract records: " + validationCode.name();
       if (log.isDebugEnabled()) {
@@ -667,6 +666,7 @@ public class SmartContractServiceImpl extends SmartContractServiceGrpc.SmartCont
       if (log.isDebugEnabled()) {
         log.debug("In systemUnDelete :: request : " + TextFormat.shortDebugString(body));
       }
+
       if (submissionManager.trySubmission(uncheckedFrom(request)) != OK) {
         logAndConstructResponseWhenCreateTxFailed(log, responseObserver);
         return;

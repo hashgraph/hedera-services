@@ -63,9 +63,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	public AccountState get(byte[] key) {
 		try (ALock ignored = rLock.lock()) {
 			var id = accountParsedFromSolidityAddress(key);
-//			if (SingletonContextsManager.CONTEXTS.lookup(0L).accountSource() == this) {
-//				log.info("Getting " + EntityIdUtils.readableId(id));
-//			}
 			if (!ledger.exists(id)) {
 				return null;
 			}
@@ -99,9 +96,6 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	@Override
 	public void put(byte[] key, AccountState evmState) {
 		var id = accountParsedFromSolidityAddress(key);
-//		if (SingletonContextsManager.CONTEXTS.lookup(0L).accountSource() == this) {
-//			log.info("Putting " + evmState +  " @ " + EntityIdUtils.readableId(id));
-//		}
 
 		if (evmState == null) {
 			String id_str = asLiteralString(id);

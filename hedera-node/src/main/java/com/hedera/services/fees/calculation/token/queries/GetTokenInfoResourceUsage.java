@@ -96,7 +96,7 @@ public class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
 		}
 	}
 
-	private Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+	public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
 		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
 	}
 }

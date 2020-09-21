@@ -243,7 +243,6 @@ public class TransferListSizeTest {
     mk.setShard(aid.getShardNum());
     MerkleAccount mv = new MerkleAccount();
     mv = fcMap.get(mk);
-//    assertNotNull(mv);
     return mv.getBalance();
   }
 

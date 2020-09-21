@@ -22,21 +22,26 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.usage.token.TokenUnfreezeUsage;
+import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenCreation;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.ProcessIdUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +49,12 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
@@ -149,25 +158,50 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenUpdate, this::mockTokenUpdateUsage, txn, numPayerKeys);
+		try {
+			final TokenInfo info = lookupInfo(spec);
+			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+				var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
+				if (info.hasFreezeKey()) {
+					estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
+				}
+				if (info.hasAdminKey()) {
+					estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+				}
+				if (info.hasSupplyKey()) {
+					estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
+				}
+				if (info.hasKycKey()) {
+					estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
+				}
+				estimate.givenCurrentExpiry(info.getExpiry())
+						.givenCurrentName(info.getName())
+						.givenCurrentSymbol(info.getSymbol());
+				if (info.hasAutoRenewAccount()) {
+					estimate.givenCurrentlyUsingAutoRenewAccount();
+				}
+				return estimate.get();
+			};
+			return spec.fees().forActivityBasedOp(
+					HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
+		} catch (Throwable ignore) {
+			return 100_000_000L;
+		}
 	}
 
-	private FeeData mockTokenUpdateUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(3)
-						.setBpt(3)
-						.setVpt(3)
-						.setRbh(3)
-						.setSbh(3)
-						.setGas(3)
-						.setTv(3)
-						.setBpr(3)
-						.setSbpr(3)
-						.build(), 3);
+	private TokenInfo lookupInfo(HapiApiSpec spec) throws Throwable {
+		HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
+		Optional<Throwable> error = subOp.execFor(spec);
+		if (error.isPresent()) {
+			if (!loggingOff) {
+				log.warn(
+						"Unable to look up current info for "
+								+ HapiPropertySource.asTokenString(spec.registry().getTokenID(token)),
+						error.get());
+			}
+			throw error.get();
+		}
+		return subOp.getResponse().getTokenGetInfo().getTokenInfo();
 	}
 
 	@Override
@@ -179,10 +213,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		if (newNameFn.isPresent()) {
 			newName = Optional.of(newNameFn.get().apply(spec));
 		}
-		TokenManagement opBody = spec
+		TokenUpdateTransactionBody opBody = spec
 				.txns()
-				.<TokenManagement, TokenManagement.Builder>body(
-						TokenManagement.class, b -> {
+				.<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
+						TokenUpdateTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(id));
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);

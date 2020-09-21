@@ -57,7 +57,6 @@ public class HexUtils {
     String in = "hedera hashgraph team";
 
     byte[] bytes = in.getBytes();
-    // byte[] bytes = hexToBytes(in);
     String hex = bytes2Hex(bytes);
     System.out.println("in=" + in + "\nhex=" + hex);
 

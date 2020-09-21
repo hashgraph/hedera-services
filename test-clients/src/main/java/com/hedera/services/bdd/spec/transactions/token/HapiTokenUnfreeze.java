@@ -24,13 +24,11 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.token.TokenFreezeUsage;
 import com.hedera.services.usage.token.TokenUnfreezeUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenUnfreeze;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -68,10 +66,10 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenUnfreezeAccount, this::mockUnfreezeAccountUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenUnfreezeAccount, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockUnfreezeAccountUsage(TransactionBody txn, SigValueObj svo) {
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		return TokenUnfreezeUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
@@ -79,10 +77,10 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenUnfreeze opBody = spec
+		TokenUnfreezeAccountTransactionBody opBody = spec
 				.txns()
-				.<TokenUnfreeze, TokenUnfreeze.Builder>body(
-						TokenUnfreeze.class, b -> {
+				.<TokenUnfreezeAccountTransactionBody, TokenUnfreezeAccountTransactionBody.Builder>body(
+						TokenUnfreezeAccountTransactionBody.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});

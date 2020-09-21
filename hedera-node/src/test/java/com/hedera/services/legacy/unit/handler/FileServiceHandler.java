@@ -145,12 +145,12 @@ public class FileServiceHandler {
       if((entity instanceof AccountID) &&
           isMasterAccount((AccountID) entity)) { // master account cannot update itself
         return false;
+      } else if (seq >= 50 && seq <= 80) {
+        rv = true;
+      } else if(seq == 101 || seq == 102 || seq == 111 || seq == 112
+    		  || seq == 121 || seq == 122 ) {
+        rv = true;
       }
-      else if (seq >= 50 && seq <= 80)
-        rv = true;
-      else if(seq == 101 || seq == 102 || seq == 111 || seq == 112
-    		  || seq == 121 || seq == 122 )
-        rv = true;
     } else if(account.equals(entity)) { // protected accounts can update themselves (excluding master account)
       return true;
     } else if (account.equals(genAccountID(ADDRESS_ACC_NUM))) {
@@ -310,8 +310,9 @@ public class FileServiceHandler {
     ResponseCodeEnum returnCode = ResponseCodeEnum.OK;
 
     // we're only concerned about system files, which are protected entities
-    if (!isProtectedEntity(fid))
+    if (!isProtectedEntity(fid)) {
       return returnCode;
+    }
     
     if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
       if (fid.getFileNum() == 111) {
@@ -498,6 +499,7 @@ public class FileServiceHandler {
       if (log.isDebugEnabled()) {
         log.debug("updateFile exception: invalid wacl! tx=" + tx, e);
       }
+
     } catch (InvalidFileIDException e) {
       receipt = RequestBuilder.getTransactionReceipt(ResponseCodeEnum.INVALID_FILE_ID,
           globalFlag.getExchangeRateSet());

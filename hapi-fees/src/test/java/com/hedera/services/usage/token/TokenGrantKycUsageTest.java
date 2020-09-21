@@ -5,7 +5,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -32,7 +32,7 @@ public class TokenGrantKycUsageTest {
 	String symbol = "ABCDEFGHIJ";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenGrantKyc op;
+	TokenGrantKycTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -82,14 +82,14 @@ public class TokenGrantKycUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenGrantKyc.newBuilder()
+		op = TokenGrantKycTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenGrantKyc.newBuilder()
+		op = TokenGrantKycTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

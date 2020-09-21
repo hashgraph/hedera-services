@@ -483,10 +483,11 @@ public class CommonUtils {
     
     Assert.assertEquals(true, record.getTransactionHash().size() > 0);
     
-    if(ResponseCodeEnum.INVALID_PAYER_SIGNATURE.equals(record.getReceipt().getStatus()))
+    if(ResponseCodeEnum.INVALID_PAYER_SIGNATURE.equals(record.getReceipt().getStatus())) {
       Assert.assertEquals(false, record.hasTransferList());
-    else
+    } else {
       Assert.assertEquals(true, record.hasTransferList());
+    }
       
     if(body.hasCryptoTransfer() && ResponseCodeEnum.SUCCESS.equals(record.getReceipt().getStatus())) {
       TransferList transferList = body.getCryptoTransfer().getTransfers();
