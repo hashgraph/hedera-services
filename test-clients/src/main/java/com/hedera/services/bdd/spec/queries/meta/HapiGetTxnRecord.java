@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.queries.meta;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -40,7 +41,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -150,9 +150,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		if (validateTxnHash) {
 			Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
-			var expectedHash = MessageDigest.getInstance("SHA-384")
-					.digest(transaction.getSignedTransactionBytes().toByteArray());
-			assertArrayEquals("Bad transaction hash!", expectedHash,
+			assertArrayEquals("Bad transaction hash!", CommonUtils.sha384HashOf(transaction).toByteArray(),
 					actualRecord.getTransactionHash().toByteArray());
 		}
 		if (topicToValidate.isPresent()) {
@@ -173,9 +171,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					out.writeLong(actualRecord.getConsensusTimestamp().getSeconds());
 					out.writeInt(actualRecord.getConsensusTimestamp().getNanos());
 					out.writeLong(actualRecord.getReceipt().getTopicSequenceNumber());
-					out.writeObject(MessageDigest.getInstance("SHA-384").digest(lastMessagedSubmitted.get()));
+					out.writeObject(CommonUtils.noThrowSha384HashOf(lastMessagedSubmitted.get()));
 					out.flush();
-					var expectedRunningHash = MessageDigest.getInstance("SHA-384").digest(boas.toByteArray());
+					var expectedRunningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
 					var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
 					assertArrayEquals("Bad running hash!", expectedRunningHash,
 							actualRunningHash.toByteArray());
