@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRevokeKyc;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -79,10 +79,10 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenRevokeKyc opBody = spec
+		TokenRevokeKycTransactionBody opBody = spec
 				.txns()
-				.<TokenRevokeKyc, TokenRevokeKyc.Builder>body(
-						TokenRevokeKyc.class, b -> {
+				.<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
+						TokenRevokeKycTransactionBody.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});

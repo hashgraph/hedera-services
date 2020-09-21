@@ -124,7 +124,6 @@ public class BatchThreadTransfer {
           timer1.purge();
         }
         try {
-//                    log.info(count1);
           batch.receipt(count1);
           count1++;
         } catch (Exception e) {
@@ -163,11 +162,9 @@ public class BatchThreadTransfer {
           firstPair, nodeAccount3, 10l);
       log.info("Transfer #" + (i + 1)
           + ": Transferring 100 coin from genesis account to 2nd account....");
-//      StopWatch stopWatch = new Log4JStopWatch("RoundTrip:transferBatch");
       TransactionResponse transferRes = stub.cryptoTransfer(transfer1);
       Assert.assertNotNull(transferRes);
       Assert.assertEquals(ResponseCodeEnum.OK, transferRes.getNodeTransactionPrecheckCode());
-//      stopWatch.stop();
           
       TransactionBody body = TransactionBody.parseFrom(transfer1.getBodyBytes());
       txList.add(i, body.getTransactionID());
@@ -180,9 +177,7 @@ public class BatchThreadTransfer {
     TransactionReceipt txReceipt = null;
 
     try {
-//      StopWatch stopWatch = new Log4JStopWatch("RoundTrip:receipt");
       txReceipt = TestHelper.getTxReceipt(txList.get(i), stub);
-//      stopWatch.stop();
       Assert.assertEquals(txReceipt.getStatus(), ResponseCodeEnum.SUCCESS);
     } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
       invalidNodeTransactionPrecheckCode.printStackTrace();

@@ -26,7 +26,7 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -122,7 +122,7 @@ class TokenFreezeTransitionLogicTest {
 
 	private void givenValidTxnCtx() {
 		tokenFreezeTxn = TransactionBody.newBuilder()
-				.setTokenFreeze(TokenFreeze.newBuilder()
+				.setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
 						.setAccount(account)
 						.setToken(token))
 				.build();

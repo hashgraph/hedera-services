@@ -5,7 +5,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -31,7 +31,7 @@ public class TokenDeleteUsageTest {
 	String symbol = "ABCDEFGH";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenDeletion op;
+	TokenDeleteTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -80,14 +80,14 @@ public class TokenDeleteUsageTest {
 	}
 
 	private void givenSymbolRefOp() {
-		op = TokenDeletion.newBuilder()
+		op = TokenDeleteTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setSymbol(symbol))
 				.build();
 		setTxn();
 	}
 
 	private void givenIdRefOp() {
-		op = TokenDeletion.newBuilder()
+		op = TokenDeleteTransactionBody.newBuilder()
 				.setToken(TokenRef.newBuilder().setTokenId(id))
 				.build();
 		setTxn();

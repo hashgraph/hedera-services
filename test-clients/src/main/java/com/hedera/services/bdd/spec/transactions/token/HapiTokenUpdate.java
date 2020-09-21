@@ -34,8 +34,8 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenManagement;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -213,10 +213,10 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		if (newNameFn.isPresent()) {
 			newName = Optional.of(newNameFn.get().apply(spec));
 		}
-		TokenManagement opBody = spec
+		TokenUpdateTransactionBody opBody = spec
 				.txns()
-				.<TokenManagement, TokenManagement.Builder>body(
-						TokenManagement.class, b -> {
+				.<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
+						TokenUpdateTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(id));
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);

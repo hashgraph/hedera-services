@@ -30,7 +30,6 @@ public final class EDBip32KeyChain implements KeyChain {
   public KeyPair keyAtIndex(int index) {
     List var10000 = this.servicesSeed.toWordsList();
     KeyPair thisPair = null;
-    // Intrinsics.checkExpressionValueIsNotNull(var10000, "hgcSeed.toWordsList()");
     try {
       String words = servicesSeed.toWordsList().toString();
       byte[] seed = Mnemonic.generateSeed(words, "");
@@ -44,7 +43,6 @@ public final class EDBip32KeyChain implements KeyChain {
   }
 
   public EDBip32KeyChain( ServicesSeed servicesSeed) {
-    // Intrinsics.checkParameterIsNotNull(hgcSeed, "hgcSeed");
     super();
     this.servicesSeed = servicesSeed;
   }

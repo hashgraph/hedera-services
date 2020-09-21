@@ -273,11 +273,7 @@
                 <li>
                   <a href="#proto.TokenRef"><span class="badge">M</span>TokenRef</a>
                 </li>
-              
-                <li>
-                  <a href="#proto.TokenRelationship"><span class="badge">M</span>TokenRelationship</a>
-                </li>
-              
+
                 <li>
                   <a href="#proto.TopicID"><span class="badge">M</span>TopicID</a>
                 </li>
@@ -692,7 +688,11 @@
                   <a href="#proto.CryptoGetInfoResponse.AccountInfo"><span class="badge">M</span>CryptoGetInfoResponse.AccountInfo</a>
                 </li>
               
-              
+                <li>
+                  <a href="#proto.TokenRelationship"><span class="badge">M</span>TokenRelationship</a>
+                </li>
+
+
               
               
             </ul>
@@ -1207,11 +1207,11 @@
         
           
           <li>
-            <a href="#TokenBurnCoins.proto">TokenBurnCoins.proto</a>
+            <a href="#TokenBurn.proto">TokenBurn.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenBurnCoins"><span class="badge">M</span>TokenBurnCoins</a>
+                  <a href="#proto.TokenBurnTransactionBody"><span class="badge">M</span>TokenBurnTransactionBody</a>
                 </li>
               
               
@@ -1241,7 +1241,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenDeletion"><span class="badge">M</span>TokenDeletion</a>
+                  <a href="#proto.TokenDeleteTransactionBody"><span class="badge">M</span>TokenDeleteTransactionBody</a>
                 </li>
               
               
@@ -1252,11 +1252,11 @@
         
           
           <li>
-            <a href="#TokenFreeze.proto">TokenFreeze.proto</a>
+            <a href="#TokenFreezeAccount.proto">TokenFreezeAccount.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenFreeze"><span class="badge">M</span>TokenFreeze</a>
+                  <a href="#proto.TokenFreezeAccountTransactionBody"><span class="badge">M</span>TokenFreezeAccountTransactionBody</a>
                 </li>
               
               
@@ -1294,7 +1294,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenGrantKyc"><span class="badge">M</span>TokenGrantKyc</a>
+                  <a href="#proto.TokenGrantKycTransactionBody"><span class="badge">M</span>TokenGrantKycTransactionBody</a>
                 </li>
               
               
@@ -1305,26 +1305,11 @@
         
           
           <li>
-            <a href="#TokenManagement.proto">TokenManagement.proto</a>
+            <a href="#TokenMint.proto">TokenMint.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenManagement"><span class="badge">M</span>TokenManagement</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#TokenMintCoins.proto">TokenMintCoins.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#proto.TokenMintCoins"><span class="badge">M</span>TokenMintCoins</a>
+                  <a href="#proto.TokenMintTransactionBody"><span class="badge">M</span>TokenMintTransactionBody</a>
                 </li>
               
               
@@ -1339,7 +1324,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenRevokeKyc"><span class="badge">M</span>TokenRevokeKyc</a>
+                  <a href="#proto.TokenRevokeKycTransactionBody"><span class="badge">M</span>TokenRevokeKycTransactionBody</a>
                 </li>
               
               
@@ -1369,7 +1354,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenTransfer"><span class="badge">M</span>TokenTransfer</a>
+                  <a href="#proto.TokenRefTransferList"><span class="badge">M</span>TokenRefTransferList</a>
                 </li>
               
                 <li>
@@ -1384,11 +1369,26 @@
         
           
           <li>
-            <a href="#TokenUnfreeze.proto">TokenUnfreeze.proto</a>
+            <a href="#TokenUnfreezeAccount.proto">TokenUnfreezeAccount.proto</a>
+            <ul>
+
+                <li>
+                  <a href="#proto.TokenUnfreezeAccountTransactionBody"><span class="badge">M</span>TokenUnfreezeAccountTransactionBody</a>
+                </li>
+
+
+
+
+            </ul>
+          </li>
+
+
+          <li>
+            <a href="#TokenUpdate.proto">TokenUpdate.proto</a>
             <ul>
               
                 <li>
-                  <a href="#proto.TokenUnfreeze"><span class="badge">M</span>TokenUnfreeze</a>
+                  <a href="#proto.TokenUpdateTransactionBody"><span class="badge">M</span>TokenUpdateTransactionBody</a>
                 </li>
               
               
@@ -1403,7 +1403,7 @@
             <ul>
               
                 <li>
-                  <a href="#proto.TokenWipeAccount"><span class="badge">M</span>TokenWipeAccount</a>
+                  <a href="#proto.TokenWipeAccountTransactionBody"><span class="badge">M</span>TokenWipeAccountTransactionBody</a>
                 </li>
               
               
@@ -2460,7 +2460,7 @@
         
       
         <h3 id="proto.TokenRef">TokenRef</h3>
-        <p></p>
+        <p>Reference for a Token. Tokens can be referenced with either TokenID or by Symbol</p>
 
         
           <table class="field-table">
@@ -2473,66 +2473,14 @@
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The ID of the Token </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="proto.TokenRelationship">TokenRelationship</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tokenId</td>
-                  <td><a href="#proto.TokenID">TokenID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>balance</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>symbol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycStatus</td>
-                  <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>freezeStatus</td>
-                  <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>The Symbol of the Token </p></td>
                 </tr>
               
             </tbody>
@@ -2877,31 +2825,31 @@
               <tr>
                 <td>ConsensusCreateTopic</td>
                 <td>50</td>
-                <td><p></p></td>
+                <td><p>Create Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusUpdateTopic</td>
                 <td>51</td>
-                <td><p></p></td>
+                <td><p>Update Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusDeleteTopic</td>
                 <td>52</td>
-                <td><p></p></td>
+                <td><p>Delete Topic</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusGetTopicInfo</td>
                 <td>53</td>
-                <td><p></p></td>
+                <td><p>Get Topic information</p></td>
               </tr>
             
               <tr>
                 <td>ConsensusSubmitMessage</td>
                 <td>54</td>
-                <td><p></p></td>
+                <td><p>Submit message to topic</p></td>
               </tr>
             
               <tr>
@@ -2913,80 +2861,80 @@
               <tr>
                 <td>TokenCreate</td>
                 <td>56</td>
-                <td><p></p></td>
+                <td><p>Create Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenTransact</td>
                 <td>57</td>
-                <td><p></p></td>
+                <td><p>Transfer Tokens</p></td>
               </tr>
             
               <tr>
                 <td>TokenGetInfo</td>
                 <td>58</td>
-                <td><p></p></td>
+                <td><p>Get token information</p></td>
               </tr>
             
               <tr>
                 <td>TokenFreezeAccount</td>
                 <td>59</td>
-                <td><p></p></td>
+                <td><p>Freeze Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenUnfreezeAccount</td>
                 <td>60</td>
-                <td><p></p></td>
+                <td><p>Unfreeze Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenGrantKycToAccount</td>
                 <td>61</td>
-                <td><p></p></td>
+                <td><p>Grant KYC to Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenRevokeKycFromAccount</td>
                 <td>62</td>
-                <td><p></p></td>
+                <td><p>Revoke KYC from Account</p></td>
               </tr>
             
               <tr>
                 <td>TokenDelete</td>
                 <td>63</td>
-                <td><p></p></td>
+                <td><p>Delete Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenUpdate</td>
                 <td>64</td>
-                <td><p></p></td>
+                <td><p>Update Token</p></td>
               </tr>
             
               <tr>
                 <td>TokenMint</td>
                 <td>65</td>
-                <td><p></p></td>
+                <td><p>Mint tokens to treasury</p></td>
               </tr>
             
               <tr>
                 <td>TokenBurn</td>
                 <td>66</td>
-                <td><p></p></td>
+                <td><p>Burn tokens from treasury</p></td>
               </tr>
             
               <tr>
                 <td>TokenAccountWipe</td>
                 <td>67</td>
-                <td><p></p></td>
+                <td><p>Wipe token amount from Account holder</p></td>
               </tr>
             
           </tbody>
         </table>
       
         <h3 id="proto.TokenFreezeStatus">TokenFreezeStatus</h3>
-        <p></p>
+        <p>Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3015,7 +2963,7 @@
         </table>
       
         <h3 id="proto.TokenKycStatus">TokenKycStatus</h3>
-        <p></p>
+        <p>Possible KYC statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -5118,7 +5066,7 @@ If unspecified, no change. </p></td>
                   <td>tokenRelationships</td>
                   <td><a href="#proto.TokenRelationship">TokenRelationship</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>All tokens related to this account </p></td>
                 </tr>
               
             </tbody>
@@ -5150,7 +5098,59 @@ If unspecified, no change. </p></td>
               </tbody>
             </table>
             
-          
+
+
+
+
+        <h3 id="proto.TokenRelationship">TokenRelationship</h3>
+        <p>Token's information related to the given Account</p>
+
+
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                  <td>tokenId</td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
+                  <td></td>
+                  <td><p>The ID of the token </p></td>
+                </tr>
+
+                <tr>
+                  <td>symbol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The Symbol of the token </p></td>
+                </tr>
+
+                <tr>
+                  <td>balance</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The balance that the Account holds in the smallest denomination </p></td>
+                </tr>
+
+                <tr>
+                  <td>kycStatus</td>
+                  <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
+                  <td></td>
+                  <td><p>The KYC status of the account (KycNotApplicable, Granted or Revoked). If the token does not have KYC key, KycNotApplicable is returned </p></td>
+                </tr>
+
+                <tr>
+                  <td>freezeStatus</td>
+                  <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
+                  <td></td>
+                  <td><p>The Freeze status of the account (FreezeNotApplicable, Frozen or Unfrozen). If the token does not have Freeze key, FreezeNotApplicable is returned </p></td>
+                </tr>
+
+            </tbody>
+          </table>
+
+
 
         
       
@@ -7017,7 +7017,7 @@ If unspecified, no change. </p></td>
                   <td>tokenGetInfo</td>
                   <td><a href="#proto.TokenGetInfoQuery">TokenGetInfoQuery</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get all information about a token </p></td>
                 </tr>
               
             </tbody>
@@ -7261,7 +7261,7 @@ If unspecified, no change. </p></td>
                   <td>tokenGetInfo</td>
                   <td><a href="#proto.TokenGetInfoResponse">TokenGetInfoResponse</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Get all information about a token </p></td>
                 </tr>
               
             </tbody>
@@ -7988,7 +7988,7 @@ If unspecified, no change. </p></td>
               <tr>
                 <td>UNAUTHORIZED</td>
                 <td>157</td>
-                <td><p>An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey, a tokenUpdate or tokenDelete for token with no adminKey).</p></td>
+                <td><p>An attempted operation was not authorized (ie - a deleteTopic for a topic with no adminKey).</p></td>
               </tr>
             
               <tr>
@@ -8032,13 +8032,13 @@ by HAPI.</p></td>
               <tr>
                 <td>ACCOUNT_FROZEN_FOR_TOKEN</td>
                 <td>165</td>
-                <td><p></p></td>
+                <td><p>Account is frozen and cannot transact with the token</p></td>
               </tr>
             
               <tr>
                 <td>TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED</td>
                 <td>166</td>
-                <td><p></p></td>
+                <td><p>Maximum number of token relations for agiven account is exceeded</p></td>
               </tr>
             
               <tr>
@@ -8062,43 +8062,43 @@ by HAPI.</p></td>
               <tr>
                 <td>INVALID_TREASURY_ACCOUNT_FOR_TOKEN</td>
                 <td>170</td>
-                <td><p></p></td>
+                <td><p>Treasury Account does not exist or is deleted</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_SYMBOL</td>
                 <td>171</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is not UTF-8 alphanumeric uppercase string</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_FREEZE_KEY</td>
                 <td>172</td>
-                <td><p></p></td>
+                <td><p>Freeze key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN</td>
                 <td>173</td>
-                <td><p></p></td>
+                <td><p>Amounts in transfer list are not net zero</p></td>
               </tr>
             
               <tr>
                 <td>MISSING_TOKEN_SYMBOL</td>
                 <td>174</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_TOO_LONG</td>
                 <td>175</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is too long</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_SYMBOL_ALREADY_IN_USE</td>
                 <td>176</td>
-                <td><p></p></td>
+                <td><p>Token Symbol is already used</p></td>
               </tr>
             
               <tr>
@@ -8110,37 +8110,37 @@ by HAPI.</p></td>
               <tr>
                 <td>ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</td>
                 <td>178</td>
-                <td><p></p></td>
+                <td><p>KYC must be granted and account does not have KYC granted</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_KYC_KEY</td>
                 <td>179</td>
-                <td><p></p></td>
+                <td><p>KYC key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>INSUFFICIENT_TOKEN_BALANCE</td>
                 <td>180</td>
-                <td><p></p></td>
+                <td><p>Token balance is not sufficient for the transaction</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_WAS_DELETED</td>
                 <td>181</td>
-                <td><p></p></td>
+                <td><p>Token transactions cannot be executed on deleted token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_SUPPLY_KEY</td>
                 <td>182</td>
-                <td><p></p></td>
+                <td><p>Supply key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_WIPE_KEY</td>
                 <td>183</td>
-                <td><p></p></td>
+                <td><p>Wipe key is not set on token</p></td>
               </tr>
             
               <tr>
@@ -8164,7 +8164,7 @@ by HAPI.</p></td>
               <tr>
                 <td>CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</td>
                 <td>187</td>
-                <td><p></p></td>
+                <td><p>Cannot execute wipe operation on treasury account</p></td>
               </tr>
             
               <tr>
@@ -8192,53 +8192,35 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>INVALID_TOKEN_TRANSFER_AMOUNT</td>
-                <td>192</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>TOKEN_NAME_ALREADY_IN_USE</td>
-                <td>193</td>
-                <td><p></p></td>
+                <td>192</td>
+                <td><p>Token Name is already used</p></td>
               </tr>
             
               <tr>
                 <td>MISSING_TOKEN_NAME</td>
-                <td>194</td>
-                <td><p></p></td>
+                <td>193</td>
+                <td><p>Token Name is not provided</p></td>
               </tr>
-
+            
               <tr>
                 <td>TOKEN_NAME_TOO_LONG</td>
-                <td>195</td>
-                <td><p></p></td>
+                <td>194</td>
+                <td><p>Token name is too long</p></td>
               </tr>
-
+            
               <tr>
                 <td>INVALID_WIPING_AMOUNT</td>
-                <td>196</td>
-                <td><p></p></td>
+                <td>195</td>
+                <td><p>The provided wipe amount must not be negative, zero or bigger than the token holder balance</p></td>
               </tr>
-
-              <tr>
-                <td>INVALID_TOKEN_EXPIRY</td>
-                <td>197</td>
-                <td><p></p></td>
-              </tr>
-
-              <tr>
-                <td>TOKEN_HAS_EXPIRED</td>
-                <td>198</td>
-                <td><p></p></td>
-              </tr>
-
+            
               <tr>
                 <td>TOKEN_IS_IMMUTABlE</td>
-                <td>199</td>
-                <td><p></p></td>
+                <td>196</td>
+                <td><p>Token does not have Admin key set, thus update/delete transactions cannot be performed</p></td>
               </tr>
-
+            
           </tbody>
         </table>
       
@@ -8577,13 +8559,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenBurnCoins.proto">TokenBurnCoins.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenBurn.proto">TokenBurn.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenBurnCoins">TokenBurnCoins</h3>
-        <p></p>
+        <h3 id="proto.TokenBurnTransactionBody">TokenBurnTransactionBody</h3>
+        <p>Burns tokens from the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.</p><p>The operation decreases the Total Supply of the Token. Total supply cannot go below zero.</p>
 
         
           <table class="field-table">
@@ -8596,14 +8578,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which to burn tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>amount</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The amount to burn from the Treasury Account. Amount must be a positive non-zero number, not bigger than the token balance of the treasury account (0; balance] </p></td>
                 </tr>
               
             </tbody>
@@ -8643,7 +8625,7 @@ by HAPI.</p></td>
                   <td></td>
                   <td><p>The publicly visible name of the token, specified as a string of only ASCII characters. Must be unique </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
@@ -8657,7 +8639,7 @@ by HAPI.</p></td>
                   <td></td>
                   <td><p>The number of decimal places a token is divisible by. This field can never be changed! </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>initialSupply</td>
                   <td><a href="#uint64">uint64</a></td>
@@ -8676,14 +8658,14 @@ by HAPI.</p></td>
                   <td>adminKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p>The key which can perform update operations on the token. If empty, the token can be perceived as immutable (not being able to be updated) </p></td>
+                  <td><p>The key which can perform update/delete operations on the token. If empty, the token can be perceived as immutable (not being able to be updated/deleted) </p></td>
                 </tr>
               
                 <tr>
                   <td>kycKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p>The key which can grant or revoke KYC of an account for the token&#39;s transactions. If empty, KYC grant is given to every account, and KYC grant or revoke to an account is not possible. </p></td>
+                  <td><p>The key which can grant or revoke KYC of an account for the token&#39;s transactions. If empty, KYC is not required, and KYC grant or revoke operations are not possible. </p></td>
                 </tr>
               
                 <tr>
@@ -8704,7 +8686,7 @@ by HAPI.</p></td>
                   <td>supplyKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p>The key which can change the supply of a token, meaning that this key is required for Token Mint/Burn operations </p></td>
+                  <td><p>The key which can change the supply of a token. The key is used to sign Token Mint/Burn operations </p></td>
                 </tr>
               
                 <tr>
@@ -8718,14 +8700,14 @@ by HAPI.</p></td>
                   <td>expiry</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>The epoch second at which the the token should expiry; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
+                  <td><p>The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p>An account which will be automatically charged to renew the token&#39;s expiration, at an interval given by the autoRenewPeriod below </p></td>
+                  <td><p>An account which will be automatically charged to renew the token&#39;s expiration, at autoRenewPeriod interval </p></td>
                 </tr>
               
                 <tr>
@@ -8756,8 +8738,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenDeletion">TokenDeletion</h3>
-        <p></p>
+        <h3 id="proto.TokenDeleteTransactionBody">TokenDeleteTransactionBody</h3>
+        <p>Marks a token as deleted, though it will remain in the ledger.</p><p>The operation must be signed by the specified Admin Key of the Token. If admin key is not set, Transaction will result in TOKEN_IS_IMMUTABlE.</p><p>Once deleted update, mint, burn, wipe, freeze, unfreeze, grant kyc, revoke kyc and token transfer transactions will resolve to TOKEN_WAS_DELETED.</p>
 
         
           <table class="field-table">
@@ -8770,7 +8752,7 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token to be deleted. If invalid token is specified, transaction will result in INVALID_TOKEN_REF </p></td>
                 </tr>
               
             </tbody>
@@ -8789,13 +8771,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenFreeze.proto">TokenFreeze.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenFreezeAccount.proto">TokenFreezeAccount.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenFreeze">TokenFreeze</h3>
-        <p></p>
+        <h3 id="proto.TokenFreezeAccountTransactionBody">TokenFreezeAccountTransactionBody</h3>
+        <p>Freezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.</p><p>Once executed the Account is marked as Frozen and he will not be able to receive or send tokens unless unfrozen. The operation is idempotent.</p>
 
         
           <table class="field-table">
@@ -8808,14 +8790,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be frozen. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be frozen </p></td>
                 </tr>
               
             </tbody>
@@ -8840,7 +8822,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenGetInfoQuery">TokenGetInfoQuery</h3>
-        <p></p>
+        <p>Gets information about Token instance</p>
 
         
           <table class="field-table">
@@ -8853,14 +8835,14 @@ by HAPI.</p></td>
                   <td>header</td>
                   <td><a href="#proto.QueryHeader">QueryHeader</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither) </p></td>
                 </tr>
               
                 <tr>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which information is requested. If invalid token is provided, INVALID_TOKEN_REF response is returned. </p></td>
                 </tr>
               
             </tbody>
@@ -8871,7 +8853,7 @@ by HAPI.</p></td>
         
       
         <h3 id="proto.TokenGetInfoResponse">TokenGetInfoResponse</h3>
-        <p></p>
+        <p>Response when the client sends the node TokenGetInfoQuery</p>
 
         
           <table class="field-table">
@@ -8884,14 +8866,14 @@ by HAPI.</p></td>
                   <td>header</td>
                   <td><a href="#proto.ResponseHeader">ResponseHeader</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Standard response from node to client, including the requested fields: cost, or state proof, or both, or neither </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenInfo</td>
                   <td><a href="#proto.TokenInfo">TokenInfo</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The information requested about this token instance </p></td>
                 </tr>
               
             </tbody>
@@ -8902,7 +8884,7 @@ by HAPI.</p></td>
         
       
         <h3 id="proto.TokenInfo">TokenInfo</h3>
-        <p></p>
+        <p>The metadata about a Token instance</p>
 
         
           <table class="field-table">
@@ -8915,119 +8897,119 @@ by HAPI.</p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>ID of the token instance </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The unique name of the token. It is a string of ASCII only characters </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-
-                <tr>
-                  <td>treasury</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>totalSupply</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>The unique symbol of the token. It is a UTF-8 alphanumeric string </p></td>
                 </tr>
               
                 <tr>
                   <td>decimals</td>
                   <td><a href="#uint32">uint32</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The number of decimal places a token is divisible by </p></td>
+                </tr>
+              
+                <tr>
+                  <td>totalSupply</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The total supply of tokens that are currently in circulation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>treasury</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The ID of the account which is set as Treasury </p></td>
                 </tr>
               
                 <tr>
                   <td>adminKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The key which can perform update/delete operations on the token. If empty, the token can be perceived as immutable (not being able to be updated/deleted) </p></td>
                 </tr>
               
                 <tr>
                   <td>kycKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The key which can grant or revoke KYC of an account for the token&#39;s transactions. If empty, KYC is not required, and KYC grant or revoke operations are not possible. </p></td>
                 </tr>
               
                 <tr>
                   <td>freezeKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The key which can freeze or unfreeze an account for token transactions. If empty, freezing is not possible </p></td>
                 </tr>
               
                 <tr>
                   <td>wipeKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The key which can wipe token balance of an account. If empty, wipe is not possible </p></td>
                 </tr>
               
                 <tr>
                   <td>supplyKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The key which can change the supply of a token. The key is used to sign Token Mint/Burn operations </p></td>
                 </tr>
               
                 <tr>
                   <td>defaultFreezeStatus</td>
                   <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The default Freeze status (not applicable, frozen or unfrozen) of Hedera accounts relative to this token. FreezeNotApplicable is returned if Token Freeze Key is empty. Frozen is returned if Token Freeze Key is set and defaultFreeze is set to true. Unfrozen is returned if Token Freeze Key is set and defaultFreeze is set to false </p></td>
                 </tr>
               
                 <tr>
                   <td>defaultKycStatus</td>
                   <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The default KYC status (KycNotApplicable or Revoked) of Hedera accounts relative to this token. KycNotApplicable is returned if KYC key is not set, otherwise Revoked </p></td>
                 </tr>
               
                 <tr>
                   <td>isDeleted</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Specifies whether the token was deleted or not </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>An account which will be automatically charged to renew the token&#39;s expiration, at autoRenewPeriod interval </p></td>
                 </tr>
               
                 <tr>
                   <td>autoRenewPeriod</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The interval at which the auto-renew account will be charged to extend the token&#39;s expiry </p></td>
                 </tr>
               
                 <tr>
                   <td>expiry</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The epoch second at which the token will expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod </p></td>
                 </tr>
               
             </tbody>
@@ -9051,8 +9033,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenGrantKyc">TokenGrantKyc</h3>
-        <p></p>
+        <h3 id="proto.TokenGrantKycTransactionBody">TokenGrantKycTransactionBody</h3>
+        <p>Grants KYC to the account for the given token. Must be signed by the Token's kycKey. If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.</p><p>Once executed the Account is marked as KYC Granted.</p>
 
         
           <table class="field-table">
@@ -9065,14 +9047,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be granted KYC. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be KYCed </p></td>
                 </tr>
               
             </tbody>
@@ -9091,13 +9073,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenManagement.proto">TokenManagement.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenMint.proto">TokenMint.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenManagement">TokenManagement</h3>
-        <p></p>
+        <h3 id="proto.TokenMintTransactionBody">TokenMintTransactionBody</h3>
+        <p>Mints tokens to the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.</p><p>The operation increases the Total Supply of the Token. The maximum total supply a token can have is 2^63-1.</p>
 
         
           <table class="field-table">
@@ -9110,129 +9092,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>treasury</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>adminKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kycKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>freezeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>wipeKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>supplyKey</td>
-                  <td><a href="#proto.Key">Key</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>symbol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-
-                <tr>
-                  <td>autoRenewAccount</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>autoRenewPeriod</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expiry</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="TokenMintCoins.proto">TokenMintCoins.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="proto.TokenMintCoins">TokenMintCoins</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which to mint tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>amount</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The amount to mint to the Treasury Account. Amount must be a positive non-zero number, such that the new supply is lower than 2^63 </p></td>
                 </tr>
               
             </tbody>
@@ -9256,8 +9123,8 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenRevokeKyc">TokenRevokeKyc</h3>
-        <p></p>
+        <h3 id="proto.TokenRevokeKycTransactionBody">TokenRevokeKycTransactionBody</h3>
+        <p>Revokes KYC to the account for the given token. Must be signed by the Token's kycKey. If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.</p><p>Once executed the Account is marked as KYC Revoked</p>
 
         
           <table class="field-table">
@@ -9270,14 +9137,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be KYC Revoked </p></td>
                 </tr>
               
             </tbody>
@@ -9384,7 +9251,7 @@ by HAPI.</p></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
                 <td><p>Removes the KYC flag of the provided Account ID</p></td>
               </tr>
-
+            
               <tr>
                 <td>transferTokens</td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
@@ -9411,7 +9278,7 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenTransfer">TokenTransfer</h3>
+        <h3 id="proto.TokenRefTransferList">TokenRefTransferList</h3>
         <p></p>
 
         
@@ -9422,23 +9289,16 @@ by HAPI.</p></td>
             <tbody>
               
                 <tr>
-                  <td>account</td>
-                  <td><a href="#proto.AccountID">AccountID</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>amount</td>
-                  <td><a href="#sint64">sint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>transfers</td>
+                  <td><a href="#proto.AccountAmount">AccountAmount</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -9460,8 +9320,8 @@ by HAPI.</p></td>
             <tbody>
               
                 <tr>
-                  <td>transfers</td>
-                  <td><a href="#proto.TokenTransfer">TokenTransfer</a></td>
+                  <td>tokenTransfers</td>
+                  <td><a href="#proto.TokenRefTransferList">TokenRefTransferList</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -9482,13 +9342,13 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenUnfreeze.proto">TokenUnfreeze.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenUnfreezeAccount.proto">TokenUnfreezeAccount.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenUnfreeze">TokenUnfreeze</h3>
-        <p></p>
+        <h3 id="proto.TokenUnfreezeAccountTransactionBody">TokenUnfreezeAccountTransactionBody</h3>
+        <p>Unfreezes transfers of the specified token for the account. Must be signed by the Token's freezeKey. If no Freeze Key is defined, the transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY.</p><p>Once executed the Account is marked as Unfrozen and will be able to receive or send tokens. The operation is idempotent.</p>
 
         
           <table class="field-table">
@@ -9501,14 +9361,14 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which this account will be unfrozen. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be unfrozen </p></td>
                 </tr>
               
             </tbody>
@@ -9527,15 +9387,130 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="TokenWipeAccount.proto">TokenWipeAccount.proto</h2><a href="#title">Top</a>
+        <h2 id="TokenUpdate.proto">TokenUpdate.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
       
-        <h3 id="proto.TokenWipeAccount">TokenWipeAccount</h3>
-        <p></p>
+        <h3 id="proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</h3>
+        <p>Updates an already created Token.</p><p>If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.</p>
 
-        
+
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                  <td>token</td>
+                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td></td>
+                  <td><p>The Token to be updated </p></td>
+                </tr>
+
+                <tr>
+                  <td>symbol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new Symbol of the Token. Must be a unique, case-insensitive UTF-8 alphanumeric string identifying the token. </p></td>
+                </tr>
+
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new Name of the Token. Must be a unique string of ASCII characters. </p></td>
+                </tr>
+
+                <tr>
+                  <td>treasury</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one. </p></td>
+                </tr>
+
+                <tr>
+                  <td>adminKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE. </p></td>
+                </tr>
+
+                <tr>
+                  <td>kycKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY. </p></td>
+                </tr>
+
+                <tr>
+                  <td>freezeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Freeze key of the Token. If the Token does not have currently a Freeze key, transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY. </p></td>
+                </tr>
+
+                <tr>
+                  <td>wipeKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY. </p></td>
+                </tr>
+
+                <tr>
+                  <td>supplyKey</td>
+                  <td><a href="#proto.Key">Key</a></td>
+                  <td></td>
+                  <td><p>The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY. </p></td>
+                </tr>
+
+                <tr>
+                  <td>autoRenewAccount</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p>The new account which will be automatically charged to renew the token&#39;s expiration, at autoRenewPeriod interval. </p></td>
+                </tr>
+
+                <tr>
+                  <td>autoRenewPeriod</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The new interval at which the auto-renew account will be charged to extend the token&#39;s expiry. </p></td>
+                </tr>
+
+                <tr>
+                  <td>expiry</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p>The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME </p></td>
+                </tr>
+
+            </tbody>
+          </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <div class="file-heading">
+        <h2 id="TokenWipeAccount.proto">TokenWipeAccount.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+
+        <h3 id="proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</h3>
+        <p>Wipes the provided amount of tokens from the specified Account. Must be signed by the Token's Wipe key.</p><p>If Wipe Key is not present in the Token, transaction results in TOKEN_HAS_NO_WIPE_KEY.</p><p>If the provided account is the Token's Treasury Account, transaction results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</p><p>If the provided account does not have a relation with the provided Token, transaction results in ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP.</p><p>On success, tokens are removed from the account and the total supply of the token is decreased by the wiped amount.</p>
+
+
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
@@ -9546,23 +9521,23 @@ by HAPI.</p></td>
                   <td>token</td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The token for which the account will be wiped. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
               
                 <tr>
                   <td>account</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The account to be wiped </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>amount</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The amount of tokens to wipe from the specified account. Amount must be a positive non-zero number, not bigger than the token balance of the account (0; balance] </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -9844,28 +9819,28 @@ by HAPI.</p></td>
                   <td>consensusCreateTopic</td>
                   <td><a href="#proto.ConsensusCreateTopicTransactionBody">ConsensusCreateTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Creates a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusUpdateTopic</td>
                   <td><a href="#proto.ConsensusUpdateTopicTransactionBody">ConsensusUpdateTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Updates a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusDeleteTopic</td>
                   <td><a href="#proto.ConsensusDeleteTopicTransactionBody">ConsensusDeleteTopicTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deletes a topic </p></td>
                 </tr>
               
                 <tr>
                   <td>consensusSubmitMessage</td>
                   <td><a href="#proto.ConsensusSubmitMessageTransactionBody">ConsensusSubmitMessageTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Submits message to a topic </p></td>
                 </tr>
               
                 <tr>
@@ -9879,77 +9854,77 @@ by HAPI.</p></td>
                   <td>tokenCreation</td>
                   <td><a href="#proto.TokenCreateTransactionBody">TokenCreateTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Creates a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenTransfers</td>
                   <td><a href="#proto.TokenTransfers">TokenTransfers</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Transfers tokens between accounts </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenFreeze</td>
-                  <td><a href="#proto.TokenFreeze">TokenFreeze</a></td>
+                  <td><a href="#proto.TokenFreezeAccountTransactionBody">TokenFreezeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Freezes account not to be able to transact with a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenUnfreeze</td>
-                  <td><a href="#proto.TokenUnfreeze">TokenUnfreeze</a></td>
+                  <td><a href="#proto.TokenUnfreezeAccountTransactionBody">TokenUnfreezeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Unfreezes account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenGrantKyc</td>
-                  <td><a href="#proto.TokenGrantKyc">TokenGrantKyc</a></td>
+                  <td><a href="#proto.TokenGrantKycTransactionBody">TokenGrantKycTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Grants KYC to an account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenRevokeKyc</td>
-                  <td><a href="#proto.TokenRevokeKyc">TokenRevokeKyc</a></td>
+                  <td><a href="#proto.TokenRevokeKycTransactionBody">TokenRevokeKycTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Revokes KYC of an account for a token </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenDeletion</td>
-                  <td><a href="#proto.TokenDeletion">TokenDeletion</a></td>
+                  <td><a href="#proto.TokenDeleteTransactionBody">TokenDeleteTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deletes a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenUpdate</td>
-                  <td><a href="#proto.TokenManagement">TokenManagement</a></td>
+                  <td><a href="#proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Updates a token instance </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenMint</td>
-                  <td><a href="#proto.TokenMintCoins">TokenMintCoins</a></td>
+                  <td><a href="#proto.TokenMintTransactionBody">TokenMintTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Mints new tokens to a token&#39;s treasury account </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenBurn</td>
-                  <td><a href="#proto.TokenBurnCoins">TokenBurnCoins</a></td>
+                  <td><a href="#proto.TokenBurnTransactionBody">TokenBurnTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Burns tokens from a token&#39;s treasury account </p></td>
                 </tr>
               
                 <tr>
                   <td>tokenWipe</td>
-                  <td><a href="#proto.TokenWipeAccount">TokenWipeAccount</a></td>
+                  <td><a href="#proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Wipes amount of tokens from an account </p></td>
                 </tr>
               
             </tbody>

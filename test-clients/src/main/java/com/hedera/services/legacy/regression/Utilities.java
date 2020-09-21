@@ -60,11 +60,6 @@ public class Utilities {
           CryptoServiceGrpc.CryptoServiceBlockingStub stub, KeyPair firstPair) throws Exception {
     AccountID newAccount = RequestBuilder.getAccountIdBuild(accountNum, realmNum, shardNum);
 
-    // create 1st account by payer as genesis
-//        KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
-		/*Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-				Collections.singletonList(genesisPrivateKey));*/
-
     Transaction transaction;
     while (true) {
       transaction = TestHelper
@@ -133,8 +128,6 @@ public class Utilities {
     Transaction transaction = TestHelper
             .createAccountWithFee(payerAccount, newAccount, firstPair, 10000000l,
                     Collections.singletonList(genesisPrivateKey));
-    //	Transaction signTransaction = TransactionSigner.signTransaction(transaction,Collections.singletonList(genesisPrivateKey));
-
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<TransactionResponse>() {
 
       @Override
@@ -173,8 +166,6 @@ public class Utilities {
         } else {
           Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
         }
-        // log.info("Pre Check Response of Create first account :: " +
-        // response.getNodeTransactionPrecheckCode().name());
       }
     }
 
@@ -193,7 +184,6 @@ public class Utilities {
       Query query = TestHelper.getTxRecordByTxId(tranID, payerAccount, payerKey, nodeAccount, queryFee,
               ResponseType.ANSWER_ONLY);
       Response transactionRecord = stub.getTxRecordByTxID(query);
-      //log.info(" transactionRecord " + transactionRecord.toString());
       Assert.assertNotNull(transactionRecord);
       Assert.assertNotNull(transactionRecord.getTransactionGetRecord());
 

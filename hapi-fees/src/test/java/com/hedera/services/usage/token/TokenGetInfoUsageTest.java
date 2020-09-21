@@ -1,21 +1,12 @@
 package com.hedera.services.usage.token;
 
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TokenGetInfo;
 
 import static org.junit.Assert.*;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenManagement;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,14 +15,8 @@ import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
-import static com.hedera.services.test.KeyUtils.A_KEY_LIST;
-import static com.hedera.services.test.KeyUtils.C_COMPLEX_KEY;
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static org.junit.Assert.*;
-import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 public class TokenGetInfoUsageTest {

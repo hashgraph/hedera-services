@@ -437,65 +437,6 @@ public class Reference {
 		}
 		return lowercasedWords;
 	}
-
-	// /**
-	// * This is only used for testing this class. It should probably be deleted at some point.
-	// * @param args ignored
-	// */
-	// private static void main(String[] args) {
-	// Random rnd = new Random(123);
-	// Reference ref;
-	// byte[] data;
-	//
-	// for (int i=16; i<=32; i+=16 ) {
-	// String strString, str62, strWords;
-	//
-	// data = new byte[i];
-	// rnd.nextBytes(data);
-	// ref = new Reference(data);
-	// strString=ref.toString();
-	// System.out.println("toString() = " + strString);
-	//
-	// str62=ref.to62();
-	// System.out.println("to62() = " + str62);
-	//
-	// //str62 = str62.substring(0, 5) + "X" + str62.substring(6);
-	// Reference newRef = new Reference(str62);
-	// byte[] newRefBytes = newRef.toBytes();
-	// String roundTrip62 = new Reference(newRefBytes).to62();
-	// System.out.println("RT to62() = " + roundTrip62);
-	//
-	// strWords=ref.toWords(" "," ","\n","\n","");
-	// System.out.println("toWords() = \n" + strWords);
-	//
-	//
-	// //strWords = strWords.substring(0, 5) + "X" + strWords.substring(6);
-	// Reference newRef2 = new Reference(strWords);
-	// String strWords2 = newRef2.toWords(" "," ","\n","");
-	// System.out.println("RT toWords() = \n" + strWords2);
-	//
-	// System.out.println();;
-	// System.out.println("number of words: "+words.size());
-	//
-	// str62=ref.to62();
-	// System.out.println("to62() = " + str62);
-	// data[5] ^= 16;
-	// Reference ref3 = new Reference(data);
-	// System.out.println("to62() = " + ref3.to62());
-	// }
-	//
-	// Class<?> main = null;
-	// try {
-	// Class.forName("com.swirlds.demos.ServerDemoMain");
-	// } catch(Exception e) {
-	// Platform.log(e,"");
-	// }
-	// System.out.println("Found class "+main);
-	// }
-
-	// {
-	// System.out.println("WordList.words.size(): " + WordList.words.size());
-	// }
 }
 
 class WordList {

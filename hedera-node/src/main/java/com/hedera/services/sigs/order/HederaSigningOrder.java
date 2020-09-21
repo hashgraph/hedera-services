@@ -580,7 +580,7 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> tokenUpdates(
 			TransactionID txnId,
-			TokenManagement op,
+			TokenUpdateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
@@ -588,12 +588,12 @@ public class HederaSigningOrder {
 		var required = basic.getOrderedKeys();
 		if (!addAutoRenew(
 				op,
-				TokenManagement::hasAutoRenewAccount,
-				TokenManagement::getAutoRenewAccount,
+				TokenUpdateTransactionBody::hasAutoRenewAccount,
+				TokenUpdateTransactionBody::getAutoRenewAccount,
 				required)) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
-		addToMutableReqIfPresent(op, TokenManagement::hasAdminKey, TokenManagement::getAdminKey, required);
+		addToMutableReqIfPresent(op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey, required);
 		return basic;
 	}
 

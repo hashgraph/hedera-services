@@ -28,7 +28,7 @@ import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -79,10 +79,10 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var tId = TxnUtils.asTokenId(token, spec);
 		var aId = TxnUtils.asId(account, spec);
-		TokenWipeAccount opBody = spec
+		TokenWipeAccountTransactionBody opBody = spec
 				.txns()
-				.<TokenWipeAccount, TokenWipeAccount.Builder>body(
-						TokenWipeAccount.class, b -> {
+				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(
+						TokenWipeAccountTransactionBody.class, b -> {
 							b.setToken(TxnUtils.asRef(tId));
 							b.setAccount(aId);
 							b.setAmount(amount);

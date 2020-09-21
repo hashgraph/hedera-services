@@ -156,7 +156,6 @@ public class FileServiceIT {
     String filePath = files[0];
     localPath = UPLOAD_PATH + filePath;
     byte[] bytes = CommonUtils.readBinaryFileAsResource(localPath, getClass());
-//		byte[] bytes = TestHelper.readFileContent(localPath).getBytes();
     fileData = ByteString.copyFrom(bytes);
   }
 
@@ -645,7 +644,6 @@ public class FileServiceIT {
     Transaction createAccountRequest = TestHelper
         .createAccountWithFee(payerAccount, defaultListeningNodeAccountID, pair,
             DEFAULT_INITIAL_ACCOUNT_BALANCE, getGenesisPrivateKeyList());
-    //  Transaction txFirstSigned = TransactionSigner.signTransaction(createAccountRequest, getGenesisPrivateKeyList());
 
     log.info("\n-----------------------------------");
     log.info("createAccount: request = " + createAccountRequest);

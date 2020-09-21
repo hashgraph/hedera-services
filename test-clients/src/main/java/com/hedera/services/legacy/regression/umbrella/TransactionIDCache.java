@@ -150,15 +150,16 @@ public class TransactionIDCache {
     evictExpiredTransactionIDsInReceiptQueue();
     TransactionID txId = txIdQueue4Receipt.poll();
     log.info("Retrieved and removed Tx ID :: {}", txId);
-    if(txId == null)
-      try {
-        log.info("wait for txID ...");
-        wait(POLL_TIMEOUT_MILLIS);
-        txId = txIdQueue4Receipt.poll();
-        log.info("awake, txID = {}", txId);
-      }  catch (InterruptedException e) {
-        log.error("Got exception waiting to poll oldest txID for receipt: ", e);
-      }
+    if(txId == null) {
+		try {
+		  log.info("wait for txID ...");
+		  wait(POLL_TIMEOUT_MILLIS);
+		  txId = txIdQueue4Receipt.poll();
+		  log.info("awake, txID = {}", txId);
+		}  catch (InterruptedException e) {
+		  log.error("Got exception waiting to poll oldest txID for receipt: ", e);
+		}
+	}
     return txId;
   }
 
@@ -251,15 +252,16 @@ public class TransactionIDCache {
     evictExpiredTransactionIDsInRecordQueue();
     TransactionID txId = txIdQueue4Record.poll();
     log.info("Retrieved and removed Tx ID :: " + txId);
-    if(txId == null)
-      try {
-        log.info("wait for txID ...");
-        wait(POLL_TIMEOUT_MILLIS);
-        txId = txIdQueue4Record.poll();
-        log.info("awake, txID = {}", txId);
-      } catch (InterruptedException e) {
-        log.error("Got exception waiting to poll oldest txID for record: ", e);
-      }
+    if(txId == null) {
+		try {
+		  log.info("wait for txID ...");
+		  wait(POLL_TIMEOUT_MILLIS);
+		  txId = txIdQueue4Record.poll();
+		  log.info("awake, txID = {}", txId);
+		} catch (InterruptedException e) {
+		  log.error("Got exception waiting to poll oldest txID for record: ", e);
+		}
+	}
     return txId;
   }
 }

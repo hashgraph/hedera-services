@@ -66,10 +66,11 @@ public class CryptoCreatePerformanceNew extends BaseClient {
       log.info("Create Account Request # " + (i + 1));
       AccountID accountID = createAccount(payerAccount, nodeAccount, 900000l,
           retrieveTxReceipt, goodResponse, badResponse, goodReceipt, badReceipt);
-      if (retrieveTxReceipt)
-        log.info("AccountID " + accountID);
-      else
-        log.info("Account creation tx submitted.");
+      if (retrieveTxReceipt) {
+		  log.info("AccountID " + accountID);
+	  } else {
+		  log.info("Account creation tx submitted.");
+	  }
     }
 
     long end = System.currentTimeMillis();

@@ -24,9 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TokenDeletion;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintCoins;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,7 +136,7 @@ class TokenMintTransitionLogicTest {
 
 	private void givenValidTxnCtx() {
 		tokenMintTxn = TransactionBody.newBuilder()
-				.setTokenMint(TokenMintCoins.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
 						.setToken(token)
 						.setAmount(amount))
 				.build();
