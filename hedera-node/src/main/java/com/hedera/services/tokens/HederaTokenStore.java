@@ -37,7 +37,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import java.math.BigInteger;
@@ -441,7 +441,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenManagement changes, long now) {
+	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		var tId = resolve(changes.getToken());
 		if (tId == MISSING_TOKEN) {
 			return INVALID_TOKEN_REF;
@@ -557,7 +557,7 @@ public class HederaTokenStore implements TokenStore {
 		return appliedValidity.get();
 	}
 
-	public static boolean affectsExpiryAtMost(TokenManagement op) {
+	public static boolean affectsExpiryAtMost(TokenUpdateTransactionBody op) {
 		return !op.hasAdminKey() &&
 				!op.hasKycKey() &&
 				!op.hasWipeKey() &&
@@ -571,7 +571,7 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum keyValidity(
-			TokenManagement op,
+			TokenUpdateTransactionBody op,
 			Optional<JKey> newKycKey,
 			Optional<JKey> newAdminKey,
 			Optional<JKey> newWipeKey,

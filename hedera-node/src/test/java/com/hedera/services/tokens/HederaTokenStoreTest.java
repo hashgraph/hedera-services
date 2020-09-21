@@ -31,16 +31,14 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -254,7 +252,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.delete(miscRef);
 
 		// then:
-		assertEquals(ResponseCodeEnum.UNAUTHORIZED, outcome);
+		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
 	}
 
 	@Test
@@ -904,7 +902,7 @@ class HederaTokenStoreTest {
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
 	private static EnumSet<KeyType> ALL_KEYS = EnumSet.allOf(KeyType.class);
 
-	private TokenManagement updateWith(
+	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
 			boolean useNewName,
@@ -913,7 +911,7 @@ class HederaTokenStoreTest {
 		return updateWith(keys, useNewName, useNewSymbol, useNewTreasury, false, false);
 	}
 
-	private TokenManagement updateWith(
+	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
 			boolean useNewName,
@@ -923,7 +921,7 @@ class HederaTokenStoreTest {
 		return updateWith(keys, useNewSymbol, useNewName, useNewTreasury, false, false, setInvalidKeys);
 	}
 
-	private TokenManagement updateWith(
+	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
 			boolean useNewName,
@@ -934,7 +932,7 @@ class HederaTokenStoreTest {
 		return updateWith(keys, useNewSymbol, useNewName, useNewTreasury, useNewAutoRenewAccount, useNewAutoRenewPeriod, false);
 	}
 
-	private TokenManagement updateWith(
+	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
 			boolean useNewName,
@@ -944,7 +942,7 @@ class HederaTokenStoreTest {
 			boolean setInvalidKeys
 	) {
 		var invalidKey = Key.getDefaultInstance();
-		var op = TokenManagement.newBuilder().setToken(miscRef);
+		var op = TokenUpdateTransactionBody.newBuilder().setToken(miscRef);
 		if (useNewSymbol) {
 			op.setSymbol(newSymbol);
 		}

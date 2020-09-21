@@ -21,7 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenGrantKyc;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -54,7 +54,7 @@ public class TokenGrantKycFactory extends SignedTxnFactory<TokenGrantKycFactory>
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenGrantKyc.newBuilder()
+		var op = TokenGrantKycTransactionBody.newBuilder()
 				.setToken(ref)
 				.setAccount(to);
 		txn.setTokenGrantKyc(op);
