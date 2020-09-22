@@ -64,11 +64,11 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	private HapiApiSpec cryptoCreateRecordSanityChecks() {
 		return defaultHapiSpec("CryptoCreateRecordSanityChecks")
 				.given(
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS)
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				).when(
 						cryptoCreate("test").via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of("test", FUNDING, NODE, GENESIS)),
+						validateTransferListForBalances("txn", List.of("test", FUNDING, NODE, DEFAULT_PAYER)),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -77,13 +77,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
 				.given(flattened(
 						cryptoCreate("test"),
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "test")
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "test")
 				)).when(
-						cryptoDelete("test").via("txn").transfer(GENESIS)
+						cryptoDelete("test").via("txn").transfer(DEFAULT_PAYER)
 				).then(
 						validateTransferListForBalances(
 								"txn",
-								List.of(FUNDING, NODE, GENESIS, "test"),
+								List.of(FUNDING, NODE, DEFAULT_PAYER, "test"),
 								Set.of("test")),
 						validateRecordTransactionFees("txn")
 				);
@@ -93,13 +93,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("CryptoTransferRecordSanityChecks")
 				.given(flattened(
 						cryptoCreate("a").balance(100_000L),
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "a")
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "a")
 				)).when(
 						cryptoTransfer(
-								tinyBarsFromTo(GENESIS, "a", 1_234L)
+								tinyBarsFromTo(DEFAULT_PAYER, "a", 1_234L)
 						).via("txn")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "a")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "a")),
 						validateRecordTransactionFees("txn")
 				);
 	}
@@ -109,11 +109,11 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						cryptoCreate("test"),
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
-						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "test")
+						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER, "test")
 				)).when(
 						cryptoUpdate("test").key("newKey").via("txn").fee(500_000L).payingWith("test")
 				).then(
-						validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "test")),
+						validateTransferListForBalances("txn", List.of(FUNDING, NODE, DEFAULT_PAYER, "test")),
 						validateRecordTransactionFees("txn")
 				);
 	}
