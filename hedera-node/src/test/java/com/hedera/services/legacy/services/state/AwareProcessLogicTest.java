@@ -20,6 +20,7 @@ package com.hedera.services.legacy.services.state;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -82,6 +83,7 @@ class AwareProcessLogicTest {
 	ServicesContext ctx;
 	TransactionContext txnCtx;
 	TransactionBody txnBody;
+	TransactionBody nonMockTxnBody;
 	SmartContractRequestHandler contracts;
 	HederaFs hfs;
 
@@ -114,11 +116,11 @@ class AwareProcessLogicTest {
 		txnBody = mock(TransactionBody.class);
 		contracts = mock(SmartContractRequestHandler.class);
 		mockLog = mock(Logger.class);
-		TransactionBody txnBody = TransactionBody.newBuilder()
+		nonMockTxnBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 								.setAccountID(IdUtils.asAccount("0.0.2"))).build();
 		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-				.setBodyBytes(txnBody.toByteString())
+				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 
 		AwareProcessLogic.log = mockLog;
@@ -159,6 +161,7 @@ class AwareProcessLogicTest {
 		final TransactionID txnId = mock(TransactionID.class);
 
 		given(txnAccessor.getSignedTxn()).willReturn(signedTxn);
+		given(signedTxn.getSignedTransactionBytes()).willReturn(ByteString.EMPTY);
 		given(txnAccessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getTransactionID()).willReturn(txnId);
 		given(txnBody.getTransactionValidDuration()).willReturn(Duration.getDefaultInstance());
@@ -218,7 +221,7 @@ class AwareProcessLogicTest {
 		// setup:
 		var now = Instant.now();
 		var then = now.minusMillis(1L);
-		SignedTransaction signedTxn = SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+		SignedTransaction signedTxn = SignedTransaction.newBuilder().setBodyBytes(nonMockTxnBody.toByteString()).build();
 		Transaction platformSignedTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder().
 				setSignedTransactionBytes(signedTxn.toByteString()).build().toByteArray());
 
