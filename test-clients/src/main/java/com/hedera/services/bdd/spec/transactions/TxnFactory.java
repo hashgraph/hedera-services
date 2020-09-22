@@ -52,7 +52,7 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -168,7 +168,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {
+	public Consumer<TokenTransfersTransactionBody.Builder> defaultDef_TokenTransfersTransactionBody() {
 		return builder -> {};
 	}
 
@@ -179,8 +179,8 @@ public class TxnFactory {
 	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
 		return builder -> {
 			builder.setTreasury(setup.defaultPayer());
-			builder.setDecimals(setup.defaultTokenDivisibility());
-			builder.setInitialSupply(setup.defaultTokenFloat());
+			builder.setDecimals(setup.defaultTokenDecimals());
+			builder.setInitialSupply(setup.defaultTokenInitialSupply());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
 			builder.setExpiry(defaultExpiry().getSeconds());
 		};

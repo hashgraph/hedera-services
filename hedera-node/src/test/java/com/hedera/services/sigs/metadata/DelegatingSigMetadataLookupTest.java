@@ -46,8 +46,8 @@ class DelegatingSigMetadataLookupTest {
 	JKey freezeKey;
 	String symbol = "NotAnHbar";
 	String tokenName = "TokenName";
-	int divisibility = 2;
-	long tokenFloat = 1_000_000;
+	int decimals = 2;
+	long totalSupply = 1_000_000;
 	boolean freezeDefault = true;
 	boolean accountsKycGrantedByDefault = true;
 	EntityId treasury = new EntityId(1,2, 3);
@@ -63,7 +63,7 @@ class DelegatingSigMetadataLookupTest {
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
-		token = new MerkleToken(Long.MAX_VALUE, tokenFloat, divisibility, symbol, tokenName,  freezeDefault, accountsKycGrantedByDefault, treasury);
+		token = new MerkleToken(Long.MAX_VALUE, totalSupply, decimals, symbol, tokenName,  freezeDefault, accountsKycGrantedByDefault, treasury);
 
 		tokenStore = mock(TokenStore.class);
 

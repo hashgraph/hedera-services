@@ -114,9 +114,9 @@ class HederaTokenStoreTest {
 	String newName = "NEWNAME";
 	long expiry = thisSecond + 1_234_567;
 	long newExpiry = thisSecond + 1_432_765;
-	long tokenFloat = 1_000_000;
+	long totalSupply = 1_000_000;
 	long adjustment = 1;
-	int divisibility = 10;
+	int decimals = 10;
 	TokenID misc = IdUtils.asToken("3.2.1");
 	TokenRef miscRef = IdUtils.asIdRef(misc);
 	boolean freezeDefault = true;
@@ -271,6 +271,18 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+	}
+
+	@Test
+	public void rejectsDeletionTokenAlreadyDeleted() {
+		// given:
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		var outcome = subject.delete(miscRef);
+
+		// then:
+		assertEquals(TOKEN_WAS_DELETED, outcome);
 	}
 
 	@Test
@@ -635,7 +647,7 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustFloatBy(-adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
 		verify(accountsLedger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
@@ -664,7 +676,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustFloatBy(-adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
 		verify(accountsLedger).set(argThat(sponsor::equals), argThat(BALANCE::equals), captor.capture());
 		// and:
 		assertEquals(misc, captor.getValue().id());
@@ -1258,6 +1270,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void mintingRejectsZeroAmount() {
+		given(token.hasSupplyKey()).willReturn(true);
+
+		// when:
+		var status = subject.mint(misc, 0);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
+	}
+
+	@Test
 	public void burningRejectsNegativeAmount() {
 		given(token.hasSupplyKey()).willReturn(true);
 
@@ -1269,15 +1292,44 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void mintingRejectsInvalidNewSupply() {
-		long halfwayToOverflow = (1L << 62) / 2;
-
+	public void burningRejectsZeroAmount() {
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.tokenFloat()).willReturn(halfwayToOverflow);
-		given(token.divisibility()).willReturn(1);
 
 		// when:
-		var status = subject.mint(misc, halfwayToOverflow);
+		var status = subject.burn(misc, 0);
+
+		// then:
+		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
+	}
+
+	@Test
+	public void burningRejectsDueToInsufficientFundsInTreasury() {
+		long targetSupply = 100;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(targetSupply);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		// and:
+		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
+		given(account.hasRelationshipWith(misc)).willReturn(true);
+		given(account.validityOfAdjustment(misc, token, -targetSupply)).willReturn(INSUFFICIENT_TOKEN_BALANCE);
+
+		// when:
+		var status = subject.burn(misc, targetSupply);
+
+		// then:
+		assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
+	}
+
+	@Test
+	public void mintingRejectsInvalidNewSupply() {
+		long halfwayToOverflow = ((1L << 63) - 1) / 2;
+
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(halfwayToOverflow + 1);
+
+		// when:
+		var status = subject.mint(misc, halfwayToOverflow + 1);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
@@ -1312,13 +1364,12 @@ class HederaTokenStoreTest {
 		long oldSupply = 123;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.tokenFloat()).willReturn(oldSupply);
-		given(token.divisibility()).willReturn(1);
+		given(token.totalSupply()).willReturn(oldSupply);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(account.hasRelationshipWith(misc)).willReturn(true);
-		given(account.validityOfAdjustment(misc, token, -oldSupply * 10)).willReturn(OK);
+		given(account.validityOfAdjustment(misc, token, -oldSupply)).willReturn(OK);
 		// and:
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
@@ -1332,28 +1383,27 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(-oldSupply * 10, (long) captor.getValue().value());
+		assertEquals(-oldSupply, (long) captor.getValue().value());
 		// and:
-		verify(token).adjustFloatBy(-oldSupply);
+		verify(token).adjustTotalSupplyBy(-oldSupply);
 		// and:
-		verify(hederaLedger).updateTokenXfers(misc, treasury, -oldSupply * 10);
+		verify(hederaLedger).updateTokenXfers(misc, treasury, -oldSupply);
 	}
 
 	@Test
 	public void validMintChangesTokenSupplyAndAdjustsTreasury() {
 		// setup:
 		ArgumentCaptor<TokenScopedPropertyValue> captor = ArgumentCaptor.forClass(TokenScopedPropertyValue.class);
-		long oldFloat = 1_000;
+		long oldTotalSupply = 1_000;
 		long adjustment = 500;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.tokenFloat()).willReturn(oldFloat);
-		given(token.divisibility()).willReturn(1);
+		given(token.totalSupply()).willReturn(oldTotalSupply);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.numTokenRelationships()).willReturn(MAX_TOKENS_PER_ACCOUNT - 1);
 		given(account.hasRelationshipWith(misc)).willReturn(true);
-		given(account.validityOfAdjustment(misc, token, adjustment * 10)).willReturn(OK);
+		given(account.validityOfAdjustment(misc, token, adjustment)).willReturn(OK);
 		// and:
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
@@ -1367,25 +1417,25 @@ class HederaTokenStoreTest {
 		// and:
 		assertEquals(misc, captor.getValue().id());
 		assertSame(token, captor.getValue().token());
-		assertEquals(adjustment * 10, (long) captor.getValue().value());
+		assertEquals(adjustment, (long) captor.getValue().value());
 		// and:
 		verify(tokens).getForModify(fromTokenId(misc));
-		verify(token).adjustFloatBy(adjustment);
+		verify(token).adjustTotalSupplyBy(adjustment);
 		verify(tokens).replace(fromTokenId(misc), token);
 		// and:
-		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment * 10);
+		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment);
 	}
 
 	@Test
-	public void burningRejectsInvalidNewSupply() {
-		long halfwayToOverflow = (1L << 62) / 2;
+	public void burningRejectsAmountMoreThanFound() {
+		long amount = 1;
 
 		given(token.hasSupplyKey()).willReturn(true);
-		given(token.tokenFloat()).willReturn(halfwayToOverflow);
-		given(token.divisibility()).willReturn(1);
+		given(token.totalSupply()).willReturn(amount);
+		given(token.decimals()).willReturn(1);
 
 		// when:
-		var status = subject.burn(misc, halfwayToOverflow + 1);
+		var status = subject.burn(misc, amount + 1);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
@@ -1547,8 +1597,8 @@ class HederaTokenStoreTest {
 		// setup:
 		var expected = new MerkleToken(
 				thisSecond + autoRenewPeriod,
-				tokenFloat,
-				divisibility,
+				totalSupply,
+				decimals,
 				symbol,
 				name,
 				freezeDefault,
@@ -1585,8 +1635,8 @@ class HederaTokenStoreTest {
 		// setup:
 		var expected = new MerkleToken(
 				expiry,
-				tokenFloat,
-				divisibility,
+				totalSupply,
+				decimals,
 				symbol,
 				name,
 				freezeDefault,
@@ -1796,7 +1846,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void allowsZeroFloatAndDivisibility() {
+	public void allowsZeroInitialSupplyAndDecimals() {
 		// given:
 		var req = fullyValidAttempt()
 				.setInitialSupply(0L)
@@ -1826,77 +1876,28 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsJustOverflowingFloat() {
-		int divisibility = 1;
-		long initialFloat = 1L << 62;
+	public void rejectsJustOverflowingInitialSupply() {
+		long initialSupply = 1L << 63;
 
 		// given:
 		var req = fullyValidAttempt()
-				.setInitialSupply(initialFloat)
-				.setDecimals(divisibility)
+				.setInitialSupply(initialSupply)
 				.build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, thisSecond);
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
+		assertEquals(INVALID_INITIAL_SUPPLY, result.getStatus());
 	}
 
 	@Test
-	public void rejectsOverflowingFloat() {
-		int divisibility = 1 << 30;
-		long initialFloat = 1L << 34;
+	public void rejectsOverflowingDecimals() {
+		int decimals = 1 << 31;
 
 		// given:
 		var req = fullyValidAttempt()
-				.setInitialSupply(initialFloat)
-				.setDecimals(divisibility)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
-	}
-
-	@Test
-	public void rejectsInvalidDivisibility() {
-		// given:
-		var req = fullyValidAttempt()
-				.setDecimals(1 << 30)
-				.setInitialSupply(1L << 34)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
-	}
-
-	@Test
-	public void rejectsOverflowingDivisibility() {
-		// given:
-		var req = fullyValidAttempt()
-				.setDecimals(19)
-				.setInitialSupply(0L)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
-	}
-
-	@Test
-	public void rejectsInvalidAmountForDivisibility() {
-		// given:
-		var req = fullyValidAttempt()
-				.setDecimals(18)
-				.setInitialSupply(10)
+				.setDecimals(decimals)
 				.build();
 
 		// when:
@@ -1945,9 +1946,9 @@ class HederaTokenStoreTest {
 				.setSupplyKey(supplyKey)
 				.setSymbol(symbol)
 				.setName(name)
-				.setInitialSupply(tokenFloat)
+				.setInitialSupply(totalSupply)
 				.setTreasury(treasury)
-				.setDecimals(divisibility)
+				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault);
 	}
 }

@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
 
-	private static final long FLOAT = 1_000;
+	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String A_TOKEN = "TokenA";
 	private static final String B_TOKEN = "TokenB";
 	private static final String FIRST_USER = "Client1";
@@ -77,7 +77,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(100)
+								.initialSupply(100)
 								.treasury("firstTreasury")
 				).then(
 						tokenTransact(
@@ -132,10 +132,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary").receiverSigRequired(true)
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(234)
+								.initialSupply(234)
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN)
 				).then(
@@ -168,10 +168,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(234)
+								.initialSupply(234)
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN)
 				).then(
@@ -192,10 +192,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(123)
+								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialFloat(50)
+								.initialSupply(50)
 								.treasury("secondTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
 						tokenTransact(
@@ -221,7 +221,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialFloat(100)
+								.initialSupply(100)
 								.treasury("firstTreasury"),
 						tokenAssociate("beneficiary", A_TOKEN)
 				).then(
@@ -242,10 +242,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate(SECOND_USER),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
-								.initialFloat(FLOAT)
+								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
-								.initialFloat(FLOAT)
+								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(FIRST_USER, A_TOKEN),
 						tokenAssociate(SECOND_USER, B_TOKEN)
@@ -256,8 +256,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
-								.hasTokenBalance(A_TOKEN, FLOAT - 100)
-								.hasTokenBalance(B_TOKEN, FLOAT - 100),
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 100)
+								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 100),
 						getAccountBalance(SECOND_USER)

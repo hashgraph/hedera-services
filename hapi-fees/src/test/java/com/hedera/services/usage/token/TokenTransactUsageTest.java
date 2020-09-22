@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -65,7 +65,7 @@ public class TokenTransactUsageTest {
 	String aSymbol = "ABCDEFGH";
 	String anotherSymbol = "HGFEDCBA";
 
-	TokenTransfers op;
+	TokenTransfersTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -107,7 +107,7 @@ public class TokenTransactUsageTest {
 	}
 
 	private void givenOp() {
-		op = TokenTransfers.newBuilder()
+		op = TokenTransfersTransactionBody.newBuilder()
 				.addTokenTransfers(TokenRefTransferList.newBuilder()
 						.setToken(TokenRef.newBuilder().setSymbol(aSymbol).build())
 						.addAllTransfers(List.of(

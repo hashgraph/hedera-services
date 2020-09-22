@@ -733,7 +733,7 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> tokenTransact(
 			TransactionID txnId,
-			TokenTransfers op,
+			TokenTransfersTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = EMPTY_LIST;

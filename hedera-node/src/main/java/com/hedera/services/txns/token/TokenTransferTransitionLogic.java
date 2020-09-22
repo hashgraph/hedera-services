@@ -34,13 +34,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 
-public class TokenTransactTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenTransactTransitionLogic.class);
+public class TokenTransferTransitionLogic implements TransitionLogic {
+	private static final Logger log = LogManager.getLogger(TokenTransferTransitionLogic.class);
 
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 
-	public TokenTransactTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
+	public TokenTransferTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 	}

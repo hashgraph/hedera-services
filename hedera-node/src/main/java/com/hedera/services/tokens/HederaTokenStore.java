@@ -313,16 +313,7 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		return sanityChecked(aId, tId, token -> {
-			var account = accountsLedger.getTokenRef(aId);
-			var validity = account.validityOfAdjustment(tId, token, adjustment);
-			if (validity != OK) {
-				return validity;
-			}
-			adjustUnchecked(aId, tId, token, adjustment);
-			hederaLedger.updateTokenXfers(tId, aId, adjustment);
-			return OK;
-		});
+		return sanityChecked(aId, tId, token -> validateAndAdjustUnchecked(token, aId, tId, adjustment));
 	}
 
 	@Override
@@ -349,7 +340,7 @@ public class HederaTokenStore implements TokenStore {
 
 			adjustUnchecked(aId, tId, token, -amount);
 			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustFloatBy(-amount));
+			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
@@ -376,31 +367,30 @@ public class HederaTokenStore implements TokenStore {
 			long sign,
 			ResponseCodeEnum failure
 	) {
-		if (amount < 0) {
-			return failure;
-		}
-		if (!exists(tId)) {
-			return INVALID_TOKEN_ID;
-		}
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
-		if (!token.hasSupplyKey()) {
-			return TOKEN_HAS_NO_SUPPLY_KEY;
-		}
-		var change = sign * amount;
-		var divisibility = token.divisibility();
-		var proposedFloat = token.tokenFloat() + change;
-		var validity = floatAndDivisibilityCheck(proposedFloat, divisibility);
-		if (validity != OK) {
-			return failure;
-		}
-		apply(tId, t -> t.adjustFloatBy(change));
-		long tinyAdjustment = BigInteger.valueOf(change)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
-		return adjustBalance(token.treasury().toGrpcAccountId(), tId, tinyAdjustment);
+		return tokenSanityCheck(tId, token -> {
+			if (amount <= 0) {
+				return failure;
+			}
+			if (!token.hasSupplyKey()) {
+				return TOKEN_HAS_NO_SUPPLY_KEY;
+			}
+
+			var change = sign * amount;
+			var toBeUpdatedTotalSupply = token.totalSupply() + change;
+			if (toBeUpdatedTotalSupply < 0) {
+				return failure;
+			}
+
+			var accountId = token.treasury().toGrpcAccountId();
+			var validity = validateAndAdjustUnchecked(token, accountId, tId, change);
+			if (validity != OK) {
+				return validity;
+			}
+
+			apply(tId, t -> t.adjustTotalSupplyBy(change));
+
+			return OK;
+		});
 	}
 
 	@Override
@@ -430,7 +420,7 @@ public class HederaTokenStore implements TokenStore {
 				return failure(INVALID_EXPIRATION_TIME);
 			}
 		}
-		validity = floatAndDivisibilityCheck(request.getInitialSupply(), request.getDecimals());
+		validity = initialSupplyAndDecimalsCheck(request.getInitialSupply(), request.getDecimals());
 		if (validity != OK) {
 			return failure(validity);
 		}
@@ -466,6 +456,24 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		return success(pendingId);
+	}
+
+	private ResponseCodeEnum validateAndAdjustUnchecked(MerkleToken token, AccountID aId, TokenID tId, long adjustment) {
+		var account = accountsLedger.getTokenRef(aId);
+		var validity = account.validityOfAdjustment(tId, token, adjustment);
+		if (validity != OK) {
+			return validity;
+		}
+		adjustUnchecked(aId, tId, token, adjustment);
+		hederaLedger.updateTokenXfers(tId, aId, adjustment);
+		return OK;
+	}
+
+	private ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
+		if (initialSupply < 0) {
+			return INVALID_INITIAL_SUPPLY;
+		}
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
 	}
 
 	private boolean isValidAutoRenewPeriod(long secs) {
@@ -706,26 +714,6 @@ public class HederaTokenStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
-		if (tokenFloat < 0) {
-			return INVALID_INITIAL_SUPPLY;
-		}
-
-		try {
-			var divisibilityFloat = BigInteger.valueOf(10)
-					.pow(divisibility);
-			if (divisibilityFloat.longValue() < 0) {
-				return INVALID_TOKEN_DECIMALS;
-			}
-
-			var tinyTokenFloat = divisibilityFloat
-					.multiply(BigInteger.valueOf(tokenFloat));
-			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DECIMALS;
-		} catch (ArithmeticException ignore) {
-			return INVALID_TOKEN_DECIMALS;
-		}
-	}
-
 	private ResponseCodeEnum symbolCheck(String symbol) {
 		if (symbolKeyedIds.containsKey(symbol)) {
 			return TOKEN_SYMBOL_ALREADY_IN_USE;
@@ -797,6 +785,23 @@ public class HederaTokenStore implements TokenStore {
 		var key = BackingTokenRels.asTokenRel(aId, tId);
 		if (!tokenRelsLedger.exists(key)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+		}
+
+		return action.apply(token);
+	}
+
+	private ResponseCodeEnum tokenSanityCheck(
+			TokenID tId,
+			Function<MerkleToken, ResponseCodeEnum> action
+	) {
+		var validity = exists(tId) ? OK : INVALID_TOKEN_ID;
+		if (validity != OK) {
+			return validity;
+		}
+
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
 		}
 
 		return action.apply(token);
