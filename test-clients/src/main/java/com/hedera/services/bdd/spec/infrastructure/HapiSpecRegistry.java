@@ -76,8 +76,10 @@ public class HapiSpecRegistry {
 		this.setup = setup;
 		KeyPairObj genesisKp = firstStartupKp(setup);
 		Key genesisKey = asPublicKey(genesisKp.getPublicKeyAbyteStr());
+		saveAccountId(setup.genesisAccountName(), setup.genesisAccount());
 		saveKey(setup.genesisAccountName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultPayerName(), setup.defaultPayer());
+		saveKey(setup.defaultPayerName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultNodeName(), setup.defaultNode());
 		saveAccountId(setup.fundingAccountName(), setup.fundingAccount());
 		saveContractId(setup.invalidContractName(), setup.invalidContract());
