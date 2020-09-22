@@ -40,10 +40,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
+	private static final int MAX_NAME_LENGTH = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
 
@@ -57,10 +58,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						symbolChanges(),
 						keysChange(),
 						treasuryEvolves(),
-						validatesMissingRef(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
+						tooLongNameCheckHolds(),
+						nameChanges(),
+						validatesMissingRef(),
 				}
 		);
 	}
@@ -104,7 +107,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 				).when().then(
 						tokenUpdate("tbd")
@@ -128,7 +130,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
-								.kycDefault(false)
 								.freezeDefault(true)
 								.initialFloat(10)
 								.adminKey("adminKey")
@@ -157,7 +158,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
 						burnToken("tbu", 10)
 								.signedBy(GENESIS, "wipeThenSupplyKey"),
-						wipeTokenAccount("tbu", "misc")
+						wipeTokenAccount("tbu", "misc", 5)
 								.signedBy(GENESIS, "supplyThenWipeKey"),
 						getAccountInfo(TOKEN_TREASURY).logged()
 				);
@@ -173,7 +174,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						cryptoCreate("newTreasury"),
 						tokenCreate("tbu")
 								.adminKey("adminKey")
-								.kycDefault(false)
 								.freezeDefault(true)
 								.kycKey("kycKey")
 								.freezeKey("freezeKey")
@@ -233,6 +233,42 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenTransact(
 								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
+				);
+	}
+
+	public HapiApiSpec nameChanges() {
+		var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
+
+		return defaultHapiSpec("NameChanges")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenUpdate("tbu")
+								.name(hopefullyUnique)
+				).then(
+						getTokenInfo("tbu").hasName(hopefullyUnique)
+				);
+	}
+
+	public HapiApiSpec tooLongNameCheckHolds() {
+		var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH+1);
+
+		return defaultHapiSpec("TooLongNameCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.name(tooLongName)
+								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);
 	}
 

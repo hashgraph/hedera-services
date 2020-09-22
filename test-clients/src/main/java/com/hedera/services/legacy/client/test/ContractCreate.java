@@ -79,12 +79,6 @@ public class ContractCreate extends ClientBaseThread {
     try {
       initAccountsAndChannels();
 
-//      List<PrivateKey> genesisAccountPrivateKeys = new ArrayList<>();
-//      genesisAccountPrivateKeys.add(genesisPrivateKey);
-//      contractFileId = LargeFileUploadIT
-//              .uploadFile(genesisAccount, SIMPLE_STORAGE_BIN, genesisAccountPrivateKeys, host,
-//                      nodeAccount);
-
       //start an extra thread to check account transaction result
       Thread checkThread = new Thread("New Thread") {
         public void run() {
@@ -97,7 +91,6 @@ public class ContractCreate extends ClientBaseThread {
 
                 if (isBackupTxIDRecord) {
                   TransactionRecord record = getTransactionRecord(genesisAccount, item, false);
-                  //log.info("Record = {}", record);
                   confirmedTxRecord.add(record);
                 }
 
@@ -156,7 +149,9 @@ public class ContractCreate extends ClientBaseThread {
       contractFileId = result.getRight();
       for(Transaction item : result.getLeft()){
         txIdQueue.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
-        if(isBackupTxIDRecord) this.submittedTxID.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
+        if(isBackupTxIDRecord) {
+			this.submittedTxID.add(TransactionBody.parseFrom(item.getBodyBytes()).getTransactionID());
+		}
       }
 
       long accumulatedTransferCount = 0;
@@ -171,9 +166,13 @@ public class ContractCreate extends ClientBaseThread {
           if (txId != null) {
             txIdQueue.add(txId);
           }
-          if (isBackupTxIDRecord) submittedTxID.add(txId);
+          if (isBackupTxIDRecord) {
+			  submittedTxID.add(txId);
+		  }
         } catch (io.grpc.StatusRuntimeException e) {
-          if (!tryReconnect(e)) return;
+          if (!tryReconnect(e)) {
+			  return;
+		  }
         }
 
         accumulatedTransferCount++;
@@ -185,7 +184,9 @@ public class ContractCreate extends ClientBaseThread {
 
       }
     }finally {
-      while(txIdQueue.size()>0); //wait query thread to finish
+      while(txIdQueue.size()>0) {
+		  ; //wait query thread to finish
+	  }
       sleep(1000);         //wait check thread done query
       log.info("{} query queue empty", getName());
       channel.shutdown();

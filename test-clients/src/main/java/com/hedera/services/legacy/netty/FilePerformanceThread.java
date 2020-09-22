@@ -133,7 +133,6 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
       thx.start();
     }
     napTime = (1000 / tpsDesired);
-    // if(napTime < 10)
     threadNumber++;
   }
 
@@ -144,8 +143,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if (!channel.isShutdown())
-      channel.shutdownNow();
+    if (!channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     return channel.isShutdown();
   }
 
@@ -216,8 +216,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
                 .getNodeTransactionPrecheckCode() == ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED) {
               log.error("T Not Created ** " + transferRes.getNodeTransactionPrecheckCode());
               platformNotAccepted++;
-            } else
-              totalBadReceipts++;
+            } else {
+				totalBadReceipts++;
+			}
           }
           te = System.currentTimeMillis();
           tm = te - ts;
@@ -231,10 +232,6 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
           if (tm < minTransInMs) {
             minTransInMs = tm;
           }
-
-          // if( i % 500 ==0 )
-          // { log.info("Shutting down channel"); shutdownChannel(); }
-
         } catch (Throwable thx) {
           te = System.currentTimeMillis();
           log.error("* ERROR * ", thx);
@@ -282,7 +279,6 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
 
             totalBadReceipts++;
           }
-          // Assert.assertNotNull(txReceipt);
           totalGoodReceipts++;
         }
       }
@@ -321,9 +317,6 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
 
     Response accountInfoResponse = TestHelper.executeAccountInfoQuery(stub, accountID,
         payerAccount, payerKeyPair, nodeAccount, MAX_TX_FEE, ResponseType.ANSWER_ONLY);
-    // TestHelper.getCryptoGetAccountInfo(stub, accountID, payerAccount,
-    // payerKeyPair.getPrivate(), nodeAccount);
-    // assertAccountBalance(accountID, accountInfoResponse, expectedBalance);
     if (accountInfoResponse != null) {
       accountBalance = accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance();
     }
@@ -407,28 +400,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
     log.debug("FileCreate: request = " + filesigned);
     checkTxSize(filesigned);
 
-    // FileServiceBlockingStub stub = getStub(nodeID);
     TransactionResponse response = fileStub.createFile(filesigned);
     txHolder.add(filesigned);
     log.debug("FileCreate Response :: " + response);
-    // Assert.assertNotNull(response);
-    // Assert.assertEquals(ResponseCodeEnum.OK_VALUE,
-    // response.getNodeTransactionPrecheckCodeValue());
-    // cache.addTransactionID(txId);
-    //
-    // // get the file ID
-    // TransactionReceipt receipt = getTxReceipt(txId);
-    // if (!ResponseCodeEnum.SUCCESS.name().equals(receipt.getStatus().name())) {
-    // throw new Exception(
-    // "Create file failed! The receipt retrieved receipt=" + receipt);
-    // }
-    // FileID fid = receipt.getFileID();
-    // log.info("GetTxReceipt: file ID = " + fid);
-    // Assert.assertNotNull(fid);
-    // Assert.assertNotEquals(0, fid.getFileNum());
-    //
-    // getFileInfo(fid, payerID, nodeID);
-    // return fid;
     return response;
   }
 
@@ -521,10 +495,11 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
   
     TransactionReceipt rv;
     Response transactionReceipts = null;
-    if(isExponentialBackoff)
-      transactionReceipts = fetchReceiptsWithExponentialBackoff(query, stub, log);
-    else
-      transactionReceipts = fetchReceiptsConstant(query, stub, log);
+    if(isExponentialBackoff) {
+		transactionReceipts = fetchReceiptsWithExponentialBackoff(query, stub, log);
+	} else {
+		transactionReceipts = fetchReceiptsConstant(query, stub, log);
+	}
     rv = transactionReceipts.getTransactionGetReceipt().getReceipt();
     return rv;
   }
@@ -589,8 +564,9 @@ public class FilePerformanceThread extends BaseClient implements Runnable {
     long rv = 0;
     rv = (long) (Math.pow(2, retries) * RETRY_FREQUENCY_MILLIS);
     
-    if(rv > maxWaitMillis)
-      rv = maxWaitMillis;
+    if(rv > maxWaitMillis) {
+		rv = maxWaitMillis;
+	}
     
     return rv;
   }

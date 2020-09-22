@@ -428,7 +428,6 @@ public class BaseFeeTests extends BaseClient {
     Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeID, payer,
         accountKeys.get(payer).get(0), nodeID, transferAmt);
-    //transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
     return transferTx;
 
   }
@@ -512,7 +511,6 @@ public class BaseFeeTests extends BaseClient {
     Transaction transaction = TestHelper
             .createAccountWithSigMap(payerAccount, nodeID, keyPair, initialBalance,
                     accountKeyPairs.get(payerAccount));
-    //	  Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
     TransactionResponse response = cstub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

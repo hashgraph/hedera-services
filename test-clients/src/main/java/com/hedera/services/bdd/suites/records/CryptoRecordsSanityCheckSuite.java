@@ -79,7 +79,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						cryptoCreate("test"),
 						takeBalanceSnapshots(FUNDING, NODE, GENESIS, "test")
 				)).when(
-						cryptoDelete("test").via("txn")
+						cryptoDelete("test").via("txn").transfer(GENESIS)
 				).then(
 						validateTransferListForBalances(
 								"txn",

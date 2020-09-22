@@ -139,11 +139,9 @@ public class DeletedReceiver {
 
   private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt)
       throws Exception {
-    Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
+    return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeAccount, payer,
         accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-    return transferTx;
-
   }
 
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
@@ -155,7 +153,6 @@ public class DeletedReceiver {
     Transaction transaction = TestHelper
         .createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
             accountKeys.get(payerAccount));
-    //	Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
     TransactionResponse response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

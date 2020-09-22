@@ -28,7 +28,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,13 +50,13 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
-	private final Predicate<TokenManagement> affectsExpiryOnly;
+	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
 	public TokenUpdateTransitionLogic(
 			TokenStore store,
 			HederaLedger ledger,
 			TransactionContext txnCtx,
-			Predicate<TokenManagement> affectsExpiryOnly
+			Predicate<TokenUpdateTransactionBody> affectsExpiryOnly
 	) {
 		this.store = store;
 		this.ledger = ledger;
@@ -74,7 +74,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void transitionFor(TokenManagement op) {
+	private void transitionFor(TokenUpdateTransactionBody op) {
 		var id = store.resolve(op.getToken());
 		if (id == MISSING_TOKEN) {
 			txnCtx.setStatus(INVALID_TOKEN_REF);
@@ -109,7 +109,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
-			outcome = store.wipe(replacedTreasury.get(), id, true);
+			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
+			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);

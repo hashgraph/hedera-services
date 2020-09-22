@@ -62,12 +62,13 @@ class MerkleTokenTest {
 	JKey supplyKey, otherSupplyKey;
 	JKey kycKey, otherKycKey;
 	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
+	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
 	int divisibility = 2, otherDivisibility = 3;
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
 	long tokenFloat = 1_000_000, otherFloat = 1_000_001;
 	boolean freezeDefault = true, otherFreezeDefault = false;
-	boolean kycDefault = true, otherKycDefault = false;
+	boolean accountsKycGrantedByDefault = true, otherAccountsKycGrantedByDefault = false;
 	EntityId treasury = new EntityId(1, 2, 3),
 			otherTreasury = new EntityId(3, 2, 1);
 	EntityId autoRenewAccount = new EntityId(2, 3, 4),
@@ -91,7 +92,7 @@ class MerkleTokenTest {
 		otherSupplyKey = new JEd25519Key("not-a-real-supply-key-either".getBytes());
 
 		subject = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(subject);
 		subject.setAdminKey(adminKey);
 		subject.setFreezeKey(freezeKey);
@@ -131,6 +132,7 @@ class MerkleTokenTest {
 		inOrder.verify(serdes).writeNullableSerializable(autoRenewAccount, out);
 		inOrder.verify(out).writeLong(autoRenewPeriod);
 		inOrder.verify(out).writeNormalisedString(symbol);
+		inOrder.verify(out).writeNormalisedString(name);
 		inOrder.verify(out).writeSerializable(treasury, true);
 		inOrder.verify(out).writeLong(tokenFloat);
 		inOrder.verify(out).writeInt(divisibility);
@@ -170,7 +172,9 @@ class MerkleTokenTest {
 				.willReturn(kycKey)
 				.willReturn(supplyKey)
 				.willReturn(wipeKey);
-		given(fin.readNormalisedString(anyInt())).willReturn(symbol);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name);
 		given(fin.readLong())
 				.willReturn(subject.expiry())
 				.willReturn(subject.autoRenewPeriod())
@@ -194,7 +198,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFloats() {
 		// given:
 		other = new MerkleToken(
-				expiry, otherFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, otherFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -207,7 +211,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentDivisibility() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, otherDivisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, otherDivisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -220,7 +224,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentWipeKey() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setWipeKey(otherWipeKey);
 
@@ -234,7 +238,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentSupply() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setSupplyKey(otherSupplyKey);
 
@@ -248,7 +252,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentDeleted() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setDeleted(otherIsDeleted);
 
@@ -262,7 +266,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentAdminKey() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setAdminKey(otherAdminKey);
 
@@ -276,7 +280,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentAutoRenewPeriods() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setAutoRenewPeriod(otherAutoRenewPeriod);
 
@@ -290,7 +294,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentAutoRenewAccounts() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setAutoRenewAccount(otherAutoRenewAccount);
 
@@ -304,7 +308,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentExpiries() {
 		// given:
 		other = new MerkleToken(
-				otherExpiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				otherExpiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -317,9 +321,21 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentSymbol() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, otherSymbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, otherSymbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
+		// expect:
+		assertNotEquals(subject, other);
+		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	public void objectContractHoldsForDifferentName() {
+		// given:
+		other = new MerkleToken(
+				expiry, tokenFloat, divisibility, symbol, otherName, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
 		// expect:
 		assertNotEquals(subject, other);
 		// and:
@@ -330,7 +346,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFreezeDefault() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, otherFreezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, otherFreezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -340,10 +356,10 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentKycDefault() {
+	public void objectContractHoldsForDifferentaccountsKycGrantedByDefault() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, otherKycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, otherAccountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -356,7 +372,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentTreasury() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, otherTreasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, otherTreasury);
 		setOptionalElements(other);
 
 		// expect:
@@ -369,7 +385,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentKycKeys() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setKycKey(otherKycKey);
 
@@ -391,7 +407,7 @@ class MerkleTokenTest {
 	public void objectContractHoldsForDifferentFreezeKeys() {
 		// given:
 		other = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setFreezeKey(otherFreezeKey);
 
@@ -426,14 +442,14 @@ class MerkleTokenTest {
 		var defaultSubject = new MerkleAccountState();
 		// and:
 		var identicalSubject = new MerkleToken(
-				expiry, tokenFloat, divisibility, symbol, freezeDefault, kycDefault, treasury);
+				expiry, tokenFloat, divisibility, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
 		identicalSubject.setDeleted(isDeleted);
 
 		// and:
 		other = new MerkleToken(
-				otherExpiry, otherFloat, otherDivisibility, otherSymbol,
-				otherFreezeDefault, otherKycDefault, otherTreasury);
+				otherExpiry, otherFloat, otherDivisibility, otherSymbol, otherName,
+				otherFreezeDefault, otherAccountsKycGrantedByDefault, otherTreasury);
 
 		// expect:
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
@@ -456,6 +472,7 @@ class MerkleTokenTest {
 					    "deleted=" + isDeleted + ", " +
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +
+						"name=" + name + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +
 						"float=" + tokenFloat + ", " +
 						"divisibility=" + divisibility + ", " +
@@ -466,7 +483,7 @@ class MerkleTokenTest {
 						"wipeKey=" + describe(wipeKey) + ", " +
 						"supplyKey=" + describe(supplyKey) + ", " +
 						"freezeKey=" + describe(freezeKey) + ", " +
-						"accountKycGrantedByDefault=" + kycDefault + ", " +
+						"accountsKycGrantedByDefault=" + accountsKycGrantedByDefault + ", " +
 						"accountsFrozenByDefault=" + freezeDefault + "}",
 				subject.toString());
 	}

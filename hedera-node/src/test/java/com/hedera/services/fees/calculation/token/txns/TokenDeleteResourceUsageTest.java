@@ -20,11 +20,20 @@ package com.hedera.services.fees.calculation.token.txns;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.fees.calculation.UsageEstimatorUtils;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.token.TokenDeleteUsage;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
+import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,18 +43,37 @@ import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class TokenDeleteResourceUsageTest {
-	private TokenDeleteResourceUsage subject;
-
 	private TransactionBody nonTokenDeleteTxn;
 	private TransactionBody tokenDeleteTxn;
 
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+
+	BiFunction<TransactionBody, SigUsage, TokenDeleteUsage> factory;
+
+	StateView view;
+	TokenDeleteUsage usage;
+
+	TokenDeleteResourceUsage subject;
+
 	@BeforeEach
 	private void setup() throws Throwable {
+		view = mock(StateView.class);
+
 		tokenDeleteTxn = mock(TransactionBody.class);
 		given(tokenDeleteTxn.hasTokenDeletion()).willReturn(true);
 
 		nonTokenDeleteTxn = mock(TransactionBody.class);
 		given(nonTokenDeleteTxn.hasTokenDeletion()).willReturn(false);
+
+		usage = mock(TokenDeleteUsage.class);
+		given(usage.get()).willReturn(MOCK_TOKEN_DELETE_USAGE);
+
+		factory = (BiFunction<TransactionBody, SigUsage, TokenDeleteUsage>)mock(BiFunction.class);
+		given(factory.apply(tokenDeleteTxn, sigUsage)).willReturn(usage);
+
+		TokenDeleteResourceUsage.factory = factory;
 
 		subject = new TokenDeleteResourceUsage();
 	}
@@ -61,7 +89,22 @@ class TokenDeleteResourceUsageTest {
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		assertEquals(
-				TokenDeleteResourceUsage.MOCK_TOKEN_DELETE_USAGE,
-				subject.usageGiven(null, null, null));
+				MOCK_TOKEN_DELETE_USAGE,
+				subject.usageGiven(tokenDeleteTxn, obj, view));
 	}
+
+	public static final FeeData MOCK_TOKEN_DELETE_USAGE = UsageEstimatorUtils.defaultPartitioning(
+			FeeComponents.newBuilder()
+					.setMin(1)
+					.setMax(1_000_000)
+					.setConstant(5)
+					.setBpt(5)
+					.setVpt(5)
+					.setRbh(5)
+					.setSbh(5)
+					.setGas(5)
+					.setTv(5)
+					.setBpr(5)
+					.setSbpr(5)
+					.build(), 5);
 }

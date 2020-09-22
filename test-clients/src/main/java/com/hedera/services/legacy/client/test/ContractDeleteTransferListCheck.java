@@ -115,7 +115,9 @@ public class ContractDeleteTransferListCheck extends ClientBaseThread {
 
         }
       } catch (io.grpc.StatusRuntimeException e) {
-        if (!tryReconnect(e)) return;
+        if (!tryReconnect(e)) {
+			return;
+		}
       }
 
     }finally {

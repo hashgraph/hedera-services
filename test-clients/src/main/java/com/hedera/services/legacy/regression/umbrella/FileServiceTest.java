@@ -78,8 +78,6 @@ public class FileServiceTest extends CryptoServiceTest {
   private static int WAIT_IN_SEC = 0;
   private static String[] files = {"1K.txt", "1K.jpg", "1K.pdf", "1K.bin"};
   protected static int FILE_PART_SIZE = 4096; //4K bytes
-  //	private List<PrivateKey> waclPrivKeyList;
-//	private List<PrivateKey> newWaclPrivKeyList;
   protected static ConcurrentHashMap<FileID, List<Key>> fid2waclMap = new ConcurrentHashMap<>();
 
   public FileServiceTest() {
@@ -91,10 +89,6 @@ public class FileServiceTest extends CryptoServiceTest {
   }
 
   public static void main(String[] args) throws Throwable {
-//		ServiceRegressionTestsIT rt = new ServiceRegressionTestsIT();
-//		rt.setUp();
-//		rt.accountCreatLoadTest(numCryptoAccounts);
-//		rt.runFileTests();
     checkTimestamp();
   }
 
@@ -240,10 +234,8 @@ public class FileServiceTest extends CryptoServiceTest {
   public Transaction updateFile(FileID fid, AccountID payerID, AccountID nodeID,
       List<Key> oldWaclKeyList, List<Key> newWaclKeyList, ByteString fileData, String memo,
       Timestamp fileExp) throws Throwable {
-    // Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC * 10);
     KeyList wacl = KeyList.newBuilder().addAllKeys(newWaclKeyList).build();
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-    // byte[] fileData = genFileContent(3, fileType);
     Transaction FileUpdateRequest = RequestBuilder.getFileUpdateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, transactionDuration, true,
@@ -374,7 +366,6 @@ public class FileServiceTest extends CryptoServiceTest {
     Assert.assertNotNull(fid);
     Assert.assertNotEquals(0, fid.getFileNum());
 
-//    getFileInfo(fid, payerID, nodeID);
     return fid;
   }
 
@@ -498,7 +489,6 @@ public class FileServiceTest extends CryptoServiceTest {
       List<Key> waclKeyList, Timestamp fileExp, String memo) throws Throwable {
     log.info("@@@ upload file: file size in byte = " + fileData.size());
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-    // Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC);
 
     Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
@@ -556,9 +546,7 @@ public class FileServiceTest extends CryptoServiceTest {
 
     // create file with first part
     ByteString fileData = ByteString.copyFrom(firstPartBytes);
-    //  StopWatch stopWatch = new Log4JStopWatch("RoundTrip:fileCreate");
     FileID fid = createFile(payerID, nodeID, fileData, waclPubKeyList, false, true);
-    //   stopWatch.stop();
     log.info("@@@ created file with first part: fileID = " + fid);
 
     getFileInfo(fid, payerID, nodeID);
@@ -569,9 +557,7 @@ public class FileServiceTest extends CryptoServiceTest {
     for (; i < numParts; i++) {
       byte[] partBytes = CommonUtils.copyBytes(i * FILE_PART_SIZE, FILE_PART_SIZE, bytes);
       fileData = ByteString.copyFrom(partBytes);
-      //    stopWatch = new Log4JStopWatch("RoundTrip:fileAppend");
       appendFile(payerID, nodeID, fid, fileData, waclPubKeyList);
-      //     stopWatch.stop();
       log.info("@@@ append file count = " + i);
       CommonUtils.nap(WAIT_IN_SEC);
       getFileInfo(fid, payerID, nodeID);
@@ -580,9 +566,7 @@ public class FileServiceTest extends CryptoServiceTest {
     if (remainder > 0) {
       byte[] partBytes = CommonUtils.copyBytes(numParts * FILE_PART_SIZE, remainder, bytes);
       fileData = ByteString.copyFrom(partBytes);
-      //    stopWatch = new Log4JStopWatch("RoundTrip:fileAppend");
       appendFile(payerID, nodeID, fid, fileData, waclPubKeyList);
-      //     stopWatch.stop();
       log.info("@@@ append file count = " + i);
       CommonUtils.nap(WAIT_IN_SEC);
       getFileInfo(fid, payerID, nodeID);

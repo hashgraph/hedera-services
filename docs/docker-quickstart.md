@@ -73,12 +73,27 @@ node_1      | 2020-04-29 15:05:28.854 INFO  133  ServicesMain - Now current plat
 Notice that the Hedera Services and  Platform logs for each node are externalized 
 under paths of the form _compose-network/node0/output/_. 
 
+During the initial startup, the network creates system accounts `0.0.1` through `0.0.100`. 
+It sets the key for each account to a `KeyList` of size one with a well-known Ed25519 
+keypair. The network reads the keypair in a legacy format from [here](../hedera-node/data/onboard/StartUpAccount.txt), 
+but the same keypair is available in PEM format using the PKCS8 encoding 
+[here](../hedera-node/data/onboard/devGenesisKeypair.pem) (the passphrase is `passphrase`).
+
+Even more explicitly, the 32-byte hex-encoded private and public keys of the Ed25519 keypair are:
+```
+Public: 0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92
+Private: 91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
+```
+
 You can now run operations against your local network using any HAPI client. For example:
 ```
 ./mvnw install -DskipTests
 cd test-clients
 ../mvnw exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.compose.LocalNetworkCheck -Dexec.cleanupDaemonThreads=false
 ```
+(This client uses account `0.0.2` as the default payer, and is aware of the above
+keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
+under the `startupAccounts.path` key). 
 
 ## Stopping or reinitializing the Compose network
 

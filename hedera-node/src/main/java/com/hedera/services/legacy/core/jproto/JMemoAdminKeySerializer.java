@@ -103,11 +103,12 @@ public class JMemoAdminKeySerializer {
       throws IOException {
     byte[] memoBytes = jfi.getMemo().getBytes(MEMO_CHARSET);
     stream.writeInt(memoBytes.length);
-    if(memoBytes.length > 0)
-      stream.write(memoBytes);
-    if(jfi.getAdminKey() == null)
-      stream.writeBoolean(false);
-    else {
+    if(memoBytes.length > 0) {
+		stream.write(memoBytes);
+	}
+    if(jfi.getAdminKey() == null) {
+		stream.writeBoolean(false);
+	} else {
       stream.writeBoolean(true);
       stream.write(JKeySerializer.serialize(jfi.getAdminKey()));
     }

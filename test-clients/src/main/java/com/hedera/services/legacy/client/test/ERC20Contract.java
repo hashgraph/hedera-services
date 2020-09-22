@@ -203,7 +203,9 @@ public class ERC20Contract extends ClientBaseThread {
         log.info("---------- Account " + accounts + " initialized: " +
                 newAccount.getAccountNum());
         } catch (StatusRuntimeException e) {
-          if (!tryReconnect(e)) return;
+          if (!tryReconnect(e)) {
+			  return;
+		  }
         }
       }
 
@@ -243,7 +245,9 @@ public class ERC20Contract extends ClientBaseThread {
             log.info("{} currentTPS {}", getName(), currentTPS);
           }
         } catch (StatusRuntimeException e) {
-          if (!tryReconnect(e)) return;
+          if (!tryReconnect(e)) {
+			  return;
+		  }
         }
       }
 

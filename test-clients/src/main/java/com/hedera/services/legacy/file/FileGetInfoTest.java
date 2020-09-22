@@ -88,8 +88,6 @@ public class FileGetInfoTest extends FileServiceTest {
   public void init() throws Throwable {
     setUp();
     CryptoServiceTest.payerAccounts = accountCreatBatch4Payer(1); // accounts as payers
-    
-//    accountCreatBatch(1);
   }
 
   /**
@@ -115,7 +113,6 @@ public class FileGetInfoTest extends FileServiceTest {
       
       // check file info
       FileInfo fi = getFileInfo(fid, payerID, nodeID);
-//      Assert.assertEquals(1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       log.info(LOG_PREFIX + "Create file: get file info test passed! fi = " + fi);
       fid2waclMap.put(fid, waclPubKeyList);
@@ -162,7 +159,6 @@ public class FileGetInfoTest extends FileServiceTest {
 
       // check file info
       FileInfo fi = getFileInfo(fileID, payerID, nodeID);
-//      Assert.assertEquals(2 * 1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       log.info(LOG_PREFIX + "Append file: get file info test passed! fi = " + fi);
     } catch (Throwable e) {
@@ -194,7 +190,6 @@ public class FileGetInfoTest extends FileServiceTest {
       
       // check file info
       FileInfo fi = getFileInfo(fileID, payerID, nodeID);
-//      Assert.assertEquals(1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       fid2waclMap.put(fileID, newWaclPubKeyList);
       log.info(LOG_PREFIX + "Update file: get file info test passed! fi = " + fi);

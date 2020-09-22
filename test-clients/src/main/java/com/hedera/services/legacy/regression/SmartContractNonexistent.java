@@ -112,9 +112,6 @@ public class SmartContractNonexistent {
 	        .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
 
 	    int numberOfReps = 1;
-//	    if ((args.length) > 0) {
-//	      numberOfReps = Integer.parseInt(args[0]);
-//	    }
 	    for (int i = 0; i < numberOfReps; i++) {
 	    	SmartContractNonexistent scSs = new SmartContractNonexistent();
 	      scSs.demo();
@@ -419,9 +416,6 @@ public class SmartContractNonexistent {
 	    // Fake the fee because the COST_ANSWER call will return 2 for INVALID_CONTRACT_IDs
 	    long fee = FeeClient.getCostContractCallLocalFee(callDataSize) * 5;
 	    Response callResp;
-//	    callResp  = executeContractCall(payerAccount, contractToCall, stub, callData, fee,
-//	        ResponseType.COST_ANSWER);
-//	    fee = callResp.getContractCallLocal().getHeader().getCost();
 	    callResp = executeContractCall(payerAccount, contractToCall, stub, callData, fee,
 	        ResponseType.ANSWER_ONLY);
 

@@ -20,15 +20,24 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
+import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory> {
+	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
+
+	private boolean adjustmentsAreSet = false;
 	private TokenTransfers.Builder xfers = TokenTransfers.newBuilder();
 
 	private TokenTransactFactory() {}
@@ -38,10 +47,11 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 	}
 
 	public TokenTransactFactory adjusting(AccountID aId, TokenID tId, long amount) {
-		xfers.addTransfers(TokenTransfer.newBuilder()
-				.setAccount(aId)
-				.setToken(TokenRef.newBuilder().setTokenId(tId))
-				.setAmount(amount));
+		adjustments.computeIfAbsent(tId, ignore -> new ArrayList<>())
+				.add(AccountAmount.newBuilder()
+						.setAccountID(aId)
+						.setAmount(amount)
+						.build());
 		return this;
 	}
 
@@ -57,6 +67,14 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
+		if (!adjustmentsAreSet) {
+			adjustments.entrySet().stream()
+					.forEach(entry -> xfers.addTokenTransfers(TokenRefTransferList.newBuilder()
+							.setToken(TokenRef.newBuilder().setTokenId(entry.getKey()).build())
+							.addAllTransfers(entry.getValue())
+							.build()));
+			adjustmentsAreSet = true;
+		}
 		txn.setTokenTransfers(xfers);
 	}
 }

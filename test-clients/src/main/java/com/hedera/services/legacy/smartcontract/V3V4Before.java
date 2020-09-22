@@ -135,18 +135,10 @@ public class V3V4Before {
 
   }
 
-  private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt)
-      throws Exception {
-    Timestamp timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-    
-    Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
+  private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) {
+    return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeAccount, payer,
         accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-    //transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
-    return transferTx;
-
   }
 
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
@@ -158,7 +150,6 @@ public class V3V4Before {
     Transaction transaction = TestHelper
         .createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
             accountKeys.get(payerAccount));
-    //	  Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
     TransactionResponse response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

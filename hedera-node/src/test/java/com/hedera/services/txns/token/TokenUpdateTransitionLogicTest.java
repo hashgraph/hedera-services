@@ -31,7 +31,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,9 +52,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -78,7 +79,7 @@ class TokenUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private Predicate<TokenManagement> expiryOnlyCheck;
+	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
 
 	private TokenUpdateTransitionLogic subject;
 
@@ -96,7 +97,7 @@ class TokenUpdateTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		expiryOnlyCheck = (Predicate<TokenManagement>) mock(Predicate.class);
+		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
 		subject = new TokenUpdateTransitionLogic(store, ledger, txnCtx, expiryOnlyCheck);
@@ -160,6 +161,7 @@ class TokenUpdateTransitionLogicTest {
 
 		// then:
 		verify(ledger).dropPendingTokenChanges();
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
 	}
@@ -178,6 +180,8 @@ class TokenUpdateTransitionLogicTest {
 		verify(store, never()).update(any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		// and:
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 	}
 
 	@Test
@@ -194,6 +198,8 @@ class TokenUpdateTransitionLogicTest {
 		verify(store, never()).update(any(), anyLong());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		// and:
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 	}
 
 	@Test
@@ -211,6 +217,8 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).unfreeze(newTreasury, target);
 		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
+		// and:
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 	}
 
 	@Test
@@ -242,26 +250,6 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rollsBackIfWipeFails() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-		given(store.update(any(), anyLong())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true))
-				.willReturn(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).dropPendingTokenChanges();
-		// and:
-		verify(txnCtx).setStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
-	}
-
-	@Test
 	public void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
@@ -271,20 +259,25 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(store, never()).wipe(oldTreasury, target, true);
+		verify(ledger, never()).getTokenBalance(oldTreasury, target);
+		// and:
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
 	public void followsHappyPathWithNewTreasury() {
+		// setup:
+		long oldTreasuryBalance = 1000;
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
 		given(store.update(any(), anyLong())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
@@ -292,7 +285,8 @@ class TokenUpdateTransitionLogicTest {
 		// then:
 		verify(ledger).unfreeze(newTreasury, target);
 		verify(ledger).grantKyc(newTreasury, target);
-		verify(store).wipe(oldTreasury, target, true);
+		verify(ledger).getTokenBalance(oldTreasury, target);
+		verify(ledger).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true);
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -304,7 +298,7 @@ class TokenUpdateTransitionLogicTest {
 		givenToken(false, false);
 		// and:
 		given(store.update(any(), anyLong())).willReturn(OK);
-		given(store.wipe(oldTreasury, target, true)).willReturn(OK);
+		given(ledger.doTokenTransfer(eq(target), eq(oldTreasury), eq(newTreasury), anyLong(), eq(true))).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
@@ -340,7 +334,7 @@ class TokenUpdateTransitionLogicTest {
 
 	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
 		var builder = TransactionBody.newBuilder()
-				.setTokenUpdate(TokenManagement.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setToken(targetRef));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()

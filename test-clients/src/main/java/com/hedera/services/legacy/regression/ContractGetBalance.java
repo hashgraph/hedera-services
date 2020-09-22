@@ -127,9 +127,6 @@ public class ContractGetBalance {
 		localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
 
 		int numberOfReps = 1;
-		// if ((args.length) > 0) {
-		// numberOfReps = Integer.parseInt(args[0]);
-		// }
 		for (int i = 0; i < numberOfReps; i++) {
 			ContractGetBalance scSs = new ContractGetBalance();
 			scSs.demo();
@@ -164,7 +161,6 @@ public class ContractGetBalance {
 		Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
 		return transferTx;
-
 	}
 
 	private AccountID createAccount(AccountID payerAccount, long initialBalance) throws Exception {
@@ -178,8 +174,6 @@ public class ContractGetBalance {
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeys.get(payerAccount));
-		// Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-		// accountKeys.get(payerAccount));
 		TransactionResponse response = stub.createAccount(transaction);
 		Assert.assertNotNull(response);
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -590,7 +584,6 @@ public class ContractGetBalance {
 
 				int currValueToDeposit = ThreadLocalRandom.current().nextInt(1, 10000 + 1);
 				depositToContract(crAccount, payTestContractId, currValueToDeposit);
-				// Thread.sleep(10000);
 				int currentBalanceAfterUpdate = getBalanceFromContract(crAccount, payTestContractId);
 				// getting contract balance using contract Id
 				Response getBalanceResp = getBalance(crAccount, null, payTestContractId);
@@ -836,8 +829,6 @@ public class ContractGetBalance {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 
 		byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
-		// Key adminPubKey =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		// note the admin key should be wrapped in a KeyList to match the signing
 		Key adminPubKey = Key.newBuilder().setKeyList(
 				KeyList.newBuilder().addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build()).build())

@@ -222,20 +222,13 @@ public class CryptoFeeTests extends BaseFeeTests {
     List<Key> queryPayerKeyList = new ArrayList<>();
     queryPayerKeyList.add(TestHelperComplex.acc2ComplexKeyMap.get(queryPayerId));
 
-//    Transaction createAccountRequest = TestHelperComplex
-//        .createAccountMultiSig(queryPayerId, nodeID, keyPairList, 10000000000l,
-//            queryPayerKeyList, 1, 5000);
-//    TransactionResponse response = cstub.createAccount(createAccountRequest);
 
     AccountID multiKeyAccountId = createAccountWithListKey(CryptoServiceTest.genesisAccountID, nodeID,
         CryptoServiceTest.DEFAULT_INITIAL_ACCOUNT_BALANCE, true, true, 10);
-    //  AccountID multiKeyAccountId = getAccountID(createAccountRequest);
 
     long payerAccountBalance_before = getAccountBalance(payerID, queryPayerId, nodeID);
 
     long durationSeconds = 30 * 24 * 60 * 60; //1 Month (30 Days)
-    //   Key payerKey = acc2ComplexKeyMap.get(payerID);
-    //  Key accKey = acc2ComplexKeyMap.get(account_1);
     List<PrivateKey> keys = new ArrayList<>();
     keys.add(CryptoServiceTest.getAccountPrivateKeys(payerID).get(0));
     for (KeyPair keyPair : keyPairList) {
@@ -251,7 +244,6 @@ public class CryptoFeeTests extends BaseFeeTests {
     TransactionResponse updateResponse = CryptoServiceTest.cstub.updateAccount(signUpdate);
 
     Assert.assertNotNull(updateResponse);
-//    Assert.assertEquals(ResponseCodeEnum.OK, updateResponse.getNodeTransactionPrecheckCode());
     log.info(
         "Pre Check Response account update :: " + updateResponse.getNodeTransactionPrecheckCode()
             .name());
@@ -301,7 +293,6 @@ public class CryptoFeeTests extends BaseFeeTests {
     long transactionFee = getTransactionFee(createAccountRequest);
     AccountID newlyCreateAccountId1 = getAccountID(createAccountRequest);
     TestHelperComplex.acc2ComplexKeyMap.put(newlyCreateAccountId1, key);
-    // PrivateKey payerPrivateKey = pubKey2privKeyMap.get(payerKey);
     String memo = TestHelperComplex.getStringMemo(10);
     Transaction transfer1 = CryptoServiceTest.getSignedTransferTx(queryPayerId, nodeID, newlyCreateAccountId1,
         account_2,
@@ -342,7 +333,6 @@ public class CryptoFeeTests extends BaseFeeTests {
     long durationSeconds = 30 * 24 * 60 * 60; //1 Month (30 Days)
     CryptoServiceTest.accountKeyTypes = new String[]{"single"};
     COMPLEX_KEY_SIZE = 1;
-  //  Key key = genComplexKey("single");
     Key key = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(TestHelperComplex.pubKey2privKeyMap);
     Transaction createAccountRequest = TestHelperComplex
             .createAccount(payerID, payerKey, nodeID, key, 100000, TestHelper.getCryptoMaxFee(), false,
@@ -359,7 +349,6 @@ public class CryptoFeeTests extends BaseFeeTests {
 
     AccountID newlyCreateAccountId1 = getAccountID(createAccountRequest);
     TestHelperComplex.acc2ComplexKeyMap.put(newlyCreateAccountId1, key);
-    // PrivateKey payerPrivateKey = pubKey2privKeyMap.get(payerKey);
     String memo = TestHelperComplex.getStringMemo(10);
     Transaction transfer1 = CryptoServiceTest.getSignedTransferTx(newlyCreateAccountId1, nodeID, newlyCreateAccountId1,
             account_2,
@@ -536,19 +525,10 @@ public class CryptoFeeTests extends BaseFeeTests {
     List<Key> queryPayerKeyList = new ArrayList<>();
     queryPayerKeyList.add(TestHelperComplex.acc2ComplexKeyMap.get(queryPayerId));
 
-//    Transaction createAccountRequest = TestHelperComplex
-//        .createAccountMultiSig(queryPayerId, nodeID, keyPairList, 10000000000l,
-//            queryPayerKeyList, 1, 5000);
-//    TransactionResponse response = cstub.createAccount(createAccountRequest);
-
     AccountID multiKeyAccountId = createAccountWithListKey(CryptoServiceTest.genesisAccountID, nodeID,
         CryptoServiceTest.DEFAULT_INITIAL_ACCOUNT_BALANCE, true, true, 10);
-    //  AccountID multiKeyAccountId = getAccountID(createAccountRequest);
 
     long payerAccountBalance_before = getAccountBalance(payerID, queryPayerId, nodeID);
-
-    //   Key payerKey = acc2ComplexKeyMap.get(payerID);
-    //  Key accKey = acc2ComplexKeyMap.get(account_1);
     List<Key> keys = new ArrayList<>();
     Key keyMultiSigAcct = TestHelperComplex.acc2ComplexKeyMap.get(multiKeyAccountId);
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(payerID));

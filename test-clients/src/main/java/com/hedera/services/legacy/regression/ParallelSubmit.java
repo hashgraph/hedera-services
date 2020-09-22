@@ -50,7 +50,9 @@ public class ParallelSubmit implements Callable<TransactionResponse> {
         long executionMicroSecond = getNextMillisecondsForMatch(startMicroSecond);
         //Wait for specific millisecond for submitting transaction
         System.out.println("******Waiting -- "+Thread.currentThread().getName()+", Current Time: "+System.currentTimeMillis());
-        while (executionMicroSecond == System.currentTimeMillis());
+        while (executionMicroSecond == System.currentTimeMillis()) {
+			;
+		}
         System.out.println("******Done -- "+Thread.currentThread().getName()+", Completed TIme "+System.currentTimeMillis());
         response = contractStub.createContract(transaction);
         return response;

@@ -192,34 +192,22 @@ public class CryptoLiveHashTest {
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
 
     Transaction tx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-//
     List<PrivateKey> fromPrivKeyList = new ArrayList<>();
     fromPrivKeyList.add(0, firstPair.getPrivate());
-//
-////    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-////    privKeysList.add(fromPrivKeyList);
-//
-////    Transaction signedTransaction = TransactionSigner.signTransaction(tx,fromPrivKeyList);
     Transaction signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(firstPair.getPrivate()));
     log.info(signedTransaction + ":: is the signed transaction");
-//    Transaction signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction,fromPrivKeyList);
     Transaction signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction, waclPrivKeyList, true);
-//    signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction,Collections.singletonList(firstPair.getPrivate()));
     log.info(signedTransactiontKeys + ":: is the transaction signed with the payer plus wacl");
-//
-//
+
     TransactionResponse response1 = stub.addLiveHash(signedTransactiontKeys);
     log.info(response1.getNodeTransactionPrecheckCode());
     Assert.assertEquals(response1.getNodeTransactionPrecheckCode(), ResponseCodeEnum.OK);
     TransactionReceipt txReceipt = null;
     txReceipt = TestHelper.getTxReceipt(transactionID, stub);
     log.info(txReceipt);
-//
+
     // get claim
-
-//    CryptoGetLiveHashQuery cryptoGetLiveHashQuery = CryptoGetLiveHashQuery.newBuilder().se
-
     Transaction transferTransaction = TestHelper
         .createTransferSigMap(newlyCreateAccountId1, firstPair, nodeAccountID,
             newlyCreateAccountId1, firstPair, nodeAccountID, 100000);

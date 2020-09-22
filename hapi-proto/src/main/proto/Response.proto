@@ -80,6 +80,6 @@ message Response {
 
         NetworkGetVersionInfoResponse networkGetVersionInfo = 151; // Semantic versions of Hedera Services and HAPI proto
 
-        TokenGetInfoResponse tokenGetInfo = 152;
+        TokenGetInfoResponse tokenGetInfo = 152; // Get all information about a token
     }
 }

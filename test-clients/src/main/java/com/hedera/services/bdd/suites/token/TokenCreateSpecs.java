@@ -23,11 +23,9 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +42,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
 
 	private static String TOKEN_TREASURY = "treasury";
+	private static final int MAX_NAME_LENGTH = 100;
 
 	public static void main(String... args) {
 		new TokenCreateSpecs().runSuiteSync();
@@ -57,8 +56,10 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						initialFloatMustBeSane(),
 						numAccountsAllowedIsDynamic(),
-						creationYieldsExpectedToken(),
 						autoRenewValidationWorks(),
+						creationYieldsExpectedToken(),
+						creationSetsExpectedName(),
+						creationValidatesName()
 				}
 		);
 	}
@@ -105,6 +106,44 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
+				);
+	}
+
+	public HapiApiSpec creationSetsExpectedName() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationSetsExpectedName")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasName(saltedName)
+				);
+	}
+
+
+	public HapiApiSpec creationValidatesName() {
+		String longName = "a".repeat(MAX_NAME_LENGTH + 1);
+		return defaultHapiSpec("CreationValidatesName")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+				).then(
+						tokenCreate("primary")
+								.name("")
+								.logged()
+								.hasKnownStatus(MISSING_TOKEN_NAME),
+						tokenCreate("primary")
+								.name(longName)
+								.logged()
+								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
@@ -193,26 +232,26 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("sinking")
 								.payingWith("payer")
 								.initialFloat(-1L)
-								.hasKnownStatus(INVALID_TOKEN_FLOAT),
+								.hasKnownStatus(INVALID_INITIAL_SUPPLY),
 						tokenCreate("indivisible")
 								.payingWith("payer")
 								.divisibility(-1)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("indivisible")
 								.payingWith("payer")
 								.divisibility(1)
 								.initialFloat(1L << 62)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("toobigdivisibility")
 								.payingWith("payer")
 								.initialFloat(0)
 								.divisibility(19)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY),
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
 						tokenCreate("toobigdivisibility")
 								.payingWith("payer")
 								.initialFloat(10)
 								.divisibility(18)
-								.hasKnownStatus(INVALID_TOKEN_DIVISIBILITY)
+								.hasKnownStatus(INVALID_TOKEN_DECIMALS)
 				);
 	}
 

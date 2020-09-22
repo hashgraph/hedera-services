@@ -164,7 +164,9 @@ public class ContractCall extends ClientBaseThread {
                 sleep(10);
               }
             } catch (io.grpc.StatusRuntimeException e) {
-              if(!tryReconnect(e)) break;
+              if(!tryReconnect(e)) {
+                break;
+              }
             } catch (Exception e) {
               e.printStackTrace();
             }
@@ -205,7 +207,6 @@ public class ContractCall extends ClientBaseThread {
                   Timestamp consensusTimeStamp = record.getConsensusTimestamp();
                   Instant payerExpiryTime = RequestBuilder.convertProtoTimeStamp(consensusTimeStamp).plusSeconds(
                           RECORD_EXPIRE_SECOND);
-                  //log.info("Old record {}", item);
 
                   Instant nowTime = Instant.now();
                   java.time.Duration duration = java.time.Duration.between(nowTime, payerExpiryTime);
@@ -227,7 +228,9 @@ public class ContractCall extends ClientBaseThread {
                   }
 
                   // keep trying to see when it will be expired
-                  while (getTransactionRecord(genesisAccount, item, false) != null) ;
+                  while (getTransactionRecord(genesisAccount, item, false) != null) {
+                    ;
+                  }
                   log.info("txRecord finally expired {} after {}", item,
                           java.time.Duration.between(Instant.now(), payerExpiryTime));
                 }
@@ -244,7 +247,9 @@ public class ContractCall extends ClientBaseThread {
                 sleep(50);
             }
             } catch (io.grpc.StatusRuntimeException e) {
-              if(!tryReconnect(e)) break;
+              if(!tryReconnect(e)) {
+                break;
+              }
             } catch (Exception e) {
               e.printStackTrace();
             }
@@ -339,7 +344,9 @@ public class ContractCall extends ClientBaseThread {
         preBalance = verifyBalance(txID, preBalance, true);
       }else {
         txIdQueue.add(txID);
-        if (isBackupTxIDRecord) submittedTxID.add(txID);
+        if (isBackupTxIDRecord) {
+          submittedTxID.add(txID);
+        }
       }
 
       for (int iteration = 1; iteration <= ITERATIONS; iteration++) {
@@ -365,11 +372,15 @@ public class ContractCall extends ClientBaseThread {
           }else{
             if (txId != null) {
               txIdQueue.add(txId);
-              if (isBackupTxIDRecord) submittedTxID.add(txId);
+              if (isBackupTxIDRecord) {
+                submittedTxID.add(txId);
+              }
             }
           }
         } catch (StatusRuntimeException e) {
-          if(!tryReconnect(e)) return;
+          if(!tryReconnect(e)) {
+            return;
+          }
         }
         accumulatedTransferCount++;
         float currentTPS = Common.tpsControl(startTime, accumulatedTransferCount, TPS_TARGET);
@@ -442,7 +453,9 @@ public class ContractCall extends ClientBaseThread {
       }
     }finally {
       if (isBackupTxIDRecord) {
-        while(txIdQueue.size()>0); //wait query thread to finish
+        while(txIdQueue.size()>0) {
+          ; //wait query thread to finish
+        }
         sleep(1000);         //wait check thread done query
         log.info("{} query queue empty", getName());
       }

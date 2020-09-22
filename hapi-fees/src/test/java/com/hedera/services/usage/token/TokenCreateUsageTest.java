@@ -8,7 +8,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -19,6 +19,7 @@ import org.junit.runner.RunWith;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static org.junit.Assert.*;
 import static org.mockito.BDDMockito.*;
@@ -34,11 +35,12 @@ public class TokenCreateUsageTest {
 	long autoRenewPeriod = 1_234_567L;
 	long now = expiry - autoRenewPeriod;
 	String symbol = "ABCDEFGH";
+	String name = "WhyWhyWHy";
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
-	TokenCreation op;
+	TokenCreateTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -93,11 +95,14 @@ public class TokenCreateUsageTest {
 		// and:
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addRbs(
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 1) *
+				USAGE_PROPERTIES.legacyReceiptStorageSecs());
 		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private long baseSize() {
-		return TokenEntitySizes.TOKEN_ENTITY_SIZES.baseBytesUsed(symbol)
+		return TOKEN_ENTITY_SIZES.baseBytesUsed(symbol, name)
 				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
 				+ FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
@@ -106,9 +111,10 @@ public class TokenCreateUsageTest {
 	}
 
 	private void givenExpiryBasedOp() {
-		op = TokenCreation.newBuilder()
+		op = TokenCreateTransactionBody.newBuilder()
 				.setExpiry(expiry)
 				.setSymbol(symbol)
+				.setName(name)
 				.setKycKey(kycKey)
 				.setAdminKey(adminKey)
 				.setFreezeKey(freezeKey)
@@ -119,10 +125,11 @@ public class TokenCreateUsageTest {
 	}
 
 	private void givenAutoRenewBasedOp() {
-		op = TokenCreation.newBuilder()
+		op = TokenCreateTransactionBody.newBuilder()
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(autoRenewPeriod)
 				.setSymbol(symbol)
+				.setName(name)
 				.setKycKey(kycKey)
 				.setAdminKey(adminKey)
 				.setFreezeKey(freezeKey)

@@ -431,7 +431,6 @@ public class BigArrayPerformance  extends Thread {
     recordResp = stub.getTxRecordByTxID(getRecordQuery);
 
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
 
     return txRecord;
   }

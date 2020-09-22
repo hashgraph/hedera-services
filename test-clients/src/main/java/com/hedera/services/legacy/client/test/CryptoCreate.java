@@ -184,14 +184,18 @@ public class CryptoCreate extends ClientBaseThread {
             log.info("{} currentTPS {}", getName(), currentTPS);
           }
         } catch (StatusRuntimeException e) {
-          if (!tryReconnect(e)) return;
+          if (!tryReconnect(e)) {
+			  return;
+		  }
         }catch (Exception e){
           log.error("Unexpected error ", e);
           return;
         }
       }
     }finally {
-      while(accountTranList.size()>0); //wait query thread to finish
+      while(accountTranList.size()>0) {
+		  ; //wait query thread to finish
+	  }
       sleep(1000);         //wait check thread done query
       log.info("{} query queue empty", getName());
       channel.shutdown();

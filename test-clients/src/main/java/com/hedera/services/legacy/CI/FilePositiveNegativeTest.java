@@ -102,11 +102,7 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     setUp();
     QUERY_GET_FILE_INFO_FEE = testProps.getInt("queryGetFileInfoSig_1", QUERY_DEFAULT_FEE);
     QUERY_GET_FILE_CONTENT_FEE = testProps.getInt("queryGetFileContent_Sig_1", QUERY_DEFAULT_FEE);
-    // String[] original = FileServiceTest.accountKeyTypes;
-    // String[] temp = {"keylist", "thresholdKey"};
-    // FileServiceTest.accountKeyTypes = temp;
     CryptoServiceTest.payerAccounts = accountCreatBatch(1);
-    // FileServiceTest.accountKeyTypes = original;
 
   }
 
@@ -132,7 +128,6 @@ public class FilePositiveNegativeTest extends FileServiceTest {
       Assert.assertNotNull(fid);
       Assert.assertTrue(fid.getFileNum() > 0);
       FileInfo fi = getFileInfo(fid, payerID, nodeID);
-      // Assert.assertEquals(1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       log.info(LOG_PREFIX + "Create file: Positive test passed! file ID = " + fid);
       fid2waclMap.put(fid, waclPubKeyList);
@@ -216,8 +211,9 @@ public class FilePositiveNegativeTest extends FileServiceTest {
           List<Key> oneKeyLess = new ArrayList<>();
           oneKeyLess.addAll(existingKeys);
           int threshold = payerKey.getThresholdKey().getThreshold();
-          for (int i = 0; i < (existingKeys.size() - threshold + 1); i++)
-            oneKeyLess.remove(0);
+          for (int i = 0; i < (existingKeys.size() - threshold + 1); i++) {
+			  oneKeyLess.remove(0);
+		  }
           KeyList newKeyList = KeyList.newBuilder().addAllKeys(oneKeyLess).build();
           payerKey = Key.newBuilder().setThresholdKey(ThresholdKey.newBuilder().setKeys(newKeyList)
               .setThreshold(payerKey.getThresholdKey().getThreshold())).build();
@@ -310,8 +306,9 @@ public class FilePositiveNegativeTest extends FileServiceTest {
     Transaction txSigned =
         TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keys, pubKey2privKeyMap);
 
-    if (txHolder != null)
-      txHolder[0] = txSigned;
+    if (txHolder != null) {
+		txHolder[0] = txSigned;
+	}
 
     log.info("\n-----------------------------------");
     log.info("  -- FileID: " + fid.getFileNum());
@@ -645,7 +642,6 @@ public class FilePositiveNegativeTest extends FileServiceTest {
           appendFile(POSITIVE, payerID, nodeID, fileID, fileData, waclPubKeyList);
       Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
       FileInfo fi = getFileInfo(fileID, payerID, nodeID);
-      // Assert.assertEquals(2 * 1024, fi.getSize());
       Assert.assertEquals(false, fi.getDeleted());
       log.info(LOG_PREFIX + "Append file: Positive test passed!");
 

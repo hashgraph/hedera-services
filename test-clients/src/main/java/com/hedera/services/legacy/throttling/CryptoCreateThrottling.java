@@ -107,8 +107,6 @@ public class CryptoCreateThrottling {
     payerAccount = genesisAccount.get(0).getAccountId();
     nodeAccount2 = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
     log.info(payerAccount);
-//        log.info(stub.withWaitForReady());
-//        log.info(stub.);
     TestHelper.initializeFeeClient(channel, payerAccount, genesisKeyPair, nodeAccount2);
 
     // create Account
@@ -158,12 +156,9 @@ public class CryptoCreateThrottling {
           + "is the update Account response");
     }
     channel.shutdown();
-
-//        Response transactionRecord = getTransactionRecord(transaction);
   }
 
   public AccountID createAccount(Transaction transaction) throws InterruptedException {
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createAccount");
     AccountID accountID = AccountID.newBuilder().setAccountNum(100000000).build();
     try {
       TransactionResponse response = stub.createAccount(transaction);
@@ -183,7 +178,6 @@ public class CryptoCreateThrottling {
       accountID =
           getTxReceipt(body.getTransactionID()).getTransactionGetReceipt()
               .getReceipt().getAccountID();
-//      stopWatch.stop();
       return accountID;
 
     } catch (Exception e) {
@@ -198,7 +192,6 @@ public class CryptoCreateThrottling {
     Query query = Query.newBuilder().setTransactionGetReceipt(
         RequestBuilder.getTransactionGetReceiptQuery(transactionID, ResponseType.ANSWER_ONLY))
         .build();
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:getReceipt");
     Response transactionReceipts = Response.newBuilder()
         .setTransactionGetReceipt(TransactionGetReceiptResponse
             .newBuilder().setReceipt(TransactionReceipt.newBuilder().setStatusValue(0).build())
@@ -221,7 +214,6 @@ public class CryptoCreateThrottling {
       }
       log.info(transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus()
           + ":: is the status");
-//      stopWatch.stop();
       return transactionReceipts;
 
     } catch (Exception e) {
@@ -231,8 +223,7 @@ public class CryptoCreateThrottling {
     return transactionReceipts;
   }
 
-  public Response doTransfer(Transaction transaction) throws InterruptedException, Exception {
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:transfer");
+  public Response doTransfer(Transaction transaction) throws Exception {
     TransactionResponse transferResponse = stub.cryptoTransfer(transaction);
     log.info(transferResponse.getNodeTransactionPrecheckCode());
     int count = 0;
@@ -248,7 +239,6 @@ public class CryptoCreateThrottling {
     }
     TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
     Response transferReceipt = getTxReceipt(body.getTransactionID());
-//    stopWatch.stop();
     return transferReceipt;
   }
 
@@ -258,7 +248,6 @@ public class CryptoCreateThrottling {
     Query query = TestHelper.getTxRecordByTxId(body.getTransactionID(),
         payerAccount, genesisKeyPair, nodeAccount2, TestHelper.getCryptoMaxFee(),
         ResponseType.ANSWER_ONLY);
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:transactionRecord");
     Response transactionRecord = stub.getTxRecordByTxID(query);
     int count = 0;
     while ((transactionRecord.getTransactionGetReceipt().getReceipt().getStatus()
@@ -273,12 +262,10 @@ public class CryptoCreateThrottling {
       }
       count++;
     }
-//    stopWatch.stop();
     return transactionRecord;
   }
 
-  public Response updateAccount(Transaction transaction) throws InterruptedException, Exception {
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:updateAccount");
+  public Response updateAccount(Transaction transaction) throws Exception {
     TransactionResponse updateAccountResponse = stub.updateAccount(transaction);
     log.info(updateAccountResponse.getNodeTransactionPrecheckCode());
     int count = 0;
@@ -294,7 +281,6 @@ public class CryptoCreateThrottling {
     }
     TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
     Response transferReceipt = getTxReceipt(body.getTransactionID());
-//    stopWatch.stop();
     return transferReceipt;
   }
 }

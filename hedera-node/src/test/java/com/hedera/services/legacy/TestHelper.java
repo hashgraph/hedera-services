@@ -170,7 +170,9 @@ public class TestHelper {
    * @return
    */
   public static Key genMultiLayerThresholdKey(int num, Key thresholdKey) {
-    if (num == 1) return thresholdKey;
+    if (num == 1) {
+		return thresholdKey;
+	}
     KeyList keyList = thresholdKey.getThresholdKey().getKeys();
     Key curr = thresholdKey;
     ThresholdKey.Builder thresholdBuilder;
@@ -191,7 +193,9 @@ public class TestHelper {
    * @return
    */
   public static Signature genMultiLayerThresholdSig(int num, Signature thresholdSig) {
-    if (num == 1) return thresholdSig;
+    if (num == 1) {
+		return thresholdSig;
+	}
     SignatureList sigList = thresholdSig.getThresholdSignature().getSigs();
     Signature curr = thresholdSig;
     ThresholdSignature.Builder thresholdBuilder;

@@ -298,20 +298,6 @@ public class LandRegistry {
 
     return createdContract;
   }
-  
-  /*
-Methods to run the buyProperty method
- */
-//  private String doBuyProperty(AccountID payerAccount, ContractID contractId, String buyer,
-//      int propertyId, int amount, ResponseCodeEnum expectedStatus) throws Exception {
-//    String retVal = null; // Value if nothing was returned
-//    byte[] dataToGet = encodeBuyProperty(buyer, propertyId, amount);
-//    byte[] result = callContract(payerAccount, contractId, dataToGet, amount, expectedStatus);
-//    if (result != null && result.length > 0) {
-//      retVal = decodeBuyPropertyResult(result);
-//    }
-//    return retVal;
-//  }
 
   private TransactionID doBuyProperty(AccountID payerAccount, ContractID contractId, String buyer,
       int propertyId, int amount) throws Exception {

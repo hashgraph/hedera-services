@@ -49,7 +49,6 @@ public class QueryFeeTests extends BaseFeeTests {
 	private static final Logger log = LogManager.getLogger(QueryFeeTests.class);
 	private static String testConfigFilePath = "config/umbrellaTest.properties";
 
-//  protected static List<String> testResults = new ArrayList<>();
 	public QueryFeeTests(String testConfigFilePath) {
 		super(testConfigFilePath);
 	}
@@ -155,7 +154,6 @@ public class QueryFeeTests extends BaseFeeTests {
 	public void cryptoGetAccountInfoFeeTest() throws Throwable {
 		String memo = TestHelperComplex.getStringMemo(1);
 		long balanceQueryCost = TestHelper.getCryptoMaxFee();
-//    long balanceQueryCost = FeeClient.getCostForGettingAccountInfo();
 		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo, balanceQueryCost);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(payerID, paymentTxSigned,
 				ResponseType.ANSWER_ONLY);
@@ -198,7 +196,6 @@ public class QueryFeeTests extends BaseFeeTests {
 		}
 		String memo = TestHelperComplex.getStringMemo(10);
 		long balanceQueryCost = TestHelper.getCryptoMaxFee();
-		// long balanceQueryCost = FeeClient.getCostForGettingAccountInfo();
 		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(payerID, nodeID, memo, balanceQueryCost);
 		Query cryptoGetInfoQuery = RequestBuilder.getCryptoGetInfoQuery(newAccountID, paymentTxSigned,
 				ResponseType.ANSWER_ONLY);
@@ -262,7 +259,6 @@ public class QueryFeeTests extends BaseFeeTests {
 		log.info("GetTxReceipt: file ID = " + fid);
 		AccountID newAccountID = getMultiSigAccount(1, 10, durationSeconds);
 		long queryCost = TestHelper.getCryptoMaxFee();
-//        long queryCost = FeeClient.getFileInfoQueryFee(kyeList);
 		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
 		Query fileGetInfoQuery = RequestBuilder.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.COST_ANSWER);
 		log.info("\n-----------------------------------");
@@ -324,7 +320,6 @@ public class QueryFeeTests extends BaseFeeTests {
 		log.info("GetTxReceipt: file ID = " + fid);
 		AccountID newAccountID = getMultiSigAccount(10, 10, durationSeconds);
 		long queryCost = TestHelper.getCryptoMaxFee();
-//        long queryCost = FeeClient.getFileInfoQueryFee(kyeList);
 		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
 		Query fileGetInfoQuery = RequestBuilder.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.COST_ANSWER);
 		log.info("\n-----------------------------------");
@@ -438,7 +433,6 @@ public class QueryFeeTests extends BaseFeeTests {
 		AccountID newAccountID = getMultiSigAccount(keyCount, memoSize, durationSeconds);
 		Assert.assertNotNull(newAccountID);
 		long payerAccountBalance_before = getAccountBalance(newAccountID, queryPayerId, nodeID);
-		// long queryCost = FeeClient.getMaxFee();
 		long queryCost = FeeClient.getFileContentQueryFee(fileContents.length);
 		Transaction paymentTxSigned = CryptoServiceTest.getQueryPaymentSignedWithFee(newAccountID, nodeID, memo, queryCost);
 

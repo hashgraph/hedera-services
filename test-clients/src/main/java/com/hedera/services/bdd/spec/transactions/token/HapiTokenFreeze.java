@@ -24,11 +24,11 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hedera.services.usage.token.TokenFreezeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenFreeze;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -39,6 +39,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 	static final Logger log = LogManager.getLogger(HapiTokenFreeze.class);
@@ -64,34 +66,21 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenFreezeAccount, this::mockFreezeAccountUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenFreezeAccount, this::usageEstimate, txn, numPayerKeys);
 	}
 
-	private FeeData mockFreezeAccountUsage(TransactionBody ignoredTxn, SigValueObj ignoredSigUsage) {
-		return TxnUtils.defaultPartitioning(
-				FeeComponents.newBuilder()
-						.setMin(1)
-						.setMax(1_000_000)
-						.setConstant(1)
-						.setBpt(1)
-						.setVpt(1)
-						.setRbh(1)
-						.setSbh(1)
-						.setGas(1)
-						.setTv(1)
-						.setBpr(1)
-						.setSbpr(1)
-						.build(), 1);
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+		return TokenFreezeUsage.newEstimate(txn, suFrom(svo)).get();
 	}
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var aId = TxnUtils.asId(account, spec);
 		var tId = TxnUtils.asTokenId(token, spec);
-		TokenFreeze opBody = spec
+		TokenFreezeAccountTransactionBody opBody = spec
 				.txns()
-				.<TokenFreeze, TokenFreeze.Builder>body(
-						TokenFreeze.class, b -> {
+				.<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(
+						TokenFreezeAccountTransactionBody.class, b -> {
 							b.setAccount(aId);
 							b.setToken(TxnUtils.asRef(tId));
 						});

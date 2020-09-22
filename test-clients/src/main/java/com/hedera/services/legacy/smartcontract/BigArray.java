@@ -298,8 +298,6 @@ public class BigArray {
          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().equals(ResponseCodeEnum.BUSY))) {
       Thread.sleep(1000);
       transactionReceipts = cryptoStub.getTransactionReceipts(query);
-//      System.out.println("waiting to getTransactionReceipts as not Unknown..." +
-//          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().name());
       attempts++;
     }
     Assert.assertEquals(ResponseCodeEnum.SUCCESS, transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus());
@@ -373,7 +371,6 @@ public class BigArray {
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(txId);
     if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
         .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
-      //Thread.sleep(6000);
       TransactionRecord trRecord = getTransactionRecord(payerAccount, txId);
       if (trRecord != null && trRecord.hasContractCallResult()) {
         ContractFunctionResult callResults = trRecord.getContractCallResult();
@@ -404,7 +401,6 @@ public class BigArray {
     recordResp = stub.getTxRecordByTxID(getRecordQuery);
 
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
 
     return txRecord;
   }

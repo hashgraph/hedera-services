@@ -139,28 +139,6 @@ public class ChainOfContracts {
 	  }
 
 	  public static void main(String args[]) throws Exception {
-			/* byte[] arrTest = {2,3,4,5,6,};
-			 byte[] arrTest2 = {7,8,9,10};
-			 DataWord dw = new DataWord(arrTest);
-			 DataWord dw1 = new DataWord(arrTest);
-			 Map<byte[],DataWord> mapToSerialize = new HashMap<byte[],DataWord>();
-			 mapToSerialize.put(arrTest, dw);
-			 mapToSerialize.put(arrTest2, dw1);
-			 byte[] serializedDataWordMap = SerializationUtils.serialize((Serializable)mapToSerialize);
-			 try {
-		            Path folderpath = Paths.get("/persisttest");
-		            Path filePath =  Paths.get("/persisttest/testpersist.data");
-		            if(Files.notExists(folderpath)) {
-		            	Files.createDirectory(folderpath);
-		            }
-		            Files.write(filePath, serializedDataWordMap);
-		            Files.readAllBytes(filePath);
-		        } catch (IOException e) {
-		            e.printStackTrace();
-		        }
-			 
-			 
-			 Map<byte[],DataWord>  deserializedMap = SerializationUtils.deserialize(serializedDataWordMap);*/
 	    Properties properties = TestHelper.getApplicationProperties();
 			contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
 	    host = properties.getProperty("host");
@@ -191,7 +169,6 @@ public class ChainOfContracts {
 
 	    if (crAccount != null) {
 
-//				FileID simpleStorageFileId = uploadFile(crAccount, fileName);
 	      FileID simpleStorageFileId = LargeFileUploadIT.uploadFile(crAccount, fileName, keyPair);
 	      if (simpleStorageFileId != null) {
 	        ContractID storageWrapperContractId = createContract(crAccount, simpleStorageFileId,
@@ -208,7 +185,6 @@ public class ChainOfContracts {
 	        setValueToContract(crAccount, storageWrapperContractId, valuePassedContract1);
 	        
 	        int actualStoredValueC1 = getValueFromContract(crAccount, storageWrapperContractId);
-	        actualStoredValueC1 = getValueFromContract(crAccount, storageWrapperContractId);
 	        Assert.assertEquals(valuePassedContract1, actualStoredValueC1);
 
 	        valuePassedContract1 = ThreadLocalRandom.current().nextInt(1, 1000000 + 1);;
@@ -228,17 +204,14 @@ public class ChainOfContracts {
 	  }
 
 	  private static Transaction createQueryHeaderTransfer(AccountID payer) throws Exception {
-	    Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
-	        nodeAccount, payer,
-	        accountKeys.get(payer).get(0), nodeAccount, TestHelper.getCryptoMaxFee());
-	    return transferTx;
-
+		  return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
+			  nodeAccount, payer,
+			  accountKeys.get(payer).get(0), nodeAccount, TestHelper.getCryptoMaxFee());
 	  }
 
 	  private static AccountID createAccount(AccountID payerAccount, long initialBalance,
 	      KeyPair keyGenerated) throws Exception {
-	    AccountID createdAccount = null;
-	    int port = 50211;
+		  int port = 50211;
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
 	        .usePlaintext(true)
 	        .build();
@@ -246,7 +219,6 @@ public class ChainOfContracts {
 	    Transaction transaction = TestHelper
 	        .createAccountWithFee(payerAccount, nodeAccount, keyGenerated, initialBalance,
 	            accountKeys.get(payerAccount));
-//			  Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
 	    TransactionResponse response = stub.createAccount(transaction);
 	    Assert.assertNotNull(response);
 	    Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

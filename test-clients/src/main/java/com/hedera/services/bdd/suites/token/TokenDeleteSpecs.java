@@ -59,8 +59,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						deletionValidatesRef(),
-						deletionWorksAsExpected(),
 						deletionValidatesMissingAdminKey(),
+						deletionWorksAsExpected(),
 				}
 		);
 	}
@@ -74,14 +74,13 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.balance(A_HUNDRED_HBARS),
 						tokenCreate("tbd")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 				).when( ).then(
 						tokenDelete("tbd")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(UNAUTHORIZED)
+								.hasKnownStatus(TOKEN_IS_IMMUTABlE)
 				);
 	}
 
@@ -99,7 +98,6 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.wipeKey("multiKey")
 								.supplyKey("multiKey")
 								.freezeDefault(false)
-								.kycDefault(true)
 								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 				).when(

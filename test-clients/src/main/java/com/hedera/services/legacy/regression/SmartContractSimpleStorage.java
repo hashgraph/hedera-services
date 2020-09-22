@@ -109,9 +109,6 @@ public class SmartContractSimpleStorage {
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
 
     int numberOfReps = 1;
-//    if ((args.length) > 0) {
-//      numberOfReps = Integer.parseInt(args[0]);
-//    }
     for (int i = 0; i < numberOfReps; i++) {
       SmartContractSimpleStorage scSs = new SmartContractSimpleStorage();
       scSs.demo();
@@ -582,7 +579,6 @@ public class SmartContractSimpleStorage {
         for (int i = 0; i < iterations; i++) {
           int currValueToSet = ThreadLocalRandom.current().nextInt(1, 1000000 + 1);
           setValueToContract(crAccount, sampleStorageContractId, currValueToSet);
-          //Thread.sleep(10000);
           int actualStoredValue = getValueFromContract(crAccount, sampleStorageContractId);
            Assert.assertEquals(currValueToSet, actualStoredValue);
           log.info("Contract get/set iteration " + i + " completed successfully==>");

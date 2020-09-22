@@ -27,16 +27,11 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-message TokenManagement {
-    TokenRef token = 1;
-    AccountID treasury = 2;
-    Key adminKey = 3;
-    Key kycKey = 4;
-    Key freezeKey = 5;
-    Key wipeKey = 6;
-    Key supplyKey = 7;
-    string symbol = 8;
-    AccountID autoRenewAccount = 9;
-    uint64 autoRenewPeriod = 10;
-    uint64 expiry = 11;
+/*
+Mints tokens to the Token's treasury Account. If no Supply Key is defined, the transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY.
+The operation increases the Total Supply of the Token. The maximum total supply a token can have is 2^63-1.
+ */
+message TokenMintTransactionBody {
+    TokenRef token = 1; // The token for which to mint tokens. If token does not exist, transaction results in INVALID_TOKEN_ID
+    uint64 amount = 2; // The amount to mint to the Treasury Account. Amount must be a positive non-zero number, such that the new supply is lower than 2^63
 }

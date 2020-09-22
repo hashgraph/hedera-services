@@ -120,9 +120,6 @@ public class ContractToContract {
 				.setShardNum(node_realm_number).build();
 
 		int numberOfReps = 1;
-		// if ((args.length) > 0) {
-		// numberOfReps = Integer.parseInt(args[0]);
-		// }
 		for (int i = 0; i < numberOfReps; i++) {
 			ContractToContract scSs = new ContractToContract();
 			scSs.demo();
@@ -152,10 +149,8 @@ public class ContractToContract {
 	}
 
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
-		Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
+		return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-		return transferTx;
-
 	}
 
 	private AccountID createAccount(AccountID payerAccount, long initialBalance) throws Exception {
@@ -169,8 +164,6 @@ public class ContractToContract {
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeys.get(payerAccount));
-		// Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-		// accountKeys.get(payerAccount));
 		TransactionResponse response = stub.createAccount(transaction);
 		Assert.assertNotNull(response);
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -585,7 +578,6 @@ public class ContractToContract {
 		for (int i = 0; i < numberOfTests; i++) {
 			int currValueToSet = ThreadLocalRandom.current().nextInt(1, 1000000 + 1);
 			setValueToContract(payerAccount, contractToTest, currValueToSet);
-			// Thread.sleep(10000);
 			int actualStoredValue = getValueFromContract(payerAccount, contractToTest);
 			Assert.assertEquals(currValueToSet, actualStoredValue);
 			log.info("Contract get/set iteration " + i + " completed successfully==>");

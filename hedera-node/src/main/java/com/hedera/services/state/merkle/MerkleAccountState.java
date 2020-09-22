@@ -424,7 +424,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			return true;
 		}
 		int i = logicalIndexOf(id);
-		return (i < 0) ? token.accountKycGrantedByDefault() : isKycGranted(i);
+		return (i < 0) ? token.accountsKycGrantedByDefault() : isKycGranted(i);
 	}
 
 	public void freeze(TokenID id, MerkleToken token) {
@@ -451,7 +451,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		if (token.kycKey().isEmpty()) {
 			return;
 		}
-		long defaultForNewRel = token.accountKycGrantedByDefault()
+		long defaultForNewRel = token.accountsKycGrantedByDefault()
 				? NOOP_MASK
 				: KYC_MASK | defaultFreezeMaskFor(token);
 		updateFlag(KYC_MASK, defaultForNewRel, id, this::set);
@@ -461,7 +461,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		if (token.kycKey().isEmpty()) {
 			return;
 		}
-		long defaultForNewRel = !token.accountKycGrantedByDefault()
+		long defaultForNewRel = !token.accountsKycGrantedByDefault()
 				? NOOP_MASK
 				: defaultFreezeMaskFor(token);
 		updateFlag(KYC_MASK, defaultForNewRel, id, this::unset);
@@ -470,7 +470,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
 		int i = logicalIndexOf(id), at = i;
 		if (i < 0) {
-			if (!token.accountKycGrantedByDefault()) {
+			if (!token.accountsKycGrantedByDefault()) {
 				return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 			}
 			if (token.accountsAreFrozenByDefault()) {
@@ -499,7 +499,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			if (adjustment < 0) {
 				throwBalanceIse(id, adjustment);
 			}
-			if (!token.accountKycGrantedByDefault()) {
+			if (!token.accountsKycGrantedByDefault()) {
 				throwNoKycIse(id);
 			}
 			if (token.accountsAreFrozenByDefault()) {
@@ -606,7 +606,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	}
 
 	private long defaultKycMaskFor(MerkleToken token) {
-		var flag = !token.hasKycKey() || token.accountKycGrantedByDefault();
+		var flag = !token.hasKycKey() || token.accountsKycGrantedByDefault();
 		return flag ? KYC_MASK : 0;
 	}
 

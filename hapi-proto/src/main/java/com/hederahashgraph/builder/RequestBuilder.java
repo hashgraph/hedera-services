@@ -562,10 +562,12 @@ public class RequestBuilder {
   public static ResponseHeader getResponseHeaderNew(ResponseCodeEnum code, Long cost,
       ResponseType type, ByteString stateProof) {
     Builder builder = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(code).setResponseType(type);
-    if(cost != null)
-      builder.setCost(cost);
-    if(stateProof != null)
-      builder.setStateProof(stateProof).build();
+    if(cost != null) {
+		builder.setCost(cost);
+	}
+    if(stateProof != null) {
+		builder.setStateProof(stateProof).build();
+	}
 
     return builder.build();
   }

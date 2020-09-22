@@ -313,7 +313,6 @@ public class RecordFileLogger implements LoggerInterface {
 		// write the transaction and record to a text file
 		try {
 			fw.write("TRANSACTION:" + counter + "\n");
-//			fw.write(Utility.printTransactionNice(transaction));
 			fw.write("RECORD:" + counter + "\n");
 			fw.write(TextFormat.printToString(txRecord));
 			fw.write("\n");

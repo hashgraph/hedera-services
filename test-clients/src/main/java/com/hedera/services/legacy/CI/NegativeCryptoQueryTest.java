@@ -166,8 +166,6 @@ public class NegativeCryptoQueryTest {
         payerAccount, keyPair, defaultNodeAccount);
     Assert.assertNotNull(accountBalance);
     Assert.assertTrue(accountBalance.hasCryptogetAccountBalance());
-   /* Assert.assertEquals(ResponseCodeEnum.INVALID_SIGNATURE,
-        accountBalance.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());*/
     Assert.assertEquals(ResponseCodeEnum.OK,
         accountBalance.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode());
     log.info("assertion completed...");

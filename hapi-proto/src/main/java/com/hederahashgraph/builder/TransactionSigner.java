@@ -129,8 +129,7 @@ public class TransactionSigner {
    *
    * @param transaction transaction to be singed
    * @param keys complex keys for signing
-   * @param privKeyList private key list for signing, each key in keys corresponds to a list of
-   * private keys.
+   * @param pubKey2privKeyMap
    * @return transaction with signatures as a SignatureMap object
    */
   public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
@@ -160,8 +159,7 @@ public class TransactionSigner {
    * 
    * @param messageBytes
    * @param keys complex keys for signing
-   * @param privKeyList private key list for signing, each key in keys corresponds to a list of
-   * private keys.
+   * @param pubKey2privKeyMap
    * @return transaction with signatures as a SignatureMap object
    * @throws Exception
    */
@@ -193,9 +191,10 @@ public class TransactionSigner {
    * @return found minimum prefix length
    */
   private static int findMinPrefixLength(Set<Key> keys) {
-    if(keys.size() == 1)
+    if (keys.size() == 1) {
       return 1;
-    
+    }
+
     int rv = 0;
     int numKeys = keys.size();
     //convert set to list of key hex strings
@@ -204,8 +203,9 @@ public class TransactionSigner {
     int maxBytes = 0;
     for(Key key : keys) {
       byte[] bytes = key.getEd25519().toByteArray();
-      if(bytes.length > maxBytes)
+      if(bytes.length > maxBytes) {
         maxBytes = bytes.length;
+      }
       String hex = Hex.encodeHexString(bytes);
       keyHexes.add(hex);
     }
@@ -233,7 +233,7 @@ public class TransactionSigner {
    * Signs transaction using signature map format.
    *
    * @param transaction transaction to be singed
-   * @param privKeyList private key list for signing
+   * @param privKeysList private key list for signing
    * @return transaction with signatures
    * @throws Exception
    */

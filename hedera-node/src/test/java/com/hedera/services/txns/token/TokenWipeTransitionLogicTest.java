@@ -27,7 +27,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenWipeAccount;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -48,85 +49,87 @@ import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class TokenWipeTransitionLogicTest {
-	private AccountID account = IdUtils.asAccount("1.2.4");
-	private TokenID id = IdUtils.asToken("1.2.3");
-	private TokenRef token = IdUtils.asIdRef("0.0.12345");
+    private AccountID account = IdUtils.asAccount("1.2.4");
+    private TokenID id = IdUtils.asToken("1.2.3");
+    private TokenRef token = IdUtils.asIdRef("0.0.12345");
+    private long wipeAmount = 100;
 
-	private TokenStore tokenStore;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+    private TokenStore tokenStore;
+    private TransactionContext txnCtx;
+    private PlatformTxnAccessor accessor;
 
-	private TransactionBody tokenWipeTxn;
-	private TokenWipeTransitionLogic subject;
+    private TransactionBody tokenWipeTxn;
+    private TokenWipeTransitionLogic subject;
 
-	@BeforeEach
-	private void setup() {
-		tokenStore = mock(TokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+    @BeforeEach
+    private void setup() {
+        tokenStore = mock(TokenStore.class);
+        accessor = mock(PlatformTxnAccessor.class);
 
-		txnCtx = mock(TransactionContext.class);
+        txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenWipeTransitionLogic(tokenStore, txnCtx);
-	}
+        subject = new TokenWipeTransitionLogic(tokenStore, txnCtx);
+    }
 
-	@Test
-	public void capturesInvalidWipe() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.wipe(account, id, false)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+    @Test
+    public void capturesInvalidWipe() {
+        givenValidTxnCtx();
+        // and:
+        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
 
-		// when:
-		subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
-	}
+        // then:
+        verify(txnCtx).setStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP);
+    }
 
-	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.wipe(account, id, false)).willReturn(OK);
+    @Test
+    public void followsHappyPath() {
+        givenValidTxnCtx();
+        // and:
+        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(OK);
 
-		// when:
-		subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-		// then:
-		verify(tokenStore).wipe(account, id, false);
-		verify(txnCtx).setStatus(SUCCESS);
-	}
+        // then:
+        verify(tokenStore).wipe(account, id, wipeAmount, false);
+        verify(txnCtx).setStatus(SUCCESS);
+    }
 
-	@Test
-	public void hasCorrectApplicability() {
-		givenValidTxnCtx();
+    @Test
+    public void hasCorrectApplicability() {
+        givenValidTxnCtx();
 
-		// expect:
-		assertTrue(subject.applicability().test(tokenWipeTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
+        // expect:
+        assertTrue(subject.applicability().test(tokenWipeTxn));
+        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    }
 
-	@Test
-	public void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.wipe(any(), any(), anyBoolean()))
-				.willThrow(IllegalArgumentException.class);
+    @Test
+    public void setsFailInvalidIfUnhandledException() {
+        givenValidTxnCtx();
+        // and:
+        given(tokenStore.wipe(any(), any(), anyLong(), anyBoolean()))
+                .willThrow(IllegalArgumentException.class);
 
-		// when:
-		subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
+        // then:
+        verify(txnCtx).setStatus(FAIL_INVALID);
+    }
 
-	private void givenValidTxnCtx() {
-		tokenWipeTxn = TransactionBody.newBuilder()
-				.setTokenWipe(TokenWipeAccount.newBuilder()
-						.setToken(token)
-						.setAccount(account))
-				.build();
-		given(accessor.getTxn()).willReturn(tokenWipeTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(token)).willReturn(id);
-	}
+    private void givenValidTxnCtx() {
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(token)
+                        .setAccount(account)
+                        .setAmount(wipeAmount))
+                .build();
+        given(accessor.getTxn()).willReturn(tokenWipeTxn);
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(tokenStore.resolve(token)).willReturn(id);
+    }
 }

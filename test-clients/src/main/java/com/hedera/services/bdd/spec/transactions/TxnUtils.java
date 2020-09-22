@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.transactions;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -45,6 +45,7 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
@@ -55,7 +56,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SplittableRandom;
@@ -81,7 +81,6 @@ import static com.hederahashgraph.fee.FeeBuilder.RECIEPT_STORAGE_TIME_SEC;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
-import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -219,6 +218,10 @@ public class TxnUtils {
 				.setAccountNum(contract.getContractNum()).build();
 	}
 
+	public static SigUsage suFrom(SigValueObj svo) {
+		return new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+	}
+
 	public static Timestamp defaultTimestamp() {
 		return getUniqueTimestampPlusSecs(0L);
 	}
@@ -347,28 +350,23 @@ public class TxnUtils {
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
 	public static String readableTokenTransferList(TokenTransfers xfers) {
-		Map<TokenRef, List<AccountAmount>> inter = xfers.getTransfersList()
-				.stream()
-				.collect(groupingBy(
-						TokenTransfer::getToken,
-						mapping(TxnUtils::projecting, toList())));
-		return inter.entrySet().stream()
-				.map(entry -> String.format("%s(%s)",
-						entry.getKey().hasTokenId()
-								? asTokenString(entry.getKey().getTokenId())
-								: entry.getKey().getSymbol()))
-				.collect(Collectors.joining(", "));
+		return xfers.getTokenTransfersList().stream()
+				.map(scopedXfers -> String.format("%s(%s)",
+						readableRef(scopedXfers.getToken()),
+						readableTransferList(scopedXfers.getTransfersList())))
+				.collect(joining(", "));
 	}
 
-	private static AccountAmount projecting(TokenTransfer xfer) {
-		return AccountAmount.newBuilder()
-				.setAccountID(xfer.getAccount())
-				.setAmount(xfer.getAmount())
-				.build();
+	public static String readableRef(TokenRef tr) {
+		return tr.hasTokenId() ? asTokenString(tr.getTokenId()) : tr.getSymbol();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsList()
+		return readableTransferList(accountAmounts.getAccountAmountsList());
+	}
+
+	public static String readableTransferList(List<AccountAmount> adjustments) {
+		return adjustments
 				.stream()
 				.map(aa -> String.format(
 						"%s %s %s%s",

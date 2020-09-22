@@ -114,16 +114,9 @@ public class FeeChargeTest extends ClientBaseThread {
       TransactionID firstTxID = callCreateAccount(payAccount, firstKeyPair, testAccountBalance);
       TransactionID secondTxID = callCreateAccount(payAccount, secondKeyPair, testAccountBalance);
 
-
       Common.getReceiptByTransactionId(stub, secondTxID);
 
-//      TransactionRecord temp = getTransactionRecord(genesisAccount, firstTxID, false);
-//
-//      Assert.assertEquals(temp.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
-
       verifyBalance(firstTxID, preBalance, false);
-
-
     }finally {
       channel.shutdown();
     }

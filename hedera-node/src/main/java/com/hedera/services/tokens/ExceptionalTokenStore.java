@@ -27,9 +27,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenCreation;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenManagement;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.function.Consumer;
 
@@ -57,7 +57,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum update(TokenManagement changes, long now) {
+	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -67,7 +67,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenCreationResult createProvisionally(TokenCreation request, AccountID sponsor, long now) {
+	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -110,6 +110,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean nameExists(String name) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public TokenID lookup(String symbol) {
 		throw new UnsupportedOperationException();
 	}
@@ -130,7 +135,7 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, boolean skipKeyCheck) {
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -111,9 +111,6 @@ public class MaxFileSizeTest {
 		serverMaxFileSize = serverConfig.getMaxFileSize();
 
 		int numberOfReps = 1;
-//	    if ((args.length) > 0) {
-//	      numberOfReps = Integer.parseInt(args[0]);
-//	    }
 		for (int i = 0; i < numberOfReps; i++) {
 			MaxFileSizeTest mFsz = new MaxFileSizeTest();
 			mFsz.demo();

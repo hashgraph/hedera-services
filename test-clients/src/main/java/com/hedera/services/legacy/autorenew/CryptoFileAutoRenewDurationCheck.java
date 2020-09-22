@@ -60,7 +60,6 @@ import org.junit.Assert;
 
 public class CryptoFileAutoRenewDurationCheck {
 
-  //  private static final Logger log = LogManager.getLogger(CryptoFileAutoRenewDurationCheck.class);
   org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(
       CryptoFileAutoRenewDurationCheck.class);
 

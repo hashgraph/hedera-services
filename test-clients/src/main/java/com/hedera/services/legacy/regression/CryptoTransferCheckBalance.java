@@ -210,9 +210,6 @@ public class CryptoTransferCheckBalance extends Thread {
           Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
         }
       }
-      // log.info("Pre Check Response transfer :: " +
-      // transferRes.getNodeTransactionPrecheckCode().name());
-
     }
 
     if (fetchReceipt == 1) { // ask for receipt
@@ -279,11 +276,8 @@ public class CryptoTransferCheckBalance extends Thread {
     CryptoGetInfoResponse.AccountInfo accountInfo1 = accountInfoResponse.getCryptoGetInfo()
         .getAccountInfo();
     log.info("Check balance of Account ID " + accountID.getAccountNum());
-    // log.info(accountInfo1);
     Assert.assertNotNull(accountInfo1);
     Assert.assertEquals(accountID, accountInfo1.getAccountID());
-    // Assert.assertEquals(firstPair.getPublic().toString(),
-    // accountInfo1.getKey().getKeyList().getKeys(0).getEd25519().toStringUtf8());
     Assert.assertEquals(TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
         accountInfo1.getGenerateReceiveRecordThreshold());
     Assert.assertEquals(TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,

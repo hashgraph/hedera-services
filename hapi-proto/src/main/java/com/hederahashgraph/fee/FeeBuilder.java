@@ -52,7 +52,7 @@ public class FeeBuilder {
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
-  public static final int BASIC_ACCT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+  public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
   /**
@@ -240,9 +240,7 @@ public class FeeBuilder {
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
-    /*return getQueryFeeDataMatrices(feeMatrices);*/
     return FeeData.getDefaultInstance();
-
   }
 
 
@@ -349,7 +347,7 @@ public class FeeBuilder {
   public static long getDefaultRBHNetworkSize() {
     return (BASIC_RECEIPT_SIZE) * (RECIEPT_STORAGE_TIME_SEC);
   }
-  
+
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {
     int txRecordSize = BASIC_TX_RECORD_SIZE;
     if (txBody.getMemo() != null) {
@@ -359,13 +357,15 @@ public class FeeBuilder {
     if (txBody.hasCryptoTransfer()) {
       txRecordSize = txRecordSize
           + txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount()
-          * (BASIC_ACCT_AMT_SIZE);
+          * (BASIC_ACCOUNT_AMT_SIZE);
     }
     return txRecordSize;
   }
 
   public static long getTxRecordUsageRBH(TransactionRecord txRecord, int timeInSeconds) {
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	long txRecordSize = getTransactionRecordSize(txRecord);    
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
@@ -376,7 +376,9 @@ public class FeeBuilder {
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
 	
-	if(txRecord == null) return 0;
+	if(txRecord == null) {
+      return 0;
+    }
 	
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
@@ -390,7 +392,7 @@ public class FeeBuilder {
     if (txRecord.hasTransferList()) {
       txRecordSize =
           txRecordSize
-              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCT_AMT_SIZE);
+              + (txRecord.getTransferList().getAccountAmountsCount()) * (BASIC_ACCOUNT_AMT_SIZE);
     }
 
     int memoBytesSize = 0;
@@ -423,7 +425,9 @@ public class FeeBuilder {
   }
 
   public static long getTransactionRecordFeeInTinyCents(TransactionRecord txRecord,long feeCoeffRBH, int timeInSec) {
-	  if(txRecord == null) return 0;
+	  if(txRecord == null) {
+        return 0;
+      }
 	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
 	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  

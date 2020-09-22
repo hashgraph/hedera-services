@@ -135,7 +135,6 @@ public class MultiSigCreationTransfer {
     Transaction transaction = TestHelper
         .createAccountmultiSig(payerAccount, defaultNodeAccount, multiSig, 10000000000l,
             genesisPrivateKey, accountDuration);
-//        Transaction signTransaction = TransactionSigner.signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
     TransactionResponse response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -166,7 +165,6 @@ public class MultiSigCreationTransfer {
     transaction = TestHelper
         .createAccountmultiSig(payerAccount, defaultNodeAccount, multiSig2, 100000000000l,
             genesisPrivateKey, accountDuration);
-    //signTransaction = TransactionSigner.signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
     response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

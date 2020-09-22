@@ -188,8 +188,9 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if (!channel.isShutdown())
-      channel.shutdownNow();
+    if (!channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     return channel.isShutdown();
   }
 
@@ -265,10 +266,10 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
 
       } while (newAccountId1 == null);
 
-      if (newAccountId1 != null)
-        this.accountMap.put(newAccountId1, firstPair);
+      if (newAccountId1 != null) {
+		  this.accountMap.put(newAccountId1, firstPair);
+	  }
 
-//      if (_acItr + 5 > _totals)
       String pKeyHex =
               HexUtils.bytes2Hex(((EdDSAPublicKey) firstPair.getPublic()).getAbyte());
       log.info(threadName + " Account  " + _acItr + " created: " + newAccountId1.getAccountNum()
@@ -298,11 +299,11 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
               Collections.singletonList(genesisPrivateKey));
       // try this until the platform is ok
       TransactionResponse response = stub.createAccount(signTransaction);
-      // Assert.assertNotNull(response);
       log.info("createAccount response :: " + response);
 
-      if(response != null && ResponseCodeEnum.OK != response.getNodeTransactionPrecheckCode())
-        return null;
+      if(response != null && ResponseCodeEnum.OK != response.getNodeTransactionPrecheckCode()) {
+		  return null;
+	  }
 
       stub = CryptoServiceGrpc.newBlockingStub(channel);
       Thread.sleep(100);
@@ -332,7 +333,6 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
           }
         }
       } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
-        // invalidNodeTransactionPrecheckCode.printStackTrace();
         log.error(threadName + "invalidNodeTransactionPrecheckCode: ",
                 invalidNodeTransactionPrecheckCode);
         return null;
@@ -418,8 +418,6 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
               try {
                 totalTransferCnt++;
                 transferRes = stub.cryptoTransfer(transfer);
-                // transferRes = stub.withDeadlineAfter(deadLineMs,
-                // TimeUnit.MILLISECONDS).cryptoTransfer(transfer1);
               } catch (Exception dex) {
                 log.error(threadName + "Skip this due to " + dex.getMessage());
               }
@@ -486,12 +484,6 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
                 threadName + "................ " + 100 * bd.doubleValue() + " % done  ..............");
         log.warn(threadName + "................ " + cpu.doubleValue() + " CpuLoad, "
                 + memoryCommitted + " Mb CMem ..........");
-        // log.warn("................ Sleeping for 10 seconds for a pause ..........");
-        // Thread.sleep(10000);
-       // Assert.assertEquals(0, s);
-       // Assert.assertEquals(totalBadReceipts, p + s + o);
-        //Assert.assertEquals(totalTransferCnt, totalGoodReceipts + totalBadReceipts);
-       // log.warn(threadName + "done with NO INVALID_SIGNATURE :)");
       }
     } catch (Exception tex) {
       log.error(threadName + "Error Happened ", tex);
@@ -580,7 +572,6 @@ public class MultiAccountBurstTransferSeqThread implements Runnable {
     }
 
     Response transactionReceipts = cstub.getTransactionReceipts(query);
-    // Assert.assertNotNull(transactionReceipts);
     ResponseCodeEnum precheckCode =
             transactionReceipts.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
     if (!precheckCode.equals(ResponseCodeEnum.OK)) {

@@ -661,8 +661,6 @@ public class SmartContractPayReceivableAmount {
 		        AccountID contractAccountId = AccountID.newBuilder().setAccountNum(payTestContractId.getContractNum())
 		        		.setRealmNum(payTestContractId.getRealmNum()).setShardNum(payTestContractId.getShardNum()).build();
 		        List<AccountAmount> expectedTransfers = new ArrayList<>(3);
-/*		        AccountAmount payerDebit = AccountAmount.newBuilder().setAccountID(crAccount).setAmount(currValueToDeposit *-1).build();
-		        expectedTransfers.add(payerDebit);*/
 		        AccountAmount receiverTransfer = AccountAmount.newBuilder().setAccountID(receiverAccount).setAmount(receiverValue).build();
 		        expectedTransfers.add(receiverTransfer);
 		        AccountAmount contractTransfer = AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(remainToContract).build();

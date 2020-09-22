@@ -103,7 +103,6 @@ public class MultipleCryptoTransfers {
   public AccountID demo()
       throws Exception {
 
- //   Path path = Paths.get(fileName);
     Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(fileName);
 
     List<AccountKeyListObj> genesisAccount = keyFromFile.get("START_ACCOUNT");
@@ -456,10 +455,6 @@ public class MultipleCryptoTransfers {
     assertAccountInfoDetails(newlyCreateAccountId2, accountInfoResponse);
     log.info("-----------------------------------------");
 
-    // update account
-    //  log.info("updating duration of account :: " + newlyCreateAccountId1);
-    //  AccountID acctID = newlyCreateAccountId1;
-
     Duration autoRenew = RequestBuilder.getDuration(CustomPropertiesSingleton.getInstance().getAccountDuration());
     Transaction updateaccount1 = TestHelper.updateAccount(newlyCreateAccountId1, payerAccount,
         genesisPrivateKey, defaultNodeAccount, autoRenew);
@@ -543,13 +538,10 @@ public class MultipleCryptoTransfers {
     log.info(accountInfo1);
     Assert.assertNotNull(accountInfo1);
     Assert.assertEquals(newlyCreateAccountId1, accountInfo1.getAccountID());
-    //  Assert.assertEquals(firstPair.getPublic().toString(), accountInfo1.getKey().getKeyList().getKeys(0).getEd25519().toStringUtf8());
     Assert.assertEquals(5000000000000000000l, accountInfo1.getGenerateReceiveRecordThreshold());
     Assert.assertEquals(5000000000000000000l, accountInfo1.getGenerateSendRecordThreshold());
     Assert.assertFalse(accountInfo1.getReceiverSigRequired());
     Duration renewal = RequestBuilder.getDuration(5000);
-    //  Assert.assertEquals(renewal, accountInfo1.getAutoRenewPeriod());
-    //z  Assert.assertEquals(RequestBuilder.getExpirationTime(renewal), accountInfo1.getExpirationTime());
   }
 
   private void runSingleTransaction(AccountID accountID) throws Exception {

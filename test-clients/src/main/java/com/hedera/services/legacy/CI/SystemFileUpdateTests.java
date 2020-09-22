@@ -340,7 +340,6 @@ public class SystemFileUpdateTests extends BaseFeeTests {
     List<Key> keys = new ArrayList<Key>();
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(payerID));
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID)); // Fee Schedule File wacl key
-    //   keys.add(getStartupAccountKey());
     Transaction txSigned = TransactionSigner
             .signTransactionComplexWithSigMap(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionResponse response = CryptoServiceTest.stub.updateFile(txSigned);
@@ -357,7 +356,6 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             1000000000000000L, "Transfer to acc 50");
   TransactionResponse transferRes = CryptoServiceTest.cstub.cryptoTransfer(transfer1);
   Thread.sleep(NAP);
-//    Key akey = getStartupAccountKey();
     KeyPairObj genesisKeyPair = CryptoServiceTest.genesisAccountList.get(0).getKeyPairList().get(0);
     String pubKeyHex = genesisKeyPair.getPublicKeyAbyteStr();
 

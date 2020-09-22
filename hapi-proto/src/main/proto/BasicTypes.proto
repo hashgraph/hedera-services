@@ -74,37 +74,33 @@ message TopicID {
     int64 topicNum = 3; // Unique topic identifier within a realm (nonnegative).
 }
 
+/* Unique identifier for a token */
 message TokenID {
     int64 shardNum = 1; // A nonnegative shard number
     int64 realmNum = 2; // A nonnegative realm number
     int64 tokenNum = 3; // A nonnegative token number
 }
 
+/* Reference for a Token. Tokens can be referenced with either TokenID or by Symbol */
 message TokenRef {
     oneof ref {
-        TokenID tokenId = 1;
-        string symbol = 2;
+        TokenID tokenId = 1; // The ID of the Token
+        string symbol = 2; // The Symbol of the Token
     }
 }
 
+/* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenFreezeStatus {
     FreezeNotApplicable = 0;
     Frozen = 1;
     Unfrozen = 2;
 }
 
+/* Possible KYC statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenKycStatus {
     KycNotApplicable = 0;
     Granted = 1;
     Revoked = 2;
-}
-
-message TokenRelationship {
-    TokenID tokenId = 1;
-    uint64 balance = 2;
-    string symbol = 3;
-    TokenKycStatus kycStatus = 4;
-    TokenFreezeStatus freezeStatus = 5;
 }
 
 /* A Key can be a public key from one of the three supported systems (ed25519, RSA-3072,  ECDSA with p384). Or, it can be the ID of a smart contract instance, which is authorized to act as if it had a key. If an account has an ed25519 key associated with it, then the corresponding private key must sign any transaction to transfer cryptocurrency out of it. And similarly for RSA and ECDSA.
@@ -240,24 +236,24 @@ enum HederaFunctionality {
     ContractAutoRenew = 34; // Contract Auto Renew
     GetVersionInfo = 35; //Get Version
     TransactionGetReceipt = 36; // Transaction Get Receipt
-    ConsensusCreateTopic = 50;
-    ConsensusUpdateTopic = 51;
-    ConsensusDeleteTopic = 52;
-    ConsensusGetTopicInfo = 53;
-    ConsensusSubmitMessage = 54;
+    ConsensusCreateTopic = 50; // Create Topic
+    ConsensusUpdateTopic = 51; // Update Topic
+    ConsensusDeleteTopic = 52; // Delete Topic
+    ConsensusGetTopicInfo = 53; // Get Topic information
+    ConsensusSubmitMessage = 54; // Submit message to topic
     UncheckedSubmit = 55;
-    TokenCreate = 56;
-    TokenTransact = 57;
-    TokenGetInfo = 58;
-    TokenFreezeAccount = 59;
-    TokenUnfreezeAccount = 60;
-    TokenGrantKycToAccount = 61;
-    TokenRevokeKycFromAccount = 62;
-    TokenDelete = 63;
-    TokenUpdate = 64;
-    TokenMint = 65;
-    TokenBurn = 66;
-    TokenAccountWipe = 67;
+    TokenCreate = 56; // Create Token
+    TokenTransact = 57; // Transfer Tokens
+    TokenGetInfo = 58; // Get token information
+    TokenFreezeAccount = 59; // Freeze Account
+    TokenUnfreezeAccount = 60; // Unfreeze Account
+    TokenGrantKycToAccount = 61; // Grant KYC to Account
+    TokenRevokeKycFromAccount = 62; // Revoke KYC from Account
+    TokenDelete = 63; // Delete Token
+    TokenUpdate = 64; // Update Token
+    TokenMint = 65; // Mint tokens to treasury
+    TokenBurn = 66; // Burn tokens from treasury
+    TokenAccountWipe = 67; // Wipe token amount from Account holder
 }
 
 /*

@@ -115,9 +115,6 @@ public class ThresholdSmartContractCall {
         .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
 
     int numberOfReps = 1;
-//    if ((args.length) > 0) {
-//      numberOfReps = Integer.parseInt(args[0]);
-//    }
     for (int i = 0; i < numberOfReps; i++) {
       ThresholdSmartContractCall scSs = new ThresholdSmartContractCall();
       scSs.demo();
@@ -664,7 +661,6 @@ public class ThresholdSmartContractCall {
 
         depositToContract(crAccount, payTestContractId, 100_000);
         log.info("Funds deposited to smart contract");
-        //Thread.sleep(10000);
 
         KeyPair rcvAccountKeyPair = new KeyPairGenerator().generateKeyPair();
         AccountID accountToSendMoney = createAccountWithThresholds(rcvAccountKeyPair,

@@ -177,8 +177,6 @@ public class SignatureVerifier {
     byte[] msgBytes = getMsgBytes(msg);
 
     ECPublicKey pubKey = SignatureGenerator.getEC384PublicKeyFromBinary(pubKeyStr);
-    // System.out.println("384 bit key generated: key format = " +
-    // pubKey.getFormat());
 
     // create a Signature object and initialize it with the public key
     Signature sigInstance = Signature.getInstance(SIGNATURE_ALGORITHM);

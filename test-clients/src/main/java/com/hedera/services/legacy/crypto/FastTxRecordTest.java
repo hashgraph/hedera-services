@@ -195,7 +195,6 @@ public class FastTxRecordTest {
 //		  txRecordFee = transactionRecord.getTransactionGetRecord().getHeader().getCost();
     query = TestHelper.getTxRecordByTxId(bodyTr.getTransactionID(), payerAccount,
         genKeyPair, defaultNodeAccount, txRecordFee, ResponseType.ANSWER_ONLY);
-    // log.info("getTxRecordByTxID: query=" + query);
     transactionRecord = stub.getTxRecordByTxID(query);
     Assert.assertNotNull(transactionRecord);
     Assert.assertNotNull(transactionRecord.getTransactionGetRecord());
