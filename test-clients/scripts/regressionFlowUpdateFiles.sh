@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 # script to be called by platform regression scrip to build new jar for update feature test
@@ -6,21 +5,36 @@
 #
 set -eE
 
-function updateServiceMainJava
+updateServiceMainJava()
 {
-    # replace a line in ServicesMain.java
-    sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+    rm -rf updateFiles
 
-    # rebuild jar files and use timestamp to tell which jar files have been updated
-    cd ../hedera-node
+    if [[ -n "${CI}" ]]; then
+        MVN_OPTION="--no-transfer-progress"
+    fi
+
+    # rebuild all jar files and use timestamp to tell which jar files have been updated
+    cd ..
+    mvn -T 2C $MVN_OPTION install -DskipTests
+
+    # replace a line in ServicesMain.java
+    sed -i -e s/'init finished'/'new version jar'/g  hedera-node/src/main/java/com/hedera/services/ServicesMain.java
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
+
+    cd hedera-node/ # only build service
+
     sleep 1
-    mvn install -DskipTests
+    mvn -T 2C $MVN_OPTION install -DskipTests
     sleep 1
     afterTime=`date +'%Y-%m-%d %H:%M:%S'`
 
     echo "beforeTime $beforeTime"
     echo "afterTime $afterTime"
+
+    if [[ -n "${CI}" ]]; then
+        echo "Installing rsync"
+        sudo apt update; sudo apt --assume-yes install rsync
+    fi
 
     # only copy updated jar files to target directory
     TARGET_DIR=../test-clients/updateFiles
@@ -28,17 +42,20 @@ function updateServiceMainJava
     mkdir -p $TARGET_DIR
     find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync  {} $TARGET_DIR \;
 
+    if [[ -n "${CI}" ]]; then
+        echo "Running on CIRCLECI, no need to restore"
+    else
+        echo "Restore source code and jar files"
+        git checkout src/main/java/com/hedera/services/ServicesMain.java
 
-    git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
-
-    # rebuild after checkout to recover binary
-    mvn install -DskipTests
-
-    cd -
+        # rebuild after checkout to recover binary
+        mvn -T 2C $MVN_OPTION install -DskipTests
+    fi
 
     echo "Update files after build have been copied to $TARGET_DIR"
 
     ls -ltr $TARGET_DIR
+    cd ../test-clients
 
 }
 

@@ -32,7 +32,6 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import org.apache.commons.codec.binary.Hex;
@@ -237,7 +236,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 		};
 		HapiSpecOperation[] opsArray = {
 				validateOp,
-				UtilVerbs.updateLargeFile(GENESIS, fileName, fileName),
+				UtilVerbs.updateLargeFile(account, fileName, fileName),
 				getFileContents(fileName).hasContents(fileName)
 		};
 		if (account.equals(GENESIS) || !isFree) {
