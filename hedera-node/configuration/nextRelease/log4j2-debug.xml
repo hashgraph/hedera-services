@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- monitorInterval="600" , if any change to log level will be effective after 10 minute -->
+<Configuration status="WARN" monitorInterval="600">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n"/>
+    </Console>
+
+    <RollingFile name="HederaPrimaryLog" fileName="output/hgcaa.log"
+      filePattern="output/hgcaa.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+    <RollingFile name="SwirldsPrimaryLog" fileName="output/swirlds.log"
+      filePattern="output/swirlds.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="50 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+      <Filters>
+        <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
+        <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />
+        <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
+        <!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
+
+        <!-- Exceptions -->
+        <MarkerFilter marker="EXCEPTION"              onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="TESTING_EXCEPTIONS"     onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SOCKET_EXCEPTIONS"      onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Errors -->
+        <MarkerFilter marker="INVALID_EVENT_ERROR"    onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+
+        <!-- Synchronization/Gossip (Debug) -->
+        <MarkerFilter marker="SYNC_START"             onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC_DONE"              onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC_ERROR"             onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC"                   onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="HEARTBEAT"              onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Platform Events (Debug) -->
+        <MarkerFilter marker="CREATE_EVENT"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="INTAKE_EVENT"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="WATCH_EVENTS_SEND_REC"  onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="EVENT_SIG"              onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="EVENT_STREAM"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="EVENT_RESTART"          onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STALE_EVENTS"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="EVENT_PARSER"           onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+
+        <!-- Queues/Certificates/Utilities -->
+        <MarkerFilter marker="QUEUES"                 onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="CERTIFICATES"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="LOCKS"                  onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="TIME_MEASURE"           onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Signed State Signatures -->
+        <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_DELETER"          onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Cryptography -->
+        <MarkerFilter marker="OPENCL_INIT_EXCEPTIONS" onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="ADV_CRYPTO_SYSTEM"      onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Startup/Restart/Reconnect -->
+        <MarkerFilter marker="STARTUP"                onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="PLATFORM_STATUS" 		  onMatch="ACCEPT" 	onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="RECONNECT"              onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FREEZE"                 onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+
+        <!-- Saved States -->
+        <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+
+        <!-- Beta Mirror -->
+        <MarkerFilter marker="BETA_MIRROR_NODE" 	  onMatch="ACCEPT" 	onMismatch="NEUTRAL"/>
+
+        <!-- FCMap -->
+        <MarkerFilter marker="FCM_COPY"               onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_FROM"          onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_TO"            onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_DEMO"               onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_FROM_DIFF"     onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FCM_COPY_TO_DIFF"       onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="FC_SERIALIZATION"       onMatch="DENY"    onMismatch="NEUTRAL"/>
+
+        <!-- Merkle Trees & Hashing -->
+        <MarkerFilter marker="MERKLE_FORCE_FLUSH"     onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_HASH"            onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"    onMismatch="DENY"/>
+      </Filters>
+    </RollingFile>
+
+    <RollingRandomAccessFile name="SwirldsSyncLog" fileName="output/debug/swirlds-sync.log"
+      filePattern="output/debug/swirlds-sync.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="50 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+      <Filters>
+        <MarkerFilter marker="SYNC_START"             onMatch="ACCEPT"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC_DONE"              onMatch="ACCEPT"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC_ERROR"             onMatch="ACCEPT"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="SYNC"                   onMatch="DENY"      onMismatch="DENY"/>
+      </Filters>
+    </RollingRandomAccessFile>
+
+    <RollingRandomAccessFile name="SwirldsHeartbeatLog" fileName="output/debug/swirlds-heartbeat.log"
+       filePattern="output/debug/swirlds-heartbeat.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="50 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+      <Filters>
+        <MarkerFilter marker="HEARTBEAT"              onMatch="ACCEPT"    onMismatch="DENY"/>
+      </Filters>
+    </RollingRandomAccessFile>
+
+    <RollingRandomAccessFile name="SwirldsEventLog" fileName="output/debug/swirlds-event.log"
+       filePattern="output/debug/swirlds-event.log-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <SizeBasedTriggeringPolicy size="50 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+      <Filters>
+        <MarkerFilter marker="CREATE_EVENT"           onMatch="ACCEPT"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="ADD_EVENT"              onMatch="ACCEPT"    onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="INTAKE_EVENT"           onMatch="ACCEPT"    onMismatch="DENY"/>
+      </Filters>
+    </RollingRandomAccessFile>
+
+  </Appenders>
+  <Loggers>
+    <Root level="ALL">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="SwirldsPrimaryLog" />
+      <AppenderRef ref="SwirldsSyncLog" />
+      <AppenderRef ref="SwirldsHeartbeatLog" />
+      <AppenderRef ref="SwirldsEventLog" />
+    </Root>
+
+    <!-- Hedera Namespace -->
+    <Logger name="com.hedera" level="info" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+
+    <!-- Legacy Hedera Namespaces -->
+    <Logger name="com.opencrowd" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.HGCAppMain" level="info" additivity="false">
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.service" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.handler" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.utils" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.hgcca.core" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.evm" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="com.opencrowd.initialization" level="warn" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+
+    <!-- JVM Namespaces -->
+    <Logger name="java.nio" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+
+    <!-- Third-party Namespaces -->
+    <Logger name="org.springframework" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="io.netty" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+
+    <!-- EVM Namespaces -->
+    <Logger name="state" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="trie" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="net" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="execute" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="VM" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="pending" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="sync" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="wire" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="db" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="general" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="TCK-Test" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="org.hibernate" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="repository" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="blockchain" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="mine" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="blockqueue" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="rlp" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+
+    <Logger name="discover" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+    <Logger name="hsqldb.db" level="ERROR" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="HederaPrimaryLog"/>
+    </Logger>
+  </Loggers>
+</Configuration>
