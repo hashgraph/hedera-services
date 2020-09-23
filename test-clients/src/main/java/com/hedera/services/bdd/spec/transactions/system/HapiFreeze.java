@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.system;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -48,7 +49,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	ChronoUnit delayUnit = SECONDS;
 	ChronoUnit durationUnit = SECONDS;
 	ZonedDateTime start, end;
-	private FileID fileID = null;
+	private String fileID = null;
 	private String fileName = null;
 	@Override
 	protected HapiFreeze self() {
@@ -87,6 +88,10 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		return this;
 	}
 
+	public HapiFreeze setFileID(String fileID) {
+		this.fileID = fileID;
+		return this;
+	}
 	@Override
 	public HederaFunctionality type() {
 		return Freeze;
@@ -106,7 +111,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 							b.setEndHour(end.getHour());
 							b.setEndMin(end.getMinute());
 							if (fileID!=null) {
-								b.setUpdateFile(fileID);
+								b.setUpdateFile(asFileId(fileID, spec));
 							}
 							if (fileName !=null){
 								FileID foundID = spec.registry().getFileId(fileName);

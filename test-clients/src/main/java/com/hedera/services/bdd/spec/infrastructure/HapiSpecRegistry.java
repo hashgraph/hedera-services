@@ -115,6 +115,9 @@ public class HapiSpecRegistry {
 		/* (system 6) :: App Properties */
 		saveFileId(setup.appPropertiesFile(), setup.appPropertiesId());
 		saveKey(setup.appPropertiesFile(), asKeyList(genesisKey));
+		/* (system 7) :: Update Feature */
+		saveFileId(setup.updateFeatureName(), setup.updateFeatureId());
+		saveKey(setup.updateFeatureName(), asKeyList(genesisKey));
 		/* Migration :: File */
 		saveFileId(setup.migrationFileName(), setup.migrationFileID());
 		saveKey(setup.migrationFileName(), asKeyList(genesisKey));

@@ -144,6 +144,14 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				() -> defaultSchedules().toByteArray());
 	}
 
+	@Override
+	public void createEmptyUpdateFeatureFile() {
+		var disFid = fileNumbers.toFid(fileNumbers.getUpdateFeatureFile());
+		if (!hfs.exists(disFid)) {
+			materialize(disFid, systemFileInfo(), new byte[0]);
+		}
+	}
+
 	@FunctionalInterface
 	private interface BootstrapLoader {
 		byte[] get() throws Exception;

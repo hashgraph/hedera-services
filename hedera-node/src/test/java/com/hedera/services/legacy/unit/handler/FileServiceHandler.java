@@ -564,6 +564,12 @@ public class FileServiceHandler {
     return systemFileCreation.readExchangeRate(fileDataPath);
   }
 
+  public void createUpdateFeatureFile(FCStorageWrapper storageWrapper) {
+    FileID fid = FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM)
+            .setRealmNum(ApplicationConstants.DEFAULT_FILE_REALM)
+            .setShardNum(ApplicationConstants.DEFAULT_FILE_SHARD).build();
+    SystemFileCreation systemFileCreation = new SystemFileCreation(storageWrapper);
+  }
   /**
    * Is the new exchange rate valid? The exchange rate of newC tiny cents per newH tinybars is valid
    * if it increases by no more than bound percent, nor decreases by more than the inverse amount.

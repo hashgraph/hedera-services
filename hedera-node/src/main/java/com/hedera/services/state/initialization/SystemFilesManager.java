@@ -30,4 +30,5 @@ public interface SystemFilesManager {
 	void loadApiPermissions();
 	void loadApplicationProperties();
 
+	void createEmptyUpdateFeatureFile();
 }
