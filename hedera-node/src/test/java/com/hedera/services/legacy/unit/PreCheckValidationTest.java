@@ -99,6 +99,7 @@ import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -704,6 +705,25 @@ class PreCheckValidationTest {
 		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
 				transactionWithSignedTransactionBytes().setBodyBytes(testBody().toByteString()).build(), false);
 		Assert.assertEquals(INVALID_TRANSACTION, result.getValidity());
+		Assert.assertEquals(0l, result.getRequiredFee());
+	}
+
+	@Test
+	void failsOnUnsupportedTransactionWithSignedTransactionBytes() {
+		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
+				transactionWithSignedTransactionBytes().build(), false);
+		Assert.assertEquals(NOT_SUPPORTED, result.getValidity());
+		Assert.assertEquals(0l, result.getRequiredFee());
+	}
+
+	@Test
+	void failsOnUnsupportedTransactionWithBodyBytesAndSigMap() {
+		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
+				Transaction.newBuilder()
+						.setBodyBytes(testBody().toByteString())
+						.setSigMap(fakeSigMap())
+						.build(), false);
+		Assert.assertEquals(NOT_SUPPORTED, result.getValidity());
 		Assert.assertEquals(0l, result.getRequiredFee());
 	}
 }
