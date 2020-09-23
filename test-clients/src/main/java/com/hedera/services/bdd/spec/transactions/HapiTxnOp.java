@@ -582,4 +582,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		usePresetTimestamp = true;
 		return self();
 	}
+
+	public T asTxnWithOnlySigMap() {
+		asTxnWithOnlySigMap = true;
+		return self();
+	}
 }

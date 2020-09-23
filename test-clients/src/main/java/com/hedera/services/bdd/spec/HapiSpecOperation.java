@@ -89,6 +89,7 @@ public abstract class HapiSpecOperation {
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
+	protected boolean asTxnWithOnlySigMap = false;
 
 	protected boolean useTls = false;
 	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
@@ -265,6 +266,10 @@ public abstract class HapiSpecOperation {
 			long customFee = feeFor(spec, provisional, numPayerKeys);
 			netDef = netDef.andThen(b -> b.setTransactionFee(customFee));
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
+		}
+
+		if (asTxnWithOnlySigMap) {
+			return txn.toBuilder().clearBodyBytes().build();
 		}
 
 		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
