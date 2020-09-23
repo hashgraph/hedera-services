@@ -73,7 +73,7 @@ public abstract class JKey implements Serializable, Cloneable {
 	 */
 	public static JKey convertKey(Key key, int depth) throws DecoderException {
 		if (depth > KeyExpansion.KEY_EXPANSION_DEPTH) {
-			log.debug("Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
+			throw new DecoderException("Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
 		}
 
 		if (!(key.hasThresholdKey() || key.hasKeyList())) {

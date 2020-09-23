@@ -66,7 +66,6 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						getAccountInfoStress(),
-						getAccountRecordsStress(),
 						getAccountBalanceStress(),
 				}
 		);
