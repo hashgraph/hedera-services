@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.swirlds.common.Platform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -125,15 +124,6 @@ class TxnHandlerSubmissionFlowTest {
 
 		// when:
 		TransactionResponse response = subject.submit(signedNonsenseTxn);
-
-		// then:
-		assertEquals(INVALID_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
-	}
-
-	@Test
-	public void shortCircuitsOnEmptyTxn() {
-		// when:
-		TransactionResponse response = subject.submit(Transaction.getDefaultInstance());
 
 		// then:
 		assertEquals(INVALID_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
