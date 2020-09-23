@@ -86,7 +86,8 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 				invalidTransactionDuration(),
 				invalidTransactionStartTime()
 
-//				invalidSigsCountMismatchingKey()
+//				invalidSigsCountMismatchingKey(),
+//				invalidKeyPrefixMismatch()
 		);
 	}
 
@@ -190,59 +191,29 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 
 	// These two scenarios still don't work.
 
-	public static HapiApiSpec invalidSigsCountMismatchingKey() {
-		return defaultHapiSpec("invalidSigsCountMismatchingKey")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-								.hasPrecheckFrom(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)
-				);
-	}
+//	public static HapiApiSpec invalidSigsCountMismatchingKey() {
+//		return defaultHapiSpec("invalidSigsCountMismatchingKey")
+//				.given(
+//				).when(
+//				).then(
+//						cryptoCreate("newPayee").balance(10000L)
+//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
+//								.hasPrecheckFrom(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)
+//				);
+//	}
+//
+//	public static HapiApiSpec invalidKeyPrefixMismatch() {
+//		return defaultHapiSpec("invalidKeyPrefixMismatch")
+//				.given(
+//				).when(
+//				).then(
+//						cryptoCreate("newPayee").balance(10000L)
+//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
+//								.hasPrecheckFrom(KEY_PREFIX_MISMATCH)
+//				);
+//	}
 
-	public static HapiApiSpec invalidKeyPrefixMismatch() {
-		return defaultHapiSpec("invalidKeyPrefixMismatch")
-				.given(
-				).when(
-				).then(
-						cryptoCreate("newPayee").balance(10000L)
-								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-								.hasPrecheckFrom(KEY_PREFIX_MISMATCH)
-				);
-	}
 
-
-	public static Transaction removeSigPairFromTransaction(Transaction transaction) {
-		SignatureMap sigMap =transaction.getSigMap();
-		List<SignaturePair> sigPairList = sigMap.getSigPairList();
-
-		List<SignaturePair> newSigPairList = new ArrayList<>();
-		for(int i=1;i<sigPairList.size();i++) {
-			newSigPairList.add(sigPairList.get(i));
-		}
-		SignatureMap newSigMap = sigMap.toBuilder().addAllSigPair(newSigPairList).build();
-		return transaction.toBuilder().setSigMap(newSigMap).build();
-	}
-
-	private static Transaction replaceTxnSigs(Transaction txn) {
-		Transaction newTxn = Transaction.getDefaultInstance();
-		try {
-
-			TransactionBody txnBody = TransactionBody.parseFrom(txn.getBodyBytes().toByteArray());
-			TransactionBody.Builder tbb = TransactionBody.newBuilder(txnBody);
-			TransactionBody newTxnBody = tbb.build();
-			Transaction.Builder tb = Transaction.newBuilder()
-					.setBodyBytes(txnBody.toByteString())
-					.setSigs(txn.getSigs())
-					;
-			newTxn = tb.build();
-		} catch (Exception e) {
-
-		}
-
-		return newTxn;
-	}
 
 	@Override
 	protected Logger getResultsLogger() {
