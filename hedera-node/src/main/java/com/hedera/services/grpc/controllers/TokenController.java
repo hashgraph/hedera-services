@@ -46,6 +46,8 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	public static final String TOKEN_GRANT_KYC_METRIC = "grantKycToTokenAccount";
 	public static final String TOKEN_REVOKE_KYC_METRIC = "revokeKycFromTokenAccount";
 	public static final String TOKEN_WIPE_ACCOUNT_METRIC = "wipeTokenAccount";
+	public static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
+	public static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
 
 	public static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 
@@ -116,6 +118,16 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void transferTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.respondToToken(signedTxn, observer, TOKEN_TRANSACT_METRIC);
+	}
+
+	@Override
+	public void associateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_ASSOCIATE_METRIC);
+	}
+
+	@Override
+	public void dissociateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.respondToToken(signedTxn, observer, TOKEN_DISSOCIATE_METRIC);
 	}
 
 	@Override

@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -56,16 +57,32 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
-						keysChange(),
-						treasuryEvolves(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						nameChanges(),
 						validatesMissingRef(),
+						keysChange(),
+						treasuryEvolves(),
+						validatesAlreadyDeletedToken(),
 				}
 		);
+	}
+
+	private HapiApiSpec validatesAlreadyDeletedToken() {
+		return defaultHapiSpec("ValidatesAlreadyDeletedToken")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("tbd")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenDelete("tbd")
+				).when().then(
+						tokenUpdate("tbd")
+								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
 	}
 
 	private HapiApiSpec standardImmutabilitySemanticsHold() {
@@ -131,7 +148,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
 								.freezeDefault(true)
-								.initialFloat(10)
+								.initialSupply(10)
 								.adminKey("adminKey")
 								.kycKey("kycThenFreezeKey")
 								.freezeKey("freezeThenKycKey")
@@ -144,7 +161,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("freezeThenKycKey")
 								.freezeKey("kycThenFreezeKey")
 								.wipeKey("supplyThenWipeKey")
-								.supplyKey("wipeThenSupplyKey")
+								.supplyKey("wipeThenSupplyKey"),
+						tokenAssociate("misc", "tbu")
 				).then(
 						getTokenInfo("tbu").logged(),
 						grantTokenKyc("tbu", "misc")
@@ -181,6 +199,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when(
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
+						tokenUpdate("tbu")
+								.signedBy(GENESIS, "adminKey")
+								.treasury("newTreasury")
+								.hasKnownStatus(INVALID_SIGNATURE),
 						tokenUpdate("tbu")
 								.treasury("newTreasury")
 								.via("treasuryUpdateTxn")
@@ -231,6 +253,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.symbol(hopefullyUnique)
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
+						tokenAssociate(GENESIS, "tbu"),
 						tokenTransact(
 								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
 				);

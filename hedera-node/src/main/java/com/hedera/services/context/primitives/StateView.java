@@ -22,7 +22,9 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
@@ -44,6 +46,7 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRef;
@@ -88,6 +91,11 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> EMPTY_STORAGE_SUPPLIER =
 			() -> EMPTY_STORAGE;
 
+	public static final FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> EMPTY_TOKEN_ASSOCIATIONS =
+			new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER);
+	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
+			() -> EMPTY_TOKEN_ASSOCIATIONS;
+
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
 			EMPTY_ACCOUNTS_SUPPLIER,
@@ -100,6 +108,7 @@ public class StateView {
 	private final TokenStore tokenStore;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private final PropertySource properties;
 
@@ -108,7 +117,7 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties
 	) {
-		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, properties);
 	}
 
 	public StateView(
@@ -117,7 +126,7 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties
 	) {
-		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, properties);
 	}
 
 	public StateView(
@@ -125,11 +134,13 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
+			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
 			PropertySource properties
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
+		this.tokenAssociations = tokenAssociations;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -156,6 +167,12 @@ public class StateView {
 		return Optional.ofNullable(contractStorage.get(asSolidityAddress(id)));
 	}
 
+	public Optional<MerkleToken> tokenWith(TokenID id) {
+		return !tokenStore.exists(id)
+				? Optional.empty()
+				: Optional.of(tokenStore.get(id));
+	}
+
 	public Optional<TokenInfo> infoForToken(TokenRef ref) {
 		try {
 			var id = tokenStore.resolve(ref);
@@ -169,8 +186,8 @@ public class StateView {
 					.setSymbol(token.symbol())
 					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())
-					.setTotalSupply(token.tokenFloat())
-					.setDecimals(token.divisibility())
+					.setTotalSupply(token.totalSupply())
+					.setDecimals(token.decimals())
 					.setExpiry(token.expiry());
 
 			var adminCandidate = token.adminKey();
@@ -245,9 +262,7 @@ public class StateView {
 		return Optional.empty();
 	}
 
-	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(
-			FileID id
-	) throws com.swirlds.blob.BinaryObjectNotFoundException, Exception {
+	private Optional<FileGetInfoResponse.FileInfo> getFileInfo(FileID id) throws Exception {
 		var attr = fileAttrs.get(id);
 		if (attr == null) {
 			return Optional.empty();
@@ -303,5 +318,9 @@ public class StateView {
 
 	public FCMap<MerkleEntityId, MerkleAccount> contracts() {
 		return accounts.get();
+	}
+
+	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
+		return tokenAssociations;
 	}
 }

@@ -20,7 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
@@ -53,7 +53,7 @@ import org.mockito.InOrder;
 @RunWith(JUnitPlatform.class)
 public class TransactionalLedgerTest {
 	Supplier<TestAccount> newAccountFactory;
-	BackingAccounts<Long, TestAccount> backingAccounts;
+	BackingStore<Long, TestAccount> backingAccounts;
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
@@ -67,7 +67,7 @@ public class TransactionalLedgerTest {
 	private void setup() {
 		token = mock(MerkleToken.class);
 
-		backingAccounts = mock(BackingAccounts.class);
+		backingAccounts = mock(BackingStore.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 		given(backingAccounts.getTokenCopy(1L)).willReturn(account1TokenCopy);
@@ -90,30 +90,6 @@ public class TransactionalLedgerTest {
 		// expect:
 		assertEquals(1L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
 		// and:
-		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void returnsNewDetachedCopyIfNonePresent() {
-		// expect:
-		assertSame(account1TokenCopy, subject.getTokenRef(1L));
-		// and:
-		assertEquals(1, subject.tokenRefs.size());
-	}
-
-	@Test
-	public void clearsDetachedCopiesOnDrop() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-		// and:
-		subject.dropPendingTokenChanges();
-
-		// then:
 		assertTrue(subject.tokenRefs.isEmpty());
 	}
 
@@ -147,20 +123,6 @@ public class TransactionalLedgerTest {
 
 		// then:
 		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void returnsCurrentDetachedCopy() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-
-		// then:
-		assertSame(account1TokenCopy, subject.getTokenRef(1L));
 	}
 
 	@Test
@@ -390,12 +352,6 @@ public class TransactionalLedgerTest {
 	public void throwsOnGettingMissingScopedProperty() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, TOKEN, TokenScope.idScopeOf(tid)));
-	}
-
-	@Test
-	public void throwsOnGettingMissingDetachedRef() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getTokenRef(2L));
 	}
 
 	@Test

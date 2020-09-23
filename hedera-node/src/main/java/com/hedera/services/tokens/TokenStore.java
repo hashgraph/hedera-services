@@ -23,8 +23,10 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -32,10 +34,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -46,7 +49,7 @@ public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 	void setHederaLedger(HederaLedger ledger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
@@ -64,6 +67,8 @@ public interface TokenStore {
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum associate(AccountID aId, List<TokenRef> tokens);
+	ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
@@ -90,6 +95,9 @@ public interface TokenStore {
 		var token = get(id);
 		if (token.adminKey().isEmpty()) {
 			return TOKEN_IS_IMMUTABlE;
+		}
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
 		}
 
 		apply(id, DELETION);

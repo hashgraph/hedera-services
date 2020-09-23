@@ -6,12 +6,12 @@ package com.hedera.services.bdd.spec.queries.token;
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
- * Licensed under the Apache License, Token 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,8 +56,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
-	OptionalInt expectedDivisibility = OptionalInt.empty();
-	OptionalLong expectedFloat = OptionalLong.empty();
+	OptionalInt expectedDecimals = OptionalInt.empty();
+	OptionalLong expectedTotalSupply = OptionalLong.empty();
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
 	Optional<String> expectedName = Optional.empty();
@@ -87,12 +87,12 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedKycDefault = Optional.of(s);
 		return this;
 	}
-	public HapiGetTokenInfo hasDivisibility(int d) {
-		expectedDivisibility = OptionalInt.of(d);
+	public HapiGetTokenInfo hasDecimals(int d) {
+		expectedDecimals = OptionalInt.of(d);
 		return this;
 	}
-	public HapiGetTokenInfo hasFloat(long amount) {
-		expectedFloat = OptionalLong.of(amount);
+	public HapiGetTokenInfo hasTotalSupply(long amount) {
+		expectedTotalSupply = OptionalLong.of(amount);
 		return this;
 	}
 	public HapiGetTokenInfo hasRegisteredId(String token) {

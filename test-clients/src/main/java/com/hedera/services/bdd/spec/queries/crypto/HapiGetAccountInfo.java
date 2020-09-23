@@ -25,14 +25,18 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -44,11 +48,14 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
 	private final String account;
+	private List<String> absentRelationships = new ArrayList<>();
+	private List<ExpectedTokenRel> relationships = new ArrayList<>();
 	Optional<AccountInfoAsserts> expectations = Optional.empty();
 	Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
 
@@ -70,6 +77,16 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
+		relationships.add(relationship);
+		return this;
+	}
+
+	public HapiGetAccountInfo hasNoTokenRelationship(String token) {
+		absentRelationships.add(token);
+		return this;
+	}
+
 	@Override
 	protected HapiGetAccountInfo self() {
 		return this;
@@ -82,6 +99,37 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
 			rethrowSummaryError(log, "Bad account info!", errors);
+		}
+		for (ExpectedTokenRel rel : relationships) {
+			var actualRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
+			boolean found = false;
+			var expectedId = spec.registry().getTokenID(rel.getToken());
+			for (TokenRelationship actualRel : actualRels) {
+				if (actualRel.getTokenId().equals(expectedId)) {
+					found = true;
+					rel.getBalance().ifPresent(a -> Assert.assertEquals(a, actualRel.getBalance()));
+					rel.getKycStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getKycStatus()));
+					rel.getFreezeStatus().ifPresent(s -> Assert.assertEquals(s, actualRel.getFreezeStatus()));
+				}
+			}
+			if (!found) {
+				Assert.fail(String.format(
+						"Account '%s' had no relationship with token '%s'!",
+						account,
+						rel.getToken()));
+			}
+		}
+		for (String unexpectedToken : absentRelationships) {
+			var actualRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
+			for (TokenRelationship actualRel : actualRels) {
+				var unexpectedId = spec.registry().getTokenID(unexpectedToken);
+				if (actualRel.getTokenId().equals(unexpectedId)) {
+					Assert.fail(String.format(
+							"Account '%s' should have had no relationship with token '%s'!",
+							account,
+							unexpectedToken));
+				}
+			}
 		}
 	}
 
@@ -120,5 +168,52 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper().add("account", account);
+	}
+
+	public static class ExpectedTokenRel {
+		private final String token;
+
+		private OptionalLong balance = OptionalLong.empty();
+		private Optional<TokenKycStatus> kycStatus = Optional.empty();
+		private Optional<TokenFreezeStatus> freezeStatus = Optional.empty();
+
+		private ExpectedTokenRel(String token) {
+			this.token = token;
+		}
+
+		public static ExpectedTokenRel relationshipWith(String token) {
+			return new ExpectedTokenRel(token);
+		}
+
+		public ExpectedTokenRel balance(long expected) {
+			balance = OptionalLong.of(expected);
+			return this;
+		}
+
+		public ExpectedTokenRel kyc(TokenKycStatus expected) {
+			kycStatus = Optional.of(expected);
+			return this;
+		}
+
+		public ExpectedTokenRel freeze(TokenFreezeStatus expected) {
+			freezeStatus = Optional.of(expected);
+			return this;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public OptionalLong getBalance() {
+			return balance;
+		}
+
+		public Optional<TokenKycStatus> getKycStatus() {
+			return kycStatus;
+		}
+
+		public Optional<TokenFreezeStatus> getFreezeStatus() {
+			return freezeStatus;
+		}
 	}
 }

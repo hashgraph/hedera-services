@@ -1527,6 +1527,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - separate-tokenrels-fcm
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -2838,6 +2839,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
+      - run-eet-suites:
+          dsl-args: "TokenAssociationSpecs"
       - run-eet-suites:
           dsl-args: "TokenCreateSpecs"
       - run-eet-suites:

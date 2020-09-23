@@ -23,7 +23,6 @@ package com.hedera.services.fees.calculation.token.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FeeComponents;

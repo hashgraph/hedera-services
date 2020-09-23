@@ -67,6 +67,18 @@ message TransactionID {
     AccountID accountID = 2; //The Account ID that paid for this transaction
 }
 
+/* An account, and the amount that it sends or receives during a cryptocurrency or token transfer. */
+message AccountAmount {
+    AccountID accountID = 1; // The Account ID that sends/receives cryptocurrency or tokens
+    sint64 amount = 2; // The amount of tinybars (for Crypto transfers) or in the lowest denomination (for Token transfers) that the account sends(negative) or receives(positive)
+}
+
+/* A list of token IDs and amounts representing the transferred out (negative) or into (positive) amounts, represented in the lowest denomination of the token */
+message TokenTransferList {
+    TokenID token = 1; // The ID of the token
+    repeated AccountAmount transfers = 2; // Multiple list of AccountAmounts, each of which has an account and amount
+}
+
 /* Unique identifier for a topic (used by the consensus service) */
 message TopicID {
     int64 shardNum = 1; // The shard number (nonnegative)
@@ -254,6 +266,8 @@ enum HederaFunctionality {
     TokenMint = 65; // Mint tokens to treasury
     TokenBurn = 66; // Burn tokens from treasury
     TokenAccountWipe = 67; // Wipe token amount from Account holder
+    TokenAssociateToAccount = 68; // Associate tokens to an account
+    TokenDissociateFromAccount = 69; // Dissociate tokens from an account
 }
 
 /*

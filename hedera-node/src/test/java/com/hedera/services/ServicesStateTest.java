@@ -21,10 +21,13 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -101,6 +104,8 @@ class ServicesStateTest {
 	FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
+	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
@@ -138,6 +143,8 @@ class ServicesStateTest {
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokensCopy = mock(FCMap.class);
+		tokenAssociations = mock(FCMap.class);
+		tokenAssociationsCopy = mock(FCMap.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		topicsCopy = mock(FCMap.class);
@@ -147,6 +154,7 @@ class ServicesStateTest {
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
 		given(tokens.copy()).willReturn(tokensCopy);
+		given(tokenAssociations.copy()).willReturn(tokenAssociationsCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -170,12 +178,13 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void ensuresNonNullTokenFcmAfterReadingFromLegacySavedState() {
+	void ensuresNonNullTokenFcmsAfterReadingFromLegacySavedState() {
 		// when:
 		subject.initialize(null);
 
 		// then:
 		assertNotNull(subject.tokens());
+		assertNotNull(subject.tokenAssociations());
 	}
 
 	@Test
@@ -186,6 +195,7 @@ class ServicesStateTest {
 		// expect:
 		assertEquals(ServicesState.ChildIndices.NUM_070_CHILDREN, subject.getMinimumChildCount(1));
 		assertEquals(ServicesState.ChildIndices.NUM_080_CHILDREN, subject.getMinimumChildCount(2));
+		assertEquals(ServicesState.ChildIndices.NUM_090_CHILDREN, subject.getMinimumChildCount(3));
 	}
 
 	@Test
@@ -255,6 +265,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 
 		// when:
 		subject.init(platform, book);
@@ -263,30 +274,6 @@ class ServicesStateTest {
 		verify(mockDigest).accept(subject);
 		// and:
 		verify(mockLog).info(argThat((String s) -> s.startsWith("[SwirldState Hashes]")));
-
-		// cleanup:
-		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
-		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
-	}
-
-	@Test
-	public void createsMissingTokensFcmapIfSavedStateWasRelease070() {
-		// setup:
-		var mockLog = mock(Logger.class);
-		ServicesMain.log = mockLog;
-
-		// and:
-		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
-		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
-		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
-		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
-		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
-
-		// when:
-		subject.init(platform, book);
-
-		// then:
-		assertNotNull(subject.tokens());
 
 		// cleanup:
 		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
@@ -304,6 +291,7 @@ class ServicesStateTest {
 		Hash tokensRootHash = new Hash("szfgszfgszfgszfgszfgszfgszfgszfgszfgszfgszfgszfg".getBytes());
 		Hash storageRootHash = new Hash("fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes());
 		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
+		Hash tokenRelsRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		// and:
@@ -313,20 +301,23 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
-				"  Overall        :: %s\n" +
-				"  Accounts       :: %s\n" +
-				"  Storage        :: %s\n" +
-				"  Topics         :: %s\n" +
-				"  Tokens         :: %s\n" +
-				"  NetworkContext :: %s\n" +
-				"  AddressBook    :: %s",
+				"  Overall           :: %s\n" +
+				"  Accounts          :: %s\n" +
+				"  Storage           :: %s\n" +
+				"  Topics            :: %s\n" +
+				"  Tokens            :: %s\n" +
+				"  TokenAssociations :: %s\n" +
+				"  NetworkContext    :: %s\n" +
+				"  AddressBook       :: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
 				topicRootHash,
 				tokensRootHash,
+				tokenRelsRootHash,
 				ctxHash,
 				bookHash);
 		subject.setHash(overallHash);
@@ -335,6 +326,7 @@ class ServicesStateTest {
 		given(accounts.getHash()).willReturn(accountsRootHash);
 		given(storage.getHash()).willReturn(storageRootHash);
 		given(tokens.getHash()).willReturn(tokensRootHash);
+		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(book.getHash()).willReturn(bookHash);
 
@@ -357,6 +349,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -372,6 +365,7 @@ class ServicesStateTest {
 		assertEquals(storageCopy, copy.storage());
 		assertEquals(accountsCopy, copy.accounts());
 		assertSame(tokensCopy, copy.tokens());
+		assertSame(tokenAssociationsCopy, copy.tokenAssociations());
 	}
 
 	@Test
@@ -393,6 +387,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
 		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 
 		// when:
 		subject.delete();
@@ -402,6 +397,7 @@ class ServicesStateTest {
 		verify(accounts).delete();
 		verify(topics).delete();
 		verify(tokens).delete();
+		verify(tokenAssociations).delete();
 	}
 
 	@Test

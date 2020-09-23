@@ -25,7 +25,7 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
@@ -79,7 +79,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	@Override
 	public void ensureSystemAccounts(
-			BackingAccounts<AccountID, MerkleAccount> accounts,
+			BackingStore<AccountID, MerkleAccount> accounts,
 			AddressBook addressBook
 	) {
 		var nodeAccountNums = getNodeAccountNums(addressBook);

@@ -58,7 +58,6 @@ import static java.util.stream.Collectors.toList;
 import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -100,6 +99,8 @@ import static com.hedera.test.factories.scenarios.TokenBurnScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.*;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.*;
+import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 
@@ -1108,7 +1109,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1122,7 +1123,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test
@@ -1134,7 +1135,9 @@ public class HederaSigningOrderTest {
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_TREASURY_KT.asKey()));
 	}
 
 	@Test
@@ -1155,6 +1158,75 @@ public class HederaSigningOrderTest {
 	public void getsTokenTransactMissingSenders() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	public void getsTokenTransactWithReceiverSigReq() throws Throwable {
+		// given:
+		setupFor(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(
+						FIRST_TOKEN_SENDER_KT.asKey(),
+						SECOND_TOKEN_SENDER_KT.asKey(),
+						RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	public void getsAssociateWithKnownTarget() throws Throwable {
+		// given:
+		setupFor(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsAssociateWithMissingTarget() throws Throwable {
+		// given:
+		setupFor(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.getOrderedKeys().isEmpty());
+	}
+
+	@Test
+	public void getsDissociateWithKnownTarget() throws Throwable {
+		// given:
+		setupFor(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	public void getsDissociateWithMissingTarget() throws Throwable {
+		// given:
+		setupFor(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1382,6 +1454,20 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
+	public void getsUpdateWithNewTreasury() throws Throwable {
+		// given:
+		setupFor(UPDATE_REPLACING_TREASURY);
+
+		// when:
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
+	}
+
+	@Test
 	public void getsUpdateWithFreeze() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
@@ -1445,7 +1531,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(MISC_ACCOUNT_KT.asKey()));
+				contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
 	}
 
 	@Test

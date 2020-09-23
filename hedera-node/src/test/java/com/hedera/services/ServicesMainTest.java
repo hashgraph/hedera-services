@@ -24,12 +24,11 @@ import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.context.properties.PropertySanitizer;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.grpc.GrpcServerManager;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -112,7 +111,7 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
-	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
+	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	@BeforeEach
 	private void setup() {
@@ -130,7 +129,7 @@ public class ServicesMainTest {
 		systemExits = mock(SystemExits.class);
 		recordStream = mock(RecordStream.class);
 		recordStreamThread = mock(Thread.class);
-		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
+		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
 		stateMigrations = mock(StateMigrations.class);
 		balancesExporter = mock(BalancesExporter.class);
 		nodeLocalProps = mock(NodeLocalProperties.class);

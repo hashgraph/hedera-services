@@ -115,10 +115,10 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.accountKeys(COMPLEX_KEY_ACCOUNT_KT).get()
 				).withAccount(
-						CARELESS_SIGNING_PAYER_ID,
+						TOKEN_TREASURY_ID,
 						newAccount()
 								.balance(DEFAULT_BALANCE)
-								.accountKeys(CARELESS_SIGNING_PAYER_KT).get()
+								.accountKeys(TOKEN_TREASURY_KT).get()
 				).withAccount(
 						DILIGENT_SIGNING_PAYER_ID,
 						newAccount()
@@ -253,9 +253,9 @@ public interface TxnHandlingScenario {
 	AccountID DILIGENT_SIGNING_PAYER = asAccount(DILIGENT_SIGNING_PAYER_ID);
 	KeyTree DILIGENT_SIGNING_PAYER_KT = withRoot(threshold(2, ed25519(true), ed25519(true), ed25519(false)));
 
-	String CARELESS_SIGNING_PAYER_ID = "0.0.1341";
-	AccountID CARELESS_SIGNING_PAYER = asAccount(CARELESS_SIGNING_PAYER_ID);
-	KeyTree CARELESS_SIGNING_PAYER_KT = withRoot(threshold(2, ed25519(false), ed25519(true), ed25519(false)));
+	String TOKEN_TREASURY_ID = "0.0.1341";
+	AccountID TOKEN_TREASURY = asAccount(TOKEN_TREASURY_ID);
+	KeyTree TOKEN_TREASURY_KT = withRoot(threshold(2, ed25519(false), ed25519(true), ed25519(false)));
 
 	String COMPLEX_KEY_ACCOUNT_ID = "0.0.1342";
 	AccountID COMPLEX_KEY_ACCOUNT = asAccount(COMPLEX_KEY_ACCOUNT_ID);

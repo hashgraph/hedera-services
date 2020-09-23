@@ -174,6 +174,7 @@ public class BootstrapProperties implements PropertySource {
 			"accounts.systemDeleteAdmin",
 			"accounts.systemUndeleteAdmin",
 			"accounts.treasury",
+			"balances.exportDir.path",
 			"files.addressBook",
 			"files.networkProperties",
 			"files.exchangeRates",
@@ -188,6 +189,8 @@ public class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"balances.exportPeriodSecs",
+			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultReceiveThreshold",
 			"contracts.defaultSendThreshold",
@@ -226,6 +229,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("accounts.systemAdmin.firstManaged", AS_LONG),
 			entry("accounts.systemAdmin.lastManaged", AS_LONG),
 			entry("accounts.treasury", AS_LONG),
+			entry("balances.exportPeriodSecs", AS_INT),
+			entry("balances.nodeBalanceWarningThreshold", AS_LONG),
 			entry("cache.records.ttl", AS_INT),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),

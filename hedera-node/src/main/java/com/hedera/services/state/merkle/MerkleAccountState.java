@@ -48,10 +48,10 @@ import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf {
@@ -247,16 +247,6 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.toString();
 	}
 
-	public List<RawTokenRelationship> explicitTokenRels() {
-		return IntStream.range(0, numTokenRelationships())
-				.mapToObj(i -> new RawTokenRelationship(
-						tokenRels[balance(i)],
-						tokenRels[num(i)],
-						isFrozen(i),
-						isKycGranted(i)))
-				.collect(toList());
-	}
-
 	public String readableTokenRels() {
 		var sb = new StringBuilder("[");
 		for (int i = 0, n = numTokenRelationships(); i < n; i++) {
@@ -283,7 +273,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
 		int at = logicalIndexOf(id);
 		if (at < 0) {
-			return ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
+			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		} else {
 			removeRelationship(at);
 		}

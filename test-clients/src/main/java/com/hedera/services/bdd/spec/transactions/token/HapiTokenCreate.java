@@ -55,9 +55,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	private String token;
 
-	private OptionalInt divisibility = OptionalInt.empty();
+	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
-	private OptionalLong initialFloat = OptionalLong.empty();
+	private OptionalLong initialSupply = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
 	private Optional<String> kycKey = Optional.empty();
@@ -81,13 +81,13 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		this.token = token;
 	}
 
-	public HapiTokenCreate initialFloat(long initialFloat) {
-		this.initialFloat = OptionalLong.of(initialFloat);
+	public HapiTokenCreate initialSupply(long initialSupply) {
+		this.initialSupply = OptionalLong.of(initialSupply);
 		return this;
 	}
 
-	public HapiTokenCreate divisibility(int divisibility) {
-		this.divisibility = OptionalInt.of(divisibility);
+	public HapiTokenCreate decimals(int decimals) {
+		this.decimals = OptionalInt.of(decimals);
 		return this;
 	}
 
@@ -190,8 +190,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 						TokenCreateTransactionBody.class, b -> {
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
-							initialFloat.ifPresent(b::setInitialSupply);
-							divisibility.ifPresent(b::setDecimals);
+							initialSupply.ifPresent(b::setInitialSupply);
+							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
@@ -213,7 +213,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec))));
+				spec -> spec.registry().getKey(effectivePayer(spec)),
+				spec -> spec.registry().getKey(treasury.orElseGet(spec.setup()::defaultPayerName))));
 		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		autoRenewAccount.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));

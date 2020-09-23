@@ -28,11 +28,13 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -89,6 +91,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		if (token.isDeleted()) {
+			txnCtx.setStatus(TOKEN_WAS_DELETED);
+			return;
+		}
+
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();
@@ -121,8 +128,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
-		var status = OK;
-		if (token.hasFreezeKey()) {
+		var ref = TokenRef.newBuilder().setTokenId(id).build();
+		var status = store.associate(newTreasury, List.of(ref));
+		if (status == TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT) {
+			status = OK;
+		}
+		if (status == OK && token.hasFreezeKey()) {
 			status = ledger.unfreeze(newTreasury, id);
 		}
 		if (status == OK && token.hasKycKey()) {

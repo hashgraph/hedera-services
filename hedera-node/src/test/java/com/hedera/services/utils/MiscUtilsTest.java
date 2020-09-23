@@ -72,16 +72,19 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenAssociate;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -320,7 +323,7 @@ public class MiscUtilsTest {
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfers.class));
+			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenController.TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_GRANT_KYC_METRIC, new BodySetter<>(TokenGrantKycTransactionBody.class));
@@ -330,6 +333,8 @@ public class MiscUtilsTest {
 			put(TokenController.TOKEN_MINT_METRIC, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenController.TOKEN_BURN_METRIC, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenController.TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenController.TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenController.TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
 		}};
 
 		// expect:
@@ -575,7 +580,7 @@ public class MiscUtilsTest {
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
 			put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenTransact, new BodySetter<>(TokenTransfers.class));
+			put(TokenTransact, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
@@ -585,6 +590,8 @@ public class MiscUtilsTest {
 			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

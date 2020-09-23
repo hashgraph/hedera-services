@@ -38,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -79,6 +80,19 @@ class TokenDeleteTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
+	}
+
+	@Test
+	public void capturesInvalidDeletionDueToAlreadyDeleted() {
+		givenValidTxnCtx();
+		// and:
+		given(tokenStore.delete(token)).willReturn(TOKEN_WAS_DELETED);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
 	}
 
 	@Test
