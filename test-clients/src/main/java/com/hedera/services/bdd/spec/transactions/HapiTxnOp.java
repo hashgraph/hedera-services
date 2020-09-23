@@ -122,6 +122,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return finalizedTxn(spec, opBodyDef(spec)).toByteArray();
 	}
 
+	public Transaction signedTxnFor(HapiApiSpec spec) throws Throwable {
+		return finalizedTxn(spec, opBodyDef(spec));
+	}
+
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
 		stats = new TxnObs(type());
