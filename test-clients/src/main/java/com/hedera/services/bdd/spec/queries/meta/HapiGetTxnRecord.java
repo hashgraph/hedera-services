@@ -129,23 +129,29 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
 
-	@Override
-	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
-		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+	private void assertPriority(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		if (priorityExpectations.isPresent()) {
 			ErroringAsserts<TransactionRecord> asserts = priorityExpectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualRecord);
 			rethrowSummaryError(log, "Bad priority record!", errors);
 		}
+	}
+
+	private void assertDuplicates(HapiApiSpec spec) throws Throwable {
 		if (duplicateExpectations.isPresent()) {
 			var asserts = duplicateExpectations.get().assertsFor(spec);
 			var errors = asserts.errorsIn(response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			rethrowSummaryError(log, "Bad duplicate records!", errors);
 		}
+	}
+
+	private void assertTransactionHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
 		assertArrayEquals("Bad transaction hash!", CommonUtils.sha384HashOf(transaction).toByteArray(),
 				actualRecord.getTransactionHash().toByteArray());
+	}
 
+	private void assertTopicRunningHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		if (topicToValidate.isPresent()) {
 			if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
@@ -178,6 +184,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				}
 			}
 		}
+	}
+
+	@Override
+	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+		assertPriority(spec, actualRecord);
+		assertDuplicates(spec);
+		assertTransactionHash(spec, actualRecord);
+		assertTopicRunningHash(spec, actualRecord);
 	}
 
 	@Override
