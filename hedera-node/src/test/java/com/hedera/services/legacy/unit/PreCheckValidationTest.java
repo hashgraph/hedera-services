@@ -42,6 +42,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestFeesFactory;
 import com.hedera.test.mocks.TestProperties;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -95,6 +97,7 @@ import org.junit.runner.RunWith;
 
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
@@ -666,11 +669,41 @@ class PreCheckValidationTest {
 				.build();
 	}
 
+	private TransactionBody testBody() {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+				.build();
+	}
+
+	private Transaction.Builder transactionWithSignedTransactionBytes() {
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(testBody().toByteString())
+				.setSigMap(fakeSigMap())
+				.build();
+		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString());
+	}
+
 	@Test
 	void failsFastOnInvalidTransactionBody() {
 		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
 				Transaction.newBuilder().setSigMap(fakeSigMap()).build(), false);
 		Assert.assertEquals(INVALID_TRANSACTION_BODY, result.getValidity());
+		Assert.assertEquals(0l, result.getRequiredFee());
+	}
+
+	@Test
+	void failsFastOnSignedTransactionBytesCombinedWithSigMap() {
+		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
+				transactionWithSignedTransactionBytes().setSigMap(fakeSigMap()).build(), false);
+		Assert.assertEquals(INVALID_TRANSACTION, result.getValidity());
+		Assert.assertEquals(0l, result.getRequiredFee());
+	}
+
+	@Test
+	void failsFastOnSignedTransactionBytesCombinedWithBodyBytes() {
+		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
+				transactionWithSignedTransactionBytes().setBodyBytes(testBody().toByteString()).build(), false);
+		Assert.assertEquals(INVALID_TRANSACTION, result.getValidity());
 		Assert.assertEquals(0l, result.getRequiredFee());
 	}
 }
