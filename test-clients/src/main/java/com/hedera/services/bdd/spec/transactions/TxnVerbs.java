@@ -156,6 +156,14 @@ public class TxnVerbs {
 		return new HapiSysUndelete().file(target);
 	}
 
+
+	public static HapiSysDelete systemContractDelete(String target) {
+		return new HapiSysDelete().contract(target);
+	}
+	public static HapiSysUndelete systemContractUndelete(String target) {
+		return new HapiSysUndelete().contract(target);
+	}
+
 	/* NETWORK */
 	public static <T extends HapiTxnOp<T>> HapiUncheckedSubmit<T> uncheckedSubmit(HapiTxnOp<T> subOp) {
 		return new HapiUncheckedSubmit<>(subOp);

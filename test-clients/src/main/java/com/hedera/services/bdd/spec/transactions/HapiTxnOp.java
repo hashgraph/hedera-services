@@ -92,6 +92,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 	protected ResponseCodeEnum actualPrecheck = UNKNOWN;
 	protected TransactionReceipt lastReceipt;
 
+	protected Optional<Function<Transaction, Transaction>> fiddler = Optional.empty();
+
 	protected Optional<ResponseCodeEnum> expectedStatus = Optional.empty();
 	protected Optional<ResponseCodeEnum> expectedPrecheck = Optional.empty();
 	protected Optional<KeyGenerator.Nature> keyGen = Optional.empty();
@@ -137,6 +139,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 			TransactionResponse response = null;
 			try {
+				if(fiddler.isPresent()) {
+					txn = fiddler.get().apply(txn);
+				}
 				response = timedCall(spec, txn);
 			} catch (StatusRuntimeException e) {
 				if (e.toString().contains("NO_ERROR")) {
@@ -576,6 +581,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T setNode(String account) {
 		node = Optional.of(HapiPropertySource.asAccount(account));
+
 		return self();
 	}
 
@@ -586,6 +592,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T usePresetTimestamp() {
 		usePresetTimestamp = true;
+		return self();
+	}
+
+	public T scrambleTxnBody(Function<Transaction, Transaction> func) {
+		fiddler = Optional.of(func);
 		return self();
 	}
 }

@@ -31,12 +31,15 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -46,6 +49,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
@@ -416,5 +420,73 @@ public class TxnUtils {
 
 	public static long nonDegenerateDiv(long dividend, int divisor) {
 		return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
+	}
+
+	// Following methods are for negative test cases purpose, use with caution
+
+	public static Transaction replaceTxnMemo(Transaction txn, String newMemo) {
+		try {
+			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+			txnBody.setMemo(newMemo);
+			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
+		} catch (Exception e) {
+			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
+		}
+		return null;
+	}
+
+	public static Transaction replaceTxnPayerAccount(Transaction txn, AccountID accountID) {
+		//log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
+		Transaction newTxn = Transaction.getDefaultInstance();
+		try {
+			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+			txnBody.setTransactionID(TransactionID.newBuilder()
+					.setAccountID(accountID)
+					.setTransactionValidStart(txnBody.getTransactionID().getTransactionValidStart()).build());
+			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
+		} catch (Exception e) {
+			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
+		}
+		return null;
+	}
+
+	public static Transaction replaceTxnStartTime(Transaction txn, long newStartTimeSecs, int newStartTimeNanos) {
+		try {
+			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+
+			txnBody.setTransactionID(TransactionID.newBuilder()
+					.setAccountID(txnBody.getTransactionID().getAccountID())
+					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(newStartTimeSecs).setNanos(newStartTimeNanos).build())
+					.build());
+			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
+		} catch (Exception e) {
+			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
+		}
+		return null;
+	}
+
+	public static Transaction replaceTxnDuration(Transaction txn, long newDuration) {
+		try {
+			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+			txnBody.setTransactionValidDuration(Duration.newBuilder().setSeconds(newDuration).build());
+			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
+		} catch (Exception e) {
+			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
+		}
+		return null;
+	}
+
+	public static Transaction replaceTxnNodeAccount(Transaction txn, AccountID newNodeAccount) {
+		log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
+		Transaction newTxn = Transaction.getDefaultInstance();
+		try {
+
+			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+			txnBody.setNodeAccountID(newNodeAccount);
+			return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
+		} catch (Exception e) {
+			log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
+		}
+		return null;
 	}
 }
