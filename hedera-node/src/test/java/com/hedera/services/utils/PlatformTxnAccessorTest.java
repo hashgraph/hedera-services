@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.goterl.lazycode.lazysodium.interfaces.Sign;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -36,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.BDDMockito.*;
 

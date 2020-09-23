@@ -20,7 +20,6 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -29,8 +28,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;

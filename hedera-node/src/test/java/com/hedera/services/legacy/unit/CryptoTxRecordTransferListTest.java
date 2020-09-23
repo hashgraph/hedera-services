@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.CryptoHandlerTestHelper;
 import com.hedera.services.legacy.util.ComplexKeyManager;
@@ -47,7 +46,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;

@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -42,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 import java.time.Instant;
