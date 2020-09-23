@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
@@ -387,7 +388,7 @@ public class HederaLedgerTest {
 		// and:
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -407,7 +408,7 @@ public class HederaLedgerTest {
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -484,6 +485,7 @@ public class HederaLedgerTest {
 				() -> new MerkleTokenRelStatus(),
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
+		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
@@ -696,7 +698,7 @@ public class HederaLedgerTest {
 		subject.dropPendingTokenChanges();
 
 		// then:
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 		// and;
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());

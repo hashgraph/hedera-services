@@ -22,6 +22,7 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
@@ -37,6 +38,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
  * A store that provides efficient access to the mutable representations
@@ -120,5 +122,9 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 
 	public static Map.Entry<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
 		return new AbstractMap.SimpleImmutableEntry<>(account, token);
+	}
+
+	public static String readableTokenRel(Map.Entry<AccountID, TokenID> relationship) {
+		return String.format("%s <-> %s", readableId(relationship.getKey()), readableId(relationship.getValue()));
 	}
 }

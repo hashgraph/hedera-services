@@ -292,7 +292,7 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		accountsLedger.dropPendingTokenChanges();
+		tokenRelsLedger.rollback();
 		clearNetTokenTransfers();
 	}
 

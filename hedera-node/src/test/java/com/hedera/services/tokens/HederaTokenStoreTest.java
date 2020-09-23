@@ -190,9 +190,6 @@ class HederaTokenStoreTest {
 
 		hederaLedger = mock(HederaLedger.class);
 
-		var sponsorMiscRel = new MerkleTokenRelStatus(sponsorBalance, false, true);
-		var treasuryMiscRel = new MerkleTokenRelStatus(treasuryBalance, false, true);
-
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
@@ -201,7 +198,6 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
-		given(accountsLedger.getTokenRef(treasury)).willReturn(account);
 
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(true);
@@ -653,7 +649,6 @@ class HederaTokenStoreTest {
 		// setup:
 		long balance = 1_234L;
 		given(token.hasWipeKey()).willReturn(false);
-		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.getTokenBalance(misc)).willReturn(balance);
@@ -717,7 +712,6 @@ class HederaTokenStoreTest {
 		long wipe = 1_235L;
 
 		given(token.hasWipeKey()).willReturn(true);
-		given(accountsLedger.getTokenRef(sponsor)).willReturn(account);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
 		given(account.hasRelationshipWith(misc)).willReturn(true);
