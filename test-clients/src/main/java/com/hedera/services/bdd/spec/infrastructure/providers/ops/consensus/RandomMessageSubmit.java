@@ -95,7 +95,6 @@ public class RandomMessageSubmit implements OpProvider {
 
                 HapiMessageSubmit op = submitMessageTo(target.get())
                         .message(new String(messageBytes))
-//                        .chunkInfo(r.nextInt(10) + 1, r.nextInt(3) + 1)
                         .hasKnownStatusFrom(permissibleOutcomes)
                         .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 

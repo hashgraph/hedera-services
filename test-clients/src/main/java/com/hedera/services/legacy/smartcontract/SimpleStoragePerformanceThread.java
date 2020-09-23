@@ -235,8 +235,6 @@ public class SimpleStoragePerformanceThread implements Runnable {
     while (attempts <= MAX_RECEIPT_RETRIES &&
         (transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().equals(ResponseCodeEnum.UNKNOWN) ||
          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().equals(ResponseCodeEnum.BUSY))) {
-//      System.out.println("waiting to getTransactionReceipts as not Unknown..." +
-//          transactionReceipts.getTransactionGetReceipt().getReceipt().getStatus().name());
       Thread.sleep(500);
       transactionReceipts = stub.getTransactionReceipts(query);
       attempts++;
@@ -404,9 +402,7 @@ public class SimpleStoragePerformanceThread implements Runnable {
     fee = recordResp.getTransactionGetRecord().getHeader().getCost();
     recordResp = executeQueryForTxRecord(payerAccount, transactionId, fee,
         ResponseType.ANSWER_ONLY);
-    TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
-    return txRecord;
+    return recordResp.getTransactionGetRecord().getTransactionRecord();
   }
 
 

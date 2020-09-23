@@ -114,7 +114,6 @@ public class DoubleSpendingTest {
     Transaction transaction = TestHelper
         .createAccountWithFee(payerAccount, defaultNodeAccount, firstPair, 100000l,
             Collections.singletonList(genesisPrivateKey));
-    //Transaction signTransaction = TransactionSigner.signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
     TransactionResponse response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -134,7 +133,6 @@ public class DoubleSpendingTest {
     transaction = TestHelper
         .createAccountWithFee(payerAccount, defaultNodeAccount, secondPair, 1000l,
             Collections.singletonList(genesisPrivateKey));
-    // signTransaction = TransactionSigner.signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
     response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -155,7 +153,6 @@ public class DoubleSpendingTest {
     transaction = TestHelper
         .createAccountWithFee(payerAccount, defaultNodeAccount, thirdPair, 1000l,
             Collections.singletonList(genesisPrivateKey));
-    //signTransaction = TransactionSigner.signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
     response = stub.createAccount(transaction);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

@@ -135,18 +135,14 @@ public class BatchCreateAccount {
       signTransaction = TransactionSigner
           .signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
 
-//      StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createAccount:Batch");
       TransactionResponse response = stub.createAccount(signTransaction);
       Assert.assertNotNull(response);
       Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-//      stopWatch.stop();
       TransactionBody body = TransactionBody.parseFrom(signTransaction.getBodyBytes());
       txList.add(i, body.getTransactionID());
     }
-//        Thread.sleep(10000);
     for (int i = 0; i < 1; i++) {
       if (retrieveTxReceipt) {
-//        StopWatch stopWatch = new Log4JStopWatch("RoundTrip:receipt for transfer");
         TransactionReceipt txReceipt = null;
         try {
           txReceipt = TestHelper.getTxReceipt(txList.get(txList.size() - 1), stub);
@@ -158,9 +154,7 @@ public class BatchCreateAccount {
           try {
             Thread.sleep(1000);
             log.info("waiting for receipt for last account");
-//            stopWatch = new Log4JStopWatch("RoundTrip:receipt for transfer");
             txReceipt = TestHelper.getTxReceipt(txList.get(txList.size() - 1), stub);
-//            stopWatch.stop();
           } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
             invalidNodeTransactionPrecheckCode.printStackTrace();
           }
@@ -168,7 +162,6 @@ public class BatchCreateAccount {
         log.info("Success in fetching the receipts");
 
         Assert.assertEquals(txReceipt.getStatus(), ResponseCodeEnum.SUCCESS);
-//        stopWatch.stop();
       }
     }
     long end = System.currentTimeMillis();

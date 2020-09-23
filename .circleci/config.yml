@@ -381,7 +381,7 @@ commands:
             - provision-testnet-hosts:
                 liveness-timeout-secs: 120
                 var-file: '<< parameters.var-file >>'
-                var-region: "us-east-1"
+                var-region: "us-west-2"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
@@ -1904,6 +1904,7 @@ jobs:
     steps:
       - run:
           name: Run Software Update regression tests
+          no_output_timeout: 30m
           command: |
             cd /swirlds-platform/regression;
             ./regression_services_circleci.sh AWS-Services-Daily-SoftwareUpdate-4N-1C.json /repo
@@ -1942,7 +1943,8 @@ jobs:
           command: |
             cd /; GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
-            cd /swirlds-platform; git submodule update --init --recursive --checkout
+            cd /swirlds-platform; git checkout services-regression;
+            git submodule update --init --recursive --checkout;
             cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 

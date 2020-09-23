@@ -114,9 +114,6 @@ public class SmartContractPay {
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
 
     int numberOfReps = 1;
-//    if ((args.length) > 0) {
-//      numberOfReps = Integer.parseInt(args[0]);
-//    }
     for (int i = 0; i < numberOfReps; i++) {
       SmartContractPay scSs = new SmartContractPay();
       scSs.demo();
@@ -333,9 +330,6 @@ public class SmartContractPay {
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
     long fee = TestHelper.getCryptoMaxFee();
     Response recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee,
-        ResponseType.COST_ANSWER);
- //   fee = recordResp.getTransactionGetRecord().getHeader().getCost();
-    recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee,
         ResponseType.ANSWER_ONLY);
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
     System.out.println("tx record = " + txRecord);
@@ -451,9 +445,6 @@ public class SmartContractPay {
     }
     long fee = TestHelper.getContractMaxFee()*100;
     Response callResp = executeContractCall(payerAccount, contractToCall, stub, callData, fee,
-        ResponseType.COST_ANSWER);
- //   fee = callResp.getContractCallLocal().getHeader().getCost() + localCallGas *10;
-    callResp = executeContractCall(payerAccount, contractToCall, stub, callData, fee,
         ResponseType.ANSWER_ONLY);
 
     System.out.println("callContractLocal response = " + callResp);
@@ -508,10 +499,6 @@ public class SmartContractPay {
         .newBlockingStub(channel);
     long fee = TestHelper.getContractMaxFee()*100;
     Response respToReturn = executeContractByteCodeQuery(payerAccount, contractId, stub, fee,
-        ResponseType.COST_ANSWER);
-
-//    fee = respToReturn.getContractGetBytecodeResponse().getHeader().getCost();
-    respToReturn = executeContractByteCodeQuery(payerAccount, contractId, stub, fee,
         ResponseType.ANSWER_ONLY);
     ByteString contractByteCode = null;
     contractByteCode = respToReturn.getContractGetBytecodeResponse().getBytecode();
@@ -615,13 +602,8 @@ public class SmartContractPay {
         log.info("Contract created successfully");
         int expectedFeeDeduction = 120;//hardcoded for now , need to take the actual fee out.
         for (int i = 0; i < 10; i++) {
-          int currentBalanceBeforeUpdate = getBalanceFromContract(crAccount, payTestContractId);
           int currValueToDeposit = ThreadLocalRandom.current().nextInt(1, 10000 + 1);
           depositToContract(crAccount, payTestContractId, currValueToDeposit);
-          //Thread.sleep(10000);
-          int currentBalanceAfterUpdate = getBalanceFromContract(crAccount, payTestContractId);
-//          Assert.assertEquals(currentBalanceBeforeUpdate + currValueToDeposit,
-//              currentBalanceAfterUpdate);
           AccountID accountToSendMoney = createAccount(genesisAccount, 100000000000L);
           AccountInfo sendAccInfo = getCryptoGetAccountInfo(crAccount, accountToSendMoney);
           long currReciveBalance = sendAccInfo.getBalance();
@@ -632,7 +614,6 @@ public class SmartContractPay {
           System.out.println(sendFundsAmount);
           System.out.println(currReciveBalance);
           System.out.println(receiverBalance);
-//          Assert.assertEquals(receiverBalance, currReciveBalance + sendFundsAmount);
 
           log.info("Contract deposit / getBalance / transfer " + i + " completed successfully==>");
         }

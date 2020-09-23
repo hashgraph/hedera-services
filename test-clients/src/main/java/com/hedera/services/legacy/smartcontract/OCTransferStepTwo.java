@@ -216,7 +216,6 @@ public class OCTransferStepTwo {
       if (transactions.size() >= BATCH_SIZE) {
         clearTransactions(payingAccount, transactions);
       }
-//      printBalances(ocTokenContract, tokenOwners, symbol, payingAccount);
     }
     if (transactions.size() > 0) {
       clearTransactions(payingAccount, transactions);
@@ -228,8 +227,6 @@ public class OCTransferStepTwo {
         elapsedMillis / 1000.0 + " seconds");
     double tps = (numberOfTransfers * 100000 / elapsedMillis) / 100.0;
     System.out.println("About " + tps + " TPS");
-
-//    printBalances(ocTokenContract, tokenOwners, symbol, payingAccount);
 
     channelShared.shutdown();
   }
@@ -374,7 +371,6 @@ public class OCTransferStepTwo {
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(txId);
     if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
         .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
-      //Thread.sleep(6000);
       TransactionRecord trRecord = getTransactionRecord(payerAccount, txId);
       if (trRecord != null && trRecord.hasContractCallResult()) {
         ContractFunctionResult callResults = trRecord.getContractCallResult();
@@ -388,7 +384,6 @@ public class OCTransferStepTwo {
 
   private static TransactionRecord getTransactionRecord(AccountID payer,
       TransactionID transactionId) throws Exception {
-    AccountID createdAccount = null;
     long fee = FeeClient.getCostForGettingTxRecord();
     CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc
         .newBlockingStub(channelShared);
@@ -403,10 +398,7 @@ public class OCTransferStepTwo {
         .getTransactionGetRecordQuery(transactionId, paymentTx, ResponseType.ANSWER_ONLY);
     recordResp = stub.getTxRecordByTxID(getRecordQuery);
 
-    TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
-
-    return txRecord;
+    return recordResp.getTransactionGetRecord().getTransactionRecord();
   }
 
 

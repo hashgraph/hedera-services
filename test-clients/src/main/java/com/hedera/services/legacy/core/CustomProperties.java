@@ -58,8 +58,9 @@ public class CustomProperties {
    * @param isResource whether the properties file can be loaded as a resource, i.e. on classpath
    */
   public CustomProperties(String file, boolean isResource) {
-    if(file == null)
-      return;
+    if(file == null) {
+		return;
+	}
     
     InputStream input = null;
     try {

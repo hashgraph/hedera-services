@@ -260,8 +260,6 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 					.setStatus(ResponseCodeEnum.ACCOUNT_DELETED).build();
 		} else {
 			try {
-       /* storeLiveHash(claim, attachedAccountID, consensusTime, fcFileSystem,
-            (int) durationSeconds);*/
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.SUCCESS).build();
 			} catch (Exception e) {
