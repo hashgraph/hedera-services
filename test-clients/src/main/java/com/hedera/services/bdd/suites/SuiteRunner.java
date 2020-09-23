@@ -63,6 +63,7 @@ import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
+import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
@@ -191,6 +192,7 @@ public class SuiteRunner {
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
+		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
 		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
 		put("FileRecordSanityChecks", aof(new FileRecordsSanityCheckSuite()));
 		put("ContractRecordSanityChecks", aof(new ContractRecordsSanityCheckSuite()));

@@ -2791,6 +2791,8 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-eet-suites:
+          dsl-args: "SignedTransactionBytesRecordsSuite"
+      - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
       - run-eet-suites:
           dsl-args: "TopicUpdateSpecs -TLS=on"
