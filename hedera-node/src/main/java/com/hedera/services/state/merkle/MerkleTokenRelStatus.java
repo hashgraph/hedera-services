@@ -126,12 +126,17 @@ public class MerkleTokenRelStatus extends AbstractMerkleNode
 	}
 
 	/* --- Bean --- */
-
 	public long getBalance() {
 		return balance;
 	}
 
 	public void setBalance(long balance) {
+		if (balance < 0) {
+			throw new IllegalArgumentException(String.format(
+					"Cannot set %s balance to %d!",
+					this,
+					balance));
+		}
 		this.balance = balance;
 	}
 

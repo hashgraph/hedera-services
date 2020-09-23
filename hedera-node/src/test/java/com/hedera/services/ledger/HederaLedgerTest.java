@@ -914,6 +914,7 @@ public class HederaLedgerTest {
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
 		System.out.println(accountsLedger.changeSetSoFar());
+		System.out.println(tokenRelsLedger.changeSetSoFar());
 		// and:
 		subject.adjustTokenBalance(a, tA, +10_000);
 		subject.adjustTokenBalance(a, tA, -5_000);
