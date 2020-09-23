@@ -533,8 +533,7 @@ public class UtilVerbs {
 
 			for (String txn : txns) {
 				HapiGetTxnRecord subOp = getTxnRecord(txn).logged()
-						.payingWith(EXCHANGE_RATE_CONTROL)
-						.hasCorrectTransactionHash();
+						.payingWith(EXCHANGE_RATE_CONTROL);
 				allRunFor(spec, subOp);
 				TransactionRecord record = subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
 				transfers.addAll(record.getTransferList().getAccountAmountsList());

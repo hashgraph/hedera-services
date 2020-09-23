@@ -58,7 +58,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	String txn;
 	boolean useDefaultTxnId = false;
 	boolean requestDuplicates = false;
-	boolean validateTxnHash = true;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
@@ -120,11 +119,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasCorrectTransactionHash() {
-		validateTxnHash = true;
-		return this;
-	}
-
 	public HapiGetTxnRecord loggedWith(BiConsumer<TransactionRecord, Logger> customFormat) {
 		super.logged();
 		format = Optional.of(customFormat);
@@ -148,11 +142,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			var errors = asserts.errorsIn(response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
 			rethrowSummaryError(log, "Bad duplicate records!", errors);
 		}
-		if (validateTxnHash) {
-			Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
-			assertArrayEquals("Bad transaction hash!", CommonUtils.sha384HashOf(transaction).toByteArray(),
-					actualRecord.getTransactionHash().toByteArray());
-		}
+		Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
+		assertArrayEquals("Bad transaction hash!", CommonUtils.sha384HashOf(transaction).toByteArray(),
+				actualRecord.getTransactionHash().toByteArray());
+
 		if (topicToValidate.isPresent()) {
 			if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
 				var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
