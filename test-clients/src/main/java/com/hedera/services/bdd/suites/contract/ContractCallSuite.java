@@ -90,11 +90,11 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs()
-//				negativeSpecs(),
-//				Arrays.asList(
-//						fridayThe13thSpec()
-//				)
+				positiveSpecs(),
+				negativeSpecs(),
+				Arrays.asList(
+						fridayThe13thSpec()
+				)
 		);
 	}
 
@@ -110,10 +110,10 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-//				vanillaSuccess(),
-//				payableSuccess(),
-//				depositSuccess(),
-//				depositDeleteSuccess(),
+				vanillaSuccess(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
 				multipleDepositSuccess()
 		);
 	}
