@@ -272,12 +272,17 @@ public abstract class HapiSpecOperation {
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
 		}
 
+		return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);
+	}
+
+	private Transaction finalizedTxnFromTxnWithBodyBytesAndSigMap(Transaction txnWithBodyBytesAndSigMap
+	) throws Throwable {
 		if (asTxnWithOnlySigMap) {
-			return txn.toBuilder().clearBodyBytes().build();
+			return txnWithBodyBytesAndSigMap.toBuilder().clearBodyBytes().build();
 		}
 
-		ByteString bodyByteString = CommonUtils.extractTransactionBodyByteString(txn);
-		SignatureMap sigMap = CommonUtils.extractSignatureMap(txn);
+		ByteString bodyByteString = CommonUtils.extractTransactionBodyByteString(txnWithBodyBytesAndSigMap);
+		SignatureMap sigMap = CommonUtils.extractSignatureMap(txnWithBodyBytesAndSigMap);
 		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
 				.setBodyBytes(bodyByteString)
 				.setSigMap(sigMap)
@@ -294,7 +299,7 @@ public abstract class HapiSpecOperation {
 		}
 
 		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
-			return txn;
+			return txnWithBodyBytesAndSigMap;
 		}
 
 		return txnWithSignedTxnBytesBuilder.build();
