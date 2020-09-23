@@ -223,11 +223,11 @@ public class TransactionHandler {
     this.platformStatus = platformStatus;
   }
 
-  public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long fee) {
+  public ResponseCodeEnum nodePaymentValidity(Transaction signedTxn, long queryFee) {
     try {
       var txn = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(signedTxn);
       var transfers = txn.getCryptoTransfer().getTransfers().getAccountAmountsList();
-      return queryFeeCheck.nodePaymentValidity(transfers, fee, txn.getNodeAccountID());
+      return queryFeeCheck.nodePaymentValidity(transfers, queryFee, txn.getNodeAccountID());
     } catch (Exception ignore) {
       return INVALID_TRANSACTION_BODY;
     }
@@ -359,8 +359,7 @@ public class TransactionHandler {
 
   private TxnValidityAndFeeReq validateTransactionFeeCoverage(
           TransactionBody txn,
-          SignedTxnAccessor accessor
-  ) {
+          SignedTxnAccessor accessor) {
     ResponseCodeEnum returnCode = OK;
     if (exemptions.hasExemptPayer(accessor)) {
       return new TxnValidityAndFeeReq(returnCode);
@@ -529,6 +528,10 @@ public class TransactionHandler {
       TxnValidityAndFeeReq localResp = validateTransactionFeeCoverage(txn, accessor);
       returnCode = localResp.getValidity();
       feeRequired = localResp.getRequiredFee();
+    }
+
+    if(returnCode == OK && isQueryPayment && txn.hasCryptoTransfer()){
+      returnCode = queryFeeCheck.validateQueryPaymentTransfers(txn);
     }
 
     if (!(isQueryPayment && txn.hasCryptoTransfer()) && returnCode == OK) {

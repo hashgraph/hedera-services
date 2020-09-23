@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -60,19 +61,20 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 
 	private String nodePaymentName;
-	protected boolean recordsNodePayment = false;
-	protected boolean stopAfterCostAnswer = false;
-	protected boolean expectStrictCostAnswer = false;
+	private boolean recordsNodePayment = false;
+	private boolean stopAfterCostAnswer = false;
+	private boolean expectStrictCostAnswer = false;
 	protected Response response = null;
+	private Optional<ResponseCodeEnum> answerOnlyPrecheck = Optional.empty();
+	private Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
+	private Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
+	private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
+	private ResponseCodeEnum expectedCostAnswerPrecheck() { return costAnswerPrecheck.orElse(OK); }
+	private ResponseCodeEnum expectedAnswerOnlyPrecheck() { return answerOnlyPrecheck.orElse(OK); }
+
 	protected Optional<Long> nodePayment = Optional.empty();
 	protected Optional<ResponseCodeEnum> costAnswerPrecheck = Optional.empty();
-	protected Optional<ResponseCodeEnum> answerOnlyPrecheck = Optional.empty();
-	protected Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
-	protected Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
-	protected Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
-
-	protected ResponseCodeEnum expectedCostAnswerPrecheck() { return costAnswerPrecheck.orElse(OK); }
-	protected ResponseCodeEnum expectedAnswerOnlyPrecheck() { return answerOnlyPrecheck.orElse(OK); }
+	protected Optional<HapiCryptoTransfer> explicitPayment = Optional.empty();
 
 	/* WARNING: Must set `response` as a side effect! */
 	protected abstract void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable;
@@ -169,7 +171,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 
 	private Transaction fittedPayment(HapiApiSpec spec) throws Throwable {
-		if (nodePaymentFn.isPresent()) {
+		if (explicitPayment.isPresent()) {
+			return explicitPayment.get().signedTxnFor(spec);
+		} else if (nodePaymentFn.isPresent()) {
 			return finalizedTxn(spec, opDef(spec, nodePaymentFn.get().apply(spec)));
 		} else if (nodePayment.isPresent()) {
 			return finalizedTxn(spec, opDef(spec, nodePayment.get()));
@@ -211,6 +215,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 			return finalizedTxn(spec, opDef(spec, realNodePayment));
 		}
 	}
+
 	private long timedCostLookupWith(HapiApiSpec spec, Transaction payment)	throws Throwable {
 		if (suppressStats) {
 			return lookupCostWith(spec, payment);
@@ -331,7 +336,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 		loggingOff = false;
 		return self();
 	}
-
 	public T recordNodePaymentAs(String s) {
 		recordsNodePayment = true;
 		nodePaymentName = s;
@@ -355,6 +359,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 	public T setNodeFrom(Supplier<String> accountSupplier) {
 		nodeSupplier = Optional.of(() -> HapiPropertySource.asAccount(accountSupplier.get()));
+		return self();
+	}
+	public T withPayment(HapiCryptoTransfer txn) {
+		explicitPayment = Optional.of(txn);
 		return self();
 	}
 }

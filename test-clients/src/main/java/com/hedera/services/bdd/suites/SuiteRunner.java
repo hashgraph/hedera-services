@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
+import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
@@ -215,6 +216,8 @@ public class SuiteRunner {
 		put("OneOfEveryTxn", aof(new OneOfEveryTransaction()));
 		/* Zero Stake behaviour */
 		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
+		/* Query payment validation */
+		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
 	}};
 
 	static boolean runAsync;

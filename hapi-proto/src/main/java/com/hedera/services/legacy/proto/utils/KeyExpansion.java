@@ -51,7 +51,7 @@ import org.junit.Assert;
 public class KeyExpansion {
 
   private static final Logger log = LogManager.getLogger(KeyExpansion.class);
-  public static int KEY_EXPANSION_DEPTH = 100; // recursion level for expansion
+  public static int KEY_EXPANSION_DEPTH = 15; // recursion level for expansion
   public static boolean USE_HEX_ENCODED_KEY = false;
 
   /**
