@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -46,6 +47,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -90,6 +92,8 @@ public abstract class HapiSpecOperation {
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
 	protected boolean asTxnWithOnlySigMap = false;
+	protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
+	protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
 
 	protected boolean useTls = false;
 	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
@@ -272,15 +276,28 @@ public abstract class HapiSpecOperation {
 			return txn.toBuilder().clearBodyBytes().build();
 		}
 
+		ByteString bodyByteString = CommonUtils.extractTransactionBodyByteString(txn);
+		SignatureMap sigMap = CommonUtils.extractSignatureMap(txn);
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(bodyByteString)
+				.setSigMap(sigMap)
+				.build();
+		Transaction.Builder txnWithSignedTxnBytesBuilder =
+				Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString());
+
+		if (asTxnWithSignedTxnBytesAndSigMap) {
+			return txnWithSignedTxnBytesBuilder.setSigMap(sigMap).build();
+		}
+
+		if (asTxnWithSignedTxnBytesAndBodyBytes) {
+			return txnWithSignedTxnBytesBuilder.setBodyBytes(bodyByteString).build();
+		}
+
 		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
 			return txn;
 		}
 
-		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(txn))
-				.setSigMap(CommonUtils.extractSignatureMap(txn))
-				.build();
-		return Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString()).build();
+		return txnWithSignedTxnBytesBuilder.build();
 	}
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {

@@ -591,4 +591,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		asTxnWithOnlySigMap = true;
 		return self();
 	}
+
+	public T asTxnWithSignedTxnBytesAndSigMap() {
+		asTxnWithSignedTxnBytesAndSigMap = true;
+		return self();
+	}
+
+	public T asTxnWithSignedTxnBytesAndBodyBytes() {
+		asTxnWithSignedTxnBytesAndBodyBytes = true;
+		return self();
+	}
 }
