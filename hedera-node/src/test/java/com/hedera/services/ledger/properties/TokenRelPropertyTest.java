@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
 import static com.hedera.services.ledger.properties.TokenRelProperty.*;
 
 @RunWith(JUnitPlatform.class)
@@ -43,7 +42,7 @@ class TokenRelPropertyTest {
 	@Test
 	public void gettersWork() {
 		// expect:
-		assertEquals(balance, BALANCE.getter().apply(target));
+		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(kycGranted, IS_KYC_GRANTED.getter().apply(target));
 	}
@@ -51,12 +50,12 @@ class TokenRelPropertyTest {
 	@Test
 	public void settersWork() {
 		// when:
-		BALANCE.setter().accept(target, newBalance);
+		TOKEN_BALANCE.setter().accept(target, newBalance);
 		IS_FROZEN.setter().accept(target, !frozen);
 		IS_KYC_GRANTED.setter().accept(target, !kycGranted);
 
 		// expect:
-		assertEquals(newBalance, BALANCE.getter().apply(target));
+		assertEquals(newBalance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(!frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(!kycGranted, IS_KYC_GRANTED.getter().apply(target));
 	}

@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import java.util.Collections;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.readableTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -77,6 +78,12 @@ class BackingTokenRelsTest {
 		rels.put(bKey, bValue);
 
 		subject = new BackingTokenRels(() -> rels);
+	}
+
+	@Test
+	public void relToStringWorks() {
+		// expect:
+		assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
 	}
 
 	@Test

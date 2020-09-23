@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
@@ -61,7 +62,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.fcmap.FCMap;
@@ -148,7 +149,7 @@ public class HederaLedgerTest {
 	String missingSymbol = "DIE";
 	TokenID missingId = IdUtils.tokenWith(333);
 
-	TokenTransfers multipleValidTokenTransfers = TokenTransfers.newBuilder()
+	TokenTransfersTransactionBody multipleValidTokenTransfers = TokenTransfersTransactionBody.newBuilder()
 			.addTokenTransfers(TokenRefTransferList.newBuilder()
 					.setToken(refWith(frozenSymbol))
 					.addAllTransfers(List.of(
@@ -163,7 +164,7 @@ public class HederaLedgerTest {
 					)))
 			.build();
 
-	TokenTransfers missingSymbolTokenTransfers = TokenTransfers.newBuilder()
+	TokenTransfersTransactionBody missingSymbolTokenTransfers = TokenTransfersTransactionBody.newBuilder()
 			.addTokenTransfers(TokenRefTransferList.newBuilder()
 					.setToken(refWith(missingSymbol))
 					.addAllTransfers(List.of(
@@ -171,7 +172,7 @@ public class HederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfers missingIdTokenTransfers = TokenTransfers.newBuilder()
+	TokenTransfersTransactionBody missingIdTokenTransfers = TokenTransfersTransactionBody.newBuilder()
 			.addTokenTransfers(TokenRefTransferList.newBuilder()
 					.setToken(refWith(missingId))
 					.addAllTransfers(List.of(
@@ -179,7 +180,7 @@ public class HederaLedgerTest {
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfers unmatchedTokenTransfers = TokenTransfers.newBuilder()
+	TokenTransfersTransactionBody unmatchedTokenTransfers = TokenTransfersTransactionBody.newBuilder()
 			.addTokenTransfers(TokenRefTransferList.newBuilder()
 					.setToken(refWith(otherSymbol))
 					.addAllTransfers(List.of(
@@ -387,7 +388,7 @@ public class HederaLedgerTest {
 		// and:
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -407,7 +408,7 @@ public class HederaLedgerTest {
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -484,6 +485,7 @@ public class HederaLedgerTest {
 				() -> new MerkleTokenRelStatus(),
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
+		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
@@ -696,7 +698,7 @@ public class HederaLedgerTest {
 		subject.dropPendingTokenChanges();
 
 		// then:
-		verify(accountsLedger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 		// and;
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
@@ -914,6 +916,7 @@ public class HederaLedgerTest {
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
 		System.out.println(accountsLedger.changeSetSoFar());
+		System.out.println(tokenRelsLedger.changeSetSoFar());
 		// and:
 		subject.adjustTokenBalance(a, tA, +10_000);
 		subject.adjustTokenBalance(a, tA, -5_000);

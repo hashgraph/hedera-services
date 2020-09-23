@@ -95,8 +95,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			status = ledger.grantKyc(treasury, created);
 		}
 		if (status == OK) {
-			var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
-			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
 		}
 
 		if (status != OK) {
@@ -107,13 +106,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
-	}
-
-	/* The preconditions on validity of this computation must be enforced by the TokenStore. */
-	private long initialTinyFloat(long initialFloat, int divisibility) {
-		return BigInteger.valueOf(initialFloat)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

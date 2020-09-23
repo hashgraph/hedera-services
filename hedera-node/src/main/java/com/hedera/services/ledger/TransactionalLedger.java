@@ -41,6 +41,7 @@ import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.tokens.TokenScope;
+import com.hedera.services.utils.EntityIdUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,6 +76,7 @@ public class TransactionalLedger<
 
 	private boolean isInTransaction = false;
 	private Optional<Comparator<K>> keyComparator = Optional.empty();
+	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
 			Class<P> propertyType,
@@ -91,6 +93,10 @@ public class TransactionalLedger<
 
 	public void setKeyComparator(Comparator<K> keyComparator) {
 		this.keyComparator = Optional.of(keyComparator);
+	}
+
+	public void setKeyToString(Function<K, String> keyToString) {
+		this.keyToString = Optional.of(keyToString);
 	}
 
 	void begin() {
@@ -111,10 +117,6 @@ public class TransactionalLedger<
 		tokenRefs.clear();
 
 		isInTransaction = false;
-	}
-
-	void dropPendingTokenChanges() {
-		tokenRefs.clear();
 	}
 
 	void commit() {
@@ -168,7 +170,7 @@ public class TransactionalLedger<
 					? accountInDeadAccounts
 					: accountNotInDeadAccounts;
 			desc.append(prefix)
-					.append(readableId(id))
+					.append(keyToString.orElse(EntityIdUtils::readableId).apply(id))
 					.append(": [");
 			desc.append(
 					change.getValue().entrySet().stream()
@@ -237,13 +239,6 @@ public class TransactionalLedger<
 		}
 
 		return account;
-	}
-
-	@Override
-	public A getTokenRef(K id) {
-		throwIfMissing(id);
-
-		return tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
 	}
 
 	public void markForMerge(K id) {

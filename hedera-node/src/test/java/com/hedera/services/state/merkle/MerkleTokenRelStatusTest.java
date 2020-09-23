@@ -24,6 +24,7 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -155,5 +156,11 @@ class MerkleTokenRelStatusTest {
 	public void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::delete);
+	}
+
+	@Test
+	public void throwsOnNegativeBalance() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.setBalance(-1));
 	}
 }

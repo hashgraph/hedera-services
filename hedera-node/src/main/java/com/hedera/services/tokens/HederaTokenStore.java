@@ -23,7 +23,6 @@ package com.hedera.services.tokens;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
@@ -43,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,8 +56,9 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_FROZEN;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_KYC_GRANTED;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.submerkle.EntityId.ofNullableAccountId;
 import static com.hedera.services.tokens.TokenCreationResult.failure;
@@ -68,7 +67,10 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -293,7 +295,7 @@ public class HederaTokenStore implements TokenStore {
 				tId,
 				value,
 				TOKEN_HAS_NO_KYC_KEY,
-				IS_KYC_GRANTED,
+				TokenRelProperty.IS_KYC_GRANTED,
 				MerkleToken::kycKey);
 	}
 
@@ -307,22 +309,13 @@ public class HederaTokenStore implements TokenStore {
 				tId,
 				value,
 				TOKEN_HAS_NO_FREEZE_KEY,
-				IS_FROZEN,
+				TokenRelProperty.IS_FROZEN,
 				MerkleToken::freezeKey);
 	}
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		return sanityChecked(aId, tId, token -> {
-			var account = accountsLedger.getTokenRef(aId);
-			var validity = account.validityOfAdjustment(tId, token, adjustment);
-			if (validity != OK) {
-				return validity;
-			}
-			adjustUnchecked(aId, tId, token, adjustment);
-			hederaLedger.updateTokenXfers(tId, aId, adjustment);
-			return OK;
-		});
+		return sanityChecked(aId, tId, token -> tryAdjustment(aId, tId, adjustment));
 	}
 
 	@Override
@@ -338,18 +331,14 @@ public class HederaTokenStore implements TokenStore {
 				return INVALID_WIPING_AMOUNT;
 			}
 
-			var account = accountsLedger.getTokenRef(aId);
-			if (!account.hasRelationshipWith(tId)) {
-				return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-			}
-			var balance = account.getTokenBalance(tId);
+			var relationship = asTokenRel(aId, tId);
+			long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 			if (amount > balance) {
 				return INVALID_WIPING_AMOUNT;
 			}
-
-			adjustUnchecked(aId, tId, token, -amount);
+			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
 			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustFloatBy(-amount));
+			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
@@ -365,42 +354,36 @@ public class HederaTokenStore implements TokenStore {
 		return changeSupply(tId, amount, +1, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
-	private void adjustUnchecked(AccountID aId, TokenID tId, MerkleToken token, long amount) {
-		var scopedAdjustment = new TokenScopedPropertyValue(tId, token, amount);
-		accountsLedger.set(aId, BALANCE, scopedAdjustment);
-	}
-
 	private ResponseCodeEnum changeSupply(
 			TokenID tId,
 			long amount,
 			long sign,
 			ResponseCodeEnum failure
 	) {
-		if (amount < 0) {
-			return failure;
-		}
-		if (!exists(tId)) {
-			return INVALID_TOKEN_ID;
-		}
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
-		}
-		if (!token.hasSupplyKey()) {
-			return TOKEN_HAS_NO_SUPPLY_KEY;
-		}
-		var change = sign * amount;
-		var divisibility = token.divisibility();
-		var proposedFloat = token.tokenFloat() + change;
-		var validity = floatAndDivisibilityCheck(proposedFloat, divisibility);
-		if (validity != OK) {
-			return failure;
-		}
-		apply(tId, t -> t.adjustFloatBy(change));
-		long tinyAdjustment = BigInteger.valueOf(change)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
-		return adjustBalance(token.treasury().toGrpcAccountId(), tId, tinyAdjustment);
+		return tokenSanityCheck(tId, token -> {
+			if (amount <= 0) {
+				return failure;
+			}
+			if (!token.hasSupplyKey()) {
+				return TOKEN_HAS_NO_SUPPLY_KEY;
+			}
+
+			var change = sign * amount;
+			var toBeUpdatedTotalSupply = token.totalSupply() + change;
+			if (toBeUpdatedTotalSupply < 0) {
+				return failure;
+			}
+
+			var aId = token.treasury().toGrpcAccountId();
+			var validity = tryAdjustment(aId, tId, change);
+			if (validity != OK) {
+				return validity;
+			}
+
+			apply(tId, t -> t.adjustTotalSupplyBy(change));
+
+			return OK;
+		});
 	}
 
 	@Override
@@ -430,7 +413,7 @@ public class HederaTokenStore implements TokenStore {
 				return failure(INVALID_EXPIRATION_TIME);
 			}
 		}
-		validity = floatAndDivisibilityCheck(request.getInitialSupply(), request.getDecimals());
+		validity = initialSupplyAndDecimalsCheck(request.getInitialSupply(), request.getDecimals());
 		if (validity != OK) {
 			return failure(validity);
 		}
@@ -466,6 +449,31 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		return success(pendingId);
+	}
+
+	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
+		var relationship = asTokenRel(aId, tId);
+		if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
+			return ACCOUNT_FROZEN_FOR_TOKEN;
+		}
+		if (!(boolean)tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
+			return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+		}
+		long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+		long newBalance = balance + adjustment;
+		if (newBalance < 0) {
+			return INSUFFICIENT_TOKEN_BALANCE;
+		}
+		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
+		hederaLedger.updateTokenXfers(tId, aId, adjustment);
+		return OK;
+	}
+
+	private ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
+		if (initialSupply < 0) {
+			return INVALID_INITIAL_SUPPLY;
+		}
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
 	}
 
 	private boolean isValidAutoRenewPeriod(long secs) {
@@ -706,26 +714,6 @@ public class HederaTokenStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum floatAndDivisibilityCheck(long tokenFloat, int divisibility) {
-		if (tokenFloat < 0) {
-			return INVALID_INITIAL_SUPPLY;
-		}
-
-		try {
-			var divisibilityFloat = BigInteger.valueOf(10)
-					.pow(divisibility);
-			if (divisibilityFloat.longValue() < 0) {
-				return INVALID_TOKEN_DECIMALS;
-			}
-
-			var tinyTokenFloat = divisibilityFloat
-					.multiply(BigInteger.valueOf(tokenFloat));
-			return tinyTokenFloat.longValueExact() >= 0 ? OK : INVALID_TOKEN_DECIMALS;
-		} catch (ArithmeticException ignore) {
-			return INVALID_TOKEN_DECIMALS;
-		}
-	}
-
 	private ResponseCodeEnum symbolCheck(String symbol) {
 		if (symbolKeyedIds.containsKey(symbol)) {
 			return TOKEN_SYMBOL_ALREADY_IN_USE;
@@ -766,15 +754,15 @@ public class HederaTokenStore implements TokenStore {
 			TokenID tId,
 			boolean value,
 			ResponseCodeEnum keyFailure,
-			AccountProperty flagProperty,
+			TokenRelProperty flagProperty,
 			Function<MerkleToken, Optional<JKey>> controlKeyFn
 	) {
 		return sanityChecked(aId, tId, token -> {
 			if (controlKeyFn.apply(token).isEmpty()) {
 				return keyFailure;
 			}
-			var scopedFreeze = new TokenScopedPropertyValue(tId, token, value);
-			accountsLedger.set(aId, flagProperty, scopedFreeze);
+			var relationship = asTokenRel(aId, tId);
+			tokenRelsLedger.set(relationship, flagProperty, value);
 			return OK;
 		});
 	}
@@ -794,9 +782,26 @@ public class HederaTokenStore implements TokenStore {
 			return TOKEN_WAS_DELETED;
 		}
 
-		var key = BackingTokenRels.asTokenRel(aId, tId);
+		var key = asTokenRel(aId, tId);
 		if (!tokenRelsLedger.exists(key)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+		}
+
+		return action.apply(token);
+	}
+
+	private ResponseCodeEnum tokenSanityCheck(
+			TokenID tId,
+			Function<MerkleToken, ResponseCodeEnum> action
+	) {
+		var validity = exists(tId) ? OK : INVALID_TOKEN_ID;
+		if (validity != OK) {
+			return validity;
+		}
+
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
 		}
 
 		return action.apply(token);

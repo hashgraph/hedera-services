@@ -35,13 +35,14 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
@@ -291,7 +292,7 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		accountsLedger.dropPendingTokenChanges();
+		tokenRelsLedger.rollback();
 		clearNetTokenTransfers();
 	}
 
@@ -317,7 +318,7 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfers transfers) {
+	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
 		var validity = OK;
 
 		for (TokenRefTransferList xfers : transfers.getTokenTransfersList()) {

@@ -91,6 +91,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		if (token.isDeleted()) {
+			txnCtx.setStatus(TOKEN_WAS_DELETED);
+			return;
+		}
+
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();

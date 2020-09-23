@@ -86,4 +86,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int ratesIntradayChangeLimitPercent() {
 		return 5;
 	}
+
+	@Override
+	public boolean shouldCreateThresholdRecords() {
+		return false;
+	}
+
+	@Override
+	public int balancesExportPeriodSecs() {
+		return 600;
+	}
 }

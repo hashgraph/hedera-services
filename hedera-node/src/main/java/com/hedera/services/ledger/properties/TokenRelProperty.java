@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
-	BALANCE {
+	TOKEN_BALANCE {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
 			return (a, l) -> a.setBalance((long)l);

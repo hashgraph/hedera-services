@@ -94,30 +94,6 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void returnsNewDetachedCopyIfNonePresent() {
-		// expect:
-		assertSame(account1TokenCopy, subject.getTokenRef(1L));
-		// and:
-		assertEquals(1, subject.tokenRefs.size());
-	}
-
-	@Test
-	public void clearsDetachedCopiesOnDrop() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-		// and:
-		subject.dropPendingTokenChanges();
-
-		// then:
-		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
 	public void clearsDetachedCopiesOnCommit() {
 		// given:
 		subject.begin();
@@ -147,20 +123,6 @@ public class TransactionalLedgerTest {
 
 		// then:
 		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void returnsCurrentDetachedCopy() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-
-		// then:
-		assertSame(account1TokenCopy, subject.getTokenRef(1L));
 	}
 
 	@Test
@@ -390,12 +352,6 @@ public class TransactionalLedgerTest {
 	public void throwsOnGettingMissingScopedProperty() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, TOKEN, TokenScope.idScopeOf(tid)));
-	}
-
-	@Test
-	public void throwsOnGettingMissingDetachedRef() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getTokenRef(2L));
 	}
 
 	@Test

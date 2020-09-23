@@ -70,16 +70,6 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	A get(K id);
 
 	/**
-	 * Gets a mutable ref encapsulating all token-scoped changes
-	 * to the account so far. Any non-token changes to this account
-	 * will be ignored.
-	 *
-	 * @param id the id of the relevant account.
-	 * @return the account.
-	 */
-	A getTokenRef(K id);
-
-	/**
 	 * Gets the current property value of the specified account. This value
 	 * need not be persisted to a durable backing store.
 	 *
