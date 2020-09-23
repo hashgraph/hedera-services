@@ -32,7 +32,12 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -83,11 +88,11 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs(),
-				negativeSpecs(),
-				Arrays.asList(
-						fridayThe13thSpec()
-				)
+				positiveSpecs()
+//				negativeSpecs(),
+//				Arrays.asList(
+//						fridayThe13thSpec()
+//				)
 		);
 	}
 
@@ -103,9 +108,10 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-				vanillaSuccess(),
-				payableSuccess(),
-				depositSuccess()
+//				vanillaSuccess(),
+//				payableSuccess(),
+//				depositSuccess(),
+				depositDeleteSuccess()
 		);
 	}
 
@@ -237,6 +243,23 @@ public class ContractCallSuite extends HapiApiSuite {
 						getTxnRecord("payTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(inOrder()))));
+	}
+
+	HapiApiSpec depositDeleteSuccess() {
+		return defaultHapiSpec("DepositSuccess")
+				.given(
+						fileCreate("payableBytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+				).when(
+						contractCall("payableContract", DEPOSIT, 1_000L)
+								.via("payTxn").sending(1_000L)
+
+				).then(
+						balanceSnapshot("payerBefore", GENESIS),
+						contractDelete("payableContract").transferAccount(GENESIS),
+						getAccountBalance(GENESIS)
+								.hasTinyBars(changeFromSnapshot("payerBefore", +1_000L))
+						);
 	}
 
 	HapiApiSpec payableSuccess() {
