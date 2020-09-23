@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -111,7 +113,8 @@ public class ContractCallSuite extends HapiApiSuite {
 //				vanillaSuccess(),
 //				payableSuccess(),
 //				depositSuccess(),
-				depositDeleteSuccess()
+//				depositDeleteSuccess(),
+				multipleDepositSuccess()
 		);
 	}
 
@@ -243,6 +246,27 @@ public class ContractCallSuite extends HapiApiSuite {
 						getTxnRecord("payTxn")
 								.hasPriority(recordWith().contractCallResult(
 										resultWith().logs(inOrder()))));
+	}
+
+	HapiApiSpec multipleDepositSuccess() {
+		return defaultHapiSpec("DepositSuccess")
+				.given(
+						fileCreate("payableBytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+				)
+				.when()
+				.then(
+						withOpContext((spec, opLog) -> {
+							for (int i = 0; i < 10; i++) {
+								var subOp1 = balanceSnapshot("payerBefore", "payableContract");
+								var subOp2 = contractCall("payableContract", DEPOSIT, 1_000L)
+										.via("payTxn").sending(1_000L);
+								var subOp3 = getAccountBalance("payableContract")
+										.hasTinyBars(changeFromSnapshot("payerBefore", +1_000L));
+								CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3);
+							}
+						})
+				);
 	}
 
 	HapiApiSpec depositDeleteSuccess() {
