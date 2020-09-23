@@ -30,12 +30,16 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
 public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
@@ -48,7 +52,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-						transactionsWithOnlySigMap()
+						transactionsWithOnlySigMap(),
+						transactionsWithSignedTxnBytesAndSigMap(),
+						transactionsWithSignedTxnBytesAndBodyBytes()
 				}
 		);
 	}
@@ -79,6 +85,32 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec transactionsWithSignedTxnBytesAndSigMap() {
+		return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
+				.given(
+				).when(
+						createTopic("testTopic")
+								.via("failedConsensusTransaction")
+								.asTxnWithSignedTxnBytesAndSigMap()
+								.hasPrecheck(INVALID_TRANSACTION)
+				).then(
+						getTxnRecord("failedConsensusTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
+				);
+	}
+
+
+	private HapiApiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
+		return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
+				.given(
+				).when(
+						cryptoCreate("testAccount")
+								.via("failedCryptoTransaction")
+								.asTxnWithSignedTxnBytesAndBodyBytes()
+								.hasPrecheck(INVALID_TRANSACTION)
+				).then(
+						getTxnRecord("failedCryptoTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)
+				);
+	}
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
