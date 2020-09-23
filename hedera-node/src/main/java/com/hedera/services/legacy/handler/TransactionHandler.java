@@ -440,6 +440,10 @@ public class TransactionHandler {
   }
 
   public TxnValidityAndFeeReq validateTransactionPreConsensus(Transaction transaction, boolean isQueryPayment) {
+    if (transaction.getSignedTransactionBytes().isEmpty() && transaction.getBodyBytes().isEmpty()) {
+      return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+    }
+
     if (platformStatus.get() != ACTIVE) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }

@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
@@ -72,7 +71,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
 								.balance(1_000L)
 								.via("failedContractTransaction")
 								.asTxnWithOnlySigMap()
-								.hasPrecheck(NOT_SUPPORTED)
+								.hasPrecheck(INVALID_TRANSACTION_BODY)
 				).then(
 						getTxnRecord("failedCryptoTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
 						getTxnRecord("failedFileTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),

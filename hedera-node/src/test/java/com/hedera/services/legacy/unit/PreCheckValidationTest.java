@@ -21,6 +21,7 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.common.cache.CacheBuilder;
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.properties.PropertySource;
@@ -46,6 +47,8 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -79,6 +82,7 @@ import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -89,10 +93,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import javax.naming.Context;
-
 import static com.hedera.test.mocks.TestExchangeRates.TEST_EXCHANGE;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -653,5 +656,21 @@ class PreCheckValidationTest {
 				transactionHandler.validateTransactionPreConsensus(signedTransaction, false);
 		assert (result.getValidity() == OK);
 		assert (result.getRequiredFee() == 0L);
+	}
+
+	private SignatureMap fakeSigMap() {
+		return SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("fake public key"))
+						.setEd25519(ByteString.copyFromUtf8("fake private key")))
+				.build();
+	}
+
+	@Test
+	void failsFastOnInvalidTransactionBody() {
+		TxnValidityAndFeeReq result = transactionHandler.validateTransactionPreConsensus(
+				Transaction.newBuilder().setSigMap(fakeSigMap()).build(), false);
+		Assert.assertEquals(INVALID_TRANSACTION_BODY, result.getValidity());
+		Assert.assertEquals(0l, result.getRequiredFee());
 	}
 }
