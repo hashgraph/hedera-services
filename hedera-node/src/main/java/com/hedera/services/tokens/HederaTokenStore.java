@@ -650,7 +650,7 @@ public class HederaTokenStore implements TokenStore {
 				return INVALID_TOKEN_REF;
 			}
 			var token = get(id);
-			if (token.isDeleted()) {
+			if (token.isTokenDeleted()) {
 				return TOKEN_WAS_DELETED;
 			}
 			tokenIds.add(id);
@@ -778,7 +778,7 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
-		if (token.isDeleted()) {
+		if (token.isTokenDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 
@@ -800,7 +800,7 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
-		if (token.isDeleted()) {
+		if (token.isTokenDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 

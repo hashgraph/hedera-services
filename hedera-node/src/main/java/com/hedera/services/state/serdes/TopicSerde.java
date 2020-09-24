@@ -85,7 +85,7 @@ public class TopicSerde {
 			out.writeBoolean(false);
 		}
 
-		out.writeBoolean(merkleTopic.isDeleted());
+		out.writeBoolean(merkleTopic.isTopicDeleted());
 		out.writeLong(merkleTopic.getSequenceNumber());
 
 		if (merkleTopic.hasRunningHash()) {

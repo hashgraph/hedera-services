@@ -85,7 +85,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 			evmState.setSenderThreshold(hederaAccount.getSenderThreshold());
 			evmState.setReceiverThreshold(hederaAccount.getReceiverThreshold());
 			evmState.setReceiverSigRequired(hederaAccount.isReceiverSigRequired());
-			evmState.setDeleted(hederaAccount.isDeleted());
+			evmState.setDeleted(hederaAccount.isAccountDeleted());
 			evmState.setExpirationTime(hederaAccount.getExpiry());
 			evmState.setSmartContract(hederaAccount.isSmartContract());
 

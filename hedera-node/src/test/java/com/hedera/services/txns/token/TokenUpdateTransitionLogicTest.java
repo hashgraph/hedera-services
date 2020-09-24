@@ -275,7 +275,7 @@ class TokenUpdateTransitionLogicTest {
 	public void abortsOnAlreadyDeletedToken() {
 		givenValidTxnCtx(true);
 		// and:
-		given(token.isDeleted()).willReturn(true);
+		given(token.isTokenDeleted()).willReturn(true);
 
 		// when:
 		subject.doStateTransition();

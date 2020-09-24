@@ -61,7 +61,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 	@Override
 	public ContractSigningMetadata lookup(ContractID id) throws Exception {
 		MerkleAccount contract = accounts.get().get(fromContractId(id));
-		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
+		if (contract == null || contract.isAccountDeleted() || !contract.isSmartContract()) {
 			throw new InvalidContractIDException("Invalid contract!", id);
 		} else if (contract.getKey() == null) {
 			throw new AdminKeyNotExistException("Contract should never be referenced by a txn (missing key)!", id);

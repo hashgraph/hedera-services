@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 
 public class TopicFactory {
-	private boolean isDeleted;
+	private boolean isTopicDeleted;
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong autoRenewDuration = OptionalLong.empty();
 	private Optional<Key> adminKey = Optional.empty();
@@ -44,7 +44,7 @@ public class TopicFactory {
 	public MerkleTopic get() throws Exception {
 		MerkleTopic value = new MerkleTopic();
 
-		value.setTopicDeleted(isDeleted);
+		value.setTopicDeleted(isTopicDeleted);
 		memo.ifPresent(s -> value.setMemo(s));
 		expiry.ifPresent(secs ->
 				value.setExpirationTimestamp(RichInstant.fromGrpc(
@@ -74,7 +74,7 @@ public class TopicFactory {
 	}
 
 	public TopicFactory deleted(boolean flag) {
-		isDeleted = flag;
+		isTopicDeleted = flag;
 		return this;
 	}
 

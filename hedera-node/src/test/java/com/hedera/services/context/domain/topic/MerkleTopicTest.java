@@ -318,7 +318,7 @@ public class MerkleTopicTest {
 		assertEquals(new EntityId(), merkleTopic.getAutoRenewAccountId());
 		assertFalse(merkleTopic.hasExpirationTimestamp());
 		assertEquals(new RichInstant(), merkleTopic.getExpirationTimestamp());
-		assertFalse(merkleTopic.isDeleted());
+		assertFalse(merkleTopic.isTopicDeleted());
 		assertEquals(0L, merkleTopic.getSequenceNumber());
 		assertFalse(merkleTopic.hasRunningHash());
 		assertArrayEquals(new byte[48], merkleTopic.getRunningHash());
@@ -353,6 +353,6 @@ public class MerkleTopicTest {
 		assertEquals(autoRenewAccountId, merkleTopic.getAutoRenewAccountId());
 		assertTrue(merkleTopic.hasExpirationTimestamp());
 		assertEquals(expirationTimestamp, merkleTopic.getExpirationTimestamp());
-		assertFalse(merkleTopic.isDeleted());
+		assertFalse(merkleTopic.isTopicDeleted());
 	}
 }

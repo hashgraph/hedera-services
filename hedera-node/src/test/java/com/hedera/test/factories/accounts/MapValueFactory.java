@@ -45,7 +45,6 @@ public class MapValueFactory {
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
-	private Optional<Boolean> topicDeleted = Optional.empty();
 	private Optional<Boolean> accountDeleted = Optional.empty();
 	private Optional<Long> expirationTime = Optional.empty();
 	private Optional<String> memo = Optional.empty();

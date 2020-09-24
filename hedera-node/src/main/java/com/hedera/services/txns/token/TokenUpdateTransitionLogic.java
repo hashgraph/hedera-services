@@ -91,7 +91,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		if (token.isDeleted()) {
+		if (token.isTokenDeleted()) {
 			txnCtx.setStatus(TOKEN_WAS_DELETED);
 			return;
 		}

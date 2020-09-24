@@ -182,7 +182,7 @@ public class StateView {
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
 					.setTokenId(id)
-					.setIsDeleted(token.isDeleted())
+					.setIsDeleted(token.isTokenDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
 					.setTreasury(token.treasury().toGrpcAccountId())

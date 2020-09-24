@@ -106,7 +106,7 @@ public class PojoAccount {
 		pojo.setSendThreshold(value.getSenderThreshold());
 		pojo.setMemo(value.getMemo());
 		pojo.setReceiverSigRequired(value.isReceiverSigRequired());
-		pojo.setDeleted(value.isDeleted());
+		pojo.setDeleted(value.isAccountDeleted());
 		if (value.getProxy() != null) {
 			pojo.setProxyId(asString(value.getProxy()));
 		}

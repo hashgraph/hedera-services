@@ -105,7 +105,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 					var optionalToken = view.tokenWith(tId);
 					if (optionalToken.isPresent()) {
 						var token = optionalToken.get();
-						if (!token.isDeleted()) {
+						if (!token.isTokenDeleted()) {
 							var relKey = fromAccountTokenRel(id, tId);
 							var relationship = view.tokenAssociations().get().get(relKey);
 							relationships.add(new RawTokenRelationship(

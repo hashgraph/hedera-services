@@ -42,7 +42,7 @@ public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
 	@Override
 	public TopicSigningMetadata lookup(TopicID id) throws Exception {
 		MerkleTopic merkleTopic = topics.get().get(fromTopicId(id));
-		if ((merkleTopic == null) || merkleTopic.isDeleted()) {
+		if ((merkleTopic == null) || merkleTopic.isTopicDeleted()) {
 			throw new InvalidTopicIDException("Invalid topic!", id);
 		}
 		return new TopicSigningMetadata(merkleTopic.hasAdminKey() ? merkleTopic.getAdminKey() : null,
@@ -52,7 +52,7 @@ public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
 	@Override
 	public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
 		var topic = topics.get().get(fromTopicId(id));
-		return (topic == null || topic.isDeleted())
+		return (topic == null || topic.isTopicDeleted())
 				? SafeLookupResult.failure(INVALID_TOPIC)
 				: new SafeLookupResult<>(
 				new TopicSigningMetadata(

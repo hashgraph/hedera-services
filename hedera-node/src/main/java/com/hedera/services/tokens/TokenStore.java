@@ -93,7 +93,7 @@ public interface TokenStore {
 		if (token.adminKey().isEmpty()) {
 			return TOKEN_IS_IMMUTABlE;
 		}
-		if (token.isDeleted()) {
+		if (token.isTokenDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 
