@@ -124,6 +124,15 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Intentionally a no-op method
+	 */
+	@Override
+	public void invalidateHash() {
+	}
+
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		if (delegate == MISSING_DELEGATE) {
