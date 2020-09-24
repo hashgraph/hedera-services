@@ -40,7 +40,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <hedera-services.version>0.8.0</hedera-services.version>
+    <hedera-services.version>0.9.0-SNAPSHOT</hedera-services.version>
 
     <!-- Plugin property overrides -->
     <maven.compiler.source>12</maven.compiler.source>
