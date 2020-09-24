@@ -29,6 +29,7 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.BigArraySpec;
 import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
 import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
@@ -192,6 +193,7 @@ public class SuiteRunner {
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
 		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
 		put("ContractCreateSuite", aof(new ContractCreateSuite()));
+		put("BigArraySpec", aof(new BigArraySpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
 		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
