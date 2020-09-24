@@ -99,7 +99,7 @@ class MerkleTokenTest {
 		subject.setKycKey(kycKey);
 		subject.setWipeKey(wipeKey);
 		subject.setSupplyKey(supplyKey);
-		subject.setDeleted(isDeleted);
+		subject.setTokenDeleted(isDeleted);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -254,7 +254,7 @@ class MerkleTokenTest {
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
-		other.setDeleted(otherIsDeleted);
+		other.setTokenDeleted(otherIsDeleted);
 
 		// expect:
 		assertNotEquals(subject, other);
@@ -426,7 +426,7 @@ class MerkleTokenTest {
 	}
 
 	private void setOptionalElements(MerkleToken token) {
-		token.setDeleted(isDeleted);
+		token.setTokenDeleted(isDeleted);
 		token.setAdminKey(adminKey);
 		token.setFreezeKey(freezeKey);
 		token.setWipeKey(wipeKey);
@@ -444,7 +444,7 @@ class MerkleTokenTest {
 		var identicalSubject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
-		identicalSubject.setDeleted(isDeleted);
+		identicalSubject.setTokenDeleted(isDeleted);
 
 		// and:
 		other = new MerkleToken(

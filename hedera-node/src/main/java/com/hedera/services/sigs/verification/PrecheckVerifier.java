@@ -29,6 +29,7 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,9 +89,9 @@ public class PrecheckVerifier {
 				assertCompatibility(reqKeys, sigs.subList(0, reqKeys.size()));
 			}
 
-			List<Signature> availSigs = getAvailSigs(reqKeys, accessor);
+			List<TransactionSignature> availSigs = getAvailSigs(reqKeys, accessor);
 			syncVerifier.verifySync(availSigs);
-			Function<byte[], Signature> sigsFn = pkToSigMapFrom(availSigs);
+			Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(availSigs);
 
 			return reqKeys.stream().allMatch(key -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID));
 		} catch (InvalidPayerAccountException ignore) {
@@ -98,7 +99,7 @@ public class PrecheckVerifier {
 		}
 	}
 
-	private List<Signature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
+	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
 		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getSignedTxn());
 		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor.getTxnBytes());
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, sigBytes, sigFactory);

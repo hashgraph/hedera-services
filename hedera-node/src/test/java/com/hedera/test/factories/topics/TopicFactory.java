@@ -44,7 +44,7 @@ public class TopicFactory {
 	public MerkleTopic get() throws Exception {
 		MerkleTopic value = new MerkleTopic();
 
-		value.setDeleted(isDeleted);
+		value.setTopicDeleted(isDeleted);
 		memo.ifPresent(s -> value.setMemo(s));
 		expiry.ifPresent(secs ->
 				value.setExpirationTimestamp(RichInstant.fromGrpc(

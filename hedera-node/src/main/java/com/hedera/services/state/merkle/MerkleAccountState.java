@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.context.properties.StandardizedPropertySources.MAX_MEMO_UTF8_BYTES;
@@ -83,7 +81,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 	private long senderThreshold;
 	private long receiverThreshold;
 	private String memo = DEFAULT_MEMO;
-	private boolean deleted;
+	private boolean accountDeleted;
 	private boolean smartContract;
 	private boolean receiverSigRequired;
 	private EntityId proxy;
@@ -100,7 +98,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			long senderThreshold,
 			long receiverThreshold,
 			String memo,
-			boolean deleted,
+			boolean accountDeleted,
 			boolean smartContract,
 			boolean receiverSigRequired,
 			EntityId proxy,
@@ -117,7 +115,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.senderThreshold = senderThreshold;
 		this.receiverThreshold = receiverThreshold;
 		this.memo = Optional.ofNullable(memo).orElse(DEFAULT_MEMO);
-		this.deleted = deleted;
+		this.accountDeleted = accountDeleted;
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
@@ -144,7 +142,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		senderThreshold = in.readLong();
 		receiverThreshold = in.readLong();
 		memo = in.readNormalisedString(MAX_MEMO_UTF8_BYTES);
-		deleted = in.readBoolean();
+		accountDeleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
@@ -162,7 +160,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		out.writeLong(senderThreshold);
 		out.writeLong(receiverThreshold);
 		out.writeNormalisedString(memo);
-		out.writeBoolean(deleted);
+		out.writeBoolean(accountDeleted);
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
@@ -179,7 +177,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				senderThreshold,
 				receiverThreshold,
 				memo,
-				deleted,
+				accountDeleted,
 				smartContract,
 				receiverSigRequired,
 				proxy,
@@ -203,7 +201,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				this.senderThreshold == that.senderThreshold &&
 				this.receiverThreshold == that.receiverThreshold &&
 				Objects.equals(this.memo, that.memo) &&
-				this.deleted == that.deleted &&
+				this.accountDeleted == that.accountDeleted &&
 				this.smartContract == that.smartContract &&
 				this.receiverSigRequired == that.receiverSigRequired &&
 				Objects.equals(this.proxy, that.proxy) &&
@@ -221,7 +219,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				senderThreshold,
 				receiverThreshold,
 				memo,
-				deleted,
+				accountDeleted,
 				smartContract,
 				receiverSigRequired,
 				proxy,
@@ -239,7 +237,7 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 				.add("senderThreshold", senderThreshold)
 				.add("receiverThreshold", receiverThreshold)
 				.add("memo", memo)
-				.add("deleted", deleted)
+				.add("deleted", accountDeleted)
 				.add("smartContract", smartContract)
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
@@ -308,8 +306,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		return memo;
 	}
 
-	public boolean isDeleted() {
-		return deleted;
+	public boolean isAccountDeleted() {
+		return accountDeleted;
 	}
 
 	public boolean isSmartContract() {
@@ -352,8 +350,8 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 		this.memo = memo;
 	}
 
-	public void setDeleted(boolean deleted) {
-		this.deleted = deleted;
+	public void setAccountDeleted(boolean accountDeleted) {
+		this.accountDeleted = accountDeleted;
 	}
 
 	public void setSmartContract(boolean smartContract) {
@@ -511,6 +509,11 @@ public class MerkleAccountState extends AbstractMerkleNode implements MerkleLeaf
 			throwBalanceIse(id, newBalance);
 		}
 		tokenRels[pos] = newBalance;
+	}
+
+	@Override
+	public void delete() {
+
 	}
 
 	/* --- Helpers --- */

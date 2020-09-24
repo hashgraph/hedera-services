@@ -64,7 +64,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	private JKey freezeKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
-	private boolean deleted;
+	private boolean tokenDeleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
 	private EntityId treasury;
@@ -114,7 +114,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		var that = (MerkleToken) o;
 		return this.expiry == that.expiry &&
 				this.autoRenewPeriod == that.autoRenewPeriod &&
-				this.deleted == that.deleted &&
+				this.tokenDeleted == that.tokenDeleted &&
 				this.totalSupply == that.totalSupply &&
 				this.decimals == that.decimals &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
@@ -134,7 +134,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	public int hashCode() {
 		return Objects.hash(
 				expiry,
-				deleted,
+				tokenDeleted,
 				totalSupply,
 				decimals,
 				adminKey,
@@ -155,7 +155,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
-				.add("deleted", deleted)
+				.add("tokenDeleted", tokenDeleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
 				.add("name", name)
@@ -191,7 +191,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		deleted = in.readBoolean();
+		tokenDeleted = in.readBoolean();
 		expiry = in.readLong();
 		autoRenewAccount = serdes.readNullableSerializable(in);
 		autoRenewPeriod = in.readLong();
@@ -211,7 +211,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeBoolean(deleted);
+		out.writeBoolean(tokenDeleted);
 		out.writeLong(expiry);
 		serdes.writeNullableSerializable(autoRenewAccount, out);
 		out.writeLong(autoRenewPeriod);
@@ -241,7 +241,7 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 				accountsFrozenByDefault,
 				accountsKycGrantedByDefault,
 				treasury);
-		fc.setDeleted(deleted);
+		fc.setTokenDeleted(tokenDeleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
 		if (adminKey != UNUSED_KEY) {
@@ -331,12 +331,12 @@ public class MerkleToken extends AbstractMerkleNode implements FCMValue, MerkleL
 		this.wipeKey = wipeKey;
 	}
 
-	public boolean isDeleted() {
-		return deleted;
+	public boolean isTokenDeleted() {
+		return tokenDeleted;
 	}
 
-	public void setDeleted(boolean deleted) {
-		this.deleted = deleted;
+	public void setTokenDeleted(boolean tokenDeleted) {
+		this.tokenDeleted = tokenDeleted;
 	}
 
 	public String symbol() {

@@ -25,6 +25,7 @@ import com.hedera.test.factories.sigs.SigWrappers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,12 +53,12 @@ public class HederaKeyActivationTest {
 	byte[] pk = "PK".getBytes();
 	byte[] sig = "SIG".getBytes();
 	byte[] data = "DATA".getBytes();
-	Function<byte[], Signature> sigsFn;
-	BiPredicate<JKey, Signature> tests;
-	final Signature VALID_SIG = SigWrappers.asValid(List.of(createEd25519(pk, sig, data))).get(0);
-	final Signature INVALID_SIG = SigWrappers.asInvalid(List.of(createEd25519(pk, sig, data))).get(0);
+	Function<byte[], TransactionSignature> sigsFn;
+	BiPredicate<JKey, TransactionSignature> tests;
+	final TransactionSignature VALID_SIG = SigWrappers.asValid(List.of(createEd25519(pk, sig, data))).get(0);
+	final TransactionSignature INVALID_SIG = SigWrappers.asInvalid(List.of(createEd25519(pk, sig, data))).get(0);
 
-	Function<Integer, Signature> mockSigFn = i -> createEd25519(
+	Function<Integer, TransactionSignature> mockSigFn = i -> createEd25519(
 			String.format("PK%d", i).getBytes(),
 			String.format("SIG%d", i).getBytes(),
 			String.format("DATA%d", i).getBytes());
@@ -77,8 +78,8 @@ public class HederaKeyActivationTest {
 
 	@BeforeEach
 	public void setup() {
-		sigsFn = (Function<byte[], Signature>)mock(Function.class);
-		tests = (BiPredicate<JKey, Signature>)mock(BiPredicate.class);
+		sigsFn = (Function<byte[], TransactionSignature>)mock(Function.class);
+		tests = (BiPredicate<JKey, TransactionSignature>)mock(BiPredicate.class);
 	}
 
 	@Test
@@ -116,17 +117,17 @@ public class HederaKeyActivationTest {
 	@Test
 	public void mapSupplierReflectsInputList() {
 		// setup:
-		List<Signature> presentSigs = List.of(mockSigFn.apply(0), mockSigFn.apply(1));
-		Signature missingSig = mockSigFn.apply(2);
+		List<TransactionSignature> presentSigs = List.of(mockSigFn.apply(0), mockSigFn.apply(1));
+		TransactionSignature missingSig = mockSigFn.apply(2);
 
 		// given:
-		Function<byte[], Signature> sigsFn = pkToSigMapFrom(presentSigs);
+		Function<byte[], TransactionSignature> sigsFn = pkToSigMapFrom(presentSigs);
 
 		// when:
-		Signature present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
-		Signature present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
+		TransactionSignature present0 = sigsFn.apply(presentSigs.get(0).getExpandedPublicKeyDirect());
+		TransactionSignature present1 = sigsFn.apply(presentSigs.get(1).getExpandedPublicKeyDirect());
 		// and:
-		Signature missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
+		TransactionSignature missing = sigsFn.apply(missingSig.getExpandedPublicKeyDirect());
 
 		// then:
 		assertEquals(presentSigs.get(0), present0);

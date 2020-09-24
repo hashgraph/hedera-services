@@ -154,7 +154,7 @@ class StateViewTest {
 		token.setAutoRenewAccount(EntityId.ofNullableAccountId(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
-		token.setDeleted(true);
+		token.setTokenDeleted(true);
 		given(tokenStore.resolve(foundToken)).willReturn(tokenId);
 		given(tokenStore.resolve(missingToken)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);

@@ -42,7 +42,7 @@ public class TopicSerde {
 		to.setAutoRenewDurationSeconds(in.readLong());
 		to.setAutoRenewAccountId(in.readBoolean() ? serdes.deserializeId(in) : null);
 		to.setExpirationTimestamp(in.readBoolean() ? serdes.deserializeTimestamp(in) : null);
-		to.setDeleted(in.readBoolean());
+		to.setTopicDeleted(in.readBoolean());
 		to.setSequenceNumber(in.readLong());
 		to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
 	}

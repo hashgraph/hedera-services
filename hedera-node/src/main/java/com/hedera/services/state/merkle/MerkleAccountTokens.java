@@ -125,6 +125,11 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 				.toString();
 	}
 
+	@Override
+	public void delete() {
+
+	}
+
 	public String readableTokenIds() {
 		var sb = new StringBuilder("[");
 		for (int i = 0, n = numAssociations(); i < n; i++) {

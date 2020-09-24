@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +56,7 @@ public class Rationalization {
             new SigStatusOrderResultFactory(true);
 
     private final SyncVerifier syncVerifier;
-    private final List<Signature> txnSigs;
+    private final List<TransactionSignature> txnSigs;
     private final PlatformTxnAccessor txnAccessor;
     private final HederaSigningOrder keyOrderer;
     private final PubKeyToSigBytesProvider sigsProvider;
@@ -78,7 +79,7 @@ public class Rationalization {
 
     public SignatureStatus execute() {
         log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
-        List<Signature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
+        List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
         var payerStatus = expandIn(
                 realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
@@ -102,8 +103,8 @@ public class Rationalization {
 
         if (rationalizedPayerSigs == realPayerSigs || rationalizedOtherPartySigs == realOtherPartySigs) {
             txnAccessor.getPlatformTxn().clear();
-            txnAccessor.getPlatformTxn().addAll(rationalizedPayerSigs.toArray(new Signature[0]));
-            txnAccessor.getPlatformTxn().addAll(rationalizedOtherPartySigs.toArray(new Signature[0]));
+            txnAccessor.getPlatformTxn().addAll(rationalizedPayerSigs.toArray(new TransactionSignature[0]));
+            txnAccessor.getPlatformTxn().addAll(rationalizedOtherPartySigs.toArray(new TransactionSignature[0]));
             log.warn("Verified crypto sigs synchronously for txn {}", txnAccessor.getSignedTxn4Log());
             return syncSuccess();
         }
@@ -111,7 +112,7 @@ public class Rationalization {
         return asyncSuccess();
     }
 
-    private List<Signature> rationalize(List<Signature> realSigs, int startingAt) {
+    private List<TransactionSignature> rationalize(List<TransactionSignature> realSigs, int startingAt) {
         try {
             var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
             if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
@@ -122,12 +123,12 @@ public class Rationalization {
         return realSigs;
     }
 
-    private boolean allStatusesAreKnown(List<Signature> sigs) {
-        return sigs.stream().map(Signature::getSignatureStatus).noneMatch(VerificationStatus.UNKNOWN::equals);
+    private boolean allStatusesAreKnown(List<TransactionSignature> sigs) {
+        return sigs.stream().map(TransactionSignature::getSignatureStatus).noneMatch(VerificationStatus.UNKNOWN::equals);
     }
 
     private SignatureStatus expandIn(
-            List<Signature> target,
+            List<TransactionSignature> target,
             Function<Transaction, PubKeyToSigBytes> sigsFn,
             BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
     ) {

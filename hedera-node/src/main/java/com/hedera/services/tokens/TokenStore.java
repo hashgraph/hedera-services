@@ -23,10 +23,8 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -35,7 +33,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRef;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -47,7 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
  */
 public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
+	Consumer<MerkleToken> DELETION = token -> token.setTokenDeleted(true);
 
 	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 	void setHederaLedger(HederaLedger ledger);

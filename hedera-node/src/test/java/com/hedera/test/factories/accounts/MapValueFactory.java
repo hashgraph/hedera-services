@@ -57,7 +57,7 @@ public class MapValueFactory {
 		memo.ifPresent(s -> value.setMemo(s));
 		proxy.ifPresent(p -> value.setProxy(EntityId.ofNullableAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
-		deleted.ifPresent(b -> value.setDeleted(b));
+		deleted.ifPresent(b -> value.setAccountDeleted(b));
 		accountKeys.ifPresent(k -> value.setKey(k));
 		expirationTime.ifPresent(l -> value.setExpiry(l));
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));

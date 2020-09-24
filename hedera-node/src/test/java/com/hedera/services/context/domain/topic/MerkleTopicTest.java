@@ -221,12 +221,12 @@ public class MerkleTopicTest {
 		// given:
 		var a = new MerkleTopic(aMemo, aAdminKey, aSubmitKey, aAutoRenewDurationSeconds, aAutoRenewAccountId,
 				aExpirationTimestamp);
-		a.setDeleted(aDeleted);
+		a.setTopicDeleted(aDeleted);
 		a.setSequenceNumber(aSequenceNumber);
 		a.setRunningHash(aRunningHash);
 		var b = new MerkleTopic(bMemo, bAdminKey, bSubmitKey, bAutoRenewDurationSeconds, bAutoRenewAccountId,
 				bExpirationTimestamp);
-		b.setDeleted(bDeleted);
+		b.setTopicDeleted(bDeleted);
 		b.setSequenceNumber(bSequenceNumber);
 		b.setRunningHash(bRunningHash);
 

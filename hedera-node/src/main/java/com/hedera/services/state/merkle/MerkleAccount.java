@@ -27,7 +27,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -115,11 +114,6 @@ public class MerkleAccount extends AbstractMerkleInternal
 
 	/* --- FastCopyable --- */
 	@Override
-	public boolean isImmutable() {
-		return records().isImmutable() || payerRecords().isImmutable();
-	}
-
-	@Override
 	public MerkleAccount copy() {
 		if (isImmutable()) {
 			var msg = String.format("Copy called on an immutable MerkleAccount by thread '%s'! " +
@@ -133,6 +127,7 @@ public class MerkleAccount extends AbstractMerkleInternal
 			throw new IllegalStateException("Tried to make a copy of an immutable MerkleAccount!");
 		}
 
+		setImmutable(true);
 		return new MerkleAccount(List.of(
 				state().copy(),
 				records().copy(),
@@ -141,7 +136,8 @@ public class MerkleAccount extends AbstractMerkleInternal
 	}
 
 	@Override
-	public void delete() {
+	protected void onDelete() {
+		super.onDelete();
 		records().delete();
 		payerRecords().delete();
 	}
@@ -361,12 +357,12 @@ public class MerkleAccount extends AbstractMerkleInternal
 		state().setAutoRenewSecs(autoRenewSecs);
 	}
 
-	public boolean isDeleted() {
+	public boolean isAccountDeleted() {
 		return state().isDeleted();
 	}
 
-	public void setDeleted(boolean deleted) {
-		state().setDeleted(deleted);
+	public void setAccountDeleted(boolean deleted) {
+		state().setAccountDeleted(deleted);
 	}
 
 	public long getExpiry() {

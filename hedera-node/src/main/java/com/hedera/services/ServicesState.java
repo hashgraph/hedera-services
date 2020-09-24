@@ -79,7 +79,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 
 	NodeId nodeId = null;
-	boolean immutable = true;
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -98,11 +97,13 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	ServicesContext ctx;
 
 	public ServicesState() {
+		setImmutable(true);
 	}
 
 	public ServicesState(List<MerkleNode> children) {
 		super(ChildIndices.NUM_090_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
+		setImmutable(true);
 	}
 
 	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
@@ -112,6 +113,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		if (ctx != null) {
 			ctx.update(this);
 		}
+
+		setImmutable(true);
 	}
 
 	/* --- MerkleInternal --- */
@@ -153,7 +156,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
-		immutable = false;
+		setImmutable(false);
 		nodeId = platform.getSelfId();
 
 		/* Note this overrides the address book from the saved state if it is present. */
@@ -238,17 +241,13 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	@Override
-	public synchronized void delete() {
+	protected synchronized void onDelete() {
+		super.onDelete();
 		storage().delete();
 		accounts().delete();
 		topics().delete();
 		tokens().delete();
 		tokenAssociations().delete();
-	}
-
-	@Override
-	public boolean isImmutable() {
-		return immutable;
 	}
 
 	@Override

@@ -27,7 +27,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcqueue.FCQueue;
@@ -399,7 +398,7 @@ public class MerkleAccountTest {
 		subject.setAutoRenewSecs(otherAutoRenewSecs);
 		subject.setSenderThreshold(otherSenderThreshold);
 		subject.setReceiverThreshold(otherReceiverThreshold);
-		subject.setDeleted(otherDeleted);
+		subject.setAccountDeleted(otherDeleted);
 		subject.setSmartContract(otherSmartContract);
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
 		subject.setMemo(otherMemo);
@@ -411,7 +410,7 @@ public class MerkleAccountTest {
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
 		verify(delegate).setSenderThreshold(otherSenderThreshold);
 		verify(delegate).setReceiverThreshold(otherReceiverThreshold);
-		verify(delegate).setDeleted(otherDeleted);
+		verify(delegate).setAccountDeleted(otherDeleted);
 		verify(delegate).setSmartContract(otherSmartContract);
 		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
 		verify(delegate).setMemo(otherMemo);

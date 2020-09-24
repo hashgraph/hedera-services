@@ -108,4 +108,9 @@ public class MerkleNetworkContext extends AbstractMerkleNode implements MerkleLe
 	public int getVersion() {
 		return MERKLE_VERSION;
 	}
+
+	@Override
+	public void delete() {
+
+	}
 }

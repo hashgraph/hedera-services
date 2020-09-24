@@ -281,7 +281,7 @@ class HederaTokenStoreTest {
 		TokenStore.DELETION.accept(token);
 
 		// then:
-		verify(token).setDeleted(true);
+		verify(token).setTokenDeleted(true);
 	}
 
 	@Test

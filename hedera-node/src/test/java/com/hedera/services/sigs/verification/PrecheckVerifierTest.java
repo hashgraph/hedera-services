@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ public class PrecheckVerifierTest {
 			return VALID_SIG_BYTES[i++];
 		}
 	};
-	private static List<Signature> expectedSigs = EMPTY_LIST;
+	private static List<TransactionSignature> expectedSigs = EMPTY_LIST;
 
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PubKeyToSigBytesProvider provider;
@@ -101,7 +102,7 @@ public class PrecheckVerifierTest {
 	public void affirmsValidSignatures() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txn)).willReturn(reqKeys);
 		given(provider.allPartiesSigBytesFor(signedTxn)).willReturn(VALID_PROVIDER_FACTORY.get());
-		AtomicReference<List<Signature>> actualSigsVerified = new AtomicReference<>();
+		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
 			ALWAYS_VALID.verifySync(sigs);
@@ -119,7 +120,7 @@ public class PrecheckVerifierTest {
 	public void rejectsInvalidSignatures() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txn)).willReturn(reqKeys);
 		given(provider.allPartiesSigBytesFor(signedTxn)).willReturn(VALID_PROVIDER_FACTORY.get());
-		AtomicReference<List<Signature>> actualSigsVerified = new AtomicReference<>();
+		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
 			NEVER_VALID.verifySync(sigs);

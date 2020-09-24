@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.hedera.services</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -241,17 +241,17 @@
         <artifactId>hapi-proto</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-platform-core</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcmap</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.hedera.hashgraph</groupId>
+      <groupId>com.swirlds</groupId>
       <artifactId>swirlds-fcqueue</artifactId>
       <version>${swirlds.version}</version>
     </dependency>
@@ -336,6 +336,11 @@
       <id>ossrh-swirlds-staging</id>
       <name>Staging repo</name>
       <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1191</url>
+    </repository>
+    <repository>
+      <id>ossrh-swirlds-proper-staging</id>
+      <name>Staging repo</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1003</url>
     </repository>
     <repository>
       <snapshots>
