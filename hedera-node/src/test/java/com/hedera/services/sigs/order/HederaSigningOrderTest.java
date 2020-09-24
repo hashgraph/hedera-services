@@ -22,6 +22,8 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.sigs.metadata.FileSigningMetadata;
+import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
 import com.hedera.services.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.TopicSigMetaLookup;
@@ -35,6 +37,7 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -110,11 +113,6 @@ public class HederaSigningOrderTest {
 		public static TopicSigMetaLookup with(ThrowingTopicLookup delegate) {
 			return new TopicSigMetaLookup() {
 				@Override
-				public TopicSigningMetadata lookup(TopicID id) throws Exception {
-					return delegate.lookup(id);
-				}
-
-				@Override
 				public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
 					throw new UnsupportedOperationException();
 				}
@@ -126,11 +124,6 @@ public class HederaSigningOrderTest {
 		) {
 			return new TopicSigMetaLookup() {
 				@Override
-				public TopicSigningMetadata lookup(TopicID id) throws Exception {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
 				public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
 					return fn.apply(id);
 				}
@@ -138,30 +131,42 @@ public class HederaSigningOrderTest {
 		}
 	}
 
-	private static class AccountAdapter {
-		public static AccountSigMetaLookup with(ThrowingAccountLookup delegate) {
-			return new AccountSigMetaLookup() {
+	private static class FileAdapter {
+		public static FileSigMetaLookup with(ThrowingFileLookup lookup) {
+			return new FileSigMetaLookup() {
 				@Override
-				public AccountSigningMetadata lookup(AccountID account) throws Exception {
-					return delegate.lookup(account);
+				public FileSigningMetadata lookup(FileID file) throws Exception {
+					return lookup.lookup(file);
 				}
 
 				@Override
-				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
+				public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
 					throw new UnsupportedOperationException();
 				}
 			};
 		}
+		public static FileSigMetaLookup withSafe(
+				Function<FileID, SafeLookupResult<FileSigningMetadata>> fn
+		) {
+			return new FileSigMetaLookup() {
+				@Override
+				public FileSigningMetadata lookup(FileID file) throws Exception {
+					throw new UnsupportedOperationException();
+				}
 
+				@Override
+				public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
+					return fn.apply(id);
+				}
+			};
+		}
+	}
+
+	private static class AccountAdapter {
 		public static AccountSigMetaLookup withSafe(
 				Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn
 		) {
 			return new AccountSigMetaLookup() {
-				@Override
-				public AccountSigningMetadata lookup(AccountID account) throws Exception {
-					throw new UnsupportedOperationException();
-				}
-
 				@Override
 				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
 					return fn.apply(id);
@@ -171,8 +176,8 @@ public class HederaSigningOrderTest {
 	}
 
 	@FunctionalInterface
-	private interface ThrowingAccountLookup {
-		AccountSigningMetadata lookup(AccountID id) throws Exception;
+	private interface ThrowingFileLookup {
+		FileSigningMetadata lookup(FileID id) throws Exception;
 	}
 	@FunctionalInterface
 	private interface ThrowingTopicLookup {
@@ -185,7 +190,7 @@ public class HederaSigningOrderTest {
 	private static final Predicate<TransactionBody> UPDATE_ACCOUNT_ALWAYS_SIGNS = txn -> true;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
 		new DelegatingSigMetadataLookup(
-				id -> { throw new Exception(); },
+				FileAdapter.with(id -> { throw new Exception(); }),
 				AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 				contractSigMetaLookup,
 				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
@@ -313,7 +318,7 @@ public class HederaSigningOrderTest {
 		setupFor(
 				CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
 				new DelegatingSigMetadataLookup(
-						id -> { throw new Exception(); },
+						FileAdapter.with(id -> { throw new Exception(); }),
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 						id -> { throw new Exception(); },
 						TopicAdapter.with(id -> { throw new Exception(); }),
@@ -1634,7 +1639,7 @@ public class HederaSigningOrderTest {
 
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
-				id -> { throw new Exception(); },
+				FileAdapter.with(id -> { throw new Exception(); }),
 				AccountAdapter.withSafe(id -> {
 					if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
 						try {

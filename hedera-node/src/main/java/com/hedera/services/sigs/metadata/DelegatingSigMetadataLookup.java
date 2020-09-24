@@ -148,18 +148,8 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public AccountSigningMetadata lookup(AccountID account) throws Exception {
-		return accountSigMetaLookup.lookup(account);
-	}
-
-	@Override
 	public ContractSigningMetadata lookup(ContractID contract) throws Exception {
 		return contractSigMetaLookup.lookup(contract);
-	}
-
-	@Override
-	public TopicSigningMetadata lookup(TopicID topic) throws Exception {
-		return topicSigMetaLookup.lookup(topic);
 	}
 
 	@Override

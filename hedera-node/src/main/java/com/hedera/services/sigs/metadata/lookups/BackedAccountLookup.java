@@ -36,16 +36,6 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 	}
 
 	@Override
-	public AccountSigningMetadata lookup(AccountID id) throws Exception {
-		if (accounts.contains(id)) {
-			var account = accounts.getRef(id);
-			return new AccountSigningMetadata(account.getKey(), account.isReceiverSigRequired());
-		} else {
-			throw new InvalidAccountIDException("Invalid account!", id);
-		}
-	}
-
-	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
 		if (!accounts.contains(id)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
