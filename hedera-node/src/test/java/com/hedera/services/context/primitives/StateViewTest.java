@@ -41,7 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -122,10 +122,10 @@ class StateViewTest {
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
 				.build();
 
-		notContract = MapValueFactory.newAccount()
+		notContract = MerkleAccountFactory.newAccount()
 				.isSmartContract(false)
 				.get();
-		contract = MapValueFactory.newAccount()
+		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)

@@ -22,11 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,9 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -51,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 
@@ -126,22 +121,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						getAccountInfo("misc")
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Frozen))
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(KNOWABLE_TOKEN)
-												.balance(0)
 												.kyc(Revoked)
 												.freeze(FreezeNotApplicable))
 								.hasToken(
 										relationshipWith(VANILLA_TOKEN)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
@@ -156,22 +147,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
-												.freeze(Frozen))
+												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(KNOWABLE_TOKEN)
-												.balance(0)
-												.kyc(Revoked)
+												.kyc(Granted)
 												.freeze(FreezeNotApplicable))
 								.hasToken(
 										relationshipWith(VANILLA_TOKEN)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
