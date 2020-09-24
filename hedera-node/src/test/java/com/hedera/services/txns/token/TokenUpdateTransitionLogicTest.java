@@ -98,7 +98,6 @@ class TokenUpdateTransitionLogicTest {
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
 		given(store.resolve(targetRef)).willReturn(target);
 		given(store.get(target)).willReturn(token);
-		given(store.associate(newTreasury, List.of(targetRef))).willReturn(OK);
 
 		txnCtx = mock(TransactionContext.class);
 
@@ -169,23 +168,6 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
 		// and:
 		verify(txnCtx).setStatus(INVALID_TOKEN_SYMBOL);
-	}
-
-	@Test
-	public void rollsbackNewTreasuryChangesIfAssociateFails() {
-		givenValidTxnCtx(true);
-		givenToken(true, true);
-		// and:
-		given(store.associate(any(), anyList())).willReturn(INVALID_TOKEN_REF);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(ledger).dropPendingTokenChanges();
-		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong(), anyBoolean());
-		// and:
-		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
 	}
 
 	@Test
@@ -311,7 +293,6 @@ class TokenUpdateTransitionLogicTest {
 		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
 		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
 		given(store.update(any(), anyLong())).willReturn(OK);
-		given(store.associate(any(), anyList())).willReturn(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
 		given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance, true)).willReturn(OK);
 

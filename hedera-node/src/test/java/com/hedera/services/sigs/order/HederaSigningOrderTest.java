@@ -1464,7 +1464,7 @@ public class HederaSigningOrderTest {
 		// then:
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
+				contains(TOKEN_ADMIN_KT.asKey()));
 	}
 
 	@Test

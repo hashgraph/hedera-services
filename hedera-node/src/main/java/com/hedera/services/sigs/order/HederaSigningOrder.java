@@ -614,13 +614,6 @@ public class HederaSigningOrder {
 				required)) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
-		if (!addAccount(
-				op,
-				TokenUpdateTransactionBody::hasTreasury,
-				TokenUpdateTransactionBody::getTreasury,
-				required)) {
-			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
-		}
 		addToMutableReqIfPresent(
 				op,
 				TokenUpdateTransactionBody::hasAdminKey,
