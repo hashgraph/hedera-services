@@ -136,6 +136,7 @@ public class HederaLedgerTest {
 	final long miscFrozenTokenBalance = 500L;
 	final HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
 	final AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
+	final AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
 	final AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	final AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	final AccountID genesis = AccountID.newBuilder().setAccountNum(2).build();
@@ -244,6 +245,9 @@ public class HederaLedgerTest {
 		addToLedger(misc, MISC_BALANCE, noopCustomizer, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
+		addToLedger(deletable, MISC_BALANCE, noopCustomizer, Map.of(
+				frozenId,
+				new TokenInfo(0, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
@@ -429,12 +433,32 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void getsTokenBalanceInScope() {
+	public void getsTokenBalance() {
 		// given:
 		var balance = subject.getTokenBalance(misc, frozenId);
 
 		// expect:
 		assertEquals(miscFrozenTokenBalance, balance);
+	}
+
+	@Test
+	public void recognizesAccountWithNonZeroTokenBalances() {
+		// expect:
+		assertFalse(subject.allTokenBalancesVanish(misc));
+	}
+
+	@Test
+	public void throwsIfSubjectHasNoUsableTokenRelsLedger() {
+		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
+	}
+
+	@Test
+	public void recognizesAccountWithZeroTokenBalances() {
+		// expect:
+		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
@@ -1498,6 +1522,9 @@ public class HederaLedgerTest {
 		when(accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
 		when(accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
 		when(accountsLedger.exists(id)).thenReturn(true);
+		var tokens = new MerkleAccountTokens();
+		tokens.associateAll(tokenInfo.keySet());
+		when(accountsLedger.get(id, TOKENS)).thenReturn(tokens);
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
