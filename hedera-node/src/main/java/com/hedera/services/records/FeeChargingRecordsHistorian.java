@@ -193,7 +193,7 @@ public class FeeChargingRecordsHistorian implements AccountRecordsHistorian {
 
 	private boolean isCallableContract(AccountID id) {
 		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
-				.map(v -> v.isSmartContract() && !v.isDeleted())
+				.map(v -> v.isSmartContract() && !v.isAccountDeleted())
 				.orElse(false);
 	}
 

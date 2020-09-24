@@ -121,7 +121,7 @@ class LedgerAccountsSourceTest {
 		given(account.getSenderThreshold()).willReturn(sendThreshold);
 		given(account.getReceiverThreshold()).willReturn(receiveThreshold);
 		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
-		given(account.isDeleted()).willReturn(deleted);
+		given(account.isAccountDeleted()).willReturn(deleted);
 		given(account.isSmartContract()).willReturn(smartContract);
 		given(account.getBalance()).willReturn(balance);
 
