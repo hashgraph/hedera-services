@@ -9,16 +9,43 @@
 
 set -eE
 
+create_new_directory () {
+    new_directory_name="HapiApp2.0-"`date +%Y%m%dT%H%M%S`
+    shell_echo $LINENO $0 "Creating new working directory $new_directory_name"
+    mkdir -p ../$new_directory_name
+
+    shell_echo $LINENO $0 "Copying existing file to new working directory $new_directory_name"
+    cp -r ./ ../$new_directory_name
+
+    shell_echo $LINENO $0 "Building symbolic link to $new_directory_name"
+    cd ..
+    rm -f HapiApp2.0
+    ln -s $new_directory_name HapiApp2.0
+    ls -ltr >> $OUTPUT
+    cd $new_directory_name
+}
+
+update_sdk_files () {
+    # check if new sdk file directory exist
+    if [ -d temp/sdk ]; then
+        shell_echo $LINENO $0 "Found new sdk files "
+        shell_echo $LINENO $0 "Copying files from temp/sdk to current working directory"
+        cp -r temp/sdk/* ./
+    else
+        shell_echo $LINENO $0 "No new sdk files found "
+    fi
+}
+
 unamestr=`uname`
 
 NODE_ID=$1
 
 SERVICE_LOG4J2="log4j2-services-regression.xml"
-
+PWD=`pwd`
 if [ -f $SERVICE_LOG4J2 ]; then
-    OUTPUT=hgcaa.log
+    OUTPUT=$PWD/hgcaa.log
 else
-    OUTPUT=output/hgcaa.log
+    OUTPUT=$PWD/output/hgcaa.log
 fi
 
 #

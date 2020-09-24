@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.freeze;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,6 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
@@ -53,7 +52,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 	private static String uploadPath = "updateFiles/";
 
 	private static int FREEZE_LAST_MINUTES = 2;
-	private static String fileIDString;
+	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
 	public static void main(String... args) {
 
@@ -126,10 +125,9 @@ public class UpdateServerFiles extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.overridingProps(Map.of("maxFileSize", "2048000")),
-						fileCreate("newFile.zip").contents("to-be-overwritten"),
-						UtilVerbs.updateLargeFile(GENESIS, "newFile.zip", ByteString.copyFrom(data))
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
-						freeze().setFileName("newFile.zip")
+						freeze().setFileID(fileIDString)
 								.startingIn(60).seconds().andLasting(FREEZE_LAST_MINUTES).minutes()
 				).then(
 				);

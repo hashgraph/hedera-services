@@ -20,27 +20,27 @@ package com.hedera.services.legacy.service;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hedera.services.legacy.utils.TransactionValidationUtils.transactionResponse;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.legacy.handler.TransactionHandler;
+import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.utils.TransactionValidationUtils;
 import com.swirlds.common.Platform;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FILE_REALM;
+import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FILE_SHARD;
+import static com.hedera.services.legacy.utils.TransactionValidationUtils.transactionResponse;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Freeze Service Implementation
@@ -74,6 +74,13 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 		if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23 ||
 				startMin < 0 || startMin > 59 || endMin < 0 || endMin > 59) {
 			return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+		}
+		// Check if FileID for update feature is the allowed default FileID
+		if (body.hasUpdateFile()
+				&& (body.getUpdateFile().getFileNum() != ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM
+				|| body.getUpdateFile().getRealmNum() != DEFAULT_FILE_REALM
+				|| body.getUpdateFile().getShardNum() != DEFAULT_FILE_SHARD)) {
+			return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FILE_ID);
 		}
 		log.debug("FreezeTransactionBody is valid: \n {} \n", () -> TextFormat.shortDebugString(body));
 		return new TxnValidityAndFeeReq(OK);
