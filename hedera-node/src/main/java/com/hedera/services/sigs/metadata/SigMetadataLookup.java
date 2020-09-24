@@ -47,8 +47,9 @@ public interface SigMetadataLookup {
 			TokenStore,
 			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
 		TokenID id;
-		return ((id = tokenStore.resolve(ref)) != TokenStore.MISSING_TOKEN)
-				? new SafeLookupResult<>(from(tokenStore.get(id))) : failure(MISSING_TOKEN);
+		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
+				? failure(MISSING_TOKEN)
+				: new SafeLookupResult<>(from(tokenStore.get(id)));
 	};
 
 	FileSigningMetadata lookup(FileID file) throws Exception;

@@ -78,7 +78,7 @@ public class ScreenedSysFileProps implements PropertySource {
 				.filter(this::hasParseableValue)
 				.filter(this::isUsableGlobalDynamic)
 				.collect(Collectors.toMap(Setting::getName, this::asTypedValue));
-		var msg = "Global/dynamic properties overridden in system file are:\n " + GLOBAL_DYNAMIC_PROPS.stream()
+		var msg = "Global/dynamic properties overridden in system file are:\n  " + GLOBAL_DYNAMIC_PROPS.stream()
 				.filter(from121::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, from121.get(name)))
