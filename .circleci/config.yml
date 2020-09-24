@@ -1659,6 +1659,22 @@ jobs:
               "mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
               | tee /repo/test-clients/output/hapi-client.log"
       - run:
+          name: Save Unit Test Results
+          command: |
+            set -x
+            JUNIT_PATH="${HOME}/junit"
+
+            if [[ ! -d "${JUNIT_PATH}" ]]; then
+              mkdir -pv "${JUNIT_PATH}"
+            fi
+
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
+          when: always
+      - store_test_results:
+          path: ~/junit/<< parameters.repo_name >>
+      - store_artifacts:
+          path: ~/junit/<< parameters.repo_name >>
+      - run:
           name: Upload codecov
           command: |
             apt-get update
