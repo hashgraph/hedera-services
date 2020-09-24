@@ -1671,9 +1671,9 @@ jobs:
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
           when: always
       - store_test_results:
-          path: ~/junit/<< parameters.repo_name >>
+          path: ~/junit
       - store_artifacts:
-          path: ~/junit/<< parameters.repo_name >>
+          path: ~/junit
       - run:
           name: Upload codecov
           command: |
