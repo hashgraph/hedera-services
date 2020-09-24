@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,14 @@ package com.hedera.services.ledger;
  * limitations under the License.
  * ‍
  */
+
+import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.properties.BeanProperty;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.utils.EntityIdUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -35,15 +43,6 @@ import java.util.stream.Stream;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static java.util.stream.Collectors.joining;
-import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.accounts.BackingStore;
-import com.hedera.services.ledger.properties.BeanProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
-import com.hedera.services.tokens.TokenScope;
-import com.hedera.services.utils.EntityIdUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a ledger with transactional semantics. Changes during a transaction
@@ -51,16 +50,15 @@ import org.apache.logging.log4j.Logger;
  * backing store when the transaction is committed; or dropped with no effects
  * upon a rollback.
  *
- * @param <K> the type of id used by the ledger.
- * @param <P> the family of properties associated to entities in the ledger.
- * @param <A> the type of a ledger entity.
- *
+ * @param <K>
+ * 		the type of id used by the ledger.
+ * @param <P>
+ * 		the family of properties associated to entities in the ledger.
+ * @param <A>
+ * 		the type of a ledger entity.
  * @author Michael Tinker
  */
-public class TransactionalLedger<
-		K,
-		P extends Enum<P> & BeanProperty<A>,
-		A extends TokenViewMergeable<A>> implements Ledger<K, P, A> {
+public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
@@ -71,7 +69,6 @@ public class TransactionalLedger<
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	final Map<K, A> tokenRefs = new HashMap<>();
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
@@ -81,12 +78,12 @@ public class TransactionalLedger<
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
-			BackingStore<K, A> accounts,
+			BackingStore<K, A> entities,
 			ChangeSummaryManager<A, P> changeManager
 	) {
 		this.propertyType = propertyType;
 		this.newEntity = newEntity;
-		this.entities = accounts;
+		this.entities = entities;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
 	}
@@ -114,7 +111,6 @@ public class TransactionalLedger<
 
 		changes.clear();
 		deadEntities.clear();
-		tokenRefs.clear();
 
 		isInTransaction = false;
 	}
@@ -133,7 +129,6 @@ public class TransactionalLedger<
 					.filter(id -> !deadEntities.contains(id))
 					.forEach(id -> entities.put(id, get(id)));
 			changes.clear();
-			tokenRefs.clear();
 
 			Stream<K> deadKeys = keyComparator.isPresent()
 					? deadEntities.stream().sorted(keyComparator.get())
@@ -176,14 +171,6 @@ public class TransactionalLedger<
 					change.getValue().entrySet().stream()
 							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
 							.collect(joining(", ")));
-			if (tokenRefs.containsKey(id)) {
-				if (change.getValue().size() > 0) {
-					desc.append(", ");
-				}
-				desc.append("TOKENS -> ");
-				var view = tokenRefs.get(id);
-				desc.append(view.readableTokenRelationships());
-			}
 			desc.append("]");
 			isFirstChange.set(false);
 		});
@@ -213,13 +200,7 @@ public class TransactionalLedger<
 	public void set(K id, P property, Object value) {
 		assertIsSettable(id);
 
-		if (value instanceof TokenScopedPropertyValue) {
-			var viewSoFar = tokenRefs.computeIfAbsent(id, ignore -> toTokenTarget(id));
-			property.setter().accept(viewSoFar, value);
-			changes.computeIfAbsent(id, changeFactory);
-		} else {
-			changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
-		}
+		changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
 	}
 
 	@Override
@@ -233,16 +214,7 @@ public class TransactionalLedger<
 			changeManager.persist(changeSet, account);
 		}
 
-		var viewSoFar = tokenRefs.get(id);
-		if (viewSoFar != null) {
-			account.mergeTokenPropertiesFrom(viewSoFar);
-		}
-
 		return account;
-	}
-
-	public void markForMerge(K id) {
-		changes.computeIfAbsent(id, changeFactory);
 	}
 
 	@Override
@@ -255,15 +227,6 @@ public class TransactionalLedger<
 		} else {
 			return property.getter().apply(toGetterTarget(id));
 		}
-	}
-
-	@Override
-	public Object get(K id, P property, TokenScope scope) {
-		throwIfMissing(id);
-
-		var viewSoFar = tokenRefs.get(id);
-		viewSoFar = (viewSoFar != null) ? viewSoFar : toGetterTarget(id);
-		return property.scopedGetter().apply(viewSoFar, scope);
 	}
 
 	@Override
@@ -286,10 +249,6 @@ public class TransactionalLedger<
 
 	private A toGetterTarget(K id) {
 		return isPendingCreation(id) ? newEntity.get() : entities.getRef(id);
-	}
-
-	private A toTokenTarget(K id) {
-		return isPendingCreation(id) ? newEntity.get() : entities.getTokenCopy(id);
 	}
 
 	private boolean isPendingCreation(K id) {

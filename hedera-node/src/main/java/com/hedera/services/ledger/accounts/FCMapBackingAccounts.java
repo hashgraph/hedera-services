@@ -50,11 +50,6 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	}
 
 	@Override
-	public MerkleAccount getTokenCopy(AccountID id) {
-		return getRef(id).tokenCopy();
-	}
-
-	@Override
 	public void flushMutableRefs() {
 		cache.keySet()
 				.stream()

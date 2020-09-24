@@ -651,7 +651,6 @@ class HederaTokenStoreTest {
 		given(token.hasWipeKey()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 		// and:
-		given(account.getTokenBalance(misc)).willReturn(balance);
 		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(false);
 
 		// when:
@@ -708,14 +707,10 @@ class HederaTokenStoreTest {
 	@Test
 	public void wipingFailsWithInvalidWipingAmount() {
 		// setup:
-		long balance = 1_234L;
 		long wipe = 1_235L;
 
 		given(token.hasWipeKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
-		// and:
-		given(account.hasRelationshipWith(misc)).willReturn(true);
-		given(account.getTokenBalance(misc)).willReturn(balance);
 
 		// when:
 		var status = subject.wipe(sponsor, misc, wipe, false);

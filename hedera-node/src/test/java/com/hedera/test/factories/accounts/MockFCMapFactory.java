@@ -27,7 +27,7 @@ import com.swirlds.fcmap.FCMap;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.factories.accounts.MapValueFactory.newAccount;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.txns.SignedTxnFactory.*;
 
 public class MockFCMapFactory {

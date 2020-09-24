@@ -106,11 +106,6 @@ public class BackingTokenRels implements BackingStore<Map.Entry<AccountID, Token
 	}
 
 	@Override
-	public MerkleTokenRelStatus getTokenCopy(Map.Entry<AccountID, TokenID> id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public MerkleTokenRelStatus getUnsafeRef(Map.Entry<AccountID, TokenID> id) {
 		throw new UnsupportedOperationException();
 	}

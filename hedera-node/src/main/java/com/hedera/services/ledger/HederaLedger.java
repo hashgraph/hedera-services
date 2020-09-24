@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -57,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNDS_RECEIVED_RECORD_THRESHOLD;
@@ -66,7 +68,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
-import static com.hedera.services.tokens.TokenScope.idScopeOf;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -107,7 +109,8 @@ public class HederaLedger {
 
 	private static final int MAX_CONCEIVABLE_TOKENS_PER_TXN = 1_000;
 	private static final long[] NO_NEW_BALANCES = new long[0];
-	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> { };
+	private static final Consumer<ExpirableTxnRecord> NOOP_CB = record -> {
+	};
 
 	static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 	public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator
@@ -218,7 +221,13 @@ public class HederaLedger {
 
 	public String currentChangeSet() {
 		if (accountsLedger.isInTransaction()) {
-			return accountsLedger.changeSetSoFar();
+			var sb = new StringBuilder("--- ACCOUNTS ---\n")
+					.append(accountsLedger.changeSetSoFar());
+			if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
+				sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
+						.append(tokenRelsLedger.changeSetSoFar());
+			}
+			return sb.toString();
 		} else {
 			return NO_ACTIVE_TXN_CHANGE_SET;
 		}
@@ -260,7 +269,7 @@ public class HederaLedger {
 
 	/* --- TOKEN MANIPULATION --- */
 	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
-		return (MerkleAccountTokens)accountsLedger.get(aId, TOKENS);
+		return (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
 	}
 
 	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
@@ -268,7 +277,8 @@ public class HederaLedger {
 	}
 
 	public long getTokenBalance(AccountID aId, TokenID tId) {
-		return (long) accountsLedger.get(aId, BALANCE, idScopeOf(tId));
+		var relationship = asTokenRel(aId, tId);
+		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {

@@ -95,6 +95,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -616,16 +617,22 @@ public class HederaLedgerTest {
 	public void delegatesChangeSetIfInTxn() {
 		// setup:
 		String zeroingGenesis = "{0.0.2: [BALANCE -> 0]}";
+		String creatingTreasury = "{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}";
 
 		given(accountsLedger.isInTransaction()).willReturn(true);
 		given(accountsLedger.changeSetSoFar()).willReturn(zeroingGenesis);
+		given(tokenRelsLedger.changeSetSoFar()).willReturn(creatingTreasury);
 
 		// when:
 		String summary = subject.currentChangeSet();
+		System.out.println(summary);
 
 		// then:
 		verify(accountsLedger).changeSetSoFar();
-		assertEquals(zeroingGenesis, summary);
+		assertEquals(String.format(
+				"--- ACCOUNTS ---\n%s\n--- TOKEN RELATIONSHIPS ---\n%s",
+				zeroingGenesis,
+				creatingTreasury), summary);
 	}
 
 	@Test
@@ -1494,10 +1501,8 @@ public class HederaLedgerTest {
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
-			when(accountsLedger.get(
-					argThat(id::equals),
-					argThat(BALANCE::equals),
-					argThat(s -> s.id().equals(tId)))).thenReturn(info.balance);
+			var relationship = BackingTokenRels.asTokenRel(id, tId);
+			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
 		}
 	}
 
