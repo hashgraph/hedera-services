@@ -27,7 +27,15 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
+/* Dissociates the provided account with the provided tokens. Must be signed by the provided Account's key.
+ If the provided account is not found, the transaction will resolve to INVALID_ACCOUNT_ID.
+ If the provided account has been deleted, the transaction will resolve to ACCOUNT_DELETED.
+ If one of the provided token is not found, the transaction will resolve to INVALID_TOKEN_REF.
+ If one of the provided token has been deleted, the transaction will resolve to TOKEN_WAS_DELETED.
+ If an association between the provided account and one of the tokens does not exist, the transaction will resolve to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.
+ On success, associations between the provided account and tokens are removed.
+ */
 message TokenDissociateTransactionBody {
-    AccountID account = 1;
-    repeated TokenRef tokens = 2;
+    AccountID account = 1; // The account to be dissociated with the provided tokens
+    repeated TokenRef tokens = 2; // The tokens to be dissociated with the provided account
 }
