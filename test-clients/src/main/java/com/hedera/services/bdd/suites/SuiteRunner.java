@@ -137,12 +137,12 @@ public class SuiteRunner {
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
 				new TokenTransactSpecs()));
-//		put("CiFileJob", aof(
-//				new FileRecordsSanityCheckSuite(),
-//				new VersionInfoSpec(),
-//				new ProtectedFilesUpdateSuite(),
-//				new PermissionSemanticsSpec(),
-//				new SysDelSysUndelSpec()));
+		put("CiFileJob", aof(
+				new FileRecordsSanityCheckSuite(),
+				new VersionInfoSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),

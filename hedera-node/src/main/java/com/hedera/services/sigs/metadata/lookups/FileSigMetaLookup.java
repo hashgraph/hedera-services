@@ -32,15 +32,5 @@ import com.hederahashgraph.api.proto.java.TopicID;
  * @author Michael Tinker
  */
 public interface FileSigMetaLookup {
-	/**
-	 * Returns metadata for the given file's signing activity; e.g., the key
-	 * representing the WACL for the file.
-	 *
-	 * @param file the file to recover signing metadata for.
-	 * @return the desired metadata.
-	 * @throws Exception if no appropriate metadata exists.
-	 */
-	FileSigningMetadata lookup(FileID file) throws Exception;
-
 	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
 }

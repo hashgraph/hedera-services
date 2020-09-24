@@ -52,11 +52,9 @@ public interface SigMetadataLookup {
 				: new SafeLookupResult<>(from(tokenStore.get(id)));
 	};
 
-	FileSigningMetadata lookup(FileID file) throws Exception;
 	ContractSigningMetadata lookup(ContractID contract) throws Exception;
 
-	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
-
+	SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id);
 	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
 	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenRef ref);
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);

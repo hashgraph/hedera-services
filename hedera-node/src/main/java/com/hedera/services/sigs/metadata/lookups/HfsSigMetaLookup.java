@@ -45,14 +45,6 @@ public class HfsSigMetaLookup implements FileSigMetaLookup {
 	}
 
 	@Override
-	public FileSigningMetadata lookup(FileID id) throws Exception {
-		if (!hfs.exists(id)) {
-			throw new InvalidFileIDException("Invalid file!", id);
-		}
-		return new FileSigningMetadata(hfs.getattr(id).getWacl());
-	}
-
-	@Override
 	public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
 		if (!hfs.exists(id)) {
 			return SafeLookupResult.failure(MISSING_FILE);

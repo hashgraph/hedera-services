@@ -135,11 +135,6 @@ public class HederaSigningOrderTest {
 		public static FileSigMetaLookup with(ThrowingFileLookup lookup) {
 			return new FileSigMetaLookup() {
 				@Override
-				public FileSigningMetadata lookup(FileID file) throws Exception {
-					return lookup.lookup(file);
-				}
-
-				@Override
 				public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
 					throw new UnsupportedOperationException();
 				}
@@ -149,11 +144,6 @@ public class HederaSigningOrderTest {
 				Function<FileID, SafeLookupResult<FileSigningMetadata>> fn
 		) {
 			return new FileSigMetaLookup() {
-				@Override
-				public FileSigningMetadata lookup(FileID file) throws Exception {
-					throw new UnsupportedOperationException();
-				}
-
 				@Override
 				public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
 					return fn.apply(id);
@@ -554,6 +544,11 @@ public class HederaSigningOrderTest {
 		// given:
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forMissingFile(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
