@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.TokenViewMergeable;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -35,9 +34,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleNode
-		implements FCMValue, MerkleLeaf, TokenViewMergeable<MerkleTokenRelStatus> {
-	static final int MERKLE_VERSION = 1;
+public class MerkleTokenRelStatus extends AbstractMerkleNode implements FCMValue, MerkleLeaf {
+	static final int RELEASE_090_VERSION = 1;
+
+	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
 	private long balance;
@@ -61,16 +61,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleNode
 		public FastCopyable deserialize(DataInputStream in) throws IOException {
 			throw new UnsupportedOperationException();
 		}
-	}
-
-	@Override
-	public void mergeTokenPropertiesFrom(MerkleTokenRelStatus viewSoFar) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public String readableTokenRelationships() {
-		throw new UnsupportedOperationException();
 	}
 
 	/* --- MerkleLeaf --- */

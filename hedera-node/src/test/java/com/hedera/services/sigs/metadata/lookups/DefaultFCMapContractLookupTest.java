@@ -37,7 +37,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.*;
-import static com.hedera.test.factories.accounts.MapValueFactory.*;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(JUnitPlatform.class)

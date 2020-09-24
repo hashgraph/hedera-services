@@ -179,7 +179,6 @@ class BackingTokenRelsTest {
 	@Test
 	public void irrelevantMethodsNotSupported() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.getTokenCopy(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.getUnsafeRef(null));
 		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}

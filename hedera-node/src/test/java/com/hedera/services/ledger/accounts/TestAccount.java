@@ -21,9 +21,8 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.TokenViewMergeable;
 
-public class TestAccount implements TokenViewMergeable<TestAccount> {
+public class TestAccount {
 	private static final long DEFAULT_TOKEN_THING = 123L;
 
 	public long value;
@@ -102,15 +101,5 @@ public class TestAccount implements TokenViewMergeable<TestAccount> {
 				.add("value", value)
 				.add("tokenThing", tokenThing)
 				.toString();
-	}
-
-	@Override
-	public void mergeTokenPropertiesFrom(TestAccount viewSoFar) {
-		this.tokenThing = viewSoFar.tokenThing;
-	}
-
-	@Override
-	public String readableTokenRelationships() {
-		return "OK(" + tokenThing + ")";
 	}
 }
