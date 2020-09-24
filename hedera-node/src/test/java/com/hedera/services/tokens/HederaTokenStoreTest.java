@@ -100,6 +100,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -560,6 +561,7 @@ class HederaTokenStoreTest {
 
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(0L);
 
 		// when:
 		var status = subject.dissociate(sponsor, List.of(miscRef));
@@ -570,6 +572,28 @@ class HederaTokenStoreTest {
 		verify(tokens).dissociateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).destroy(key);
+	}
+
+	@Test
+	public void dissociatingFailsIfTokenBalanceIsNonzero() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		var key = asTokenRel(sponsor, misc);
+
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		// and:
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(miscRef));
+
+		// expect:
+		assertEquals(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, status);
+		// and:
+		verify(tokens, never()).dissociateAll(Set.of(misc));
+		verify(hederaLedger, never()).setAssociatedTokens(sponsor, tokens);
+		verify(tokenRelsLedger, never()).destroy(key);
 	}
 
 	@Test
