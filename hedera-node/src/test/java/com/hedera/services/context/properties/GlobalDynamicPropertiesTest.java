@@ -68,6 +68,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(9, subject.maxContractStorageKb());
 		assertEquals(10, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(11, subject.balancesExportPeriodSecs());
+		assertTrue(subject.shouldExportBalances());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -98,6 +99,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(10, subject.maxContractStorageKb());
 		assertEquals(11, subject.ratesIntradayChangeLimitPercent());
 		assertEquals(12, subject.balancesExportPeriodSecs());
+		assertFalse(subject.shouldExportBalances());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -113,5 +115,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("contracts.maxStorageKb")).willReturn(i + 8);
 		given(properties.getIntProperty("rates.intradayChangeLimitPercent")).willReturn(i + 9);
 		given(properties.getIntProperty("balances.exportPeriodSecs")).willReturn(i + 10);
+		given(properties.getBooleanProperty("balances.exportEnabled")).willReturn((i + 11) % 2 == 0);
 	}
 }

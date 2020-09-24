@@ -69,6 +69,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.system.entityExpiry", 4102444800L),
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "data/accountBalances"),
+			entry("balances.exportEnabled", true),
 			entry("balances.exportPeriodSecs", 600),
 			entry("balances.nodeBalanceWarningThreshold", 0L),
 			entry("accounts.exchangeRatesAdmin", 57L),

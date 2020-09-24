@@ -96,4 +96,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int balancesExportPeriodSecs() {
 		return 600;
 	}
+
+	@Override
+	public boolean shouldExportBalances() {
+		return true;
+	}
 }

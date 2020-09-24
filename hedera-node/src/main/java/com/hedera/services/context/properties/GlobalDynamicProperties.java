@@ -40,6 +40,7 @@ public class GlobalDynamicProperties {
 	private long defaultContractReceiveThreshold;
 	private AccountID fundingAccount;
 	private boolean shouldCreateThresholdRecords;
+	private boolean shouldExportBalances;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -69,6 +70,7 @@ public class GlobalDynamicProperties {
 		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
 		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
 		balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
+		shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -121,5 +123,9 @@ public class GlobalDynamicProperties {
 
 	public int balancesExportPeriodSecs() {
 		return balancesExportPeriodSecs;
+	}
+
+	public boolean shouldExportBalances() {
+		return shouldExportBalances;
 	}
 }

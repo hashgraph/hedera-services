@@ -56,10 +56,13 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
 			entry("txReceiptTTL", "cache.records.ttl"),
-			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent")
+			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent"),
+			entry("accountBalanceExportPeriodMinutes", "balances.exportPeriodSecs"),
+			entry("accountBalanceExportEnabled", "balances.exportEnabled")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
-			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())
+			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
+			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
 			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
