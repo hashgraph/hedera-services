@@ -40,7 +40,9 @@ import org.apache.logging.log4j.Logger;
 import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FILE_REALM;
 import static com.hedera.services.legacy.logic.ApplicationConstants.DEFAULT_FILE_SHARD;
 import static com.hedera.services.legacy.utils.TransactionValidationUtils.transactionResponse;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 
 /**
  * Freeze Service Implementation
@@ -75,12 +77,18 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 				startMin < 0 || startMin > 59 || endMin < 0 || endMin > 59) {
 			return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
 		}
-		// Check if FileID for update feature is the allowed default FileID
-		if (body.hasUpdateFile()
-				&& (body.getUpdateFile().getFileNum() != ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM
-				|| body.getUpdateFile().getRealmNum() != DEFAULT_FILE_REALM
-				|| body.getUpdateFile().getShardNum() != DEFAULT_FILE_SHARD)) {
-			return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FILE_ID);
+		if (body.hasUpdateFile()) {
+			// Check if FileID for update feature is the allowed default FileID
+			if (body.getUpdateFile().getFileNum() != ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM
+					|| body.getUpdateFile().getRealmNum() != DEFAULT_FILE_REALM
+					|| body.getUpdateFile().getShardNum() != DEFAULT_FILE_SHARD){
+				return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FILE_ID);
+			}
+			// Check if file hash field is included
+			if (body.getFileHash() == null || body.getFileHash().isEmpty()) {
+				log.error("Missing file hash when update file ID is present");
+				return new TxnValidityAndFeeReq(INVALID_FREEZE_TRANSACTION_BODY);
+			}
 		}
 		log.debug("FreezeTransactionBody is valid: \n {} \n", () -> TextFormat.shortDebugString(body));
 		return new TxnValidityAndFeeReq(OK);

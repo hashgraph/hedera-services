@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.transactions.system;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -34,6 +36,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -51,6 +54,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	ZonedDateTime start, end;
 	private String fileID = null;
 	private String fileName = null;
+	private Optional<byte[]> fileHash = Optional.empty();
 	@Override
 	protected HapiFreeze self() {
 		return this;
@@ -92,6 +96,16 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		this.fileID = fileID;
 		return this;
 	}
+
+	public HapiFreeze setFileHash(byte[] data) {
+		fileHash = Optional.of(data);
+		return this;
+	}
+	public HapiFreeze setFileHash(String data) {
+		fileHash = Optional.of(data.getBytes());
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return Freeze;
@@ -117,6 +131,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 								FileID foundID = spec.registry().getFileId(fileName);
 								b.setUpdateFile(foundID);
 							}
+							fileHash.ifPresent(x -> b.setFileHash(ByteString.copyFrom(x)));
 						}
 				);
 		return b -> b.setFreeze(opBody);

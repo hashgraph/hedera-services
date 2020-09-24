@@ -2,6 +2,7 @@ package com.hedera.services.bdd.suites.freeze;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -15,12 +16,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
+import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
 import static junit.framework.TestCase.fail;
 
 public class UpdateFile150 extends HapiApiSuite {
@@ -49,23 +52,22 @@ public class UpdateFile150 extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				negativeTests(),
 				positiveTests()
-		);
+				);
 	}
 
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-				updateWithWrongFileID()
-		);
-	}
+
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-
+//				getUpdateFileInfo(),
+//				emptyUpdateFile(),
+//				updateWithWrongFileID()
+//				missingFileHash(),
+				verifyFileHash()
 		);
 	}
 
-	private byte [] createZipFileData() {
+	private byte[] createZipFileData() {
 		log.info("Creating zip file from " + uploadPath);
 		//create directory if uploadPath doesn't exist
 		if (!new File(uploadPath).exists()) {
@@ -107,7 +109,81 @@ public class UpdateFile150 extends HapiApiSuite {
 				).when(
 						freeze().setFileID("0.0.152")
 								.startingIn(60).seconds().andLasting(FREEZE_LAST_MINUTES).minutes()
-						.hasPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
+								.hasPrecheck(ResponseCodeEnum.INVALID_FILE_ID)
+				).then(
+				);
+	}
+
+	private HapiApiSpec getUpdateFileInfo() {
+		return defaultHapiSpec("getUpdateFileInfo")
+				.given(
+						withOpContext((spec, opLog) -> {
+							ByteString zeroBytes = ByteString.copyFrom(new byte[0]);
+							spec.registry().saveBytes("zeroBytes", zeroBytes);
+						})
+				).when(
+						//on start, 0.0.150 should already exist and has empty content
+						getFileInfo(fileIDString),
+						getFileContents(fileIDString)
+								.logging()
+								.logged()
+								.hasContents(spec -> spec.registry().getBytes("zeroBytes"))
+				).then(
+				);
+	}
+
+	private HapiApiSpec emptyUpdateFile() {
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		final byte[] hash = sha384Digest(new4k);
+		return defaultHapiSpec("emptyUpdateFile")
+				.given(
+						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
+								.startingIn(1)
+								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+						// check server log it should has error about empty file
+				).when(
+				).then(
+				);
+	}
+
+	/**
+	 * Not setting file hash filed should get INVALID_FREEZE_TRANSACTION_BODY error
+	 *
+	 * @return
+	 */
+	private HapiApiSpec missingFileHash() {
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		return defaultHapiSpec("missingFileHash")
+				.given(
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
+				).when(
+						// set freeze start time many hours later so freeze will begin during the test
+						freeze().setFileID(fileIDString)
+								.startingIn(1)
+								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+								.hasPrecheck(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY)
+				).then(
+				);
+	}
+
+	/**
+	 * Intentionally set the wrong hash
+	 */
+	private HapiApiSpec verifyFileHash() {
+		final byte[] notUsed = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		final byte[] hash = sha384Digest(notUsed);
+		return defaultHapiSpec("verifyFileHash")
+				.given(
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
+				).when(
+						// set freeze start time many hours later so freeze will begin during the test
+						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
+								.startingIn(1)
+								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+						// check server log it should has error about hash mismatch
 				).then(
 				);
 	}
