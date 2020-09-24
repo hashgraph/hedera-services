@@ -129,7 +129,7 @@ public class MerkleAccountPropertyTest {
 				.expiry(origExpiry)
 				.proxy(EntityId.ofNullableAccountId(origProxy))
 				.autoRenewPeriod(origAutoRenew)
-				.isDeleted(origIsDeleted)
+				.isAccountDeleted(origIsDeleted)
 				.memo(origMemo)
 				.isSmartContract(origIsContract)
 				.isReceiverSigRequired(origIsReceiverSigReq)

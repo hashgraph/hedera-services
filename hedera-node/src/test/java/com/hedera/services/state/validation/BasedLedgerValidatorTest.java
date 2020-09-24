@@ -142,7 +142,7 @@ class BasedLedgerValidatorTest {
 				.fundsReceivedRecordThreshold(123)
 				.isReceiverSigRequired(false)
 				.proxy(MISSING_ENTITY_ID)
-				.isDeleted(false)
+				.isAccountDeleted(false)
 				.expiry(1_234_567L)
 				.memo("")
 				.isSmartContract(false)

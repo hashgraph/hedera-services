@@ -120,7 +120,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 		ledger.adjustBalance(id, adjustment);
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.expiry(evmState.getExpirationTime())
-				.isDeleted(evmState.isDeleted());
+				.isAccountDeleted(evmState.isDeleted());
 		ledger.customize(id, customizer);
 	}
 

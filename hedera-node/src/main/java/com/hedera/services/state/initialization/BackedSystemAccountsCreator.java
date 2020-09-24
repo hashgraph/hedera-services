@@ -121,7 +121,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				.fundsReceivedRecordThreshold(amount)
 				.isReceiverSigRequired(false)
 				.proxy(MISSING_ENTITY_ID)
-				.isDeleted(false)
+				.isAccountDeleted(false)
 				.expiry(expiry)
 				.memo("")
 				.isSmartContract(false)

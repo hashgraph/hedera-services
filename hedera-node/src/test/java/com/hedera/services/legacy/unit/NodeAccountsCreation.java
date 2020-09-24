@@ -22,7 +22,6 @@ package com.hedera.services.legacy.unit;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -72,7 +71,7 @@ public class NodeAccountsCreation {
 				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
-				.isDeleted(false)
+				.isAccountDeleted(false)
 				.expiry(expiryTime)
 				.memo("")
 				.isSmartContract(false)
