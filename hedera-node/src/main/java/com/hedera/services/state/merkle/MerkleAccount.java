@@ -358,7 +358,7 @@ public class MerkleAccount extends AbstractMerkleInternal
 	}
 
 	public boolean isAccountDeleted() {
-		return state().isDeleted();
+		return state().isAccountDeleted();
 	}
 
 	public void setAccountDeleted(boolean deleted) {

@@ -114,7 +114,7 @@ public class ContextOptionValidator implements OptionValidator {
 		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
 
 		return Optional.ofNullable(merkleTopic)
-				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
+				.map(t -> t.isTopicDeleted() ? INVALID_TOPIC_ID : OK)
 				.orElse(INVALID_TOPIC_ID);
 	}
 

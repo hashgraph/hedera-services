@@ -62,7 +62,7 @@ public class DefaultFCMapContractLookupTest {
 	@Test
 	public void failsOnDeletedAccount() {
 		// given:
-		accounts = newAccounts().withAccount(id, newContract().deleted(true).get()).get();
+		accounts = newAccounts().withAccount(id, newContract().accountDeleted(true).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
 		// expect:

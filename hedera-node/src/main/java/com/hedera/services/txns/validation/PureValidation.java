@@ -58,7 +58,7 @@ public class PureValidation {
 		MerkleAccount account = accounts.get(MerkleEntityId.fromAccountId(id));
 
 		return Optional.ofNullable(account)
-				.map(v -> v.isDeleted()
+				.map(v -> v.isAccountDeleted()
 						? ACCOUNT_DELETED
 						: (v.isSmartContract() ? INVALID_ACCOUNT_ID : OK))
 				.orElse(INVALID_ACCOUNT_ID);
@@ -68,7 +68,7 @@ public class PureValidation {
 		MerkleAccount contract = contracts.get(fromContractId(cid));
 
 		return Optional.ofNullable(contract)
-				.map(v -> v.isDeleted()
+				.map(v -> v.isAccountDeleted()
 						? CONTRACT_DELETED
 						: (!v.isSmartContract() ? INVALID_CONTRACT_ID : OK))
 				.orElse(INVALID_CONTRACT_ID);

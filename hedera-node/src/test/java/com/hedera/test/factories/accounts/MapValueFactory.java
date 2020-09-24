@@ -45,7 +45,8 @@ public class MapValueFactory {
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
-	private Optional<Boolean> deleted = Optional.empty();
+	private Optional<Boolean> topicDeleted = Optional.empty();
+	private Optional<Boolean> accountDeleted = Optional.empty();
 	private Optional<Long> expirationTime = Optional.empty();
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
@@ -57,7 +58,7 @@ public class MapValueFactory {
 		memo.ifPresent(s -> value.setMemo(s));
 		proxy.ifPresent(p -> value.setProxy(EntityId.ofNullableAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
-		deleted.ifPresent(b -> value.setAccountDeleted(b));
+		accountDeleted.ifPresent(b -> value.setAccountDeleted(b));
 		accountKeys.ifPresent(k -> value.setKey(k));
 		expirationTime.ifPresent(l -> value.setExpiry(l));
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
@@ -125,8 +126,8 @@ public class MapValueFactory {
 		autoRenewPeriod = Optional.of(p);
 		return this;
 	}
-	public MapValueFactory deleted(boolean b) {
-		deleted = Optional.of(b);
+	public MapValueFactory accountDeleted(boolean b) {
+		accountDeleted = Optional.of(b);
 		return this;
 	}
 	public MapValueFactory expirationTime(long l) {
