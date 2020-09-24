@@ -124,7 +124,7 @@ class MerkleTopicTest {
 				"MerkleTopic{"
 						+ "memo=First memo, "
 						+ "expiry=1234567.0, "
-						+ "deleted=false, "
+						+ "topicDeleted=false, "
 						+ "adminKey=<N/A>, "
 						+ "submitKey=<N/A>, "
 						+ "runningHash=<N/A>, "
@@ -137,7 +137,7 @@ class MerkleTopicTest {
 				"MerkleTopic{" +
 						"memo=Second memo, " +
 						"expiry=2234567.1, " +
-						"deleted=false, " +
+						"topicDeleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[1]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[1]) + ", " +
 						"runningHash=3c8e1604b2cd20068f02976fa10217491561cc864b7bff28451e1f1a0a8c58c02df56f60562f129e845e0ba16e3420eb, " +
@@ -150,7 +150,7 @@ class MerkleTopicTest {
 				"MerkleTopic{" +
 						"memo=Third memo, " +
 						"expiry=3234567.2, " +
-						"deleted=false, " +
+						"topicDeleted=false, " +
 						"adminKey=" + MiscUtils.describe(adminKeys[2]) + ", " +
 						"submitKey=" + MiscUtils.describe(submitKeys[2]) + ", " +
 						"runningHash=a19f77d351424204e3eeec1bb42bcdc728e521483bb99103dc7fa7c527db0c14aeefe4b0a8a7d0924b2f2c4a1d237bc5, " +
