@@ -26,7 +26,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -55,7 +54,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -819,13 +817,5 @@ public class HederaTokenStore implements TokenStore {
 		return accountsLedger.exists(aId)
 				? (hederaLedger.isDeleted(aId) ? ACCOUNT_DELETED : OK)
 				: INVALID_ACCOUNT_ID;
-	}
-
-	private boolean unsaturated(MerkleAccount account) {
-		return account.numTokenRelationships() < properties.maxTokensPerAccount();
-	}
-
-	private boolean saturated(MerkleAccount account) {
-		return account.numTokenRelationships() >= properties.maxTokensPerAccount();
 	}
 }

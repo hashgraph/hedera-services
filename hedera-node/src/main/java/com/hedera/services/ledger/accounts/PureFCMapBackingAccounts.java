@@ -39,11 +39,6 @@ public class PureFCMapBackingAccounts implements BackingStore<AccountID, MerkleA
 	}
 
 	@Override
-	public MerkleAccount getTokenCopy(AccountID id) {
-		return getRef(id).tokenCopy();
-	}
-
-	@Override
 	public void flushMutableRefs() { }
 
 	@Override

@@ -20,35 +20,43 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hedera.services.ledger.properties.TokenScopedPropertyValue;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.tokens.TokenScope;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
+import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.ledger.properties.TestAccountProperty.*;
-import com.hedera.services.exceptions.MissingAccountException;
-import org.mockito.InOrder;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.verifyNoMoreInteractions;
+import static org.mockito.BDDMockito.willThrow;
 
 @RunWith(JUnitPlatform.class)
 public class TransactionalLedgerTest {
@@ -70,106 +78,9 @@ public class TransactionalLedgerTest {
 		backingAccounts = mock(BackingStore.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
-		given(backingAccounts.getTokenCopy(1L)).willReturn(account1TokenCopy);
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
-	}
-
-	@Test
-	public void markForMergeEnsuresPendingChange() {
-		// when:
-		subject.markForMerge(1L);
-
-		// then:
-		assertTrue(subject.changes.containsKey(1L));
-	}
-
-	@Test
-	public void getsTokenScopedPropertyFromNormalRefIfNoDetachedCopy() {
-		// expect:
-		assertEquals(1L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
-		// and:
-		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void clearsDetachedCopiesOnCommit() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-		// and:
-		subject.commit();
-
-		// then:
-		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void clearsDetachedCopiesOnRollback() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-		// and:
-		subject.rollback();
-
-		// then:
-		assertTrue(subject.tokenRefs.isEmpty());
-	}
-
-	@Test
-	public void gettingMergesDetachedTokenViews() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-		// and:
-		var newAccount = subject.get(1L);
-
-		// then:
-		assertEquals(668L, newAccount.tokenThing);
-	}
-
-	@Test
-	public void settingTokenPropertyEnsuresPendingChange() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-
-		// then:
-		assertTrue(subject.changes.containsKey(1L));
-	}
-
-	@Test
-	public void settingTokenPropertyCreatesDetachedCopy() {
-		// given:
-		subject.begin();
-		// and:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-
-		// when:
-		subject.set(1L, TOKEN, newSv);
-
-		// then:
-		assertTrue(subject.tokenRefs.containsKey(1L));
-		assertEquals(668L, subject.tokenRefs.get(1L).tokenThing);
-		// and:
-		assertEquals(2L, subject.get(1L, TOKEN, TokenScope.idScopeOf(tid)));
 	}
 
 	@Test
@@ -349,12 +260,6 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnGettingMissingScopedProperty() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, TOKEN, TokenScope.idScopeOf(tid)));
-	}
-
-	@Test
 	public void throwsOnCreationWithExistingAccountId() {
 		// given:
 		subject.begin();
@@ -503,29 +408,6 @@ public class TransactionalLedgerTest {
 		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false, 667L));
 		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
 		verify(backingAccounts).remove(3L);
-	}
-
-	@Test
-	public void describesChangesAsExpected() {
-		// setup:
-		var newSv = new TokenScopedPropertyValue(tid, token, 2L);
-		var otherNewSv = new TokenScopedPropertyValue(tid, token, 34L);
-
-		// given:
-		subject.begin();
-		subject.set(1L, OBJ, things[0]);
-		subject.create(2L);
-		subject.set(2L, OBJ, things[2]);
-		subject.set(2L, LONG, 2L);
-		subject.set(1L, TOKEN, newSv);
-		subject.create(3L);
-		subject.set(3L, TOKEN, otherNewSv);
-		// and:
-		String expectedDescription = "{1: [OBJ -> a, TOKENS -> OK(668)], *NEW* 2: [LONG -> 2, OBJ -> c], " +
-				"*NEW* 3: [TOKENS -> OK(700)]}";
-
-		// expect:
-		assertEquals(expectedDescription, subject.changeSetSoFar());
 	}
 
 	@Test

@@ -51,8 +51,8 @@ import static org.mockito.Mockito.mock;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.*;
-import static com.hedera.test.factories.accounts.MapValueFactory.newAccount;
-import static com.hedera.test.factories.accounts.MapValueFactory.newContract;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
 public interface TxnHandlingScenario {
