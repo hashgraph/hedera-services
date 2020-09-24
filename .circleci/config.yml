@@ -2855,10 +2855,10 @@ jobs:
       - run-eet-suites:
           dsl-args: "MultipleSelfDestructsAreSafe"
       - postgres-get-counts
-      - postgres-verify-counts:
-          expected-difference: 3
       - run-eet-suites:
           dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+      - postgres-verify-counts:
+          expected-difference: 3
       - run-eet-suites:
           dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
       - run-eet-suites:
