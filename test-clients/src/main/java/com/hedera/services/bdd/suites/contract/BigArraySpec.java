@@ -31,7 +31,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -62,42 +64,45 @@ public class BigArraySpec extends HapiApiSuite {
 	}
 
 	HapiApiSpec bigArray() {
-		var MAX_CONTRACT_STORAGE_ALLOWED = 1024;
+		var MAX_CONTRACT_STORAGE_ALLOWED = 1025;
 
 		return HapiApiSpec.defaultHapiSpec("BigArray")
 				.given(
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
 								.overridingProps(Map.of(
 										"contracts.maxStorageKb", "" + MAX_CONTRACT_STORAGE_ALLOWED
 								))
-//						TxnVerbs.fileCreate("bigArrayContractFile")
-//								.path(PATH_TO_BIG_ARRAY_BYTECODE),
-//						TxnVerbs.contractCreate("bigArrayContract")
-//								.bytec ode("bigArrayContractFile")
+								.payingWith(GENESIS),
+						TxnVerbs.fileCreate("bigArrayContractFile")
+								.path(PATH_TO_BIG_ARRAY_BYTECODE),
+						TxnVerbs.contractCreate("bigArrayContract")
+								.bytecode("bigArrayContractFile")
 				)
 				.when(
-//						withOpContext((spec, opLog) -> {
-//							long kbPerStep = 16;
-//
-//							for (int sizeNow = 0; sizeNow <= MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += kbPerStep) {
-//								var subOp1 = contractCall(
-//										"bigArrayContract", BA_GROWTO_ABI, sizeNow);
-//								CustomSpecAssert.allRunFor(spec, subOp1);
-//							}
-//						})
+						withOpContext((spec, opLog) -> {
+							int kbPerStep = 16;
+
+							for (int sizeNow = kbPerStep; sizeNow < MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += kbPerStep) {
+								var subOp1 = contractCall(
+										"bigArrayContract", BA_GROWTO_ABI, sizeNow)
+										.gas(300_000L)
+										.logged();
+								CustomSpecAssert.allRunFor(spec, subOp1);
+							}
+						})
 				)
 				.then(
-//						withOpContext((spec, opLog) -> {
-//							long numberOfIterations = 10;
-//
-//							for (int i = 0; i < numberOfIterations; i++) {
-//								var subOp1 = contractCall(
-//										"bigArrayContract", BA_CHANGEARRAY_ABI,
-//										ThreadLocalRandom.current().nextInt(1000)).logged();
-//								CustomSpecAssert.allRunFor(spec, subOp1);
-//							}
-//						})
+						withOpContext((spec, opLog) -> {
+							long numberOfIterations = 10;
+
+							for (int i = 0; i < numberOfIterations; i++) {
+								var subOp1 = contractCall(
+										"bigArrayContract", BA_CHANGEARRAY_ABI,
+										ThreadLocalRandom.current().nextInt(1000))
+										.logged();
+								CustomSpecAssert.allRunFor(spec, subOp1);
+							}
+						})
 				);
 	}
 }
