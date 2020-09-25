@@ -545,29 +545,14 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void isMutableOnlyIfBothFcqsAreMutable1() {
-		given(records.isImmutable()).willReturn(false);
-		given(payerRecords.isImmutable()).willReturn(true);
+	public void isMutableAfterCopy() {
+		subject.copy();
 
-		// expect:
 		assertTrue(subject.isImmutable());
 	}
 
 	@Test
-	public void isMutableOnlyIfBothFcqsAreMutable2() {
-		given(records.isImmutable()).willReturn(true);
-		given(payerRecords.isImmutable()).willReturn(false);
-
-		// expect:
-		assertTrue(subject.isImmutable());
-	}
-
-	@Test
-	public void isMutableOnlyIfBothFcqsAreMutable3() {
-		given(records.isImmutable()).willReturn(false);
-		given(payerRecords.isImmutable()).willReturn(false);
-
-		// expect:
+	public void originalIsMutable() {
 		assertFalse(subject.isImmutable());
 	}
 
