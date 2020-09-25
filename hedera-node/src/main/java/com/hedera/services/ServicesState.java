@@ -241,20 +241,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	@Override
-	protected synchronized void onDelete() {
-		super.onDelete();
-		if (storage() == null) {
-			return;
-		}
-
-		storage().delete();
-		accounts().delete();
-		topics().delete();
-		tokens().delete();
-		tokenAssociations().delete();
-	}
-
-	@Override
 	@Deprecated
 	public void copyFrom(SerializableDataInputStream in) throws IOException {
 		log.info("Restoring context of Services node {} from legacy (Platform v0.6.x) state...", nodeId);
