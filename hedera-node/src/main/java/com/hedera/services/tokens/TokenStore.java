@@ -56,6 +56,7 @@ public interface TokenStore {
 	boolean exists(TokenID id);
 	boolean symbolExists(String symbol);
 	boolean nameExists(String name);
+	boolean isKnownTreasury(AccountID id);
 	TokenID lookup(String symbol);
 	MerkleToken get(TokenID id);
 
@@ -94,7 +95,7 @@ public interface TokenStore {
 
 		var token = get(id);
 		if (token.adminKey().isEmpty()) {
-			return TOKEN_IS_IMMUTABlE;
+			return TOKEN_IS_IMMUTABLE;
 		}
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;

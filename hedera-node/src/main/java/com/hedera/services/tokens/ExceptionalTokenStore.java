@@ -72,6 +72,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean isKnownTreasury(AccountID aId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		throw new UnsupportedOperationException();
 	}

@@ -96,7 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -183,6 +183,7 @@ class HederaTokenStoreTest {
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -306,7 +307,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.delete(miscRef);
 
 		// then:
-		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
@@ -395,6 +396,8 @@ class HederaTokenStoreTest {
 		given(bToken.symbol()).willReturn("pending");
 		given(aToken.name()).willReturn("name1");
 		given(bToken.name()).willReturn("name2");
+		given(aToken.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		given(bToken.treasury()).willReturn(EntityId.ofNullableAccountId(newTreasury));
 
 		// when:
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
@@ -407,6 +410,10 @@ class HederaTokenStoreTest {
 		assertEquals(2, subject.nameKeyedIds.size());
 		assertTrue(subject.nameExists("name1"));
 		assertTrue(subject.nameExists("name2"));
+
+		assertEquals(2, subject.knownTreasuries.size());
+		assertTrue(subject.isKnownTreasury(EntityId.ofNullableAccountId(treasury).toGrpcAccountId()));
+		assertTrue(subject.isKnownTreasury(EntityId.ofNullableAccountId(newTreasury).toGrpcAccountId()));
 	}
 
 	@Test
@@ -812,7 +819,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.update(op, thisSecond);
 
 		// then:
-		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
@@ -1032,6 +1039,7 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
 		subject.nameKeyedIds.put(name, misc);
+		subject.addKnownTreasury(treasury, misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1053,6 +1061,7 @@ class HederaTokenStoreTest {
 	public void updateHappyPathWorksForEverythingWithNewExpiry() {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
+		subject.addKnownTreasury(treasury, misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1085,6 +1094,8 @@ class HederaTokenStoreTest {
 	public void updateHappyPathWorksWithNewAutoRenewAccount() {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
+		subject.nameKeyedIds.put(name, misc);
+		subject.addKnownTreasury(treasury, misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1584,6 +1595,7 @@ class HederaTokenStoreTest {
 		// and:
 		assertTrue(subject.symbolKeyedIds.containsKey(symbol));
 		assertTrue(subject.nameKeyedIds.containsKey(name));
+		assertTrue(subject.isKnownTreasury(treasury));
 		assertEquals(created, subject.symbolKeyedIds.get(symbol));
 		assertEquals(created, subject.nameKeyedIds.get(name));
 	}
