@@ -143,28 +143,13 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public FileSigningMetadata lookup(FileID file) throws Exception {
-		return fileSigMetaLookup.lookup(file);
-	}
-
-	@Override
-	public AccountSigningMetadata lookup(AccountID account) throws Exception {
-		return accountSigMetaLookup.lookup(account);
-	}
-
-	@Override
 	public ContractSigningMetadata lookup(ContractID contract) throws Exception {
 		return contractSigMetaLookup.lookup(contract);
 	}
 
 	@Override
-	public TopicSigningMetadata lookup(TopicID topic) throws Exception {
-		return topicSigMetaLookup.lookup(topic);
-	}
-
-	@Override
-	public SafeLookupResult<FileSigningMetadata> safeLookup(FileID id) {
-		throw new AssertionError("Not implemented");
+	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id) {
+		return fileSigMetaLookup.safeLookup(id);
 	}
 
 	@Override

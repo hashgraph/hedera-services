@@ -60,10 +60,10 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						deletionValidatesRef(),
 						deletionValidatesMissingAdminKey(),
 						deletionWorksAsExpected(),
 						deletionValidatesAlreadyDeletedToken(),
+						deletionValidatesRef(),
 				}
 		);
 	}
@@ -160,7 +160,11 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						tokenDelete("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_TOKEN_REF)
+								.hasKnownStatus(INVALID_TOKEN_ID),
+						tokenDelete("0.0.0")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
 	}
 

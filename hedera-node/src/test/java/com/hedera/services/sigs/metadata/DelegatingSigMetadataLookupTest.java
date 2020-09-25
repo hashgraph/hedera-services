@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,6 +69,21 @@ class DelegatingSigMetadataLookupTest {
 		tokenStore = mock(TokenStore.class);
 
 		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
+	}
+
+	@Test
+	public void returnsExpectedFailIfExplicitlyMissing() {
+		given(tokenStore.resolve(ref)).willReturn(TokenID.newBuilder()
+				.setShardNum(0L)
+				.setRealmNum(0L)
+				.setTokenNum(0L)
+				.build());
+
+		// when:
+		var result = subject.apply(ref);
+
+		// then:
+		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
 	}
 
 	@Test
