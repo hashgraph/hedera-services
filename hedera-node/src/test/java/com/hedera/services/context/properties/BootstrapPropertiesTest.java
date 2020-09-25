@@ -68,7 +68,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.rates.nextExpiry", 4102444800L),
 			entry("bootstrap.system.entityExpiry", 4102444800L),
 			entry("accounts.addressBookAdmin", 55L),
-			entry("balances.exportDir.path", "data/accountBalances"),
+			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
 			entry("balances.exportEnabled", true),
 			entry("balances.exportPeriodSecs", 600),
 			entry("balances.nodeBalanceWarningThreshold", 0L),

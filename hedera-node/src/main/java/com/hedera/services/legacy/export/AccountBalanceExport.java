@@ -148,8 +148,7 @@ public class AccountBalanceExport {
       MerkleEntityId currKey = item.getKey();
       MerkleAccount currMv = item.getValue();
       totalBalance += currMv.getBalance();
-      exAccObj = new AccountBalance(
-              currKey.getShard(), currKey.getRealm(), currKey.getNum(), currMv.getBalance());
+      exAccObj = new AccountBalance(currKey.getShard(), currKey.getRealm(), currKey.getNum(), currMv.getBalance());
       acctObjList.add(exAccObj);
       //check if the account is a node account
       long nodeId = nodeAccounts.getOrDefault(currKey.toAbbrevString(), -1l);
