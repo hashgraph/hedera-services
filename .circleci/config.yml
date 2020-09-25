@@ -917,11 +917,11 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "15 17,4 * * *"
+          cron: "0 21,0 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-basic-suiterunner-tests:
@@ -937,11 +937,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "30 17,4 * * *"
+          cron: "15 21,0 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -957,11 +957,11 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "45 17,4 * * *"
+          cron: "30 21,0 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -977,11 +977,11 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "0 18,5 * * *"
+          cron: "0 22,1 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-zero-stake-regression:
@@ -998,11 +998,11 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "15 18,5 * * *"
+              cron: "15 22,1 * * *"
               filters:
                 branches:
                   only:
-                    - master
+                    - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1041,11 +1041,11 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "30 18,5 * * *"
+          cron: "30 22,1 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1081,11 +1081,11 @@ workflows:
   nightly-simulate-network-outage:
     triggers:
         - schedule:
-            cron: "0 0,12 * * *"
+            cron: "0 23,2 * * *"
             filters:
               branches:
                 only:
-                  - master
+                  - 554-M-Reconnect-Functionality
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1145,11 +1145,11 @@ workflows:
   feature-update-regression:
     triggers:
         - schedule:
-            cron: "0 8 * * *"
+            cron: "0 23 * * *"
             filters:
               branches:
                 only:
-                  - master
+                  - 554-M-Reconnect-Functionality
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1433,11 +1433,11 @@ workflows:
   nightly-freeze-restart:
     triggers:
       - schedule:
-          cron: "0 5 * * *"
+          cron: "0 23 * * *"
           filters:
             branches:
               only:
-                - master
+                - 554-M-Reconnect-Functionality
     jobs:
       - fast-build-artifact:
           context: Slack
