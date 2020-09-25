@@ -393,11 +393,11 @@ class ServicesStateTest {
 		subject.delete();
 
 		// then:
-		verify(storage).delete();
-		verify(accounts).delete();
-		verify(topics).delete();
-		verify(tokens).delete();
-		verify(tokenAssociations).delete();
+		verify(storage).decrementReferenceCount();
+		verify(accounts).decrementReferenceCount();
+		verify(topics).decrementReferenceCount();
+		verify(tokens).decrementReferenceCount();
+		verify(tokenAssociations).decrementReferenceCount();
 	}
 
 	@Test
