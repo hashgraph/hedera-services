@@ -37,6 +37,6 @@ import "BasicTypes.proto";
  Once executed the Account is marked as KYC Revoked
  */
 message TokenRevokeKycTransactionBody {
-    TokenRef token = 1; // The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID
+    TokenID token = 1; // The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID
     AccountID account = 2; // The account to be KYC Revoked
 }

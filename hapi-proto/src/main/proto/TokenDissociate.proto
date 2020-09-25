@@ -38,5 +38,5 @@ import "BasicTypes.proto";
  */
 message TokenDissociateTransactionBody {
     AccountID account = 1; // The account to be dissociated with the provided tokens
-    repeated TokenRef tokens = 2; // The tokens to be dissociated with the provided account
+    repeated TokenID tokens = 2; // The tokens to be dissociated with the provided account
 }

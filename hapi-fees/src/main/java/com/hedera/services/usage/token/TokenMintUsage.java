@@ -42,8 +42,7 @@ public class TokenMintUsage extends TokenUsage<TokenMintUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenMint();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAmountBpt();
 		addTransfersRecordRb(1, 1);
 		return usageEstimator.get();

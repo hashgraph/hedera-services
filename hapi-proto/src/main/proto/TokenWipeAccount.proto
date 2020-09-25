@@ -41,7 +41,7 @@ import "BasicTypes.proto";
  Token A has 2 decimals. In order to wipe 100 tokens from account, one must provide amount of 10000. In order to wipe 100.55 tokens, one must provide amount of 10055.
  */
 message TokenWipeAccountTransactionBody {
-    TokenRef token = 1; // The token for which the account will be wiped. If token does not exist, transaction results in INVALID_TOKEN_ID
+    TokenID token = 1; // The token for which the account will be wiped. If token does not exist, transaction results in INVALID_TOKEN_ID
     AccountID account = 2; // The account to be wiped
     uint64 amount = 3; // The amount of tokens to wipe from the specified account. Amount must be a positive non-zero number in the lowest denomination possible, not bigger than the token balance of the account (0; balance]
 }

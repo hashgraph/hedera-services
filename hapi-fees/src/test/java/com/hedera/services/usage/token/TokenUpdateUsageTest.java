@@ -28,6 +28,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -70,6 +71,7 @@ public class TokenUpdateUsageTest {
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID autoRenewAccount = IdUtils.asAccount("3.2.1");
+	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TokenUpdateTransactionBody op;
 	TransactionBody txn;
@@ -94,7 +96,7 @@ public class TokenUpdateUsageTest {
 		// setup:
 		var curRb = curSize(A_KEY_LIST);
 		var newRb = newRb();
-		var expectedBytes = newRb + 2 * BASIC_ENTITY_ID_SIZE + 8 + oldSymbol.length();
+		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
 
 		givenOp();
 		// and:
@@ -117,7 +119,7 @@ public class TokenUpdateUsageTest {
 	public void createsExpectedDeltaForNewSmallerKeys() {
 		// setup:
 		var newRb = newRb();
-		var expectedBytes = newRb + 2 * BASIC_ENTITY_ID_SIZE + 8 + oldSymbol.length();
+		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
 
 		givenOp();
 		// and:
@@ -138,7 +140,7 @@ public class TokenUpdateUsageTest {
 		// setup:
 		var curRb = curSize(A_KEY_LIST) + BASIC_ENTITY_ID_SIZE;
 		var newRb = newRb();
-		var expectedBytes = newRb + 2 * BASIC_ENTITY_ID_SIZE + 8 + oldSymbol.length();
+		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
 
 		givenOp();
 		// and:
@@ -163,7 +165,7 @@ public class TokenUpdateUsageTest {
 		// setup:
 		var curRb = curSize(A_KEY_LIST) + BASIC_ENTITY_ID_SIZE;
 		var newRb = newRb() - BASIC_ENTITY_ID_SIZE;
-		var expectedBytes = newRb + 2 * BASIC_ENTITY_ID_SIZE + 8 + oldSymbol.length();
+		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
 
 		givenOp();
 		op = op.toBuilder().setAutoRenewAccount(AccountID.getDefaultInstance()).build();
@@ -222,7 +224,7 @@ public class TokenUpdateUsageTest {
 
 	private void givenOp() {
 		op = TokenUpdateTransactionBody.newBuilder()
-				.setToken(IdUtils.asSymbolRef(oldSymbol))
+				.setToken(id)
 				.setExpiry(expiry)
 				.setTreasury(treasury)
 				.setAutoRenewAccount(autoRenewAccount)

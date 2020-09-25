@@ -38,5 +38,5 @@ import "BasicTypes.proto";
  */
 message TokenAssociateTransactionBody {
     AccountID account = 1; // The account to be associated with the provided tokens
-    repeated TokenRef tokens = 2; // The tokens to be associated with the provided account
+    repeated TokenID tokens = 2; // The tokens to be associated with the provided account
 }

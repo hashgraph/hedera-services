@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,9 +172,9 @@ public class StateView {
 				: Optional.of(tokenStore.get(id));
 	}
 
-	public Optional<TokenInfo> infoForToken(TokenRef ref) {
+	public Optional<TokenInfo> infoForToken(TokenID tokenID) {
 		try {
-			var id = tokenStore.resolve(ref);
+			var id = tokenStore.resolve(tokenID);
 			if (id == MISSING_TOKEN) {
 				return Optional.empty();
 			}
@@ -219,7 +218,7 @@ public class StateView {
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",
-					ref.hasTokenId() ? readableId(ref.getTokenId()) : ref.getSymbol(),
+					readableId(tokenID),
 					unexpected);
 			return Optional.empty();
 		}
@@ -233,8 +232,8 @@ public class StateView {
 		return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
 	}
 
-	public boolean tokenExists(TokenRef ref) {
-		return tokenStore.resolve(ref) != MISSING_TOKEN;
+	public boolean tokenExists(TokenID id) {
+		return tokenStore.resolve(id) != MISSING_TOKEN;
 	}
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {

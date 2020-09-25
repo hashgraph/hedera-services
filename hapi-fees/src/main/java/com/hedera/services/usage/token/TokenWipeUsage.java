@@ -42,8 +42,7 @@ public class TokenWipeUsage extends TokenUsage<TokenWipeUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenWipe();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAmountBpt();
 		addAccountBpt();
 		addTransfersRecordRb(1, 1);

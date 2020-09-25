@@ -26,24 +26,12 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
 import java.util.stream.Stream;
 
 public class IdUtils {
-	public static TokenRef refWith(String symbol) {
-		return TokenRef.newBuilder()
-				.setSymbol(symbol)
-				.build();
-	}
-
-	public static TokenRef refWith(TokenID id) {
-		return TokenRef.newBuilder()
-				.setTokenId(id)
-				.build();
-	}
 
 	public static TokenID tokenWith(long num) {
 		return TokenID.newBuilder()
@@ -91,14 +79,6 @@ public class IdUtils {
 				.setRealmNum(nativeParts[1])
 				.setFileNum(nativeParts[2])
 				.build();
-	}
-
-	public static TokenRef asIdRef(String v) {
-		return TokenRef.newBuilder().setTokenId(asToken(v)).build();
-	}
-
-	public static TokenRef asIdRef(TokenID id) {
-		return TokenRef.newBuilder().setTokenId(id).build();
 	}
 
 	public static TokenID asToken(String v) {
