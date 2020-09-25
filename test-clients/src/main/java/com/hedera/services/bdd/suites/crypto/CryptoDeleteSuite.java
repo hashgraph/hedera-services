@@ -82,7 +82,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoCreate("transferAccount").balance(0L)
 				).when(
 						cryptoDelete("toBeDeleted")
-								.transfer("transferAccount").via("deleteTxn")
+								.transfer("transferAccount")
 				).then(
 						getAccountInfo("transferAccount")
 								.has(accountWith().balance(B)),
@@ -130,7 +130,6 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				.then(
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
-								.via("deleteTxn")
 								.hasKnownStatus(ACCOUNT_DELETED)
 				);
 	}
@@ -171,7 +170,6 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				.then(
 						cryptoDelete("treasury")
 								.transfer("transferAccount")
-								.via("deleteTxn")
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
 						);
 	}
