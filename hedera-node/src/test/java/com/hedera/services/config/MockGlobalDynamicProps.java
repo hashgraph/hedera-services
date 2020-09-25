@@ -96,4 +96,19 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int balancesExportPeriodSecs() {
 		return 600;
 	}
+
+	@Override
+	public boolean shouldExportBalances() {
+		return true;
+	}
+
+	@Override
+	public long nodeBalanceWarningThreshold() {
+		return 123L;
+	}
+
+	@Override
+	public String pathToBalancesExportDir() {
+		return "data/accountBalances";
+	}
 }

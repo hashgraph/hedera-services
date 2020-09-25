@@ -56,10 +56,15 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
 			entry("txReceiptTTL", "cache.records.ttl"),
-			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent")
+			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent"),
+			entry("accountBalanceExportPeriodMinutes", "balances.exportPeriodSecs"),
+			entry("accountBalanceExportEnabled", "balances.exportEnabled"),
+			entry("nodeAccountBalanceValidity", "balances.nodeBalanceWarningThreshold"),
+			entry("accountBalanceExportDir", "balances.exportDir.path")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
-			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())
+			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
+			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
 			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
@@ -74,8 +79,8 @@ public class ScreenedSysFileProps implements PropertySource {
 				.filter(this::isValidGlobalDynamic)
 				.filter(this::hasParseableValue)
 				.filter(this::isUsableGlobalDynamic)
-				.collect(Collectors.toMap(Setting::getName, this::asTypedValue));
-		var msg = "Global/dynamic properties overridden in system file are:\n " + GLOBAL_DYNAMIC_PROPS.stream()
+				.collect(Collectors.toMap(Setting::getName, this::asTypedValue, (a, b) -> b));
+		var msg = "Global/dynamic properties overridden in system file are:\n  " + GLOBAL_DYNAMIC_PROPS.stream()
 				.filter(from121::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, from121.get(name)))

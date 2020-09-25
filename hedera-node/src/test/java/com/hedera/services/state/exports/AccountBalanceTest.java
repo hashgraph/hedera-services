@@ -30,15 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @RunWith(JUnitPlatform.class)
 class AccountBalanceTest {
 	@Test
-	public void compareAppliesOnlyToNum() {
+	public void comparesAllIdParts() {
 		// setup:
 		var a = new AccountBalance(5, 4, 3, 5);
 		var b = new AccountBalance(15, 20, 1, 25);
-		var c = new AccountBalance(10, 20, 4, 25);
-		var d = new AccountBalance(10, 20, 3, 25);
+		var c = new AccountBalance(5, 20, 4, 25);
+		var d = new AccountBalance(5, 4, 3, 25);
 
 		// expect:
-		assertTrue(a.compareTo(b) > 0);
+		assertTrue(a.compareTo(b) < 0);
 		assertTrue(a.compareTo(c) < 0);
 		assertTrue(a.compareTo(d) == 0);
 	}

@@ -103,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static java.util.stream.IntStream.range;
 
 /**
@@ -204,9 +205,14 @@ public class HederaTokenStore implements TokenStore {
 	public ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens) {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
-			for (TokenID id : tokenIds) {
-				if (!accountTokens.includes(id)) {
+			for (TokenID tId : tokenIds) {
+				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+				}
+				var relationship = asTokenRel(aId, tId);
+				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+				if (balance > 0) {
+					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 				}
 			}
 			accountTokens.dissociateAll(new HashSet<>(tokenIds));

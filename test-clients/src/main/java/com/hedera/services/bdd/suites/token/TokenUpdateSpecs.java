@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -62,10 +63,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						nameChanges(),
-						validatesMissingRef(),
 						keysChange(),
-						treasuryEvolves(),
 						validatesAlreadyDeletedToken(),
+						validatesMissingRef(),
+						treasuryEvolves(),
 				}
 		);
 	}
@@ -112,7 +113,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_TOKEN_REF)
+								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
 	}
 
@@ -199,10 +200,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when(
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
-						tokenUpdate("tbu")
-								.signedBy(GENESIS, "adminKey")
-								.treasury("newTreasury")
-								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenAssociate("newTreasury", "tbu"),
 						tokenUpdate("tbu")
 								.treasury("newTreasury")
 								.via("treasuryUpdateTxn")

@@ -27,7 +27,5 @@ import com.hederahashgraph.api.proto.java.TopicID;
  * Defines a simple type that is able to recover metadata about signing activity associated with a given HCS topic.
  */
 public interface TopicSigMetaLookup {
-	TopicSigningMetadata lookup(TopicID topic) throws Exception;
-
 	SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id);
 }

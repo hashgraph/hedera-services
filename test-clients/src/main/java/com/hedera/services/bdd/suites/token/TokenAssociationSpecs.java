@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,11 +38,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -64,8 +69,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						treasuryAssociationIsAutomatic(),
-						associateHasExpectedSemantics(),
+//						treasuryAssociationIsAutomatic(),
+//						associateHasExpectedSemantics(),
 						dissociateHasExpectedSemantics(),
 				}
 		);
@@ -83,6 +88,16 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN)
 								.payingWith("payer"),
+						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
+						tokenTransact(
+								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.between(TOKEN_TREASURY, "misc")),
+						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("misc")
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						tokenTransact(
+								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.between("misc", TOKEN_TREASURY)),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.payingWith("misc")
 				).then(

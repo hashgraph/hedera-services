@@ -281,6 +281,22 @@ public class HederaLedger {
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 	}
 
+	public boolean allTokenBalancesVanish(AccountID aId) {
+		if (tokenRelsLedger == UNUSABLE_TOKEN_RELS_LEDGER) {
+			throw new IllegalStateException("Ledger has no manageable token relationships!");
+		}
+
+		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+		for (TokenID tId : tokens.asIds()) {
+			var relationship = asTokenRel(aId, tId);
+			var balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			if (balance > 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}

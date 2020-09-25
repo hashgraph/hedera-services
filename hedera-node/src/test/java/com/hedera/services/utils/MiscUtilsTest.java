@@ -30,6 +30,7 @@ import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -99,6 +100,8 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.binary.Hex;
@@ -120,6 +123,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.hedera.services.utils.MiscUtils.*;
@@ -133,9 +137,26 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
+	@Test
+	public void getsNodeAccounts() {
+		var address = mock(Address.class);
+		given(address.getMemo()).willReturn("0.0.3");
+
+		var book = mock(AddressBook.class);
+		given(book.getSize()).willReturn(1);
+		given(book.getAddress(0)).willReturn(address);
+
+		// when:
+		var accounts = MiscUtils.getNodeAccounts(book);
+
+		// then:
+		assertEquals(Set.of(IdUtils.asAccount("0.0.3")), accounts);
+	}
+
 	@Test
 	public void asFcKeyUncheckedTranslatesExceptions() {
 		// expect:

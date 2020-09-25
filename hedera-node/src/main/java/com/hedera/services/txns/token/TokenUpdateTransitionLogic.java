@@ -117,7 +117,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
 			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
-			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);
+			outcome = ledger.doTokenTransfer(
+					id,
+					replacedTreasury.get(),
+					op.getTreasury(),
+					replacedTreasuryBalance,
+					true);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);
@@ -128,12 +133,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
-		var ref = TokenRef.newBuilder().setTokenId(id).build();
-		var status = store.associate(newTreasury, List.of(ref));
-		if (status == TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT) {
-			status = OK;
-		}
-		if (status == OK && token.hasFreezeKey()) {
+		var status = OK;
+		if (token.hasFreezeKey()) {
 			status = ledger.unfreeze(newTreasury, id);
 		}
 		if (status == OK && token.hasKycKey()) {
