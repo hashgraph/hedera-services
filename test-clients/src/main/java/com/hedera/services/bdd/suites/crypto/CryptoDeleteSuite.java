@@ -116,7 +116,6 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec cannotDeleteAlreadyDeletedAccount() {
 		return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount")
 				.given(
-						cryptoCreate("treasury"),
 						cryptoCreate("toBeDeleted"),
 						cryptoCreate("transferAccount")
 				)
@@ -135,9 +134,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec cannotDeleteAccountWithSameBeneficiary() {
 		return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
 				.given(
-						cryptoCreate("treasury"),
-						cryptoCreate("toBeDeleted"),
-						cryptoCreate("transferAccount")
+						cryptoCreate("toBeDeleted")
 				)
 				.when()
 				.then(
