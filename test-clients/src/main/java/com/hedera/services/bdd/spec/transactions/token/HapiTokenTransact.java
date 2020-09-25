@@ -60,21 +60,18 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		private final long amount;
 		private final String token;
 		private final String sender;
-		private final boolean useSymbols;
 		private final Optional<String> receiver;
 
 		TokenMovement(
 				String token,
 				String sender,
 				long amount,
-				Optional<String> receiver,
-				boolean useSymbols
+				Optional<String> receiver
 		) {
 			this.token = token;
 			this.sender = sender;
 			this.amount = amount;
 			this.receiver = receiver;
-			this.useSymbols = useSymbols;
 		}
 
 		public List<Map.Entry<String, Long>> generallyInvolved() {
@@ -112,15 +109,15 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 			}
 
 			public TokenMovement between(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver), false);
+				return new TokenMovement(token, sender, amount, Optional.of(receiver));
 			}
 
 			public TokenMovement symbolicallyBetween(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver), true);
+				return new TokenMovement(token, sender, amount, Optional.of(receiver));
 			}
 
 			public TokenMovement from(String magician) {
-				return new TokenMovement(token, magician, amount, Optional.empty(), false);
+				return new TokenMovement(token, magician, amount, Optional.empty());
 			}
 		}
 
