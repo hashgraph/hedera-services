@@ -67,7 +67,7 @@ public class TokenDissociateFactory extends SignedTxnFactory<TokenDissociateFact
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		txn.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
 				.setAccount(target)
-				.addAllTokens(dissociations.stream().map(IdUtils::asIdRef).collect(toList())))
+				.addAllTokens(dissociations))
 				.build();
 	}
 }

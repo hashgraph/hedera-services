@@ -20,22 +20,22 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenMintFactory extends SignedTxnFactory<TokenMintFactory> {
 	private TokenMintFactory() {}
 
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenMintFactory newSignedTokenMint() {
 		return new TokenMintFactory();
 	}
 
-	public TokenMintFactory minting(TokenRef ref) {
-		this.ref = ref;
+	public TokenMintFactory minting(TokenID id) {
+		this.id = id;
 		return this;
 	}
 
@@ -52,7 +52,7 @@ public class TokenMintFactory extends SignedTxnFactory<TokenMintFactory> {
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenMintTransactionBody.newBuilder()
-				.setToken(ref);
+				.setToken(id);
 		txn.setTokenMint(op);
 	}
 }

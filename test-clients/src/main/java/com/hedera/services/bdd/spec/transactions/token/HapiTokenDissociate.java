@@ -37,9 +37,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -100,7 +97,6 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 							b.setAccount(aId);
 							b.addAllTokens(tokens.stream()
 									.map(lit -> TxnUtils.asTokenId(lit, spec))
-									.map(id -> TokenRef.newBuilder().setTokenId(id).build())
 									.collect(toList()));
 						});
 		return b -> b.setTokenDissociate(opBody);

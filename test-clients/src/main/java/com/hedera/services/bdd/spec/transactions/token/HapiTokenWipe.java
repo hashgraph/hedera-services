@@ -83,7 +83,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 				.txns()
 				.<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(
 						TokenWipeAccountTransactionBody.class, b -> {
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 							b.setAccount(aId);
 							b.setAmount(amount);
 						});

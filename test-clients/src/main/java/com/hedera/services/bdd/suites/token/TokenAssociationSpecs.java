@@ -42,7 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -121,7 +121,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", "1.2.3")
-								.hasKnownStatus(INVALID_TOKEN_REF),
+								.hasKnownStatus(INVALID_TOKEN_ID),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + 1
 						)).payingWith(ADDRESS_BOOK_CONTROL),

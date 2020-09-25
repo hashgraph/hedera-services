@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -84,15 +84,10 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 					: List.of(senderEntry);
 		}
 
-		public TokenRefTransferList specializedFor(HapiApiSpec spec) {
-			var scopedTransfers = TokenRefTransferList.newBuilder();
-			if (useSymbols)	 {
-				var symbol = spec.registry().getSymbol(token);
-				scopedTransfers.setToken(TokenRef.newBuilder().setSymbol(symbol).build());
-			} else {
-				var id = spec.registry().getTokenID(token);
-				scopedTransfers.setToken(TokenRef.newBuilder().setTokenId(id).build());
-			}
+		public TokenTransferList specializedFor(HapiApiSpec spec) {
+			var scopedTransfers = TokenTransferList.newBuilder();
+			var id = spec.registry().getTokenID(token);
+			scopedTransfers.setToken(id);
 			scopedTransfers.addTransfers(adjustment(sender, -amount, spec));
 			if (receiver.isPresent()) {
 				scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
@@ -190,14 +185,14 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		};
 	}
 
-	private List<TokenRefTransferList> transfersFor(HapiApiSpec spec) {
-		Map<TokenRef, List<AccountAmount>> aggregated = providers.stream()
+	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {
+		Map<TokenID, List<AccountAmount>> aggregated = providers.stream()
 				.map(p -> p.specializedFor(spec))
 				.collect(groupingBy(
-						TokenRefTransferList::getToken,
+						TokenTransferList::getToken,
 						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
 		return aggregated.entrySet().stream()
-				.map(entry -> TokenRefTransferList.newBuilder()
+				.map(entry -> TokenTransferList.newBuilder()
 						.setToken(entry.getKey())
 						.addAllTransfers(entry.getValue())
 						.build())

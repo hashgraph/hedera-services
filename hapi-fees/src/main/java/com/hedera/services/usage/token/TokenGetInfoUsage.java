@@ -41,8 +41,8 @@ public class TokenGetInfoUsage {
 		this.customTb = customTb;
 	}
 
-	public static TokenGetInfoUsage newEstimate() {
-		return new TokenGetInfoUsage(BASIC_ENTITY_ID_SIZE);
+	public static TokenGetInfoUsage newEstimate(Query query) {
+		return new TokenGetInfoUsage(TokenUsageUtils.idBpt());
 	}
 
 	public TokenGetInfoUsage givenCurrentAdminKey(Optional<Key> adminKey) {

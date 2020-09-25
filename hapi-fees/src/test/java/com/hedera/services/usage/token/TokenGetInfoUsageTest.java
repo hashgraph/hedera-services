@@ -50,7 +50,7 @@ public class TokenGetInfoUsageTest {
 
 	@BeforeEach
 	public void setup() {
-		subject = TokenGetInfoUsage.newEstimate();
+		subject = TokenGetInfoUsage.newEstimate(tokenQuery());
 	}
 
 	@Test

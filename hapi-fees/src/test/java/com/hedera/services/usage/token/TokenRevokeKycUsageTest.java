@@ -70,7 +70,7 @@ public class TokenRevokeKycUsageTest {
 
 	@Test
 	public void createsExpectedDelta() {
-		givenIdRefOp();
+		givenOp();
 		// and:
 		subject = TokenRevokeKycUsage.newEstimate(txn, sigUsage);
 
@@ -83,7 +83,7 @@ public class TokenRevokeKycUsageTest {
 		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
-	private void givenIdRefOp() {
+	private void givenOp() {
 		op = TokenRevokeKycTransactionBody.newBuilder()
 				.setToken(id)
 				.build();

@@ -23,7 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.refWith;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -50,8 +50,8 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class TokenTransferTransitionLogicTest {
 	TokenTransfersTransactionBody xfers = TokenTransfersTransactionBody.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith("NOTHBAR"))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(asToken("0.0.12345"))
 					.addAllTransfers(List.of(
 							adjustFrom(asAccount("0.0.2"), -1_000),
 							adjustFrom(asAccount("0.0.3"), +1_000)
