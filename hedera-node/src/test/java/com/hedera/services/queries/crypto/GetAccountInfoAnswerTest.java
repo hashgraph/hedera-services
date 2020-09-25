@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -57,8 +57,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.FREEZE_MASK;
-import static com.hedera.services.state.merkle.MerkleAccountState.KYC_MASK;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -137,7 +135,7 @@ class GetAccountInfoAnswerTest {
 
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
-		payerAccount = MapValueFactory.newAccount()
+		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("1.2.3"))
 				.senderThreshold(1_234L)
@@ -162,7 +160,7 @@ class GetAccountInfoAnswerTest {
 				propertySource);
 		optionValidator = mock(OptionValidator.class);
 
-		subject = new GetAccountInfoAnswer(tokenStore, optionValidator);
+		subject = new GetAccountInfoAnswer(optionValidator);
 	}
 
 	@Test

@@ -9,8 +9,8 @@ dbConnection.schema, fcfsNODE_ID
 doUpnp, 0
 freezeSettings.active, 0
 maxOutgoingSyncs, 2
-roundsExpired, 500
 showInternalStats, 1
+state.roundsExpired, 500
 state.roundsStale, 25
 state.saveStatePeriod, 300
 state.signedStateDisk, 10

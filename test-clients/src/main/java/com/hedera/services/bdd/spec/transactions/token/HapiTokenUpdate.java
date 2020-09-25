@@ -217,7 +217,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				.txns()
 				.<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
 						TokenUpdateTransactionBody.class, b -> {
-							b.setToken(TxnUtils.asRef(id));
+							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
 							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
@@ -247,7 +247,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				return Key.getDefaultInstance();
 			}
 		});
-		newTreasury.ifPresent(t -> signers.add(spec -> spec.registry().getKey(t)));
 		newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
 		autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
 		return signers;

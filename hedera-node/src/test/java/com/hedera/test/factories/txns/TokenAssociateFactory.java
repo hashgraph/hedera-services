@@ -72,7 +72,7 @@ public class TokenAssociateFactory extends SignedTxnFactory<TokenAssociateFactor
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		txn.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
 				.setAccount(target)
-				.addAllTokens(associations.stream().map(IdUtils::asIdRef).collect(toList())))
+				.addAllTokens(associations))
 				.build();
 	}
 }

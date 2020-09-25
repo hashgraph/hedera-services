@@ -28,7 +28,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -51,12 +51,12 @@ class DelegatingSigMetadataLookupTest {
 	boolean freezeDefault = true;
 	boolean accountsKycGrantedByDefault = true;
 	EntityId treasury = new EntityId(1,2, 3);
-	TokenRef ref = IdUtils.asIdRef("1.2.666");
+	TokenID id = IdUtils.asToken("1.2.666");
 
 	MerkleToken token;
 	TokenStore tokenStore;
 
-	Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> subject;
+	Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
 
 	@BeforeEach
 	public void setup() {
@@ -71,11 +71,26 @@ class DelegatingSigMetadataLookupTest {
 	}
 
 	@Test
-	public void returnsExpectedFailIfMissing() {
-		given(tokenStore.resolve(ref)).willReturn(TokenStore.MISSING_TOKEN);
+	public void returnsExpectedFailIfExplicitlyMissing() {
+		given(tokenStore.resolve(id)).willReturn(TokenID.newBuilder()
+				.setShardNum(0L)
+				.setRealmNum(0L)
+				.setTokenNum(0L)
+				.build());
 
 		// when:
-		var result = subject.apply(ref);
+		var result = subject.apply(id);
+
+		// then:
+		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
+	}
+
+	@Test
+	public void returnsExpectedFailIfMissing() {
+		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
+
+		// when:
+		var result = subject.apply(id);
 
 		// then:
 		assertEquals(KeyOrderingFailure.MISSING_TOKEN, result.failureIfAny());
@@ -87,11 +102,11 @@ class DelegatingSigMetadataLookupTest {
 		token.setFreezeKey(freezeKey);
 		var expected = TokenSigningMetadata.from(token);
 
-		given(tokenStore.resolve(ref)).willReturn(ref.getTokenId());
-		given(tokenStore.get(ref.getTokenId())).willReturn(token);
+		given(tokenStore.resolve(id)).willReturn(id);
+		given(tokenStore.get(id)).willReturn(token);
 
 		// when:
-		var result = subject.apply(ref);
+		var result = subject.apply(id);
 
 		// then:
 		assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());

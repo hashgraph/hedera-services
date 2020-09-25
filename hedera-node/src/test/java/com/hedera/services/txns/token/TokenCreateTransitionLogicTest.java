@@ -187,13 +187,13 @@ class TokenCreateTransitionLogicTest {
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
-		given(store.associate(treasury, List.of(IdUtils.asIdRef(created)))).willReturn(OK);
+		given(store.associate(treasury, List.of(created))).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(store).associate(treasury, List.of(IdUtils.asIdRef(created)));
+		verify(store).associate(treasury, List.of(created));
 		verify(ledger).unfreeze(treasury, created);
 		verify(ledger).grantKyc(treasury, created);
 		// and:

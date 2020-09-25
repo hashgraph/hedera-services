@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
-import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELATIONSHIPS;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -53,7 +52,6 @@ import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -148,15 +146,13 @@ public class MerkleAccountTest {
 				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy,
-				tokenRels);
+				proxy);
 		otherState = new MerkleAccountState(
 				otherKey,
 				otherExpiry, otherBalance, otherAutoRenewSecs, otherSenderThreshold, otherReceiverThreshold,
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
-				otherProxy,
-				otherTokenRels);
+				otherProxy);
 
 		subject = new MerkleAccount(List.of(state, records, payerRecords, tokens));
 	}
@@ -176,49 +172,6 @@ public class MerkleAccountTest {
 
 		// then:
 		assertThrows(IllegalStateException.class, () -> original.copy());
-	}
-
-	@Test
-	public void tokenMergeWorks() {
-		// when:
-		subject.mergeTokenPropertiesFrom(new MerkleAccount(
-				List.of(otherState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ)));
-
-		// then:
-		assertSame(otherTokenRels, subject.state().getTokenRels());
-	}
-
-	@Test
-	public void explicitBalancesDelegates() {
-		// expect:
-		assertEquals(3, subject.getAllExplicitTokenBalances().size());
-	}
-
-	@Test
-	public void tokenDescriptionDelegates() {
-		// setup:
-		var expected = "[0.0.555(balance=123), 0.0.666(balance=234), 0.0.777(balance=345,FROZEN)]";
-		var freezableToken = mock(MerkleToken.class);
-
-		given(freezableToken.freezeKey()).willReturn(Optional.of(otherKey));
-
-		// given:
-		state.freeze(IdUtils.tokenWith(thirdToken), freezableToken);
-
-		// expect:
-		assertEquals(expected, subject.readableTokenRelationships());
-	}
-
-	@Test
-	public void tokenCopyWorks() {
-		// given:
-		var tokenCopy = subject.tokenCopy();
-
-		// expect:
-		assertSame(IMMUTABLE_EMPTY_FCQ, tokenCopy.payerRecords());
-		assertSame(IMMUTABLE_EMPTY_FCQ, tokenCopy.records());
-		assertNotSame(subject.state(), tokenCopy.state());
-		assertEquals(subject.state(), tokenCopy.state());
 	}
 
 	@Test
@@ -266,125 +219,6 @@ public class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getKey()));
 		assertSame(tokens, subject.tokens());
-	}
-
-	@Test
-	public void tokenGettersDelegate() {
-		// given:
-		var token = IdUtils.tokenWith(secondToken);
-
-		// expect:
-		assertEquals(secondBalance, subject.getTokenBalance(token));
-	}
-
-	@Test
-	public void delegatesWipe() {
-		// setup:
-		var id = IdUtils.tokenWith(firstToken);
-
-		// given:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-
-		// when:
-		subject.wipeTokenRelationship(id);
-
-		// expect:
-		verify(delegate).wipeTokenRelationship(id);
-	}
-
-	@Test
-	public void tokenSettersDelegate() {
-		// setup:
-		var id = IdUtils.tokenWith(secondToken);
-		var token = mock(MerkleToken.class);
-
-		// and:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-
-		// when:
-		subject.adjustTokenBalance(id, token, secondBalance + 1);
-
-		// expect:
-		verify(delegate).adjustTokenBalance(id, token, secondBalance + 1);
-	}
-
-	@Test
-	public void kycCallsDelegate() {
-		// setup:
-		var id = IdUtils.tokenWith(secondToken);
-		var token = mock(MerkleToken.class);
-
-		given(delegate.isKycGranted(id, token)).willReturn(true);
-		// and:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-
-		// when:
-		var granted = subject.isKycGranted(id, token);
-		subject.grantKyc(id, token);
-		subject.revokeKyc(id, token);
-
-		// expect:
-		assertTrue(granted);
-		verify(delegate).grantKyc(id, token);
-		verify(delegate).revokeKyc(id, token);
-	}
-
-	@Test
-	public void tokenFreezingDelegates() {
-		// setup:
-		var id = IdUtils.tokenWith(secondToken);
-		var token = mock(MerkleToken.class);
-
-		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
-
-		// when:
-		subject.freeze(id, token);
-
-		// expect:
-		assertTrue(subject.isFrozen(id, token));
-	}
-
-	@Test
-	public void tokenUnfreezingDelegates() {
-		// setup:
-		var id = IdUtils.tokenWith(secondToken);
-		var token = mock(MerkleToken.class);
-
-		given(token.freezeKey()).willReturn(Optional.of(new JEd25519Key("OK".getBytes())));
-		// and:
-		state.freeze(id, token);
-
-		// when:
-		subject.unfreeze(id, token);
-
-		// expect:
-		assertFalse(state.isFrozen(id, token));
-	}
-
-	@Test
-	public void relationshipStatusDelegates() {
-		// expect:
-		assertEquals(3, subject.numTokenRelationships());
-		assertTrue(subject.hasRelationshipWith(IdUtils.tokenWith(firstToken)));
-		assertFalse(subject.hasRelationshipWith(IdUtils.tokenWith(firstToken - 1)));
-	}
-
-	@Test
-	public void validityDelegates() {
-		// setup:
-		var id = IdUtils.tokenWith(secondToken);
-		var token = mock(MerkleToken.class);
-
-		given(delegate.validityOfAdjustment(id, token, 123))
-				.willReturn(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
-		// and:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-
-		// when:
-		var validity = subject.validityOfAdjustment(id, token, 123);
-
-		// expect:
-		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, validity);
 	}
 
 	@Test
@@ -499,8 +333,7 @@ public class MerkleAccountTest {
 				expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 				memo,
 				deleted, smartContract, receiverSigRequired,
-				proxy,
-				NO_TOKEN_RELATIONSHIPS);
+				proxy);
 		// and:
 		var in = mock(DataInputStream.class);
 

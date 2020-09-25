@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.crypto.SignatureStatus;
@@ -177,9 +176,9 @@ public class SigStatusOrderResultFactoryTest {
 	@Test
 	public void reportsMissingToken() {
 		// setup:
-		TokenRef missing = IdUtils.asIdRef("1.2.3");
+		TokenID missing = IdUtils.asToken("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
-				SignatureStatusCode.INVALID_TOKEN_REF, ResponseCodeEnum.INVALID_TOKEN_ID,
+				SignatureStatusCode.INVALID_TOKEN_ID, ResponseCodeEnum.INVALID_TOKEN_ID,
 				inHandleTxnDynamicContext, txnId, missing);
 
 		// given:

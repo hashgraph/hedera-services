@@ -20,6 +20,7 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -33,11 +34,13 @@ import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
-public class MapValueFactory {
+public class MerkleAccountFactory {
 	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	private Optional<Long> balance = Optional.empty();
 	private Optional<Long> receiverThreshold = Optional.empty();
@@ -50,7 +53,7 @@ public class MapValueFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
-	private List<Map.Entry<TokenID, Long>> tokenBalances = new ArrayList<>();
+	private Set<TokenID> associatedTokens = new HashSet<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -65,79 +68,78 @@ public class MapValueFactory {
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
 		receiverThreshold.ifPresent(l -> value.setReceiverThreshold(l));
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
-		tokenBalances.forEach(entry -> {
-			var token = new MerkleToken();
-			token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked());
-			value.grantKyc(entry.getKey(), token);
-			value.adjustTokenBalance(entry.getKey(), token, entry.getValue());
-		});
+		var tokens = new MerkleAccountTokens();
+		tokens.associateAll(associatedTokens);
+		value.setTokens(tokens);
 		return value;
 	}
 
-	private MapValueFactory() {}
-	public static MapValueFactory newAccount() {
-		return new MapValueFactory();
+	private MerkleAccountFactory() {}
+	public static MerkleAccountFactory newAccount() {
+		return new MerkleAccountFactory();
 	}
-	public static MapValueFactory newContract() {
-		return new MapValueFactory().isSmartContract(true);
+	public static MerkleAccountFactory newContract() {
+		return new MerkleAccountFactory().isSmartContract(true);
 	}
 
-	public MapValueFactory proxy(AccountID id) {
+	public MerkleAccountFactory proxy(AccountID id) {
 		proxy = Optional.of(id);
 		return this;
 	}
 
-	public MapValueFactory balance(long amount) {
+	public MerkleAccountFactory balance(long amount) {
 		balance = Optional.of(amount);
 		return this;
 	}
-	public MapValueFactory tokenBalance(TokenID token, long amount) {
-		tokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount));
+
+	public MerkleAccountFactory tokens(TokenID... tokens) {
+		associatedTokens.addAll(List.of(tokens));
 		return this;
 	}
-	public MapValueFactory receiverThreshold(long v) {
+
+	public MerkleAccountFactory receiverThreshold(long v) {
 		receiverThreshold = Optional.of(v);
 		return this;
 	}
-	public MapValueFactory senderThreshold(long v) {
+	public MerkleAccountFactory senderThreshold(long v) {
 		senderThreshold = Optional.of(v);
 		return this;
 	}
-	public MapValueFactory receiverSigRequired(boolean b) {
+	public MerkleAccountFactory receiverSigRequired(boolean b) {
 		receiverSigRequired = Optional.of(b);
 		return this;
 	}
-	public MapValueFactory keyFactory(KeyFactory keyFactory) {
+	public MerkleAccountFactory keyFactory(KeyFactory keyFactory) {
 		this.keyFactory = keyFactory;
 		return this;
 	}
-	public MapValueFactory accountKeys(KeyTree kt) throws Exception {
+	public MerkleAccountFactory accountKeys(KeyTree kt) throws Exception {
 		return accountKeys(kt.asKey(keyFactory));
 	}
-	public MapValueFactory accountKeys(Key k) throws Exception {
+	public MerkleAccountFactory accountKeys(Key k) throws Exception {
 		return accountKeys(JKey.mapKey(k));
 	}
-	public MapValueFactory accountKeys(JKey k) {
+	public MerkleAccountFactory accountKeys(JKey k) {
 		accountKeys = Optional.of(k);
 		return this;
 	}
-	public MapValueFactory autoRenewPeriod(long p) {
+	public MerkleAccountFactory autoRenewPeriod(long p) {
 		autoRenewPeriod = Optional.of(p);
 		return this;
 	}
-	public MapValueFactory accountDeleted(boolean b) {
+	public MerkleAccountFactory accountDeleted(boolean b) {
 		accountDeleted = Optional.of(b);
 		return this;
 	}
-	public MapValueFactory expirationTime(long l) {
+	public MerkleAccountFactory expirationTime(long l) {
 		expirationTime = Optional.of(l);
 		return this;
 	}
-	public MapValueFactory memo(String s) {
+	public MerkleAccountFactory memo(String s) {
 		memo = Optional.of(s);
 		return this;
 	}
-	public MapValueFactory isSmartContract(boolean b) {
+	public MerkleAccountFactory isSmartContract(boolean b) {
 		isSmartContract = Optional.of(b);
 		return this;
 	}

@@ -20,10 +20,8 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
@@ -48,7 +46,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -58,11 +55,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public class GetAccountInfoAnswer implements AnswerService {
-	private final TokenStore tokenStore;
 	private final OptionValidator optionValidator;
 
-	public GetAccountInfoAnswer(TokenStore tokenStore, OptionValidator optionValidator) {
-		this.tokenStore = tokenStore;
+	public GetAccountInfoAnswer(OptionValidator optionValidator) {
 		this.optionValidator = optionValidator;
 	}
 

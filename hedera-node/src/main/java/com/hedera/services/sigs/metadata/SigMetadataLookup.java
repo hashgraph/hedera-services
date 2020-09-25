@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.function.Function;
@@ -45,20 +44,17 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 public interface SigMetadataLookup {
 	Function<
 			TokenStore,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>>> REF_LOOKUP_FACTORY = tokenStore -> ref -> {
 		TokenID id;
-		return ((id = tokenStore.resolve(ref)) != TokenStore.MISSING_TOKEN)
-				? new SafeLookupResult<>(from(tokenStore.get(id))) : failure(MISSING_TOKEN);
+		return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
+				? failure(MISSING_TOKEN)
+				: new SafeLookupResult<>(from(tokenStore.get(id)));
 	};
 
-	FileSigningMetadata lookup(FileID file) throws Exception;
-	AccountSigningMetadata lookup(AccountID account) throws Exception;
 	ContractSigningMetadata lookup(ContractID contract) throws Exception;
-	TopicSigningMetadata lookup(TopicID topic) throws Exception;
 
-	SafeLookupResult<FileSigningMetadata> safeLookup(FileID id);
-
+	SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id);
 	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
-	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenRef ref);
+	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id);
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
 }

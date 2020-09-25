@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenFreezeFactory.newSignedTokenFreeze;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenFreezeScenarios implements TxnHandlingScenario {
 	VALID_FREEZE_WITH_EXTANT_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenFreezeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenFreeze()
-							.freezing(asIdRef(KNOWN_TOKEN_WITH_FREEZE))
+							.freezing(KNOWN_TOKEN_WITH_FREEZE)
 							.nonPayerKts(TOKEN_FREEZE_KT)
 							.get()
 			));

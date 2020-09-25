@@ -27,16 +27,13 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static com.hedera.services.utils.MiscUtils.asRef;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -83,7 +80,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
 		var status = OK;
-		status = store.associate(treasury, List.of(asRef(created)));
+		status = store.associate(treasury, List.of(created));
 		if (status != OK) {
 			abortWith(status);
 			return;

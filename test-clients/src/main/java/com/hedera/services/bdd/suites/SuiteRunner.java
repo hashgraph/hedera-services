@@ -34,6 +34,7 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
@@ -137,12 +138,12 @@ public class SuiteRunner {
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
 				new TokenTransactSpecs()));
-//		put("CiFileJob", aof(
-//				new FileRecordsSanityCheckSuite(),
-//				new VersionInfoSpec(),
-//				new ProtectedFilesUpdateSuite(),
-//				new PermissionSemanticsSpec(),
-//				new SysDelSysUndelSpec()));
+		put("CiFileJob", aof(
+				new FileRecordsSanityCheckSuite(),
+				new VersionInfoSpec(),
+				new ProtectedFilesUpdateSuite(),
+				new PermissionSemanticsSpec(),
+				new SysDelSysUndelSpec()));
 //		put("CiSmartContractJob", aof(
 //				new NewOpInConstructorSuite(),
 //				new IssueXXXXSpec(),
@@ -180,6 +181,7 @@ public class SuiteRunner {
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		/* Functional tests - CRYPTO */
+		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
 		put("CryptoQueriesStressTests", aof(new CryptoQueriesStressTests()));

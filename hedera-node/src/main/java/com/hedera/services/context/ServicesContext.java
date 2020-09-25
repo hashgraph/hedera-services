@@ -644,7 +644,7 @@ public class ServicesContext {
 			cryptoAnswers = new CryptoAnswers(
 					new GetLiveHashAnswer(),
 					new GetStakersAnswer(),
-					new GetAccountInfoAnswer(tokenStore(), validator()),
+					new GetAccountInfoAnswer(validator()),
 					new GetAccountBalanceAnswer(validator()),
 					new GetAccountRecordsAnswer(answerFunctions(), validator())
 			);
@@ -1096,6 +1096,7 @@ public class ServicesContext {
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
 			tokenRelsLedger.setKeyComparator(RELATIONSHIP_COMPARATOR);
+			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			tokenStore = new HederaTokenStore(
 					ids(),
 					validator(),

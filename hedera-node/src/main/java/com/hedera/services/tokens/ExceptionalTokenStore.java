@@ -26,16 +26,13 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
@@ -57,12 +54,12 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenRef> tokens) {
+	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens) {
+	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -120,21 +117,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public boolean exists(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean symbolExists(String symbol) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean nameExists(String name) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public TokenID lookup(String symbol) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -42,8 +42,7 @@ public class TokenDeleteUsage extends TokenUsage<TokenDeleteUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenDeletion();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		return usageEstimator.get();
 	}
 }

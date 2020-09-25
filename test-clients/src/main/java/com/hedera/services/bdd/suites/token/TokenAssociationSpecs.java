@@ -22,11 +22,8 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,23 +31,26 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
+import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 
@@ -88,6 +88,16 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN)
 								.payingWith("payer"),
+						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
+						tokenTransact(
+								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.between(TOKEN_TREASURY, "misc")),
+						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+								.payingWith("misc")
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						tokenTransact(
+								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
+										.between("misc", TOKEN_TREASURY)),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.payingWith("misc")
 				).then(
@@ -111,7 +121,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.payingWith("payer")
 								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", "1.2.3")
-								.hasKnownStatus(INVALID_TOKEN_REF),
+								.hasKnownStatus(INVALID_TOKEN_ID),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + 1
 						)).payingWith(ADDRESS_BOOK_CONTROL),
@@ -126,22 +136,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						getAccountInfo("misc")
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Frozen))
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(KNOWABLE_TOKEN)
-												.balance(0)
 												.kyc(Revoked)
 												.freeze(FreezeNotApplicable))
 								.hasToken(
 										relationshipWith(VANILLA_TOKEN)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()
@@ -156,22 +162,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
-												.freeze(Frozen))
+												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(Unfrozen))
 								.hasToken(
 										relationshipWith(KNOWABLE_TOKEN)
-												.balance(0)
-												.kyc(Revoked)
+												.kyc(Granted)
 												.freeze(FreezeNotApplicable))
 								.hasToken(
 										relationshipWith(VANILLA_TOKEN)
-												.balance(0)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
 								.logged()

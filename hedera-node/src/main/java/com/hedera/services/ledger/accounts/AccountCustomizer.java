@@ -20,7 +20,6 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.TokenViewMergeable;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -47,7 +46,7 @@ import static java.util.Collections.unmodifiableMap;
  */
 public abstract class AccountCustomizer<
 		K,
-		A extends TokenViewMergeable<A>,
+		A,
 		P extends Enum<P> & BeanProperty<A>, T extends AccountCustomizer<K, A, P, T>> {
 	public enum Option {
 		KEY,

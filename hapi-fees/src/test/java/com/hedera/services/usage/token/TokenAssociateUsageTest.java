@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -54,8 +53,8 @@ public class TokenAssociateUsageTest {
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	TokenID firstId = IdUtils.asToken("0.0.75231");
+	TokenID secondId = IdUtils.asToken("0.0.75232");
 	AccountID id = IdUtils.asAccount("1.2.3");
-	String secondSymbol = "ABCDEFGHIJK";
 
 	TokenAssociateTransactionBody op;
 	TransactionBody txn;
@@ -87,8 +86,7 @@ public class TokenAssociateUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, usage);
 		// and:
-		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
-		verify(base).addBpt(secondSymbol.length());
+		verify(base, times(3)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 		// and:
 		verify(base).addRbs(2 * tokenEntitySizes.bytesUsedPerAccountRelationship() * (expiry - now));
 	}
@@ -96,8 +94,8 @@ public class TokenAssociateUsageTest {
 	private void givenOpWithTwoAssociations() {
 		op = TokenAssociateTransactionBody.newBuilder()
 				.setAccount(id)
-				.addTokens(TokenRef.newBuilder().setTokenId(firstId))
-				.addTokens(TokenRef.newBuilder().setSymbol(secondSymbol))
+				.addTokens(firstId)
+				.addTokens(secondId)
 				.build();
 		setTxn();
 	}

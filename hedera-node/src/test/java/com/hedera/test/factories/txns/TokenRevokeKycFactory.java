@@ -21,7 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -30,15 +30,15 @@ public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactor
 	private TokenRevokeKycFactory() {}
 
 	private AccountID to;
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenRevokeKycFactory newSignedTokenRevokeKyc() {
 		return new TokenRevokeKycFactory();
 	}
 
-	public TokenRevokeKycFactory revoking(TokenRef ref, AccountID to) {
+	public TokenRevokeKycFactory revoking(TokenID id, AccountID to) {
 		this.to = to;
-		this.ref = ref;
+		this.id = id;
 		return this;
 	}
 
@@ -55,7 +55,7 @@ public class TokenRevokeKycFactory extends SignedTxnFactory<TokenRevokeKycFactor
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenRevokeKycTransactionBody.newBuilder()
-				.setToken(ref)
+				.setToken(id)
 				.setAccount(to);
 		txn.setTokenRevokeKyc(op);
 	}

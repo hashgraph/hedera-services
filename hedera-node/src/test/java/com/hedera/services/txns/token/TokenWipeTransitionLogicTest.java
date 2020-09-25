@@ -26,7 +26,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +50,6 @@ import static org.mockito.BDDMockito.verify;
 class TokenWipeTransitionLogicTest {
     private AccountID account = IdUtils.asAccount("1.2.4");
     private TokenID id = IdUtils.asToken("1.2.3");
-    private TokenRef token = IdUtils.asIdRef("0.0.12345");
     private long wipeAmount = 100;
 
     private TokenStore tokenStore;
@@ -124,12 +122,12 @@ class TokenWipeTransitionLogicTest {
     private void givenValidTxnCtx() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(token)
+                        .setToken(id)
                         .setAccount(account)
                         .setAmount(wipeAmount))
                 .build();
         given(accessor.getTxn()).willReturn(tokenWipeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(tokenStore.resolve(token)).willReturn(id);
+        given(tokenStore.resolve(id)).willReturn(id);
     }
 }

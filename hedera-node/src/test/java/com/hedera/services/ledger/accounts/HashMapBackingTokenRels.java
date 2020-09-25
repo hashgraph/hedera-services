@@ -33,11 +33,6 @@ public class HashMapBackingTokenRels implements BackingStore<Map.Entry<AccountID
 	private Map<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> rels = new HashMap<>();
 
 	@Override
-	public MerkleTokenRelStatus getTokenCopy(Map.Entry<AccountID, TokenID> id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void flushMutableRefs() { }
 
 	@Override

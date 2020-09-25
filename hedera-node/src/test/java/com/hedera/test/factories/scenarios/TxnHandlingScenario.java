@@ -51,8 +51,8 @@ import static org.mockito.Mockito.mock;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.newAccounts;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.*;
-import static com.hedera.test.factories.accounts.MapValueFactory.newAccount;
-import static com.hedera.test.factories.accounts.MapValueFactory.newContract;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.keys.NodeFactory.*;
 
 public interface TxnHandlingScenario {
@@ -175,7 +175,7 @@ public interface TxnHandlingScenario {
 				Long.MAX_VALUE, 100, 1,
 				"ImmutableToken", "ImmutableTokenName", false, false,
 				new EntityId(1, 2, 3));
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_IMMUTABLE_ID)))
+		given(tokenStore.resolve(KNOWN_TOKEN_IMMUTABLE))
 				.willReturn(KNOWN_TOKEN_IMMUTABLE);
 		given(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).willReturn(immutableToken);
 
@@ -184,7 +184,7 @@ public interface TxnHandlingScenario {
 				"VanillaToken", "TOKENNAME", false, false,
 				new EntityId(1, 2, 3));
 		vanillaToken.setAdminKey(adminKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS)))
+		given(tokenStore.resolve(KNOWN_TOKEN_NO_SPECIAL_KEYS))
 				.willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
 		given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
 
@@ -194,7 +194,7 @@ public interface TxnHandlingScenario {
 				new EntityId(1, 2, 4));
 		frozenToken.setAdminKey(adminKey);
 		frozenToken.setFreezeKey(optionalFreezeKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_FREEZE)))
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_FREEZE))
 				.willReturn(KNOWN_TOKEN_WITH_FREEZE);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
 
@@ -204,7 +204,7 @@ public interface TxnHandlingScenario {
 				new EntityId(1, 2, 4));
 		kycToken.setAdminKey(adminKey);
 		kycToken.setKycKey(optionalKycKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_KYC)))
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_KYC))
 				.willReturn(KNOWN_TOKEN_WITH_KYC);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
 
@@ -214,7 +214,7 @@ public interface TxnHandlingScenario {
 				new EntityId(1, 2, 4));
 		supplyToken.setAdminKey(adminKey);
 		supplyToken.setSupplyKey(optionalSupplyKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_SUPPLY)))
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_SUPPLY))
 				.willReturn(KNOWN_TOKEN_WITH_SUPPLY);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(supplyToken);
 
@@ -224,11 +224,11 @@ public interface TxnHandlingScenario {
 				new EntityId(1, 2, 4));
 		wipeToken.setAdminKey(adminKey);
 		wipeToken.setWipeKey(optionalWipeKey);
-		given(tokenStore.resolve(IdUtils.asIdRef(KNOWN_TOKEN_WITH_WIPE)))
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_WIPE))
 				.willReturn(KNOWN_TOKEN_WITH_WIPE);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).willReturn(wipeToken);
 
-		given(tokenStore.resolve(IdUtils.asIdRef(UNKNOWN_TOKEN)))
+		given(tokenStore.resolve(UNKNOWN_TOKEN))
 				.willReturn(TokenStore.MISSING_TOKEN);
 
 		return tokenStore;

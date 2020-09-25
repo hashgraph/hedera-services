@@ -22,27 +22,34 @@ networks:
       sysFilesDown:
         evalMode: snapshot
         numsToFetch: [121]
-  testnet:
+  previewtestnet:
+    bootstrap: 2
+    defaultNode: 3
+    ensureScenarioPayerHbars: 300
+    nodes:
+    - {account: 3, ipv4Addr: 35.231.208.148}
+    - {account: 4, ipv4Addr: 35.199.15.177}
+    - {account: 5, ipv4Addr: 35.225.201.195}
+    - {account: 6, ipv4Addr: 35.247.109.135}
+    scenarioPayer: 6895
+    scenarios:
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [121]
+  stabletestnet:
     bootstrap: 50
     defaultNode: 3
     ensureScenarioPayerHbars: 300
     nodes:
-    - {account: 3, ipv4Addr: 34.94.254.82}
-    - {account: 4, ipv4Addr: 35.196.34.86}
-    - {account: 5, ipv4Addr: 35.194.75.187}
-    - {account: 6, ipv4Addr: 34.82.241.226}
-    scenarioPayer: 49542
+    - {account: 3, ipv4Addr: 34.94.106.61}
+    - {account: 4, ipv4Addr: 35.237.119.55}
+    - {account: 5, ipv4Addr: 35.245.27.193}
+    - {account: 6, ipv4Addr: 34.83.112.116}
+    scenarioPayer: 48559
     scenarios:
-      consensus: {persistent: 39045}
-      contract:
-        persistent: {bytecode: 39042, luckyNo: 42, num: 39043, source: Multipurpose.sol}
-      crypto: {receiver: 39038, sender: 39037}
-      file:
-        persistent: {contents: MrBleaney.txt, num: 39040}
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [101, 102]
-      versions: {hapiProtoSemVer: 0.5.1, servicesSemVer: 0.5.0}
+        numsToFetch: [121]
   mainnet:
     bootstrap: 950
     defaultNode: 3

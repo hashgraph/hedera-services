@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenDeleteFactory.newSignedTokenDelete;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenDeleteScenarios implements TxnHandlingScenario {
 	DELETE_WITH_KNOWN_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenDelete()
-							.deleting(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
 			));
 		}
@@ -42,7 +41,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenDelete()
-							.deleting(asIdRef(UNKNOWN_TOKEN))
+							.deleting(UNKNOWN_TOKEN)
 							.get()
 			));
 		}
@@ -52,7 +51,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenDelete()
-							.deleting(asIdRef(KNOWN_TOKEN_IMMUTABLE))
+							.deleting(KNOWN_TOKEN_IMMUTABLE)
 							.get()
 			));
 		}
