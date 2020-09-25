@@ -112,10 +112,6 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 				return new TokenMovement(token, sender, amount, Optional.of(receiver));
 			}
 
-			public TokenMovement symbolicallyBetween(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver));
-			}
-
 			public TokenMovement from(String magician) {
 				return new TokenMovement(token, magician, amount, Optional.empty());
 			}
