@@ -122,9 +122,6 @@ public class SmartContractDeletePayable {
 		localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
 
 		int numberOfReps = 1;
-		// if ((args.length) > 0) {
-		// numberOfReps = Integer.parseInt(args[0]);
-		// }
 		for (int i = 0; i < numberOfReps; i++) {
 			SmartContractDeletePayable scSs = new SmartContractDeletePayable();
 			scSs.demo();
@@ -133,7 +130,6 @@ public class SmartContractDeletePayable {
 	}
 
 	private void loadGenesisAndNodeAcccounts() throws Exception {
-		Map<String, List<AccountKeyListObj>> hederaAccounts = null;
 		Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
 
 		// Get Genesis Account key Pair
@@ -567,7 +563,6 @@ public class SmartContractDeletePayable {
 						ResponseCodeEnum.OK);
 				int currValueToDeposit = ThreadLocalRandom.current().nextInt(1, 10000 + 1);
 				depositToContract(crAccount, payTestContractId, currValueToDeposit);
-				// Thread.sleep(10000);
 				int currentBalanceAfterUpdate = getBalanceFromContract(crAccount, payTestContractId,
 						ResponseCodeEnum.OK);
 				Assert.assertEquals(currentBalanceBeforeUpdate + currValueToDeposit, currentBalanceAfterUpdate);
@@ -827,8 +822,6 @@ public class SmartContractDeletePayable {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build();
 
 		byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
-		// Key adminPubKey =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		// note the admin key should be wrapped in a KeyList to match the signing
 		Key adminPubKey = Key.newBuilder().setKeyList(
 				KeyList.newBuilder().addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build()).build())

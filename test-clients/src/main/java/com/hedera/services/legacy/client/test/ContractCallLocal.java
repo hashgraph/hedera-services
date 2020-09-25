@@ -160,7 +160,6 @@ public class ContractCallLocal extends ClientBaseThread {
           if (response != null){
             bytes = response.getFunctionResult().getContractCallResult().toByteArray();
             long readValue = new BigInteger(bytes).longValue();
-            //log.info("readValue " + readValue);
             Assert.assertEquals(readValue, currValueToSet);
             long gasUsed = response.getFunctionResult().getGasUsed();
             Assert.assertTrue(gasUsed > 0L);
@@ -168,7 +167,9 @@ public class ContractCallLocal extends ClientBaseThread {
 
           }
         } catch (StatusRuntimeException e) {
-          if(!tryReconnect(e)) return;
+          if(!tryReconnect(e)) {
+			  return;
+		  }
         }
 
         accumulatedTransferCount++;

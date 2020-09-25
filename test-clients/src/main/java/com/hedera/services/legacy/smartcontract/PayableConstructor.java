@@ -263,7 +263,6 @@ public class PayableConstructor {
 				.build();
 
 		byte[] pubKey = ((EdDSAPublicKey) adminKeyPair.getPublic()).getAbyte();
-//            Key adminPubKey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		// note the admin key should be wrapped in a KeyList to match the signing
 		Key adminPubKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(Key.newBuilder()
 				.setEd25519(ByteString.copyFrom(pubKey)).build()).build()).build();

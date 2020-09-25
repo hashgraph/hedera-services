@@ -113,10 +113,6 @@ public class CryptoCreatePerformanceThread {
 
         }
 
-
-
-
-        // = properties.getProperty("host");
         int port = Integer.parseInt(properties.getProperty("port"));
         log.info("Connecting host = " + host + "; port = " + port);
 
@@ -127,13 +123,6 @@ public class CryptoCreatePerformanceThread {
             perfThread.start();
         }
 
-//        CryptoCreatePerformance perf2 = new CryptoCreatePerformance(port, host, numTransfer, retrieveTxReceipt,nodeAccount);
-//        CryptoCreatePerformance perf3 = new CryptoCreatePerformance(port, host, numTransfer, retrieveTxReceipt,nodeAccount);
-//        perf1.start();
-//        perf2.start();
-//        perf3.start();
-
         log.info("****** Process COMPLETE ********");
-
     }
 }

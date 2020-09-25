@@ -137,14 +137,11 @@ public class RunLoadTest extends UtilOp {
 			allRunFor(spec, ops);
 			int numOpsNow = spec.numLedgerOps();
 			//should not use spec.numLedgerOps() since spec shared by all load test threads
-			//log.info("size {} Added {}", ops.length, (numOpsNow - numOpsThen));
 			submitOps += ops.length;
 			totalOps += ops.length;
 
 			long elapsedMS = statDuration.elapsed(MILLISECONDS);
 			currentTPS = submitOps / (elapsedMS * 0.001f);
-			//log.info("Thread {} elapsedMS {} submitOps {} currentTPS {} ", Thread.currentThread().getName(),
-			// elapsedMS, submitOps, currentTPS);
 
 			if (statDuration.elapsed(SECONDS) % 10 == 0) { //report periodically
 				if (!reported) {
@@ -160,7 +157,6 @@ public class RunLoadTest extends UtilOp {
 			try {
 				if (currentTPS > _targetTps) {
 					long pauseMillieSeconds = (long) ((submitOps / (float) _targetTps) * 1000 - elapsedMS);
-					//log.info("Thread {} pauseMillieSeconds {}", Thread.currentThread().getName(), pauseMillieSeconds);
 					Thread.sleep(Math.max(5, pauseMillieSeconds));
 				}
 			} catch (InterruptedException irrelevant) {

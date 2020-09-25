@@ -59,7 +59,6 @@ public class SetupAccount {
             log.info("Usage: SetupAccount <ACCOUNT_NUM> <PEM_KEY_FILE_PATH>");
             return;
         }
-        //createStartupAccountFile(args[1], Long.parseLong(args[0]));
         long accountNum = 8013L;
         String pubKey ="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
         String privKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";

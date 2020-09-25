@@ -98,10 +98,11 @@ public class ThreadPerAPIRunnable extends UmbrellaServiceRunnable {
     }
     
     String msg = "Finished thread #" + taskNum + ": op=" + op + ", actual calls = " + txSubmitted + ", expected calls = " + numCalls;
-    if(txSubmitted == numCalls)
-      log.info("==> :) Success: {}", msg);
-    else
-      log.warn("==> (: Not all calls finished: {}", msg);
+    if(txSubmitted == numCalls) {
+		log.info("==> :) Success: {}", msg);
+	} else {
+		log.warn("==> (: Not all calls finished: {}", msg);
+	}
   }
 
   /**

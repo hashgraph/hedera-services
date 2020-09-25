@@ -133,9 +133,6 @@ public class OCTransferStepOne {
   }
 
   static KeyPair getMasterKeyPair() {
-
-//    String pubKeyStr = HexUtils.bytes2Hex(keyPair.getPublic().getEncoded());
-//    String privKeyStr = HexUtils.bytes2Hex(keyPair.getPrivate().getEncoded());
     String pubKeyStr = "302a300506032b657003210077e22838c072db186720e20171ac2c065f5492b75f3b2641f691b7d7c3d94a4b";
     String privKeyStr = "302e020100300506032b6570042204203f1c71a139dc67f6a5a0c090b92fb4edcf12f72fa4f868468de112adf4679f7b";
 
@@ -208,7 +205,6 @@ public class OCTransferStepOne {
     Assert.assertNotNull(ocTokenContract);
     Assert.assertNotEquals(0, ocTokenContract.getContractNum());
     System.out.println("@@@ Contract Address is  " + ocTokenContract.toString());
-//    String symbol = symbol(ocTokenContract, tokenIssuer);
 
     // Create test accounts (with the same keypair) and give them tokens
     long start = System.nanoTime();
@@ -397,7 +393,6 @@ public class OCTransferStepOne {
     		callContractBody.getTransactionID());
     if (contractCallReceipt != null && contractCallReceipt.getReceipt().getStatus().name()
         .equalsIgnoreCase(ResponseCodeEnum.SUCCESS.name())) {
-      //Thread.sleep(6000);
       TransactionRecord trRecord = getTransactionRecord(payerAccount,
           callContractBody.getTransactionID());
       if (trRecord != null && trRecord.hasContractCallResult()) {
@@ -433,7 +428,6 @@ public class OCTransferStepOne {
     recordResp = stub.getTxRecordByTxID(getRecordQuery);
 
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
 
     return txRecord;
   }

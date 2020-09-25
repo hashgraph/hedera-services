@@ -71,7 +71,7 @@ class UsageEstimatorUtilsTest {
 	@Test
 	public void graspsTransferListSize() {
 		// expect:
-		assertEquals(3 * FeeBuilder.BASIC_ACCT_AMT_SIZE, transferListBytes(transfers));
+		assertEquals(3 * FeeBuilder.BASIC_ACCOUNT_AMT_SIZE, transferListBytes(transfers));
 	}
 
 	@Test
@@ -141,7 +141,7 @@ class UsageEstimatorUtilsTest {
 				.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transfers))
 				.build();
 		// and:
-		int expected = FeeBuilder.BASIC_TX_RECORD_SIZE + memo.length() + FeeBuilder.BASIC_ACCT_AMT_SIZE * 3;
+		int expected = FeeBuilder.BASIC_TX_RECORD_SIZE + memo.length() + FeeBuilder.BASIC_ACCOUNT_AMT_SIZE * 3;
 
 		// when:
 		int actual = baseRecordBytes(txn);

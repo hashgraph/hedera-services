@@ -119,8 +119,6 @@ public class BiasedDelegatingProvider implements OpProvider {
 			((HapiTxnOp)op).deferStatusResolution();
 		}
 		if (!shouldLogNormalFlow) {
-//			log.info(String.format("configs: shouldAlwaysDefer = %b, shouldLogNormalFlow = %b", shouldAlwaysDefer, shouldLogNormalFlow));
-
 			if (isTxnOp) {
 				((HapiTxnOp)op).noLogging().payingWith(UNIQUE_PAYER_ACCOUNT).fee(TRANSACTION_FEE);
 

@@ -51,7 +51,7 @@ import org.junit.Assert;
 public class KeyExpansion {
 
   private static final Logger log = LogManager.getLogger(KeyExpansion.class);
-  public static int KEY_EXPANSION_DEPTH = 100; // recursion level for expansion
+  public static int KEY_EXPANSION_DEPTH = 15; // recursion level for expansion
   public static boolean USE_HEX_ENCODED_KEY = false;
 
   /**
@@ -640,7 +640,10 @@ public class KeyExpansion {
         int i = 0;
         for (Key aKey : tKeys) {
           if(i++ >= thd) // if threshold is reached, stop expanding keys
+		  {
+		    log.debug("Threshold reached, stopping key expansion.");
             break;
+		  }
           expandKeyMinimum4Signing(aKey, depth, expandedKeys);
         }
       }
@@ -670,8 +673,9 @@ public class KeyExpansion {
       byte[] pubKeyBytes = key.getEd25519().toByteArray();
       String pubKeyHex = Hex.encodeHexString(pubKeyBytes);
       byte[] prefixBytes = pubKeyBytes;
-      if(prefixLen != -1)
-        prefixBytes = CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
+      if(prefixLen != -1) {
+		  prefixBytes = CommonUtils.copyBytes(0, prefixLen, pubKeyBytes);
+	  }
       PrivateKey privKey = pubKey2privKeyMap.get(pubKeyHex);
       String sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
       rv = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(prefixBytes))

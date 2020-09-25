@@ -275,7 +275,6 @@ public class ClientBaseThread extends Thread {
 		Transaction transferTx = Common.createTransfer(payer, accountKeys.get(payer).get(0),
 				nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt, "queryFrom" + payer.getAccountNum());
-		//transferTx = TransactionSigner.signTransaction(transferTx, accountKeys.get(payer));
 		return transferTx;
 
 	}
@@ -527,7 +526,6 @@ public class ClientBaseThread extends Thread {
 			return null;
 		}
 		if (recordResp.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == RECORD_NOT_FOUND) {
-			//log.info("record not found for txID {}", transactionId);
 			return null;
 		}
 		fee = recordResp.getTransactionGetRecord().getHeader().getCost();
@@ -540,7 +538,6 @@ public class ClientBaseThread extends Thread {
 				return null;
 			}
 			if (recordResp.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == RECORD_NOT_FOUND) {
-				//log.info("record not found for txID {}", transactionId);
 				return null;
 			}
 
@@ -575,15 +572,6 @@ public class ClientBaseThread extends Thread {
 				return null;
 			}
 		}, stub::getTxRecordByTxID);
-		//if successful
-//		if(isBackupTxIDRecord && trackTxID){
-//			try {
-//				submittedTxID.add(TransactionBody.parseFrom(queryPaymentTx.getBodyBytes())
-//						.getTransactionID());
-//			} catch (InvalidProtocolBufferException e) {
-//				e.printStackTrace();
-//			}
-//		}
 		return Pair.of(queryPaymentTx, response);
 	}
 
@@ -601,11 +589,9 @@ public class ClientBaseThread extends Thread {
 				gas, ResponseType.COST_ANSWER);
 		fee = callResp.getContractCallLocal().getHeader().getCost() + localCallGas;
 
-		//log.info("===> Fee offered is " + fee + ", gas offered is " + gas);
 
 		callResp = executeContractCall(payerAccount, contractToCall, callData, fee,
 				gas, ResponseType.ANSWER_ONLY);
-		//log.info("callContractLocal response = " + callResp);
 		Assert.assertTrue(callResp.hasContractCallLocal());
 		ContractCallLocalResponse response = callResp.getContractCallLocal();
 		return response;

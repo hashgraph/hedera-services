@@ -149,13 +149,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
   public static void main(String args[])
       throws Exception {
     Properties properties = TestHelper.getApplicationProperties();
-    String host;
 
 
     int port = Integer.parseInt(properties.getProperty("port"));
-//    log.info("Connecting host = " + host + "; port = " + port);
-    int numTransfer = 10;
-  //  boolean retrieveTxReceipt = true;
 
   }
 
@@ -169,7 +165,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       thx.start ();
     }
     napTime = (1000 / tpsDesired);
-    //if(napTime < 10)
     threadNumber++;
 
   }
@@ -201,7 +196,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       channel.shutdown();
       Thread.sleep(100);
     }
-    if(! channel.isShutdown()) channel.shutdownNow();
+    if(! channel.isShutdown()) {
+		channel.shutdownNow();
+	}
     channelShutdowns++;
 
     return channel.isShutdown();
@@ -217,7 +214,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
     try {
       doOneIteration(z);
       log.warn("------------ Iteration " + z + " complete ---------------");
-      //Thread.sleep(1000);
     }catch(Exception tx) {
       log.error(z + " -> Exception " , tx);
     }
@@ -242,11 +238,8 @@ public class MultiAccountTransferSeqThread implements Runnable  {
     // create 1st account by payer as genesis
     long sentAmtToAcc1 = 0l;
     long sentAmtToAcc2 = 0l;
-    int totalGoodReceipts=0;
-    int totalBadReceipts=0;
     long minTransInMs = 100l;
     long maxTransInMs = -1l;
-   // HashMap<TransactionID,Transaction> transferMap = new HashMap<>();
 
     try {
 
@@ -337,7 +330,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
 
         try{
           transferRes = stub.cryptoTransfer(transfer1);
-     //     transferRes = stub.withDeadlineAfter(deadLineMs, TimeUnit.MILLISECONDS).cryptoTransfer(transfer1);
         }catch(Exception dex) {
           log.error("Skipping this due to " + dex.getMessage());
         }
@@ -345,8 +337,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
         if ((transferRes != null) && (ResponseCodeEnum.OK == transferRes.getNodeTransactionPrecheckCode())) {
         TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
           transList.add(transferBody.getTransactionID());
-
-          //transferMap.put(transferBody.getTransactionID(), transfer1);
         } else
           {
           log.error("Got Bad Precheck Stuff ** Adding to Retry Queue ** " + transferRes
@@ -354,8 +344,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
           if(transferRes.getNodeTransactionPrecheckCode() == ResponseCodeEnum.TRANSACTION_OVERSIZE){
             badTransList.add(transfer1);
           }
-          else totalBadReceipts++;
-         // totalBadReceipts++;
         }
         te = System.currentTimeMillis();
         tm = te - ts;
@@ -368,8 +356,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
           minTransInMs = tm;
         }
 
-//        if( i % 5 ==0 )
-//        {log.info("Shutting down channel"); shutdownChannel(); }
         try {
           if ((i != 0) && (i % 50 == 0)) {
             log.info("T # " + i + " sent in " + tm + " millis");
@@ -391,10 +377,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       Thread.sleep(napTime);
 
     }
-//    if(this.lifeLine) {
-//      log.warn(" Premature Exit " );
-//   Thread.currentThread().stop();
-//    }
     log.warn(" $$ ALL " + transferCounts + " took MIN= " + minTransInMs  + " took MAX= " + maxTransInMs + " $$$$$$$$$");
 
     long transferEndTime = System.currentTimeMillis() - transferStartTime ;
@@ -420,7 +402,9 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       }
     }
     else {
-      if(badTransList.size() > 0) badTransList.clear();
+      if(badTransList.size() > 0) {
+		  badTransList.clear();
+	  }
     }
 
 // Get Records Now
@@ -454,7 +438,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
 
     long end = System.currentTimeMillis();
 
-    //log.warn("Total Accounts  " + totalGoodReceipts);
     log.warn("Total Amount sent from Account 1 to 2 " + sentAmtToAcc1);
     log.warn("Total Amount sent from Account 2 to 1 " + sentAmtToAcc2);
 
@@ -482,7 +465,6 @@ public class MultiAccountTransferSeqThread implements Runnable  {
       // try this until the platform is ok
 
       TransactionResponse response = stub.createAccount(signTransaction);
-     // Assert.assertNotNull(response);
       log.info("Response" + response);
       log.info(" Got Precheck " + response.getNodeTransactionPrecheckCode());
       log.info(
@@ -532,11 +514,7 @@ public class MultiAccountTransferSeqThread implements Runnable  {
          log.warn("R # " + j++ + "got at " + index);
         } catch (InvalidNodeTransactionPrecheckCode invalidNodeTransactionPrecheckCode) {
           log.info("InvalidNodeTransactionPrecheckCode" + invalidNodeTransactionPrecheckCode);
-
-          //totalBadReceipts++;
         }
-        // Assert.assertNotNull(txReceipt);
-       // totalGoodReceipts++;
         iterations --;
       }
     }

@@ -150,7 +150,6 @@ public class CryptoSpecialAccountTests extends BaseClient {
    */
   public void cryptoUpdate_SpecialAccount_Success() throws Throwable {
 
-//    payerAccounts = accountCreatBatch(3);
     AccountID payerID = CryptoServiceTest.genesisAccountID;
 
     // get account content

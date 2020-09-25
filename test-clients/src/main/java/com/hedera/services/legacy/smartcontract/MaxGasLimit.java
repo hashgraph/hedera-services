@@ -284,7 +284,6 @@ public class MaxGasLimit {
     TransactionResponse response = stub.contractCallMethod(callContractRequest);
     log.info("callContract Pre Check Response :: " + response.getNodeTransactionPrecheckCode()
         .name());
-//    Thread.sleep(1000);
     TransactionBody callContractBody = TransactionBody.parseFrom(callContractRequest.getBodyBytes());
     TransactionGetReceiptResponse contractCallReceipt = getReceipt(
         callContractBody.getTransactionID());
@@ -320,7 +319,6 @@ public class MaxGasLimit {
     recordResp = executeQueryForTxRecord(payerAccount, transactionId, stub, fee,
         ResponseType.ANSWER_ONLY);
     TransactionRecord txRecord = recordResp.getTransactionGetRecord().getTransactionRecord();
-//    System.out.println("tx record = " + txRecord);
     channel.shutdown();
     return txRecord;
   }

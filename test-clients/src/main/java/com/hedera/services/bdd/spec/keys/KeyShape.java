@@ -45,7 +45,6 @@ public class KeyShape extends SigControl {
 		return listOf(IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
 	}
 	public static KeyShape listOf(KeyShape... childShapes) {
-//		Assert.assertTrue("A list much have at least one child key!", childShapes.length > 0);
 		return new KeyShape(childShapes);
 	}
 
@@ -54,7 +53,6 @@ public class KeyShape extends SigControl {
 		return threshOf(M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(n -> new KeyShape[n]));
 	}
 	public static KeyShape threshOf(int M, KeyShape... childShapes) {
-//		Assert.assertTrue("A threshold much have at least one child key!", childShapes.length > 0);
 		return new KeyShape(M, childShapes);
 	}
 
