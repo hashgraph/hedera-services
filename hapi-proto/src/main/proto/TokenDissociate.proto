@@ -29,5 +29,5 @@ import "BasicTypes.proto";
 
 message TokenDissociateTransactionBody {
     AccountID account = 1;
-    repeated TokenRef tokens = 2;
+    repeated TokenID tokens = 2;
 }

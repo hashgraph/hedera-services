@@ -23,7 +23,7 @@ package com.hedera.services.usage.token;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.UsageProperties;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -53,10 +53,6 @@ public abstract class TokenUsage<T extends TokenUsage<T>> {
 
 	protected void addAccountBpt() {
 		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
-	}
-
-	protected void addRefBpt(TokenRef ref) {
-		usageEstimator.addBpt(TokenUsageUtils.refBpt(ref));
 	}
 
 	protected void addNetworkRecordRb(long rb) {

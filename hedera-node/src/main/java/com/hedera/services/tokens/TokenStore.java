@@ -23,19 +23,15 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -54,9 +50,6 @@ public interface TokenStore {
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
-	boolean symbolExists(String symbol);
-	boolean nameExists(String name);
-	TokenID lookup(String symbol);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
@@ -67,8 +60,8 @@ public interface TokenStore {
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
-	ResponseCodeEnum associate(AccountID aId, List<TokenRef> tokens);
-	ResponseCodeEnum dissociate(AccountID aId, List<TokenRef> tokens);
+	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
@@ -76,20 +69,14 @@ public interface TokenStore {
 	void rollbackCreation();
 	boolean isCreationPending();
 
-	default TokenID resolve(TokenRef ref) {
-		String symbol;
-		TokenID id;
-		if (ref.hasTokenId()) {
-			return exists(id = ref.getTokenId()) ? id : MISSING_TOKEN;
-		} else {
-			return symbolExists(symbol = ref.getSymbol()) ? lookup(symbol) : MISSING_TOKEN;
-		}
+	default TokenID resolve(TokenID id) {
+		return exists(id) ? id : MISSING_TOKEN;
 	}
 
-	default ResponseCodeEnum delete(TokenRef ref) {
-		var id = resolve(ref);
-		if (id == MISSING_TOKEN) {
-			return INVALID_TOKEN_REF;
+	default ResponseCodeEnum delete(TokenID id) {
+		var idRes = resolve(id);
+		if (idRes == MISSING_TOKEN) {
+			return INVALID_TOKEN_ID;
 		}
 
 		var token = get(id);

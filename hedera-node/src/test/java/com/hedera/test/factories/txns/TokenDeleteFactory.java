@@ -21,21 +21,21 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenDeleteFactory extends SignedTxnFactory<TokenDeleteFactory> {
 	private TokenDeleteFactory() {}
 
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenDeleteFactory newSignedTokenDelete() {
 		return new TokenDeleteFactory();
 	}
 
-	public TokenDeleteFactory deleting(TokenRef ref) {
-		this.ref = ref;
+	public TokenDeleteFactory deleting(TokenID id) {
+		this.id = id;
 		return this;
 	}
 
@@ -52,7 +52,7 @@ public class TokenDeleteFactory extends SignedTxnFactory<TokenDeleteFactory> {
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenDeleteTransactionBody.newBuilder()
-				.setToken(ref);
+				.setToken(id);
 		txn.setTokenDeletion(op);
 	}
 }

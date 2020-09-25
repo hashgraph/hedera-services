@@ -217,7 +217,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				.txns()
 				.<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
 						TokenUpdateTransactionBody.class, b -> {
-							b.setToken(TxnUtils.asRef(id));
+							b.setToken(id);
 							newSymbol.ifPresent(b::setSymbol);
 							newName.ifPresent(b::setName);
 							newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));

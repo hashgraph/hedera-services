@@ -123,7 +123,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 			usageEstimator.addRbs(rbsDelta);
 		}
 
-		long txnBytes = newMutableRb + TokenUsageUtils.refBpt(op.getToken()) + noRbImpactBytes(op);
+		long txnBytes = newMutableRb + TokenUsageUtils.idBpt() + noRbImpactBytes(op);
 		usageEstimator.addBpt(txnBytes);
 		addTransfersRecordRb(1, 2);
 

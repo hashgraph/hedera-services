@@ -42,8 +42,7 @@ public class TokenUnfreezeUsage extends TokenUsage<TokenUnfreezeUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenUnfreeze();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAccountBpt();
 		return usageEstimator.get();
 	}

@@ -43,7 +43,7 @@ import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
 
@@ -64,42 +64,42 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	private final ContractSigMetaLookup contractSigMetaLookup;
 	private final TopicSigMetaLookup topicSigMetaLookup;
 
-	private final Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup;
+	private final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup;
 
 	public static DelegatingSigMetadataLookup backedLookupsFor(
 			HederaFs hfs,
 			BackingStore<AccountID, MerkleAccount> backingAccounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenRefLookup
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				new BackedAccountLookup(backingAccounts),
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
-				tokenRefLookup);
+				tokenLookup);
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsFor(
 			HederaFs hfs,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenRefLookup
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				new DefaultFCMapAccountLookup(accounts),
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
-				tokenRefLookup);
+				tokenLookup);
 	}
 
 	public static DelegatingSigMetadataLookup defaultLookupsPlusAccountRetriesFor(
 			HederaFs hfs,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenRefLookup,
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
 			int maxRetries,
 			int retryWaitIncrementMs,
 			HederaNodeStats stats
@@ -109,7 +109,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 				new RetryingFCMapAccountLookup(accounts, maxRetries, retryWaitIncrementMs, pause, stats),
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
-				tokenRefLookup);
+				tokenLookup);
 	}
 
 	public static DelegatingSigMetadataLookup defaultAccountRetryingLookupsFor(
@@ -118,14 +118,14 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			HederaNodeStats stats,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenRefLookup
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup
 	) {
 		return new DelegatingSigMetadataLookup(
 				new HfsSigMetaLookup(hfs),
 				new RetryingFCMapAccountLookup(pause, properties, stats, accounts),
 				new DefaultFCMapContractLookup(accounts),
 				new DefaultFCMapTopicLookup(topics),
-				tokenRefLookup);
+				tokenLookup);
 	}
 
 	public DelegatingSigMetadataLookup(
@@ -133,7 +133,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 			AccountSigMetaLookup accountSigMetaLookup,
 			ContractSigMetaLookup contractSigMetaLookup,
 			TopicSigMetaLookup topicSigMetaLookup,
-			Function<TokenRef, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup
+			Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup
 	) {
 		this.fileSigMetaLookup = fileSigMetaLookup;
 		this.accountSigMetaLookup = accountSigMetaLookup;
@@ -163,7 +163,7 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenRef ref) {
-		return tokenSigMetaLookup.apply(ref);
+	public SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id) {
+		return tokenSigMetaLookup.apply(id);
 	}
 }

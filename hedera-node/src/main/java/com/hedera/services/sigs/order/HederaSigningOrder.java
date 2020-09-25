@@ -53,8 +53,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -632,34 +632,34 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> tokenFreezing(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalFreezeKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalFreezeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenKnowing(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalKycKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalKycKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenRefloating(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalSupplyKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalSupplyKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenWiping(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalWipeKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalWipeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenUpdates(
@@ -699,21 +699,21 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> tokenMutates(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenMutates(txnId, ref, factory, Collections.emptyList());
+		return tokenMutates(txnId, id, factory, Collections.emptyList());
 	}
 
 	private <T> SigningOrderResult<T> tokenMutates(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory,
 			List<Function<TokenSigningMetadata, Optional<JKey>>> optionalKeyLookups
 	) {
 		List<JKey> required = new ArrayList<>();
 
-		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
 			var meta = result.metadata();
 			if (meta.adminKey().isPresent()) {
@@ -724,20 +724,20 @@ public class HederaSigningOrder {
 				candidate.ifPresent(required::add);
 			});
 		} else {
-			return factory.forMissingToken(ref, txnId);
+			return factory.forMissingToken(id, txnId);
 		}
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenAdjusts(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory,
 			Function<TokenSigningMetadata, Optional<JKey>> optionalKeyLookup
 	) {
 		List<JKey> required = EMPTY_LIST;
 
-		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
 			var optionalKey = optionalKeyLookup.apply(result.metadata());
 			if (optionalKey.isPresent()) {
@@ -747,7 +747,7 @@ public class HederaSigningOrder {
 				return SigningOrderResult.noKnownKeys();
 			}
 		} else {
-			return factory.forMissingToken(ref, txnId);
+			return factory.forMissingToken(id, txnId);
 		}
 		return factory.forValidOrder(required);
 	}
@@ -794,7 +794,7 @@ public class HederaSigningOrder {
 	) {
 		List<JKey> required = EMPTY_LIST;
 
-		for (TokenRefTransferList xfers : op.getTokenTransfersList()) {
+		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
 				var account = adjust.getAccountID();
 				var result = sigMetaLookup.accountSigningMetaFor(account);
