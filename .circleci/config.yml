@@ -1039,13 +1039,13 @@ workflows:
           workflow-name: "nightly-mainnet-migration-regression"
 
   nightly-software-update-regression:
-    triggers:
-      - schedule:
-          cron: "30 18,5 * * *"
-          filters:
-            branches:
-              only:
-                - master
+    # triggers:
+    #   - schedule:
+    #       cron: "30 18,5 * * *"
+    #       filters:
+    #         branches:
+    #           only:
+    #             - master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
