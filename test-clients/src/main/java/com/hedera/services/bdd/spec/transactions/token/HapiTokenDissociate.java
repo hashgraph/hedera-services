@@ -64,7 +64,7 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.TokenGrantKycToAccount;
+		return HederaFunctionality.TokenDissociateFromAccount;
 	}
 
 	public HapiTokenDissociate(String account, String... tokens) {

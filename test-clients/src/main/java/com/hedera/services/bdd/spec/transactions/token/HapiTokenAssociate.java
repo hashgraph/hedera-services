@@ -66,7 +66,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.TokenGrantKycToAccount;
+		return HederaFunctionality.TokenAssociateToAccount;
 	}
 
 	public HapiTokenAssociate(String account, String... tokens) {
