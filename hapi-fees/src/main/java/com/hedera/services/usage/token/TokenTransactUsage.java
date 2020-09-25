@@ -23,7 +23,7 @@ package com.hedera.services.usage.token;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -47,8 +47,8 @@ public class TokenTransactUsage extends TokenUsage<TokenTransactUsage> {
 
 		int xfers = 0;
 		long xferBytes = 0;
-		for (TokenRefTransferList transfer : op.getTokenTransfersList()) {
-			xferBytes += TokenUsageUtils.refBpt(transfer.getToken());
+		for (TokenTransferList transfer : op.getTokenTransfersList()) {
+			xferBytes += TokenUsageUtils.idBpt();
 			xfers += transfer.getTransfersCount();
 		}
 		xferBytes += xfers * usageProperties.accountAmountBytes();

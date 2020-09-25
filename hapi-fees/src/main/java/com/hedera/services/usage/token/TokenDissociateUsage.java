@@ -44,7 +44,7 @@ public class TokenDissociateUsage extends TokenUsage<TokenDissociateUsage> {
 	public FeeData get() {
 		var op = tokenOp.getTokenDissociate();
 		addAccountBpt();
-		op.getTokensList().forEach(this::addRefBpt);
+		op.getTokensList().forEach(t -> addAccountBpt());
 		return usageEstimator.get();
 	}
 }

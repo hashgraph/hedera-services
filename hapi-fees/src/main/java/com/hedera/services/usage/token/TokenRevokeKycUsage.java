@@ -42,8 +42,7 @@ public class TokenRevokeKycUsage extends TokenUsage<TokenRevokeKycUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenRevokeKyc();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAccountBpt();
 		return usageEstimator.get();
 	}
