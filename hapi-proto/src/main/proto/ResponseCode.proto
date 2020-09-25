@@ -210,5 +210,5 @@ enum ResponseCodeEnum {
   TOKEN_IS_IMMUTABLE = 196; // Token does not have Admin key set, thus update/delete transactions cannot be performed
   TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT = 197; // An <tt>associateToken</tt> operation specified a token already associated to the account
   TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES = 198; // An attempted operation is invalid until all token balances for the target account are zero
-  ACCOUNT_IS_TREASURY = 199;  // A selected account is a treasury
+  ACCOUNT_IS_TREASURY = 199;  // An attempted operation is invalid because the account is a treasury
 }

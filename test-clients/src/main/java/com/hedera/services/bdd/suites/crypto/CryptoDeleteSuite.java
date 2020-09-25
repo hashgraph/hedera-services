@@ -50,7 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
 
 public class CryptoDeleteSuite extends HapiApiSuite {
 	static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
-	private static final long INITIAL_FLOAT = 500;
+	private static final long TOKEN_INITIAL_SUPPLY = 500;
 
 	public static void main(String... args) {
 		new CryptoDeleteSuite().runSuiteSync();
@@ -66,7 +66,10 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 				fundsTransferOnDelete(),
 				cannotDeleteAccountsWithNonzeroTokenBalances(),
-				deleteFailureScenarios()
+				deletionOfAlreadyDeletedAccount(),
+				sameAccountAndBeneficiaryFailure(),
+				deletionAttemptOfTreasuryFailure(),
+				nonExistingAccountDeletionAttempt()
 		});
 	}
 
@@ -96,9 +99,13 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoCreate("transferAccount"),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
-						tokenCreate("misc").initialSupply(INITIAL_FLOAT).treasury(TOKEN_TREASURY),
+						tokenCreate("misc")
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
 						tokenAssociate("toBeDeleted", "misc"),
-						tokenTransact(HapiTokenTransact.TokenMovement.moving(INITIAL_FLOAT, "misc").between(TOKEN_TREASURY, "toBeDeleted"))
+						tokenTransact(HapiTokenTransact.TokenMovement
+								.moving(TOKEN_INITIAL_SUPPLY, "misc")
+								.between(TOKEN_TREASURY, "toBeDeleted"))
 				).then(
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
@@ -106,10 +113,8 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec deleteFailureScenarios() {
-		long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
-
-		return defaultHapiSpec("DeleteFailureScenarios")
+	private HapiApiSpec deletionOfAlreadyDeletedAccount() {
+		return defaultHapiSpec("DeletionOfAlreadyDeletedAccount")
 				.given(
 						cryptoCreate("treasury"),
 						cryptoCreate("toBeDeleted"),
@@ -119,28 +124,83 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				.when(
 						cryptoDelete("nonexistingAccount"),
 						tokenCreate("toBeTransferred")
-								.initialSupply(INITIAL_FLOAT)
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.treasury("treasury"),
+						cryptoDelete("toBeDeleted")
+								.transfer("transferAccount")
+								.via("deleteTxn")
+								.hasKnownStatus(SUCCESS)
+				)
+				.then(
+						cryptoDelete("toBeDeleted")
+								.transfer("transferAccount")
+								.via("deleteTxn")
+								.hasKnownStatus(ACCOUNT_DELETED)
+				);
+	}
+
+	private HapiApiSpec sameAccountAndBeneficiaryFailure() {
+		return defaultHapiSpec("SameAccountAndBeneficiaryFailure")
+				.given(
+						cryptoCreate("treasury"),
+						cryptoCreate("toBeDeleted"),
+						cryptoCreate("nonexistingAccount"),
+						cryptoCreate("transferAccount").balance(0L)
+				)
+				.when(
+						cryptoDelete("nonexistingAccount"),
+						tokenCreate("toBeTransferred")
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
 								.treasury("treasury")
 				)
 				.then(
 						cryptoDelete("toBeDeleted")
 								.transfer("toBeDeleted")
 								.via("deleteTxn")
-								.hasPrecheck(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT),
+								.hasPrecheck(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT)
+						);
+	}
+
+	private HapiApiSpec deletionAttemptOfTreasuryFailure() {
+		return defaultHapiSpec("DeletionAttemptOfTreasuryFailure")
+				.given(
+						cryptoCreate("treasury"),
+						cryptoCreate("toBeDeleted"),
+						cryptoCreate("nonexistingAccount"),
+						cryptoCreate("transferAccount").balance(0L)
+				)
+				.when(
+						cryptoDelete("nonexistingAccount"),
+						tokenCreate("toBeTransferred")
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.treasury("treasury")
+				)
+				.then(
 						cryptoDelete("treasury")
 								.transfer("transferAccount")
 								.via("deleteTxn")
-								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+								.hasKnownStatus(ACCOUNT_IS_TREASURY)
+						);
+	}
+
+
+	private HapiApiSpec nonExistingAccountDeletionAttempt() {
+		return defaultHapiSpec("NonExistingAccountDeletionAttempt")
+				.given(
+						cryptoCreate("treasury"),
+						cryptoCreate("toBeDeleted"),
+						cryptoCreate("nonexistingAccount"),
+						cryptoCreate("transferAccount").balance(0L)
+				)
+				.when(
+						cryptoDelete("nonexistingAccount"),
+						tokenCreate("toBeTransferred")
+								.initialSupply(TOKEN_INITIAL_SUPPLY)
+								.treasury("treasury")
+				)
+				.then(
 						cryptoDelete("toBeDeleted")
 								.transfer("nonexistingAccount")
-								.via("deleteTxn")
-								.hasKnownStatus(ACCOUNT_DELETED),
-						cryptoDelete("toBeDeleted")
-								.transfer("transferAccount")
-								.via("deleteTxn")
-								.hasKnownStatus(SUCCESS),
-						cryptoDelete("toBeDeleted")
-								.transfer("transferAccount")
 								.via("deleteTxn")
 								.hasKnownStatus(ACCOUNT_DELETED)
 				);
