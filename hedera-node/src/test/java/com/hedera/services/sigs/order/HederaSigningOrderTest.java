@@ -1301,7 +1301,7 @@ public class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
 	}
 
 	@Test
@@ -1317,7 +1317,7 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsTokenMintWithValidRef() throws Throwable {
+	public void getsTokenMintWithValidId() throws Throwable {
 		// given:
 		setupFor(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
@@ -1331,7 +1331,7 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsTokenBurnWithValidRef() throws Throwable {
+	public void getsTokenBurnWithValidId() throws Throwable {
 		// given:
 		setupFor(BURN_WITH_SUPPLY_KEYED_TOKEN);
 
@@ -1345,7 +1345,7 @@ public class HederaSigningOrderTest {
 	}
 
 	@Test
-	public void getsTokenDeletionWithValidRef() throws Throwable {
+	public void getsTokenDeletionWithValidId() throws Throwable {
 		// given:
 		setupFor(DELETE_WITH_KNOWN_TOKEN);
 
@@ -1368,7 +1368,7 @@ public class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
 	}
 
 	@Test
@@ -1505,7 +1505,7 @@ public class HederaSigningOrderTest {
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(SignatureStatusCode.INVALID_TOKEN_REF, summary.getErrorReport().getStatusCode());
+		assertEquals(SignatureStatusCode.INVALID_TOKEN_ID, summary.getErrorReport().getStatusCode());
 	}
 
 	@Test

@@ -27,6 +27,7 @@ import com.hedera.services.test.IdUtils;
 import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ public class TokenGetInfoUsageTest {
 	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
 	String name = "WhyWhyWhyWHY";
 	String symbol = "OKITSFINE";
+	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TokenGetInfoUsage subject;
 
@@ -71,13 +73,13 @@ public class TokenGetInfoUsageTest {
 
 		// then:
 		var node = usage.getNodedata();
-		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + symbol.length(), node.getBpt());
+		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE, node.getBpt());
 		assertEquals(expectedBytes, node.getBpr());
 	}
 
 	private Query tokenQuery() {
 		var op = TokenGetInfoQuery.newBuilder()
-				.setToken(IdUtils.asSymbolRef(symbol))
+				.setToken(id)
 				.build();
 		return Query.newBuilder().setTokenGetInfo(op).build();
 	}

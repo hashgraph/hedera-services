@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -60,21 +60,18 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		private final long amount;
 		private final String token;
 		private final String sender;
-		private final boolean useSymbols;
 		private final Optional<String> receiver;
 
 		TokenMovement(
 				String token,
 				String sender,
 				long amount,
-				Optional<String> receiver,
-				boolean useSymbols
+				Optional<String> receiver
 		) {
 			this.token = token;
 			this.sender = sender;
 			this.amount = amount;
 			this.receiver = receiver;
-			this.useSymbols = useSymbols;
 		}
 
 		public List<Map.Entry<String, Long>> generallyInvolved() {
@@ -84,15 +81,10 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 					: List.of(senderEntry);
 		}
 
-		public TokenRefTransferList specializedFor(HapiApiSpec spec) {
-			var scopedTransfers = TokenRefTransferList.newBuilder();
-			if (useSymbols)	 {
-				var symbol = spec.registry().getSymbol(token);
-				scopedTransfers.setToken(TokenRef.newBuilder().setSymbol(symbol).build());
-			} else {
-				var id = spec.registry().getTokenID(token);
-				scopedTransfers.setToken(TokenRef.newBuilder().setTokenId(id).build());
-			}
+		public TokenTransferList specializedFor(HapiApiSpec spec) {
+			var scopedTransfers = TokenTransferList.newBuilder();
+			var id = spec.registry().getTokenID(token);
+			scopedTransfers.setToken(id);
 			scopedTransfers.addTransfers(adjustment(sender, -amount, spec));
 			if (receiver.isPresent()) {
 				scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
@@ -117,15 +109,11 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 			}
 
 			public TokenMovement between(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver), false);
-			}
-
-			public TokenMovement symbolicallyBetween(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver), true);
+				return new TokenMovement(token, sender, amount, Optional.of(receiver));
 			}
 
 			public TokenMovement from(String magician) {
-				return new TokenMovement(token, magician, amount, Optional.empty(), false);
+				return new TokenMovement(token, magician, amount, Optional.empty());
 			}
 		}
 
@@ -190,14 +178,14 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		};
 	}
 
-	private List<TokenRefTransferList> transfersFor(HapiApiSpec spec) {
-		Map<TokenRef, List<AccountAmount>> aggregated = providers.stream()
+	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {
+		Map<TokenID, List<AccountAmount>> aggregated = providers.stream()
 				.map(p -> p.specializedFor(spec))
 				.collect(groupingBy(
-						TokenRefTransferList::getToken,
+						TokenTransferList::getToken,
 						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
 		return aggregated.entrySet().stream()
-				.map(entry -> TokenRefTransferList.newBuilder()
+				.map(entry -> TokenTransferList.newBuilder()
 						.setToken(entry.getKey())
 						.addAllTransfers(entry.getValue())
 						.build())

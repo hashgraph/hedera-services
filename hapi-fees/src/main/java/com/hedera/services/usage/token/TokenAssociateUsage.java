@@ -51,7 +51,7 @@ public class TokenAssociateUsage extends TokenUsage<TokenAssociateUsage> {
 	public FeeData get() {
 		var op = tokenOp.getTokenAssociate();
 		addAccountBpt();
-		op.getTokensList().forEach(this::addRefBpt);
+		op.getTokensList().forEach(t -> addAccountBpt());
 		novelRelsLasting(op.getTokensCount(), ESTIMATOR_UTILS.relativeLifetime(tokenOp, currentExpiry));
 		return usageEstimator.get();
 	}

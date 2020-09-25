@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -406,10 +405,6 @@ public class MiscUtils {
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
 		}
-	}
-
-	public static TokenRef asRef(TokenID id) {
-		return TokenRef.newBuilder().setTokenId(id).build();
 	}
 
 	public static String describe(JKey k) {
