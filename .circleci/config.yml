@@ -955,20 +955,15 @@ workflows:
           workflow-name: "nightly-performance-regression"
 
   nightly-network-error-regression:
-#    triggers:
-#      - schedule:
-#          cron: "30 21,0 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - 554-M-Reconnect-Functionality
-    jobs:
-      - build-platform-and-services:
+    triggers:
+      - schedule:
+          cron: "30 21,0 * * *"
           filters:
             branches:
               only:
                 - 554-M-Reconnect-Functionality
-
+    jobs:
+      - build-platform-and-services
       - run-network-error-regression:
           context: Slack
           requires:
