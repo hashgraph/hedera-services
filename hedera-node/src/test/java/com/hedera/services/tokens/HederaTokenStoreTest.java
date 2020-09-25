@@ -50,6 +50,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -429,41 +430,46 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void treasuryRemovalForTokenRemovesKeyWhenEmpty() {
-		subject.addKnownTreasury(treasury, misc);
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		subject.knownTreasuries.put(treasury, tokenSet);
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
 
 		// expect:
-		assertFalse(subject.isKnownTreasury(treasury));
+		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertTrue(subject.knownTreasuries.isEmpty());
 	}
 
 	@Test
 	public void addKnownTreasuryWorks() {
-		subject.addKnownTreasury(treasury, misc);
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		subject.knownTreasuries.put(treasury, tokenSet);
 
 		// expect:
-		assertTrue(subject.isKnownTreasury(treasury));
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
 	}
 
 	@Test
 	public void removeKnownTreasuryWorks() {
-		subject.addKnownTreasury(treasury, misc);
-		subject.addKnownTreasury(treasury, anotherMisc);
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc, anotherMisc));
+		subject.knownTreasuries.put(treasury, tokenSet);
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
 
 		// expect:
-		assertTrue(subject.isKnownTreasury(treasury));
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(1, subject.knownTreasuries.size());
+		assertTrue(subject.knownTreasuries.get(treasury).contains(anotherMisc));
 	}
 
 	@Test
 	public void isKnownTreasuryWorks() {
-		given(subject.knownTreasuries.containsKey(treasury)).willReturn(true);
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+
+		subject.knownTreasuries.put(treasury, tokenSet);
 
 		// expect:
-		assertTrue(subject.isKnownTreasury(treasury));
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
 	}
 
 	@Test
