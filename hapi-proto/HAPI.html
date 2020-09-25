@@ -275,10 +275,6 @@
                 </li>
               
                 <li>
-                  <a href="#proto.TokenRef"><span class="badge">M</span>TokenRef</a>
-                </li>
-              
-                <li>
                   <a href="#proto.TokenTransferList"><span class="badge">M</span>TokenTransferList</a>
                 </li>
               
@@ -652,6 +648,10 @@
               
                 <li>
                   <a href="#proto.TokenBalance"><span class="badge">M</span>TokenBalance</a>
+                </li>
+              
+                <li>
+                  <a href="#proto.TokenBalances"><span class="badge">M</span>TokenBalances</a>
                 </li>
               
               
@@ -1207,6 +1207,21 @@
         
           
           <li>
+            <a href="#TokenAssociate.proto">TokenAssociate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.TokenAssociateTransactionBody"><span class="badge">M</span>TokenAssociateTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#TokenBurn.proto">TokenBurn.proto</a>
             <ul>
               
@@ -1242,6 +1257,21 @@
               
                 <li>
                   <a href="#proto.TokenDeleteTransactionBody"><span class="badge">M</span>TokenDeleteTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#TokenDissociate.proto">TokenDissociate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.TokenDissociateTransactionBody"><span class="badge">M</span>TokenDissociateTransactionBody</a>
                 </li>
               
               
@@ -1352,10 +1382,6 @@
           <li>
             <a href="#TokenTransfer.proto">TokenTransfer.proto</a>
             <ul>
-              
-                <li>
-                  <a href="#proto.TokenRefTransferList"><span class="badge">M</span>TokenRefTransferList</a>
-                </li>
               
                 <li>
                   <a href="#proto.TokenTransfersTransactionBody"><span class="badge">M</span>TokenTransfersTransactionBody</a>
@@ -2490,37 +2516,6 @@
 
         
       
-        <h3 id="proto.TokenRef">TokenRef</h3>
-        <p>Reference for a Token. Tokens can be referenced with either TokenID or by Symbol</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tokenId</td>
-                  <td><a href="#proto.TokenID">TokenID</a></td>
-                  <td></td>
-                  <td><p>The ID of the Token </p></td>
-                </tr>
-              
-                <tr>
-                  <td>symbol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The Symbol of the Token </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="proto.TokenTransferList">TokenTransferList</h3>
         <p>A list of token IDs and amounts representing the transferred out (negative) or into (positive) amounts, represented in the lowest denomination of the token</p>
 
@@ -2990,6 +2985,18 @@
                 <td>TokenAccountWipe</td>
                 <td>67</td>
                 <td><p>Wipe token amount from Account holder</p></td>
+              </tr>
+            
+              <tr>
+                <td>TokenAssociateToAccount</td>
+                <td>68</td>
+                <td><p>Associate tokens to an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>TokenDissociateFromAccount</td>
+                <td>69</td>
+                <td><p>Dissociate tokens from an account</p></td>
               </tr>
             
           </tbody>
@@ -4847,7 +4854,7 @@ If unspecified, no change. </p></td>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The ID of the token, in the format that can be used as TokenRef </p></td>
+                  <td><p>The ID of the token </p></td>
                 </tr>
               
                 <tr>
@@ -4855,6 +4862,30 @@ If unspecified, no change. </p></td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>The current token balance </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.TokenBalances">TokenBalances</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tokenBalances</td>
+                  <td><a href="#proto.TokenBalance">TokenBalance</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8102,123 +8133,129 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>INVALID_TOKEN_REF</td>
-                <td>177</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</td>
-                <td>178</td>
+                <td>177</td>
                 <td><p>KYC must be granted and account does not have KYC granted</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_KYC_KEY</td>
-                <td>179</td>
+                <td>178</td>
                 <td><p>KYC key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>INSUFFICIENT_TOKEN_BALANCE</td>
-                <td>180</td>
+                <td>179</td>
                 <td><p>Token balance is not sufficient for the transaction</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_WAS_DELETED</td>
-                <td>181</td>
+                <td>180</td>
                 <td><p>Token transactions cannot be executed on deleted token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_SUPPLY_KEY</td>
-                <td>182</td>
+                <td>181</td>
                 <td><p>Supply key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_HAS_NO_WIPE_KEY</td>
-                <td>183</td>
+                <td>182</td>
                 <td><p>Wipe key is not set on token</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_MINT_AMOUNT</td>
-                <td>184</td>
+                <td>183</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>INVALID_TOKEN_BURN_AMOUNT</td>
+                <td>184</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</td>
                 <td>185</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP</td>
-                <td>186</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</td>
-                <td>187</td>
+                <td>186</td>
                 <td><p>Cannot execute wipe operation on treasury account</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_KYC_KEY</td>
-                <td>188</td>
+                <td>187</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>INVALID_WIPE_KEY</td>
-                <td>189</td>
+                <td>188</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>INVALID_FREEZE_KEY</td>
-                <td>190</td>
+                <td>189</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>INVALID_SUPPLY_KEY</td>
-                <td>191</td>
+                <td>190</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_NAME_ALREADY_IN_USE</td>
-                <td>192</td>
+                <td>191</td>
                 <td><p>Token Name is already used</p></td>
               </tr>
             
               <tr>
                 <td>MISSING_TOKEN_NAME</td>
-                <td>193</td>
+                <td>192</td>
                 <td><p>Token Name is not provided</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_NAME_TOO_LONG</td>
-                <td>194</td>
+                <td>193</td>
                 <td><p>Token name is too long</p></td>
               </tr>
             
               <tr>
                 <td>INVALID_WIPING_AMOUNT</td>
-                <td>195</td>
+                <td>194</td>
                 <td><p>The provided wipe amount must not be negative, zero or bigger than the token holder balance</p></td>
               </tr>
             
               <tr>
                 <td>TOKEN_IS_IMMUTABlE</td>
-                <td>196</td>
+                <td>195</td>
                 <td><p>Token does not have Admin key set, thus update/delete transactions cannot be performed</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT</td>
+                <td>196</td>
+                <td><p>An &lt;tt&gt;associateToken&lt;/tt&gt; operation specified a token already associated to the account</p></td>
+              </tr>
+            
+              <tr>
+                <td>TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES</td>
+                <td>197</td>
+                <td><p>An attempted operation is invalid until all token balances for the target account are zero</p></td>
               </tr>
             
           </tbody>
@@ -8559,6 +8596,51 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="TokenAssociate.proto">TokenAssociate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.TokenAssociateTransactionBody">TokenAssociateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>account</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokens</td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="TokenBurn.proto">TokenBurn.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8576,7 +8658,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which to burn tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -8750,9 +8832,54 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The token to be deleted. If invalid token is specified, transaction will result in INVALID_TOKEN_REF </p></td>
+                  <td><p>The token to be deleted. If invalid token is specified, transaction will result in INVALID_TOKEN_ID </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="TokenDissociate.proto">TokenDissociate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.TokenDissociateTransactionBody">TokenDissociateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>account</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokens</td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8788,7 +8915,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which this account will be frozen. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -8840,9 +8967,9 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
-                  <td><p>The token for which information is requested. If invalid token is provided, INVALID_TOKEN_REF response is returned. </p></td>
+                  <td><p>The token for which information is requested. If invalid token is provided, INVALID_TOKEN_ID response is returned. </p></td>
                 </tr>
               
             </tbody>
@@ -9045,7 +9172,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which this account will be granted KYC. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -9090,7 +9217,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which to mint tokens. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -9135,7 +9262,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which this account will get his KYC revoked. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -9260,6 +9387,20 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
+                <td>associateTokens</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Associates tokens to an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>dissociateTokens</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Dissociates tokens from an account</p></td>
+              </tr>
+            
+              <tr>
                 <td>getTokenInfo</td>
                 <td><a href="#proto.Query">Query</a></td>
                 <td><a href="#proto.Response">Response</a></td>
@@ -9278,37 +9419,6 @@ by HAPI.</p></td>
       <p></p>
 
       
-        <h3 id="proto.TokenRefTransferList">TokenRefTransferList</h3>
-        <p>A list of tokens (can be either ID or Symbol) and amounts to transfer out of each account (negative) or into it (positive)</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
-                  <td></td>
-                  <td><p>The token for which we want to transfer tokens </p></td>
-                </tr>
-              
-                <tr>
-                  <td>transfers</td>
-                  <td><a href="#proto.AccountAmount">AccountAmount</a></td>
-                  <td>repeated</td>
-                  <td><p>Multiple list of AccountAmounts, each of which has an account and amount to transfer into or out of </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="proto.TokenTransfersTransactionBody">TokenTransfersTransactionBody</h3>
         <p>Transfer tokens from some accounts to other accounts. Each negative amount is withdrawn from the corresponding account (a sender), and each positive one is added to the corresponding account (a receiver). All amounts must have sum of zero.</p><p>Each amount is a number with the lowest denomination possible for a token. Example:</p><p>Token X has 2 decimals. Account A transfers amount of 100 tokens by providing 10000 as amount in the TransferList. If Account A wants to send 100.55 tokens, he must provide 10055 as amount.</p><p>If any sender account fails to have sufficient token balance, then the entire transaction fails and none of the transfers occur, though transaction fee is still charged.</p>
 
@@ -9321,7 +9431,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>tokenTransfers</td>
-                  <td><a href="#proto.TokenRefTransferList">TokenRefTransferList</a></td>
+                  <td><a href="#proto.TokenTransferList">TokenTransferList</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -9359,7 +9469,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which this account will be unfrozen. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -9404,7 +9514,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The Token to be updated </p></td>
                 </tr>
@@ -9519,7 +9629,7 @@ by HAPI.</p></td>
               
                 <tr>
                   <td>token</td>
-                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The token for which the account will be wiped. If token does not exist, transaction results in INVALID_TOKEN_ID </p></td>
                 </tr>
@@ -9925,6 +10035,20 @@ by HAPI.</p></td>
                   <td><a href="#proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</a></td>
                   <td></td>
                   <td><p>Wipes amount of tokens from an account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokenAssociate</td>
+                  <td><a href="#proto.TokenAssociateTransactionBody">TokenAssociateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Associate tokens to an account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokenDissociate</td>
+                  <td><a href="#proto.TokenDissociateTransactionBody">TokenDissociateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Dissociate tokens from an account </p></td>
                 </tr>
               
             </tbody>

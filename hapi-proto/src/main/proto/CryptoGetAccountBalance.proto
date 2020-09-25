@@ -41,7 +41,7 @@ message CryptoGetAccountBalanceQuery {
 
 /* Contains information the balance of an Account in regards to the corresponding Token ID */
 message TokenBalance {
-    TokenID tokenId = 1; // The ID of the token, in the format that can be used as TokenRef
+    TokenID tokenId = 1; // The ID of the token
     uint64 balance = 2; // The current token balance
 }
 

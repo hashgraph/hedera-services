@@ -93,14 +93,6 @@ message TokenID {
     int64 tokenNum = 3; // A nonnegative token number
 }
 
-/* Reference for a Token. Tokens can be referenced with either TokenID or by Symbol */
-message TokenRef {
-    oneof ref {
-        TokenID tokenId = 1; // The ID of the Token
-        string symbol = 2; // The Symbol of the Token
-    }
-}
-
 /* Possible Freeze statuses returned on TokenGetInfoQuery or CryptoGetInfoResponse in TokenRelationship */
 enum TokenFreezeStatus {
     FreezeNotApplicable = 0;
