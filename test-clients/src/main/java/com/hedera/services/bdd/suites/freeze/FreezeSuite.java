@@ -26,6 +26,9 @@ import com.hedera.services.legacy.regression.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 import java.util.List;
@@ -34,6 +37,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
+import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
 
 
 public class FreezeSuite extends HapiApiSuite {
@@ -92,11 +96,21 @@ public class FreezeSuite extends HapiApiSuite {
 		}
 
 		log.info("Uploading file " + uploadFile);
+		File f = new File(uploadFile);
+		byte[] bytes = new byte[0];
+		try {
+			bytes = Files.readAllBytes(f.toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		final byte[] hash = sha384Digest(bytes);
+
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(fileIDString).path(uploadFile)
 				).when(
 						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
 								.startingIn(60).seconds().andLasting(1).minutes()
 				).then(
 				);

@@ -9,9 +9,9 @@ package com.hedera.services.state.initialization;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -188,7 +188,11 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private void materialize(FileID fid, JFileInfo info, byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		hfs.getData().put(fid, contents);
+		if (hfs.getSpecialFileSystem().isSpeicalFileID(fid)) {
+			hfs.getSpecialFileSystem().put(fid, contents);
+		} else {
+			hfs.getData().put(fid, contents);
+		}
 	}
 
 	private <T> void loadProtoWithSupplierFallback(

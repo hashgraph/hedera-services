@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
+import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
 import static junit.framework.TestCase.fail;
 
 
@@ -121,6 +122,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 			log.error("Directory creation failed", e);
 			fail("Directory creation failed");
 		}
+		final byte[] hash = sha384Digest(data);
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(APP_PROPERTIES)
@@ -128,6 +130,7 @@ public class UpdateServerFiles extends HapiApiSuite {
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
 						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
 								.startingIn(60).seconds().andLasting(FREEZE_LAST_MINUTES).minutes()
 				).then(
 				);

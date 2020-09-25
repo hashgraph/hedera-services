@@ -9,9 +9,9 @@ package com.hedera.services.context.primitives;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,14 +22,12 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.tokens.ExceptionalTokenStore;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -91,7 +89,7 @@ public class StateView {
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
 			EMPTY_ACCOUNTS_SUPPLIER,
-			null);
+			null, null);
 
 	Map<byte[], byte[]> contractStorage;
 	Map<byte[], byte[]> contractBytecode;
@@ -102,30 +100,34 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	private final PropertySource properties;
-
+	private SpecialFileSystem specialFileSystem;
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			PropertySource properties
+			PropertySource properties,
+			SpecialFileSystem specialFileSystem
 	) {
-		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties, specialFileSystem);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			PropertySource properties
+			PropertySource properties,
+			SpecialFileSystem specialFileSystem
 	) {
-		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties);
+		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, properties, specialFileSystem);
 	}
 
+	// TBD
 	public StateView(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
-			PropertySource properties
+			PropertySource properties,
+			SpecialFileSystem specialFileSystem
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
@@ -138,6 +140,7 @@ public class StateView {
 		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 		this.properties = properties;
+		this.specialFileSystem = specialFileSystem;
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -145,7 +148,11 @@ public class StateView {
 	}
 
 	public Optional<byte[]> contentsOf(FileID id) {
-		return Optional.ofNullable(fileContents.get(id));
+		if (specialFileSystem.isSpeicalFileID(id)) {
+			return Optional.ofNullable(specialFileSystem.get(id));
+		} else {
+			return Optional.ofNullable(fileContents.get(id));
+		}
 	}
 
 	public Optional<byte[]> bytecodeOf(ContractID id) {

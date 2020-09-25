@@ -134,7 +134,7 @@ class GetAccountInfoAnswerTest {
 		given(accounts.get(MerkleEntityId.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 
 		propertySource = mock(PropertySource.class);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetAccountInfoAnswer(tokenStore, optionValidator);

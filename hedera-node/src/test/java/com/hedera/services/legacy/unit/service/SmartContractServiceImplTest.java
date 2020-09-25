@@ -282,7 +282,7 @@ public class SmartContractServiceImplTest {
 				TEST_USAGE_PRICES,
 				TestExchangeRates.TEST_EXCHANGE,
 				TestFeesFactory.FEES_FACTORY.get(),
-				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource),
+				() -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
 				new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
 				new QueryFeeCheck(() -> accountFCMap),
 				new MockAccountNumbers(),

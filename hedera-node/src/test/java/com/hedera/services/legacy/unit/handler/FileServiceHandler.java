@@ -9,9 +9,9 @@ package com.hedera.services.legacy.unit.handler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -313,7 +313,7 @@ public class FileServiceHandler {
     if (!isProtectedEntity(fid)) {
       return returnCode;
     }
-    
+
     if (hasAuthorityToUpdate(gtx.getTransactionID().getAccountID(), fid)) {
       if (fid.getFileNum() == 111) {
         String fileDataPath = FeeCalcUtilsTest.pathOf(fid);
@@ -424,8 +424,8 @@ public class FileServiceHandler {
         }
         ByteString fileData = tx.getContents();
         ResponseCodeEnum validateCode = ResponseCodeEnum.OK;
-        if (fileData != null && !fileData.isEmpty()) {  
-          //check if allowed max size is not exceeded 	
+        if (fileData != null && !fileData.isEmpty()) {
+          //check if allowed max size is not exceeded
   	      //compare size to allowable size
           long fileSize = 	fileData.toByteArray().length;
           System.out.println("Going to update with " + fileSize + " bytes");
@@ -433,7 +433,7 @@ public class FileServiceHandler {
   	        throw new MaxFileSizeExceeded(String.format("The file size %d (bytes) is greater than allowed %d (bytes) ",
                     fileSize,
                     1024*1024L));
-  	      }	
+  	      }
           validateCode = validateSystemFile(fid, gtx, fileData.toByteArray(), false);
   	      System.out.println("ValidateCode = " + validateCode);
           if (validateCode.equals(ResponseCodeEnum.OK) || validateCode
@@ -472,12 +472,12 @@ public class FileServiceHandler {
               }
           }
         }
-        
+
         // exp time may be updated independent of content change
         if (expTimeUpdated) {
           fi.setExpirationTimeSeconds(expireTimeSec);
         }
-        
+
         if (validateCode.equals(ResponseCodeEnum.OK) || validateCode
             .equals(ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED)) {
           storageWrapper.fileCreate(fileMetaDataPath, fi.serialize(), timestamp.getEpochSecond(),
@@ -564,12 +564,6 @@ public class FileServiceHandler {
     return systemFileCreation.readExchangeRate(fileDataPath);
   }
 
-  public void createUpdateFeatureFile(FCStorageWrapper storageWrapper) {
-    FileID fid = FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM)
-            .setRealmNum(ApplicationConstants.DEFAULT_FILE_REALM)
-            .setShardNum(ApplicationConstants.DEFAULT_FILE_SHARD).build();
-    SystemFileCreation systemFileCreation = new SystemFileCreation(storageWrapper);
-  }
   /**
    * Is the new exchange rate valid? The exchange rate of newC tiny cents per newH tinybars is valid
    * if it increases by no more than bound percent, nor decreases by more than the inverse amount.

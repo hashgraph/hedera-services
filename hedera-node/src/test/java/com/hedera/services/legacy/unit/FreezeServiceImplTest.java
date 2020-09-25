@@ -158,7 +158,7 @@ public class FreezeServiceImplTest {
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource ),
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),

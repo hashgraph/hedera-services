@@ -6,25 +6,21 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
-import static junit.framework.TestCase.fail;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 
 public class UpdateFile150 extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
@@ -53,54 +49,21 @@ public class UpdateFile150 extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveTests()
-				);
-	}
-
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-//				getUpdateFileInfo(),
-//				emptyUpdateFile(),
-//				updateWithWrongFileID()
-//				missingFileHash(),
-				verifyFileHash()
 		);
 	}
 
-	private byte[] createZipFileData() {
-		log.info("Creating zip file from " + uploadPath);
-		//create directory if uploadPath doesn't exist
-		if (!new File(uploadPath).exists()) {
-			new File(uploadPath).mkdirs();
-		}
-		final String temp_dir = "temp/";
-		final String sdk_dir = temp_dir + "sdk/";
-		byte[] data = null;
-		try {
-			//create a temp sdk directory
-			File directory = new File(temp_dir);
-			if (directory.exists()) {
-				// delete everything in it recursively
-
-				FileUtils.cleanDirectory(directory);
-
-			} else {
-				directory.mkdir();
-			}
-
-			(new File(sdk_dir)).mkdir();
-			//copy files to sdk directory
-			FileUtils.copyDirectory(new File(uploadPath), new File(sdk_dir));
-			createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
-			String uploadFile = zipFile;
-
-			log.info("Uploading file " + uploadFile);
-			data = Files.readAllBytes(Paths.get(uploadFile));
-		} catch (IOException e) {
-			log.error("Directory creation failed", e);
-			fail("Directory creation failed");
-		}
-		return data;
+	private List<HapiApiSpec> positiveTests() {
+		return Arrays.asList(
+				updateWithWrongFileID(),
+				getUpdateFileInfo(),
+				missingFileHash(),
+				updateWithShortContent(),
+				updateWithLargeContent(),
+				notAllowedToDelete(),
+//				updateWithHash()
+				emptyUpdateFile(),
+				verifyFileHash()
+		);
 	}
 
 	private HapiApiSpec updateWithWrongFileID() {
@@ -125,24 +88,7 @@ public class UpdateFile150 extends HapiApiSuite {
 						//on start, 0.0.150 should already exist and has empty content
 						getFileInfo(fileIDString),
 						getFileContents(fileIDString)
-								.logging()
-								.logged()
 								.hasContents(spec -> spec.registry().getBytes("zeroBytes"))
-				).then(
-				);
-	}
-
-	private HapiApiSpec emptyUpdateFile() {
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
-		final byte[] hash = sha384Digest(new4k);
-		return defaultHapiSpec("emptyUpdateFile")
-				.given(
-						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
-								.startingIn(1)
-								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
-						// check server log it should has error about empty file
-				).when(
 				).then(
 				);
 	}
@@ -158,7 +104,6 @@ public class UpdateFile150 extends HapiApiSuite {
 				.given(
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
 				).when(
-						// set freeze start time many hours later so freeze will begin during the test
 						freeze().setFileID(fileIDString)
 								.startingIn(1)
 								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
@@ -166,6 +111,90 @@ public class UpdateFile150 extends HapiApiSuite {
 				).then(
 				);
 	}
+
+	/**
+	 * A correct update feature with file hash
+	 */
+	private HapiApiSpec updateWithShortContent() {
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(100);
+		return defaultHapiSpec("updateWithShortContent")
+				.given(
+						withOpContext((spec, opLog) -> {
+							spec.registry().saveBytes("updateFileContent",
+									ByteString.copyFrom(new4k));
+						})
+				).when(
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k)),
+						sleepFor(2000) //wait reach consensus
+				).then(
+						getFileContents(fileIDString)
+								.hasContents(spec -> spec.registry().getBytes("updateFileContent"))
+				);
+	}
+
+	/**
+	 * A correct update feature with file hash
+	 */
+	private HapiApiSpec updateWithLargeContent() {
+		final byte[] largeContent = TxnUtils.randomUtf8Bytes(80 * 1000);
+		return defaultHapiSpec("updateWithLargeContent")
+				.given(
+						withOpContext((spec, opLog) -> {
+							spec.registry().saveBytes("updateFileContent",
+									ByteString.copyFrom(largeContent));
+						})
+				).when(
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(largeContent)),
+						sleepFor(2000) //wait reach consensus
+				).then(
+						getFileContents(fileIDString)
+								.hasContents(spec -> spec.registry().getBytes("updateFileContent"))
+				);
+	}
+
+	// Last test try delete the special file
+	private HapiApiSpec notAllowedToDelete() {
+		return defaultHapiSpec("notAllowedToDelete")
+				.given(
+				).when(
+						fileDelete(fileIDString)
+								.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
+				).then(
+				);
+	}
+
+	private HapiApiSpec updateWithHash() {
+		final byte[] largeContent = TxnUtils.randomUtf8Bytes(180 * 1000);
+		final byte[] hash = sha384Digest(largeContent);
+		return defaultHapiSpec("updateWithHash")
+				.given(
+						withOpContext((spec, opLog) -> {
+							spec.registry().saveBytes("updateFileContent",
+									ByteString.copyFrom(largeContent));
+						})
+				).when(
+						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(largeContent)),
+						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
+								.startingIn(1)
+								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+				).then(
+				);
+	}
+
+
+	private HapiApiSpec emptyUpdateFile() {
+		return defaultHapiSpec("emptyUpdateFile")
+				.given(
+						freeze().setFileID(fileIDString)
+								.startingIn(1)
+								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
+						// check server log it should has error about empty file
+				).when(
+				).then(
+				);
+	}
+
 
 	/**
 	 * Intentionally set the wrong hash
@@ -178,7 +207,6 @@ public class UpdateFile150 extends HapiApiSuite {
 				.given(
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(new4k))
 				).when(
-						// set freeze start time many hours later so freeze will begin during the test
 						freeze().setFileID(fileIDString)
 								.setFileHash(hash)
 								.startingIn(1)
@@ -187,5 +215,4 @@ public class UpdateFile150 extends HapiApiSuite {
 				).then(
 				);
 	}
-
 }

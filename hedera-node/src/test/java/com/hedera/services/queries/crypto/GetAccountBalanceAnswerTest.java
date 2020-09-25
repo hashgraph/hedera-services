@@ -81,7 +81,7 @@ public class GetAccountBalanceAnswerTest {
 		propertySource = mock(PropertySource.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
-		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource);
+		view = new StateView(StateView.EMPTY_TOPICS_SUPPLIER, () -> accounts, propertySource, null);
 
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetAccountBalanceAnswer(optionValidator);

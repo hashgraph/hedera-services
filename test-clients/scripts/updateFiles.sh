@@ -65,7 +65,7 @@ function updateServiceMainJava
 #
 function checkUpdateResult
 {
-    if grep -q "$1" ../hedera-node/output/$2; then
+    if grep -q "$1" $2; then
         echo "SUCEED: Found expected string ($1) in $2"
     else
         echo "FAIL: Not found expected string ($1) in $2"
@@ -75,7 +75,7 @@ function checkUpdateResult
 
 if [[ -n $1 ]]; then
     echo "---------- run test to update jar files -----------"
-    checkUpdateResult "$OLD_MARKER" hgcaa.log
+     checkUpdateResult "$OLD_MARKER" ../hedera-node/output/hgcaa.log
 
     #run client test before freeze
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoCreateSuite -Dexec.cleanupDaemonThreads=false
@@ -93,7 +93,7 @@ if [[ -n $1 ]]; then
     #run client test after freeze
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoTransferSuite -Dexec.cleanupDaemonThreads=false
 
-    checkUpdateResult "$NEW_MARKER" hgcaa.log
+    checkUpdateResult "$NEW_MARKER" ../HapiApp2.0/output/hgcaa.log
 
 else
     echo "---------- run test to update settings.txt -----------"
@@ -108,7 +108,7 @@ else
     #run client test after freeze
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoTransferSuite -Dexec.cleanupDaemonThreads=false
 
-    checkUpdateResult "ERROR: fakeParameter is not a valid setting name" swirlds.log
+    checkUpdateResult "ERROR: fakeParameter is not a valid setting name" ../HapiApp2.0/output/swirlds.log
 
     # recover settings.txt
     git checkout ../hedera-node/settings.txt

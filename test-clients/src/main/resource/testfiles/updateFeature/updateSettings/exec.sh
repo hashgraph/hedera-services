@@ -83,7 +83,9 @@ shell_echo $LINENO $0 "current user is $USER"
 processId=$(ps -ef | grep 'com.swirlds.platform.Browser' | grep -v 'grep' | awk '{ printf $2 }')
 shell_echo $LINENO $0 "HGCApp processID=$processId"
 
-
+# create new working directory
+create_new_directory
+update_sdk_files
 # detect current platform and restart java process
 if [[ "$unamestr" == 'Linux' ]]; then
     # useful set circle ci AWS environment variable

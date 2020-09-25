@@ -48,6 +48,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingAccounts;
@@ -410,6 +411,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
+	private SpecialFileSystem specialFileSystem;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -480,14 +482,16 @@ public class ServicesContext {
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
-					properties());
+					properties(),
+					specialFileSystem());
 		}
 		return stateViews;
 	}
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(tokenStore(), this::topics, this::accounts, this::storage, properties());
+			currentView = new StateView(tokenStore(), this::topics, this::accounts, this::storage, properties(),
+					specialFileSystem());
 		}
 		return currentView;
 	}
@@ -844,7 +848,8 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					txnCtx()::consensusTime,
 					DataMapFactory.dataMapFrom(blobStore()),
-					MetadataMapFactory.metaMapFrom(blobStore()));
+					MetadataMapFactory.metaMapFrom(blobStore()),
+					specialFileSystem());
 			hfs.register(feeSchedulesManager());
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
@@ -979,6 +984,13 @@ public class ServicesContext {
 			ids = new SeqNoEntityIdSource(this::seqNo);
 		}
 		return ids;
+	}
+
+	public SpecialFileSystem specialFileSystem() {
+		if (specialFileSystem == null) {
+			specialFileSystem = new SpecialFileSystem();
+		}
+		return specialFileSystem;
 	}
 
 	public TransactionContext txnCtx() {

@@ -168,16 +168,6 @@ public class FreezeHandler {
 			//unzip bytes stream to target directory
 			UnzipUtility.unzip(fileBytes, TEMP_DIR);
 
-//			File sdk_directory = new File(TEMP_SDK_DIR);
-//			if (sdk_directory.exists()) {
-//				log.info("{} copying files from {} to {}", LOG_PREFIX, TEMP_SDK_DIR, TARGET_DIR);
-//				// copy files recursively to sdk directory
-//				FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
-//
-//				log.info("{} deleting directory {}", LOG_PREFIX, TEMP_SDK_DIR);
-//				FileUtils.deleteDirectory(sdk_directory);
-//			}
-
 			File deleteTxt = new File(DELETE_FILE);
 			if (deleteTxt.exists()) {
 				log.info("{} executing delete file list {}", LOG_PREFIX, DELETE_FILE);
