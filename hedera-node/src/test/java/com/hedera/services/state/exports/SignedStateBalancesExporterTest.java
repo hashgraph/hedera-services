@@ -96,7 +96,7 @@ class SignedStateBalancesExporterTest {
 		var anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
 		var firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
 		var secondNonNodeAccount = MerkleAccountFactory.newAccount().balance(secondNonNodeAccountBalance).get();
-		var deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
+		var deletedAccount = MerkleAccountFactory.newAccount().accountDeleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
 		accounts.put(fromAccountId(anotherNode), anotherNodeAccount);
