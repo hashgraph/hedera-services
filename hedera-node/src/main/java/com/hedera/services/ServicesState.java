@@ -243,6 +243,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	@Override
 	protected synchronized void onDelete() {
 		super.onDelete();
+		if (storage() == null) {
+			return;
+		}
+
 		storage().delete();
 		accounts().delete();
 		topics().delete();
