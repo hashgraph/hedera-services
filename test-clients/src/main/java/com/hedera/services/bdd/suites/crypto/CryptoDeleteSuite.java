@@ -83,6 +83,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				).when(
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
+								.via("deleteTxn")
 				).then(
 						getAccountInfo("transferAccount")
 								.has(accountWith().balance(B)),
@@ -120,9 +121,6 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoCreate("transferAccount")
 				)
 				.when(
-						tokenCreate("toBeTransferred")
-								.initialSupply(TOKEN_INITIAL_SUPPLY)
-								.treasury("treasury"),
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
 								.hasKnownStatus(SUCCESS)
@@ -141,11 +139,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						cryptoCreate("toBeDeleted"),
 						cryptoCreate("transferAccount")
 				)
-				.when(
-						tokenCreate("toBeTransferred")
-								.initialSupply(TOKEN_INITIAL_SUPPLY)
-								.treasury("treasury")
-				)
+				.when()
 				.then(
 						cryptoDelete("toBeDeleted")
 								.transfer("toBeDeleted")
@@ -157,12 +151,9 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotDeleteTreasuryAccount")
 				.given(
 						cryptoCreate("treasury"),
-						cryptoCreate("toBeDeleted"),
-						cryptoCreate("nonexistingAccount"),
-						cryptoCreate("transferAccount").balance(0L)
+						cryptoCreate("transferAccount")
 				)
 				.when(
-						cryptoDelete("nonexistingAccount"),
 						tokenCreate("toBeTransferred")
 								.initialSupply(TOKEN_INITIAL_SUPPLY)
 								.treasury("treasury")
