@@ -46,10 +46,6 @@ public class SyncPropertiesObject {
 
 	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
 
-	// if a node account's balance is less than this value tinybars, we should log
-	// Insufficient Node Balance warning;
-	private static long nodeAccountBalanceValidity = ApplicationConstants.ZERO;
-
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
 
@@ -72,10 +68,6 @@ public class SyncPropertiesObject {
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
 
 		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
-
-		// if a node account's balance is less than this value tinybars, we should log
-		// Insufficient Node Balance warning;
-		nodeAccountBalanceValidity = appConfig.getLong("nodeAccountBalanceValidity", ApplicationConstants.ZERO);
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
@@ -121,10 +113,6 @@ public class SyncPropertiesObject {
 
 	static int getTransferListSizeLimit() {
 		return transferListSizeLimit;
-	}
-
-	static long getNodeAccountBalanceValidity() {
-		return nodeAccountBalanceValidity;
 	}
 
 	static int getLocalCallEstReturnBytes() {

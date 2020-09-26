@@ -156,22 +156,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getRecordLogDir();
 	}
 
-	public static boolean isAccountBalanceExportEnabled() {
-		return AsyncPropertiesObject.isAccountBalanceExportEnabled();
-	}
-
-	public static String getAccountBalanceExportDir() {
-		return AsyncPropertiesObject.getAccountBalanceExportDir();
-	}
-
-	public static long accountBalanceExportPeriodMinutes() {
-		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
-	}
-
-	public static long getNodeAccountBalanceValidity() {
-		return SyncPropertiesObject.getNodeAccountBalanceValidity();
-	}
-
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
 	}

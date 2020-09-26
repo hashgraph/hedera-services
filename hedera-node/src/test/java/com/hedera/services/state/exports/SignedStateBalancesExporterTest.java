@@ -74,8 +74,6 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class SignedStateBalancesExporterTest {
-	String lineSeparator = System.getProperty("line.separator");
-
 	FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
@@ -401,21 +399,6 @@ class SignedStateBalancesExporterTest {
 		assertEquals(now.plusSeconds(dynamicProperties.balancesExportPeriodSecs()), subject.periodEnd);
 		assertTrue(subject.isTimeToExport(anEternityLater));
 		assertEquals(anEternityLater.plusSeconds(dynamicProperties.balancesExportPeriodSecs()), subject.periodEnd);
-	}
-
-	@Test
-	public void doesntExportWhenNotEnabled() {
-		// setup:
-		var otherDynamicProperties = new MockGlobalDynamicProps() {
-			@Override
-			public boolean shouldExportBalances() {
-				return false;
-			}
-		};
-		subject = new SignedStateBalancesExporter(properties, signer, otherDynamicProperties);
-
-		assertFalse(subject.isTimeToExport(now));
-		assertFalse(subject.isTimeToExport(anEternityLater));
 	}
 
 	@AfterAll

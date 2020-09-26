@@ -67,6 +67,7 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -266,7 +267,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.state.migration.DefaultStateMigrations;
 import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -847,7 +847,10 @@ public class ServicesContext {
 
 	public BalancesExporter balancesExporter() {
 		if (balancesExporter == null) {
-			balancesExporter = new DefaultBalancesExporter(platform, addressBook());
+			balancesExporter = new SignedStateBalancesExporter(
+					properties(),
+					platform()::sign,
+					globalDynamicProperties());
 		}
 		return balancesExporter;
 	}
