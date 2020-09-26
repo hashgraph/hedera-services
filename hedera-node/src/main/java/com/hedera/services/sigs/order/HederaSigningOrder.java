@@ -21,9 +21,6 @@ package com.hedera.services.sigs.order;
  */
 
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.sigs.metadata.SigMetadataLookup;
-import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
@@ -31,6 +28,38 @@ import com.hedera.services.legacy.exception.InvalidAutoRenewAccountIDException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.hedera.services.legacy.exception.InvalidTopicIDException;
+import com.hedera.services.sigs.metadata.SigMetadataLookup;
+import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +77,6 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
-import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -134,6 +162,11 @@ public class HederaSigningOrder {
 			return tokenOrder.get();
 		}
 
+		var fileOrder = forFile(txn, factory);
+		if (fileOrder.isPresent()) {
+			return fileOrder.get();
+		}
+
 		SigningOrderResult<T> othersSigningOrder = keyOrder(factory, () -> forOtherInvolvedParties(txn, factory));
 		log.debug("Signing order result for non-payer Hedera keys of txn {} was {}", txn, othersSigningOrder);
 		return othersSigningOrder;
@@ -175,7 +208,6 @@ public class HederaSigningOrder {
 	) throws SigningOrderException {
 		try {
 			return Stream.of(
-					forInvolvedFiles(txn),
 					forInvolvedContracts(txn)
 			).flatMap(List::stream).collect(toList());
 		} catch (InvalidFileIDException ife) {
@@ -237,6 +269,10 @@ public class HederaSigningOrder {
 			return Optional.of(tokenCreate(txn.getTransactionID(), txn.getTokenCreation(), factory));
 		} else if (txn.hasTokenTransfers()) {
 			return Optional.of(tokenTransact(txn.getTransactionID(), txn.getTokenTransfers(), factory));
+		} else if (txn.hasTokenAssociate()) {
+			return Optional.of(tokenAssociate(txn.getTransactionID(), txn.getTokenAssociate(), factory));
+		} else if (txn.hasTokenDissociate()) {
+			return Optional.of(tokenDissociate(txn.getTransactionID(), txn.getTokenDissociate(), factory));
 		} else if (txn.hasTokenFreeze()) {
 			return Optional.of(tokenFreezing(txn.getTransactionID(), txn.getTokenFreeze().getToken(), factory));
 		} else if (txn.hasTokenUnfreeze()) {
@@ -260,28 +296,28 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private List<JKey> forInvolvedFiles(TransactionBody txn) throws Exception {
-		if (isFileTxn(txn)) {
+	private <T> Optional<SigningOrderResult<T>> forFile(
+			TransactionBody txn,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (txn.hasFileCreate()) {
+			return Optional.of(fileCreate(txn.getFileCreate(), factory));
+		} else if (txn.hasFileAppend() || txn.hasFileUpdate()) {
 			var isSuperuser = entityNums.accounts().isSuperuser(txn.getTransactionID().getAccountID().getAccountNum());
-			if (txn.hasFileCreate()) {
-				return forFileCreate(txn.getFileCreate());
-			} else if (txn.hasFileAppend()) {
+			if (txn.hasFileAppend()) {
 				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileAppend);
-				return forFileAppend(txn.getFileAppend(), waclShouldSign, isSuperuser);
-			} else if (txn.hasFileUpdate()) {
-				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileUpdate);
-				return forFileUpdate(txn.getFileUpdate(), waclShouldSign, isSuperuser);
-			} else if (txn.hasFileDelete()) {
-				return forFileDelete(txn.getFileDelete());
+				return Optional.of(fileAppend(
+						txn.getTransactionID(), txn.getFileAppend(), waclShouldSign, isSuperuser, factory));
 			} else {
-				return EMPTY_LIST;
+				var waclShouldSign = targetWaclSigns.test(txn, HederaFunctionality.FileUpdate);
+				return Optional.of(fileUpdate(
+						txn.getTransactionID(), txn.getFileUpdate(), waclShouldSign, isSuperuser, factory));
 			}
+		} else if (txn.hasFileDelete()) {
+			return Optional.of(fileDelete(txn.getTransactionID(), txn.getFileDelete(), factory));
+		} else {
+			return Optional.empty();
 		}
-		return EMPTY_LIST;
-	}
-
-	private boolean isFileTxn(TransactionBody txn) {
-		return txn.hasFileCreate() || txn.hasFileAppend() || txn.hasFileUpdate() || txn.hasFileDelete();
 	}
 
 	private <T> Optional<SigningOrderResult<T>> forConsensus(
@@ -339,54 +375,85 @@ public class HederaSigningOrder {
 				: EMPTY_LIST;
 	}
 
-	private List<JKey> forFileDelete(FileDeleteTransactionBody op) throws Exception {
-		return forPossiblyImmutableFile(op.getFileID());
+	private <T> SigningOrderResult<T> fileDelete(
+			TransactionID txnId,
+			FileDeleteTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		var target = op.getFileID();
+		var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+		if (!targetResult.succeeded()) {
+			return factory.forMissingFile(target, txnId);
+		} else {
+			var wacl = targetResult.metadata().getWacl();
+			return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
+		}
 	}
 
-	private List<JKey> forFileUpdate(
+	private <T> SigningOrderResult<T> fileUpdate(
+			TransactionID txnId,
 			FileUpdateTransactionBody op,
 			boolean waclShouldSign,
-			boolean payerIsSuperuser
-	) throws Exception {
+			boolean payerIsSuperuser,
+			SigningOrderResultFactory<T> factory
+	) {
 		var target = op.getFileID();
 		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
-			return emptyList();
+			return SigningOrderResult.noKnownKeys();
 		} else {
-			return accumulated(keys -> {
+			var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+			if (!targetResult.succeeded()) {
+				return factory.forMissingFile(target, txnId);
+			} else {
+				List<JKey> required = new ArrayList<>();
 				if (waclShouldSign) {
-					keys.addAll(forPossiblyImmutableFile(op.getFileID()));
+					var wacl = targetResult.metadata().getWacl();
+					if (!wacl.isEmpty()) {
+						required.add(wacl);
+					}
 					if (op.hasKeys()) {
-						keys.add(asJKey(op.getKeys()));
+						var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+						candidate.ifPresent(required::add);
 					}
 				}
-			});
+				return factory.forValidOrder(required);
+			}
 		}
 	}
 
-	private List<JKey> forFileAppend(
+	private <T> SigningOrderResult<T> fileAppend(
+			TransactionID txnId,
 			FileAppendTransactionBody op,
 			boolean waclShouldSign,
-			boolean payerIsSuperuser
-	) throws Exception {
+			boolean payerIsSuperuser,
+			SigningOrderResultFactory<T> factory
+	) {
 		var target = op.getFileID();
 		if (payerIsSuperuser && entityNums.isSystemFile(target)) {
-			return emptyList();
+			return SigningOrderResult.noKnownKeys();
 		} else {
-			return waclShouldSign ? forPossiblyImmutableFile(target) : emptyList();
+			var targetResult = sigMetaLookup.fileSigningMetaFor(target);
+			if (!targetResult.succeeded()) {
+				return factory.forMissingFile(target, txnId);
+			} else {
+				if (!waclShouldSign) {
+					return SigningOrderResult.noKnownKeys();
+				} else {
+					var wacl = targetResult.metadata().getWacl();
+					return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
+				}
+			}
 		}
 	}
 
-	private List<JKey> forPossiblyImmutableFile(FileID fid) throws Exception {
-		var wacl = sigMetaLookup.lookup(fid).getWacl();
-		return wacl.isEmpty() ? EMPTY_LIST : List.of(wacl);
-	}
-
-	private List<JKey> forFileCreate(FileCreateTransactionBody op) throws Exception {
-		return List.of(asJKey(op.getKeys()));
-	}
-
-	private JKey asJKey(KeyList keyList) throws Exception {
-		return JKey.mapKey(Key.newBuilder().setKeyList(keyList).build());
+	private <T> SigningOrderResult<T> fileCreate(
+			FileCreateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+		return candidate.isPresent()
+				? factory.forValidOrder(List.of(candidate.get()))
+				: SigningOrderResult.noKnownKeys();
 	}
 
 	private <T> SigningOrderResult<T> cryptoDelete(
@@ -520,7 +587,7 @@ public class HederaSigningOrder {
 				ConsensusCreateTopicTransactionBody::hasAdminKey,
 				ConsensusCreateTopicTransactionBody::getAdminKey,
 				required);
-		if (!addAutoRenew(
+		if (!addAccount(
 				op,
 				ConsensusCreateTopicTransactionBody::hasAutoRenewAccount,
 				ConsensusCreateTopicTransactionBody::getAutoRenewAccount,
@@ -538,44 +605,61 @@ public class HederaSigningOrder {
 	) {
 		List<JKey> required = new ArrayList<>();
 
-		if (!addAutoRenew(op, TokenCreateTransactionBody::hasAutoRenewAccount, TokenCreateTransactionBody::getAutoRenewAccount, required)) {
+		var couldAddTreasury = addAccount(
+				op,
+				TokenCreateTransactionBody::hasTreasury,
+				TokenCreateTransactionBody::getTreasury,
+				required);
+		if (!couldAddTreasury) {
+			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
+		}
+		var couldAddAutoRenew = addAccount(
+				op,
+				TokenCreateTransactionBody::hasAutoRenewAccount,
+				TokenCreateTransactionBody::getAutoRenewAccount,
+				required);
+		if (!couldAddAutoRenew) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
-		addToMutableReqIfPresent(op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey, required);
+		addToMutableReqIfPresent(
+				op,
+				TokenCreateTransactionBody::hasAdminKey,
+				TokenCreateTransactionBody::getAdminKey,
+				required);
 
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenFreezing(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalFreezeKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalFreezeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenKnowing(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalKycKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalKycKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenRefloating(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalSupplyKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalSupplyKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenWiping(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenAdjusts(txnId, ref, factory, TokenSigningMetadata::optionalWipeKey);
+		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalWipeKey);
 	}
 
 	private <T> SigningOrderResult<T> tokenUpdates(
@@ -586,18 +670,22 @@ public class HederaSigningOrder {
 		List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
 		var basic = tokenMutates(txnId, op.getToken(), factory, nonAdminReqs);
 		var required = basic.getOrderedKeys();
-		if (!addAutoRenew(
+		if (!addAccount(
 				op,
 				TokenUpdateTransactionBody::hasAutoRenewAccount,
 				TokenUpdateTransactionBody::getAutoRenewAccount,
 				required)) {
 			return accountFailure(op.getAutoRenewAccount(), txnId, MISSING_AUTORENEW_ACCOUNT, factory);
 		}
-		addToMutableReqIfPresent(op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey, required);
+		addToMutableReqIfPresent(
+				op,
+				TokenUpdateTransactionBody::hasAdminKey,
+				TokenUpdateTransactionBody::getAdminKey,
+				required);
 		return basic;
 	}
 
-	private <T> boolean addAutoRenew(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
+	private <T> boolean addAccount(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
 		if (isPresent.test(op)) {
 			var result = sigMetaLookup.accountSigningMetaFor(getter.apply(op));
 			if (result.succeeded()) {
@@ -611,21 +699,21 @@ public class HederaSigningOrder {
 
 	private <T> SigningOrderResult<T> tokenMutates(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory
 	) {
-		return tokenMutates(txnId, ref, factory, Collections.emptyList());
+		return tokenMutates(txnId, id, factory, Collections.emptyList());
 	}
 
 	private <T> SigningOrderResult<T> tokenMutates(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory,
 			List<Function<TokenSigningMetadata, Optional<JKey>>> optionalKeyLookups
 	) {
 		List<JKey> required = new ArrayList<>();
 
-		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
 			var meta = result.metadata();
 			if (meta.adminKey().isPresent()) {
@@ -636,20 +724,20 @@ public class HederaSigningOrder {
 				candidate.ifPresent(required::add);
 			});
 		} else {
-			return factory.forMissingToken(ref, txnId);
+			return factory.forMissingToken(id, txnId);
 		}
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenAdjusts(
 			TransactionID txnId,
-			TokenRef ref,
+			TokenID id,
 			SigningOrderResultFactory<T> factory,
 			Function<TokenSigningMetadata, Optional<JKey>> optionalKeyLookup
 	) {
 		List<JKey> required = EMPTY_LIST;
 
-		var result = sigMetaLookup.tokenSigningMetaFor(ref);
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
 		if (result.succeeded()) {
 			var optionalKey = optionalKeyLookup.apply(result.metadata());
 			if (optionalKey.isPresent()) {
@@ -659,29 +747,65 @@ public class HederaSigningOrder {
 				return SigningOrderResult.noKnownKeys();
 			}
 		} else {
-			return factory.forMissingToken(ref, txnId);
+			return factory.forMissingToken(id, txnId);
 		}
+		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> tokenAssociate(
+			TransactionID txnId,
+			TokenAssociateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		return forSingleAccount(txnId, op.getAccount(), factory);
+	}
+
+	private <T> SigningOrderResult<T> tokenDissociate(
+			TransactionID txnId,
+			TokenDissociateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		return forSingleAccount(txnId, op.getAccount(), factory);
+	}
+
+	private <T> SigningOrderResult<T> forSingleAccount(
+			TransactionID txnId,
+			AccountID target,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = EMPTY_LIST;
+
+		var result = sigMetaLookup.accountSigningMetaFor(target);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			required = mutable(required);
+			required.add(meta.getKey());
+		} else {
+			return factory.forMissingAccount(target, txnId);
+		}
+
 		return factory.forValidOrder(required);
 	}
 
 	private <T> SigningOrderResult<T> tokenTransact(
 			TransactionID txnId,
-			TokenTransfers op,
+			TokenTransfersTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
 		List<JKey> required = EMPTY_LIST;
 
-		for (TokenRefTransferList xfers : op.getTokenTransfersList()) {
+		for (TokenTransferList xfers : op.getTokenTransfersList()) {
 			for (AccountAmount adjust : xfers.getTransfersList()) {
-				if (adjust.getAmount() < 0) {
-					var account = adjust.getAccountID();
-					var result = sigMetaLookup.accountSigningMetaFor(account);
-					if (result.succeeded()) {
+				var account = adjust.getAccountID();
+				var result = sigMetaLookup.accountSigningMetaFor(account);
+				if (result.succeeded()) {
+					var meta = result.metadata();
+					if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
 						required = mutable(required);
-						required.add(result.metadata().getKey());
-					} else {
-						return factory.forMissingAccount(account, txnId);
+						required.add(meta.getKey());
 					}
+				} else {
+					return factory.forMissingAccount(account, txnId);
 				}
 			}
 		}

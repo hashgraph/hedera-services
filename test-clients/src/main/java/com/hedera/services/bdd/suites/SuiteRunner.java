@@ -34,6 +34,8 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -67,6 +69,7 @@ import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.BucketThrottlingSpec;
+import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
@@ -115,22 +118,22 @@ public class SuiteRunner {
 
 	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
 		/* CI jobs */
-/*
-		put("CiConsensusAndCryptoJob", aof(
-				new DuplicateManagementTest(),
-				new TopicCreateSuite(),
-				new TopicUpdateSuite(),
-				new TopicDeleteSuite(),
-				new SubmitMessageSuite(),
-				new ChunkingSuite(),
-				new TopicGetInfoSuite(),
-				new ConsensusThrottlesSuite(),
-				new BucketThrottlingSpec(),
-				new SpecialAccountsAreExempted(),
-				new CryptoTransferSuite(),
-				new CryptoRecordsSanityCheckSuite(),
-				new Issue2144Spec()));
+//		put("CiConsensusAndCryptoJob", aof(
+//				new DuplicateManagementTest(),
+//				new TopicCreateSuite(),
+//				new TopicUpdateSuite(),
+//				new TopicDeleteSuite(),
+//				new SubmitMessageSuite(),
+//				new ChunkingSuite(),
+//				new TopicGetInfoSuite(),
+//				new ConsensusThrottlesSuite(),
+//				new BucketThrottlingSpec(),
+//				new SpecialAccountsAreExempted(),
+//				new CryptoTransferSuite(),
+//				new CryptoRecordsSanityCheckSuite(),
+//				new Issue2144Spec()));
 		put("CiTokenJob", aof(
+				new TokenAssociationSpecs(),
 				new TokenCreateSpecs(),
 				new TokenDeleteSpecs(),
 				new TokenManagementSpecs(),
@@ -141,15 +144,14 @@ public class SuiteRunner {
 				new ProtectedFilesUpdateSuite(),
 				new PermissionSemanticsSpec(),
 				new SysDelSysUndelSpec()));
-		put("CiSmartContractJob", aof(
-				new NewOpInConstructorSuite(),
-				new IssueXXXXSpec(),
-				new FetchSystemFiles(),
-				new ChildStorageSpec(),
-				new DeprecatedContractKeySuite(),
-				new ThresholdRecordCreationSuite(),
-				new ContractRecordsSanityCheckSuite()));
-*/
+//		put("CiSmartContractJob", aof(
+//				new NewOpInConstructorSuite(),
+//				new IssueXXXXSpec(),
+//				new FetchSystemFiles(),
+//				new ChildStorageSpec(),
+//				new DeprecatedContractKeySuite(),
+//				new ThresholdRecordCreationSuite(),
+//				new ContractRecordsSanityCheckSuite()));
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
@@ -179,6 +181,7 @@ public class SuiteRunner {
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
 		/* Functional tests - CRYPTO */
+		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
 		put("CryptoQueriesStressTests", aof(new CryptoQueriesStressTests()));

@@ -84,7 +84,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
 				.<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
 						TokenRevokeKycTransactionBody.class, b -> {
 							b.setAccount(aId);
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 						});
 		return b -> b.setTokenRevokeKyc(opBody);
 	}

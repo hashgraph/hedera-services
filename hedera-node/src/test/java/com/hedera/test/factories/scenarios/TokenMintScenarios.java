@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenMintScenarios implements TxnHandlingScenario {
 	MINT_WITH_SUPPLY_KEYED_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenMint()
-							.minting(asIdRef(KNOWN_TOKEN_WITH_SUPPLY))
+							.minting(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
 			));
@@ -43,7 +42,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenMint()
-							.minting(asIdRef(UNKNOWN_TOKEN))
+							.minting(UNKNOWN_TOKEN)
 							.get()
 			));
 		}
@@ -53,7 +52,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenMint()
-							.minting(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.minting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
 			));
 		}

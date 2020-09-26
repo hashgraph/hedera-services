@@ -25,20 +25,27 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
+import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.tokens.HederaTokenStore;
 import com.hedera.services.tokens.TokenStore;
@@ -52,14 +59,13 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -86,11 +92,12 @@ import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECO
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.PAYER_RECORDS;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.refWith;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -126,54 +133,52 @@ public class HederaLedgerTest {
 	final long miscFrozenTokenBalance = 500L;
 	final HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
 	final AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
+	final AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
 	final AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	final AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	final AccountID genesis = AccountID.newBuilder().setAccountNum(2).build();
 
 	TokenID frozenId = IdUtils.tokenWith(111);
 	MerkleToken frozenToken;
-	String frozenSymbol = "FREEZE";
 	TokenID tokenId = IdUtils.tokenWith(222);
 	MerkleToken token;
-	String otherSymbol = "FLOW";
 	MerkleAccount account;
-	String missingSymbol = "DIE";
 	TokenID missingId = IdUtils.tokenWith(333);
 
-	TokenTransfers multipleValidTokenTransfers = TokenTransfers.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(frozenSymbol))
+	TokenTransfersTransactionBody multipleValidTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(frozenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(otherSymbol))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
 
-	TokenTransfers missingSymbolTokenTransfers = TokenTransfers.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(missingSymbol))
+	TokenTransfersTransactionBody missingSymbolTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(missingId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfers missingIdTokenTransfers = TokenTransfers.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(missingId))
+	TokenTransfersTransactionBody missingIdTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(missingId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
-	TokenTransfers unmatchedTokenTransfers = TokenTransfers.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(otherSymbol))
+	TokenTransfersTransactionBody unmatchedTokenTransfers = TokenTransfersTransactionBody.newBuilder()
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +2_000),
 							adjustFrom(rand, -1_000)
@@ -189,7 +194,8 @@ public class HederaLedgerTest {
 	EntityIdSource ids;
 	ExpiringCreations creator;
 	AccountRecordsHistorian historian;
-	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 
 	@BeforeEach
 	private void setupWithMockLedger() {
@@ -227,11 +233,15 @@ public class HederaLedgerTest {
 		token = mock(MerkleToken.class);
 		given(token.freezeKey()).willReturn(Optional.empty());
 
-		ledger = mock(TransactionalLedger.class);
+		accountsLedger = mock(TransactionalLedger.class);
+		tokenRelsLedger = mock(TransactionalLedger.class);
 		creator = mock(ExpiringCreations.class);
 		addToLedger(misc, MISC_BALANCE, noopCustomizer, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
+		addToLedger(deletable, MISC_BALANCE, noopCustomizer, Map.of(
+				frozenId,
+				new TokenInfo(0, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
 		addDeletedAccountToLedger(deleted, noopCustomizer);
@@ -241,25 +251,15 @@ public class HederaLedgerTest {
 		given(tokenStore.exists(frozenId)).willReturn(true);
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.exists(missingId)).willReturn(false);
-		given(tokenStore.symbolExists(frozenSymbol)).willReturn(true);
-		given(tokenStore.lookup(frozenSymbol)).willReturn(frozenId);
-		given(tokenStore.symbolExists(otherSymbol)).willReturn(true);
-		given(tokenStore.lookup(otherSymbol)).willReturn(tokenId);
-		given(tokenStore.symbolExists(missingSymbol)).willReturn(false);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(missingSymbol).build()))
+		given(tokenStore.resolve(missingId))
 				.willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(missingId).build()))
-				.willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(frozenId).build()))
+		given(tokenStore.resolve(frozenId))
 				.willReturn(frozenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(frozenSymbol).build()))
-				.willReturn(frozenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(tokenId).build()))
-				.willReturn(tokenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(otherSymbol).build()))
+		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 
-		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 
 	@Test
@@ -376,7 +376,7 @@ public class HederaLedgerTest {
 		// and:
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
-		verify(ledger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -396,7 +396,7 @@ public class HederaLedgerTest {
 		assertEquals(0, subject.numTouches);
 		verify(tokenStore).adjustBalance(misc, tokenId, -555);
 		verify(tokenStore).adjustBalance(rand, tokenId, 555);
-		verify(ledger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 	}
 
 	@Test
@@ -416,12 +416,32 @@ public class HederaLedgerTest {
 	}
 
 	@Test
-	public void getsTokenBalanceInScope() {
+	public void getsTokenBalance() {
 		// given:
 		var balance = subject.getTokenBalance(misc, frozenId);
 
 		// expect:
 		assertEquals(miscFrozenTokenBalance, balance);
+	}
+
+	@Test
+	public void recognizesAccountWithNonZeroTokenBalances() {
+		// expect:
+		assertFalse(subject.allTokenBalancesVanish(misc));
+	}
+
+	@Test
+	public void throwsIfSubjectHasNoUsableTokenRelsLedger() {
+		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
+
+		// expect:
+		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
+	}
+
+	@Test
+	public void recognizesAccountWithZeroTokenBalances() {
+		// expect:
+		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
@@ -456,24 +476,31 @@ public class HederaLedgerTest {
 	@Test
 	public void injectsLedgerToTokenStore() {
 		// expect:
-		verify(tokenStore).setLedger(ledger);
+		verify(tokenStore).setAccountsLedger(accountsLedger);
 		verify(tokenStore).setHederaLedger(subject);
 	}
 
 	private void setupWithLiveLedger() {
-		ledger = new TransactionalLedger<>(
+		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens =
 				new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER);
+		tokenRelsLedger = new TransactionalLedger<>(
+				TokenRelProperty.class,
+				() -> new MerkleTokenRelStatus(),
+				new HashMapBackingTokenRels(),
+				new ChangeSummaryManager<>());
+		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
 				new MockGlobalDynamicProps(),
-				() -> tokens);
-		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
+				() -> tokens,
+				tokenRelsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 	}
 
 	private void setupWithLiveFcBackedLedger() {
@@ -488,19 +515,19 @@ public class HederaLedgerTest {
 		} catch (Exception impossible) {
 		}
 		backingAccounts.put(genesis, genesisAccount);
-		ledger = new TransactionalLedger<>(
+		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				() -> new MerkleAccount(),
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		subject = new HederaLedger(tokenStore, ids, creator, historian, ledger);
+		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
 	}
 
 	@Test
 	public void backingFcRootHashDoesDependsOnDeleteOrder() {
 		// when:
 		setupWithLiveFcBackedLedger();
-		ledger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
+		accountsLedger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 		commitNewSpawns(50, 100);
 		CryptoFactory.getInstance().digestTreeSync(backingMap);
 		byte[] firstPreHash = backingMap.getRootHash().getValue();
@@ -510,11 +537,11 @@ public class HederaLedgerTest {
 
 		// and:
 		setupWithLiveFcBackedLedger();
-		ledger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
+		accountsLedger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 		commitNewSpawns(50, 100);
 		CryptoFactory.getInstance().digestTreeSync(backingMap);
 		byte[] secondPreHash = backingMap.getRootHash().getValue();
-		ledger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR.reversed());
+		accountsLedger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR.reversed());
 		commitDestructions(50, 55);
 		CryptoFactory.getInstance().digestTreeSync(backingMap);
 		byte[] secondPostHash = backingMap.getRootHash().getValue();
@@ -528,7 +555,7 @@ public class HederaLedgerTest {
 	public void backingFcRootHashDependsOnUpdateOrder() {
 		// when:
 		setupWithLiveFcBackedLedger();
-		ledger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
+		accountsLedger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 		commitNewSpawns(50, 100);
 		CryptoFactory.getInstance().digestTreeSync(backingMap);
 		byte[] firstHash = backingMap.getRootHash().getValue();
@@ -580,7 +607,7 @@ public class HederaLedgerTest {
 		subject.destroy(genesis);
 
 		// then:
-		verify(ledger).destroy(genesis);
+		verify(accountsLedger).destroy(genesis);
 	}
 
 	@Test
@@ -589,7 +616,7 @@ public class HederaLedgerTest {
 		String summary = subject.currentChangeSet();
 
 		// then:
-		verify(ledger, never()).changeSetSoFar();
+		verify(accountsLedger, never()).changeSetSoFar();
 		assertEquals(HederaLedger.NO_ACTIVE_TXN_CHANGE_SET, summary);
 	}
 
@@ -597,16 +624,22 @@ public class HederaLedgerTest {
 	public void delegatesChangeSetIfInTxn() {
 		// setup:
 		String zeroingGenesis = "{0.0.2: [BALANCE -> 0]}";
+		String creatingTreasury = "{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}";
 
-		given(ledger.isInTransaction()).willReturn(true);
-		given(ledger.changeSetSoFar()).willReturn(zeroingGenesis);
+		given(accountsLedger.isInTransaction()).willReturn(true);
+		given(accountsLedger.changeSetSoFar()).willReturn(zeroingGenesis);
+		given(tokenRelsLedger.changeSetSoFar()).willReturn(creatingTreasury);
 
 		// when:
 		String summary = subject.currentChangeSet();
+		System.out.println(summary);
 
 		// then:
-		verify(ledger).changeSetSoFar();
-		assertEquals(zeroingGenesis, summary);
+		verify(accountsLedger).changeSetSoFar();
+		assertEquals(String.format(
+				"--- ACCOUNTS ---\n%s\n--- TOKEN RELATIONSHIPS ---\n%s",
+				zeroingGenesis,
+				creatingTreasury), summary);
 	}
 
 	@Test
@@ -614,7 +647,7 @@ public class HederaLedgerTest {
 		// setup:
 		MerkleAccount fakeGenesis = new MerkleAccount();
 
-		given(ledger.get(genesis)).willReturn(fakeGenesis);
+		given(accountsLedger.get(genesis)).willReturn(fakeGenesis);
 
 		// expect:
 		assertTrue(fakeGenesis == subject.get(genesis));
@@ -630,7 +663,7 @@ public class HederaLedgerTest {
 		boolean hasGenesis = subject.exists(genesis);
 
 		// then:
-		verify(ledger, times(2)).exists(any());
+		verify(accountsLedger, times(2)).exists(any());
 		assertTrue(hasGenesis);
 		assertFalse(hasMissing);
 	}
@@ -651,7 +684,7 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		subject.adjustBalance(genesis, -1L);
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
@@ -679,7 +712,7 @@ public class HederaLedgerTest {
 		subject.dropPendingTokenChanges();
 
 		// then:
-		verify(ledger).dropPendingTokenChanges();
+		verify(tokenRelsLedger).rollback();
 		// and;
 		assertEquals(0, subject.numTouches);
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
@@ -723,14 +756,14 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		subject.commit();
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		// and:
 		subject.begin();
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
@@ -744,7 +777,7 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertEquals(0L, subject.netTransfersInTxn().getAccountAmountsList().size());
@@ -758,7 +791,7 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
@@ -773,7 +806,7 @@ public class HederaLedgerTest {
 		AccountID a = asAccount("1.2.3");
 		subject.spawn(a, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		subject.commit();
 
 		// then:
@@ -789,7 +822,7 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		int numNetTransfers = subject.netTransfersInTxn().getAccountAmountsCount();
 		subject.commit();
 
@@ -850,14 +883,14 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		subject.rollback();
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		// and:
 		subject.begin();
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 		System.out.println(subject.netTransfersInTxn());
 
 		// then:
@@ -886,17 +919,24 @@ public class HederaLedgerTest {
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
+		tokenStore.associate(a, List.of(tA, tB));
+		tokenStore.associate(b, List.of(tA, tB));
+		tokenStore.associate(c, List.of(tA, tB));
+		tokenStore.associate(d, List.of(tA, tB));
+		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
 		subject.adjustBalance(c, 1_000L);
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
+		System.out.println(tokenRelsLedger.changeSetSoFar());
 		// and:
 		subject.adjustTokenBalance(a, tA, +10_000);
 		subject.adjustTokenBalance(a, tA, -5_000);
 		subject.adjustTokenBalance(a, tB, +1);
 		subject.adjustTokenBalance(a, tB, -1);
+
 		subject.adjustTokenBalance(b, tB, +10_000);
 		subject.adjustTokenBalance(c, tB, +50);
 		subject.adjustTokenBalance(c, tB, +50);
@@ -904,7 +944,7 @@ public class HederaLedgerTest {
 		subject.adjustTokenBalance(c, tA, +5000);
 		System.out.println(subject.freeze(a, tB));
 		System.out.println(subject.adjustTokenBalance(a, tB, +1_000_000));
-		System.out.println(ledger.changeSetSoFar());
+		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertThat(
@@ -967,7 +1007,7 @@ public class HederaLedgerTest {
 		subject.fundsReceivedRecordThreshold(genesis);
 
 		// then:
-		verify(ledger).get(genesis, FUNDS_RECEIVED_RECORD_THRESHOLD);
+		verify(accountsLedger).get(genesis, FUNDS_RECEIVED_RECORD_THRESHOLD);
 	}
 
 	@Test
@@ -976,7 +1016,7 @@ public class HederaLedgerTest {
 		subject.fundsSentRecordThreshold(genesis);
 
 		// then:
-		verify(ledger).get(genesis, FUNDS_SENT_RECORD_THRESHOLD);
+		verify(accountsLedger).get(genesis, FUNDS_SENT_RECORD_THRESHOLD);
 	}
 
 	@Test
@@ -985,7 +1025,7 @@ public class HederaLedgerTest {
 		subject.isSmartContract(genesis);
 
 		// then:
-		verify(ledger).get(genesis, IS_SMART_CONTRACT);
+		verify(accountsLedger).get(genesis, IS_SMART_CONTRACT);
 	}
 
 	@Test
@@ -994,7 +1034,33 @@ public class HederaLedgerTest {
 		subject.isDeleted(genesis);
 
 		// then:
-		verify(ledger).get(genesis, IS_DELETED);
+		verify(accountsLedger).get(genesis, IS_DELETED);
+	}
+
+	@Test
+	public void delegatesToGetTokens() {
+		// setup:
+		var tokens = new MerkleAccountTokens();
+
+		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
+
+		// when:
+		var actual = subject.getAssociatedTokens(genesis);
+
+		// then:
+		Assertions.assertSame(actual, tokens);
+	}
+
+	@Test
+	public void delegatesToSetTokens() {
+		// setup:
+		var tokens = new MerkleAccountTokens();
+
+		// when:
+		subject.setAssociatedTokens(genesis, tokens);
+
+		// then:
+		verify(accountsLedger).set(genesis, TOKENS, tokens);
 	}
 
 	@Test
@@ -1003,13 +1069,13 @@ public class HederaLedgerTest {
 		subject.expiry(genesis);
 
 		// then:
-		verify(ledger).get(genesis, EXPIRY);
+		verify(accountsLedger).get(genesis, EXPIRY);
 	}
 
 	@Test
 	public void throwsOnNetTransfersIfNotInTxn() {
 		// setup:
-		doThrow(IllegalStateException.class).when(ledger).throwIfNotInTxn();
+		doThrow(IllegalStateException.class).when(accountsLedger).throwIfNotInTxn();
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.netTransfersInTxn());
@@ -1034,7 +1100,7 @@ public class HederaLedgerTest {
 		verify(cb).accept(same(added.get(2)));
 		// and:
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(ledger).set(
+		verify(accountsLedger).set(
 				argThat(misc::equals),
 				argThat(PAYER_RECORDS::equals),
 				captor.capture());
@@ -1060,7 +1126,7 @@ public class HederaLedgerTest {
 		// then:
 		assertEquals(311L, newEarliestExpiry);
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(ledger).set(
+		verify(accountsLedger).set(
 				argThat(misc::equals),
 				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
@@ -1087,7 +1153,7 @@ public class HederaLedgerTest {
 		// then:
 		assertEquals(-1L, newEarliestExpiry);
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(ledger).set(
+		verify(accountsLedger).set(
 				argThat(misc::equals),
 				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
@@ -1112,7 +1178,7 @@ public class HederaLedgerTest {
 
 		// then:
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(ledger).set(
+		verify(accountsLedger).set(
 				argThat(misc::equals),
 				argThat(PAYER_RECORDS::equals),
 				captor.capture());
@@ -1140,7 +1206,7 @@ public class HederaLedgerTest {
 		// then:
 		assertEquals(100L, newEarliestExpiry);
 		ArgumentCaptor<FCQueue> captor = ArgumentCaptor.forClass(FCQueue.class);
-		verify(ledger).set(
+		verify(accountsLedger).set(
 				argThat(misc::equals),
 				argThat(HISTORY_RECORDS::equals),
 				captor.capture());
@@ -1166,17 +1232,17 @@ public class HederaLedgerTest {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 		// and:
-		given(ledger.existsPending(IdUtils.asAccount(String.format("0.0.%d", NEXT_ID)))).willReturn(true);
+		given(accountsLedger.existsPending(IdUtils.asAccount(String.format("0.0.%d", NEXT_ID)))).willReturn(true);
 
 		// when:
 		AccountID created = subject.create(rand, 1_000L, customizer);
 
 		// then:
 		assertEquals(NEXT_ID, created.getAccountNum());
-		verify(ledger).set(rand, BALANCE, RAND_BALANCE - 1_000L);
-		verify(ledger).create(created);
-		verify(ledger).set(created, BALANCE, 1_000L);
-		verify(customizer).customize(created, ledger);
+		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 1_000L);
+		verify(accountsLedger).create(created);
+		verify(accountsLedger).set(created, BALANCE, 1_000L);
+		verify(customizer).customize(created, accountsLedger);
 	}
 
 	@Test
@@ -1186,15 +1252,15 @@ public class HederaLedgerTest {
 		AccountID contract = asAccount("1.2.3");
 		long balance = 1_234L;
 		// and:
-		given(ledger.existsPending(contract)).willReturn(true);
+		given(accountsLedger.existsPending(contract)).willReturn(true);
 
 		// when:
 		subject.spawn(contract, balance, customizer);
 
 		// then:
-		verify(ledger).create(contract);
-		verify(ledger).set(contract, BALANCE, balance);
-		verify(customizer).customize(contract, ledger);
+		verify(accountsLedger).create(contract);
+		verify(accountsLedger).set(contract, BALANCE, balance);
+		verify(customizer).customize(contract, accountsLedger);
 	}
 
 	@Test
@@ -1203,9 +1269,9 @@ public class HederaLedgerTest {
 		subject.delete(rand, misc);
 
 		// expect:
-		verify(ledger).set(rand, BALANCE, 0L);
-		verify(ledger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
-		verify(ledger).set(rand, IS_DELETED, true);
+		verify(accountsLedger).set(rand, BALANCE, 0L);
+		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + RAND_BALANCE);
+		verify(accountsLedger).set(rand, IS_DELETED, true);
 	}
 
 	@Test
@@ -1223,7 +1289,7 @@ public class HederaLedgerTest {
 		subject.customize(rand, customizer);
 
 		// then:
-		verify(customizer).customize(rand, ledger);
+		verify(customizer).customize(rand, accountsLedger);
 
 	}
 
@@ -1241,7 +1307,7 @@ public class HederaLedgerTest {
 
 		// then:
 		assertEquals("0.0.3456", e.getMessage());
-		verify(ledger, never()).set(any(), any(), any());
+		verify(accountsLedger, never()).set(any(), any(), any());
 	}
 
 	@Test
@@ -1258,7 +1324,7 @@ public class HederaLedgerTest {
 
 		// then:
 		assertEquals("0.0.3456", e.getMessage());
-		verify(ledger, never()).set(any(), any(), any());
+		verify(accountsLedger, never()).set(any(), any(), any());
 	}
 
 	@Test
@@ -1276,7 +1342,7 @@ public class HederaLedgerTest {
 
 		// then:
 		assertEquals("0.0.3456", e.getMessage());
-		verify(ledger, never()).set(any(), any(), any());
+		verify(accountsLedger, never()).set(any(), any(), any());
 	}
 
 	@Test
@@ -1288,9 +1354,9 @@ public class HederaLedgerTest {
 		subject.doTransfers(accountAmounts);
 
 		// then:
-		verify(ledger).set(misc, BALANCE, MISC_BALANCE + 1);
-		verify(ledger).set(rand, BALANCE, RAND_BALANCE - 2);
-		verify(ledger).set(genesis, BALANCE, GENESIS_BALANCE + 1);
+		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + 1);
+		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE - 2);
+		verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE + 1);
 	}
 
 	@Test
@@ -1311,8 +1377,8 @@ public class HederaLedgerTest {
 		subject.doTransfer(genesis, misc, amount);
 
 		// then:
-		verify(ledger).set(genesis, BALANCE, GENESIS_BALANCE - amount);
-		verify(ledger).set(misc, BALANCE, MISC_BALANCE + amount);
+		verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE - amount);
+		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE + amount);
 	}
 
 	@Test
@@ -1330,7 +1396,7 @@ public class HederaLedgerTest {
 
 		// then:
 		assertEquals(messageFor(genesis, -1 * amount), e.getMessage());
-		verify(ledger, never()).set(any(), any(), any());
+		verify(accountsLedger, never()).set(any(), any(), any());
 	}
 
 	@Test
@@ -1342,7 +1408,7 @@ public class HederaLedgerTest {
 		subject.adjustBalance(genesis, amount);
 
 		// then:
-		verify(ledger).set(genesis, BALANCE, GENESIS_BALANCE + amount);
+		verify(accountsLedger).set(genesis, BALANCE, GENESIS_BALANCE + amount);
 	}
 
 	@Test
@@ -1360,7 +1426,7 @@ public class HederaLedgerTest {
 
 		// then:
 		assertEquals(messageFor(genesis, overdraftAdjustment), e.getMessage());
-		verify(ledger, never()).set(any(), any(), any());
+		verify(accountsLedger, never()).set(any(), any(), any());
 	}
 
 	@Test
@@ -1375,7 +1441,8 @@ public class HederaLedgerTest {
 	@Test
 	public void forwardsTransactionalSemantics() {
 		// setup:
-		InOrder inOrder = inOrder(ledger);
+		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
+		InOrder inOrder = inOrder(accountsLedger);
 
 		// when:
 		subject.begin();
@@ -1384,10 +1451,28 @@ public class HederaLedgerTest {
 		subject.rollback();
 
 		// then:
-		inOrder.verify(ledger).begin();
-		inOrder.verify(ledger).commit();
-		inOrder.verify(ledger).begin();
-		inOrder.verify(ledger).rollback();
+		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(accountsLedger).commit();
+		inOrder.verify(accountsLedger).begin();
+		inOrder.verify(accountsLedger).rollback();
+	}
+
+	@Test
+	public void forwardsTransactionalSemanticsToRelsLedgerIfPresent() {
+		// setup:
+		InOrder inOrder = inOrder(tokenRelsLedger);
+
+		// when:
+		subject.begin();
+		subject.commit();
+		subject.begin();
+		subject.rollback();
+
+		// then:
+		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).commit();
+		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).rollback();
 	}
 
 	private void addToLedger(
@@ -1414,34 +1499,35 @@ public class HederaLedgerTest {
 			HederaAccountCustomizer customizer,
 			Map<TokenID, TokenInfo> tokenInfo
 	) {
-		when(ledger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
-		when(ledger.get(id, BALANCE)).thenReturn(balance);
-		when(ledger.get(id, IS_DELETED)).thenReturn(false);
-		when(ledger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
-		when(ledger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
-		when(ledger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
-		when(ledger.exists(id)).thenReturn(true);
+		when(accountsLedger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
+		when(accountsLedger.get(id, BALANCE)).thenReturn(balance);
+		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
+		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
+		when(accountsLedger.get(id, FUNDS_SENT_RECORD_THRESHOLD)).thenReturn(1L);
+		when(accountsLedger.get(id, FUNDS_RECEIVED_RECORD_THRESHOLD)).thenReturn(2L);
+		when(accountsLedger.exists(id)).thenReturn(true);
+		var tokens = new MerkleAccountTokens();
+		tokens.associateAll(tokenInfo.keySet());
+		when(accountsLedger.get(id, TOKENS)).thenReturn(tokens);
 		// and:
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
-			when(ledger.get(
-					argThat(id::equals),
-					argThat(BALANCE::equals),
-					argThat(s -> s.id().equals(tId)))).thenReturn(info.balance);
+			var relationship = BackingTokenRels.asTokenRel(id, tId);
+			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
 		}
 	}
 
 	private void addDeletedAccountToLedger(AccountID id, HederaAccountCustomizer customizer) {
-		when(ledger.get(id, BALANCE)).thenReturn(0L);
-		when(ledger.get(id, IS_DELETED)).thenReturn(true);
+		when(accountsLedger.get(id, BALANCE)).thenReturn(0L);
+		when(accountsLedger.get(id, IS_DELETED)).thenReturn(true);
 	}
 
 	private void addPayerRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(ledger.get(id, PAYER_RECORDS)).thenReturn(records);
+		when(accountsLedger.get(id, PAYER_RECORDS)).thenReturn(records);
 	}
 
 	private void addRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(ledger.get(id, HISTORY_RECORDS)).thenReturn(records);
+		when(accountsLedger.get(id, HISTORY_RECORDS)).thenReturn(records);
 	}
 
 	FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {

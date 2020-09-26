@@ -22,7 +22,7 @@ package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -30,15 +30,15 @@ public class TokenGrantKycFactory extends SignedTxnFactory<TokenGrantKycFactory>
 	private TokenGrantKycFactory() {}
 
 	private AccountID to;
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenGrantKycFactory newSignedTokenGrantKyc() {
 		return new TokenGrantKycFactory();
 	}
 
-	public TokenGrantKycFactory granting(TokenRef ref, AccountID to) {
+	public TokenGrantKycFactory granting(TokenID id, AccountID to) {
 		this.to = to;
-		this.ref = ref;
+		this.id = id;
 		return this;
 	}
 
@@ -55,7 +55,7 @@ public class TokenGrantKycFactory extends SignedTxnFactory<TokenGrantKycFactory>
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenGrantKycTransactionBody.newBuilder()
-				.setToken(ref)
+				.setToken(id)
 				.setAccount(to);
 		txn.setTokenGrantKyc(op);
 	}

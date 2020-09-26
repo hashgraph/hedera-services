@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
@@ -45,9 +46,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -57,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -67,17 +69,59 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return allOf(
+				List.of(new HapiApiSpec[] {
 						freezeMgmtFailureCasesWork(),
 						freezeMgmtSuccessCasesWork(),
 						kycMgmtFailureCasesWork(),
 						kycMgmtSuccessCasesWork(),
 						supplyMgmtSuccessCasesWork(),
-						supplyMgmtFailureCasesWork(),
 						wipeAccountFailureCasesWork(),
 						wipeAccountSuccessCasesWork(),
-				}
+						supplyMgmtFailureCasesWork(),
+						burnTokenFailsDueToInsufficientTreasuryBalance(),
+				})
 		);
+	}
+
+	private HapiApiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
+		final String BURN_TOKEN = "burn";
+		final int TOTAL_SUPPLY = 100;
+		final int TRANSFER_AMOUNT = 50;
+		final int BURN_AMOUNT = 60;
+
+		return defaultHapiSpec("BurnTokenFailsDueToInsufficientTreasuryBalance")
+				.given(
+						newKeyNamed("burnKey"),
+						cryptoCreate("misc"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate(BURN_TOKEN)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(TOTAL_SUPPLY)
+								.supplyKey("burnKey"),
+						tokenAssociate("misc", BURN_TOKEN),
+						tokenTransact(
+								moving(TRANSFER_AMOUNT, BURN_TOKEN)
+										.between(TOKEN_TREASURY, "misc")),
+						getAccountBalance("misc")
+								.hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
+						getAccountInfo("misc").logged(),
+						burnToken(BURN_TOKEN, BURN_AMOUNT)
+								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
+								.via("wipeTxn"),
+						getTokenInfo(BURN_TOKEN).logged(),
+						getAccountInfo("misc").logged()
+
+				).then(
+						getTokenInfo(BURN_TOKEN)
+								.hasTotalSupply(TOTAL_SUPPLY),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
+						getTxnRecord("wipeTxn").logged()
+				);
 	}
 
 	public HapiApiSpec wipeAccountSuccessCasesWork() {
@@ -91,8 +135,9 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(wipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.initialFloat(1_000)
+								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", wipeableToken),
 						tokenTransact(
 								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
@@ -107,7 +152,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
 						getTokenInfo(wipeableToken)
-								.hasFloat(500),
+								.hasTotalSupply(500),
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(wipeableToken, 500),
 						getTxnRecord("wipeTxn").logged()
@@ -132,8 +177,9 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.wipeKey("wipeKey"),
 						tokenCreate(anotherWipeableToken)
 								.treasury(TOKEN_TREASURY)
-								.initialFloat(1_000)
+								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", anotherWipeableToken),
 						tokenTransact(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
@@ -141,7 +187,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
 						wipeTokenAccount(wipeableToken, "misc", 1)
-								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),
@@ -232,7 +278,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec freezeMgmtSuccessCasesWork() {
-		var withPlusDefaultTrue = "withPlusDefaultTrue";
 		var withPlusDefaultFalse = "withPlusDefaultFalse";
 
 		return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
@@ -241,14 +286,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						newKeyNamed("oneFreeze"),
 						newKeyNamed("twoFreeze"),
-						tokenCreate(withPlusDefaultTrue)
-								.freezeDefault(true)
-								.freezeKey("oneFreeze")
-								.treasury(TOKEN_TREASURY),
 						tokenCreate(withPlusDefaultFalse)
 								.freezeDefault(false)
 								.freezeKey("twoFreeze")
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withPlusDefaultFalse)
 				).when(
 						tokenTransact(
 								moving(1, withPlusDefaultFalse)
@@ -282,7 +324,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(withoutKycKey)
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withKycKey, withoutKycKey)
 				).when(
 						tokenTransact(
 								moving(1, withKycKey)
@@ -313,8 +356,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						newKeyNamed("supplyKey"),
 						tokenCreate("supple")
 								.supplyKey("supplyKey")
-								.initialFloat(10)
-								.divisibility(1)
+								.initialSupply(10)
+								.decimals(1)
 								.treasury(TOKEN_TREASURY)
 				).when(
 						getTokenInfo("supple").logged(),
@@ -334,23 +377,27 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed("supplyKey")
 				).when(
-						tokenCreate("rigid"),
-						tokenCreate("supple")
-								.supplyKey("supplyKey")
-								.divisibility(16)
-								.initialFloat(1)
-				).then(
-						mintToken("rigid", 1)
-								.signedBy(GENESIS)
-								.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-						burnToken("rigid", 1)
-								.signedBy(GENESIS)
-								.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-						mintToken("supple", 1_000)
-								.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-						burnToken("supple", 2)
-								.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
-				);
+				tokenCreate("rigid"),
+				tokenCreate("supple")
+						.supplyKey("supplyKey")
+						.decimals(16)
+						.initialSupply(1)
+		).then(
+				mintToken("rigid", 1)
+						.signedBy(GENESIS)
+						.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+				burnToken("rigid", 1)
+						.signedBy(GENESIS)
+						.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+				mintToken("supple", Long.MAX_VALUE)
+						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+				mintToken("supple", 0)
+						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+				burnToken("supple", 2)
+						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
+				burnToken("supple", 0)
+						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
+		);
 	}
 
 	@Override

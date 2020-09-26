@@ -24,13 +24,14 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
+import java.util.List;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -78,9 +79,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
-		var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
-
 		var status = OK;
+		status = store.associate(treasury, List.of(created));
+		if (status != OK) {
+			abortWith(status);
+			return;
+		}
 		if (op.hasFreezeKey()) {
 			status = ledger.unfreeze(treasury, created);
 		}
@@ -88,7 +92,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			status = ledger.grantKyc(treasury, created);
 		}
 		if (status == OK) {
-			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
 		}
 
 		if (status != OK) {
@@ -99,13 +103,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
-	}
-
-	/* The preconditions on validity of this computation must be enforced by the TokenStore. */
-	private long initialTinyFloat(long initialFloat, int divisibility) {
-		return BigInteger.valueOf(initialFloat)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

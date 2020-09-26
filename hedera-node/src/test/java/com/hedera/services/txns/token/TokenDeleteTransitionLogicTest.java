@@ -27,7 +27,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +34,10 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
@@ -48,7 +48,6 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class TokenDeleteTransitionLogicTest {
 	private TokenID tokenId = IdUtils.asToken("0.0.12345");
-	private TokenRef token = IdUtils.asIdRef("0.0.12345");
 	private AccountID account = IdUtils.asAccount("0.0.54321");
 
 	private TokenStore tokenStore;
@@ -72,26 +71,39 @@ class TokenDeleteTransitionLogicTest {
 	public void capturesInvalidDelete() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.delete(token)).willReturn(INVALID_TOKEN_REF);
+		given(tokenStore.delete(tokenId)).willReturn(INVALID_TOKEN_ID);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
+		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	public void capturesInvalidDeletionDueToAlreadyDeleted() {
+		givenValidTxnCtx();
+		// and:
+		given(tokenStore.delete(tokenId)).willReturn(TOKEN_WAS_DELETED);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
 	}
 
 	@Test
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.delete(token)).willReturn(OK);
+		given(tokenStore.delete(tokenId)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).delete(token);
+		verify(tokenStore).delete(tokenId);
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -120,7 +132,7 @@ class TokenDeleteTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		tokenDeleteTxn = TransactionBody.newBuilder()
 				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder()
-						.setToken(token))
+						.setToken(tokenId))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

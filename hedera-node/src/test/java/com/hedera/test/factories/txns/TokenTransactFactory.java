@@ -23,9 +23,8 @@ package com.hedera.test.factories.txns;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -38,7 +37,7 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();
 
 	private boolean adjustmentsAreSet = false;
-	private TokenTransfers.Builder xfers = TokenTransfers.newBuilder();
+	private TokenTransfersTransactionBody.Builder xfers = TokenTransfersTransactionBody.newBuilder();
 
 	private TokenTransactFactory() {}
 
@@ -69,8 +68,8 @@ public class TokenTransactFactory extends SignedTxnFactory<TokenTransactFactory>
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		if (!adjustmentsAreSet) {
 			adjustments.entrySet().stream()
-					.forEach(entry -> xfers.addTokenTransfers(TokenRefTransferList.newBuilder()
-							.setToken(TokenRef.newBuilder().setTokenId(entry.getKey()).build())
+					.forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
+							.setToken(entry.getKey())
 							.addAllTransfers(entry.getValue())
 							.build()));
 			adjustmentsAreSet = true;

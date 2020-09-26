@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,20 +25,24 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import java.util.Arrays;
 import java.util.List;
 
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class CryptoDeleteSuite extends HapiApiSuite {
 	static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
@@ -54,21 +58,12 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				fundsTransferOnDelete()
-		);
+		return List.of(new HapiApiSpec[] {
+				fundsTransferOnDelete(),
+				cannotDeleteAccountsWithNonzeroTokenBalances(),
+		});
 	}
 
-	private List<HapiApiSpec> negativeTests() {
-		return Arrays.asList(
-		);
-	}
 
 	private HapiApiSpec fundsTransferOnDelete() {
 		long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
@@ -86,5 +81,19 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 						getTxnRecord("deleteTxn")
 								.hasPriority(recordWith().transfers(including(
 										tinyBarsFromTo("toBeDeleted", "transferAccount", B)))));
+	}
+
+	private HapiApiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
+		return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
+				.given(
+						cryptoCreate("toBeDeleted"),
+						cryptoCreate("transferAccount")
+				).when(
+						tokenCreate("misc").treasury("toBeDeleted")
+				).then(
+						cryptoDelete("toBeDeleted")
+								.transfer("transferAccount")
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+				);
 	}
 }
