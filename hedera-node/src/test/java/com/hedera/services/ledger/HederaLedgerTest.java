@@ -1462,6 +1462,8 @@ public class HederaLedgerTest {
 		// setup:
 		InOrder inOrder = inOrder(tokenRelsLedger);
 
+		given(tokenRelsLedger.isInTransaction()).willReturn(true);
+
 		// when:
 		subject.begin();
 		subject.commit();
@@ -1470,8 +1472,10 @@ public class HederaLedgerTest {
 
 		// then:
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
 	}
 
