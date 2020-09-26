@@ -108,10 +108,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTransferListSizeLimit();
 	}
 
-	public static long getInitialGenesisCoins() {
-		return SyncPropertiesObject.getInitialGenesisCoins();
-	}
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}

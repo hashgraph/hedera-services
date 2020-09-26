@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.context;
 
 /*-
  * ‌
@@ -20,8 +20,19 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class StorageKeyNotFoundException extends Exception {
-	public StorageKeyNotFoundException(String message) {
-		super(message);
+import com.swirlds.common.PlatformStatus;
+import static com.swirlds.common.PlatformStatus.*;
+
+public class ContextPlatformStatus implements CurrentPlatformStatus {
+	private PlatformStatus current = STARTING_UP;
+
+	@Override
+	public synchronized void set(PlatformStatus status) {
+		current = status;
+	}
+
+	@Override
+	public synchronized PlatformStatus get() {
+		return current;
 	}
 }

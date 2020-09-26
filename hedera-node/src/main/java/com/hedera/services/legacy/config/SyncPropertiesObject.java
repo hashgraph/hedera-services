@@ -38,7 +38,6 @@ public class SyncPropertiesObject {
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
-	private static long initialGenesisCoins = ApplicationConstants.INITIAL_GENESIS_COINS;
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
 
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
@@ -60,7 +59,6 @@ public class SyncPropertiesObject {
 		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
-		initialGenesisCoins = appConfig.getLong("initialGenesisCoins", ApplicationConstants.INITIAL_GENESIS_COINS);
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
 
@@ -93,10 +91,6 @@ public class SyncPropertiesObject {
 
 	static int getKeyExpansionDepth() {
 		return keyExpansionDepth;
-	}
-
-	static long getInitialGenesisCoins() {
-		return initialGenesisCoins;
 	}
 
 	static long getDefaultContractDurationSec() {
