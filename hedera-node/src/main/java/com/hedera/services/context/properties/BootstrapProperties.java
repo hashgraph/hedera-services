@@ -191,6 +191,7 @@ public class BootstrapProperties implements PropertySource {
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
 			"balances.exportEnabled",
 			"balances.exportPeriodSecs",
+			"balances.exportTokenBalances",
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultReceiveThreshold",
@@ -234,6 +235,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("balances.exportPeriodSecs", AS_INT),
 			entry("balances.nodeBalanceWarningThreshold", AS_LONG),
 			entry("cache.records.ttl", AS_INT),
+			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),
