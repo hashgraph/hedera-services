@@ -43,6 +43,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '%s'!";
 	static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '%s' has unacceptably low balance %d!";
 	static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '%s'!";
+	static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '%s'!";
+	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '%s'.";
 	static final Instant NEVER = null;
 	static final Base64.Encoder encoder = Base64.getEncoder();
 
@@ -99,15 +101,26 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 
 		var csvLoc = lastUsedExportDir + when + "_Balances.csv";
-		boolean succeeded = writeFile(summary, csvLoc, when);
-		if (succeeded) {
-			var hash = hashReader.readHash(csvLoc);
-			var sig = signer.apply(hash);
-			var sigFileLoc = sigFileWriter.writeSigFile(csvLoc, sig, hash);
+		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, when);
+		if (exportSucceeded) {
+			tryToSign(csvLoc);
 		}
 	}
 
-	private boolean writeFile(BalancesSummary summary, String csvLoc, Instant when) {
+	private void tryToSign(String csvLoc) {
+		try {
+			var hash = hashReader.readHash(csvLoc);
+			var sig = signer.apply(hash);
+			var sigFileLoc = sigFileWriter.writeSigFile(csvLoc, sig, hash);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc));
+			}
+		} catch (Exception e) {
+			log.error(String.format(BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL, csvLoc), e);
+		}
+	}
+
+	private boolean exportBalancesFile(BalancesSummary summary, String csvLoc, Instant when) {
 		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(csvLoc))) {
 			if (dynamicProperties.shouldExportTokenBalances()) {
 				addRelease090Header(fout, when);

@@ -53,6 +53,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL;
+import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -64,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
@@ -122,6 +125,7 @@ class SignedStateBalancesExporterTest {
 	@BeforeEach
 	public void setUp() throws Exception {
 		mockLog = mock(Logger.class);
+		given(mockLog.isDebugEnabled()).willReturn(true);
 		SignedStateBalancesExporter.log = mockLog;
 
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
@@ -207,20 +211,36 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
+	public void logsOnSigningFailure() {
+		// setup:
+		var loc = testExportLoc();
+
+		given(hashReader.readHash(loc)).willThrow(IllegalStateException.class);
+
+		// when:
+		subject.toCsvFile(state, now);
+
+		// then:
+		verify(mockLog).error(any(String.class), any(Throwable.class));
+
+		// cleanup:
+		new File(loc).delete();
+	}
+
+	@Test
 	public void usesNewFormatWhenExportingTokenBalances() throws IOException {
 		// setup:
 		var loc = testExportLoc();
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
+		given(sigFileWriter.writeSigFile(any(), any(), any())).willReturn(loc + "_sig");
 
 		// when:
 		subject.toCsvFile(state, now);
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(loc));
-		System.out.println(lines);
 		var expected = theExpectedBalances();
-		System.out.println(expected);
 		assertEquals(expected.size() + 3, lines.size());
 		assertEquals(String.format("# 0.1.0", now), lines.get(0));
 		assertEquals(String.format("# TimeStamp:%s", now), lines.get(1));
@@ -237,6 +257,8 @@ class SignedStateBalancesExporterTest {
 		}
 		// and:
 		verify(sigFileWriter).writeSigFile(loc, sig, fileHash);
+		// and:
+		verify(mockLog).debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig"));
 
 		// cleanup:
 		new File(loc).delete();
