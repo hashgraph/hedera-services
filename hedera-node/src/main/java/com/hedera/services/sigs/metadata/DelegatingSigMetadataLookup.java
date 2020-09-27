@@ -148,6 +148,11 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
+	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id) {
+		return contractSigMetaLookup.safeLookup(id);
+	}
+
+	@Override
 	public SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id) {
 		return fileSigMetaLookup.safeLookup(id);
 	}

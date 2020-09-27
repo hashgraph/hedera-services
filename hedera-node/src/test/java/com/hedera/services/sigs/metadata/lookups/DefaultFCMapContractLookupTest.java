@@ -20,6 +20,7 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -31,6 +32,7 @@ import com.hedera.services.legacy.exception.AdminKeyNotExistException;
 import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.swirlds.fcmap.FCMap;
 import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
@@ -38,7 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 import static com.hedera.test.factories.accounts.MockFCMapFactory.*;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(JUnitPlatform.class)
 public class DefaultFCMapContractLookupTest {
@@ -48,15 +52,17 @@ public class DefaultFCMapContractLookupTest {
 	private DefaultFCMapContractLookup subject;
 
 	@Test
-	public void failsOnMissingAccount() {
+	public void failsSafelyOnMissingAccount() {
 		// given:
 		accounts = newAccounts().get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		assertThrows(InvalidContractIDException.class, () -> {
-			subject.lookup(contract);
-		});
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertFalse(result.succeeded());
+		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -65,10 +71,12 @@ public class DefaultFCMapContractLookupTest {
 		accounts = newAccounts().withAccount(id, newContract().deleted(true).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		assertThrows(InvalidContractIDException.class, () -> {
-			subject.lookup(contract);
-		});
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertFalse(result.succeeded());
+		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -77,10 +85,12 @@ public class DefaultFCMapContractLookupTest {
 		accounts = newAccounts().withAccount(id, newAccount().get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		assertThrows(InvalidContractIDException.class, () -> {
-			subject.lookup(contract);
-		});
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertFalse(result.succeeded());
+		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -89,10 +99,12 @@ public class DefaultFCMapContractLookupTest {
 		accounts = newAccounts().withAccount(id, newContract().get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		assertThrows(AdminKeyNotExistException.class, () -> {
-			subject.lookup(contract);
-		});
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertFalse(result.succeeded());
+		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -101,10 +113,12 @@ public class DefaultFCMapContractLookupTest {
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(new JContractIDKey(contract)).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		assertThrows(AdminKeyNotExistException.class, () -> {
-			subject.lookup(contract);
-		});
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertFalse(result.succeeded());
+		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -114,8 +128,10 @@ public class DefaultFCMapContractLookupTest {
 		accounts = newAccounts().withAccount(id, newContract().accountKeys(desiredKey).get()).get();
 		subject = new DefaultFCMapContractLookup(() -> accounts);
 
-		// expect:
-		Assert.assertTrue(subject.lookup(contract).hasAdminKey());
-		assertEquals(desiredKey, subject.lookup(contract).getKey());
+		// when:
+		var result = subject.safeLookup(contract);
+
+		// then:
+		assertTrue(result.succeeded());
 	}
 }

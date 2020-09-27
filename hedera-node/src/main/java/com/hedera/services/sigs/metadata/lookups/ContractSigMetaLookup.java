@@ -39,4 +39,6 @@ public interface ContractSigMetaLookup {
 	 * @throws Exception if no appropriate metadata exists.
 	 */
 	ContractSigningMetadata lookup(ContractID contract) throws Exception;
+
+	SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id);
 }

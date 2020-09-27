@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.goterl.lazycode.lazysodium.interfaces.Sign;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.AdminKeyNotExistException;
@@ -31,6 +32,7 @@ import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -167,22 +169,12 @@ public class HederaSigningOrder {
 			return fileOrder.get();
 		}
 
-		SigningOrderResult<T> othersSigningOrder = keyOrder(factory, () -> forOtherInvolvedParties(txn, factory));
-		log.debug("Signing order result for non-payer Hedera keys of txn {} was {}", txn, othersSigningOrder);
-		return othersSigningOrder;
-	}
-
-	private <T> SigningOrderResult<T> keyOrder(
-			SigningOrderResultFactory<T> factory,
-			OrderSupplier supplier
-	) {
-		try {
-			return factory.forValidOrder(supplier.get());
-		} catch (SigningOrderException soe) {
-			@SuppressWarnings("unchecked")
-			SigningOrderResult<T> summary = (SigningOrderResult<T>) soe.getErrorReport();
-			return summary;
+		var contractOrder = forContract(txn, factory);
+		if (contractOrder.isPresent()) {
+			return contractOrder.get();
 		}
+
+		return SigningOrderResult.noKnownKeys();
 	}
 
 	private <T> SigningOrderResult<T> orderForPayer(
@@ -202,41 +194,21 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private List<JKey> forOtherInvolvedParties(
+	private <T> Optional<SigningOrderResult<T>> forContract(
 			TransactionBody txn,
-			SigningOrderResultFactory<?> factory
-	) throws SigningOrderException {
-		try {
-			return Stream.of(
-					forInvolvedContracts(txn)
-			).flatMap(List::stream).collect(toList());
-		} catch (InvalidFileIDException ife) {
-			throw new SigningOrderException(factory.forMissingFile(ife.getFileId(), txn.getTransactionID()));
-		} catch (InvalidAccountIDException iae) {
-			throw new SigningOrderException(factory.forMissingAccount(iae.getAccountId(), txn.getTransactionID()));
-		} catch (InvalidContractIDException ice) {
-			throw new SigningOrderException(factory.forInvalidContract(ice.getContractId(), txn.getTransactionID()));
-		} catch (InvalidTopicIDException ite) {
-			throw new SigningOrderException(factory.forMissingTopic(ite.getTopicId(), txn.getTransactionID()));
-		} catch (AdminKeyNotExistException ane) {
-			throw new SigningOrderException(factory.forImmutableContract(ane.getContractId(), txn.getTransactionID()));
-		} catch (InvalidAutoRenewAccountIDException e) {
-			throw new SigningOrderException(
-					factory.forMissingAutoRenewAccount(e.getAccountId(), txn.getTransactionID()));
-		} catch (Exception e) {
-			throw new SigningOrderException(factory.forGeneralError(txn.getTransactionID()));
-		}
-	}
-
-	private List<JKey> forInvolvedContracts(TransactionBody txn) throws Exception {
+			SigningOrderResultFactory<T> factory
+	) {
 		if (txn.hasContractCreateInstance()) {
-			return forContractCreate(txn.getContractCreateInstance());
+			return Optional.of(contractCreate(
+					txn.getContractCreateInstance(), factory));
 		} else if (txn.hasContractUpdateInstance()) {
-			return forContractUpdate(txn.getContractUpdateInstance());
+			return Optional.of(contractUpdate(
+					txn.getTransactionID(), txn.getContractUpdateInstance(), factory));
 		} else if (txn.hasContractDeleteInstance()) {
-			return forContractDelete(txn.getContractDeleteInstance());
+			return Optional.of(contractDelete(
+					txn.getTransactionID(), txn.getContractDeleteInstance(), factory));
 		} else {
-			return EMPTY_LIST;
+			return Optional.empty();
 		}
 	}
 
@@ -345,6 +317,43 @@ public class HederaSigningOrder {
 		return List.of(sigMetaLookup.lookup(op.getContractID()).getKey());
 	}
 
+	private <T> SigningOrderResult<T> contractDelete(
+			TransactionID txnId,
+			ContractDeleteTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		var target = op.getContractID();
+		var targetResult = sigMetaLookup.contractSigningMetaFor(target);
+		System.out.println(targetResult);
+		if (!targetResult.succeeded()) {
+			return factory.forInvalidContract(target, txnId);
+		}
+		System.out.println(MiscUtils.asKeyUnchecked(targetResult.metadata().getKey()));
+		required.add(targetResult.metadata().getKey());
+
+		if (op.hasTransferAccountID()) {
+			var beneficiary = op.getTransferAccountID();
+			var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary);
+			if (!beneficiaryResult.succeeded()) {
+				return factory.forInvalidAccount(beneficiary, txnId);
+			} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
+				required.add(beneficiaryResult.metadata().getKey());
+			}
+		} else {
+			var beneficiary = op.getTransferContractID();
+			var beneficiaryResult = sigMetaLookup.contractSigningMetaFor(beneficiary);
+			if (!beneficiaryResult.succeeded()) {
+				return factory.forInvalidContract(beneficiary, txnId);
+			} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
+				required.add(beneficiaryResult.metadata().getKey());
+			}
+		}
+
+		return factory.forValidOrder(required);
+	}
+
 	private List<JKey> forContractUpdate(ContractUpdateTransactionBody op) throws Exception {
 		return accumulated(keys -> {
 			if (needsCurrentAdminSig(op)) {
@@ -354,6 +363,29 @@ public class HederaSigningOrder {
 				keys.add(JKey.mapKey(op.getAdminKey()));
 			}
 		});
+	}
+
+	private <T> SigningOrderResult<T> contractUpdate(
+			TransactionID txnId,
+			ContractUpdateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		List<JKey> required = new ArrayList<>();
+
+		var target = op.getContractID();
+		var result = sigMetaLookup.contractSigningMetaFor(target);
+		if (!result.succeeded()) {
+			return factory.forInvalidContract(target, txnId);
+		}
+		if (needsCurrentAdminSig(op)) {
+			required.add(result.metadata().getKey());
+		}
+		if (hasNondeprecatedAdminKey(op)) {
+			var candidate = asUsableFcKey(op.getAdminKey());
+			candidate.ifPresent(required::add);
+		}
+
+		return factory.forValidOrder(required);
 	}
 
 	private boolean needsCurrentAdminSig(ContractUpdateTransactionBody op) {
@@ -373,6 +405,20 @@ public class HederaSigningOrder {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID()
 				? List.of(JKey.mapKey(op.getAdminKey()))
 				: EMPTY_LIST;
+	}
+
+	private <T> SigningOrderResult<T> contractCreate(
+			ContractCreateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		var key = op.getAdminKey();
+		if (key.hasContractID()) {
+			return SigningOrderResult.noKnownKeys();
+		}
+		var candidate = asUsableFcKey(key);
+		return candidate.isPresent()
+				? factory.forValidOrder(List.of(candidate.get()))
+				: SigningOrderResult.noKnownKeys();
 	}
 
 	private <T> SigningOrderResult<T> fileDelete(

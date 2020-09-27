@@ -1527,6 +1527,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - export-token-balances
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack

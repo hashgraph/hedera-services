@@ -22,6 +22,7 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.sigs.metadata.ContractSigningMetadata;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hedera.services.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.services.sigs.metadata.lookups.SafeLookupResult;
@@ -37,6 +38,7 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -165,9 +167,45 @@ public class HederaSigningOrderTest {
 		}
 	}
 
+	private static class ContractAdapter {
+		public static ContractSigMetaLookup with(ThrowingContractLookup lookup) {
+			return new ContractSigMetaLookup() {
+				@Override
+				public ContractSigningMetadata lookup(ContractID contract) throws Exception {
+					return lookup.lookup(contract);
+				}
+
+				@Override
+				public SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id) {
+					throw new UnsupportedOperationException();
+				}
+			};
+		}
+
+		public static ContractSigMetaLookup withSafe(
+				Function<ContractID, SafeLookupResult<ContractSigningMetadata>> fn
+		) {
+			return new ContractSigMetaLookup() {
+				@Override
+				public ContractSigningMetadata lookup(ContractID contract) throws Exception {
+					throw new UnsupportedOperationException();
+				}
+
+				@Override
+				public SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id) {
+					return fn.apply(id);
+				}
+			};
+		}
+	}
+
 	@FunctionalInterface
 	private interface ThrowingFileLookup {
 		FileSigningMetadata lookup(FileID id) throws Exception;
+	}
+	@FunctionalInterface
+	private interface ThrowingContractLookup {
+		ContractSigningMetadata lookup(ContractID id) throws Exception;
 	}
 	@FunctionalInterface
 	private interface ThrowingTopicLookup {
@@ -186,15 +224,13 @@ public class HederaSigningOrderTest {
 				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 				id -> null);
 	private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			id -> { throw new Exception(); }
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
 	private static final SigMetadataLookup INVALID_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			id -> {
-				throw new InvalidContractIDException("Oops!", MISC_CONTRACT);
-			}
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
 	private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
-			id -> { throw new AdminKeyNotExistException("Oops!", MISC_CONTRACT); }
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
 
 	private HederaFs hfs;
@@ -310,7 +346,7 @@ public class HederaSigningOrderTest {
 				new DelegatingSigMetadataLookup(
 						FileAdapter.with(id -> { throw new Exception(); }),
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-						id -> { throw new Exception(); },
+						ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
 						TopicAdapter.with(id -> { throw new Exception(); }),
 						id -> null ));
 		aMockSummaryFactory();
@@ -797,6 +833,11 @@ public class HederaSigningOrderTest {
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forInvalidContract(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
@@ -1647,7 +1688,7 @@ public class HederaSigningOrderTest {
 						return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
 					}
 				}),
-				id -> { throw new Exception(); },
+				ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
 				TopicAdapter.withSafe(id -> {
 					if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
 						return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));

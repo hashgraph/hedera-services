@@ -39,6 +39,7 @@ import static com.hedera.test.utils.IdUtils.asFile;
 
 public class ContractDeleteFactory extends SignedTxnFactory<ContractDeleteFactory> {
 	private final String contract;
+//	private final AccountID transferAccount;
 
 	public ContractDeleteFactory(String contract) {
 		this.contract = contract;
