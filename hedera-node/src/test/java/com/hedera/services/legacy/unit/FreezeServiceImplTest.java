@@ -38,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.sigs.verification.PrecheckVerifier;

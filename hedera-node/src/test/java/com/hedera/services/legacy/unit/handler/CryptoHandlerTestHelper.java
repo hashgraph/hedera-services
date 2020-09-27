@@ -20,7 +20,7 @@ package com.hedera.services.legacy.unit.handler;
  * ‍
  */
 
-import com.hedera.services.legacy.service.GlobalFlag;
+import com.hedera.services.legacy.unit.GlobalFlag;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.LiveHash;

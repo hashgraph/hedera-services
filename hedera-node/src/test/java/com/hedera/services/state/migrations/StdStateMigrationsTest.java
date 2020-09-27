@@ -1,4 +1,4 @@
-package com.hedera.services.state.migration;
+package com.hedera.services.state.migrations;
 
 /*-
  * ‌
@@ -21,17 +21,32 @@ package com.hedera.services.state.migration;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.utils.Pause;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
-public class DefaultStateMigrations implements StateMigrations {
-	private final Pause pause;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.mock;
 
-	public DefaultStateMigrations(Pause pause) {
-		this.pause = pause;
+@RunWith(JUnitPlatform.class)
+public class StdStateMigrationsTest {
+	Pause pause;
+	ServicesContext ctx;
+	StdStateMigrations subject;
+
+	@BeforeEach
+	private void setup() {
+		ctx = mock(ServicesContext.class);
+		pause = mock(Pause.class);
+		subject = new StdStateMigrations(pause);
 	}
 
-	@Override
-	public void runAllFor(ServicesContext ctx) {
-		/* There are no applicable state migrations at this time. */
+	@Test
+	public void isNoop() {
+		// expect:
+		assertDoesNotThrow(() -> subject.runAllFor(ctx));
 	}
 }

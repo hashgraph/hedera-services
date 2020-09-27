@@ -25,7 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.legacy.service.GlobalFlag;
+import com.hedera.services.legacy.unit.GlobalFlag;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.ExchangeRates;

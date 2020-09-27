@@ -18,21 +18,24 @@ public class AwareHbarCentExchange implements HbarCentExchange {
 
 	@Override
 	public ExchangeRate activeRate() {
-		throw new AssertionError("Not implemented");
+		var now = txnCtx.accessor().getTxn().getTransactionID().getTransactionValidStart();
+		return rate(now);
 	}
 
 	@Override
 	public ExchangeRateSet activeRates() {
-		throw new AssertionError("Not implemented");
+		return rates;
 	}
 
 	@Override
 	public ExchangeRate rate(Timestamp at) {
-		throw new AssertionError("Not implemented");
+		var currentRate = rates.getCurrentRate();
+		long currentExpiry = currentRate.getExpirationTime().getSeconds();
+		return (at.getSeconds() < currentExpiry) ? currentRate : rates.getNextRate();
 	}
 
 	@Override
 	public void updateRates(ExchangeRateSet rates) {
-		throw new AssertionError("Not implemented");
+		this.rates = rates;
 	}
 }

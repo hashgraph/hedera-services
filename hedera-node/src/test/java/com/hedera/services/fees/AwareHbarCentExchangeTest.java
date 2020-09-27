@@ -20,37 +20,101 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import org.junit.Before;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class AwareHbarCentExchangeTest {
+	long validStartTime = 1_234_567L;
+	Timestamp validStart = Timestamp.newBuilder()
+		.setSeconds(validStartTime).build();
+	TransactionBody txn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(validStart)
+					.build())
+			.build();
+
+	ExchangeRate current, next;
+	ExchangeRateSet rates;
+	PlatformTxnAccessor accessor;
 	TransactionContext txnCtx;
 
 	AwareHbarCentExchange subject;
 
 	@BeforeEach
 	public void setUp() throws Exception {
+		next = mock(ExchangeRate.class);
+		current = mock(ExchangeRate.class);
+
+		rates = mock(ExchangeRateSet.class);
+		given(rates.getCurrentRate()).willReturn(current);
+		given(rates.getNextRate()).willReturn(next);
+
 		txnCtx = mock(TransactionContext.class);
+		accessor = mock(PlatformTxnAccessor.class);
+
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(txn);
 
 		subject = new AwareHbarCentExchange(txnCtx);
+		subject.updateRates(rates);
 	}
 
+	@Test
+	public void updatesWork() {
+		// expect:
+		assertSame(rates, subject.rates);
+		// and:
+		assertSame(rates, subject.activeRates());
+	}
 
+	@Test
+	public void returnsCurrentRateIfNotExpired() {
+		given(current.getExpirationTime())
+				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime + 1).build());
+
+		// when:
+		var ratesNow = subject.rate(Timestamp.newBuilder().setSeconds(validStartTime).build());
+
+		// then:
+		assertSame(current, ratesNow);
+	}
+
+	@Test
+	public void returnsNextRateIfNotExpired() {
+		given(current.getExpirationTime())
+				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime - 1).build());
+
+		// when:
+		var ratesNow = subject.rate(Timestamp.newBuilder().setSeconds(validStartTime).build());
+
+		// then:
+		assertSame(next, ratesNow);
+	}
+
+	@Test
+	public void usesValidStartToGetRate() {
+		given(current.getExpirationTime())
+				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime + 1).build());
+
+		// when:
+		var activeRates = subject.activeRate();
+
+		// then:
+		assertSame(current, activeRates);
+	}
 }
