@@ -53,6 +53,10 @@ service TokenService {
     rpc revokeKycFromTokenAccount (Transaction) returns (TransactionResponse);
     // Initiates a Token transfer by submitting the transaction
     rpc transferTokens (Transaction) returns (TransactionResponse);
+    // Associates tokens to an account
+    rpc associateTokens (Transaction) returns (TransactionResponse);
+    // Dissociates tokens from an account
+    rpc dissociateTokens (Transaction) returns (TransactionResponse);
 
     // Retrieves the metadata of a token
     rpc getTokenInfo (Query) returns (Response);

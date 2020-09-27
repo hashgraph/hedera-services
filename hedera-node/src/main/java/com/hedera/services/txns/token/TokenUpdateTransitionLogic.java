@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -77,7 +78,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private void transitionFor(TokenUpdateTransactionBody op) {
 		var id = store.resolve(op.getToken());
 		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_REF);
+			txnCtx.setStatus(INVALID_TOKEN_ID);
 			return;
 		}
 
@@ -115,7 +116,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
 			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
-			outcome = ledger.doTokenTransfer(id, replacedTreasury.get(), op.getTreasury(), replacedTreasuryBalance, true);
+			outcome = ledger.doTokenTransfer(
+					id,
+					replacedTreasury.get(),
+					op.getTreasury(),
+					replacedTreasuryBalance,
+					true);
 		}
 		if (outcome != OK) {
 			abortWith(outcome);

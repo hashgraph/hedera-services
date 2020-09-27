@@ -34,7 +34,7 @@ import java.util.Set;
  *
  * @author Michael Tinker
  */
-public interface BackingAccounts<K, A> {
+public interface BackingStore<K, A> {
 	/**
 	 * Alerts this {@code BackingAccounts} it should flush any cached mutable references.
 	 */
@@ -47,14 +47,6 @@ public interface BackingAccounts<K, A> {
 	 * @return a reference to the account.
 	 */
 	A getRef(K id);
-
-	/**
-	 * Gets a mutable detached copy of the account with the specified id.
-	 *
-	 * @param id the id of the relevant account.
-	 * @return a detached copy of the account.
-	 */
-	A getTokenCopy(K id);
 
 	/**
 	 * Gets a reference to the account with the specified id which should not be mutated.

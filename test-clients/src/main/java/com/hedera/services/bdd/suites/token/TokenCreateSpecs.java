@@ -56,10 +56,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationRequiresAppropriateSigs(),
 						initialSupplyMustBeSane(),
 						numAccountsAllowedIsDynamic(),
-						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
-						creationValidatesName()
+						creationValidatesName(),
+						creationRequiresAppropriateSigs(),
+						autoRenewValidationWorks(),
 				}
 		);
 	}
@@ -174,7 +175,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec creationValidatesSymbol() {
-		String hopefullyUnique = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
+		String firstToken = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
@@ -198,14 +199,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
 								.hasKnownStatus(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
-								.symbol(hopefullyUnique)
+								.symbol(firstToken)
 								.payingWith("payer")
-				).then(
-						tokenCreate("tooLate")
-								.payingWith("payer")
-								.symbol(hopefullyUnique)
-								.hasKnownStatus(TOKEN_SYMBOL_ALREADY_IN_USE)
-				);
+				).then();
 	}
 
 	public HapiApiSpec creationRequiresAppropriateSigs() {
@@ -216,9 +212,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("adminKey")
 				).when().then(
 						tokenCreate("shouldntWork")
+								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						/* treasury must sign */
+						tokenCreate("shouldntWorkEither")
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+								.adminKey("adminKey")
+								.signedBy("payer", "adminKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}
@@ -232,7 +236,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("sinking")
 								.payingWith("payer")
 								.initialSupply(-1L)
-								.hasKnownStatus(INVALID_INITIAL_SUPPLY),
+								.hasKnownStatus(INVALID_TOKEN_INITIAL_SUPPLY),
 						tokenCreate("bad decimals")
 								.payingWith("payer")
 								.decimals(-1)
@@ -244,7 +248,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("bad initial supply")
 								.payingWith("payer")
 								.initialSupply(1L << 63)
-								.hasKnownStatus(INVALID_INITIAL_SUPPLY)
+								.hasKnownStatus(INVALID_TOKEN_INITIAL_SUPPLY)
 				);
 	}
 

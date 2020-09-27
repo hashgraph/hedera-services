@@ -22,10 +22,12 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -69,7 +71,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
-	static final int MERKLE_VERSION = RELEASE_080_VERSION;
+	static final int RELEASE_090_VERSION = 3;
+	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static Consumer<MerkleNode> merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
@@ -88,6 +91,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int NUM_070_CHILDREN = 5;
 		static final int TOKENS = 5;
 		static final int NUM_080_CHILDREN = 6;
+		static final int TOKEN_ASSOCIATIONS = 6;
+		static final int NUM_090_CHILDREN = 7;
 	}
 
 	ServicesContext ctx;
@@ -96,7 +101,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	}
 
 	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_080_CHILDREN);
+		super(ChildIndices.NUM_090_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -122,9 +127,13 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		return (version == RELEASE_070_VERSION)
-				? ChildIndices.NUM_070_CHILDREN
-				: ChildIndices.NUM_080_CHILDREN;
+		if (version == RELEASE_070_VERSION) {
+			return ChildIndices.NUM_070_CHILDREN;
+		} else {
+			return (version == RELEASE_080_VERSION)
+					? ChildIndices.NUM_080_CHILDREN
+					: ChildIndices.NUM_090_CHILDREN;
+		}
 	}
 
 	@Override
@@ -133,6 +142,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			setChild(ChildIndices.TOKENS,
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			log.info("Created tokens FCMap after 0.7.0 state restoration");
+		}
+		if (tokenAssociations() == null) {
+			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
+					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
+			log.info("Created token associations FCMap after <=0.8.0 state restoration");
 		}
 	}
 
@@ -146,13 +160,14 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		if (getNumberOfChildren() < ChildIndices.NUM_080_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
 					new SequenceNumber(seqStart),
 					new ExchangeRates());
-			setChild(ChildIndices.NETWORK_CTX, networkCtx);
+			setChild(ChildIndices.NETWORK_CTX,
+					networkCtx);
 			setChild(ChildIndices.TOPICS,
 					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
 			setChild(ChildIndices.STORAGE,
@@ -161,6 +176,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleAccount.LEGACY_PROVIDER));
 			setChild(ChildIndices.TOKENS,
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
+			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
+					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -216,7 +233,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				topics().copy(),
 				storage().copy(),
 				accounts().copy(),
-				tokens().copy()));
+				tokens().copy(),
+				tokenAssociations().copy()));
 	}
 
 	@Override
@@ -225,6 +243,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		accounts().delete();
 		topics().delete();
 		tokens().delete();
+		tokenAssociations().delete();
 	}
 
 	@Override
@@ -272,18 +291,20 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public void printHashes() {
 		ServicesMain.log.info(String.format("[SwirldState Hashes]\n" +
-						"  Overall        :: %s\n" +
-						"  Accounts       :: %s\n" +
-						"  Storage        :: %s\n" +
-						"  Topics         :: %s\n" +
-						"  Tokens         :: %s\n" +
-						"  NetworkContext :: %s\n" +
-						"  AddressBook    :: %s",
+						"  Overall           :: %s\n" +
+						"  Accounts          :: %s\n" +
+						"  Storage           :: %s\n" +
+						"  Topics            :: %s\n" +
+						"  Tokens            :: %s\n" +
+						"  TokenAssociations :: %s\n" +
+						"  NetworkContext    :: %s\n" +
+						"  AddressBook       :: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
 				topics().getHash(),
 				tokens().getHash(),
+				tokenAssociations().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash()));
 	}
@@ -302,6 +323,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return getChild(ChildIndices.TOKENS);
+	}
+
+	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+		return getChild(ChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
 	public MerkleNetworkContext networkCtx() {

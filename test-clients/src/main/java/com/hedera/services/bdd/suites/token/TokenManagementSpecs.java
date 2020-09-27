@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
@@ -45,7 +46,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -58,6 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -76,9 +77,10 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						kycMgmtSuccessCasesWork(),
 						supplyMgmtSuccessCasesWork(),
 						wipeAccountFailureCasesWork(),
-						wipeAccountSuccessCasesWork()
-				}),
-				supplyMgmtFailureCasesWork()
+						wipeAccountSuccessCasesWork(),
+						supplyMgmtFailureCasesWork(),
+						burnTokenFailsDueToInsufficientTreasuryBalance(),
+				})
 		);
 	}
 
@@ -98,8 +100,10 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
 								.supplyKey("burnKey"),
+						tokenAssociate("misc", BURN_TOKEN),
 						tokenTransact(
-								moving(TRANSFER_AMOUNT, BURN_TOKEN).between(TOKEN_TREASURY, "misc")),
+								moving(TRANSFER_AMOUNT, BURN_TOKEN)
+										.between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
 								.hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
 						getAccountBalance(TOKEN_TREASURY)
@@ -133,6 +137,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", wipeableToken),
 						tokenTransact(
 								moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
 						getAccountBalance("misc")
@@ -174,6 +179,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(1_000)
 								.wipeKey("wipeKey"),
+						tokenAssociate("misc", anotherWipeableToken),
 						tokenTransact(
 								moving(500, anotherWipeableToken).between(TOKEN_TREASURY, "misc"))
 				).then(
@@ -181,7 +187,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.signedBy(GENESIS)
 								.hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY),
 						wipeTokenAccount(wipeableToken, "misc", 1)
-								.hasKnownStatus(ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP),
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.signedBy(GENESIS)
 								.hasKnownStatus(INVALID_SIGNATURE),
@@ -272,7 +278,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec freezeMgmtSuccessCasesWork() {
-		var withPlusDefaultTrue = "withPlusDefaultTrue";
 		var withPlusDefaultFalse = "withPlusDefaultFalse";
 
 		return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
@@ -281,14 +286,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate("misc"),
 						newKeyNamed("oneFreeze"),
 						newKeyNamed("twoFreeze"),
-						tokenCreate(withPlusDefaultTrue)
-								.freezeDefault(true)
-								.freezeKey("oneFreeze")
-								.treasury(TOKEN_TREASURY),
 						tokenCreate(withPlusDefaultFalse)
 								.freezeDefault(false)
 								.freezeKey("twoFreeze")
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withPlusDefaultFalse)
 				).when(
 						tokenTransact(
 								moving(1, withPlusDefaultFalse)
@@ -322,7 +324,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.kycKey("oneKyc")
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(withoutKycKey)
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate("misc", withKycKey, withoutKycKey)
 				).when(
 						tokenTransact(
 								moving(1, withKycKey)
@@ -369,34 +372,31 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	public List<HapiApiSpec> supplyMgmtFailureCasesWork() {
-		return List.of(
-				defaultHapiSpec("SupplyMgmtFailureCasesWork")
-					.given(
-							newKeyNamed("supplyKey")
-					).when(
-							tokenCreate("rigid"),
-							tokenCreate("supple")
-									.supplyKey("supplyKey")
-									.decimals(16)
-									.initialSupply(1)
-					).then(
-							mintToken("rigid", 1)
-									.signedBy(GENESIS)
-									.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-							burnToken("rigid", 1)
-									.signedBy(GENESIS)
-									.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-							mintToken("supple", Long.MAX_VALUE)
-									.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-							mintToken("supple", 0)
-									.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-							burnToken("supple", 2)
-									.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-							burnToken("supple", 0)
-									.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
-					),
-				burnTokenFailsDueToInsufficientTreasuryBalance()
+	public HapiApiSpec supplyMgmtFailureCasesWork() {
+		return defaultHapiSpec("SupplyMgmtFailureCasesWork")
+				.given(
+						newKeyNamed("supplyKey")
+				).when(
+				tokenCreate("rigid"),
+				tokenCreate("supple")
+						.supplyKey("supplyKey")
+						.decimals(16)
+						.initialSupply(1)
+		).then(
+				mintToken("rigid", 1)
+						.signedBy(GENESIS)
+						.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+				burnToken("rigid", 1)
+						.signedBy(GENESIS)
+						.hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+				mintToken("supple", Long.MAX_VALUE)
+						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+				mintToken("supple", 0)
+						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+				burnToken("supple", 2)
+						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
+				burnToken("supple", 0)
+						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
 		);
 	}
 

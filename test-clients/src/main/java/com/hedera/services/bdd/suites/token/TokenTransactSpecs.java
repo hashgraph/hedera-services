@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
@@ -57,15 +58,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
-						txnsAreAtomic(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreChecked(),
 						senderSigsAreValid(),
 						balancesAreChecked(),
 						nonZeroNetTransfersRejected(),
+						allRequiredSigsAreChecked(),
+						txnsAreAtomic(),
 				}
 		);
 	}
+
 	public HapiApiSpec balancesAreChecked() {
 		return defaultHapiSpec("BalancesAreChecked")
 				.given(
@@ -99,6 +101,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("treasury")
 								.freezeKey("freezeKey")
 								.freezeDefault(true),
+						tokenAssociate("randomBeneficiary", A_TOKEN),
 						tokenTransact(
 								moving(100, A_TOKEN)
 										.between("treasury", "randomBeneficiary")
@@ -107,6 +110,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						tokenCreate(B_TOKEN)
 								.treasury("treasury")
 								.freezeDefault(false),
+						tokenAssociate("randomBeneficiary", B_TOKEN),
 						tokenTransact(
 								moving(100, B_TOKEN)
 										.between("treasury", "randomBeneficiary")
@@ -119,27 +123,39 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec senderSigsAreChecked() {
+	public HapiApiSpec allRequiredSigsAreChecked() {
 		return defaultHapiSpec("SenderSigsAreChecked")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate("firstTreasury"),
 						cryptoCreate("secondTreasury"),
-						cryptoCreate("beneficiary")
+						cryptoCreate("beneficiary").receiverSigRequired(true)
 				).when(
 						tokenCreate(A_TOKEN)
 								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
 								.initialSupply(234)
-								.treasury("secondTreasury")
+								.treasury("secondTreasury"),
+						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN)
 				).then(
 						tokenTransact(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
 						).payingWith("payer")
-								.signedBy("payer", "firstTreasury")
-								.hasKnownStatus(INVALID_SIGNATURE)
+								.signedBy("payer", "firstTreasury", "beneficiary")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).payingWith("payer")
+								.signedBy("payer", "firstTreasury", "secondTreasury")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenTransact(
+								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
+								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
+						).payingWith("payer")
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 
@@ -156,19 +172,18 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
 								.initialSupply(234)
-								.treasury("secondTreasury")
+								.treasury("secondTreasury"),
+						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN)
 				).then(
 						tokenTransact(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
-								.signedBy("firstTreasury","payer")
+								.signedBy("firstTreasury", "payer")
 								.hasKnownStatus(SUCCESS)
 				);
 	}
 
 	public HapiApiSpec txnsAreAtomic() {
-		final int MONOGAMOUS_NETWORK = 1;
-		final int ADVENTUROUS_NETWORK = 1_000;
 		return defaultHapiSpec("TxnsAreAtomic")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
@@ -176,31 +191,25 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoCreate("secondTreasury"),
 						cryptoCreate("beneficiary")
 				).when(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
-						)),
 						tokenCreate(A_TOKEN)
 								.initialSupply(123)
 								.treasury("firstTreasury"),
 						tokenCreate(B_TOKEN)
-								.initialSupply(234)
+								.initialSupply(50)
 								.treasury("secondTreasury"),
+						tokenAssociate("beneficiary", A_TOKEN, B_TOKEN),
 						tokenTransact(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary")
-						).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+						).hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
 				).then(
 						getAccountBalance("firstTreasury")
 								.logged()
 								.hasTokenBalance(A_TOKEN, 123),
 						getAccountBalance("secondTreasury")
 								.logged()
-								.hasTokenBalance(B_TOKEN, 234),
-						getAccountBalance("beneficiary").logged(),
-						/* Cleanup */
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
-						))
+								.hasTokenBalance(B_TOKEN, 50),
+						getAccountBalance("beneficiary").logged()
 				);
 	}
 
@@ -213,7 +222,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(A_TOKEN)
 								.initialSupply(100)
-								.treasury("firstTreasury")
+								.treasury("firstTreasury"),
+						tokenAssociate("beneficiary", A_TOKEN)
 				).then(
 						tokenTransact(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
@@ -236,7 +246,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
 								.initialSupply(TOTAL_SUPPLY)
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, B_TOKEN)
 				).when(
 						tokenTransact(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),

@@ -9,9 +9,9 @@ package com.hedera.services.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,12 +33,16 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.TokenBalance;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import java.util.Optional;
+
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -81,7 +85,21 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var key = MerkleEntityId.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			opAnswer.addAllTokenBalances(account.getAllExplicitTokenBalances());
+			for (TokenID tId : account.tokens().asIds()) {
+				var optionalToken = view.tokenWith(tId);
+				if (optionalToken.isPresent()) {
+					var token = optionalToken.get();
+					if (!token.isDeleted()) {
+						var relKey = fromAccountTokenRel(id, tId);
+						var relationship = view.tokenAssociations().get().get(relKey);
+						opAnswer.addTokenBalances(TokenBalance.newBuilder()
+								.setTokenId(tId)
+								.setBalance(relationship.getBalance())
+								.build());
+					}
+				}
+
+			}
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

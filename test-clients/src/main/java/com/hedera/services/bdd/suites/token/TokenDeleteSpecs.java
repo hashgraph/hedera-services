@@ -39,12 +39,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -58,10 +60,10 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						deletionValidatesRef(),
 						deletionValidatesMissingAdminKey(),
 						deletionWorksAsExpected(),
 						deletionValidatesAlreadyDeletedToken(),
+						deletionValidatesRef(),
 				}
 		);
 	}
@@ -115,7 +117,8 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.supplyKey("multiKey")
 								.freezeDefault(false)
 								.treasury(TOKEN_TREASURY)
-								.payingWith("payer")
+								.payingWith("payer"),
+						tokenAssociate(GENESIS, "tbd")
 				).when(
 						getAccountInfo(TOKEN_TREASURY).logged(),
 						mintToken("tbd", 1),
@@ -157,7 +160,11 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						tokenDelete("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_TOKEN_REF)
+								.hasKnownStatus(INVALID_TOKEN_ID),
+						tokenDelete("0.0.0")
+								.payingWith("payer")
+								.signedBy("payer")
+								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
 	}
 

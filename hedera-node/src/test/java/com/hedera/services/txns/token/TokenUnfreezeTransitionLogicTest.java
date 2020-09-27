@@ -28,7 +28,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,6 @@ import static org.mockito.BDDMockito.verify;
 @RunWith(JUnitPlatform.class)
 class TokenUnfreezeTransitionLogicTest {
 	private TokenID tokenId = IdUtils.asToken("0.0.12345");
-	private TokenRef token = IdUtils.asIdRef("0.0.12345");
 	private AccountID account = IdUtils.asAccount("0.0.54321");
 
 	private TokenStore tokenStore;
@@ -124,10 +122,10 @@ class TokenUnfreezeTransitionLogicTest {
 		tokenUnfreezeTxn = TransactionBody.newBuilder()
 				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
 						.setAccount(account)
-						.setToken(token))
+						.setToken(tokenId))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenUnfreezeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(token)).willReturn(tokenId);
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 	}
 }

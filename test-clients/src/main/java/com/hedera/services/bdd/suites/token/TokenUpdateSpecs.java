@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -57,15 +57,15 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
-						keysChange(),
-						treasuryEvolves(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
 						nameChanges(),
-						validatesMissingRef(),
+						keysChange(),
 						validatesAlreadyDeletedToken(),
+						validatesMissingRef(),
+						treasuryEvolves(),
 				}
 		);
 	}
@@ -112,7 +112,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("1.2.3")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(INVALID_TOKEN_REF)
+								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
 	}
 
@@ -161,7 +161,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("freezeThenKycKey")
 								.freezeKey("kycThenFreezeKey")
 								.wipeKey("supplyThenWipeKey")
-								.supplyKey("wipeThenSupplyKey")
+								.supplyKey("wipeThenSupplyKey"),
+						tokenAssociate("misc", "tbu")
 				).then(
 						getTokenInfo("tbu").logged(),
 						grantTokenKyc("tbu", "misc")
@@ -198,6 +199,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when(
 						getAccountInfo("oldTreasury").logged(),
 						getAccountInfo("newTreasury").logged(),
+						tokenAssociate("newTreasury", "tbu"),
 						tokenUpdate("tbu")
 								.treasury("newTreasury")
 								.via("treasuryUpdateTxn")
@@ -248,8 +250,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.symbol(hopefullyUnique)
 				).then(
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
+						tokenAssociate(GENESIS, "tbu"),
 						tokenTransact(
-								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
+								moving(1, "tbu").between(TOKEN_TREASURY, GENESIS))
 				);
 	}
 

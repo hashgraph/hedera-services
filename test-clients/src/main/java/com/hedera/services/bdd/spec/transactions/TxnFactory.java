@@ -42,9 +42,11 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
@@ -124,6 +126,14 @@ public class TxnFactory {
 		Method defaultBody = this.getClass().getMethod(defaultBodyMethod);
 		((Consumer<B>)defaultBody.invoke(this)).andThen(def).accept(opBuilder);
 		return (T)opBuilder.build();
+	}
+
+	public Consumer<TokenAssociateTransactionBody.Builder> defaultDef_TokenAssociateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenDissociateTransactionBody.Builder> defaultDef_TokenDissociateTransactionBody() {
+		return builder -> {};
 	}
 
 	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccountTransactionBody() {

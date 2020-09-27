@@ -39,6 +39,8 @@ RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
 COPY pom.xml /opt/hedera/services
 RUN mkdir /opt/hedera/services/hapi-proto
 COPY hapi-proto /opt/hedera/services/hapi-proto
+RUN mkdir /opt/hedera/services/hapi-fees
+COPY hapi-fees /opt/hedera/services/hapi-fees
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients

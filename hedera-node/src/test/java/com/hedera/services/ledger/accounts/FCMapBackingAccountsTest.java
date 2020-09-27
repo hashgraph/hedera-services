@@ -22,7 +22,7 @@ package com.hedera.services.ledger.accounts;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -50,10 +50,10 @@ class FCMapBackingAccountsTest {
 	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
 	private final MerkleEntityId cKey = MerkleEntityId.fromAccountId(c);
 	private final MerkleEntityId dKey = MerkleEntityId.fromAccountId(d);
-	private final MerkleAccount aValue = MapValueFactory.newAccount().balance(123L).get();
-	private final MerkleAccount bValue = MapValueFactory.newAccount().balance(122L).get();
-	private final MerkleAccount cValue = MapValueFactory.newAccount().balance(121L).get();
-	private final MerkleAccount dValue = MapValueFactory.newAccount().balance(120L).get();
+	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
+	private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
+	private final MerkleAccount cValue = MerkleAccountFactory.newAccount().balance(121L).get();
+	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
 	private FCMap<MerkleEntityId, MerkleAccount> map;
 	private FCMapBackingAccounts subject;
@@ -64,22 +64,6 @@ class FCMapBackingAccountsTest {
 		given(map.keySet()).willReturn(Collections.emptySet());
 
 		subject = new FCMapBackingAccounts(() -> map);
-	}
-
-	@Test
-	public void tokenCopyAsExpected() {
-		// setup:
-		var account = mock(MerkleAccount.class);
-		var expected = mock(MerkleAccount.class);
-
-		given(account.tokenCopy()).willReturn(expected);
-		given(map.getForModify(aKey)).willReturn(account);
-
-		// when:
-		var tokenCopy = subject.getTokenCopy(a);
-
-		// then:
-		assertSame(expected, tokenCopy);
 	}
 
 	@Test

@@ -27,12 +27,6 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 
-/* A list of tokens (can be either ID or Symbol) and amounts to transfer out of each account (negative) or into it (positive) */
-message TokenRefTransferList {
-    TokenRef token = 1; // The token for which we want to transfer tokens
-    repeated AccountAmount transfers = 2; // Multiple list of AccountAmounts, each of which has an account and amount to transfer into or out of
-}
-
 /* Transfer tokens from some accounts to other accounts. Each negative amount is withdrawn from the corresponding account (a sender), and each positive one is added to the corresponding account (a receiver). All amounts must have sum of zero.
 Each amount is a number with the lowest denomination possible for a token. Example:
 Token X has 2 decimals. Account A transfers amount of 100 tokens by providing 10000 as amount in the TransferList. If Account A wants to send 100.55 tokens, he must provide 10055 as amount.
@@ -40,5 +34,5 @@ Token X has 2 decimals. Account A transfers amount of 100 tokens by providing 10
 If any sender account fails to have sufficient token balance, then the entire transaction fails and none of the transfers occur, though transaction fee is still charged.
 */
 message TokenTransfersTransactionBody {
-    repeated TokenRefTransferList tokenTransfers = 1;
+    repeated TokenTransferList tokenTransfers = 1;
 }

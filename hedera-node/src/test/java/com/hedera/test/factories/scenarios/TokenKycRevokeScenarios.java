@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.TokenRevokeKycFactory.newSignedTokenRevokeKyc;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 	VALID_REVOKE_WITH_EXTANT_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_KYC), MISC_ACCOUNT)
+							.revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));
@@ -43,7 +42,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(UNKNOWN_TOKEN), MISC_ACCOUNT)
+							.revoking(UNKNOWN_TOKEN, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));
@@ -54,7 +53,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenRevokeKyc()
-							.revoking(asIdRef(KNOWN_TOKEN_WITH_FREEZE), MISC_ACCOUNT)
+							.revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));

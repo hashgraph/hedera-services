@@ -62,6 +62,8 @@ public class CryptoDeleteTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 
+		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
+
 		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx);
 	}
 
@@ -124,6 +126,19 @@ public class CryptoDeleteTransitionLogicTest {
 		// then:
 		verify(ledger).delete(target, payer);
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void rejectsIfTargetHasNonZeroTokenBalances() {
+		givenValidTxnCtx();
+		given(ledger.allTokenBalancesVanish(target)).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger, never()).delete(target, payer);
+		verify(txnCtx).setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 	}
 
 	@Test

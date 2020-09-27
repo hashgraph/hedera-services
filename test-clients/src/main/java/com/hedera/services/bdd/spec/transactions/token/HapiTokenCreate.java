@@ -213,7 +213,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(List.of(
-				spec -> spec.registry().getKey(effectivePayer(spec))));
+				spec -> spec.registry().getKey(effectivePayer(spec)),
+				spec -> spec.registry().getKey(treasury.orElseGet(spec.setup()::defaultPayerName))));
 		adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
 		autoRenewAccount.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));

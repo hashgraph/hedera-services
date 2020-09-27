@@ -21,21 +21,21 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
 	private TokenFreezeFactory() {}
 
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenFreezeFactory newSignedTokenFreeze() {
 		return new TokenFreezeFactory();
 	}
 
-	public TokenFreezeFactory freezing(TokenRef ref) {
-		this.ref = ref;
+	public TokenFreezeFactory freezing(TokenID id) {
+		this.id = id;
 		return this;
 	}
 
@@ -51,7 +51,8 @@ public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
 
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
-		var op = TokenFreezeAccountTransactionBody.newBuilder().setToken(ref);
+		var op = TokenFreezeAccountTransactionBody.newBuilder()
+				.setToken(id);
 		txn.setTokenFreeze(op);
 	}
 }

@@ -32,7 +32,7 @@ import "ResponseHeader.proto";
 /* Gets information about Token instance */
 message TokenGetInfoQuery {
     QueryHeader header = 1; // Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither)
-    TokenRef token = 2; // The token for which information is requested. If invalid token is provided, INVALID_TOKEN_REF response is returned.
+    TokenID token = 2; // The token for which information is requested. If invalid token is provided, INVALID_TOKEN_ID response is returned.
 }
 
 /* The metadata about a Token instance */
