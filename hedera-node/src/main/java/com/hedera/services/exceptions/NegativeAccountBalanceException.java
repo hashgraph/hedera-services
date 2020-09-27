@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.exceptions;
 
 /*-
  * ‌
@@ -20,19 +20,8 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractID;
-
-public class AdminKeyNotExistException extends Exception {
-	private static final long serialVersionUID = 1L;
-
-	private ContractID contractId;
-
-	public AdminKeyNotExistException(String message, ContractID contractId) {
-		super(message);
-		this.contractId = contractId;
-	}
-
-	public ContractID getContractId() {
-		return contractId;
-	}
+public class NegativeAccountBalanceException extends Exception {
+  public NegativeAccountBalanceException(String message) {
+    super(message);
+  }
 }

@@ -170,11 +170,6 @@ public class HederaSigningOrderTest {
 		public static ContractSigMetaLookup with(ThrowingContractLookup lookup) {
 			return new ContractSigMetaLookup() {
 				@Override
-				public ContractSigningMetadata lookup(ContractID contract) throws Exception {
-					return lookup.lookup(contract);
-				}
-
-				@Override
 				public SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id) {
 					throw new UnsupportedOperationException();
 				}
@@ -185,11 +180,6 @@ public class HederaSigningOrderTest {
 				Function<ContractID, SafeLookupResult<ContractSigningMetadata>> fn
 		) {
 			return new ContractSigMetaLookup() {
-				@Override
-				public ContractSigningMetadata lookup(ContractID contract) throws Exception {
-					throw new UnsupportedOperationException();
-				}
-
 				@Override
 				public SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id) {
 					return fn.apply(id);

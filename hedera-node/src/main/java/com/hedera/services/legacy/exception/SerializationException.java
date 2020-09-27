@@ -28,13 +28,4 @@ public class SerializationException extends IOException {
 	public SerializationException(String message, Throwable cause) {
 		super(message, cause);
 	}
-
-	public SerializationException(String message) {
-		super(message);
-	}
-
-	public SerializationException(Throwable cause) {
-		super(cause);
-	}
-
 }

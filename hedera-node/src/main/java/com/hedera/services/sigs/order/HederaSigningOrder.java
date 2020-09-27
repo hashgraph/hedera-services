@@ -20,19 +20,10 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.goterl.lazycode.lazysodium.interfaces.Sign;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.AdminKeyNotExistException;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.exception.InvalidAutoRenewAccountIDException;
-import com.hedera.services.legacy.exception.InvalidContractIDException;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
-import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -72,14 +63,12 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Encapsulates all policies related to:
@@ -313,10 +302,6 @@ public class HederaSigningOrder {
 		}
 	}
 
-	private List<JKey> forContractDelete(ContractDeleteTransactionBody op) throws Exception {
-		return List.of(sigMetaLookup.lookup(op.getContractID()).getKey());
-	}
-
 	private <T> SigningOrderResult<T> contractDelete(
 			TransactionID txnId,
 			ContractDeleteTransactionBody op,
@@ -350,17 +335,6 @@ public class HederaSigningOrder {
 		}
 
 		return factory.forValidOrder(required);
-	}
-
-	private List<JKey> forContractUpdate(ContractUpdateTransactionBody op) throws Exception {
-		return accumulated(keys -> {
-			if (needsCurrentAdminSig(op)) {
-				keys.add(sigMetaLookup.lookup(op.getContractID()).getKey());
-			}
-			if (hasNondeprecatedAdminKey(op)) {
-				keys.add(JKey.mapKey(op.getAdminKey()));
-			}
-		});
 	}
 
 	private <T> SigningOrderResult<T> contractUpdate(
@@ -397,12 +371,6 @@ public class HederaSigningOrder {
 
 	private boolean hasNondeprecatedAdminKey(ContractUpdateTransactionBody op) {
 		return op.hasAdminKey() && !op.getAdminKey().hasContractID();
-	}
-
-	private List<JKey> forContractCreate(ContractCreateTransactionBody op) throws Exception {
-		return op.hasAdminKey() && !op.getAdminKey().hasContractID()
-				? List.of(JKey.mapKey(op.getAdminKey()))
-				: EMPTY_LIST;
 	}
 
 	private <T> SigningOrderResult<T> contractCreate(
@@ -956,19 +924,5 @@ public class HederaSigningOrder {
 			required.add(targetResult.metadata().getAdminKey());
 		}
 		return factory.forValidOrder(required);
-	}
-
-	private List<JKey> accumulated(KeyAccumulation using) throws Exception {
-		List<JKey> keys = new ArrayList<>();
-		using.accept(keys);
-		return keys;
-	}
-
-	private interface KeyAccumulation {
-		void accept(List<JKey> l) throws Exception;
-	}
-
-	private interface OrderSupplier {
-		List<JKey> get() throws SigningOrderException;
 	}
 }

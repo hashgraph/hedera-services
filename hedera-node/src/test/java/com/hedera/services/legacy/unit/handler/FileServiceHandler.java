@@ -47,11 +47,10 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.DeserializationException;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
+import com.hedera.services.legacy.unit.InvalidFileIDException;
 import com.hedera.services.legacy.exception.InvalidFileWACLException;
 import com.hedera.services.legacy.exception.SerializationException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.config.PropertiesLoader;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

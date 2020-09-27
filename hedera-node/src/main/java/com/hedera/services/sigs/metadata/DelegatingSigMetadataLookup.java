@@ -143,11 +143,6 @@ public class DelegatingSigMetadataLookup implements SigMetadataLookup {
 	}
 
 	@Override
-	public ContractSigningMetadata lookup(ContractID contract) throws Exception {
-		return contractSigMetaLookup.lookup(contract);
-	}
-
-	@Override
 	public SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id) {
 		return contractSigMetaLookup.safeLookup(id);
 	}

@@ -20,15 +20,12 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.ContractSigningMetadata;
-import com.hedera.services.sigs.order.KeyOrderingFailure;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.exception.AdminKeyNotExistException;
-import com.hedera.services.legacy.exception.InvalidContractIDException;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
@@ -41,20 +38,6 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 
 	public DefaultFCMapContractLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
-	}
-
-	@Override
-	public ContractSigningMetadata lookup(ContractID id) throws Exception {
-		MerkleAccount contract = accounts.get().get(fromContractId(id));
-		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-			throw new InvalidContractIDException("Invalid contract!", id);
-		} else if (contract.getKey() == null) {
-			throw new AdminKeyNotExistException("Contract should never be referenced by a txn (missing key)!", id);
-		} else if (contract.getKey() instanceof JContractIDKey) {
-			throw new AdminKeyNotExistException("Contract should never be referenced by a txn (no admin key)!", id);
-		} else {
-			return new ContractSigningMetadata(contract.getKey(), contract.isReceiverSigRequired());
-		}
 	}
 
 	@Override
