@@ -100,7 +100,7 @@ public class DefaultFCMapContractLookupTest {
 
 		// then:
 		assertFalse(result.succeeded());
-		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
+		assertEquals(KeyOrderingFailure.IMMUTABLE_CONTRACT, result.failureIfAny());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class DefaultFCMapContractLookupTest {
 
 		// then:
 		assertFalse(result.succeeded());
-		assertEquals(KeyOrderingFailure.INVALID_CONTRACT, result.failureIfAny());
+		assertEquals(KeyOrderingFailure.IMMUTABLE_CONTRACT, result.failureIfAny());
 	}
 
 	@Test

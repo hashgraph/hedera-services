@@ -30,6 +30,7 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 
@@ -48,7 +49,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 		} else {
 			JKey key;
 			if ((key = contract.getKey()) == null || key instanceof JContractIDKey) {
-				return SafeLookupResult.failure(INVALID_CONTRACT);
+				return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
 			} else {
 				return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
 			}

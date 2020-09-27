@@ -21,10 +21,12 @@ package com.hedera.services.fees;
  */
 
 import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -38,65 +40,17 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
-class StandardExemptionsTest {
-	SystemOpPolicies policies;
-	SignedTxnAccessor accessor;
+class AwareHbarCentExchangeTest {
+	TransactionContext txnCtx;
 
-	StandardExemptions subject;
+	AwareHbarCentExchange subject;
 
 	@BeforeEach
-	public void setup() {
-		policies = mock(SystemOpPolicies.class);
-		accessor = mock(SignedTxnAccessor.class);
+	public void setUp() throws Exception {
+		txnCtx = mock(TransactionContext.class);
 
-		subject = new StandardExemptions(new MockAccountNumbers(), policies);
+		subject = new AwareHbarCentExchange(txnCtx);
 	}
 
-	@Test
-	public void sysAdminAndTreasuryPayNoThresholdFees() {
-		// expect:
-		assertTrue(subject.isExemptFromRecordFees(account(2)));
-		assertTrue(subject.isExemptFromRecordFees(account(50)));
-		// and:
-		assertFalse(subject.isExemptFromRecordFees(account(51)));
-		assertFalse(subject.isExemptFromRecordFees(account(3)));
-	}
 
-	@Test
-	public void sysAdminPaysNoFees() {
-		given(accessor.getPayer()).willReturn(account(50));
-
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
-
-	@Test
-	public void authorizedOpsAreExempt() {
-		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.check(accessor)).willReturn(AUTHORIZED);
-
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
-
-	@Test
-	public void unnecessaryOpsAreNotExempt() {
-		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.check(accessor)).willReturn(UNNECESSARY);
-
-		// expect:
-		assertFalse(subject.hasExemptPayer(accessor));
-	}
-
-	@Test
-	public void treasuryPaysNoFees() {
-		given(accessor.getPayer()).willReturn(account(2));
-
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
-
-	private AccountID account(long num) {
-		return IdUtils.asAccount(String.format("0.0.%d", num));
-	}
 }

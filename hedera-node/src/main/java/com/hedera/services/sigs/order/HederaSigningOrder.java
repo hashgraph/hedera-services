@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -64,6 +65,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
@@ -312,7 +315,7 @@ public class HederaSigningOrder {
 		var target = op.getContractID();
 		var targetResult = sigMetaLookup.contractSigningMetaFor(target);
 		if (!targetResult.succeeded()) {
-			return factory.forInvalidContract(target, txnId);
+			return contractFailure(target, txnId, targetResult.failureIfAny(), factory);
 		}
 		required.add(targetResult.metadata().getKey());
 
@@ -324,7 +327,7 @@ public class HederaSigningOrder {
 			} else if (beneficiaryResult.metadata().isReceiverSigRequired()) {
 				required.add(beneficiaryResult.metadata().getKey());
 			}
-		} else {
+		} else if (op.hasTransferContractID()) {
 			var beneficiary = op.getTransferContractID();
 			var beneficiaryResult = sigMetaLookup.contractSigningMetaFor(beneficiary);
 			if (!beneficiaryResult.succeeded()) {
@@ -346,10 +349,10 @@ public class HederaSigningOrder {
 
 		var target = op.getContractID();
 		var result = sigMetaLookup.contractSigningMetaFor(target);
-		if (!result.succeeded()) {
-			return factory.forInvalidContract(target, txnId);
-		}
 		if (needsCurrentAdminSig(op)) {
+			if (!result.succeeded()) {
+				return contractFailure(target, txnId, result.failureIfAny(), factory);
+			}
 			required.add(result.metadata().getKey());
 		}
 		if (hasNondeprecatedAdminKey(op)) {
@@ -539,6 +542,21 @@ public class HederaSigningOrder {
 			}
 		}
 		return factory.forValidOrder(required);
+	}
+
+	private <T> SigningOrderResult<T> contractFailure(
+			ContractID id,
+			TransactionID txnId,
+			KeyOrderingFailure type,
+			SigningOrderResultFactory<T> factory
+	) {
+		if (type == INVALID_CONTRACT) {
+			return factory.forInvalidContract(id, txnId);
+		} else if (type == IMMUTABLE_CONTRACT) {
+			return factory.forImmutableContract(id, txnId);
+		} else {
+			return factory.forGeneralError(txnId);
+		}
 	}
 
 	private <T> SigningOrderResult<T> accountFailure(
