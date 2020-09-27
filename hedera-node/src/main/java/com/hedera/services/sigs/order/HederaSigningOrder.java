@@ -326,11 +326,9 @@ public class HederaSigningOrder {
 
 		var target = op.getContractID();
 		var targetResult = sigMetaLookup.contractSigningMetaFor(target);
-		System.out.println(targetResult);
 		if (!targetResult.succeeded()) {
 			return factory.forInvalidContract(target, txnId);
 		}
-		System.out.println(MiscUtils.asKeyUnchecked(targetResult.metadata().getKey()));
 		required.add(targetResult.metadata().getKey());
 
 		if (op.hasTransferAccountID()) {

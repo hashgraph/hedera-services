@@ -48,8 +48,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.exception.AdminKeyNotExistException;
-import com.hedera.services.legacy.exception.InvalidContractIDException;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -76,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
@@ -852,24 +851,40 @@ public class HederaSigningOrderTest {
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
 		// and:
 		aMockSummaryFactory();
+		// and:
+		SigningOrderResult<SignatureStatus> result = mock(SigningOrderResult.class);
+
+		given(mockSummaryFactory.forInvalidContract(any(), any()))
+				.willReturn(result);
 
 		// when:
 		subject.keysForOtherParties(txn, mockSummaryFactory);
-
-		// then:
-		verify(mockSummaryFactory).forImmutableContract(MISC_CONTRACT, txn.getTransactionID());
 	}
 
 	@Test
 	public void getsContractDelete() throws Throwable {
 		// given:
-		setupFor(CONTRACT_DELETE_SCENARIO);
+		setupFor(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
 
 		// when:
 		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
-		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ADMIN_KT.asKey()));
+		assertThat(sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+	}
+
+	@Test
+	public void getsContractDeleteContractXfer() throws Throwable {
+		// given:
+		setupFor(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
+
+		// when:
+		SigningOrderResult<SignatureStatus> summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()),
+				contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
 	}
 
 	@Test
