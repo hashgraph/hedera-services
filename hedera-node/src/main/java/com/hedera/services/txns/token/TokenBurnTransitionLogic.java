@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -59,7 +59,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 			var op = txnCtx.accessor().getTxn().getTokenBurn();
 			var id = store.resolve(op.getToken());
 			if (id == TokenStore.MISSING_TOKEN) {
-				txnCtx.setStatus(INVALID_TOKEN_REF);
+				txnCtx.setStatus(INVALID_TOKEN_ID);
 			} else {
 				var outcome = store.burn(id, op.getAmount());
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);

@@ -163,6 +163,24 @@ class TokenControllerTest {
 	}
 
 	@Test
+	public void forwardDissociate() {
+		// when:
+		subject.dissociateTokens(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_DISSOCIATE_METRIC);
+	}
+
+	@Test
+	public void forwardAssociate() {
+		// when:
+		subject.associateTokens(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).respondToToken(txn, txnObserver, TOKEN_ASSOCIATE_METRIC);
+	}
+
+	@Test
 	public void forwardsTokenInfoAsExpected() {
 		// when:
 		subject.getTokenInfo(query, queryObserver);

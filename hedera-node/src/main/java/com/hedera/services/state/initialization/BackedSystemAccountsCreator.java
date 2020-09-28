@@ -25,12 +25,13 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -40,14 +41,9 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Set;
-import java.util.stream.IntStream;
-
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.commonsHexToBytes;
-import static java.util.stream.Collectors.toSet;
 
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	static Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
@@ -79,10 +75,10 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
 	@Override
 	public void ensureSystemAccounts(
-			BackingAccounts<AccountID, MerkleAccount> accounts,
+			BackingStore<AccountID, MerkleAccount> accounts,
 			AddressBook addressBook
 	) {
-		var nodeAccountNums = getNodeAccountNums(addressBook);
+		var nodeAccountNums = MiscUtils.getNodeAccountNums(addressBook);
 
 		long N = properties.getIntProperty("ledger.numSystemAccounts");
 		long expiry = properties.getLongProperty("bootstrap.system.entityExpiry");
@@ -134,13 +130,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 			throw new IllegalStateException(e);
 		}
 		return account;
-	}
-
-	private Set<Long> getNodeAccountNums(AddressBook addressBook) {
-		return IntStream.range(0, addressBook.getSize())
-				.mapToObj(addressBook::getAddress)
-				.map(address -> accountParsedFromString(address.getMemo()).getAccountNum())
-				.collect(toSet());
 	}
 
 	private JKey getGenesisKey() {

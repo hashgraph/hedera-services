@@ -36,9 +36,11 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenFreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenGrantKycResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenMintResourceUsage;
@@ -51,8 +53,10 @@ import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.queries.answering.ZeroStakeAnswerFlow;
 import com.hedera.services.queries.contract.ContractAnswers;
 import com.hedera.services.queries.contract.GetBytecodeAnswer;
@@ -65,7 +69,9 @@ import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.StandardizedPropertySources;
@@ -150,6 +156,7 @@ import com.hedera.services.throttling.TransactionThrottling;
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.RELATIONSHIP_COMPARATOR;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
 import static com.hedera.services.sigs.metadata.SigMetadataLookup.REF_LOOKUP_FACTORY;
@@ -181,14 +188,16 @@ import com.hedera.services.txns.network.UncheckedSubmitTransitionLogic;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TxnHandlerSubmissionFlow;
 import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.services.txns.token.TokenAssociateTransitionLogic;
 import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
+import com.hedera.services.txns.token.TokenDissociateTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
 import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
-import com.hedera.services.txns.token.TokenTransactTransitionLogic;
+import com.hedera.services.txns.token.TokenTransferTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
@@ -235,6 +244,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
@@ -299,7 +309,6 @@ import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defa
 import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateAPIPropertiesWithProto;
 import static com.hedera.services.legacy.config.PropertiesLoader.populateApplicationPropertiesWithProto;
-import static io.grpc.ServerInterceptors.intercept;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toMap;
 
@@ -363,6 +372,7 @@ public class ServicesContext {
 	private BucketThrottling bucketThrottling;
 	private HbarCentExchange exchange;
 	private PrecheckVerifier precheckVerifier;
+	private BackingTokenRels backingTokenRels;
 	private BalancesExporter balancesExporter;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
@@ -412,6 +422,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private SpecialFileSystem specialFileSystem;
+	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -445,6 +456,7 @@ public class ServicesContext {
 		queryableTopics().set(topics());
 		queryableStorage().set(storage());
 		queryableTokens().set(tokens());
+		queryableTokenAssociations().set(tokenAssociations());
 	}
 
 	public CurrentPlatformStatus platformStatus() {
@@ -482,16 +494,23 @@ public class ServicesContext {
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
-					properties(),
-					specialFileSystem());
+					() -> queryableTokenAssociations().get(),
+					specialFileSystem(),
+					properties());
 		}
 		return stateViews;
 	}
 
 	public StateView currentView() {
 		if (currentView == null) {
-			currentView = new StateView(tokenStore(), this::topics, this::accounts, this::storage, properties(),
-					specialFileSystem());
+			currentView = new StateView(
+					tokenStore(),
+					this::topics,
+					this::accounts,
+					this::storage,
+					this::tokenAssociations,
+					specialFileSystem(),
+					properties());
 		}
 		return currentView;
 	}
@@ -629,7 +648,7 @@ public class ServicesContext {
 			cryptoAnswers = new CryptoAnswers(
 					new GetLiveHashAnswer(),
 					new GetStakersAnswer(),
-					new GetAccountInfoAnswer(tokenStore(), validator()),
+					new GetAccountInfoAnswer(validator()),
 					new GetAccountBalanceAnswer(validator()),
 					new GetAccountRecordsAnswer(answerFunctions(), validator())
 			);
@@ -724,6 +743,8 @@ public class ServicesContext {
 				entry(TokenMint, List.of(new TokenMintResourceUsage())),
 				entry(TokenBurn, List.of(new TokenBurnResourceUsage())),
 				entry(TokenAccountWipe, List.of(new TokenWipeResourceUsage())),
+				entry(TokenAssociateToAccount, List.of(new TokenAssociateResourceUsage())),
+				entry(TokenDissociateFromAccount, List.of(new TokenDissociateResourceUsage())),
 				/* System */
 				entry(Freeze, List.of(new FreezeResourceUsage())),
 				entry(SystemDelete, List.of(new SystemDeleteFileResourceUsage(fileFees))),
@@ -751,7 +772,8 @@ public class ServicesContext {
 
 	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
-			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics, REF_LOOKUP_FACTORY.apply(tokenStore()));
+			var lookups = defaultLookupsFor(hfs(), this::accounts, this::topics,
+					REF_LOOKUP_FACTORY.apply(tokenStore()));
 			keyOrder = keyOrderWith(lookups);
 		}
 		return keyOrder;
@@ -950,7 +972,7 @@ public class ServicesContext {
 								txnCtx(),
 								HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenTransact,
-						List.of(new TokenTransactTransitionLogic(ledger(), txnCtx()))),
+						List.of(new TokenTransferTransitionLogic(ledger(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -967,6 +989,10 @@ public class ServicesContext {
 						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenAssociateToAccount,
+						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
+				entry(TokenDissociateFromAccount,
+						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* System */
 				entry(SystemDelete,
 						List.of(new FileSysDelTransitionLogic(hfs(), entityExpiries(), txnCtx()))),
@@ -1045,7 +1071,14 @@ public class ServicesContext {
 		return exchange;
 	}
 
-	public BackingAccounts<AccountID, MerkleAccount> backingAccounts() {
+	public BackingStore<Map.Entry<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+		if (backingTokenRels == null) {
+			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
+		}
+		return backingTokenRels;
+	}
+
+	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
 			backingAccounts = new FCMapBackingAccounts(this::accounts);
 		}
@@ -1068,20 +1101,39 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			tokenStore = new HederaTokenStore(ids(), validator(), globalDynamicProperties(), this::tokens);
+			TransactionalLedger<Map.Entry<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
+					new TransactionalLedger<>(
+							TokenRelProperty.class,
+							MerkleTokenRelStatus::new,
+							backingTokenRels(),
+							new ChangeSummaryManager<>());
+			tokenRelsLedger.setKeyComparator(RELATIONSHIP_COMPARATOR);
+			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+			tokenStore = new HederaTokenStore(
+					ids(),
+					validator(),
+					globalDynamicProperties(),
+					this::tokens,
+					tokenRelsLedger);
 		}
 		return tokenStore;
 	}
 
 	public HederaLedger ledger() {
 		if (ledger == null) {
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
-					AccountProperty.class,
-					MerkleAccount::new,
-					backingAccounts(),
-					new ChangeSummaryManager<>());
-			delegate.setKeyComparator(ACCOUNT_ID_COMPARATOR);
-			ledger = new HederaLedger(tokenStore(), ids(), creator(), recordsHistorian(), delegate);
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
+					new TransactionalLedger<>(
+							AccountProperty.class,
+							MerkleAccount::new,
+							backingAccounts(),
+							new ChangeSummaryManager<>());
+			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
+			ledger = new HederaLedger(
+					tokenStore(),
+					ids(),
+					creator(),
+					recordsHistorian(),
+					accountsLedger);
 		}
 		return ledger;
 	}
@@ -1322,7 +1374,7 @@ public class ServicesContext {
 						}
 					},
 					config -> {
-						((StandardizedPropertySources)propertySources()).reloadFrom(config);
+						((StandardizedPropertySources) propertySources()).reloadFrom(config);
 						globalDynamicProperties().reload();
 						PropertiesLoader.populateApplicationPropertiesWithProto(config);
 					},
@@ -1475,6 +1527,13 @@ public class ServicesContext {
 		return queryableTokens;
 	}
 
+	public AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
+		if (queryableTokenAssociations == null) {
+			queryableTokenAssociations = new AtomicReference<>(tokenAssociations());
+		}
+		return queryableTokenAssociations;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -1564,5 +1623,9 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return state.tokens();
+	}
+
+	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+		return state.tokenAssociations();
 	}
 }

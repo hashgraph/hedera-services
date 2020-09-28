@@ -41,7 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -52,7 +52,6 @@ import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,8 +74,7 @@ class StateViewTest {
 	JFileInfo immutableMetadata;
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
-	TokenRef foundToken = TokenRef.newBuilder().setSymbol("FOUND").build();
-	TokenRef missingToken = TokenRef.newBuilder().setSymbol("MISSING").build();
+	TokenID missingTokenId = asToken("3.4.5");
 	ContractID cid = asContract("3.2.1");
 	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
 	ContractID notCid = asContract("1.2.3");
@@ -122,10 +120,10 @@ class StateViewTest {
 				.setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
 				.build();
 
-		notContract = MapValueFactory.newAccount()
+		notContract = MerkleAccountFactory.newAccount()
 				.isSmartContract(false)
 				.get();
-		contract = MapValueFactory.newAccount()
+		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
@@ -155,8 +153,8 @@ class StateViewTest {
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
-		given(tokenStore.resolve(foundToken)).willReturn(tokenId);
-		given(tokenStore.resolve(missingToken)).willReturn(TokenStore.MISSING_TOKEN);
+		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
 		contents = mock(Map.class);
@@ -177,14 +175,31 @@ class StateViewTest {
 	@Test
 	public void tokenExistsWorks() {
 		// expect:
-		assertTrue(subject.tokenExists(foundToken));
-		assertFalse(subject.tokenExists(missingToken));
+		assertTrue(subject.tokenExists(tokenId));
+		assertFalse(subject.tokenExists(missingTokenId));
+	}
+
+	@Test
+	public void tokenWithWorks() {
+		given(tokenStore.exists(tokenId)).willReturn(true);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
+		// expect:
+		assertSame(token, subject.tokenWith(tokenId).get());
+	}
+
+	@Test
+	public void tokenWithWorksForMissing() {
+		given(tokenStore.exists(tokenId)).willReturn(false);
+
+		// expect:
+		assertTrue(subject.tokenWith(tokenId).isEmpty());
 	}
 
 	@Test
 	public void recognizesMissingToken() {
 		// when:
-		var info = subject.infoForToken(missingToken);
+		var info = subject.infoForToken(missingTokenId);
 
 		// then:
 		assertTrue(info.isEmpty());
@@ -195,7 +210,7 @@ class StateViewTest {
 		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
-		var info = subject.infoForToken(foundToken);
+		var info = subject.infoForToken(tokenId);
 
 		// then:
 		assertTrue(info.isEmpty());
@@ -207,15 +222,15 @@ class StateViewTest {
 		token.setFreezeKey(MerkleToken.UNUSED_KEY);
 
 		// when:
-		var info = subject.infoForToken(foundToken).get();
+		var info = subject.infoForToken(tokenId).get();
 
 		// then:
 		assertEquals(tokenId, info.getTokenId());
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
-		assertEquals(token.tokenFloat(), info.getTotalSupply());
-		assertEquals(token.divisibility(), info.getDecimals());
+		assertEquals(token.totalSupply(), info.getTotalSupply());
+		assertEquals(token.decimals(), info.getDecimals());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TokenFreezeStatus.FreezeNotApplicable, info.getDefaultFreezeStatus());
 		assertFalse(info.hasFreezeKey());
@@ -224,7 +239,7 @@ class StateViewTest {
 	@Test
 	public void getsTokenInfo() {
 		// when:
-		var info = subject.infoForToken(foundToken).get();
+		var info = subject.infoForToken(tokenId).get();
 
 		// then:
 		assertTrue(info.getIsDeleted());
@@ -232,8 +247,8 @@ class StateViewTest {
 		assertEquals(token.symbol(), info.getSymbol());
 		assertEquals(token.name(), info.getName());
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
-		assertEquals(token.tokenFloat(), info.getTotalSupply());
-		assertEquals(token.divisibility(), info.getDecimals());
+		assertEquals(token.totalSupply(), info.getTotalSupply());
+		assertEquals(token.decimals(), info.getDecimals());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());

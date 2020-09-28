@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
@@ -83,7 +83,7 @@ class AnswerFunctionsTest {
 
 	@BeforeEach
 	private void setup() {
-		payerAccount = MapValueFactory.newAccount().get();
+		payerAccount = MerkleAccountFactory.newAccount().get();
 		payerAccount.records().offer(recordOne());
 		payerAccount.records().offer(targetRecord);
 

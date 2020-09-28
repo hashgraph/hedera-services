@@ -22,8 +22,8 @@ package com.hedera.test.factories.txns;
 
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -32,8 +32,9 @@ import java.util.Optional;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_REPLACE_KT;
 
 public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
-	private TokenRef ref;
+	private TokenID id;
 	private Optional<KeyTree> newAdminKt = Optional.empty();
+	private Optional<AccountID> newTreasury = Optional.empty();
 	private Optional<AccountID> newAutoRenew = Optional.empty();
 	private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
 
@@ -43,8 +44,8 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 		return new TokenUpdateFactory();
 	}
 
-	public TokenUpdateFactory updating(TokenRef ref) {
-		this.ref = ref;
+	public TokenUpdateFactory updating(TokenID id) {
+		this.id = id;
 		return this;
 	}
 
@@ -55,6 +56,11 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 
 	public TokenUpdateFactory newAutoRenew(AccountID account) {
 		newAutoRenew = Optional.of(account);
+		return this;
+	}
+
+	public TokenUpdateFactory newTreasury(AccountID account) {
+		newTreasury = Optional.of(account);
 		return this;
 	}
 
@@ -91,7 +97,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenUpdateTransactionBody.newBuilder();
-		op.setToken(ref);
+		op.setToken(id);
 		newAdminKt.ifPresent(kt -> op.setAdminKey(kt.asKey()));
 		if (replaceFreeze) {
 			op.setFreezeKey(TOKEN_REPLACE_KT.asKey());
@@ -106,6 +112,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 			op.setWipeKey(TOKEN_REPLACE_KT.asKey());
 		}
 		newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
+		newTreasury.ifPresent(op::setTreasury);
 		txn.setTokenUpdate(op);
 	}
 }

@@ -23,14 +23,14 @@ package com.hedera.services.fees.calculation.token.txns;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.UsageEstimatorUtils;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class TokenUpdateResourceUsageTest {
 	long expiry = 1_234_567L;
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
-	TokenRef target = TokenRef.newBuilder().setSymbol("TARGET").build();
+	TokenID target = IdUtils.asToken("0.0.123");
 	TokenInfo info = TokenInfo.newBuilder()
 			.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
 			.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())

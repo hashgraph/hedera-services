@@ -32,7 +32,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,21 +39,24 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -68,7 +70,6 @@ class TokenUpdateTransitionLogicTest {
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private TokenID target = IdUtils.asToken("1.2.666");
-	private TokenRef targetRef = IdUtils.asIdRef("1.2.666");
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
@@ -92,7 +93,7 @@ class TokenUpdateTransitionLogicTest {
 		token = mock(MerkleToken.class);
 		given(token.adminKey()).willReturn(Optional.of(adminKey));
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
-		given(store.resolve(targetRef)).willReturn(target);
+		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
 
 		txnCtx = mock(TransactionContext.class);
@@ -104,15 +105,15 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnInvalidRefForSafety() {
+	public void abortsOnInvalidIdForSafety() {
 		givenValidTxnCtx(true);
-		given(store.resolve(targetRef)).willReturn(TokenStore.MISSING_TOKEN);
+		given(store.resolve(target)).willReturn(TokenStore.MISSING_TOKEN);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
+		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
 	}
 
 	@Test
@@ -250,6 +251,19 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void abortsOnAlreadyDeletedToken() {
+		givenValidTxnCtx(true);
+		// and:
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TOKEN_WAS_DELETED);
+	}
+
+	@Test
 	public void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
@@ -335,7 +349,7 @@ class TokenUpdateTransitionLogicTest {
 	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
 		var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
-						.setToken(targetRef));
+						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
 					.setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);

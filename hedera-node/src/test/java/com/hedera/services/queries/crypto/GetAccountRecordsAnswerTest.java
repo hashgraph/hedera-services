@@ -25,7 +25,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.queries.answering.AnswerFunctions;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.Query;
@@ -72,7 +72,7 @@ class GetAccountRecordsAnswerTest {
 	PropertySource propertySource;
 	@BeforeEach
 	private void setup() throws Throwable {
-		payerAccount = MapValueFactory.newAccount()
+		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("1.2.3"))
 				.senderThreshold(1_234L)

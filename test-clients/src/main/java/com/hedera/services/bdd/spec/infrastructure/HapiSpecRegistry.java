@@ -384,11 +384,9 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean isSigRequired(String name) {
-		try {
-			return get(name, Boolean.class);
-		} catch (Throwable ignore) {
-		}
-		return setup.defaultReceiverSigRequired();
+		return registry.containsKey(full(name, Boolean.class))
+				? get(name, Boolean.class)
+				: setup.defaultReceiverSigRequired();
 	}
 
 	public boolean hasSigRequirement(String name) {

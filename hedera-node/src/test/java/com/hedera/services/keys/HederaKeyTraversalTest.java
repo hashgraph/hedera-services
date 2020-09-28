@@ -22,7 +22,7 @@ package com.hedera.services.keys;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.test.factories.accounts.MapValueFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,7 +82,7 @@ public class HederaKeyTraversalTest {
 	public void countsSimpleKeysForValidAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
-		MerkleAccount account = MapValueFactory.newAccount().accountKeys(jKey).get();
+		MerkleAccount account = MerkleAccountFactory.newAccount().accountKeys(jKey).get();
 
 		// expect:
 		assertEquals(10, HederaKeyTraversal.numSimpleKeys(account));
@@ -92,7 +92,7 @@ public class HederaKeyTraversalTest {
 	public void countsZeroSimpleKeysForWeirdAccount() throws Exception {
 		// given:
 		JKey jKey = kt.asJKey();
-		MerkleAccount account = MapValueFactory.newAccount().get();
+		MerkleAccount account = MerkleAccountFactory.newAccount().get();
 
 		// expect:
 		assertEquals(0, HederaKeyTraversal.numSimpleKeys(account));
