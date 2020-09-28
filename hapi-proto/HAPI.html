@@ -8244,7 +8244,7 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>TOKEN_IS_IMMUTABlE</td>
+                <td>TOKEN_IS_IMMUTABLE</td>
                 <td>193</td>
                 <td><p>Token does not have Admin key set, thus update/delete transactions cannot be performed</p></td>
               </tr>
@@ -8259,6 +8259,12 @@ by HAPI.</p></td>
                 <td>TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES</td>
                 <td>195</td>
                 <td><p>An attempted operation is invalid until all token balances for the target account are zero</p></td>
+              </tr>
+            
+              <tr>
+                <td>ACCOUNT_IS_TREASURY</td>
+                <td>196</td>
+                <td><p>An attempted operation is invalid because the account is a treasury</p></td>
               </tr>
             
           </tbody>

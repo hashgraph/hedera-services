@@ -49,6 +49,7 @@ import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -320,6 +321,18 @@ public class MerkleAccountTest {
 	public void throwsOnNegativeBalance() {
 		// expect:
 		assertThrows(NegativeAccountBalanceException.class, () -> subject.setBalance(-1L));
+	}
+
+	@Test
+	public void initializeEnsuresAssociationsExist() {
+		// given:
+		subject.setTokens(null);
+
+		// when:
+		subject.initialize(null);
+
+		// then:
+		assertNotNull(subject.tokens());
 	}
 
 	@Test
