@@ -187,7 +187,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var tokenAssociations = signedState.tokenAssociations();
 		for (MerkleEntityId id : accounts.keySet())	{
 			var account = accounts.get(id);
-			if (!account.isDeleted()) {
+			if (!account.isAccountDeleted()) {
 				var accountId = id.toAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
