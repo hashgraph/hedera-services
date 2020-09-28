@@ -83,7 +83,6 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						basicKeysAndTokens(),
 						cryptoCreate("payer")
 				)).when(
-						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate("tkn1")
 								.treasury(TOKEN_TREASURY),
 						tokenDissociate(TOKEN_TREASURY, "tkn1")

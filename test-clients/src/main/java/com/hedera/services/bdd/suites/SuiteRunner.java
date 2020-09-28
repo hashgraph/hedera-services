@@ -180,6 +180,7 @@ public class SuiteRunner {
 		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
+		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
 		/* Functional tests - CRYPTO */
 		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
