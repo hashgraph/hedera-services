@@ -93,9 +93,9 @@ public class GetAccountBalanceAnswerTest {
 	@BeforeEach
 	private void setup() {
 		deleted = mock(MerkleToken.class);
-		given(deleted.isDeleted()).willReturn(true);
+		given(deleted.isTokenDeleted()).willReturn(true);
 		notDeleted = mock(MerkleToken.class);
-		given(notDeleted.isDeleted()).willReturn(false);
+		given(notDeleted.isTokenDeleted()).willReturn(false);
 
 		tokenRels = new FCMap<>();
 		tokenRels.put(

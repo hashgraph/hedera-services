@@ -45,7 +45,7 @@ public class CryptoHandler {
     MerkleEntityId accountKey = MerkleEntityId.fromAccountId(accountID);
     if (map.containsKey(accountKey)) {
       MerkleAccount accountValue = map.get(accountKey);
-      return accountValue.isDeleted();
+      return accountValue.isAccountDeleted();
     }
     return false;
   }

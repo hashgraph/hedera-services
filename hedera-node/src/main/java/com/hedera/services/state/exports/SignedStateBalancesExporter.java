@@ -221,7 +221,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var tokenBalances = TokenBalances.newBuilder();
 			for (TokenID tokenId : accountTokens.asIds()) {
 				var token = tokens.get(fromTokenId(tokenId));
-				if (token != null && !token.isDeleted()) {
+				if (token != null && !token.isTokenDeleted()) {
 					var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
 					tokenBalances.addTokenBalances(tb(tokenId, relationship.getBalance()));
 				}

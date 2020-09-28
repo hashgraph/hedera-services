@@ -131,7 +131,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		// then:
 		var topic = topics.get(fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
-		assertFalse(topic.isDeleted());
+		assertFalse(topic.isTopicDeleted());
 		verify(transactionContext).setStatus(UNAUTHORIZED);
 	}
 

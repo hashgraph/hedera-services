@@ -172,7 +172,7 @@ public class HederaTokenStore implements TokenStore {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
-			int effectiveRelationships = accountTokens.purge(id -> !exists(id), id -> get(id).isDeleted());
+			int effectiveRelationships = accountTokens.purge(id -> !exists(id), id -> get(id).isTokenDeleted());
 			var validity = OK;
 			if ((effectiveRelationships + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
