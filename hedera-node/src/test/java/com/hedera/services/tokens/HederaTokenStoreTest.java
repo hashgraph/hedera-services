@@ -75,6 +75,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREA
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -118,6 +119,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.spy;
 
 @RunWith(JUnitPlatform.class)
 class HederaTokenStoreTest {
@@ -428,6 +430,22 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	public void dissociatingRejectsTreasuryAccount() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		subject = spy(subject);
+		given(subject.isTreasuryForToken(sponsor, misc)).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(ACCOUNT_IS_TREASURY, status);
 	}
 
 	@Test
@@ -977,8 +995,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void addKnownTreasuryWorks() {
-		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
-		subject.knownTreasuries.put(treasury, tokenSet);
+		subject.addKnownTreasury(treasury, misc);
 
 		// expect:
 		assertTrue(subject.knownTreasuries.containsKey(treasury));
@@ -1004,13 +1021,35 @@ class HederaTokenStoreTest {
 		subject.knownTreasuries.put(treasury, tokenSet);
 
 		// expect:
-		assertTrue(subject.knownTreasuries.containsKey(treasury));
+		assertTrue(subject.isKnownTreasury(treasury));
+	}
+
+	@Test
+	public void isTreasuryForTokenWorks() {
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		// expect:
+		assertTrue(subject.isTreasuryForToken(treasury, misc));
+	}
+
+	@Test
+	public void isTreasuryForTokenReturnsFalse() {
+		// expect:
+		assertFalse(subject.isTreasuryForToken(treasury, misc));
 	}
 
 	@Test
 	public void throwsIfKnownTreasuryIsMissing() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(null, misc));
+	}
+
+	@Test
+	public void throwsIfInvalidTreasury() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
 	}
 
 

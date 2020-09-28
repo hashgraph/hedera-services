@@ -111,16 +111,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public TokenID resolve(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum delete(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		/* No-op */
 	}

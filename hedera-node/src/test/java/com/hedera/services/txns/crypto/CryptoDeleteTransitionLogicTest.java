@@ -53,7 +53,6 @@ public class CryptoDeleteTransitionLogicTest {
 	final private boolean withKnownTreasury = true;
 
 	private HederaLedger ledger;
-	private TokenStore tokenStore;
 	private TransactionBody cryptoDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
@@ -64,7 +63,6 @@ public class CryptoDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
-		tokenStore = mock(TokenStore.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 

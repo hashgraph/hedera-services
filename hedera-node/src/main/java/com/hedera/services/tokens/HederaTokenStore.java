@@ -205,10 +205,9 @@ public class HederaTokenStore implements TokenStore {
 				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
-				if(isTreasuryForToken(aId ,tId)) {
+				if (isTreasuryForToken(aId, tId)) {
 					return ACCOUNT_IS_TREASURY;
 				}
-
 				var relationship = asTokenRel(aId, tId);
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
@@ -742,7 +741,7 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
-		if (!isKnownTreasury(aId)) {
+		if (!knownTreasuries.containsKey(aId)) {
 			return false;
 		}
 		return knownTreasuries.get(aId).contains(tId);
