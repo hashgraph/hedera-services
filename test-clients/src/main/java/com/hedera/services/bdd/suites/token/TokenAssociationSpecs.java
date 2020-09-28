@@ -84,22 +84,18 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 				)).when(
 						cryptoCreate("misc"),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.payingWith("misc")
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN)
-								.payingWith("payer"),
+						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
 						tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
 						tokenTransact(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between(TOKEN_TREASURY, "misc")),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.payingWith("misc")
 								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
 						tokenTransact(
 								moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
 										.between("misc", TOKEN_TREASURY)),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.payingWith("misc")
 				).then(
 						getAccountInfo("misc")
 								.hasToken(relationshipWith(KNOWABLE_TOKEN))
@@ -115,10 +111,8 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						cryptoCreate("payer")
 				)).when(
 						cryptoCreate("misc"),
+						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT),
 						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.payingWith("payer"),
-						tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-								.payingWith("payer")
 								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", "1.2.3")
 								.hasKnownStatus(INVALID_TOKEN_ID),
