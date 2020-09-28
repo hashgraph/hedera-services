@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
@@ -20,10 +20,18 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class NegativeAccountBalanceException extends Exception {
-  private static final long serialVersionUID = 1L;
+import com.hedera.services.context.ServicesContext;
+import com.hedera.services.utils.Pause;
 
-  public NegativeAccountBalanceException(String message) {
-    super(message);
-  }
+public class StdStateMigrations implements StateMigrations {
+	private final Pause pause;
+
+	public StdStateMigrations(Pause pause) {
+		this.pause = pause;
+	}
+
+	@Override
+	public void runAllFor(ServicesContext ctx) {
+		/* There are no applicable state migrations at this time. */
+	}
 }

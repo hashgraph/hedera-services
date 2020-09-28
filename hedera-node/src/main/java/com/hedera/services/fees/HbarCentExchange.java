@@ -34,4 +34,7 @@ public interface HbarCentExchange {
 	ExchangeRate activeRate();
 	ExchangeRateSet activeRates();
 	ExchangeRate rate(Timestamp at);
+
+	default void updateRates(ExchangeRateSet rates) {
+	}
 }

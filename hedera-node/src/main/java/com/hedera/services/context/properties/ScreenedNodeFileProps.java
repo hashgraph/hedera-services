@@ -33,6 +33,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.BootstrapProperties.NODE_PROPS;
+import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
 import static com.hedera.services.context.properties.Profile.DEV;
 import static com.hedera.services.context.properties.Profile.PROD;
 import static com.hedera.services.context.properties.Profile.TEST;
@@ -104,7 +105,7 @@ public class ScreenedNodeFileProps implements PropertySource {
 			return;
 		}
 		try {
-			fromFile.put(name, BootstrapProperties.PROP_TRANSFORMS.get(name).apply(value));
+			fromFile.put(name, transformFor(name).apply(value));
 		} catch (Exception reason) {
 			log.warn(String.format(UNPARSEABLE_PROP_TPL, value, name, reason.getClass().getSimpleName()));
 		}

@@ -69,8 +69,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 
