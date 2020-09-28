@@ -8686,7 +8686,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenCreateTransactionBody">TokenCreateTransactionBody</h3>
-        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The Name and Symbol properties must be unique within the network. If there are other tokens defined with the same name or symbol, respectively TOKEN_SYMBOL_ALREADY_IN_USE and TOKEN_NAME_ALREADY_IN_USE errors are returned.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be S*(10^D), where S is initial supply and D is decimals. The maximum supply a token can have is S*(10^D) < 2^63.</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
+        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be the initial supply provided. The maximum supply a token can have is 2^63-1.</p><p>Example:</p><p>Token A has initial supply set to 10_000 and decimals set to 2. The tokens that will be put into circulation are going be 100.</p><p>Token B has initial supply set to 10_012_345_678 and decimals set to 8. The number of tokens that will be put into circulation are going to be 100.12345678</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
 
         
           <table class="field-table">
@@ -8699,14 +8699,14 @@ by HAPI.</p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The publicly visible name of the token, specified as a string of only ASCII characters. Must be unique </p></td>
+                  <td><p>The publicly visible name of the token, specified as a string of only ASCII characters </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The publicly visible token symbol. It is UTF-8 capitalized alphabetical string identifying the token. Must be unique </p></td>
+                  <td><p>The publicly visible token symbol. It is UTF-8 capitalized alphabetical string identifying the token </p></td>
                 </tr>
               
                 <tr>
@@ -8720,7 +8720,7 @@ by HAPI.</p></td>
                   <td>initialSupply</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>Specifies the initial supply of tokens to be put in circulation. The initial supply is sent to the Treasury Account </p></td>
+                  <td><p>Specifies the initial supply of tokens to be put in circulation. The initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible. </p></td>
                 </tr>
               
                 <tr>
@@ -9025,14 +9025,14 @@ by HAPI.</p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The unique name of the token. It is a string of ASCII only characters </p></td>
+                  <td><p>The name of the token. It is a string of ASCII only characters </p></td>
                 </tr>
               
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The unique symbol of the token. It is a UTF-8 capitalized alphabetical string </p></td>
+                  <td><p>The symbol of the token. It is a UTF-8 capitalized alphabetical string </p></td>
                 </tr>
               
                 <tr>
@@ -9517,14 +9517,14 @@ by HAPI.</p></td>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Symbol of the Token. Must be a unique, UTF-8 capitalized alphabetical string identifying the token. </p></td>
+                  <td><p>The new Symbol of the Token. Must be UTF-8 capitalized alphabetical string identifying the token. </p></td>
                 </tr>
               
                 <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The new Name of the Token. Must be a unique string of ASCII characters. </p></td>
+                  <td><p>The new Name of the Token. Must be a string of ASCII characters. </p></td>
                 </tr>
               
                 <tr>
