@@ -277,7 +277,7 @@
                 <li>
                   <a href="#proto.TokenTransferList"><span class="badge">M</span>TokenTransferList</a>
                 </li>
-
+              
                 <li>
                   <a href="#proto.TopicID"><span class="badge">M</span>TopicID</a>
                 </li>
@@ -699,8 +699,8 @@
                 <li>
                   <a href="#proto.TokenRelationship"><span class="badge">M</span>TokenRelationship</a>
                 </li>
-
-
+              
+              
               
               
             </ul>
@@ -1397,18 +1397,18 @@
           <li>
             <a href="#TokenUnfreezeAccount.proto">TokenUnfreezeAccount.proto</a>
             <ul>
-
+              
                 <li>
                   <a href="#proto.TokenUnfreezeAccountTransactionBody"><span class="badge">M</span>TokenUnfreezeAccountTransactionBody</a>
                 </li>
-
-
-
-
+              
+              
+              
+              
             </ul>
           </li>
-
-
+        
+          
           <li>
             <a href="#TokenUpdate.proto">TokenUpdate.proto</a>
             <ul>
@@ -5191,59 +5191,59 @@ If unspecified, no change. </p></td>
               </tbody>
             </table>
             
+          
 
-
-
-
+        
+      
         <h3 id="proto.TokenRelationship">TokenRelationship</h3>
         <p>Token's information related to the given Account</p>
 
-
+        
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-
+              
                 <tr>
                   <td>tokenId</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The ID of the token </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The Symbol of the token </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>balance</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>The balance that the Account holds in the smallest denomination </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>kycStatus</td>
                   <td><a href="#proto.TokenKycStatus">TokenKycStatus</a></td>
                   <td></td>
                   <td><p>The KYC status of the account (KycNotApplicable, Granted or Revoked). If the token does not have KYC key, KycNotApplicable is returned </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>freezeStatus</td>
                   <td><a href="#proto.TokenFreezeStatus">TokenFreezeStatus</a></td>
                   <td></td>
                   <td><p>The Freeze status of the account (FreezeNotApplicable, Frozen or Unfrozen). If the token does not have Freeze key, FreezeNotApplicable is returned </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
-
+          
 
         
       
@@ -8680,7 +8680,7 @@ by HAPI.</p></td>
 
       
         <h3 id="proto.TokenCreateTransactionBody">TokenCreateTransactionBody</h3>
-        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The Name and Symbol properties must be unique within the network. If there are other tokens defined with the same name or symbol, respectively TOKEN_SYMBOL_ALREADY_IN_USE and TOKEN_NAME_ALREADY_IN_USE errors are returned.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be S*(10^D), where S is initial supply and D is decimals. The maximum supply a token can have is S*(10^D) < 2^63.</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
+        <p>Create a new token. After the token is created, the Token ID for it is in the receipt.</p><p>The Name and Symbol properties must be unique within the network. If there are other tokens defined with the same name or symbol, respectively TOKEN_SYMBOL_ALREADY_IN_USE and TOKEN_NAME_ALREADY_IN_USE errors are returned.</p><p>The specified Treasury Account is receiving the initial supply of tokens as-well as the tokens from the Token Mint operation once executed. The balance of the treasury account is decreased when the Token Burn operation is executed.</p><p>The supply that is going to be put in circulation is going to be the initial supply provided. The maximum supply a token can have is 2^63-1.</p><p>Example:</p><p>Token A has initial supply set to 10_000 and decimals set to 2. The tokens that will be put into circulation are going be 100.</p><p>Token B has initial supply set to 10_012_345_678 and decimals set to 8. The number of tokens that will be put into circulation are going to be 100.12345678</p><p>Creating immutable token: Token can be created as immutable if the adminKey is omitted. In this case, the name, symbol, treasury, management keys, expiry and renew properties cannot be updated. If a token is created as immutable, anyone is able to extend the expiry time by paying the fee.</p>
 
         
           <table class="field-table">
@@ -8714,7 +8714,7 @@ by HAPI.</p></td>
                   <td>initialSupply</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
-                  <td><p>Specifies the initial supply of tokens to be put in circulation. The initial supply is sent to the Treasury Account </p></td>
+                  <td><p>Specifies the initial supply of tokens to be put in circulation. The initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible. </p></td>
                 </tr>
               
                 <tr>
@@ -9493,122 +9493,122 @@ by HAPI.</p></td>
         <h3 id="proto.TokenUpdateTransactionBody">TokenUpdateTransactionBody</h3>
         <p>Updates an already created Token.</p><p>If no value is given for a field, that field is left unchanged. For an immutable tokens (that is, a token created without an adminKey), only the expiry may be updated. Setting any other field in that case will cause the transaction status to resolve to TOKEN_IS_IMMUTABlE.</p>
 
-
+        
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-
+              
                 <tr>
                   <td>token</td>
                   <td><a href="#proto.TokenID">TokenID</a></td>
                   <td></td>
                   <td><p>The Token to be updated </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>symbol</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The new Symbol of the Token. Must be a unique, UTF-8 capitalized alphabetical string identifying the token. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The new Name of the Token. Must be a unique string of ASCII characters. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>treasury</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
                   <td><p>The new Treasury account of the Token. If the provided treasury account is not existing or deleted, the response will be INVALID_TREASURY_ACCOUNT_FOR_TOKEN. If successful, the Token balance held in the previous Treasury Account is transferred to the new one. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>adminKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
                   <td><p>The new Admin key of the Token. If Token is immutable, transaction will resolve to TOKEN_IS_IMMUTABlE. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>kycKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
                   <td><p>The new KYC key of the Token. If Token does not have currently a KYC key, transaction will resolve to TOKEN_HAS_NO_KYC_KEY. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>freezeKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
                   <td><p>The new Freeze key of the Token. If the Token does not have currently a Freeze key, transaction will resolve to TOKEN_HAS_NO_FREEZE_KEY. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>wipeKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
                   <td><p>The new Wipe key of the Token. If the Token does not have currently a Wipe key, transaction will resolve to TOKEN_HAS_NO_WIPE_KEY. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>supplyKey</td>
                   <td><a href="#proto.Key">Key</a></td>
                   <td></td>
                   <td><p>The new Supply key of the Token. If the Token does not have currently a Supply key, transaction will resolve to TOKEN_HAS_NO_SUPPLY_KEY. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>autoRenewAccount</td>
                   <td><a href="#proto.AccountID">AccountID</a></td>
                   <td></td>
                   <td><p>The new account which will be automatically charged to renew the token&#39;s expiration, at autoRenewPeriod interval. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>autoRenewPeriod</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>The new interval at which the auto-renew account will be charged to extend the token&#39;s expiry. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>expiry</td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>The new expiry time of the token. Expiry can be updated even if admin key is not set. If the provided expiry is earlier than the current token expiry, transaction wil resolve to INVALID_EXPIRATION_TIME </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
+          
 
+        
+      
 
+      
 
+      
 
-
-
-
-
-
-
-
-
+      
+    
+      
       <div class="file-heading">
         <h2 id="TokenWipeAccount.proto">TokenWipeAccount.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
-
+      
         <h3 id="proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</h3>
         <p>Wipes the provided amount of tokens from the specified Account. Must be signed by the Token's Wipe key.</p><p>If the provided account is not found, the transaction will resolve to INVALID_ACCOUNT_ID.</p><p>If the provided account has been deleted, the transaction will resolve to ACCOUNT_DELETED.</p><p>If the provided token is not found, the transaction will resolve to INVALID_TOKEN_ID.</p><p>If the provided token has been deleted, the transaction will resolve to TOKEN_WAS_DELETED.</p><p>If an Association between the provided token and account is not found, the transaction will resolve to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.</p><p>If Wipe Key is not present in the Token, transaction results in TOKEN_HAS_NO_WIPE_KEY.</p><p>If the provided account is the Token's Treasury Account, transaction results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT</p><p>On success, tokens are removed from the account and the total supply of the token is decreased by the wiped amount.</p><p>The amount provided is in the lowest denomination possible. Example:</p><p>Token A has 2 decimals. In order to wipe 100 tokens from account, one must provide amount of 10000. In order to wipe 100.55 tokens, one must provide amount of 10055.</p>
 
-
+        
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
