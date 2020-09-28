@@ -24,19 +24,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALL
 
 public class UpdateFile150 extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
-	private static String zipFile = "Archive.zip";
-	private static final String DEFAULT_SCRIPT = "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
-
-	private static String uploadPath = "updateFiles/";
-
 	private static int FREEZE_LAST_MINUTES = 2;
 	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
 	public static void main(String... args) {
-
-		if (args.length > 0) {
-			uploadPath = args[0];
-		}
 		new UpdateFile150().runSuiteSync();
 	}
 
@@ -184,10 +175,13 @@ public class UpdateFile150 extends HapiApiSuite {
 
 
 	private HapiApiSpec emptyUpdateFile() {
+		final byte[] notUsed = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
+		final byte[] hash = sha384Digest(notUsed);
 		return defaultHapiSpec("emptyUpdateFile")
 				.given(
 						freeze().setFileID(fileIDString)
 								.startingIn(1)
+								.setFileHash(hash)
 								.minutes().andLasting(FREEZE_LAST_MINUTES).minutes()
 						// check server log it should has error about empty file
 				).when(

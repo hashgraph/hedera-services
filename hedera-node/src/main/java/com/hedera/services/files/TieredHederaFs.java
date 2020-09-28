@@ -197,11 +197,7 @@ public class TieredHederaFs implements HederaFs {
 			var attr = metadata.get(id);
 			attr.setDeleted(true);
 			metadata.put(id, attr);
-			if (specialFileSystem.isSpeicalFileID(id)) {
-				specialFileSystem.remove(id);
-			} else {
-				data.remove(id);
-			}
+			data.remove(id);
 		}
 		return new SimpleUpdateResult(verdict.getValue(), verdict.getValue(), verdict.getKey());
 	}
@@ -211,11 +207,7 @@ public class TieredHederaFs implements HederaFs {
 		assertExtant(id);
 
 		metadata.remove(id);
-		if (specialFileSystem.isSpeicalFileID(id)) {
-			specialFileSystem.remove(id);
-		} else {
-			data.remove(id);
-		}
+		data.remove(id);
 	}
 
 	public static class SimpleUpdateResult implements UpdateResult {
