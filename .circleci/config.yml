@@ -1527,7 +1527,6 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
-                - 554-M-Reconnect-Functionality
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
