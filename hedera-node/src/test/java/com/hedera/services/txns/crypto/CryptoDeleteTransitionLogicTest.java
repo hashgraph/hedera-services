@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -49,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class CryptoDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+	final private boolean withKnownTreasury = true;
 
 	private HederaLedger ledger;
 	private TransactionBody cryptoDeleteTxn;
@@ -126,6 +128,20 @@ public class CryptoDeleteTransitionLogicTest {
 		// then:
 		verify(ledger).delete(target, payer);
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void rejectsDeletionOfKnownTreasury() {
+		// setup:
+		givenValidTxnCtx();
+		given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
+
+		// when:
+		subject.doStateTransition();
+
+		// when:
+		verify(ledger, never()).delete(target, payer);
+		verify(txnCtx).setStatus(ACCOUNT_IS_TREASURY);
 	}
 
 	@Test
