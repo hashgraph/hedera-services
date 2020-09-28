@@ -50,7 +50,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,7 +98,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -147,7 +149,9 @@ class HederaTokenStoreTest {
 	int decimals = 10;
 	long treasuryBalance = 50_000, sponsorBalance = 1_000;
 	TokenID misc = IdUtils.asToken("3.2.1");
+	TokenID anotherMisc = IdUtils.asToken("6.4.2");
 	TokenRef miscRef = IdUtils.asIdRef(misc);
+	TokenRef anotherMiscRef = IdUtils.asIdRef(anotherMisc);
 	boolean freezeDefault = true;
 	boolean accountsKycGrantedByDefault = false;
 	long autoRenewPeriod = 500_000;
@@ -183,6 +187,7 @@ class HederaTokenStoreTest {
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -306,7 +311,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.delete(miscRef);
 
 		// then:
-		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
@@ -395,6 +400,8 @@ class HederaTokenStoreTest {
 		given(bToken.symbol()).willReturn("pending");
 		given(aToken.name()).willReturn("name1");
 		given(bToken.name()).willReturn("name2");
+		given(aToken.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
+		given(bToken.treasury()).willReturn(EntityId.ofNullableAccountId(newTreasury));
 
 		// when:
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
@@ -407,6 +414,10 @@ class HederaTokenStoreTest {
 		assertEquals(2, subject.nameKeyedIds.size());
 		assertTrue(subject.nameExists("name1"));
 		assertTrue(subject.nameExists("name2"));
+
+		assertEquals(2, subject.knownTreasuries.size());
+		assertTrue(subject.isKnownTreasury(EntityId.ofNullableAccountId(treasury).toGrpcAccountId()));
+		assertTrue(subject.isKnownTreasury(EntityId.ofNullableAccountId(newTreasury).toGrpcAccountId()));
 	}
 
 	@Test
@@ -415,6 +426,56 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
+	}
+
+	@Test
+	public void treasuryRemovalForTokenRemovesKeyWhenEmpty() {
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		subject.removeKnownTreasuryForToken(treasury, misc);
+
+		// expect:
+		assertFalse(subject.knownTreasuries.containsKey(treasury));
+		assertTrue(subject.knownTreasuries.isEmpty());
+	}
+
+	@Test
+	public void addKnownTreasuryWorks() {
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		// expect:
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
+	}
+
+	@Test
+	public void removeKnownTreasuryWorks() {
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc, anotherMisc));
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		subject.removeKnownTreasuryForToken(treasury, misc);
+
+		// expect:
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
+		assertEquals(1, subject.knownTreasuries.size());
+		assertTrue(subject.knownTreasuries.get(treasury).contains(anotherMisc));
+	}
+
+	@Test
+	public void isKnownTreasuryWorks() {
+		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
+
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		// expect:
+		assertTrue(subject.knownTreasuries.containsKey(treasury));
+	}
+
+	@Test
+	public void throwsIfKnownTreasuryIsMissing() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(null, misc));
 	}
 
 	@Test
@@ -812,7 +873,7 @@ class HederaTokenStoreTest {
 		var outcome = subject.update(op, thisSecond);
 
 		// then:
-		assertEquals(TOKEN_IS_IMMUTABlE, outcome);
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
@@ -1032,6 +1093,7 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
 		subject.nameKeyedIds.put(name, misc);
+		subject.addKnownTreasury(treasury, misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1053,6 +1115,10 @@ class HederaTokenStoreTest {
 	public void updateHappyPathWorksForEverythingWithNewExpiry() {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
+		subject.addKnownTreasury(treasury, misc);
+
+		Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1079,12 +1145,16 @@ class HederaTokenStoreTest {
 		assertEquals(subject.symbolKeyedIds.get(newSymbol), misc);
 		assertFalse(subject.nameKeyedIds.containsKey(name));
 		assertEquals(subject.nameKeyedIds.get(newName), misc);
+		assertFalse(subject.knownTreasuries.containsKey(treasury));
+		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
 	}
 
 	@Test
 	public void updateHappyPathWorksWithNewAutoRenewAccount() {
 		// setup:
 		subject.symbolKeyedIds.put(symbol, misc);
+		subject.nameKeyedIds.put(name, misc);
+		subject.addKnownTreasury(treasury, misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1572,6 +1642,8 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
+		Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(subject.pendingId);
 
 		// when:
 		subject.commitCreation();
@@ -1584,8 +1656,10 @@ class HederaTokenStoreTest {
 		// and:
 		assertTrue(subject.symbolKeyedIds.containsKey(symbol));
 		assertTrue(subject.nameKeyedIds.containsKey(name));
+		assertTrue(subject.isKnownTreasury(treasury));
 		assertEquals(created, subject.symbolKeyedIds.get(symbol));
 		assertEquals(created, subject.nameKeyedIds.get(name));
+		assertEquals(tokenSet, subject.knownTreasuries.get(treasury));
 	}
 
 	@Test

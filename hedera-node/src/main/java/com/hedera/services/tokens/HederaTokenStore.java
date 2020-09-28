@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -98,7 +99,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_ALREADY_IN_USE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -128,6 +129,7 @@ public class HederaTokenStore implements TokenStore {
 
 	Map<String, TokenID> symbolKeyedIds = new HashMap<>();
 	Map<String, TokenID> nameKeyedIds = new HashMap<>();
+	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
@@ -145,10 +147,11 @@ public class HederaTokenStore implements TokenStore {
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
 
-		tokens.get().entrySet().forEach(entry ->
-				symbolKeyedIds.put(entry.getValue().symbol(), entry.getKey().toTokenId()));
-		tokens.get().entrySet().forEach(entry ->
-				nameKeyedIds.put(entry.getValue().name(), entry.getKey().toTokenId()));
+		tokens.get().forEach((key, value) -> {
+			symbolKeyedIds.put(value.symbol(), key.toTokenId());
+			nameKeyedIds.put(value.name(), key.toTokenId());
+			addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
+		});
 	}
 
 	@Override
@@ -455,6 +458,28 @@ public class HederaTokenStore implements TokenStore {
 		return success(pendingId);
 	}
 
+
+	public void addKnownTreasury(AccountID aId, TokenID tId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			knownTreasuries.put(aId, new HashSet<>());
+		}
+		knownTreasuries.get(aId).add(tId);
+	}
+
+	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+		throwIfKnownTreasuryIsMissing(aId);
+		knownTreasuries.get(aId).remove(tId);
+		if (knownTreasuries.get(aId).isEmpty()) {
+			knownTreasuries.remove(aId);
+		}
+	}
+
+	private void throwIfKnownTreasuryIsMissing(AccountID aId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			throw new IllegalArgumentException(String.format("No such known treasury '%s'!", readableId(aId)));
+		}
+	}
+
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
 		if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
@@ -497,6 +522,7 @@ public class HederaTokenStore implements TokenStore {
 		tokens.get().put(fromTokenId(pendingId), pendingCreation);
 		symbolKeyedIds.put(pendingCreation.symbol(), pendingId);
 		nameKeyedIds.put(pendingCreation.name(), pendingId);
+		addKnownTreasury(pendingCreation.treasury().toGrpcAccountId(), pendingId);
 
 		resetPendingCreation();
 	}
@@ -574,7 +600,7 @@ public class HederaTokenStore implements TokenStore {
 				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
 			}
 			if (!token.hasAdminKey() && !isExpiryOnly) {
-				appliedValidity.set(TOKEN_IS_IMMUTABlE);
+				appliedValidity.set(TOKEN_IS_IMMUTABLE);
 			}
 			if (OK != appliedValidity.get()) {
 				return;
@@ -616,7 +642,9 @@ public class HederaTokenStore implements TokenStore {
 			}
 			if (changes.hasTreasury()) {
 				var treasuryId = ofNullableAccountId(changes.getTreasury());
+				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
+				addKnownTreasury(changes.getTreasury(), tId);
 			}
 			if (changes.getExpiry() != 0) {
 				token.setExpiry(changes.getExpiry());
@@ -744,6 +772,10 @@ public class HederaTokenStore implements TokenStore {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;
+	}
+
+	public boolean isKnownTreasury(AccountID aid) {
+		return knownTreasuries.containsKey(aid);
 	}
 
 	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {

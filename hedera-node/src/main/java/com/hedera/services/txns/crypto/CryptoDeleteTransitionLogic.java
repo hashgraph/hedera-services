@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -52,10 +53,12 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final HederaLedger ledger;
+	private final TokenStore tokenStore;
 	private final TransactionContext txnCtx;
 
-	public CryptoDeleteTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
+	public CryptoDeleteTransitionLogic(HederaLedger ledger, TokenStore tokenStore, TransactionContext txnCtx) {
 		this.ledger = ledger;
+		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 	}
 
@@ -64,6 +67,11 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 			AccountID id = op.getDeleteAccountID();
+			if (tokenStore.isKnownTreasury(id)) {
+				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
+				return;
+			};
+
 			if (!ledger.allTokenBalancesVanish(id)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 				return;

@@ -654,6 +654,10 @@
                   <a href="#proto.TokenBalance"><span class="badge">M</span>TokenBalance</a>
                 </li>
               
+                <li>
+                  <a href="#proto.TokenBalances"><span class="badge">M</span>TokenBalances</a>
+                </li>
+              
               
               
               
@@ -1207,6 +1211,21 @@
         
           
           <li>
+            <a href="#TokenAssociate.proto">TokenAssociate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.TokenAssociateTransactionBody"><span class="badge">M</span>TokenAssociateTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#TokenBurn.proto">TokenBurn.proto</a>
             <ul>
               
@@ -1242,6 +1261,21 @@
               
                 <li>
                   <a href="#proto.TokenDeleteTransactionBody"><span class="badge">M</span>TokenDeleteTransactionBody</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#TokenDissociate.proto">TokenDissociate.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.TokenDissociateTransactionBody"><span class="badge">M</span>TokenDissociateTransactionBody</a>
                 </li>
               
               
@@ -2990,6 +3024,18 @@
                 <td>TokenAccountWipe</td>
                 <td>67</td>
                 <td><p>Wipe token amount from Account holder</p></td>
+              </tr>
+            
+              <tr>
+                <td>TokenAssociateToAccount</td>
+                <td>68</td>
+                <td><p>Associate tokens to an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>TokenDissociateFromAccount</td>
+                <td>69</td>
+                <td><p>Dissociate tokens from an account</p></td>
               </tr>
             
           </tbody>
@@ -4855,6 +4901,30 @@ If unspecified, no change. </p></td>
                   <td><a href="#uint64">uint64</a></td>
                   <td></td>
                   <td><p>The current token balance </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="proto.TokenBalances">TokenBalances</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tokenBalances</td>
+                  <td><a href="#proto.TokenBalance">TokenBalance</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8156,7 +8226,7 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP</td>
+                <td>TOKEN_NOT_ASSOCIATED_TO_ACCOUNT</td>
                 <td>186</td>
                 <td><p></p></td>
               </tr>
@@ -8216,9 +8286,27 @@ by HAPI.</p></td>
               </tr>
             
               <tr>
-                <td>TOKEN_IS_IMMUTABlE</td>
+                <td>TOKEN_IS_IMMUTABLE</td>
                 <td>196</td>
                 <td><p>Token does not have Admin key set, thus update/delete transactions cannot be performed</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT</td>
+                <td>197</td>
+                <td><p>An &lt;tt&gt;associateToken&lt;/tt&gt; operation specified a token already associated to the account</p></td>
+              </tr>
+            
+              <tr>
+                <td>TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES</td>
+                <td>198</td>
+                <td><p>An attempted operation is invalid until all token balances for the target account are zero</p></td>
+              </tr>
+            
+              <tr>
+                <td>ACCOUNT_IS_TREASURY</td>
+                <td>199</td>
+                <td><p>A selected account is a treasury</p></td>
               </tr>
             
           </tbody>
@@ -8559,6 +8647,51 @@ by HAPI.</p></td>
     
       
       <div class="file-heading">
+        <h2 id="TokenAssociate.proto">TokenAssociate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.TokenAssociateTransactionBody">TokenAssociateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>account</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokens</td>
+                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="TokenBurn.proto">TokenBurn.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -8753,6 +8886,51 @@ by HAPI.</p></td>
                   <td><a href="#proto.TokenRef">TokenRef</a></td>
                   <td></td>
                   <td><p>The token to be deleted. If invalid token is specified, transaction will result in INVALID_TOKEN_REF </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="TokenDissociate.proto">TokenDissociate.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.TokenDissociateTransactionBody">TokenDissociateTransactionBody</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>account</td>
+                  <td><a href="#proto.AccountID">AccountID</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokens</td>
+                  <td><a href="#proto.TokenRef">TokenRef</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9257,6 +9435,20 @@ by HAPI.</p></td>
                 <td><a href="#proto.Transaction">Transaction</a></td>
                 <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
                 <td><p>Initiates a Token transfer by submitting the transaction</p></td>
+              </tr>
+            
+              <tr>
+                <td>associateTokens</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Associates tokens to an account</p></td>
+              </tr>
+            
+              <tr>
+                <td>dissociateTokens</td>
+                <td><a href="#proto.Transaction">Transaction</a></td>
+                <td><a href="#proto.TransactionResponse">TransactionResponse</a></td>
+                <td><p>Dissociates tokens from an account</p></td>
               </tr>
             
               <tr>
@@ -9925,6 +10117,20 @@ by HAPI.</p></td>
                   <td><a href="#proto.TokenWipeAccountTransactionBody">TokenWipeAccountTransactionBody</a></td>
                   <td></td>
                   <td><p>Wipes amount of tokens from an account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokenAssociate</td>
+                  <td><a href="#proto.TokenAssociateTransactionBody">TokenAssociateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Associate tokens to an account </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tokenDissociate</td>
+                  <td><a href="#proto.TokenDissociateTransactionBody">TokenDissociateTransactionBody</a></td>
+                  <td></td>
+                  <td><p>Dissociate tokens from an account </p></td>
                 </tr>
               
             </tbody>
