@@ -30,6 +30,7 @@ import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -72,17 +73,19 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -97,6 +100,8 @@ import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
@@ -119,6 +124,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.hedera.services.utils.MiscUtils.*;
@@ -137,6 +143,22 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
+	@Test
+	public void getsNodeAccounts() {
+		var address = mock(Address.class);
+		given(address.getMemo()).willReturn("0.0.3");
+
+		var book = mock(AddressBook.class);
+		given(book.getSize()).willReturn(1);
+		given(book.getAddress(0)).willReturn(address);
+
+		// when:
+		var accounts = MiscUtils.getNodeAccounts(book);
+
+		// then:
+		assertEquals(Set.of(IdUtils.asAccount("0.0.3")), accounts);
+	}
+
 	@Test
 	public void asFcKeyUncheckedTranslatesExceptions() {
 		// expect:
@@ -324,7 +346,7 @@ public class MiscUtilsTest {
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TokenController.TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfers.class));
+			put(TokenController.TOKEN_TRANSACT_METRIC, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenController.TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenController.TOKEN_GRANT_KYC_METRIC, new BodySetter<>(TokenGrantKycTransactionBody.class));
@@ -334,6 +356,8 @@ public class MiscUtilsTest {
 			put(TokenController.TOKEN_MINT_METRIC, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenController.TOKEN_BURN_METRIC, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenController.TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenController.TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenController.TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
 		}};
 
 		// expect:
@@ -579,7 +603,7 @@ public class MiscUtilsTest {
 			put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
 			put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
 			put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
-			put(TokenTransact, new BodySetter<>(TokenTransfers.class));
+			put(TokenTransact, new BodySetter<>(TokenTransfersTransactionBody.class));
 			put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
 			put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
@@ -589,6 +613,8 @@ public class MiscUtilsTest {
 			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
 			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
 			put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+			put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
+			put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
 			put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
 			put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));

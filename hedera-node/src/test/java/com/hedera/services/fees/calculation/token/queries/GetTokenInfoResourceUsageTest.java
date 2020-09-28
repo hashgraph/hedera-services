@@ -32,8 +32,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -72,7 +72,7 @@ class GetTokenInfoResourceUsageTest {
 
 	String symbol = "HEYMAOK";
 	String name = "IsItReallyOk";
-	TokenRef target = TokenRef.newBuilder().setSymbol("TARGET").build();
+	TokenID target = IdUtils.asToken("0.0.123");
 
 	TokenGetInfoUsage estimator;
 	Function<Query, TokenGetInfoUsage> factory;
@@ -177,9 +177,9 @@ class GetTokenInfoResourceUsageTest {
 		assertThrows(IllegalArgumentException.class, () -> subject.usageGiven(query, view));
 	}
 
-	private Query tokenInfoQuery(TokenRef ref, ResponseType type) {
+	private Query tokenInfoQuery(TokenID id, ResponseType type) {
 		TokenGetInfoQuery.Builder op = TokenGetInfoQuery.newBuilder()
-				.setToken(ref)
+				.setToken(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()
 				.setTokenGetInfo(op)

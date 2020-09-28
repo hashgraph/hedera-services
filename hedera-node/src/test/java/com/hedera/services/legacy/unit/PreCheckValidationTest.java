@@ -26,7 +26,7 @@ import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;

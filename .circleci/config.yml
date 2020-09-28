@@ -2834,6 +2834,8 @@ jobs:
       workflow-name:  << parameters.workflow-name >>
     steps:
       - run-eet-suites:
+          dsl-args: "TokenAssociationSpecs"
+      - run-eet-suites:
           dsl-args: "TokenCreateSpecs"
       - run-eet-suites:
           dsl-args: "TokenUpdateSpecs"

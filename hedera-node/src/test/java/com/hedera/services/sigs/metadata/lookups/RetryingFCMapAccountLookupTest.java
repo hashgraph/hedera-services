@@ -21,7 +21,6 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hedera.services.utils.Pause;
@@ -33,7 +32,6 @@ import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +46,7 @@ import org.mockito.InOrder;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.test.factories.accounts.MapValueFactory.*;
+import static com.hedera.test.factories.accounts.MerkleAccountFactory.*;
 
 @RunWith(JUnitPlatform.class)
 public class RetryingFCMapAccountLookupTest {

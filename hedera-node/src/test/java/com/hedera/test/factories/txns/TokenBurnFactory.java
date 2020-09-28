@@ -21,21 +21,21 @@ package com.hedera.test.factories.txns;
  */
 
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenBurnFactory extends SignedTxnFactory<TokenBurnFactory> {
 	private TokenBurnFactory() {}
 
-	private TokenRef ref;
+	private TokenID id;
 
 	public static TokenBurnFactory newSignedTokenBurn() {
 		return new TokenBurnFactory();
 	}
 
-	public TokenBurnFactory burning(TokenRef ref) {
-		this.ref = ref;
+	public TokenBurnFactory burning(TokenID id) {
+		this.id = id;
 		return this;
 	}
 
@@ -52,7 +52,7 @@ public class TokenBurnFactory extends SignedTxnFactory<TokenBurnFactory> {
 	@Override
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		var op = TokenBurnTransactionBody.newBuilder()
-				.setToken(ref);
+				.setToken(id);
 		txn.setTokenBurn(op);
 	}
 }

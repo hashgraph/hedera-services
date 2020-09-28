@@ -1,5 +1,25 @@
 package com.hedera.services.context.properties;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.logging.log4j.LogManager;
@@ -14,7 +34,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
-import static com.hedera.services.context.properties.BootstrapProperties.PROP_TRANSFORMS;
+import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static java.util.Map.entry;
@@ -36,10 +56,15 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("maxFileSize", "files.maxSizeKb"),
 			entry("defaultFeeCollectionAccount", "ledger.fundingAccount"),
 			entry("txReceiptTTL", "cache.records.ttl"),
-			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent")
+			entry("exchangeRateAllowedPercentage", "rates.intradayChangeLimitPercent"),
+			entry("accountBalanceExportPeriodMinutes", "balances.exportPeriodSecs"),
+			entry("accountBalanceExportEnabled", "balances.exportEnabled"),
+			entry("nodeAccountBalanceValidity", "balances.nodeBalanceWarningThreshold"),
+			entry("accountBalanceExportDir", "balances.exportDir.path")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
-			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum())
+			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
+			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
 			entry("rates.intradayChangeLimitPercent", limitPercent -> (int)limitPercent > 0)
@@ -54,8 +79,8 @@ public class ScreenedSysFileProps implements PropertySource {
 				.filter(this::isValidGlobalDynamic)
 				.filter(this::hasParseableValue)
 				.filter(this::isUsableGlobalDynamic)
-				.collect(Collectors.toMap(Setting::getName, this::asTypedValue));
-		var msg = "Global/dynamic properties overridden in system file are:\n " + GLOBAL_DYNAMIC_PROPS.stream()
+				.collect(Collectors.toMap(Setting::getName, this::asTypedValue, (a, b) -> b));
+		var msg = "Global/dynamic properties overridden in system file are:\n  " + GLOBAL_DYNAMIC_PROPS.stream()
 				.filter(from121::containsKey)
 				.sorted()
 				.map(name -> String.format("%s=%s", name, from121.get(name)))
@@ -111,12 +136,12 @@ public class ScreenedSysFileProps implements PropertySource {
 	}
 
 	private Object asTypedValue(Setting prop) {
-		return PROP_TRANSFORMS.get(prop.getName()).apply(prop.getValue());
+		return transformFor(prop.getName()).apply(prop.getValue());
 	}
 
 	private boolean hasParseableValue(Setting prop) {
 		try {
-			PROP_TRANSFORMS.get(prop.getName()).apply(prop.getValue());
+			transformFor(prop.getName()).apply(prop.getValue());
 			return true;
 		} catch (Exception reason) {
 			log.warn(String.format(

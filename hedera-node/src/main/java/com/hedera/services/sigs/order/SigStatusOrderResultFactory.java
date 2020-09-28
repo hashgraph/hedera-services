@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -126,9 +125,9 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 	}
 
 	@Override
-	public SigningOrderResult<SignatureStatus> forMissingToken(TokenRef missing, TransactionID txnId) {
+	public SigningOrderResult<SignatureStatus> forMissingToken(TokenID missing, TransactionID txnId) {
 		SignatureStatus error = new SignatureStatus(
-				SignatureStatusCode.INVALID_TOKEN_REF, ResponseCodeEnum.INVALID_TOKEN_ID,
+				SignatureStatusCode.INVALID_TOKEN_ID, ResponseCodeEnum.INVALID_TOKEN_ID,
 				inHandleTxnDynamicContext, txnId, missing);
 		return new SigningOrderResult<>(error);
 	}

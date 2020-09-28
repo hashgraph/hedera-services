@@ -42,15 +42,17 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -126,6 +128,14 @@ public class TxnFactory {
 		return (T)opBuilder.build();
 	}
 
+	public Consumer<TokenAssociateTransactionBody.Builder> defaultDef_TokenAssociateTransactionBody() {
+		return builder -> {};
+	}
+
+	public Consumer<TokenDissociateTransactionBody.Builder> defaultDef_TokenDissociateTransactionBody() {
+		return builder -> {};
+	}
+
 	public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDef_TokenWipeAccountTransactionBody() {
 		return builder -> {};
 	}
@@ -158,7 +168,7 @@ public class TxnFactory {
 		return builder -> {};
 	}
 
-	public Consumer<TokenTransfers.Builder> defaultDef_TokenTransfers() {
+	public Consumer<TokenTransfersTransactionBody.Builder> defaultDef_TokenTransfersTransactionBody() {
 		return builder -> {};
 	}
 
@@ -169,8 +179,8 @@ public class TxnFactory {
 	public Consumer<TokenCreateTransactionBody.Builder> defaultDef_TokenCreateTransactionBody() {
 		return builder -> {
 			builder.setTreasury(setup.defaultPayer());
-			builder.setDecimals(setup.defaultTokenDivisibility());
-			builder.setInitialSupply(setup.defaultTokenFloat());
+			builder.setDecimals(setup.defaultTokenDecimals());
+			builder.setInitialSupply(setup.defaultTokenInitialSupply());
 			builder.setSymbol(TxnUtils.randomUppercase(8));
 			builder.setExpiry(defaultExpiry().getSeconds());
 		};

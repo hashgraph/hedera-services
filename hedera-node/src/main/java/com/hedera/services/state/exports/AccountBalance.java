@@ -20,22 +20,63 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+
+import java.util.Comparator;
+
 public class AccountBalance implements Comparable<AccountBalance> {
-	public AccountBalance(long shard, long realm, long num, long balance) {
+	private static final Comparator<AccountBalance> CANONICAL_ORDER = Comparator
+			.comparingLong(AccountBalance::getShard)
+			.thenComparingLong(AccountBalance::getRealm)
+			.thenComparingLong(AccountBalance::getNum);
+
+	private long num;
+	private long shard;
+	private long realm;
+	private long balance;
+	private String b64TokenBalances = "";
+
+	public AccountBalance(
+			long shard,
+			long realm,
+			long num,
+			long balance
+	) {
+		this.num = num;
 		this.shard = shard;
 		this.realm = realm;
-		this.num = num;
 		this.balance = balance;
 	}
 
-	private long shard;
-	private long realm;
-	private long num;
-	private long balance;
+	@Override
+	public String toString() {
+		var helper = MoreObjects.toStringHelper(this)
+				.add("account", String.format("%d.%d.%d", shard, realm, num))
+				.add("balance", balance);
+		if (b64TokenBalances.length() > 0) {
+			helper.add("b64TokenBalances", b64TokenBalances);
+		}
+		return helper.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || o.getClass() != AccountBalance.class) {
+			return false;
+		}
+		AccountBalance that = (AccountBalance) o;
+		return this.num == that.num
+				&& this.realm == that.realm
+				&& this.shard == that.shard
+				&& this.b64TokenBalances.equals(that.b64TokenBalances);
+	}
 
 	@Override
 	public int compareTo(AccountBalance that) {
-		return Long.compare(this.num, that.num);
+		return CANONICAL_ORDER.compare(this, that);
 	}
 
 	public long getShard() {
@@ -68,5 +109,13 @@ public class AccountBalance implements Comparable<AccountBalance> {
 
 	public void setBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setB64TokenBalances(String b64TokenBalances) {
+		this.b64TokenBalances = b64TokenBalances;
+	}
+
+	public String getB64TokenBalances() {
+		return b64TokenBalances;
 	}
 }

@@ -26,7 +26,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,7 @@ import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -51,7 +50,6 @@ import static org.mockito.Mockito.never;
 class TokenBurnTransitionLogicTest {
 	long amount = 123L;
 	private TokenID id = IdUtils.asToken("1.2.3");
-	private TokenRef token = IdUtils.asIdRef("0.0.12345");
 
 	private TokenStore tokenStore;
 	private TransactionContext txnCtx;
@@ -87,14 +85,14 @@ class TokenBurnTransitionLogicTest {
 	public void rejectsBadRefForSafety() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.resolve(token)).willReturn(TokenStore.MISSING_TOKEN);
+		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(tokenStore, never()).burn(id, amount);
-		verify(txnCtx).setStatus(INVALID_TOKEN_REF);
+		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
 	}
 
 	@Test
@@ -137,11 +135,11 @@ class TokenBurnTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
-						.setToken(token)
+						.setToken(id)
 						.setAmount(amount))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenBurnTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(token)).willReturn(id);
+		given(tokenStore.resolve(id)).willReturn(id);
 	}
 }

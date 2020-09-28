@@ -24,7 +24,6 @@ import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
@@ -42,23 +41,6 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 
 	public DefaultFCMapAccountLookup(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
 		this.accounts = accounts;
-	}
-
-	/**
-	 * Returns metadata for the given account's signing activity; e.g., whether
-	 * the account must sign transactions in which it receives cryptocurrency.
-	 *
-	 * @param id the account to recover signing metadata for.
-	 * @return the desired metadata.
-	 * @throws InvalidAccountIDException if the backing {@code FCMap} has no matching entry.
-	 */
-	@Override
-	public AccountSigningMetadata lookup(AccountID id) throws Exception {
-		MerkleAccount account = accounts.get().get(fromAccountId(id));
-		if (account == null) {
-			throw new InvalidAccountIDException("Invalid account!", id);
-		}
-		return new AccountSigningMetadata(account.getKey(), account.isReceiverSigRequired());
 	}
 
 	@Override

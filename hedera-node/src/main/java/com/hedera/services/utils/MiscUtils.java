@@ -29,16 +29,19 @@ import static com.hedera.services.grpc.controllers.FileController.*;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.swirlds.common.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -50,8 +53,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETBYTECODE;
@@ -74,6 +80,7 @@ import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static java.util.stream.Collectors.toSet;
 
 public class MiscUtils {
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
@@ -288,6 +295,10 @@ public class MiscUtils {
 			return TOKEN_BURN_METRIC;
 		} else if (txn.hasTokenWipe()) {
 			return TOKEN_WIPE_ACCOUNT_METRIC;
+		} else if (txn.hasTokenAssociate()) {
+			return TOKEN_ASSOCIATE_METRIC;
+		} else if (txn.hasTokenDissociate()) {
+			return TOKEN_DISSOCIATE_METRIC;
 		} else {
 			return "NotImplemented";
 		}
@@ -358,6 +369,10 @@ public class MiscUtils {
 			return TokenBurn;
 		} else if (txn.hasTokenWipe()) {
 			return TokenAccountWipe;
+		} else if (txn.hasTokenAssociate()) {
+			return TokenAssociateToAccount;
+		} else if (txn.hasTokenDissociate()) {
+			return TokenDissociateFromAccount;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
 		} else {
@@ -387,5 +402,16 @@ public class MiscUtils {
 			} catch (Exception ignore) { }
 			return String.valueOf(readable);
 		}
+	}
+
+	public static Set<AccountID> getNodeAccounts(AddressBook addressBook) {
+		return IntStream.range(0, addressBook.getSize())
+				.mapToObj(addressBook::getAddress)
+				.map(address -> accountParsedFromString(address.getMemo()))
+				.collect(toSet());
+	}
+
+	public static Set<Long> getNodeAccountNums(AddressBook addressBook) {
+		return getNodeAccounts(addressBook).stream().map(AccountID::getAccountNum).collect(toSet());
 	}
 }

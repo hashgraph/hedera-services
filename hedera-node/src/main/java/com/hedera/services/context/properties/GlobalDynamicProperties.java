@@ -33,12 +33,17 @@ public class GlobalDynamicProperties {
 	private int maxFileSizeKb;
 	private int cacheRecordsTtl;
 	private int maxContractStorageKb;
+	private int balancesExportPeriodSecs;
 	private int ratesIntradayChangeLimitPercent;
 	private long maxAccountNum;
 	private long defaultContractSendThreshold;
 	private long defaultContractReceiveThreshold;
-	private AccountID fundingAccount;
+	private long nodeBalanceWarningThreshold;
+	private String pathToBalancesExportDir;
 	private boolean shouldCreateThresholdRecords;
+	private boolean shouldExportBalances;
+	private boolean shouldExportTokenBalances;
+	private AccountID fundingAccount;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -67,6 +72,11 @@ public class GlobalDynamicProperties {
 		cacheRecordsTtl = properties.getIntProperty("cache.records.ttl");
 		maxContractStorageKb = properties.getIntProperty("contracts.maxStorageKb");
 		ratesIntradayChangeLimitPercent = properties.getIntProperty("rates.intradayChangeLimitPercent");
+		balancesExportPeriodSecs = properties.getIntProperty("balances.exportPeriodSecs");
+		shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
+		nodeBalanceWarningThreshold = properties.getLongProperty("balances.nodeBalanceWarningThreshold");
+		pathToBalancesExportDir = properties.getStringProperty("balances.exportDir.path");
+		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -115,5 +125,25 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldCreateThresholdRecords() {
 		return shouldCreateThresholdRecords;
+	}
+
+	public int balancesExportPeriodSecs() {
+		return balancesExportPeriodSecs;
+	}
+
+	public boolean shouldExportBalances() {
+		return shouldExportBalances;
+	}
+
+	public long nodeBalanceWarningThreshold() {
+		return nodeBalanceWarningThreshold;
+	}
+
+	public String pathToBalancesExportDir() {
+		return pathToBalancesExportDir;
+	}
+
+	public boolean shouldExportTokenBalances() {
+		return shouldExportTokenBalances;
 	}
 }

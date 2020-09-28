@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,10 +53,7 @@ import java.util.Optional;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -78,7 +74,6 @@ class GetTokenInfoAnswerTest {
 	private String node = "0.0.3";
 	private String payer = "0.0.12345";
 	private TokenID tokenId = asToken("1.2.3");
-	private TokenRef target = TokenRef.newBuilder().setSymbol("TARGET").build();
 	private long fee = 1_234L;
 
 	StateView view;
@@ -104,9 +99,9 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void getsTheInfo() throws Throwable {
 		// setup:
-		Query query = validQuery(ANSWER_ONLY, fee, target);
+		Query query = validQuery(ANSWER_ONLY, fee, tokenId);
 
-		given(view.infoForToken(target)).willReturn(Optional.of(info));
+		given(view.infoForToken(tokenId)).willReturn(Optional.of(info));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -125,7 +120,7 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void getsInfoFromCtxWhenAvailable() throws Throwable {
 		// setup:
-		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 		Map<String, Object> ctx = new HashMap<>();
 
 		// given:
@@ -146,9 +141,9 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
 		// setup:
-		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 
-		given(view.infoForToken(target)).willReturn(Optional.empty());
+		given(view.infoForToken(tokenId)).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -156,13 +151,13 @@ class GetTokenInfoAnswerTest {
 		// then:
 		TokenGetInfoResponse opResponse = response.getTokenGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(INVALID_TOKEN_REF, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(INVALID_TOKEN_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test
 	public void recognizesMissingInfoWhenCtxGiven() throws Throwable {
 		// setup:
-		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
@@ -170,14 +165,14 @@ class GetTokenInfoAnswerTest {
 		// then:
 		TokenGetInfoResponse opResponse = response.getTokenGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(INVALID_TOKEN_REF, opResponse.getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(INVALID_TOKEN_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		verify(view, never()).infoForToken(any());
 	}
 
 	@Test
 	public void getsCostAnswerResponse() throws Throwable {
 		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
+		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -192,7 +187,7 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void getsInvalidResponse() throws Throwable {
 		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
+		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
 		// when:
 		Response response = subject.responseGiven(query, view, INVALID_TOKEN_ID, fee);
@@ -215,15 +210,15 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void requiresAnswerOnlyPayment() throws Throwable {
 		// expect:
-		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
-		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
+		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, tokenId)));
+		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, tokenId)));
 	}
 
 	@Test
 	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
-		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
-		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
+		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, tokenId)));
+		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, tokenId)));
 	}
 
 	@Test
@@ -240,34 +235,34 @@ class GetTokenInfoAnswerTest {
 	@Test
 	public void usesViewToValidate() throws Throwable {
 		// setup:
-		Query query = validQuery(COST_ANSWER, fee, target);
+		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
-		given(view.tokenExists(target)).willReturn(false);
+		given(view.tokenExists(tokenId)).willReturn(false);
 
 		// when:
 		ResponseCodeEnum validity = subject.checkValidity(query, view);
 
 		// then:
-		assertEquals(INVALID_TOKEN_REF, validity);
+		assertEquals(INVALID_TOKEN_ID, validity);
 	}
 
 	@Test
 	public void getsExpectedPayment() throws Throwable {
 		// given:
-		Query query = validQuery(COST_ANSWER, fee, target);
+		Query query = validQuery(COST_ANSWER, fee, tokenId);
 
 		// expect:
 		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxn());
 	}
 
-	private Query validQuery(ResponseType type, long payment, TokenRef ref) throws Throwable {
+	private Query validQuery(ResponseType type, long payment, TokenID id) throws Throwable {
 		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
 				.setResponseType(type);
 		TokenGetInfoQuery.Builder op = TokenGetInfoQuery.newBuilder()
 				.setHeader(header)
-				.setToken(ref);
+				.setToken(id);
 		return Query.newBuilder().setTokenGetInfo(op).build();
 	}
 }

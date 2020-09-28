@@ -20,15 +20,8 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import com.hedera.services.tokens.TokenScope;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Defines a type that can provide a getter/setter pair for a given type.
@@ -53,13 +46,4 @@ public interface BeanProperty<A> {
 	 * @return the getter on the target type.
 	 */
 	Function<A, Object> getter();
-
-	/**
-	 * Provides a token-scoped getter for the property at hand.
-	 *
-	 * @return the getter on the target type.
-	 */
-	default BiFunction<A, TokenScope, Object> scopedGetter() {
-		throw new UnsupportedOperationException("Only token-scoped properties implement this method!");
-	}
 }

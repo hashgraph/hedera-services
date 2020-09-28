@@ -122,8 +122,7 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
 			((ServicesState)signedState).printHashes();
 		}
-		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
-				ctx.balancesExporter().isTimeToExport(when)) {
+		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
 				ctx.balancesExporter().toCsvFile((ServicesState) signedState, when);
 			} catch (IllegalStateException ise) {

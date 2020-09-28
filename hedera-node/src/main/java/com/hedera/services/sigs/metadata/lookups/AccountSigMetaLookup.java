@@ -30,15 +30,5 @@ import com.hederahashgraph.api.proto.java.AccountID;
  * @author Michael Tinker
  */
 public interface AccountSigMetaLookup {
-	/**
-	 * Returns metadata for the given account's signing activity; e.g., whether
-	 * the account must sign transactions in which it receives cryptocurrency.
-	 *
-	 * @param account the account to recover signing metadata for.
-	 * @return the desired metadata.
-	 * @throws Exception if no appropriate metadata exists.
-	 */
-	AccountSigningMetadata lookup(AccountID account) throws Exception;
-
 	SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
 }

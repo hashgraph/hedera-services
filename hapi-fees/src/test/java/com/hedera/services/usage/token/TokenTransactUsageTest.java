@@ -1,5 +1,25 @@
 package com.hedera.services.usage.token;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -8,9 +28,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -36,16 +55,14 @@ public class TokenTransactUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	String symbol = "ABCDEFGH";
 
 	AccountID a = asAccount("1.2.3");
 	AccountID b = asAccount("2.3.4");
 	AccountID c = asAccount("3.4.5");
 	TokenID anId = IdUtils.asToken("0.0.75231");
-	String aSymbol = "ABCDEFGH";
-	String anotherSymbol = "HGFEDCBA";
+	TokenID anotherId = IdUtils.asToken("0.0.75232");
 
-	TokenTransfers op;
+	TokenTransfersTransactionBody op;
 	TransactionBody txn;
 
 	EstimatorFactory factory;
@@ -75,11 +92,11 @@ public class TokenTransactUsageTest {
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addBpt(aSymbol.length()
+		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE
 				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
 				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
 				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ anotherSymbol.length()
+				+ FeeBuilder.BASIC_ENTITY_ID_SIZE
 				+ 2 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(3, 7) *
@@ -87,22 +104,22 @@ public class TokenTransactUsageTest {
 	}
 
 	private void givenOp() {
-		op = TokenTransfers.newBuilder()
-				.addTokenTransfers(TokenRefTransferList.newBuilder()
-						.setToken(TokenRef.newBuilder().setSymbol(aSymbol).build())
+		op = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
 						.addAllTransfers(List.of(
 								adjustFrom(a, -50),
 								adjustFrom(b, 25),
 								adjustFrom(c, 25)
 						)))
-				.addTokenTransfers(TokenRefTransferList.newBuilder()
-						.setToken(TokenRef.newBuilder().setTokenId(anId).build())
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anId)
 						.addAllTransfers(List.of(
 								adjustFrom(b, -100),
 								adjustFrom(c, 100)
 						)))
-				.addTokenTransfers(TokenRefTransferList.newBuilder()
-						.setToken(TokenRef.newBuilder().setSymbol(anotherSymbol).build())
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
 						.addAllTransfers(List.of(
 								adjustFrom(a, -15),
 								adjustFrom(b, 15)
