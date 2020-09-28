@@ -103,7 +103,7 @@ public class SmartContractTestInlineAssembly extends LegacySmartContractTest {
 	    }
 	    for (int i = 0; i < numberOfReps; i++) {
 	    	SmartContractTestInlineAssembly scSs = new SmartContractTestInlineAssembly();
-	      scSs.demo();
+	      scSs.demo(host, nodeAccount);
 	    }
 	  }
 
@@ -469,16 +469,18 @@ public class SmartContractTestInlineAssembly extends LegacySmartContractTest {
 	    return bySolidityReturn;
 	  }
 
-	  public void demo() throws Exception {
+	  public void demo(String grpcHost, AccountID nodeAccount) throws Exception {
 	  	setUp();
+	  	host = grpcHost;
+	  	SmartContractTestInlineAssembly.nodeAccount = nodeAccount;
 	    loadGenesisAndNodeAcccounts();
 
-			ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-					.usePlaintext(true)
-					.build();
-			TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
-					nodeAccount);
-			channel.shutdown();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+				.usePlaintext(true)
+				.build();
+		TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
+				SmartContractTestInlineAssembly.nodeAccount);
+		channel.shutdown();
 
 		KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
 	    AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, TestHelper.getCryptoMaxFee() * 10);

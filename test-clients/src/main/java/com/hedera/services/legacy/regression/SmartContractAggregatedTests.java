@@ -22,6 +22,8 @@ package com.hedera.services.legacy.regression;
 
 
 import com.hedera.services.legacy.smartcontract.OCTokenIT;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.builder.RequestBuilder;
 
 import java.util.List;
 
@@ -36,18 +38,36 @@ public class SmartContractAggregatedTests {
 			new OCTokenIT()
 	);
 
+	private static String grpcHost;
+	private static long nodeAccountNum;
+	private static AccountID nodeAccount;
+	private static int numberOfReps = 1;
 
 	public static void main(String[] args) throws Exception {
 
-		int numberOfReps = 1;
-		if ((args.length) > 0) {
-			numberOfReps = Integer.parseInt(args[0]);
+		if (args.length < 3) {
+			System.out.println("Must provide all four arguments to this application.");
+			System.out.println("0: host");
+			System.out.println("1: node number");
+			System.out.println("2: number of iterations");
+			return;
 		}
+
+		System.out.println("args[0], host, is " + args[0]);
+		System.out.println("args[1], node account, is " + args[1]);
+		System.out.println("args[2], number of iterations, is " + args[2]);
+
+		grpcHost = args[0];
+		nodeAccountNum = Long.parseLong(args[1]);
+		nodeAccount = RequestBuilder
+				.getAccountIdBuild(nodeAccountNum, 0l, 0l);
+		numberOfReps = Integer.parseInt(args[2]);
+
 
 		// just a simple utility for running legecy SC tests one after the other.
 		for(LegacySmartContractTest scTest : SCTests) {
 			for (int i = 0; i < numberOfReps; i++) {
-				scTest.demo();
+				scTest.demo(grpcHost, nodeAccount);
 			}
 		}
 	}

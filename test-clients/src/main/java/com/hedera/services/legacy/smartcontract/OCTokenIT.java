@@ -127,16 +127,20 @@ public class OCTokenIT extends LegacySmartContractTest {
 
   public static void main(String args[]) throws Exception {
     OCTokenIT scOCT = new OCTokenIT();
-    scOCT.demo();
+    Properties properties = getApplicationProperties();
+    OCTokenIT.grpcHost = properties.getProperty("host");
+    scOCT.demo(grpcHost, nodeAccount);
   }
 
-  public void demo() throws Exception{
+  public void demo(String grpcHost, AccountID nodeAccount) throws Exception{
+
+    OCTokenIT.grpcHost = grpcHost;
+    OCTokenIT.nodeAccount = nodeAccount;
     Properties properties = getApplicationProperties();
     contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
-    grpcHost = properties.getProperty("host");
     grpcPort = Integer.parseInt(properties.getProperty("port"));
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
-    channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
+    channelShared = ManagedChannelBuilder.forAddress(OCTokenIT.grpcHost, grpcPort)
             .usePlaintext(true)
             .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
@@ -144,7 +148,7 @@ public class OCTokenIT extends LegacySmartContractTest {
     loadGenesisAndNodeAcccounts();
 
     TestHelper.initializeFeeClient(channelShared, genesisAccount, accountKeyPairs.get(genesisAccount),
-            nodeAccount);
+            OCTokenIT.nodeAccount);
 
     Map<String, String> tokenOwners = new HashMap<String, String>();
 
@@ -250,13 +254,13 @@ public class OCTokenIT extends LegacySmartContractTest {
         log.info("Get Tx records by account Id...");
         long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetRecords);
         Query query = TestHelper.getTxRecordByContractId(ocTokenContract, tokenIssuer,
-                tokenIssureKeyPair, nodeAccount, fee, ResponseType.COST_ANSWER);
+                tokenIssureKeyPair, OCTokenIT.nodeAccount, fee, ResponseType.COST_ANSWER);
         Response transactionRecord = sCServiceStub.getTxRecordByContractID(query);
         Assert.assertNotNull(transactionRecord);
 
         fee = transactionRecord.getContractGetRecordsResponse().getHeader().getCost();
         query = TestHelper.getTxRecordByContractId(ocTokenContract, tokenIssuer,
-                tokenIssureKeyPair, nodeAccount, fee, ResponseType.ANSWER_ONLY);
+                tokenIssureKeyPair, OCTokenIT.nodeAccount, fee, ResponseType.ANSWER_ONLY);
         transactionRecord = sCServiceStub.getTxRecordByContractID(query);
         Assert.assertNotNull(transactionRecord.getContractGetRecordsResponse());
         List<TransactionRecord> recordList = transactionRecord.getContractGetRecordsResponse()

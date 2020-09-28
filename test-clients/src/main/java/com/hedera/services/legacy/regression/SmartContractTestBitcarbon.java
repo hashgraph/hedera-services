@@ -118,7 +118,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
     }
     for (int i = 0; i < numberOfReps; i++) {
       SmartContractTestBitcarbon scSs = new SmartContractTestBitcarbon();
-      scSs.demo();
+      scSs.demo(host, nodeAccount);
     }
 
   }
@@ -559,15 +559,17 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
     TransactionRecord txRec = callContract(payerAccount, contractId, dataToSet, expectedStatus);
     return txRec;
   }
-  public void demo() throws Exception {
+  public void demo(String grpcHost, AccountID nodeAccount) throws Exception {
     setUp();
+    host = grpcHost;
+    SmartContractTestBitcarbon.nodeAccount = nodeAccount;
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
         .usePlaintext(true)
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
-        nodeAccount);
+            SmartContractTestBitcarbon.nodeAccount);
     channel.shutdown();
 
     KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
