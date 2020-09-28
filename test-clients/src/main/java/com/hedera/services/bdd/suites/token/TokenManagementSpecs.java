@@ -196,9 +196,9 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						wipeTokenAccount(anotherWipeableToken, "misc", 501)
 								.hasKnownStatus(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", -1)
-								.hasKnownStatus(INVALID_WIPING_AMOUNT),
+								.hasPrecheck(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", 0)
-								.hasKnownStatus(INVALID_WIPING_AMOUNT)
+								.hasPrecheck(INVALID_WIPING_AMOUNT)
 				);
 	}
 
@@ -392,11 +392,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				mintToken("supple", Long.MAX_VALUE)
 						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
 				mintToken("supple", 0)
-						.hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+						.hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
 				burnToken("supple", 2)
 						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
 				burnToken("supple", 0)
-						.hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)
+						.hasPrecheck(INVALID_TOKEN_BURN_AMOUNT)
 		);
 	}
 

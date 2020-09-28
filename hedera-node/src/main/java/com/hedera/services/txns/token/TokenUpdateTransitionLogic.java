@@ -25,6 +25,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -33,12 +34,21 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.tokens.TokenStore.MISSING_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.txns.validation.TokenChecks.checkKey;
+import static com.hedera.services.txns.validation.TokenChecks.checkKeys;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * Provides the state transition for token updates.
@@ -48,17 +58,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenUpdateTransitionLogic.class);
 
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+
+	private final OptionValidator validator;
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
 	public TokenUpdateTransitionLogic(
+			OptionValidator validator,
 			TokenStore store,
 			HederaLedger ledger,
 			TransactionContext txnCtx,
 			Predicate<TokenUpdateTransactionBody> affectsExpiryOnly
 	) {
+		this.validator = validator;
 		this.store = store;
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
@@ -150,5 +165,52 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenUpdate;
+	}
+
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
+
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		TokenUpdateTransactionBody op = txnBody.getTokenUpdate();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		var validity = OK;
+
+		var hasNewSymbol = op.getSymbol().length() > 0;
+		if (hasNewSymbol) {
+			validity = validator.tokenSymbolCheck(op.getSymbol());
+			if (validity != OK) {
+				return validity;
+			}
+		}
+
+		var hasNewTokenName = op.getName().length() > 0;
+		if (hasNewTokenName) {
+			validity = validator.tokenNameCheck(op.getName());
+			if (validity != OK) {
+				return validity;
+			}
+		}
+
+		validity = checkKeys(op.hasAdminKey(), op.getAdminKey(),
+				op.hasKycKey(), op.getKycKey(),
+				op.hasWipeKey(), op.getWipeKey(),
+				op.hasSupplyKey(), op.getSupplyKey());
+		if (validity != OK) {
+			return validity;
+		}
+		if (op.hasFreezeKey()) {
+			validity = checkKey(op.getFreezeKey(), INVALID_FREEZE_KEY);
+			if (validity != OK) {
+				return validity;
+			}
+		}
+
+		return validity;
 	}
 }

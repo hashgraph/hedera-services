@@ -81,4 +81,14 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum tokenNameCheck(String name) {
+		throw new UnsupportedOperationException();
+	}
 }

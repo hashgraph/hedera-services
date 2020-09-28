@@ -677,38 +677,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingFailsWithNegativeWipingAmount() {
-		// setup:
-		long wipe = -1_111L;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
-
-		// when:
-		var status = subject.wipe(sponsor, misc, wipe, false);
-
-		// expect:
-		assertEquals(INVALID_WIPING_AMOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wipe);
-	}
-
-	@Test
-	public void wipingFailsWithZeroWipingAmount() {
-		// setup:
-		long wipe = 0;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(treasury));
-
-		// when:
-		var status = subject.wipe(sponsor, misc, wipe, false);
-
-		// expect:
-		assertEquals(INVALID_WIPING_AMOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wipe);
-	}
-
-	@Test
 	public void adjustingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
@@ -763,36 +731,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInvalidSymbol() {
-		// given:
-		var op = updateWith(NO_KEYS, true, false, false);
-		op = op.toBuilder().setSymbol("notok").build();
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_TOKEN_SYMBOL, outcome);
-	}
-
-	@Test
-	public void updateRejectsTokenNameTooLong() {
-		// setup:
-		String tooLongName = IntStream.range(0, MAX_TOKEN_NAME_LENGTH + 1)
-				.mapToObj(ignore -> "A")
-				.collect(Collectors.joining(""));
-		// given:
-		var op = updateWith(NO_KEYS, true, false, false);
-		op = op.toBuilder().setName(tooLongName).build();
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(TOKEN_NAME_TOO_LONG, outcome);
-	}
-
-	@Test
 	public void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		// and:
@@ -834,31 +772,6 @@ class HederaTokenStoreTest {
 		assertEquals(INVALID_TOKEN_ID, outcome);
 	}
 
-	@Test
-	public void updateRejectsBadAdminKey() {
-		givenUpdateTarget(NO_KEYS);
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.ADMIN), false, false, false, true);
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_ADMIN_KEY, outcome);
-	}
-
-	@Test
-	public void updateRejectsBadKycKey() {
-		givenUpdateTarget(EnumSet.of(KeyType.KYC));
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.KYC), false, false, false, true);
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_KYC_KEY, outcome);
-	}
 
 	@Test
 	public void updateRejectsInappropriateKycKey() {
@@ -918,45 +831,6 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
-	}
-
-	@Test
-	public void updateRejectsBadWipeKey() {
-		givenUpdateTarget(EnumSet.of(KeyType.WIPE));
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, false, true);
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_WIPE_KEY, outcome);
-	}
-
-	@Test
-	public void updateRejectsBadSupplyKey() {
-		givenUpdateTarget(EnumSet.of(KeyType.SUPPLY));
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, false, true);
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_SUPPLY_KEY, outcome);
-	}
-
-	@Test
-	public void updateRejectsBadFreezeKey() {
-		givenUpdateTarget(EnumSet.of(KeyType.FREEZE));
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, false, true);
-
-		// when:
-		var outcome = subject.update(op, thisSecond);
-
-		// then:
-		assertEquals(INVALID_FREEZE_KEY, outcome);
 	}
 
 	@Test
@@ -1216,39 +1090,6 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
-	}
-
-	@Test
-	public void mintingRejectsZeroAmount() {
-		given(token.hasSupplyKey()).willReturn(true);
-
-		// when:
-		var status = subject.mint(misc, 0);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT, status);
-	}
-
-	@Test
-	public void burningRejectsNegativeAmount() {
-		given(token.hasSupplyKey()).willReturn(true);
-
-		// when:
-		var status = subject.burn(misc, -1L);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
-	}
-
-	@Test
-	public void burningRejectsZeroAmount() {
-		given(token.hasSupplyKey()).willReturn(true);
-
-		// when:
-		var status = subject.burn(misc, 0);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT, status);
 	}
 
 	@Test
@@ -1588,109 +1429,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsInvalidExpiry() {
-		// given:
-		var req = fullyValidAttempt()
-				.setExpiry(thisSecond - 1)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(INVALID_EXPIRATION_TIME, result.getStatus());
-	}
-
-	@Test
-	public void rejectsInvalidAutoRenewPeriod() {
-		// given:
-		var req = fullyValidAttempt()
-				.setAutoRenewAccount(autoRenewAccount)
-				.setAutoRenewPeriod(Long.MAX_VALUE)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(INVALID_RENEWAL_PERIOD, result.getStatus());
-	}
-
-	@Test
-	public void rejectsSymbolTooLong() {
-		// given:
-		var req = fullyValidAttempt()
-				.setSymbol(IntStream.range(0, MAX_TOKEN_SYMBOL_LENGTH + 1)
-						.mapToObj(ignore -> "A")
-						.collect(Collectors.joining("")))
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG, result.getStatus());
-	}
-
-	@Test
-	public void rejectsNameTooLong() {
-		// given:
-		var req = fullyValidAttempt()
-				.setName(IntStream.range(0, MAX_TOKEN_NAME_LENGTH + 1)
-						.mapToObj(ignore -> "A")
-						.collect(Collectors.joining("")))
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKEN_NAME_TOO_LONG, result.getStatus());
-	}
-
-	@Test
-	public void rejectsMissingSymbol() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearSymbol()
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.MISSING_TOKEN_SYMBOL, result.getStatus());
-	}
-
-	@Test
-	public void rejectsMissingTokenName() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearName()
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.MISSING_TOKEN_NAME, result.getStatus());
-	}
-
-	@Test
-	public void rejectsNonAlphanumericSymbol() {
-		// given:
-		var req = fullyValidAttempt()
-				.setSymbol("!!!")
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_SYMBOL, result.getStatus());
-	}
-
-	@Test
 	public void rejectsMissingTreasury() {
 		given(accountsLedger.exists(treasury)).willReturn(false);
 		// and:
@@ -1750,38 +1488,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsJustOverflowingInitialSupply() {
-		long initialSupply = 1L << 63;
-
-		// given:
-		var req = fullyValidAttempt()
-				.setInitialSupply(initialSupply)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, result.getStatus());
-	}
-
-	@Test
-	public void rejectsOverflowingDecimals() {
-		int decimals = 1 << 31;
-
-		// given:
-		var req = fullyValidAttempt()
-				.setDecimals(decimals)
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.INVALID_TOKEN_DECIMALS, result.getStatus());
-	}
-
-	@Test
 	public void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
 		// given:
 		var req = fullyValidAttempt()
@@ -1794,20 +1500,6 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
 		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
-	}
-
-	@Test
-	public void rejectsFreezeDefaultWithoutFreezeKey() {
-		// given:
-		var req = fullyValidAttempt()
-				.clearFreezeKey()
-				.build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, thisSecond);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, result.getStatus());
 	}
 
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {

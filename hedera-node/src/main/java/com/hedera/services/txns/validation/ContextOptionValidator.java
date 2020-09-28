@@ -40,8 +40,14 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static java.util.stream.IntStream.range;
 
 /**
  * Implements an {@link OptionValidator} that relies an injected instance
@@ -116,6 +122,30 @@ public class ContextOptionValidator implements OptionValidator {
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
 				.orElse(INVALID_TOPIC_ID);
+	}
+
+	@Override
+	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
+		if (symbol.length() < 1) {
+			return MISSING_TOKEN_SYMBOL;
+		}
+		if (symbol.length() > properties.getIntProperty("tokens.maxSymbolLength")) {
+			return TOKEN_SYMBOL_TOO_LONG;
+		}
+		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
+				? OK
+				: INVALID_TOKEN_SYMBOL;
+	}
+
+	@Override
+	public ResponseCodeEnum tokenNameCheck(String name) {
+		if (name.length() < 1) {
+			return MISSING_TOKEN_NAME;
+		}
+		if (name.length() > properties.getIntProperty("tokens.maxTokenNameLength")) {
+			return TOKEN_NAME_TOO_LONG;
+		}
+		return OK;
 	}
 
 	/* Not applicable until auto-renew is implemented. */

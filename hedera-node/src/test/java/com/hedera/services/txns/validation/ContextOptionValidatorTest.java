@@ -517,4 +517,67 @@ public class ContextOptionValidatorTest {
 		assertFalse(subject.isPlausibleTxnFee(-1));
 		assertTrue(subject.isPlausibleTxnFee(0));
 	}
+
+	@Test
+	public void acceptsReasonableTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(OK, subject.tokenSymbolCheck("AS"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void rejectsMissingTokenSymbol() {
+		// expect:
+		assertEquals(MISSING_TOKEN_SYMBOL, subject.tokenSymbolCheck(""));
+	}
+
+	@Test
+	public void rejectsTooLongTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.tokenSymbolCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void rejectsInvalidTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_SYMBOL, subject.tokenSymbolCheck("!!!"));
+
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void acceptsReasonableTokenName() {
+		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(100);
+
+		// expect:
+		assertEquals(OK, subject.tokenNameCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxTokenNameLength");
+	}
+
+	@Test
+	public void rejectsMissingTokenName() {
+		// expect:
+		assertEquals(MISSING_TOKEN_NAME, subject.tokenNameCheck(""));
+	}
+
+	@Test
+	public void rejectsTooLongTokenName() {
+		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(3);
+
+		// expect:
+		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxTokenNameLength");
+	}
 }

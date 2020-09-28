@@ -34,10 +34,14 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -119,6 +123,46 @@ class TokenWipeTransitionLogicTest {
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
+    @Test
+    public void acceptsValidTxn() {
+        givenValidTxnCtx();
+
+        // expect:
+        assertEquals(OK, subject.syntaxCheck().apply(tokenWipeTxn));
+    }
+
+    @Test
+    public void rejectsMissingToken() {
+        givenMissingToken();
+
+        // expect:
+        assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenWipeTxn));
+    }
+
+    @Test
+    public void rejectsMissingAccount() {
+        givenMissingAccount();
+
+        // expect:
+        assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenWipeTxn));
+    }
+
+    @Test
+    public void rejectsInvalidZeroAmount() {
+        givenInvalidZeroWipeAmount();
+
+        // expect:
+        assertEquals(INVALID_WIPING_AMOUNT, subject.syntaxCheck().apply(tokenWipeTxn));
+    }
+
+    @Test
+    public void rejectsInvalidNegativeAmount() {
+        givenInvalidNegativeWipeAmount();
+
+        // expect:
+        assertEquals(INVALID_WIPING_AMOUNT, subject.syntaxCheck().apply(tokenWipeTxn));
+    }
+
     private void givenValidTxnCtx() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
@@ -129,5 +173,36 @@ class TokenWipeTransitionLogicTest {
         given(accessor.getTxn()).willReturn(tokenWipeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.resolve(id)).willReturn(id);
+    }
+
+    private void givenMissingToken() {
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
+                .build();
+    }
+
+    private void givenMissingAccount() {
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id))
+                .build();
+    }
+
+    private void givenInvalidZeroWipeAmount() {
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(account)
+                        .setAmount(0))
+                .build();
+    }
+
+    private void givenInvalidNegativeWipeAmount() {
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(account)
+                        .setAmount(-1))
+                .build();
     }
 }

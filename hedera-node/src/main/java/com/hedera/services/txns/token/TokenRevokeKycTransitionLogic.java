@@ -24,18 +24,25 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class TokenRevokeKycTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenRevokeKycTransitionLogic.class);
+
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final TokenStore tokenStore;
 	private final HederaLedger ledger;
@@ -67,5 +74,24 @@ public class TokenRevokeKycTransitionLogic implements TransitionLogic {
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenRevokeKyc;
+	}
+
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
+
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		TokenRevokeKycTransactionBody op = txnBody.getTokenRevokeKyc();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		if (!op.hasAccount()) {
+			return INVALID_ACCOUNT_ID;
+		}
+
+		return OK;
 	}
 }
