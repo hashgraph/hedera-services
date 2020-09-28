@@ -98,7 +98,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						tokenDelete("tbd")
 								.payingWith("payer")
 								.signedBy("payer")
-								.hasKnownStatus(TOKEN_IS_IMMUTABlE)
+								.hasKnownStatus(TOKEN_IS_IMMUTABLE)
 				);
 	}
 

@@ -50,6 +50,8 @@ public interface TokenStore {
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
+	boolean isKnownTreasury(AccountID id);
+	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
@@ -81,7 +83,7 @@ public interface TokenStore {
 
 		var token = get(id);
 		if (token.adminKey().isEmpty()) {
-			return TOKEN_IS_IMMUTABlE;
+			return TOKEN_IS_IMMUTABLE;
 		}
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
