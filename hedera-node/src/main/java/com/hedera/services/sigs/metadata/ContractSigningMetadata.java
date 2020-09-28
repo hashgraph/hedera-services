@@ -30,15 +30,22 @@ import com.hedera.services.legacy.core.jproto.JKey;
  */
 public class ContractSigningMetadata {
 	private final JKey key;
+	private final boolean receiverSigRequired;
 
-	public ContractSigningMetadata(JKey key) {
+	public ContractSigningMetadata(JKey key, boolean receiverSigRequired) {
 		this.key = key;
+		this.receiverSigRequired = receiverSigRequired;
 	}
 
 	public boolean hasAdminKey() {
 		return !(key instanceof JContractIDKey);
 	}
+
 	public JKey getKey() {
 		return key;
+	}
+
+	public boolean isReceiverSigRequired() {
+		return receiverSigRequired;
 	}
 }

@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -86,7 +85,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		MerkleToken token = store.get(id);
 
 		if (token.adminKey().isEmpty() && !affectsExpiryOnly.test(op)) {
-			txnCtx.setStatus(TOKEN_IS_IMMUTABlE);
+			txnCtx.setStatus(TOKEN_IS_IMMUTABLE);
 			return;
 		}
 

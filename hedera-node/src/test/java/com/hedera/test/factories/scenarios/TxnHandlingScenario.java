@@ -131,6 +131,12 @@ public interface TxnHandlingScenario {
 								.keyFactory(overlapFactory)
 								.accountKeys(FROM_OVERLAP_PAYER_KT).get()
 				).withContract(
+						MISC_RECIEVER_SIG_CONTRACT_ID,
+						newContract()
+								.receiverSigRequired(true)
+								.balance(DEFAULT_BALANCE)
+								.accountKeys(DILIGENT_SIGNING_PAYER_KT).get()
+				).withContract(
 						MISC_CONTRACT_ID,
 						newContract()
 								.balance(DEFAULT_BALANCE)
@@ -305,6 +311,9 @@ public interface TxnHandlingScenario {
 
 	String MISSING_CONTRACT_ID = "1.2.3";
 	ContractID MISSING_CONTRACT = asContract(MISSING_CONTRACT_ID);
+
+	String MISC_RECIEVER_SIG_CONTRACT_ID = "0.0.7337";
+	ContractID MISC_RECIEVER_SIG_CONTRACT = asContract(MISC_RECIEVER_SIG_CONTRACT_ID);
 
 	String MISC_CONTRACT_ID = "0.0.3337";
 	ContractID MISC_CONTRACT = asContract(MISC_CONTRACT_ID);

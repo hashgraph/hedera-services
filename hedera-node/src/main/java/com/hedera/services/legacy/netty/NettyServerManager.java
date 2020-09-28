@@ -43,10 +43,6 @@ import javax.net.ssl.SSLException;
 public class NettyServerManager {
 	private static final Logger log = LogManager.getLogger(NettyServerManager.class);
 
-	public NettyServerBuilder buildNettyServer(int port) throws FileNotFoundException, SSLException {
-		return buildNettyServer(port, false);
-	}
-
 	public NettyServerBuilder buildNettyServer(int port, boolean tlsSupport) throws FileNotFoundException, SSLException {
 		String nettyMode = PropertiesLoader.getNettyMode();
 		boolean isDevMode = ApplicationConstants.NETTY_MODE_DEV.equalsIgnoreCase(nettyMode);

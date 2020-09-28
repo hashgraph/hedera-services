@@ -21,7 +21,7 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;

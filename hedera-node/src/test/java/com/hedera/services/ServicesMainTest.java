@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.Profile;
 import com.hedera.services.context.properties.PropertySource;
@@ -111,6 +112,7 @@ public class ServicesMainTest {
 	SystemAccountsCreator systemAccountsCreator;
 	CurrentPlatformStatus platformStatus;
 	AccountRecordsHistorian recordsHistorian;
+	GlobalDynamicProperties globalDynamicProperties;
 	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	@BeforeEach
@@ -142,6 +144,7 @@ public class ServicesMainTest {
 		addressBook = mock(AddressBook.class);
 		systemFilesManager = mock(SystemFilesManager.class);
 		systemAccountsCreator = mock(SystemAccountsCreator.class);
+		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		ctx = mock(ServicesContext.class);
 
 		ServicesMain.log = mockLog;
@@ -151,6 +154,7 @@ public class ServicesMainTest {
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.stats()).willReturn(stats);
 		given(ctx.grpc()).willReturn(grpc);
+		given(ctx.globalDynamicProperties()).willReturn(globalDynamicProperties);
 		given(ctx.pause()).willReturn(pause);
 		given(ctx.nodeLocalProperties()).willReturn(nodeLocalProps);
 		given(ctx.accounts()).willReturn(accounts);
@@ -525,7 +529,7 @@ public class ServicesMainTest {
 		Instant when = Instant.now();
 		ServicesState signedState = mock(ServicesState.class);
 
-		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(true);
+		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
 
 		// when:
@@ -542,7 +546,7 @@ public class ServicesMainTest {
 		Instant when = Instant.now();
 		ServicesState signedState = mock(ServicesState.class);
 
-		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(false);
+		given(globalDynamicProperties.shouldExportBalances()).willReturn(false);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);
@@ -558,7 +562,7 @@ public class ServicesMainTest {
 		Instant when = Instant.now();
 		ServicesState signedState = mock(ServicesState.class);
 
-		given(properties.getBooleanProperty("hedera.exportBalancesOnNewSignedState")).willReturn(true);
+		given(globalDynamicProperties.shouldExportBalances()).willReturn(true);
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
 		willThrow(IllegalStateException.class).given(balancesExporter).toCsvFile(signedState, when);
 

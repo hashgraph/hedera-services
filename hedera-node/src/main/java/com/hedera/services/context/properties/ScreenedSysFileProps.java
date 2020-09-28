@@ -34,7 +34,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
-import static com.hedera.services.context.properties.BootstrapProperties.PROP_TRANSFORMS;
+import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
 import static com.hedera.services.throttling.ThrottlingPropsBuilder.API_THROTTLING_PREFIX;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static java.util.Map.entry;
@@ -136,12 +136,12 @@ public class ScreenedSysFileProps implements PropertySource {
 	}
 
 	private Object asTypedValue(Setting prop) {
-		return PROP_TRANSFORMS.get(prop.getName()).apply(prop.getValue());
+		return transformFor(prop.getName()).apply(prop.getValue());
 	}
 
 	private boolean hasParseableValue(Setting prop) {
 		try {
-			PROP_TRANSFORMS.get(prop.getName()).apply(prop.getValue());
+			transformFor(prop.getName()).apply(prop.getValue());
 			return true;
 		} catch (Exception reason) {
 			log.warn(String.format(

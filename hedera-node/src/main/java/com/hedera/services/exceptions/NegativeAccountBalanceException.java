@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.exceptions;
 
 /*-
  * ‌
@@ -20,17 +20,8 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TopicID;
-
-public class InvalidTopicIDException extends Exception {
-	private TopicID topicId;
-
-	public InvalidTopicIDException(String message, TopicID topicId) {
-		super(message);
-		this.topicId = topicId;
-	}
-
-	public TopicID getTopicId() {
-		return topicId;
-	}
+public class NegativeAccountBalanceException extends Exception {
+  public NegativeAccountBalanceException(String message) {
+    super(message);
+  }
 }

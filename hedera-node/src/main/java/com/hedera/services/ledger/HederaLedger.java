@@ -170,7 +170,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		accountsLedger.rollback();
-		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
+		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
 		netTransfers.clear();
@@ -181,7 +181,7 @@ public class HederaLedger {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
 		accountsLedger.commit();
-		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
+		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}
 		netTransfers.clear();
@@ -624,6 +624,9 @@ public class HederaLedger {
 		} while (lastZeroRemoved != -1);
 	}
 
+	public boolean isKnownTreasury(AccountID aId) {
+		return tokenStore.isKnownTreasury(aId);
+	}
 
 	public enum LedgerTxnEvictionStats {
 		INSTANCE;

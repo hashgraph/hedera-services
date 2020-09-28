@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenTransact;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -82,6 +83,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						basicKeysAndTokens(),
 						cryptoCreate("payer")
 				)).when(
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("tkn1")
+								.treasury(TOKEN_TREASURY),
+						tokenDissociate(TOKEN_TREASURY, "tkn1")
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						cryptoCreate("misc"),
 						tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
 								.payingWith("misc")

@@ -153,7 +153,12 @@ public class MerkleOptionalBlob extends AbstractMerkleNode implements FCMValue, 
 	}
 
 	@Override
-	public void serializeAbbreviated(SerializableDataOutputStream out) { }
+	public void serializeAbbreviated(SerializableDataOutputStream out) { 
+                /* Nothing to do here, since Platform automatically serializes the 
+                 * hash of an MerkleExternalLeaf and passes it as an argument to 
+                 * deserializeAbbreviated as below. (Our BinaryObject delegate 
+                 * doesn't need anything except this hash to deserialize itself.) */
+        }
 
 	@Override
 	public void deserializeAbbreviated(

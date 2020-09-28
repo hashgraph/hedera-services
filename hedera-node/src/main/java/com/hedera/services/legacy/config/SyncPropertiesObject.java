@@ -38,17 +38,12 @@ public class SyncPropertiesObject {
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
 
-	private static long initialGenesisCoins = ApplicationConstants.INITIAL_GENESIS_COINS;
 	private static long defaultContractDurationSec = ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC;
 
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
 
 	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
-
-	// if a node account's balance is less than this value tinybars, we should log
-	// Insufficient Node Balance warning;
-	private static long nodeAccountBalanceValidity = ApplicationConstants.ZERO;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
@@ -64,7 +59,6 @@ public class SyncPropertiesObject {
 		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
-		initialGenesisCoins = appConfig.getLong("initialGenesisCoins", ApplicationConstants.INITIAL_GENESIS_COINS);
 		// default valid duration of the contract in seconds
 		defaultContractDurationSec = appConfig.getLong("defaultContractDurationSec", ApplicationConstants.DEFAULT_CONTRACT_DURATION_IN_SEC);
 
@@ -72,10 +66,6 @@ public class SyncPropertiesObject {
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
 
 		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
-
-		// if a node account's balance is less than this value tinybars, we should log
-		// Insufficient Node Balance warning;
-		nodeAccountBalanceValidity = appConfig.getLong("nodeAccountBalanceValidity", ApplicationConstants.ZERO);
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
@@ -103,10 +93,6 @@ public class SyncPropertiesObject {
 		return keyExpansionDepth;
 	}
 
-	static long getInitialGenesisCoins() {
-		return initialGenesisCoins;
-	}
-
 	static long getDefaultContractDurationSec() {
 		return defaultContractDurationSec;
 	}
@@ -121,10 +107,6 @@ public class SyncPropertiesObject {
 
 	static int getTransferListSizeLimit() {
 		return transferListSizeLimit;
-	}
-
-	static long getNodeAccountBalanceValidity() {
-		return nodeAccountBalanceValidity;
 	}
 
 	static int getLocalCallEstReturnBytes() {

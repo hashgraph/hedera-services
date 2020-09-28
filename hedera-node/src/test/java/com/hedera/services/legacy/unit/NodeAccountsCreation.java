@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 
 import java.io.File;
 import java.io.FileOutputStream;

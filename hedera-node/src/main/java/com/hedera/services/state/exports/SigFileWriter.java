@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.context;
+package com.hedera.services.state.exports;
 
 /*-
  * ‌
@@ -20,20 +20,7 @@ package com.hedera.services.legacy.services.context;
  * ‍
  */
 
-import com.hedera.services.context.CurrentPlatformStatus;
-import com.swirlds.common.PlatformStatus;
-import static com.swirlds.common.PlatformStatus.*;
-
-public class ContextPlatformStatus implements CurrentPlatformStatus {
-	private PlatformStatus current = STARTING_UP;
-
-	@Override
-	public synchronized void set(PlatformStatus status) {
-		current = status;
-	}
-
-	@Override
-	public synchronized PlatformStatus get() {
-		return current;
-	}
+@FunctionalInterface
+public interface SigFileWriter {
+	String writeSigFile(String signedFile, byte[] sig, byte[] signedFileHash);
 }

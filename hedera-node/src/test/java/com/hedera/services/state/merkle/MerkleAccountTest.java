@@ -25,10 +25,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +39,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
@@ -52,6 +49,7 @@ import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -323,6 +321,18 @@ public class MerkleAccountTest {
 	public void throwsOnNegativeBalance() {
 		// expect:
 		assertThrows(NegativeAccountBalanceException.class, () -> subject.setBalance(-1L));
+	}
+
+	@Test
+	public void initializeEnsuresAssociationsExist() {
+		// given:
+		subject.setTokens(null);
+
+		// when:
+		subject.initialize(null);
+
+		// then:
+		assertNotNull(subject.tokens());
 	}
 
 	@Test

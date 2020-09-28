@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.legacy.unit;
 
 /*-
  * ‌
@@ -20,18 +20,18 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
 
-public class InvalidContractIDException extends Exception {
+public class InvalidFileIDException extends Exception {
 	private static final long serialVersionUID = 1L;
-	private ContractID contractId;
+	private FileID fileId;
 
-	public InvalidContractIDException(String message, ContractID contractId) {
+	public InvalidFileIDException(String message, FileID fileId) {
 		super(message);
-		this.contractId = contractId;
+		this.fileId = fileId;
 	}
 
-	public ContractID getContractId() {
-		return contractId;
+	public FileID getFileId() {
+		return fileId;
 	}
 }
