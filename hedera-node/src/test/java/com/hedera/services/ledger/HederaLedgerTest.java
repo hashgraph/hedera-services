@@ -59,8 +59,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -100,7 +98,6 @@ import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.refWith;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -143,23 +140,20 @@ public class HederaLedgerTest {
 
 	TokenID frozenId = IdUtils.tokenWith(111);
 	MerkleToken frozenToken;
-	String frozenSymbol = "FREEZE";
 	TokenID tokenId = IdUtils.tokenWith(222);
 	MerkleToken token;
-	String otherSymbol = "FLOW";
 	MerkleAccount account;
-	String missingSymbol = "DIE";
 	TokenID missingId = IdUtils.tokenWith(333);
 
 	TokenTransfersTransactionBody multipleValidTokenTransfers = TokenTransfersTransactionBody.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(frozenSymbol))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(frozenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(otherSymbol))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
@@ -167,24 +161,24 @@ public class HederaLedgerTest {
 			.build();
 
 	TokenTransfersTransactionBody missingSymbolTokenTransfers = TokenTransfersTransactionBody.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(missingSymbol))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(missingId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
 	TokenTransfersTransactionBody missingIdTokenTransfers = TokenTransfersTransactionBody.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(missingId))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(missingId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +1_000),
 							adjustFrom(rand, -1_000)
 					)))
 			.build();
 	TokenTransfersTransactionBody unmatchedTokenTransfers = TokenTransfersTransactionBody.newBuilder()
-			.addTokenTransfers(TokenRefTransferList.newBuilder()
-					.setToken(refWith(otherSymbol))
+			.addTokenTransfers(TokenTransferList.newBuilder()
+					.setToken(tokenId)
 					.addAllTransfers(List.of(
 							adjustFrom(misc, +2_000),
 							adjustFrom(rand, -1_000)
@@ -257,22 +251,11 @@ public class HederaLedgerTest {
 		given(tokenStore.exists(frozenId)).willReturn(true);
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.exists(missingId)).willReturn(false);
-		given(tokenStore.symbolExists(frozenSymbol)).willReturn(true);
-		given(tokenStore.lookup(frozenSymbol)).willReturn(frozenId);
-		given(tokenStore.symbolExists(otherSymbol)).willReturn(true);
-		given(tokenStore.lookup(otherSymbol)).willReturn(tokenId);
-		given(tokenStore.symbolExists(missingSymbol)).willReturn(false);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(missingSymbol).build()))
+		given(tokenStore.resolve(missingId))
 				.willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(missingId).build()))
-				.willReturn(TokenStore.MISSING_TOKEN);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(frozenId).build()))
+		given(tokenStore.resolve(frozenId))
 				.willReturn(frozenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(frozenSymbol).build()))
-				.willReturn(frozenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setTokenId(tokenId).build()))
-				.willReturn(tokenId);
-		given(tokenStore.resolve(TokenRef.newBuilder().setSymbol(otherSymbol).build()))
+		given(tokenStore.resolve(tokenId))
 				.willReturn(tokenId);
 
 		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
@@ -936,10 +919,10 @@ public class HederaLedgerTest {
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
-		tokenStore.associate(a, List.of(refWith(tA), refWith(tB)));
-		tokenStore.associate(b, List.of(refWith(tA), refWith(tB)));
-		tokenStore.associate(c, List.of(refWith(tA), refWith(tB)));
-		tokenStore.associate(d, List.of(refWith(tA), refWith(tB)));
+		tokenStore.associate(a, List.of(tA, tB));
+		tokenStore.associate(b, List.of(tA, tB));
+		tokenStore.associate(c, List.of(tA, tB));
+		tokenStore.associate(d, List.of(tA, tB));
 		// and:
 		subject.doTransfer(d, a, 1_000L);
 		subject.delete(d, b);
@@ -953,6 +936,7 @@ public class HederaLedgerTest {
 		subject.adjustTokenBalance(a, tA, -5_000);
 		subject.adjustTokenBalance(a, tB, +1);
 		subject.adjustTokenBalance(a, tB, -1);
+
 		subject.adjustTokenBalance(b, tB, +10_000);
 		subject.adjustTokenBalance(c, tB, +50);
 		subject.adjustTokenBalance(c, tB, +50);
@@ -1478,6 +1462,8 @@ public class HederaLedgerTest {
 		// setup:
 		InOrder inOrder = inOrder(tokenRelsLedger);
 
+		given(tokenRelsLedger.isInTransaction()).willReturn(true);
+
 		// when:
 		subject.begin();
 		subject.commit();
@@ -1486,8 +1472,10 @@ public class HederaLedgerTest {
 
 		// then:
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
 	}
 

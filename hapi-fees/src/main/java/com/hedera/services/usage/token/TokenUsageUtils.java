@@ -21,8 +21,6 @@ package com.hedera.services.usage.token;
  */
 
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -35,7 +33,7 @@ public class TokenUsageUtils {
 		return check.test(op)? getAccountKeyStorageSize(getter.apply(op)) : 0L;
 	}
 
-	public static long refBpt(TokenRef ref) {
-		return ref.hasTokenId() ? BASIC_ENTITY_ID_SIZE : ref.getSymbolBytes().size();
+	public static long idBpt() {
+		return BASIC_ENTITY_ID_SIZE;
 	}
 }

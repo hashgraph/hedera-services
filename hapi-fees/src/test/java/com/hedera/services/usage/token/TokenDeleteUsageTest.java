@@ -27,7 +27,6 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -48,7 +47,6 @@ public class TokenDeleteUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	String symbol = "ABCDEFGH";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TokenDeleteTransactionBody op;
@@ -70,23 +68,8 @@ public class TokenDeleteUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForSymbolRef() {
-		givenSymbolRefOp();
-		// and:
-		subject = TokenDeleteUsage.newEstimate(txn, sigUsage);
-
-		// when:
-		var actual = subject.get();
-
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(symbol.length());
-	}
-
-	@Test
-	public void createsExpectedDeltaForIdRef() {
-		givenIdRefOp();
+	public void createsExpectedDelta() {
+		givenOp();
 		// and:
 		subject = TokenDeleteUsage.newEstimate(txn, sigUsage);
 
@@ -99,16 +82,9 @@ public class TokenDeleteUsageTest {
 		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 	}
 
-	private void givenSymbolRefOp() {
+	private void givenOp() {
 		op = TokenDeleteTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.build();
-		setTxn();
-	}
-
-	private void givenIdRefOp() {
-		op = TokenDeleteTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(id))
+				.setToken(id)
 				.build();
 		setTxn();
 	}

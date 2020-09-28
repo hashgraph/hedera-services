@@ -53,12 +53,10 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final HederaLedger ledger;
-	private final TokenStore tokenStore;
 	private final TransactionContext txnCtx;
 
-	public CryptoDeleteTransitionLogic(HederaLedger ledger, TokenStore tokenStore, TransactionContext txnCtx) {
+	public CryptoDeleteTransitionLogic(HederaLedger ledger, TransactionContext txnCtx) {
 		this.ledger = ledger;
-		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 	}
 
@@ -67,7 +65,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 			AccountID id = op.getDeleteAccountID();
-			if (tokenStore.isKnownTreasury(id)) {
+			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
 			};

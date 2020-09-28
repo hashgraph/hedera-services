@@ -68,7 +68,7 @@ public class CryptoDeleteTransitionLogicTest {
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		subject = new CryptoDeleteTransitionLogic(ledger, tokenStore, txnCtx);
+		subject = new CryptoDeleteTransitionLogic(ledger, txnCtx);
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class CryptoDeleteTransitionLogicTest {
 	public void rejectsDeletionOfKnownTreasury() {
 		// setup:
 		givenValidTxnCtx();
-		given(tokenStore.isKnownTreasury(target)).willReturn(withKnownTreasury);
+		given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
 
 		// when:
 		subject.doStateTransition();

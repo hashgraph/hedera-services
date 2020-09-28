@@ -186,8 +186,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
   }
 
   public void smartContractCreateFeeTest_90Days() throws Throwable {
-    KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
-    //   AccountID crAccount = createAccount(crAccountKeyPair, queryPayerId, 100000000000000L);
 
     AccountID crAccount = getMultiSigAccount(1, 1, CryptoServiceTest.DAY_SEC * 30);
     accountKeys.put(crAccount, CryptoServiceTest.getAccountPrivateKeys(crAccount));
@@ -294,8 +292,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
 
 
   public void smartContractCallFeeTest() throws Throwable {
-    KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
-    //  AccountID crAccount = createAccount(crAccountKeyPair, queryPayerId, 100000000000000L);
     AccountID crAccount = createAccountWithListKey(queryPayerId, nodeID, 100000000000000L,
         true, true, 1);
     accountKeys.put(crAccount, CryptoServiceTest.getAccountPrivateKeys(crAccount));
@@ -343,8 +339,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
   }
 
   public void smartContractDeleteFeeTest() throws Throwable {
-    KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
-    //  AccountID crAccount = createAccount(crAccountKeyPair, queryPayerId, 100000000000000L);
     AccountID crAccount = createAccountWithListKey(queryPayerId, nodeID, 100000000000000L,
         true, true, 1);
     accountKeys.put(crAccount, CryptoServiceTest.getAccountPrivateKeys(crAccount));
@@ -386,16 +380,11 @@ public class SmartContractFeeTests extends BaseFeeTests {
     long feeVariance = (contractDeleteFee * FEE_VARIANCE_PERCENT) / 100;
     long maxTransactionFee = CONTRACT_CALL_FUNC_10_RECSIZE_10 + feeVariance;
     long minTransactionFee = CONTRACT_CALL_FUNC_10_RECSIZE_10 - feeVariance;
-//    Assert.assertTrue(maxTransactionFee > contractCallFee);
-//    Assert.assertTrue(minTransactionFee < contractCallFee);
-
   }
 
   public void callLocalFeeTest() throws Throwable {
     KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
     AccountID crAccount = createAccount(crAccountKeyPair, queryPayerId, 100000000000000L);
-    //   AccountID crAccount = getMultiSigAccount(10,10,DAY_SEC * 90);
-    //   accountKeys.put(crAccount, getAccountPrivateKeys(crAccount));
     KeyPair fileAccountKeyPair = new KeyPairGenerator().generateKeyPair();
     AccountID fileAccount = createAccount(fileAccountKeyPair, queryPayerId, 100000000000000L);
     log.info("Account created successfully");
@@ -430,7 +419,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     long callLocalFee = callLocal(crAccount, createdContract, data,
         CONTRACT_CREATE_SUCCESS_GAS);
 
-    // contractCallFee = contractCallFee;
     long payerAccountBalance_after = getAccountBalance(crAccount, queryPayerId, nodeID);
     log.info("callLocalFee=" + callLocalFee);
     log.info("payerAccountBalance_before=" + payerAccountBalance_before);
@@ -479,8 +467,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     }
     long payerAccountBalance_before = getAccountBalance(crAccount, queryPayerId, nodeID);
     AccountID newAccountID = getMultiSigAccount(keyCount, memoSize, CryptoServiceTest.DAY_SEC * durationDays);
-    long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetInfo);
-    //   Transaction paymentTx = createQueryHeaderTransfer(newAccountID, fee);
     Transaction paymentTx = CryptoServiceTest.getQueryPaymentSigned(newAccountID, nodeID, TestHelperComplex.getStringMemo(10));
     Query getContractInfoQuery = RequestBuilder
         .getContractGetInfoQuery(createdContract, paymentTx, ResponseType.COST_ANSWER);
@@ -521,7 +507,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
 
     log.info("payerAccountBalance_before=" + payerAccountBalance_before);
     log.info("payerAccountBalance_after=" + payerAccountBalance_after);
-//    checkRecord(sampleStorageTransaction, queryPayerId, "30 Days");
   }
 
   public void smartContractGetRecordsFeeTest(int keyCount, int memoSize, int durationDays)
@@ -560,7 +545,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     long payerAccountBalance_before = getAccountBalance(crAccount, queryPayerId, nodeID);
     AccountID newAccountID = getMultiSigAccount(keyCount, memoSize, CryptoServiceTest.DAY_SEC * durationDays);
     long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetInfo);
-    //   Transaction paymentTx = createQueryHeaderTransfer(newAccountID, fee);
     Transaction paymentTx = CryptoServiceTest.getQueryPaymentSigned(newAccountID, nodeID, TestHelperComplex.getStringMemo(10));
     Query contractRecordsQuery = RequestBuilder.getContractRecordsQuery(createdContract,
         paymentTx, ResponseType.COST_ANSWER);
@@ -598,7 +582,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     }
     log.info("payerAccountBalance_before=" + payerAccountBalance_before);
     log.info("payerAccountBalance_after=" + payerAccountBalance_after);
-//    checkRecord(sampleStorageTransaction, queryPayerId, "30 Days");
   }
 
   public void smartContractGetByteCodeFeeTest(int keyCount, int memoSize, int durationDays)
@@ -636,8 +619,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     }
     long payerAccountBalance_before = getAccountBalance(crAccount, queryPayerId, nodeID);
     AccountID newAccountID = getMultiSigAccount(keyCount, memoSize, CryptoServiceTest.DAY_SEC * durationDays);
-    long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetInfo);
-    //   Transaction paymentTx = createQueryHeaderTransfer(newAccountID, fee);
     Transaction paymentTx = CryptoServiceTest.getQueryPaymentSigned(newAccountID, nodeID, TestHelperComplex.getStringMemo(10));
     Query getContractGetByteCodeQuery = RequestBuilder
         .getContractGetBytecodeQuery(createdContract, paymentTx, ResponseType.COST_ANSWER);
@@ -677,7 +658,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
 
     log.info("payerAccountBalance_before=" + payerAccountBalance_before);
     log.info("payerAccountBalance_after=" + payerAccountBalance_after);
-//    checkRecord(sampleStorageTransaction, queryPayerId, "30 Days");
   }
 
   private long callLocal(AccountID payerAccount, ContractID contractToCall, byte[] data,
@@ -837,9 +817,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
         deleteContractBody.getTransactionID());
 
     if (contractDeleteReceipt != null) {
-
-//      Assert.assertEquals(contractDeleteReceipt.getReceipt().getStatus(),
-//              ResponseCodeEnum.CONTRACT_DELETED);
       TransactionRecord trRecord = getTransactionRecord(payerAccount,
           deleteContractBody.getTransactionID());
       totalCost =
@@ -952,27 +929,6 @@ public class SmartContractFeeTests extends BaseFeeTests {
     KeyPair keyGenerated = new KeyPairGenerator().generateKeyPair();
     return createAccount(keyGenerated, payerAccount, initialBalance);
   }
-
-//  private static AccountID createAccount(KeyPair keyPair, AccountID payerAccount,
-//      long initialBalance) throws Exception {
-//
-//    Transaction transaction = TestHelper
-//        .createAccountWithSigMap(payerAccount, nodeID, keyPair, initialBalance,
-//            accountKeyPairs.get(payerAccount));
-//    //	  Transaction signTransaction = TransactionSigner.signTransaction(transaction, accountKeys.get(payerAccount));
-//    TransactionResponse response = cstub.createAccount(transaction);
-//    Assert.assertNotNull(response);
-//    Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-//    System.out.println(
-//        "Pre Check Response of Create  account :: " + response.getNodeTransactionPrecheckCode()
-//            .name());
-//    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
-//    AccountID newlyCreateAccountId = TestHelper
-//        .getTxReceipt(body.getTransactionID(), cstub).getAccountID();
-//    accountKeys.put(newlyCreateAccountId, Collections.singletonList(keyPair.getPrivate()));
-//    accountKeyPairs.put(newlyCreateAccountId, keyPair);
-//    return newlyCreateAccountId;
-//  }
 
   private static TransactionGetReceiptResponse getReceipt_new(TransactionID transactionId)
       throws Exception {

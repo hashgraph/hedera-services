@@ -67,7 +67,6 @@ public class SameTxMultipleNodesTests extends BaseFeeTests {
     accountKeys.put(account_1, getAccountPrivateKeys(account_1));
     accountKeys.put(queryPayerId, getAccountPrivateKeys(queryPayerId));
     tester.smartContractCreateFeeTest_90Days();
-    //   channelList.stream().forEach(c->c.shutdown()); //shutdown channels created
     for(ManagedChannel ch:channelList) {
       ch.shutdown();
     }

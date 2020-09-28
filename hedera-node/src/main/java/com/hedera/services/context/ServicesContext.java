@@ -932,7 +932,7 @@ public class ServicesContext {
 				entry(CryptoUpdate,
 						List.of(new CryptoUpdateTransitionLogic(ledger(), validator(), txnCtx()))),
 				entry(CryptoDelete,
-						List.of(new CryptoDeleteTransitionLogic(ledger(), tokenStore(), txnCtx()))),
+						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
 				entry(CryptoTransfer,
 						List.of(new CryptoTransferTransitionLogic(ledger(), validator(), txnCtx()))),
 				/* File */

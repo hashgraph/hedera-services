@@ -120,9 +120,6 @@ public class ContractToContract {
 				.setShardNum(node_realm_number).build();
 
 		int numberOfReps = 1;
-		// if ((args.length) > 0) {
-		// numberOfReps = Integer.parseInt(args[0]);
-		// }
 		for (int i = 0; i < numberOfReps; i++) {
 			ContractToContract scSs = new ContractToContract();
 			scSs.demo();
@@ -152,29 +149,8 @@ public class ContractToContract {
 	}
 
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
-		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-		Duration transactionDuration = RequestBuilder.getDuration(30);
-
-		// KeyPair pair = new KeyPairGenerator().generateKeyPair();
-		// byte[] pubKeyBytes = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		// String pubKey = HexUtils.bytes2Hex(pubKeyBytes);
-		// Key key =
-		// Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey.getBytes())).build();
-		// // used later
-		SignatureList sigList = SignatureList.getDefaultInstance();
-		/*
-		 * Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
-		 * payer.getAccountNum(), payer.getRealmNum(), payer.getShardNum(),
-		 * nodeAccount.getAccountNum(), nodeAccount.getRealmNum(),
-		 * nodeAccount.getShardNum(), 50, timestamp, transactionDuration, false, "test",
-		 * sigList, payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
-		 */
-
-		Transaction transferTx = TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
+		return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-		// transferTx = TransactionSigner.signTransaction(transferTx,
-		// accountKeys.get(payer));
-		return transferTx;
 
 	}
 
@@ -189,8 +165,6 @@ public class ContractToContract {
 		CryptoServiceGrpc.CryptoServiceBlockingStub stub = CryptoServiceGrpc.newBlockingStub(channel);
 		Transaction transaction = TestHelper.createAccountWithFee(payerAccount, nodeAccount, keyPair, initialBalance,
 				accountKeys.get(payerAccount));
-		// Transaction signTransaction = TransactionSigner.signTransaction(transaction,
-		// accountKeys.get(payerAccount));
 		TransactionResponse response = stub.createAccount(transaction);
 		Assert.assertNotNull(response);
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -608,7 +582,6 @@ public class ContractToContract {
 		for (int i = 0; i < numberOfTests; i++) {
 			int currValueToSet = ThreadLocalRandom.current().nextInt(1, 1000000 + 1);
 			setValueToContract(payerAccount, contractToTest, currValueToSet);
-			// Thread.sleep(10000);
 			int actualStoredValue = getValueFromContract(payerAccount, contractToTest);
 			Assert.assertEquals(currValueToSet, actualStoredValue);
 			log.info("Contract get/set iteration " + i + " completed successfully==>");

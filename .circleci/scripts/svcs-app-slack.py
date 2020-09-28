@@ -16,6 +16,7 @@ GITHUB_TO_SLACK_USER_ID = {
     'nathanklick': 'UA66NE2NT',
     'mike-burrage-hedera': 'UJLNNSUPR',
     'ljianghedera': 'UMQ7SUGBE',
+    'Neeharika-Sompalli': 'UL19K9CTB',
 }
 
 CHANNEL_NAME_TO_CHANNEL_ID = {

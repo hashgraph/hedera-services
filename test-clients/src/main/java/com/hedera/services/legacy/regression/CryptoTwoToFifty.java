@@ -124,7 +124,6 @@ public class CryptoTwoToFifty {
     TestHelper.initializeFeeClient(channel, payerAccount, genKeyPair, nodeAccount3);
 
     // create 1st account by payer as genesis
-//    StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createAccount");
     KeyPair firstPair = new KeyPairGenerator().generateKeyPair();
     Transaction transaction = TestHelper
         .createAccountWithSigMap(payerAccount, nodeAccount3, firstPair, 1000000l,
@@ -140,13 +139,11 @@ public class CryptoTwoToFifty {
     AccountID newlyCreateAccountId1 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
-//    stopWatch.stop();
     log.info("First account: Account ID " + newlyCreateAccountId1.getAccountNum()
         + " created successfully.");
     log.info("--------------------------------------");
 
     // create 2nd account by payer as genesis
-//    stopWatch = new Log4JStopWatch("RoundTrip:createAccount");
     KeyPair secondPair = new KeyPairGenerator().generateKeyPair();
     transaction = TestHelper.createAccountWithSigMap(payerAccount, nodeAccount3, secondPair, 10_000_000L,
         genKeyPair);
@@ -159,7 +156,6 @@ public class CryptoTwoToFifty {
     body = TransactionBody.parseFrom(transaction.getBodyBytes());
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
-//    stopWatch.stop();
     Assert.assertNotNull(newlyCreateAccountId2);
     Assert
         .assertTrue(newlyCreateAccountId2.getAccountNum() > newlyCreateAccountId1.getAccountNum());
@@ -174,7 +170,6 @@ public class CryptoTwoToFifty {
 
       log.info(
           "Transfer #" + (i + 1) + ": Transferring 1000 coin from 1st account to 2nd account....");
-//      stopWatch = new Log4JStopWatch("RoundTrip:transferStart");
       TransactionResponse transferRes = stub.cryptoTransfer(transfer1);
       Assert.assertNotNull(transferRes);
       Assert.assertEquals(ResponseCodeEnum.OK, transferRes.getNodeTransactionPrecheckCode());
@@ -183,7 +178,6 @@ public class CryptoTwoToFifty {
       TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
       TransactionReceipt txReceipt = TestHelper
           .getTxReceipt(transferBody.getTransactionID(), stub);
-//      stopWatch.stop();
 
       Assert.assertNotNull(txReceipt);
       log.info("-----------------------------------------");
@@ -191,11 +185,7 @@ public class CryptoTwoToFifty {
       Response accountInfoResponse = TestHelper
           .getCryptoGetAccountInfo(stub, newlyCreateAccountId1, newlyCreateAccountId2,
               secondPair, nodeAccount3);
-      // Assert.assertEquals(9000, accountInfoResponse.getCryptoGetInfo().getAccountInfo().getBalance());
       assertAccountInfoDetails(newlyCreateAccountId1, accountInfoResponse);
-
-//            channel.shutdown();
-
     }
   }
 
@@ -209,14 +199,11 @@ public class CryptoTwoToFifty {
     log.info(accountInfo1);
     Assert.assertNotNull(accountInfo1);
     Assert.assertEquals(newlyCreateAccountId1, accountInfo1.getAccountID());
-    //  Assert.assertEquals(firstPair.getPublic().toString(), accountInfo1.getKey().getKeyList().getKeys(0).getEd25519().toStringUtf8());
     Assert.assertEquals(TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
         accountInfo1.getGenerateReceiveRecordThreshold());
     Assert.assertEquals(TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
         accountInfo1.getGenerateSendRecordThreshold());
     Assert.assertFalse(accountInfo1.getReceiverSigRequired());
     Duration renewal = RequestBuilder.getDuration(5000);
-    //  Assert.assertEquals(renewal, accountInfo1.getAutoRenewPeriod());
-    //z  Assert.assertEquals(RequestBuilder.getExpirationTime(renewal), accountInfo1.getExpirationTime());
   }
 }

@@ -116,7 +116,7 @@ class SingletonEstimatorUtilsTest {
 				.build();
 		// and:
 		int expected = FeeBuilder.BASIC_TX_RECORD_SIZE + memo.length()
-				+ FeeBuilder.BASIC_ACCT_AMT_SIZE * transfers.getAccountAmountsCount();
+				+ FeeBuilder.BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
 
 		// when:
 		int actual = ESTIMATOR_UTILS.baseRecordBytes(txn);

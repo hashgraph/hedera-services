@@ -26,7 +26,6 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -51,7 +50,6 @@ public class TokenWipeUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	String symbol = "ABCDEFGHIJ";
 	TokenID id = IdUtils.asToken("0.0.75231");
 
 	TransactionBody txn;
@@ -73,28 +71,8 @@ public class TokenWipeUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForSymbolRef() {
-		givenSymbolRefOp();
-		// and:
-		subject = TokenWipeUsage.newEstimate(txn, sigUsage);
-
-		// when:
-		var actual = subject.get();
-
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(symbol.length());
-		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
-		verify(base).addBpt(8);
-		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 1) *
-						USAGE_PROPERTIES.legacyReceiptStorageSecs());
-	}
-
-	@Test
-	public void createsExpectedDeltaForIdRef() {
-		givenIdRefOp();
+	public void createsExpectedDelta() {
+		givenOp();
 		// and:
 		subject = TokenWipeUsage.newEstimate(txn, sigUsage);
 
@@ -111,16 +89,9 @@ public class TokenWipeUsageTest {
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
-	private void givenSymbolRefOp() {
+	private void givenOp() {
 		op = TokenWipeAccountTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.build();
-		setTxn();
-	}
-
-	private void givenIdRefOp() {
-		op = TokenWipeAccountTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(id))
+				.setToken(id)
 				.build();
 		setTxn();
 	}

@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 import java.util.stream.Stream;
@@ -73,14 +72,6 @@ public class IdUtils {
 				.setRealmNum(nativeParts[1])
 				.setFileNum(nativeParts[2])
 				.build();
-	}
-
-	public static TokenRef asSymbolRef(String v) {
-		return TokenRef.newBuilder().setSymbol(v).build();
-	}
-
-	public static TokenRef asIdRef(TokenID id) {
-		return TokenRef.newBuilder().setTokenId(id).build();
 	}
 
 	public static TokenID asToken(String v) {

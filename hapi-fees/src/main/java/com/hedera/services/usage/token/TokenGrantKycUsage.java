@@ -42,8 +42,7 @@ public class TokenGrantKycUsage extends TokenUsage<TokenGrantKycUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenGrantKyc();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAccountBpt();
 		return usageEstimator.get();
 	}

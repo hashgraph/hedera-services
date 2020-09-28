@@ -42,8 +42,7 @@ public class TokenBurnUsage extends TokenUsage<TokenBurnUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenBurn();
-		addRefBpt(op.getToken());
+		addAccountBpt();
 		addAmountBpt();
 		addTransfersRecordRb(1, 1);
 		return usageEstimator.get();

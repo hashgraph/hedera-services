@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -67,7 +66,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.TokenGrantKycToAccount;
+		return HederaFunctionality.TokenAssociateToAccount;
 	}
 
 	public HapiTokenAssociate(String account, String... tokens) {
@@ -121,7 +120,6 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
 							b.setAccount(aId);
 							b.addAllTokens(tokens.stream()
 									.map(lit -> TxnUtils.asTokenId(lit, spec))
-									.map(id -> TokenRef.newBuilder().setTokenId(id).build())
 									.collect(toList()));
 						});
 		return b -> b.setTokenAssociate(opBody);

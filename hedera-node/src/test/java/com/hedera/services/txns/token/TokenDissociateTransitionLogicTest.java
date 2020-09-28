@@ -27,7 +27,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,6 @@ import static org.mockito.BDDMockito.verify;
 class TokenDissociateTransitionLogicTest {
 	private AccountID account = IdUtils.asAccount("1.2.4");
 	private TokenID id = IdUtils.asToken("1.2.3");
-	private TokenRef token = IdUtils.asIdRef("0.0.12345");
 
 	private TokenStore tokenStore;
 	private TransactionContext txnCtx;
@@ -75,7 +73,7 @@ class TokenDissociateTransitionLogicTest {
 	public void capturesInvalidDissociate() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.dissociate(account, List.of(token))).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+		given(tokenStore.dissociate(account, List.of(id))).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
 		// when:
 		subject.doStateTransition();
@@ -88,13 +86,13 @@ class TokenDissociateTransitionLogicTest {
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(tokenStore.dissociate(account, List.of(token))).willReturn(OK);
+		given(tokenStore.dissociate(account, List.of(id))).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).dissociate(account, List.of(token));
+		verify(tokenStore).dissociate(account, List.of(id));
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -125,10 +123,10 @@ class TokenDissociateTransitionLogicTest {
 		tokenDissociateTxn = TransactionBody.newBuilder()
 				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
 						.setAccount(account)
-						.addTokens(token))
+						.addTokens(id))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(token)).willReturn(id);
+		given(tokenStore.resolve(id)).willReturn(id);
 	}
 }

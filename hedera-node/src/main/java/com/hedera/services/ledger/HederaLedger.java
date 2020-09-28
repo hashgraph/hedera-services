@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRefTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -171,7 +170,7 @@ public class HederaLedger {
 
 	public void rollback() {
 		accountsLedger.rollback();
-		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
+		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
 		}
 		netTransfers.clear();
@@ -182,7 +181,7 @@ public class HederaLedger {
 		throwIfPendingStateIsInconsistent();
 		historian.addNewRecords();
 		accountsLedger.commit();
-		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER) {
+		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}
 		netTransfers.clear();
@@ -347,7 +346,7 @@ public class HederaLedger {
 	public ResponseCodeEnum doAtomicZeroSumTokenTransfers(TokenTransfersTransactionBody transfers) {
 		var validity = OK;
 
-		for (TokenRefTransferList xfers : transfers.getTokenTransfersList()) {
+		for (TokenTransferList xfers : transfers.getTokenTransfersList()) {
 			var id = tokenStore.resolve(xfers.getToken());
 			if (id == MISSING_TOKEN) {
 				validity = INVALID_TOKEN_ID;
@@ -625,6 +624,9 @@ public class HederaLedger {
 		} while (lastZeroRemoved != -1);
 	}
 
+	public boolean isKnownTreasury(AccountID aId) {
+		return tokenStore.isKnownTreasury(aId);
+	}
 
 	public enum LedgerTxnEvictionStats {
 		INSTANCE;

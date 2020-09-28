@@ -117,7 +117,9 @@ public class TestHelper {
     if(tempFile==null || !tempFile.exists()) {
       try {
         int index = strPath.lastIndexOf("\\");
-        if (index <= 0) index =  strPath.lastIndexOf("/");
+        if (index <= 0) {
+			index =  strPath.lastIndexOf("/");
+		}
         String localStartUpFile = strPath.substring(index+1);
         path = Paths.get(TestHelper.class.getClassLoader().getResource(localStartUpFile).toURI());
       }catch (Exception e) {
@@ -206,8 +208,6 @@ public class TestHelper {
   }
 
   public static List<AccountKeyListObj> getGenAccountKey() throws URISyntaxException, IOException {
-//    Path path = Paths
-//        .get(Thread.currentThread().getContextClassLoader().getResource(fileName).toURI());
     Map<String, List<AccountKeyListObj>> keyFromFile = getKeyFromFile(fileName);
 
     return keyFromFile.get("START_ACCOUNT");
@@ -220,18 +220,10 @@ public class TestHelper {
 
   public static Transaction createAccountWithFee(AccountID payerAccount, AccountID nodeAccount,
       KeyPair pair, long initialBalance, List<PrivateKey> privKey) throws Exception {
-
     Transaction transaction = TestHelper
-        .createAccount(payerAccount, nodeAccount, pair, initialBalance, 0,
-            DEFAULT_SEND_RECV_RECORD_THRESHOLD, DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-    Transaction signTransaction = TransactionSigner.signTransaction(transaction, privKey);
-//    long createAccountFee = FeeClient.getCreateAccountFee(signTransaction, privKey.size());
-//    System.out.println("createAccountFee ===> " + createAccountFee);
-    transaction = TestHelper
         .createAccount(payerAccount, nodeAccount, pair, initialBalance, TestHelper.getCryptoMaxFee(),
             DEFAULT_SEND_RECV_RECORD_THRESHOLD, DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-    signTransaction = TransactionSigner.signTransaction(transaction, privKey);
-    return signTransaction;
+    return TransactionSigner.signTransaction(transaction, privKey);
   }
   public static Transaction createAccountWithSigMap(AccountID payerAccount, AccountID nodeAccount,
       KeyPair pair, long initialBalance, KeyPair payerKeyPair) throws Exception {
@@ -244,7 +236,6 @@ public class TestHelper {
     Common.addKeyMap(payerKeyPair, pubKey2privKeyMap);
     Transaction signTransaction = TransactionSigner
         .signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
-    //  Transaction signTransaction = TransactionSigner.signTransaction(transaction, privKey);
     long createAccountFee = FeeClient.getCreateAccountFee(signTransaction, 1);
     System.out.println("createAccountFee ===> " + createAccountFee);
     return signTransaction;
@@ -346,8 +337,6 @@ public class TestHelper {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
     byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-//		  String pubKeyStr = Hex.encodeHexString(pubKey);
-//		  Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
     Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
     List<Key> keyList = Collections.singletonList(key);
 
@@ -376,8 +365,6 @@ public class TestHelper {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(30);
     byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-//		  String pubKeyStr = Hex.encodeHexString(pubKey);
-//		  Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
     Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
     List<Key> keyList = Collections.singletonList(key);
 
@@ -404,9 +391,6 @@ public class TestHelper {
       String pubKeyStr, long initialBalance) throws DecoderException {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-    //		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-//		String pubKeyStr = Hex.encodeHexString(pubKey);
-//		  Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
     byte[] bytes = HexUtils.hexToBytes(pubKeyStr);
     Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(bytes)).build();
     List<Key> keyList = Collections.singletonList(key);
@@ -561,7 +545,6 @@ public class TestHelper {
       AccountID accountId, AccountID payerAccount, KeyPair payerAccountKey,
       AccountID nodeAccount) throws Exception {
 
-//    long costForQuery = FeeClient.getFeeByID(HederaFunctionality.CryptoGetAccountRecords);
     long costForQuery = TestHelper.getCryptoMaxFee();
     System.out.println(costForQuery + " :: is the cost for query");
     Response response = executeGetAccountRecords(stub, accountId, payerAccount, payerAccountKey,
@@ -677,8 +660,6 @@ public class TestHelper {
     int i = listKeyPairs.size();
     for (int j = 0; j < i; j++) {
       byte[] pubKey = ((EdDSAPublicKey) listKeyPairs.get(j).getPublic()).getAbyte();
-//			String pubKeyStr = Hex.encodeHexString(pubKey);
-//			Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyStr)).build();
       Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
       keyList.add(j, key);
     }
@@ -1299,15 +1280,12 @@ public class TestHelper {
 
   public static long getFileMaxFee() {
     return CryptoServiceTest.getUmbrellaProperties().getLong("fileMaxFee", 800_000_000L);
-  //  return 800_000_000L;
   }
   public static long getContractMaxFee() {
     return CryptoServiceTest.getUmbrellaProperties().getLong("contractMaxFee", 60_00_000_000L);
- //   return 6000_000_000L;
   }
   public static long getCryptoMaxFee() {
     return CryptoServiceTest.getUmbrellaProperties().getLong("cryptoMaxFee", 5_00_000_000L);
-//    return 500_000_000L;
   }
 
   public static int getErrorReturnCode() {

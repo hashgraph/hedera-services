@@ -252,7 +252,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getTokenInfo("tbu").hasSymbol(hopefullyUnique),
 						tokenAssociate(GENESIS, "tbu"),
 						tokenTransact(
-								moving(1, "tbu").symbolicallyBetween(TOKEN_TREASURY, GENESIS))
+								moving(1, "tbu").between(TOKEN_TREASURY, GENESIS))
 				);
 	}
 

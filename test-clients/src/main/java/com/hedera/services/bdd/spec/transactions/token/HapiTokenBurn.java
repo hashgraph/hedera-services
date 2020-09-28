@@ -80,7 +80,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 				.txns()
 				.<TokenBurnTransactionBody, TokenBurnTransactionBody.Builder>body(
 						TokenBurnTransactionBody.class, b -> {
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 							b.setAmount(amount);
 						});
 		return b -> b.setTokenBurn(opBody);

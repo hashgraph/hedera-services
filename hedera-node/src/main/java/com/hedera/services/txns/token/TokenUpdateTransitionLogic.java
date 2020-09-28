@@ -77,7 +77,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 	private void transitionFor(TokenUpdateTransactionBody op) {
 		var id = store.resolve(op.getToken());
 		if (id == MISSING_TOKEN) {
-			txnCtx.setStatus(INVALID_TOKEN_REF);
+			txnCtx.setStatus(INVALID_TOKEN_ID);
 			return;
 		}
 

@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -155,10 +154,6 @@ public class TxnUtils {
 
 	public static TokenID asTokenId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
-	}
-
-	public static TokenRef asRef(TokenID id) {
-		return TokenRef.newBuilder().setTokenId(id).build();
 	}
 
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {
@@ -352,13 +347,9 @@ public class TxnUtils {
 	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
 		return xfers.getTokenTransfersList().stream()
 				.map(scopedXfers -> String.format("%s(%s)",
-						readableRef(scopedXfers.getToken()),
+						asTokenString(scopedXfers.getToken()),
 						readableTransferList(scopedXfers.getTransfersList())))
 				.collect(joining(", "));
-	}
-
-	public static String readableRef(TokenRef tr) {
-		return tr.hasTokenId() ? asTokenString(tr.getTokenId()) : tr.getSymbol();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {

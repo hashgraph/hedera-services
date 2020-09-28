@@ -100,7 +100,6 @@ public class CryptoCreatePerformance {
       nodeAccount = Utilities.getDefaultNodeAccount();
     }
 
-   // = properties.getProperty("host");
     int port = Integer.parseInt(properties.getProperty("port"));
     log.info("Connecting host = " + host + "; port = " + port);
     int numTransfer = 1000000;
@@ -149,7 +148,6 @@ public class CryptoCreatePerformance {
       signTransaction = TransactionSigner
           .signTransaction(transaction, Collections.singletonList(genesisPrivateKey));
 
-     // StopWatch stopWatch = new Log4JStopWatch("RoundTrip:createAccount");
       TransactionResponse response = stub.createAccount(signTransaction);
       Assert.assertNotNull(response);
       if(ResponseCodeEnum.OK == response.getNodeTransactionPrecheckCode()){

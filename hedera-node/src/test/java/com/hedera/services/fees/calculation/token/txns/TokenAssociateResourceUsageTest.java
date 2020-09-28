@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.fcmap.FCMap;
@@ -69,8 +69,8 @@ class TokenAssociateResourceUsageTest {
 	BiFunction<TransactionBody, SigUsage, TokenAssociateUsage> factory;
 
 	long expiry = 1_234_567L;
-	TokenRef firstRef = TokenRef.newBuilder().setSymbol("TARGET").build();
-	TokenRef secondRef = TokenRef.newBuilder().setSymbol("TEGRAT").build();
+	TokenID firstToken = IdUtils.asToken("0.0.123");
+	TokenID secondToken = IdUtils.asToken("0.0.124");
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -86,8 +86,8 @@ class TokenAssociateResourceUsageTest {
 		given(tokenAssociateTxn.getTokenAssociate())
 				.willReturn(TokenAssociateTransactionBody.newBuilder()
 						.setAccount(IdUtils.asAccount("1.2.3"))
-						.addTokens(firstRef)
-						.addTokens(secondRef)
+						.addTokens(firstToken)
+						.addTokens(secondToken)
 						.build());
 
 		nonTokenAssociateTxn = mock(TransactionBody.class);

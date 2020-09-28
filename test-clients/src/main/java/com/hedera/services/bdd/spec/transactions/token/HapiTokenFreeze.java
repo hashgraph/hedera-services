@@ -82,7 +82,7 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
 				.<TokenFreezeAccountTransactionBody, TokenFreezeAccountTransactionBody.Builder>body(
 						TokenFreezeAccountTransactionBody.class, b -> {
 							b.setAccount(aId);
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 						});
 		return b -> b.setTokenFreeze(opBody);
 	}

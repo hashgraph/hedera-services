@@ -37,7 +37,7 @@ import java.util.Optional;
 
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_REF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -72,9 +72,9 @@ public class GetTokenInfoAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var ref = query.getTokenGetInfo().getToken();
+		var token = query.getTokenGetInfo().getToken();
 
-		return view.tokenExists(ref) ? OK : INVALID_TOKEN_REF;
+		return view.tokenExists(token) ? OK : INVALID_TOKEN_ID;
 	}
 
 	@Override
@@ -130,7 +130,7 @@ public class GetTokenInfoAnswer implements AnswerService {
 		if (queryCtx.isPresent()) {
 			var ctx = queryCtx.get();
 			if (!ctx.containsKey(TOKEN_INFO_CTX_KEY)) {
-				response.setHeader(answerOnlyHeader(INVALID_TOKEN_REF));
+				response.setHeader(answerOnlyHeader(INVALID_TOKEN_ID));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
 				response.setTokenInfo((TokenInfo)ctx.get(TOKEN_INFO_CTX_KEY));
@@ -138,7 +138,7 @@ public class GetTokenInfoAnswer implements AnswerService {
 		} else {
 			var info = view.infoForToken(op.getToken());
 			if (info.isEmpty()) {
-				response.setHeader(answerOnlyHeader(INVALID_TOKEN_REF));
+				response.setHeader(answerOnlyHeader(INVALID_TOKEN_ID));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
 				response.setTokenInfo(info.get());
