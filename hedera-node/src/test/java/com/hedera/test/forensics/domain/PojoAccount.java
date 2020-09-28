@@ -67,8 +67,8 @@ public class PojoAccount {
 	private long autoRenewPeriod;
 	private long sendThreshold;
 	private long receiveThreshold;
-	private List<PojoRecord> records = Collections.EMPTY_LIST;
-	private List<PojoRecord> payerRecords = Collections.EMPTY_LIST;
+	private List<PojoRecord> records = Collections.emptyList();
+	private List<PojoRecord> payerRecords = Collections.emptyList();
 	private String id;
 	private String proxyId = "0.0.0";
 	private String memo;
