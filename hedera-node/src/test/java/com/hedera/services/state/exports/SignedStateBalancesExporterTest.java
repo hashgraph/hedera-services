@@ -238,7 +238,7 @@ class SignedStateBalancesExporterTest {
 		var lines = Files.readAllLines(Paths.get(loc));
 		var expected = theExpectedBalances();
 		assertEquals(expected.size() + 3, lines.size());
-		assertEquals(String.format("# 0.1.0", now), lines.get(0));
+		assertEquals(String.format("# " + SignedStateBalancesExporter.CURRENT_VERSION, now), lines.get(0));
 		assertEquals(String.format("# TimeStamp:%s", now), lines.get(1));
 		assertEquals("shardNum,realmNum,accountNum,balance,tokenBalances", lines.get(2));
 		for (int i = 0; i < expected.size(); i++) {

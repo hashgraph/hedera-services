@@ -65,6 +65,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '%s'!";
 	static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '%s'!";
 	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '%s'.";
+	static final String CURRENT_VERSION = "version:2";
+
 	static final Instant NEVER = null;
 	static final Base64.Encoder encoder = Base64.getEncoder();
 
@@ -169,7 +171,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	private void addRelease090Header(Writer writer, Instant at) throws IOException {
-		writer.write("# 0.1.0" + LINE_SEPARATOR);
+		writer.write("# " + CURRENT_VERSION + LINE_SEPARATOR);
 		writer.write(String.format("# TimeStamp:%s%s", at, LINE_SEPARATOR));
 		writer.write("shardNum,realmNum,accountNum,balance,tokenBalances" + LINE_SEPARATOR);
 	}
