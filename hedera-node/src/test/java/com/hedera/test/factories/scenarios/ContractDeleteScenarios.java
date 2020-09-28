@@ -26,10 +26,21 @@ import static com.hedera.test.factories.txns.ContractDeleteFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum ContractDeleteScenarios implements TxnHandlingScenario {
-	CONTRACT_DELETE_SCENARIO {
+	CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
-					newSignedContractDelete(MISC_CONTRACT_ID).get()
+					newSignedContractDelete(MISC_CONTRACT_ID)
+							.withBeneficiary(RECEIVER_SIG)
+							.get()
+			));
+		}
+	},
+	CONTRACT_DELETE_XFER_CONTRACT_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedContractDelete(MISC_CONTRACT_ID)
+							.withBeneficiary(MISC_RECIEVER_SIG_CONTRACT)
+							.get()
 			));
 		}
 	}

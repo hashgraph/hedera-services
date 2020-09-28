@@ -22,7 +22,6 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
-import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;

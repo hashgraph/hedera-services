@@ -76,6 +76,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportBalances());
 		assertEquals(13L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
+		assertTrue(subject.shouldExportTokenBalances());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -109,6 +110,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.shouldExportBalances());
 		assertEquals(14L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
+		assertFalse(subject.shouldExportTokenBalances());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -127,5 +129,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("balances.exportEnabled")).willReturn((i + 11) % 2 == 0);
 		given(properties.getLongProperty("balances.nodeBalanceWarningThreshold")).willReturn(i + 12L);
 		given(properties.getStringProperty("balances.exportDir.path")).willReturn(balanceExportPaths[i % 2]);
+		given(properties.getBooleanProperty("balances.exportTokenBalances")).willReturn((i + 13) % 2 == 0);
 	}
 }

@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.context;
 
 /*-
  * ‌
@@ -20,19 +20,19 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractID;
+import com.swirlds.common.PlatformStatus;
+import static com.swirlds.common.PlatformStatus.*;
 
-public class AdminKeyNotExistException extends Exception {
-	private static final long serialVersionUID = 1L;
+public class ContextPlatformStatus implements CurrentPlatformStatus {
+	private PlatformStatus current = STARTING_UP;
 
-	private ContractID contractId;
-
-	public AdminKeyNotExistException(String message, ContractID contractId) {
-		super(message);
-		this.contractId = contractId;
+	@Override
+	public synchronized void set(PlatformStatus status) {
+		current = status;
 	}
 
-	public ContractID getContractId() {
-		return contractId;
+	@Override
+	public synchronized PlatformStatus get() {
+		return current;
 	}
 }

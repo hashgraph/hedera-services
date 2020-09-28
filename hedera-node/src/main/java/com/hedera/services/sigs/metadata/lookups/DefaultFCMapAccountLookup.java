@@ -24,7 +24,6 @@ import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.function.Supplier;
