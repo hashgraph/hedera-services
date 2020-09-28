@@ -1057,6 +1057,8 @@ class HederaTokenStoreTest {
 	public void updateHappyPathIgnoresZeroExpiry() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
+		Set<TokenID> tokenSet = new HashSet<>();
+		tokenSet.add(misc);
 
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
@@ -1071,7 +1073,9 @@ class HederaTokenStoreTest {
 		// then:
 		assertEquals(OK, outcome);
 		verify(token, never()).setExpiry(anyLong());
-
+		// and:
+		assertFalse(subject.knownTreasuries.containsKey(treasury));
+		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
 	}
 
 	@Test
