@@ -532,7 +532,8 @@ public class UtilVerbs {
 			List<AccountAmount> transfers = new ArrayList<>();
 
 			for (String txn : txns) {
-				HapiGetTxnRecord subOp = getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL);
+				HapiGetTxnRecord subOp = getTxnRecord(txn).logged()
+						.payingWith(EXCHANGE_RATE_CONTROL);
 				allRunFor(spec, subOp);
 				TransactionRecord record = subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
 				transfers.addAll(record.getTransferList().getAccountAmountsList());

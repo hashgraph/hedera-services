@@ -21,6 +21,7 @@ package com.hedera.services.sigs.sourcing;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
@@ -65,7 +66,7 @@ public class SigMapPubKeyToSigBytesTest {
 		PubKeyToSigBytes subject = PubKeyToSigBytes.forPayer(signedTxn);
 
 		// expect:
-		lookupsMatch(payerKt, defaultFactory, signedTxn.getBodyBytes().toByteArray(), subject);
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 	}
 
 	@Test
@@ -78,7 +79,7 @@ public class SigMapPubKeyToSigBytesTest {
 		PubKeyToSigBytes subject = PubKeyToSigBytes.forOtherParties(signedTxn);
 
 		// expect:
-		lookupsMatch(otherKt, defaultFactory, signedTxn.getBodyBytes().toByteArray(), subject);
+		lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 	}
 
 	@Test
@@ -91,8 +92,8 @@ public class SigMapPubKeyToSigBytesTest {
 		PubKeyToSigBytes subject = PubKeyToSigBytes.forAllParties(signedTxn);
 
 		// expect:
-		lookupsMatch(payerKt, defaultFactory, signedTxn.getBodyBytes().toByteArray(), subject);
-		lookupsMatch(otherKt, defaultFactory, signedTxn.getBodyBytes().toByteArray(), subject);
+		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 	}
 
 	@Test
@@ -104,7 +105,7 @@ public class SigMapPubKeyToSigBytesTest {
 
 		// expect:
 		assertThrows(KeyPrefixMismatchException.class, () -> {
-			lookupsMatch(payerKt, overlapFactory, signedTxn.getBodyBytes().toByteArray(), subject);
+			lookupsMatch(payerKt, overlapFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 		});
 	}
 

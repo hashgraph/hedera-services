@@ -22,7 +22,6 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -93,7 +92,7 @@ public class AwareTransactionContext implements TransactionContext {
 		this.submittingMember = submittingMember;
 
 		otherNonThresholdFees = 0L;
-		hash = MiscUtils.sha384HashOf(accessor);
+		hash = accessor.getHash();
 		statusSoFar = UNKNOWN;
 		consensusTimestamp = asTimestamp(consensusTime);
 		recordConfig = noopRecordConfig;

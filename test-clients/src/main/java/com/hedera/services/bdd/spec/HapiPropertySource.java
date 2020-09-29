@@ -105,6 +105,9 @@ public interface HapiPropertySource {
 	default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
 		return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
 	}
+	default HapiSpecSetup.TxnConfig getTxnConfig(String property) {
+		return HapiSpecSetup.TxnConfig.valueOf(get(property).toUpperCase());
+	}
 	default HapiSpecSetup.NodeSelection getNodeSelector(String property) {
 		return HapiSpecSetup.NodeSelection.valueOf(get(property).toUpperCase());
 	}

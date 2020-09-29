@@ -54,16 +54,15 @@ public class ClientManager {
     final String host = args[2];
     final int port = Integer.parseInt(args[3]);
     final long nodeAccountNumber = Integer.parseInt(args[4]);
-    boolean useSigMap = Boolean.parseBoolean(args[5]);
 
     ClientBaseThread[] threadClients = new ClientBaseThread[numberOfThreads];
 
     // remained arguments are passed to instantiated test
-    String [] threadArgs = Arrays.copyOfRange(args, 6, args.length);
+    String [] threadArgs = Arrays.copyOfRange(args, 5, args.length);
 
     // Dynamically instantiate test case thread and pass arguments to it
     for (int k = 0; k < numberOfThreads; k++){
-      threadClients[k] = (ClientBaseThread) constructor[0].newInstance(host, port, nodeAccountNumber, useSigMap, threadArgs, k);
+      threadClients[k] = (ClientBaseThread) constructor[0].newInstance(host, port, nodeAccountNumber, threadArgs, k);
       threadClients[k].setName("thread" + k);
     }
 

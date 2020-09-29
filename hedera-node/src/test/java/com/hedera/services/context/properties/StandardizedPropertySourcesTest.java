@@ -236,7 +236,6 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("grpc.port"));
 		assertTrue(properties.containsProperty("hedera.accountsExportPath"));
 		assertTrue(properties.containsProperty("hedera.exportAccountsOnStartup"));
-		assertTrue(properties.containsProperty("hedera.exportBalancesOnNewSignedState"));
 		assertTrue(properties.containsProperty("hedera.profiles.active"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logDir"));
 		assertTrue(properties.containsProperty("hedera.recordStream.logPeriod"));

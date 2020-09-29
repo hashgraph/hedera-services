@@ -22,7 +22,6 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.unit.handler.FileServiceHandler;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
@@ -33,7 +32,6 @@ import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import com.swirlds.fcmap.FCMap;
 

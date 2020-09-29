@@ -21,8 +21,10 @@ package com.hedera.services.legacy.unit;
  */
 
 
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.handler.FreezeHandler;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -37,6 +39,7 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.BeforeClass;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.platform.runner.JUnitPlatform;
@@ -58,12 +61,13 @@ import static org.mockito.BDDMockito.*;
 @RunWith(JUnitPlatform.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FreezeHandlerTest {
+	Instant consensusTime;
+	HederaFs hfs;
 	Platform platform;
 	FreezeHandler freezeHandler;
-	Instant consensusTime;
-	private HederaFs hfs;
+	ExchangeRateSet rates;
+	HbarCentExchange exchange;
 
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = null;
 	@BeforeAll
 	@BeforeClass
 	public static void setupAll() {
@@ -75,11 +79,19 @@ public class FreezeHandlerTest {
 		consensusTime = new Date().toInstant();
 	}
 
+	@BeforeEach
+	void setUp() {
+		hfs = mock(HederaFs.class);
+		rates = mock(ExchangeRateSet.class);
+		exchange = mock(HbarCentExchange.class);
+		given(exchange.activeRates()).willReturn(rates);
+		platform = Mockito.mock(Platform.class);
+
+		freezeHandler = new FreezeHandler(hfs, platform, exchange);
+	}
+
 	@Test
 	public void freezeTest() throws Exception {
-		hfs = mock(HederaFs.class);
-		platform = Mockito.mock(Platform.class);
-		freezeHandler = new FreezeHandler(hfs, platform);
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
@@ -88,10 +100,7 @@ public class FreezeHandlerTest {
 
 	@Test
 	public void freeze_InvalidFreezeTxBody_Test() throws Exception {
-		hfs = mock(HederaFs.class);
-		platform = Mockito.mock(Platform.class);
 		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
-		freezeHandler = new FreezeHandler(hfs, platform);
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
@@ -102,10 +111,6 @@ public class FreezeHandlerTest {
 	public void freeze_updateFeature() throws Exception {
 		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
 		byte[] data = Files.readAllBytes(Paths.get(zipFile));
-
-		hfs = mock(HederaFs.class);
-		platform = Mockito.mock(Platform.class);
-		freezeHandler = new FreezeHandler(hfs, platform);
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(2000L).build();
 
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID);

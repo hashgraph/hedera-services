@@ -42,6 +42,7 @@ public class GlobalDynamicProperties {
 	private String pathToBalancesExportDir;
 	private boolean shouldCreateThresholdRecords;
 	private boolean shouldExportBalances;
+	private boolean shouldExportTokenBalances;
 	private AccountID fundingAccount;
 
 	public GlobalDynamicProperties(
@@ -75,6 +76,7 @@ public class GlobalDynamicProperties {
 		shouldExportBalances = properties.getBooleanProperty("balances.exportEnabled");
 		nodeBalanceWarningThreshold = properties.getLongProperty("balances.nodeBalanceWarningThreshold");
 		pathToBalancesExportDir = properties.getStringProperty("balances.exportDir.path");
+		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -139,5 +141,9 @@ public class GlobalDynamicProperties {
 
 	public String pathToBalancesExportDir() {
 		return pathToBalancesExportDir;
+	}
+
+	public boolean shouldExportTokenBalances() {
+		return shouldExportTokenBalances;
 	}
 }

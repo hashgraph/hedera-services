@@ -41,10 +41,12 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -64,6 +66,7 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -83,7 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -108,6 +111,8 @@ public class HederaTokenStore implements TokenStore {
 	private HederaLedger hederaLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
+
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
@@ -123,6 +128,10 @@ public class HederaTokenStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
+
+		tokens.get().forEach((key, value) -> {
+			addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
+		});
 	}
 
 	@Override
@@ -182,6 +191,9 @@ public class HederaTokenStore implements TokenStore {
 			for (TokenID tId : tokenIds) {
 				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+				}
+				if (isTreasuryForToken(aId, tId)) {
+					return ACCOUNT_IS_TREASURY;
 				}
 				var relationship = asTokenRel(aId, tId);
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
@@ -384,6 +396,28 @@ public class HederaTokenStore implements TokenStore {
 		return success(pendingId);
 	}
 
+
+	public void addKnownTreasury(AccountID aId, TokenID tId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			knownTreasuries.put(aId, new HashSet<>());
+		}
+		knownTreasuries.get(aId).add(tId);
+	}
+
+	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+		throwIfKnownTreasuryIsMissing(aId);
+		knownTreasuries.get(aId).remove(tId);
+		if (knownTreasuries.get(aId).isEmpty()) {
+			knownTreasuries.remove(aId);
+		}
+	}
+
+	private void throwIfKnownTreasuryIsMissing(AccountID aId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			throw new IllegalArgumentException(String.format("No such known treasury '%s'!", readableId(aId)));
+		}
+	}
+
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
 		if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
@@ -417,6 +451,7 @@ public class HederaTokenStore implements TokenStore {
 		throwIfNoCreationPending();
 
 		tokens.get().put(fromTokenId(pendingId), pendingCreation);
+		addKnownTreasury(pendingCreation.treasury().toGrpcAccountId(), pendingId);
 
 		resetPendingCreation();
 	}
@@ -477,7 +512,7 @@ public class HederaTokenStore implements TokenStore {
 				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
 			}
 			if (!token.hasAdminKey() && !isExpiryOnly) {
-				appliedValidity.set(TOKEN_IS_IMMUTABlE);
+				appliedValidity.set(TOKEN_IS_IMMUTABLE);
 			}
 			if (OK != appliedValidity.get()) {
 				return;
@@ -515,7 +550,9 @@ public class HederaTokenStore implements TokenStore {
 			}
 			if (changes.hasTreasury()) {
 				var treasuryId = ofNullableAccountId(changes.getTreasury());
+				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
+				addKnownTreasury(changes.getTreasury(), tId);
 			}
 			if (changes.getExpiry() != 0) {
 				token.setExpiry(changes.getExpiry());
@@ -576,6 +613,19 @@ public class HederaTokenStore implements TokenStore {
 		if (!exists(id)) {
 			throw new IllegalArgumentException(String.format("No such token '%s'!", readableId(id)));
 		}
+	}
+
+
+	public boolean isKnownTreasury(AccountID aid) {
+		return knownTreasuries.containsKey(aid);
+	}
+
+	@Override
+	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			return false;
+		}
+		return knownTreasuries.get(aId).contains(tId);
 	}
 
 	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {

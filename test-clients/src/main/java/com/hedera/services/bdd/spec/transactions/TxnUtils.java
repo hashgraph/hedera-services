@@ -179,7 +179,7 @@ public class TxnUtils {
 
 	public static String getTxnIDandType(Transaction txn) {
 		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShortTxnID(txn);
+			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableTransactionID(txn);
 		} catch (InvalidProtocolBufferException e) {
 			log.error("Got Grpc protocol buffer error: ", e);
 		}

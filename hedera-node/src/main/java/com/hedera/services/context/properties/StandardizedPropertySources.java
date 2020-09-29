@@ -199,7 +199,6 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("dev.onlyDefaultNodeListens", () -> getUniqueListeningPortFlag() != 1);
 		source.put("hedera.accountsExportPath", PropertiesLoader::getExportedAccountPath);
 		source.put("hedera.exportAccountsOnStartup", () -> getSaveAccounts().equals("YES"));
-		source.put("hedera.exportBalancesOnNewSignedState", PropertiesLoader::isAccountBalanceExportEnabled);
 		source.put("iss.reset.periodSecs", () -> ISS_RESET_PERIOD_SECS);
 		source.put("iss.roundsToDump", () -> ISS_ROUNDS_TO_DUMP);
 

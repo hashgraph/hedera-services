@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -42,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 import java.time.Instant;
@@ -91,8 +89,6 @@ public class TransferListSizeTest {
   AccountID feeCollAccountId;
   protected FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
   public long TX_DURATION_SEC = 2 * 60; // 2 minutes for tx dedup
-  protected SignatureList signatures = SignatureList.newBuilder()
-      .getDefaultInstanceForType();
   protected Duration transactionDuration = Duration.newBuilder().setSeconds(TX_DURATION_SEC)
       .build();
   protected long MAX_FEE = 100L;
@@ -142,15 +138,15 @@ public class TransferListSizeTest {
     AccountID[] payerAccounts = accountCreatBatch(toAccountCount + 2);
     AccountID payerID = payerAccounts[0];
     AccountID nodeID = nodeAccountId;
-  
+
     AccountID fromID = payerAccounts[1];
     Assert.assertNotNull(fromID);
-  
+
     AccountID[] toIDs = new AccountID[toAccountCount];
-  
+
     System.arraycopy(payerAccounts, 2, toIDs, 0, toAccountCount);
     Arrays.stream(toIDs).forEach(a -> Assert.assertNotNull(a));
-  
+
     // positive scenario transfer with one from and one to accounts, verify the balance change
     long amount = 100L;
     TransactionReceipt receipt = null;
@@ -176,13 +172,13 @@ public class TransferListSizeTest {
       for (int i = 0; i < toAccBalPost.length; i++) {
         toAccBalPost[i] = getBalance(toIDs[i]);
       }
-  
+
       long fromBalPost = getBalance(fromID);
       Assert.assertEquals(fromBalPost, fromBalPre + amountsList[0]);
       for (int i = 0; i < toAccBal.length; i++) {
         Assert.assertEquals(toAccBalPost[i], toAccBal[i] + amountsList[i + 1]);
       }
-  
+
       log.info(LOG_PREFIX + "cryptoTransferTestsWithVariableAccountAmounts: PASSED! :)");
     } else {
       Assert.assertEquals(ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
@@ -281,14 +277,14 @@ public class TransferListSizeTest {
           AccountAmount.newBuilder().setAccountID(accs[i]).setAmount(amts[i]).build();
       accountAmountsMod.add(aa1);
     }
-  
+
     Transaction transferTx =
         getUnSignedTransferTx(payerID, nodeID, accs[0], accs[1], 100L, "Transfer");
     com.hederahashgraph.api.proto.java.TransactionBody.Builder txBodyBuilder =
         CommonUtils.extractTransactionBody(transferTx).toBuilder();
     Builder transferListBuilder =
         com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody.newBuilder();
-  
+
     TransferList transferListMod =
         TransferList.newBuilder().addAllAccountAmounts(accountAmountsMod).build();
     transferListBuilder.setTransfers(transferListMod);
@@ -333,11 +329,11 @@ public class TransferListSizeTest {
       if(amount <= 0) { // from account
         Key fromKey = ComplexKeyManager.getAccountKey(accountID);
         keys.add(fromKey);
-      } 
+      }
     }
-    
+
     Transaction paymentTxSigned = TransactionSigner
-        .signTransactionComplex(unSignedTransferTx, keys, ComplexKeyManager.getPubKey2privKeyMap());
+        .signTransactionComplexWithSigMap(unSignedTransferTx, keys, ComplexKeyManager.getPubKey2privKeyMap());
     return paymentTxSigned;
   }
 
@@ -347,13 +343,13 @@ public class TransferListSizeTest {
   protected Transaction getUnSignedTransferTx(AccountID payerAccountID,
       AccountID nodeAccountID,
       AccountID fromAccountID, AccountID toAccountID, long amount, String memo) throws Exception {
-  
+
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccountID.getAccountNum(),
         payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
         nodeAccountID.getRealmNum(), nodeAccountID.getShardNum(), MAX_FEE, timestamp,
         transactionDuration, true,
-        memo, signatures, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
+        memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
         amount);
     return transferTx;
   }

@@ -110,10 +110,6 @@ public class PropertiesLoader {
 
 	public static int getTokenTransfersListSize() { return SyncPropertiesObject.getTokenTransfersListSizeLimit(); }
 
-	public static long getInitialGenesisCoins() {
-		return SyncPropertiesObject.getInitialGenesisCoins();
-	}
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}
@@ -156,22 +152,6 @@ public class PropertiesLoader {
 
 	public static String getRecordLogDir() {
 		return AsyncPropertiesObject.getRecordLogDir();
-	}
-
-	public static boolean isAccountBalanceExportEnabled() {
-		return AsyncPropertiesObject.isAccountBalanceExportEnabled();
-	}
-
-	public static String getAccountBalanceExportDir() {
-		return AsyncPropertiesObject.getAccountBalanceExportDir();
-	}
-
-	public static long accountBalanceExportPeriodMinutes() {
-		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
-	}
-
-	public static long getNodeAccountBalanceValidity() {
-		return SyncPropertiesObject.getNodeAccountBalanceValidity();
 	}
 
 	public static int getRecordStreamQueueCapacity() {

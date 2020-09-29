@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -331,9 +332,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		final Timestamp expiry = TxnUtils.inConsensusOrder(oldExpiry, newExpiry) ? newExpiry : oldExpiry;
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
 				fileFees.getFileUpdateTxFeeMatrices(txBody, expiry, sigUsage);
-		var saferTxnBuilder = TransactionBody.parseFrom(txn.getBodyBytes()).toBuilder();
+		var saferTxnBuilder = CommonUtils.extractTransactionBody(txn).toBuilder();
 		saferTxnBuilder.getFileUpdateBuilder().setContents(RANDOM_4K);
-		final var saferTxn = txn.toBuilder().setBody(saferTxnBuilder).build();
+		final var saferTxn = txn.toBuilder().setBodyBytes(saferTxnBuilder.build().toByteString()).build();
 		return spec.fees().forActivityBasedOp(HederaFunctionality.FileUpdate, metricsCalc, saferTxn, numPayerKeys);
 	}
 

@@ -54,7 +54,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -68,8 +67,8 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.legacy.exception.StorageKeyNotFoundException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.legacy.unit.StorageKeyNotFoundException;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.legacy.unit.PropertyLoaderTest;
@@ -272,12 +271,11 @@ public class SmartContractRequestHandlerMiscTest {
     Duration transactionDuration = RequestBuilder.getDuration(100);
     boolean generateRecord = true;
     String memo = "SmartContractFile";
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction txn = RequestBuilder.getFileCreateBuilder(payerAccount, 0L, 0L,
         nodeAccount, 0L, 0L,
         100L, startTime, transactionDuration, generateRecord,
-        memo, signatures, fileData, expTime, Collections.emptyList());
+        memo, fileData, expTime, Collections.emptyList());
 
     TransactionBody body = null;
     try {
@@ -310,13 +308,12 @@ public class SmartContractRequestHandlerMiscTest {
     boolean generateRecord = true;
     String memo = "SmartContract";
     String sCMemo = "SmartContractMemo";
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction txn = RequestBuilder.getCreateContractRequest(payerAccount, 0L, 0L,
         nodeAccount, 0L, 0L,
         100L, startTime, transactionDuration, generateRecord,
         memo, gas, contractFileId, ByteString.EMPTY, initialBalance,
-        renewalDuration, signatures, sCMemo, adminKey);
+        renewalDuration, sCMemo, adminKey);
 
     TransactionBody body = null;
     try {
@@ -374,13 +371,12 @@ public class SmartContractRequestHandlerMiscTest {
     Timestamp startTime = RequestBuilder
         .getTimestamp(Instant.now(Clock.systemUTC()));
     Duration transactionDuration = RequestBuilder.getDuration(100);
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction txn = RequestBuilder.getContractCallRequest(payerAccount, 0L, 0L,
         nodeAccount, 0L, 0L,
         100L /* fee */, startTime,
         transactionDuration, gas, newContractId,
-        functionData, value, signatures);
+        functionData, value);
 
     TransactionBody body = null;
     try {

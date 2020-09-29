@@ -95,8 +95,7 @@ public class BootstrapProperties implements PropertySource {
 				.stream()
 				.forEach(prop -> bootstrapProps.put(
 						prop,
-						PROP_TRANSFORMS.getOrDefault(prop, s -> s)
-								.apply(resourceProps.getProperty(prop))));
+						transformFor(prop).apply(resourceProps.getProperty(prop))));
 
 		var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
@@ -174,7 +173,6 @@ public class BootstrapProperties implements PropertySource {
 			"accounts.systemDeleteAdmin",
 			"accounts.systemUndeleteAdmin",
 			"accounts.treasury",
-			"balances.exportDir.path",
 			"files.addressBook",
 			"files.networkProperties",
 			"files.exchangeRates",
@@ -189,8 +187,10 @@ public class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"balances.exportDir.path",
 			"balances.exportEnabled",
 			"balances.exportPeriodSecs",
+			"balances.exportTokenBalances",
 			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultReceiveThreshold",
@@ -219,6 +219,10 @@ public class BootstrapProperties implements PropertySource {
 					.flatMap(Set::stream)
 					.collect(toSet()));
 
+	public static Function<String, Object> transformFor(String prop) {
+		return PROP_TRANSFORMS.getOrDefault(prop, AS_STRING);
+	}
+
 	static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
 			entry("accounts.exchangeRatesAdmin", AS_LONG),
@@ -234,6 +238,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("balances.exportPeriodSecs", AS_INT),
 			entry("balances.nodeBalanceWarningThreshold", AS_LONG),
 			entry("cache.records.ttl", AS_INT),
+			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),

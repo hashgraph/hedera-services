@@ -21,6 +21,7 @@ package com.hedera.test.factories.sigs;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -68,18 +69,6 @@ public class SigFactory {
 		}
 	}
 
-	public Transaction signWithSigList(Transaction.Builder txn, List<KeyTree> signers) {
-		return signWithSigList(txn, signers, KeyFactory.getDefaultInstance());
-	}
-	public Transaction signWithSigList(Transaction.Builder txn, List<KeyTree> signers, KeyFactory factory) {
-		final byte[] data = txn.getBodyBytes().toByteArray();
-
-		SignatureList.Builder sigList = SignatureList.newBuilder();
-		signers.stream().forEach(kt -> sigList.addSigs(asHederaSignature(kt.getRoot(), data, factory)));
-		txn.setSigs(sigList.build());
-
-		return txn.build();
-	}
 	private Signature asHederaSignature(KeyTreeNode node, byte[] data, KeyFactory factory) {
 		if (node instanceof KeyTreeLeaf) {
 			@SuppressWarnings("unchecked")
@@ -138,7 +127,7 @@ public class SigFactory {
 			List<KeyTree> signers,
 			KeyFactory factory
 	) throws Throwable {
-		SimpleSigning signing = new SimpleSigning(txn.getBodyBytes().toByteArray(), signers, factory);
+		SimpleSigning signing = new SimpleSigning(CommonUtils.extractTransactionBodyBytes(txn), signers, factory);
 		List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
 		txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
 		return txn.build();

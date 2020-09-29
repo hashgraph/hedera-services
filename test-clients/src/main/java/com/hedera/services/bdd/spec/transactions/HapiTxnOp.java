@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.transactions;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.keys.SigStyle;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -444,7 +443,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T via(String name) {
 		txnName = name;
-		shouldRegisterTxnId = true;
+		shouldRegisterTxn = true;
 		return self();
 	}
 
@@ -510,11 +509,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T sigMapPrefixes(SigMapGenerator.Nature nature) {
 		sigMapGen = Optional.of(nature);
-		return self();
-	}
-
-	public T sigStyle(SigStyle style) {
-		useLegacySignature = (style == SigStyle.LIST);
 		return self();
 	}
 
@@ -590,6 +584,21 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
 	public T usePresetTimestamp() {
 		usePresetTimestamp = true;
+		return self();
+	}
+
+	public T asTxnWithOnlySigMap() {
+		asTxnWithOnlySigMap = true;
+		return self();
+	}
+
+	public T asTxnWithSignedTxnBytesAndSigMap() {
+		asTxnWithSignedTxnBytesAndSigMap = true;
+		return self();
+	}
+
+	public T asTxnWithSignedTxnBytesAndBodyBytes() {
+		asTxnWithSignedTxnBytesAndBodyBytes = true;
 		return self();
 	}
 }

@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
@@ -101,7 +101,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		MerkleToken token = store.get(id);
 
 		if (token.adminKey().isEmpty() && !affectsExpiryOnly.test(op)) {
-			txnCtx.setStatus(TOKEN_IS_IMMUTABlE);
+			txnCtx.setStatus(TOKEN_IS_IMMUTABLE);
 			return;
 		}
 

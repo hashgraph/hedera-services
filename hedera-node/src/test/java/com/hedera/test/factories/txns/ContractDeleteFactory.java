@@ -24,6 +24,7 @@ import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -39,12 +40,24 @@ import static com.hedera.test.utils.IdUtils.asFile;
 
 public class ContractDeleteFactory extends SignedTxnFactory<ContractDeleteFactory> {
 	private final String contract;
+	private Optional<AccountID> transferAccount = Optional.empty();
+	private Optional<ContractID> transferContract = Optional.empty();
 
 	public ContractDeleteFactory(String contract) {
 		this.contract = contract;
 	}
 	public static ContractDeleteFactory newSignedContractDelete(String contract) {
 		return new ContractDeleteFactory(contract);
+	}
+
+	public ContractDeleteFactory withBeneficiary(AccountID account) {
+		transferAccount = Optional.of(account);
+		return this;
+	}
+
+	public ContractDeleteFactory withBeneficiary(ContractID contract) {
+		transferContract = Optional.of(contract);
+		return this;
 	}
 
 	@Override
@@ -61,6 +74,8 @@ public class ContractDeleteFactory extends SignedTxnFactory<ContractDeleteFactor
 	protected void customizeTxn(TransactionBody.Builder txn) {
 		ContractDeleteTransactionBody.Builder op = ContractDeleteTransactionBody.newBuilder()
 				.setContractID(asContract(contract));
+		transferAccount.ifPresent(op::setTransferAccountID);
+		transferContract.ifPresent(op::setTransferContractID);
 		txn.setContractDeleteInstance(op);
 	}
 }
