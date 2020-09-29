@@ -436,7 +436,6 @@ public class TxnUtils {
 	}
 
 	public static Transaction replaceTxnPayerAccount(Transaction txn, AccountID accountID) {
-		//log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn) ));
 		Transaction newTxn = Transaction.getDefaultInstance();
 		try {
 			TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
