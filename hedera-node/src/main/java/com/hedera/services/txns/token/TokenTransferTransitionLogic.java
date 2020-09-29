@@ -37,6 +37,7 @@ import static com.hedera.services.txns.validation.TokenChecks.checkTokenTransfer
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 
 public class TokenTransferTransitionLogic implements TransitionLogic {
@@ -79,7 +80,10 @@ public class TokenTransferTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenTransfersTransactionBody op = txnBody.getTokenTransfers();
 
-		// TODO: Check TokenTransferList MaxAmount
+		if (!validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList())) {
+			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+		}
+
 		return checkTokenTransfers(op.getTokenTransfersList());
 	}
 }

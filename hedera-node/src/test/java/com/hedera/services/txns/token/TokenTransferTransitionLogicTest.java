@@ -46,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,6 +82,7 @@ class TokenTransferTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 
 		txnCtx = mock(TransactionContext.class);
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(true);
 
 		subject = new TokenTransferTransitionLogic(ledger, validator, txnCtx);
 	}
@@ -140,6 +142,15 @@ class TokenTransferTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsIncorrectTransfersLength() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(false);
+
+		// expect:
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(tokenTransactTxn));
 	}
 
 	@Test

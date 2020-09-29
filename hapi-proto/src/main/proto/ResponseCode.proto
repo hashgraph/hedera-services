@@ -208,4 +208,5 @@ enum ResponseCodeEnum {
   TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT = 194; // An <tt>associateToken</tt> operation specified a token already associated to the account
   TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES = 195; // An attempted operation is invalid until all token balances for the target account are zero
   TOKEN_ID_REPEATED_IN_TOKEN_LIST = 196; // Same TokenIDs present in the token list
+  TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED = 197; // Exceeded the number of token transfers (both from and to) allowed for token transfer list
 }

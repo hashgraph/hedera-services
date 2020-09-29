@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
@@ -37,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
@@ -107,6 +109,31 @@ public class ContextOptionValidator implements OptionValidator {
 		int maxLen = properties.getIntProperty("ledger.transfers.maxLen");
 
 		return accountAmounts.getAccountAmountsCount() <= maxLen;
+	}
+
+	@Override
+	public boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
+		int maxLen = properties.getIntProperty("ledger.token.transfers.maxLen");
+
+		if (tokenTransferLists.size() > maxLen) {
+			return false;
+		}
+
+		int count = 0;
+		for (var tokenTransferList : tokenTransferLists) {
+			int transferCounts = tokenTransferList.getTransfersCount();
+			if (transferCounts == 0) {
+				return false;
+			}
+
+			count += transferCounts;
+
+			if (count > maxLen) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override

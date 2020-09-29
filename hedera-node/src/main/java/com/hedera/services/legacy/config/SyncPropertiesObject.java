@@ -45,6 +45,7 @@ public class SyncPropertiesObject {
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
 
 	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
+	private static int tokenTransfersListSizeLimit = ApplicationConstants.TOKEN_TRANSFERS_LIST_LIMIT;
 
 	// if a node account's balance is less than this value tinybars, we should log
 	// Insufficient Node Balance warning;
@@ -72,6 +73,7 @@ public class SyncPropertiesObject {
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
 
 		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
+		tokenTransfersListSizeLimit = appConfig.getInt("tokenTransfersListSizeLimit", ApplicationConstants.TOKEN_TRANSFERS_LIST_LIMIT);
 
 		// if a node account's balance is less than this value tinybars, we should log
 		// Insufficient Node Balance warning;
@@ -122,6 +124,8 @@ public class SyncPropertiesObject {
 	static int getTransferListSizeLimit() {
 		return transferListSizeLimit;
 	}
+
+	static int getTokenTransfersListSizeLimit() { return tokenTransfersListSizeLimit; }
 
 	static long getNodeAccountBalanceValidity() {
 		return nodeAccountBalanceValidity;

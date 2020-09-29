@@ -108,6 +108,8 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTransferListSizeLimit();
 	}
 
+	public static int getTokenTransfersListSize() { return SyncPropertiesObject.getTokenTransfersListSizeLimit(); }
+
 	public static long getInitialGenesisCoins() {
 		return SyncPropertiesObject.getInitialGenesisCoins();
 	}

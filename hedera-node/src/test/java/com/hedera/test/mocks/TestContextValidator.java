@@ -26,12 +26,15 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.binary.StringUtils;
+
+import java.util.List;
 
 public enum TestContextValidator implements OptionValidator {
 	TEST_VALIDATOR;
@@ -74,6 +77,11 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isAcceptableLength(TransferList accountAmounts) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
 		throw new UnsupportedOperationException();
 	}
 

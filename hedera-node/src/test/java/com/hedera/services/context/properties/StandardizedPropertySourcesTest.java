@@ -31,14 +31,24 @@ import org.junit.runner.RunWith;
 import java.util.function.Predicate;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_QUERY_CAPACITY_REQUIRED_PROPERTY;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.DEFAULT_TXN_CAPACITY_REQUIRED_PROPERTY;
+import static com.hedera.services.throttling.ThrottlingPropsBuilder.asCapacityRequiredProperty;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_BURST_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_CAPACITY_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.DEFAULT_QUERY_BUCKET_PROPERTY;
+import static com.hedera.services.throttling.bucket.BucketConfig.burstProperty;
+import static com.hedera.services.throttling.bucket.BucketConfig.capacityProperty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.throttling.ThrottlingPropsBuilder.*;
-import static com.hedera.services.throttling.bucket.BucketConfig.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class StandardizedPropertySourcesTest {
@@ -241,6 +251,7 @@ public class StandardizedPropertySourcesTest {
 		assertTrue(properties.containsProperty("ledger.totalTinyBarFloat"));
 		assertTrue(properties.containsProperty("ledger.records.ttl"));
 		assertTrue(properties.containsProperty("ledger.transfers.maxLen"));
+		assertTrue(properties.containsProperty("ledger.token.transfers.maxLen"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.tps"));
 		assertTrue(properties.containsProperty("throttling.hcs.createTopic.burstPeriod"));
 		assertTrue(properties.containsProperty("throttling.hcs.updateTopic.tps"));
