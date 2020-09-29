@@ -39,7 +39,6 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @RunWith(JUnitPlatform.class)
 public class LegacyTopicsTest {
 	@Test
-	public void readFcMap() throws IOException, NoSuchAlgorithmException {
+	public void readFcMap() throws IOException {
 		// setup:
 /*
 		FCMap<MapKey, Topic> subject = new FCMap<>(MapKey::deserialize, Topic::deserialize);
@@ -107,7 +106,7 @@ public class LegacyTopicsTest {
 			new JKeyList(List.of(new JEd25519Key("AbCdEfGhIjKlMnOpQrStUvWxYz012345".getBytes())))
 	};
 
-	public static MerkleTopic topicFrom(int s) throws IOException, NoSuchAlgorithmException {
+	public static MerkleTopic topicFrom(int s) throws IOException {
 		long v = 1_234_567L + s * 1_000_000L;
 		AccountID payer = AccountID.newBuilder().setAccountNum(123).build();
 		TopicID id = TopicID.newBuilder().setTopicNum(s).build();

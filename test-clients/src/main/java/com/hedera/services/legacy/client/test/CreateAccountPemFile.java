@@ -23,7 +23,6 @@ package com.hedera.services.legacy.client.test;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.client.util.Common;
 import com.hedera.services.legacy.client.util.Ed25519KeyStore;
-import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -38,9 +37,6 @@ import org.junit.Assert;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
-import java.util.Collections;
-
-import static com.hedera.services.legacy.client.util.Common.createAccountComplex;
 
 public class CreateAccountPemFile extends ClientBaseThread {
 
@@ -57,10 +53,9 @@ public class CreateAccountPemFile extends ClientBaseThread {
 	 *
 	 * Create a batch of account, then verify transaction success or not, then repeat
 	 */
-	public CreateAccountPemFile(String host, int port, long nodeAccountNumber, boolean useSigMap, String[] args,
+	public CreateAccountPemFile(String host, int port, long nodeAccountNumber, String[] args,
 			int index) {
-		super(host, port, nodeAccountNumber, useSigMap, args, index);
-		this.useSigMap = useSigMap;
+		super(host, port, nodeAccountNumber, args, index);
 		this.nodeAccountNumber = nodeAccountNumber;
 		this.host = host;
 		this.port = port;
@@ -94,33 +89,19 @@ public class CreateAccountPemFile extends ClientBaseThread {
 				final Ed25519KeyStore keyStore = new Ed25519KeyStore(DEFAULT_PASSWORD.toCharArray());
 				final KeyPair newKeyPair = keyStore.insertNewKeyPair();
 
-				if (useSigMap) {
-					Common.addKeyMap(newKeyPair, pubKey2privKeyMap);
-				}
+				Common.addKeyMap(newKeyPair, pubKey2privKeyMap);
 
 				// send create account transaction only, confirm later
 				AccountID newAccount = RequestBuilder.getAccountIdBuild(nodeAccountNumber, 0l, 0l);
 
 				try {
 					Transaction transaction = Common.tranSubmit(() -> {
-						Transaction createRequest;
-						try {
-							if (useSigMap) {
-								byte[] pubKey = ((EdDSAPublicKey) newKeyPair.getPublic()).getAbyte();
-								Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-								Key payerKey = acc2ComplexKeyMap.get(payerAccount);
-								createRequest = Common.createAccountComplex(payerAccount, payerKey, newAccount, key,
-										initialBalance,
-										pubKey2privKeyMap);
-							} else {
-								createRequest = TestHelper
-										.createAccountWithFee(payerAccount, newAccount, newKeyPair, initialBalance,
-												Collections.singletonList(genesisPrivateKey));
-							}
-						} catch (Exception e) {
-							e.printStackTrace();
-							return null;
-						}
+						byte[] pubKey = ((EdDSAPublicKey) newKeyPair.getPublic()).getAbyte();
+						Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+						Key payerKey = acc2ComplexKeyMap.get(payerAccount);
+						Transaction createRequest = Common.createAccountComplex(payerAccount, payerKey, newAccount, key,
+								initialBalance,
+								pubKey2privKeyMap);
 						return createRequest;
 					}, stub::createAccount);
 

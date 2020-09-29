@@ -29,35 +29,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.fcmap.FCMap;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.core.jproto.JKey;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class CrptDelAcctValtionAndStartupBalCheckTest {
 

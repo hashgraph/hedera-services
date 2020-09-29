@@ -313,8 +313,6 @@ public class FreezeServiceImplTest {
   }
 
   public Transaction sign(Transaction tx) throws Exception {
-    SignatureMap sigsMap = TransactionSigner.signAsSignatureMap(
-            tx.getBodyBytes().toByteArray(), Collections.singletonList(key), pubKey2privKeyMap);
-    return tx.toBuilder().setSigMap(sigsMap).build();
+    return TransactionSigner.signTransactionComplexWithSigMap(tx, Collections.singletonList(key), pubKey2privKeyMap);
   }
 }

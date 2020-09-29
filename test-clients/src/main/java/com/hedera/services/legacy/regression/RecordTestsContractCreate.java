@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -211,10 +209,7 @@ public class RecordTestsContractCreate {
               nodeRealmNum, nodeShardNum, transactionFee, timestamp,
               txDuration, generateRecord, txMemo, gas, fileId, constructorParameters,
               initialBalance,
-              autoRenewalPeriod, SignatureList.newBuilder()
-                  .addSigs(Signature.newBuilder()
-                      .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                  .build(), contractMemo, adminKey);
+              autoRenewalPeriod, contractMemo, adminKey);
 
       transaction = TransactionSigner.signTransactionComplexWithSigMap(
           transaction, keyList, pubKey2privKeyMap);
@@ -226,10 +221,7 @@ public class RecordTestsContractCreate {
         .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
             nodeRealmNum, nodeShardNum, transactionFee, timestamp,
             txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-            autoRenewalPeriod, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), contractMemo, adminKey);
+            autoRenewalPeriod, contractMemo, adminKey);
 
     transaction = TransactionSigner.signTransactionComplexWithSigMap(
         transaction, keyList, pubKey2privKeyMap);

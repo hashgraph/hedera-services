@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -117,7 +116,7 @@ public class SmartContractServiceTest extends FileServiceTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), TestHelper.getContractMaxFee(), timestamp,
             transactionDuration, true, "createContract",
             DEFAULT_CREATE_CONTRACT_OP_GAS, contractFile, ByteString.EMPTY, 0, contractAutoRenew,
-            SignatureList.newBuilder().getDefaultInstanceForType(), "", adminKey);
+            "", adminKey);
 
     Key payerKey = acc2ComplexKeyMap.get(payerAccount);
     List<Key> keys = new ArrayList<Key>();
@@ -126,7 +125,7 @@ public class SmartContractServiceTest extends FileServiceTest {
       keys.add(adminKey);
     }
     createContractRequest = TransactionSigner
-        .signTransactionComplex(createContractRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(createContractRequest, keys, pubKey2privKeyMap);
 
     log.debug("createContract: request=" + createContractRequest);
     TransactionResponse response = retryLoopTransaction(createContractRequest, "createContract");
@@ -184,8 +183,7 @@ public class SmartContractServiceTest extends FileServiceTest {
     Transaction updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, TestHelper.getContractMaxFee(),
             timestamp, transactionDuration, true, "updateContract", contractToUpdate,
-            autoRenewPeriod, newAdminKey, null, expirationTime,
-            SignatureList.newBuilder().getDefaultInstanceForType(), "");
+            autoRenewPeriod, newAdminKey, null, expirationTime, "");
 
     List<Key> keys = new ArrayList<Key>();
     Key payerKey = acc2ComplexKeyMap.get(payerAccount);
@@ -197,7 +195,7 @@ public class SmartContractServiceTest extends FileServiceTest {
     }
     keys.add(newAdminKey);
 
-    updateContractRequest = TransactionSigner.signTransactionComplex(updateContractRequest, keys,
+    updateContractRequest = TransactionSigner.signTransactionComplexWithSigMap(updateContractRequest, keys,
         pubKey2privKeyMap);
     log.debug("updateContract: request=" + updateContractRequest);
     TransactionResponse response = retryLoopTransaction(updateContractRequest, "updateContract");
@@ -293,14 +291,13 @@ public class SmartContractServiceTest extends FileServiceTest {
         .getContractCallRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), node_account_number, 0l, 0l,
                 TestHelper.getContractMaxFee(), timestamp,
-            transactionDuration, DEFAULT_CONTRACT_OP_GAS, contractID, dataBstr, valuetoSet,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            transactionDuration, DEFAULT_CONTRACT_OP_GAS, contractID, dataBstr, valuetoSet);
 
     Key payerKey = acc2ComplexKeyMap.get(payerAccount);
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     callContractRequest = TransactionSigner
-        .signTransactionComplex(callContractRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(callContractRequest, keys, pubKey2privKeyMap);
 
     log.debug("callContract: request=" + callContractRequest);
     TransactionBody callContractBody = com.hedera.services.legacy.proto.utils.CommonUtils

@@ -75,7 +75,6 @@ import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.*;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.*;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.*;
 import static org.mockito.BDDMockito.*;
-import static com.hedera.test.factories.scenarios.PrecheckSigListFailScenarios.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static com.hedera.test.CiConditions.isInCircleCi;
 
@@ -130,77 +129,6 @@ public class TxnHandlerVerifySigRegressionTest {
 	}
 
 	@Test
-	public void shortCircuitsOnMissingSigList() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(MISSING_SIG_LIST_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureCountMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void shortCircuitsOnSimpleKeyComplexSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(SIMPLE_KEY_COMPLEX_SIG_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureTypeMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void shortCircuitsOnKeyListSimpleSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(KEY_LIST_SIMPLE_SIG_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureTypeMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void shortCircuitsOnKeyListTooLong() throws Throwable {
-		assumeFalse(isInCircleCi);
-		// given:
-		setupFor(KEY_LIST_TOO_LONG_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureCountMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void shortCircuitsOnThresholdKeySimpleSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(THRESHOLD_KEY_SIMPLE_SIG_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureTypeMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void shortCircuitsOnThresholdSigTooLong() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(THRESHOLD_SIG_TOO_LONG_SCENARIO);
-
-		// expect:
-		assertThrows(KeySignatureCountMismatchException.class, () ->
-				subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
 	public void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
 		assumeFalse(isInCircleCi);
 
@@ -212,33 +140,11 @@ public class TxnHandlerVerifySigRegressionTest {
 	}
 
 	@Test
-	public void acceptsValidNonCryptoTransferPayerSigList() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(FULL_PAYER_SIGS_VIA_LIST_SCENARIO);
-
-		// expect:
-		assertTrue(subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
 	public void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
 		assumeFalse(isInCircleCi);
 
 		// given:
 		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
-
-		// expect:
-		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void rejectsIncompleteNonCryptoTransferPayerSigList() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(MISSING_PAYER_SIGS_VIA_LIST_SCENARIO);
 
 		// expect:
 		assertFalse(subject.verifySignature(platformTxn.getSignedTxn()));
@@ -275,18 +181,6 @@ public class TxnHandlerVerifySigRegressionTest {
 
 		// expect:
 		assertTrue(subject.verifySignature(platformTxn.getSignedTxn()));
-	}
-
-	@Test
-	public void throwsOnQueryPaymentTransferWithMissingSigsList() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
-		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO_LIST);
-
-		// expect:
-		assertThrows(KeySignatureCountMismatchException.class,
-				() -> subject.verifySignature(platformTxn.getSignedTxn()));
 	}
 
 	@Test

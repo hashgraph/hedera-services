@@ -57,8 +57,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -467,9 +465,6 @@ public class ContractGetBalance {
 		Transaction updateContractRequest = RequestBuilder.getContractUpdateRequest(payerAccount, nodeAccount,
 				MAX_TX_FEE, timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
 				expirationTime,
-				SignatureList.newBuilder()
-						.addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-						.build(),
 				"");
 
 		updateContractRequest = TransactionSigner.signTransaction(updateContractRequest, accountKeys.get(payerAccount));

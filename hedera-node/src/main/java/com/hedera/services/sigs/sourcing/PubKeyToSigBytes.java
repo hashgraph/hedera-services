@@ -20,6 +20,7 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -89,12 +90,7 @@ public interface PubKeyToSigBytes {
 	 * @return a source of the raw signatures associated to the payer for the txn.
 	 */
 	static PubKeyToSigBytes forPayer(Transaction signedTxn) {
-		if (signedTxn.hasSigs()) {
-			List<Signature>	sigs = signedTxn.getSigs().getSigsList();
-			return sigs.size() >= 1 ? from(sigs.subList(0, 1)) : SigListPubKeyToSigBytes.NO_SIGS;
-		} else {
-			return from(signedTxn.getSigMap());
-		}
+		return from(CommonUtils.extractSignatureMapOrUseDefault(signedTxn));
 	}
 
 	/**
@@ -106,12 +102,7 @@ public interface PubKeyToSigBytes {
 	 * @return a source of the raw signatures associated non-payer roles in the txn.
 	 */
 	static PubKeyToSigBytes forOtherParties(Transaction signedTxn) {
-		if (signedTxn.hasSigs()) {
-			List<Signature>	sigs = signedTxn.getSigs().getSigsList();
-			return sigs.size() > 1 ? from(sigs.subList(1, sigs.size())) : SigListPubKeyToSigBytes.NO_SIGS;
-		} else {
-			return from(signedTxn.getSigMap());
-		}
+		return forPayer(signedTxn);
 	}
 
 	/**
@@ -123,6 +114,6 @@ public interface PubKeyToSigBytes {
 	 * @return a source of the raw signatures associated non-payer roles in the txn.
 	 */
 	static PubKeyToSigBytes forAllParties(Transaction signedTxn) {
-		return signedTxn.hasSigs() ? from(signedTxn.getSigs().getSigsList()) : from(signedTxn.getSigMap());
+		return forPayer(signedTxn);
 	}
 }

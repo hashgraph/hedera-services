@@ -20,7 +20,6 @@ package com.hedera.services.legacy.crypto;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -44,7 +43,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import java.security.KeyPair;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.util.Collections;
 import java.util.List;
@@ -112,7 +110,7 @@ public class FastTxRecordTest {
     log.info(
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     TransactionRecord fastTxRecord = getFastTransactionRecord(
         body.getTransactionID());
     AccountID newlyCreateAccountId1 = fastTxRecord.getReceipt().getAccountID();
@@ -143,8 +141,7 @@ public class FastTxRecordTest {
     Assert.assertEquals(body.getMemo(), transactionRecordResponse.getMemo());
     Assert.assertNotNull(transactionRecordResponse.getTransactionHash());
     Assert.assertEquals(transactionRecordResponse.getTransactionHash(),
-        ByteString
-            .copyFrom(MessageDigest.getInstance("SHA-384").digest(transaction.toByteArray())));
+            com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf(transaction));
     Assert.assertTrue(transactionRecordResponse.getTransactionFee() >= 0);
     Assert.assertEquals(fastTxRecord, transactionRecordResponse);
     log.info(
@@ -164,11 +161,10 @@ public class FastTxRecordTest {
         .createAccount(payerAccount, defaultNodeAccount, secondPair, 100000, createAccountFee,
             TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD,
             TestHelper.DEFAULT_SEND_RECV_RECORD_THRESHOLD);
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     TransactionBody.Builder txBody = body.toBuilder();
     txBody.setGenerateRecord(false);
-    Transaction transaction1 = Transaction.newBuilder().setBodyBytes(txBody.build().toByteString())
-        .setSigs(transaction.getSigs()).build();
+    Transaction transaction1 = transaction.toBuilder().setBodyBytes(txBody.build().toByteString()).build();
     signTransaction = TransactionSigner
         .signTransaction(transaction1, Collections.singletonList(genesisPrivateKey));
     response = stub.createAccount(signTransaction);
@@ -194,7 +190,7 @@ public class FastTxRecordTest {
         .getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode().name());
     Assert.assertEquals(ResponseCodeEnum.RECORD_NOT_FOUND,
         transactionRecord.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode());
-    TransactionBody bodyTr = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody bodyTr = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(transaction);
     // Skip fee data, since there was no Tx it will be zero.
 //		  txRecordFee = transactionRecord.getTransactionGetRecord().getHeader().getCost();
     query = TestHelper.getTxRecordByTxId(bodyTr.getTransactionID(), payerAccount,

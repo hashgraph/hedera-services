@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.token.TokenTransactUsage;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -202,7 +203,7 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		MoreObjects.ToStringHelper helper = super.toStringHelper();
 		if (txnSubmitted != null) {
 			try {
-				TransactionBody txn = TransactionBody.parseFrom(txnSubmitted.getBodyBytes());
+				TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
 				helper.add(
 						"transfers",
 						TxnUtils.readableTokenTransferList(txn.getTokenTransfers()));

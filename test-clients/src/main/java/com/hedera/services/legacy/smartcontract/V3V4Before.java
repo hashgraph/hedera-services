@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -139,7 +138,6 @@ public class V3V4Before {
     return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeAccount, payer,
         accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-
   }
 
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
