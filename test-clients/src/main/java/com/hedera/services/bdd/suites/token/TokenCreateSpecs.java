@@ -70,8 +70,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec autoRenewValidationWorks() {
 		return defaultHapiSpec("AutoRenewValidationWorks")
 				.given(
-						cryptoCreate("autoRenew")
+						cryptoCreate("autoRenew"),
+						cryptoCreate("deletingAccount")
 				).when(
+						cryptoDelete("deletingAccount"),
+						tokenCreate("primary")
+								.autoRenewAccount("deletingAccount")
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
 						tokenCreate("primary")
 								.signedBy(GENESIS)
 								.autoRenewAccount("1.2.3")
