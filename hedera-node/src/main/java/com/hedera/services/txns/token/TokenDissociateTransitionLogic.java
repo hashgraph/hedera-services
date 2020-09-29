@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.TokenChecks.hasRepeatedTokenID;
+import static com.hedera.services.txns.validation.TokenListChecks.hasRepeatedTokenID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

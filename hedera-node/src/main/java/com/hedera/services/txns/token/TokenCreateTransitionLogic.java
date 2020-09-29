@@ -36,9 +36,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.TokenChecks.checkKey;
-import static com.hedera.services.txns.validation.TokenChecks.checkKeys;
-import static com.hedera.services.txns.validation.TokenChecks.initialSupplyAndDecimalsCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.checkKey;
+import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
+import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
@@ -73,7 +73,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		this.store = store;
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
-		// Include validator, move out checks before creating MerkleToken here or in validator
 	}
 
 	@Override
