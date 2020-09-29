@@ -25,6 +25,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -32,10 +34,12 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -44,6 +48,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 
 public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenInfo.class);
@@ -59,13 +64,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
 	Optional<String> expectedName = Optional.empty();
+	Optional<String> expectedTreasury = Optional.empty();
 	Optional<String> expectedAdminKey = Optional.empty();
 	Optional<String> expectedKycKey = Optional.empty();
 	Optional<String> expectedFreezeKey = Optional.empty();
 	Optional<String> expectedSupplyKey = Optional.empty();
+	Optional<String> expectedWipeKey = Optional.empty();
 	Optional<Boolean> expectedDeletion = Optional.empty();
 	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
+	Optional<String> expectedAutoRenewAccount = Optional.empty();
+	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
+	OptionalLong expectedExpiry = OptionalLong.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -97,12 +107,28 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedId = Optional.of(token);
 		return this;
 	}
+	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
+		expectedAutoRenewPeriod = OptionalLong.of(renewPeriod);
+		return this;
+	}
+	public HapiGetTokenInfo hasAutoRenewAccount(String account) {
+		expectedAutoRenewAccount = Optional.of(account);
+		return this;
+	}
+	public HapiGetTokenInfo hasExpiry(Long expiry) {
+		expectedExpiry = OptionalLong.of(expiry);
+		return this;
+	}
 	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
 	public HapiGetTokenInfo hasName(String name) {
 		expectedName = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasTreasury(String name) {
+		expectedTreasury = Optional.of(name);
 		return this;
 	}
 	public HapiGetTokenInfo hasFreezeKey(String name) {
@@ -121,6 +147,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedSupplyKey = Optional.of(name);
 		return this;
 	}
+	public HapiGetTokenInfo hasWipeKey(String name) {
+		expectedWipeKey = Optional.of(name);
+		return this;
+	}
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
@@ -135,11 +165,42 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
 		if (expectedSymbol.isPresent()) {
-			Assert.assertEquals("Wrong symbol!", expectedSymbol.get(), actualInfo.getSymbol());
+			Assert.assertEquals(
+					"Wrong symbol!",
+					expectedSymbol.get(),
+					actualInfo.getSymbol());
 		}
 
 		if (expectedName.isPresent()) {
-			Assert.assertEquals("Wrong name!", expectedName.get(), actualInfo.getName());
+			Assert.assertEquals(
+					"Wrong name!",
+					expectedName.get(),
+					actualInfo.getName());
+		}
+
+		if (expectedAutoRenewAccount.isPresent()) {
+			Assert.assertEquals(
+					"Wrong auto renew account!",
+					expectedAutoRenewAccount.get(),
+					actualInfo.getAutoRenewAccount());
+		}
+
+		if (expectedAutoRenewPeriod.isPresent()) {
+			Assert.assertEquals(
+					"Wrong auto renew period!",
+					expectedAutoRenewPeriod.getAsLong(),
+					actualInfo.getAutoRenewPeriod());
+		}
+
+		if (expectedExpiry.isPresent()) {
+			System.out.println("Expected:");
+			System.out.println(expectedExpiry);
+			System.out.println("Actual:");
+			System.out.println(actualInfo.getExpiry());
+			Assert.assertEquals(
+					"Wrong expiry!",
+					expectedExpiry.getAsLong(),
+					actualInfo.getExpiry());
 		}
 
 		var registry = spec.registry();

@@ -22,28 +22,36 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static java.time.LocalDate.now;
 
 public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final int MAX_NAME_LENGTH = 100;
+	private static final long A_HUNDRED_SECONDS = 100;
 
 	public static void main(String... args) {
 		new TokenCreateSpecs().runSuiteSync();
@@ -52,17 +60,19 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						creationValidatesSymbol(),
-						treasuryHasCorrectBalance(),
-						creationRequiresAppropriateSigs(),
-						initialSupplyMustBeSane(),
-						numAccountsAllowedIsDynamic(),
-						creationYieldsExpectedToken(),
-						creationSetsExpectedName(),
-						creationValidatesName(),
-						creationRequiresAppropriateSigs(),
-						creationValidatesTreasuryAccount(),
-						autoRenewValidationWorks()
+//						creationValidatesSymbol(),
+//						treasuryHasCorrectBalance(),
+//						creationRequiresAppropriateSigs(),
+//						initialSupplyMustBeSane(),
+//						numAccountsAllowedIsDynamic(),
+//						creationYieldsExpectedToken(),
+//						creationSetsExpectedName(),
+//						creationValidatesName(),
+//						creationRequiresAppropriateSigs(),
+//						creationValidatesTreasuryAccount(),
+//						autoRenewValidationWorks(),
+						creationSetsCorrectExpiry(),
+//						creationHappyPath()
 				}
 		);
 	}
@@ -132,6 +142,91 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.logged()
 								.hasRegisteredId("primary")
 								.hasName(saltedName)
+				);
+	}
+
+	public HapiApiSpec creationHappyPath() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationHappyPath")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("autoRenewAccount"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("supplyKey"),
+						newKeyNamed("wipeKey")
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.initialSupply(500)
+								.decimals(1)
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.kycKey("kycKey")
+								.supplyKey("supplyKey")
+								.wipeKey("wipeKey")
+				).then(
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var createTxn = getTxnRecord("createTxn");
+							allRunFor(spec, createTxn);
+							var record = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
+
+							getTokenInfo("primary")
+									.logged()
+									.hasRegisteredId("primary")
+									.hasName(saltedName)
+									.hasTreasury(TOKEN_TREASURY)
+									.hasAutoRenewAccount("autoRenewAccount")
+									.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+									.hasDecimals(1)
+									.hasAdminKey("adminKey")
+									.hasFreezeKey("freezeKey")
+									.hasFreezeDefault(TokenFreezeStatus.Frozen)
+									.hasKycKey("kycKey")
+									.hasSupplyKey("supplyKey")
+									.hasWipeKey("wipeKey")
+									.hasTotalSupply(500);
+						}),
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasName(saltedName)
+								.hasTreasury(TOKEN_TREASURY)
+								.hasAutoRenewAccount("autoRenewAccount")
+								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+								.hasDecimals(1)
+								.hasAdminKey("adminKey")
+								.hasFreezeKey("freezeKey")
+								.hasFreezeDefault(TokenFreezeStatus.Frozen)
+								.hasKycKey("kycKey")
+								.hasSupplyKey("supplyKey")
+								.hasWipeKey("wipeKey")
+								.hasTotalSupply(500)
+				);
+	}
+
+	public HapiApiSpec creationSetsCorrectExpiry() {
+		return defaultHapiSpec("CreationSetsCorrectExpiry")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("autoRenew")
+				).when(
+						tokenCreate("primary")
+								.autoRenewAccount("autoRenew")
+								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.treasury(TOKEN_TREASURY)
+								.via("createTxn")
+				).then(
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasExpiry(0L)
 				);
 	}
 
@@ -237,14 +332,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationValidatesTreasuryAccount() {
 		return defaultHapiSpec("CreationValidatesTreasuryAccount")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						cryptoDelete(TOKEN_TREASURY)
 				).then(
 						tokenCreate("shouldntWork")
 								.treasury(TOKEN_TREASURY)
-								.payingWith("payer")
 								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
 				);
 	}
