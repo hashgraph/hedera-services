@@ -24,8 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
@@ -132,6 +133,38 @@ class TokenBurnTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	public void rejectsMissingToken() {
+		givenMissingToken();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	public void rejectsInvalidNegativeAmount() {
+		givenInvalidNegativeAmount();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.syntaxCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	public void rejectsInvalidZeroAmount() {
+		givenInvalidZeroAmount();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.syntaxCheck().apply(tokenBurnTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
@@ -141,5 +174,33 @@ class TokenBurnTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenBurnTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.resolve(id)).willReturn(id);
+	}
+
+	private void givenMissingToken() {
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.build()
+				).build();
+	}
+
+	private void givenInvalidNegativeAmount() {
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.setToken(id)
+								.setAmount(-1)
+								.build()
+				).build();
+	}
+
+	private void givenInvalidZeroAmount() {
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.setToken(id)
+								.setAmount(0)
+								.build()
+				).build();
 	}
 }

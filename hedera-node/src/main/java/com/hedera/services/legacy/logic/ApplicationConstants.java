@@ -55,6 +55,7 @@ public class ApplicationConstants {
 	public static long MAXIMUM_AUTORENEW_DURATION = 1000000000l;
 
 	public static int TRANSFER_LST_LIMIT = 10;
+	public static int TOKEN_TRANSFERS_LIST_LIMIT = 10;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;

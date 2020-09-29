@@ -21,10 +21,13 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -40,29 +43,46 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static org.junit.jupiter.api.Assertions.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 public class ContextOptionValidatorTest {
@@ -86,6 +106,11 @@ public class ContextOptionValidatorTest {
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
+
+	final private TokenID aTId = TokenID.newBuilder().setTokenNum(1_234L).build();
+	final private TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
+	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
+	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
 
 	private MerkleTopic missingMerkleTopic;
 	private MerkleTopic deletedMerkleTopic;
@@ -516,5 +541,120 @@ public class ContextOptionValidatorTest {
 		// expect:
 		assertFalse(subject.isPlausibleTxnFee(-1));
 		assertTrue(subject.isPlausibleTxnFee(0));
+	}
+
+	@Test
+	public void acceptsReasonableTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(OK, subject.tokenSymbolCheck("AS"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void rejectsMissingTokenSymbol() {
+		// expect:
+		assertEquals(MISSING_TOKEN_SYMBOL, subject.tokenSymbolCheck(""));
+	}
+
+	@Test
+	public void rejectsTooLongTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.tokenSymbolCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void rejectsInvalidTokenSymbol() {
+		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_SYMBOL, subject.tokenSymbolCheck("!!!"));
+
+		// and:
+		verify(properties).getIntProperty("tokens.maxSymbolLength");
+	}
+
+	@Test
+	public void acceptsReasonableTokenName() {
+		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(100);
+
+		// expect:
+		assertEquals(OK, subject.tokenNameCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxTokenNameLength");
+	}
+
+	@Test
+	public void rejectsMissingTokenName() {
+		// expect:
+		assertEquals(MISSING_TOKEN_NAME, subject.tokenNameCheck(""));
+	}
+
+	@Test
+	public void rejectsTooLongTokenName() {
+		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(3);
+
+		// expect:
+		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("ASDF"));
+		// and:
+		verify(properties).getIntProperty("tokens.maxTokenNameLength");
+	}
+
+	@Test
+	public void acceptsReasonableTokenTransfersLength() {
+		// setup:
+		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+
+		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(4);
+
+		// expect:
+		assertTrue(subject.isAcceptableTokenTransfersLength(wrapper));
+		// and:
+		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
+	}
+
+	@Test
+	public void rejectsInvalidTokenTransfersLength() {
+		// setup:
+		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
+
+		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(2);
+
+		// expect:
+		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		// and:
+		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
+	}
+
+	@Test
+	public void rejectsInvalidTokenTransfersAccountAmountsLength() {
+		// setup:
+		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
+
+		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(4);
+
+		// expect:
+		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		// and:
+		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
+	}
+
+	@Test
+	public void rejectsInvalidTokenTransfersEmptyAccountAmounts() {
+		// setup:
+		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, bTId);
+
+		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(2);
+
+		// expect:
+		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		// and:
+		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
 	}
 }
