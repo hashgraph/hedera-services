@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -60,7 +61,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationSetsExpectedName(),
 						creationValidatesName(),
 						creationRequiresAppropriateSigs(),
-						autoRenewValidationWorks(),
+						creationValidatesTreasuryAccount(),
+						autoRenewValidationWorks()
 				}
 		);
 	}
@@ -224,6 +226,21 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.adminKey("adminKey")
 								.signedBy("payer", "adminKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	public HapiApiSpec creationValidatesTreasuryAccount() {
+		return defaultHapiSpec("CreationValidatesTreasuryAccount")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						cryptoDelete(TOKEN_TREASURY)
+				).then(
+						tokenCreate("shouldntWork")
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
 				);
 	}
 
