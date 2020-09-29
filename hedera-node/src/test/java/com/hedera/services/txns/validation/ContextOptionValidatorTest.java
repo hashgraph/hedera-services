@@ -136,7 +136,6 @@ public class ContextOptionValidatorTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(now);
 		properties = mock(PropertySource.class);
-		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(100);
 		accounts = mock(FCMap.class);
 		given(accounts.get(MerkleEntityId.fromAccountId(a))).willReturn(aV);
 		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
@@ -144,6 +143,7 @@ public class ContextOptionValidatorTest {
 		given(accounts.get(fromContractId(deletedContract))).willReturn(deletedContractV);
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
 
 		topics = mock(FCMap.class);
 		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();

@@ -46,6 +46,7 @@ public class GlobalDynamicProperties {
 	private AccountID fundingAccount;
 	private int maxTransfersLen;
 	private int maxTokenTransfersLen;
+	private int maxMemoUtf8Bytes;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -81,6 +82,7 @@ public class GlobalDynamicProperties {
 		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
 		maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
 		maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
+		maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -157,5 +159,9 @@ public class GlobalDynamicProperties {
 
 	public int maxTokenTransferListSize() {
 		return maxTokenTransfersLen;
+	}
+
+	public int maxMemoUtf8Bytes() {
+		return maxMemoUtf8Bytes;
 	}
 }

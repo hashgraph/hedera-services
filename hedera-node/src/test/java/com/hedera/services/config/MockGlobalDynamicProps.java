@@ -116,4 +116,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public boolean shouldExportTokenBalances() {
 		return true;
 	}
+
+	@Override
+	public int maxTransferListSize() {
+		return 10;
+	}
+
+	@Override
+	public int maxTokenTransferListSize() {
+		return 10;
+	}
 }

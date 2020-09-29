@@ -77,8 +77,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(13L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
 		assertTrue(subject.shouldExportTokenBalances());
-		assertEquals(15L, subject.maxTransferListSize());
-		assertEquals(16L, subject.maxTokenTransferListSize());
+		assertEquals(15, subject.maxTransferListSize());
+		assertEquals(16, subject.maxTokenTransferListSize());
+		assertEquals(17, subject.maxMemoUtf8Bytes());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -113,8 +114,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(14L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
 		assertFalse(subject.shouldExportTokenBalances());
-		assertEquals(16L, subject.maxTransferListSize());
-		assertEquals(17L, subject.maxTokenTransferListSize());
+		assertEquals(16, subject.maxTransferListSize());
+		assertEquals(17, subject.maxTokenTransferListSize());
+		assertEquals(18, subject.maxMemoUtf8Bytes());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -136,5 +138,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("balances.exportTokenBalances")).willReturn((i + 13) % 2 == 0);
 		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(i + 14);
 		given(properties.getIntProperty("ledger.tokenTransfers.maxLen")).willReturn(i + 15);
+		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(i + 16);
 	}
 }

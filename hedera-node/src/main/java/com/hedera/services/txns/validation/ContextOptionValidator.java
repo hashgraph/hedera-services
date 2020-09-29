@@ -142,8 +142,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidEntityMemo(@Nullable String memo) {
-		var maxUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= maxUtf8Bytes);
+		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= dynamicProperties.maxMemoUtf8Bytes());
 	}
 
 	@Override

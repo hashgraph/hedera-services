@@ -63,7 +63,6 @@ public class StandardizedPropertySources implements PropertySources {
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
 	private static final int ISS_ROUNDS_TO_DUMP = 5;
-	public static final int MAX_MEMO_UTF8_BYTES = 100;
 	public static final long LONG_MASK = 0xffffffffL;
 
 	private final PropertySource bootstrapProps;
@@ -166,7 +165,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Global/dynamic properties. */
-		source.put("hedera.transaction.maxMemoUtf8Bytes", () -> MAX_MEMO_UTF8_BYTES);
 		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidityBufferSecs", PropertiesLoader::getTxMinRemaining);
@@ -175,6 +173,7 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
+
 		source.put("throttlingTps", PropertiesLoader::getThrottlingTps);
 		source.put("queriesTps", PropertiesLoader::getQueriesTps);
 		source.put("simpletransferTps", PropertiesLoader::getSimpleTransferTps);
