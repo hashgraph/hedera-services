@@ -223,10 +223,16 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.via("createTxn")
 				).then(
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var createTxn = getTxnRecord("createTxn");
+							allRunFor(spec, createTxn);
+							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
+							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+						}),
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
-								.hasExpiry(0L)
+								.hasValidExpiry()
 				);
 	}
 

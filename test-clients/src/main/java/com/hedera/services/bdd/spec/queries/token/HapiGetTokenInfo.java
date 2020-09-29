@@ -75,7 +75,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
 	Optional<String> expectedAutoRenewAccount = Optional.empty();
 	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
-	OptionalLong expectedExpiry = OptionalLong.empty();
+	Optional<Boolean> expectedExpiry = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -115,8 +115,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedAutoRenewAccount = Optional.of(account);
 		return this;
 	}
-	public HapiGetTokenInfo hasExpiry(Long expiry) {
-		expectedExpiry = OptionalLong.of(expiry);
+	public HapiGetTokenInfo hasValidExpiry() {
+		expectedExpiry = Optional.of(true);
 		return this;
 	}
 	public HapiGetTokenInfo hasSymbol(String token) {
@@ -192,23 +192,19 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getAutoRenewPeriod());
 		}
 
-		if (expectedExpiry.isPresent()) {
-			System.out.println("Expected:");
-			System.out.println(expectedExpiry);
-			System.out.println("Actual:");
-			System.out.println(actualInfo.getExpiry());
-			Assert.assertEquals(
-					"Wrong expiry!",
-					expectedExpiry.getAsLong(),
-					actualInfo.getExpiry());
-		}
-
 		var registry = spec.registry();
 		assertFor(
 				actualInfo.getTokenId(),
 				expectedId,
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
+				registry);
+
+		assertFor(
+				actualInfo.getExpiry(),
+				expectedExpiry,
+				(n, r) -> r.getTokenExpiry(token),
+				"Wrong token expiry!",
 				registry);
 	}
 
