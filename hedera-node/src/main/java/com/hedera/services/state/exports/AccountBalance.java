@@ -20,6 +20,8 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+
 import java.util.Comparator;
 
 public class AccountBalance implements Comparable<AccountBalance> {
@@ -44,6 +46,32 @@ public class AccountBalance implements Comparable<AccountBalance> {
 		this.shard = shard;
 		this.realm = realm;
 		this.balance = balance;
+	}
+
+	@Override
+	public String toString() {
+		var helper = MoreObjects.toStringHelper(this)
+				.add("account", String.format("%d.%d.%d", shard, realm, num))
+				.add("balance", balance);
+		if (b64TokenBalances.length() > 0) {
+			helper.add("b64TokenBalances", b64TokenBalances);
+		}
+		return helper.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || o.getClass() != AccountBalance.class) {
+			return false;
+		}
+		AccountBalance that = (AccountBalance) o;
+		return this.num == that.num
+				&& this.realm == that.realm
+				&& this.shard == that.shard
+				&& this.b64TokenBalances.equals(that.b64TokenBalances);
 	}
 
 	@Override

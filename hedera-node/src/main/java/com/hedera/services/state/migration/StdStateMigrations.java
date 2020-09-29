@@ -1,8 +1,8 @@
-package com.hedera.services.bdd.spec.keys;
+package com.hedera.services.state.migration;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
@@ -20,6 +20,18 @@ package com.hedera.services.bdd.spec.keys;
  * ‍
  */
 
-public enum SigStyle {
-	MAP, LIST
+import com.hedera.services.context.ServicesContext;
+import com.hedera.services.utils.Pause;
+
+public class StdStateMigrations implements StateMigrations {
+	private final Pause pause;
+
+	public StdStateMigrations(Pause pause) {
+		this.pause = pause;
+	}
+
+	@Override
+	public void runAllFor(ServicesContext ctx) {
+		/* There are no applicable state migrations at this time. */
+	}
 }

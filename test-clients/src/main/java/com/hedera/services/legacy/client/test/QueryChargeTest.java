@@ -49,10 +49,9 @@ public class QueryChargeTest extends ClientBaseThread {
   private static final Logger log = LogManager.getLogger(QueryChargeTest.class);
   public static String fileName = TestHelper.getStartUpFile();
 
-  public QueryChargeTest(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index) {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
+  public QueryChargeTest(String host, int port, long nodeAccountNumber, String [] args, int index) {
+    super(host, port, nodeAccountNumber, args, index);
     log.info("host {} nodeAccountNumber {}", host, nodeAccountNumber);
-    this.useSigMap = useSigMap;
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;

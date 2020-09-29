@@ -20,8 +20,6 @@ package com.hedera.services.legacy.bip39utils;
  * ‍
  */
 
-
-
 import org.spongycastle.asn1.pkcs.PBKDF2Params;
 import org.spongycastle.crypto.digests.SHA512Digest;
 import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
@@ -42,7 +40,6 @@ public class CryptoUtils {
         return bytes;
     }
 
-
     public static byte[] sha256Digest(byte[] message) {
         MessageDigest digest = null;
         try {
@@ -54,21 +51,7 @@ public class CryptoUtils {
         return hash;
     }
 
-
-    public static byte[] sha384Digest( byte[] message) {
-        MessageDigest digest = null;
-        try {
-            digest = MessageDigest.getInstance("SHA-384");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        byte[] hash = digest.digest(message);
-        return hash;
-    }
-
-
     public static byte[] deriveKey( byte[] seed, long index, int length) {
-
         byte[] password = new byte[seed.length + Long.BYTES];
         for (int i = 0; i < seed.length; i++) {
             password[i] = seed[i];
@@ -92,7 +75,6 @@ public class CryptoUtils {
 
         return derivedKey;
     }
-
 
     public static byte[] longToBytes(long x) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

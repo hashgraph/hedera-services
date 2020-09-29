@@ -73,7 +73,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenAssociate;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -85,6 +84,7 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -104,6 +104,7 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -137,7 +138,8 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class MiscUtilsTest {
@@ -631,6 +633,21 @@ public class MiscUtilsTest {
 				throw new IllegalStateException(uhf);
 			}
 		});
+	}
+
+	@Test
+	public void hashCorrectly() throws DecoderException {
+		byte[] testBytes = "test bytes".getBytes();
+		byte[] expectedHash = Hex.decodeHex(
+				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
+		);
+		Transaction transaction = mock(Transaction.class);
+		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
+		given(transaction.toByteArray()).willReturn(testBytes);
+		given(accessor.getSignedTxn()).willReturn(transaction);
+
+		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
+		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
 	}
 
 	public static class BodySetter<T> {

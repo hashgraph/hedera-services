@@ -68,27 +68,5 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
 							.get()
 			));
 		}
-	},
-	LIST_SIGNED_FILE_UPDATE_NEW_WACL_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedFileUpdate(MISC_FILE_ID)
-							.newWaclKt(SIMPLE_NEW_WACL_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT, SIMPLE_NEW_WACL_KT)
-							.useSigList()
-							.get()
-			));
-		}
-	},
-	PAYER_ONLY_LIST_SIGNED_FILE_UPDATE_NEW_WACL_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedFileUpdate(MISC_FILE_ID)
-							.newWaclKt(SIMPLE_NEW_WACL_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT)
-							.useSigList()
-							.get()
-			));
-		}
 	}
 }

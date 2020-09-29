@@ -38,8 +38,8 @@ message TokenGetInfoQuery {
 /* The metadata about a Token instance */
 message TokenInfo {
     TokenID tokenId = 1; // ID of the token instance
-    string name = 2; // The unique name of the token. It is a string of ASCII only characters
-    string symbol = 3; // The unique symbol of the token. It is a UTF-8 capitalized alphabetical string
+    string name = 2; // The name of the token. It is a string of ASCII only characters
+    string symbol = 3; // The symbol of the token. It is a UTF-8 capitalized alphabetical string
     uint32 decimals = 4; // The number of decimal places a token is divisible by
     uint64 totalSupply = 5; // The total supply of tokens that are currently in circulation
     AccountID treasury = 6; // The ID of the account which is set as Treasury

@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.consensus;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -136,7 +137,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 			}
 		});
 		try{
-			TransactionBody txn = TransactionBody.parseFrom(txnSubmitted.getBodyBytes());
+			TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
 			spec.registry().saveTopicMeta(topic, txn.getConsensusUpdateTopic());
 		} catch (Exception impossible) {
 			throw new IllegalStateException(impossible);
@@ -199,7 +200,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 			/* Computed the increase in RBS due to this update. */
 			long tentativeRbsIncrease = 0;
 			try {
-				TransactionBody updateTxn = TransactionBody.parseFrom(txn.getBodyBytes());
+				TransactionBody updateTxn = CommonUtils.extractTransactionBody(txn);
 				tentativeRbsIncrease = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
 						updateTxn.getTransactionID().getTransactionValidStart(),
 						oldMeta.getAdminKey(),

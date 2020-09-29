@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.exceptions;
 
 /*-
  * ‌
@@ -20,8 +20,8 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class StorageKeyNotFoundException extends Exception {
-	public StorageKeyNotFoundException(String message) {
-		super(message);
-	}
+public class NegativeAccountBalanceException extends Exception {
+  public NegativeAccountBalanceException(String message) {
+    super(message);
+  }
 }

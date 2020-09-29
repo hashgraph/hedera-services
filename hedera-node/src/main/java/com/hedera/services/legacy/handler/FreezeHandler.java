@@ -20,8 +20,8 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
+import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.utils.UnzipUtility;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
@@ -44,7 +44,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 
@@ -55,10 +54,10 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
  */
 public class FreezeHandler {
 	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+
 	private final Platform platform;
 	private final HederaFs hfs;
-
-	private GlobalFlag globalFlag;
+	private final HbarCentExchange exchange;
 
 	private static String TARGET_DIR = "./";
 	private static String TEMP_DIR = "./temp";
@@ -70,8 +69,12 @@ public class FreezeHandler {
 
 	private FileID updateFeatureFile;
 
-	public FreezeHandler(HederaFs hfs, Platform platform) {
-		this.globalFlag = GlobalFlag.getInstance();
+	public FreezeHandler(
+			HederaFs hfs,
+			Platform platform,
+			HbarCentExchange exchange
+	) {
+		this.exchange = exchange;
 		this.platform = platform;
 		this.hfs = hfs;
 		LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
@@ -91,14 +94,14 @@ public class FreezeHandler {
 					freezeBody.getStartMin(),
 					freezeBody.getEndHour(),
 					freezeBody.getEndMin());
-			receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, globalFlag.getExchangeRateSet());
+			receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, exchange.activeRates());
 			log.info("Freeze time starts {}:{} end {}:{}", freezeBody.getStartHour(),
 					freezeBody.getStartMin(),
 					freezeBody.getEndHour(),
 					freezeBody.getEndMin());
 		} catch (IllegalArgumentException ex) {
 			log.warn("FreezeHandler - freeze fails. {}", ex.getMessage());
-			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, globalFlag.getExchangeRateSet());
+			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
 		}
 
 		TransactionRecord.Builder transactionRecord = RequestBuilder.getTransactionRecord(

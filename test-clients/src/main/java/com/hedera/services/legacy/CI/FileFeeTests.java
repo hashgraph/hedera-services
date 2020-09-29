@@ -342,7 +342,7 @@ public class FileFeeTests extends BaseFeeTests {
         
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(), 0l, 0l,
             nodeID.getAccountNum(), 0l, 0l, TestHelper.getFileMaxFee(),
-            timestamp, CryptoServiceTest.transactionDuration, true, "FileDelete", CryptoServiceTest.signatures, fid);
+            timestamp, CryptoServiceTest.transactionDuration, true, "FileDelete", fid);
     
     
     
@@ -351,7 +351,7 @@ public class FileFeeTests extends BaseFeeTests {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     keys.add(waclKey);
-    Transaction txSigned = TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+    Transaction txSigned = TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
@@ -440,7 +440,7 @@ public class FileFeeTests extends BaseFeeTests {
         
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(), 0l,
             0l, nodeID.getAccountNum(), 0l, 0l, TestHelper.getFileMaxFee(),
-            timestamp, CryptoServiceTest.transactionDuration, true, "FileDelete", CryptoServiceTest.signatures, fid);
+            timestamp, CryptoServiceTest.transactionDuration, true, "FileDelete", fid);
     
     
     
@@ -449,7 +449,7 @@ public class FileFeeTests extends BaseFeeTests {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     keys.add(waclKey);
-    Transaction txSigned = TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+    Transaction txSigned = TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
@@ -535,7 +535,7 @@ public class FileFeeTests extends BaseFeeTests {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, CryptoServiceTest.transactionDuration, true,
-        "FileAppend", CryptoServiceTest.signatures, fileData,fid);
+        "FileAppend", fileData,fid);
     
     
     
@@ -545,7 +545,7 @@ public class FileFeeTests extends BaseFeeTests {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     keys.add(waclKey);
-    Transaction txSigned = TransactionSigner.signTransactionComplex(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+    Transaction txSigned = TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
    
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);
@@ -632,7 +632,7 @@ public class FileFeeTests extends BaseFeeTests {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, CryptoServiceTest.transactionDuration, true,
-        "FileAppend", CryptoServiceTest.signatures, fileData,fid);
+        "FileAppend", fileData,fid);
      
     
     Key payerKey = TestHelperComplex.acc2ComplexKeyMap.get(payerID);
@@ -640,7 +640,7 @@ public class FileFeeTests extends BaseFeeTests {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     keys.add(waclKey);
-    Transaction txSigned = TransactionSigner.signTransactionComplex(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+    Transaction txSigned = TransactionSigner.signTransactionComplexWithSigMap(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
    
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);

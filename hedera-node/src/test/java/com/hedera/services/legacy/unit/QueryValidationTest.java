@@ -25,10 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.fees.StandardExemptions;
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.service.GlobalFlag;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -55,6 +53,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,12 +100,16 @@ class QueryValidationTest {
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payer.getAccountNum(),
         payer.getRealmNum(), payer.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 100, timestamp, transactionDuration,
-        false, "test", sigList, payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
-    List<PrivateKey> keyList = new ArrayList<>();
+        false, "test", payer.getAccountNum(), -100l, nodeAccount.getAccountNum(), 100l);
+    List<PrivateKey> privateKeyList = new ArrayList<>();
+    List<PublicKey> pubKeyList = new ArrayList<>();
     PrivateKey genPrivKey = payerKeyGenerated.getPrivate();
-    keyList.add(genPrivKey);
-    keyList.add(genPrivKey);
-    transferTx = TransactionSigner.signTransaction(transferTx, keyList);
+    PublicKey genPubKey = payerKeyGenerated.getPublic();
+    privateKeyList.add(genPrivKey);
+    privateKeyList.add(genPrivKey);
+    pubKeyList.add(genPubKey);
+    pubKeyList.add(genPubKey);
+    transferTx = TransactionSigner.signTransactionWithSignatureMap(transferTx, privateKeyList, pubKeyList);
     return transferTx;
   }
 

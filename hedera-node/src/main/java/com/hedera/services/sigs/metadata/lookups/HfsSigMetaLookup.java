@@ -22,9 +22,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
-import com.hedera.services.sigs.order.KeyOrderingFailure;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

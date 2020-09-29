@@ -78,6 +78,7 @@ public class HapiSpecSetup {
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
+	public enum TxnConfig { NEW, OLD, ALTERNATE }
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
@@ -353,6 +354,17 @@ public class HapiSpecSetup {
 		return useTls;
 	}
 
+	public TxnConfig txnConfig() {
+		TxnConfig config = props.getTxnConfig("txn");
+		if (TxnConfig.ALTERNATE == config) {
+			if (r.nextBoolean()) {
+				return TxnConfig.NEW;
+			} else {
+				return TxnConfig.OLD;
+			}
+		}
+		return config;
+	}
 	public long txnStartOffsetSecs() {
 		return props.getLong("txn.start.offset.secs");
 	}

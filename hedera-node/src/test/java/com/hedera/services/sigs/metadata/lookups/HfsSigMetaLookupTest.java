@@ -27,7 +27,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

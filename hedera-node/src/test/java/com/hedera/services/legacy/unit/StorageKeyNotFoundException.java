@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.legacy.unit;
 
 /*-
  * ‌
@@ -20,18 +20,8 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileID;
-
-public class InvalidFileIDException extends Exception {
-	private static final long serialVersionUID = 1L;
-	private FileID fileId;
-
-	public InvalidFileIDException(String message, FileID fileId) {
+public class StorageKeyNotFoundException extends Exception {
+	public StorageKeyNotFoundException(String message) {
 		super(message);
-		this.fileId = fileId;
-	}
-
-	public FileID getFileId() {
-		return fileId;
 	}
 }

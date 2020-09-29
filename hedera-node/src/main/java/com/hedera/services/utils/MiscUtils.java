@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import static com.hedera.services.grpc.controllers.CryptoController.*;
 import static com.hedera.services.grpc.controllers.ConsensusController.*;
@@ -48,8 +47,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -181,10 +178,6 @@ public class MiscUtils {
 		} catch (Exception impossible) {
 			return Key.getDefaultInstance();
 		}
-	}
-
-	public static ByteString sha384HashOf(PlatformTxnAccessor accessor) {
-		return ByteString.copyFrom(uncheckedSha384Hash(accessor.getSignedTxn().toByteArray()));
 	}
 
 	public static Timestamp asTimestamp(Instant when) {
@@ -397,14 +390,6 @@ public class MiscUtils {
 
 	public static byte[] commonsHexToBytes(String literal) throws DecoderException {
 		return Hex.decodeHex(literal);
-	}
-
-	public static byte[] uncheckedSha384Hash(byte[] data) {
-		try {
-			return MessageDigest.getInstance("SHA-384").digest(data);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
-		}
 	}
 
 	public static String describe(JKey k) {

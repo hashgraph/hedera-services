@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.exception;
+package com.hedera.services.state.exports;
 
 /*-
  * ‌
@@ -20,10 +20,7 @@ package com.hedera.services.legacy.exception;
  * ‍
  */
 
-public class NegativeAccountBalanceException extends Exception {
-  private static final long serialVersionUID = 1L;
-
-  public NegativeAccountBalanceException(String message) {
-    super(message);
-  }
+@FunctionalInterface
+public interface SigFileWriter {
+	String writeSigFile(String signedFile, byte[] sig, byte[] signedFileHash);
 }

@@ -109,6 +109,11 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	@Override
 	public String pathToBalancesExportDir() {
-		return "data/accountBalances";
+		return "src/test/resources";
+	}
+
+	@Override
+	public boolean shouldExportTokenBalances() {
+		return true;
 	}
 }

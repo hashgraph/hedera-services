@@ -21,8 +21,9 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.ServicesState;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -33,6 +34,7 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,6 +105,13 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		return version == RELEASE_090_VERSION
 				? ChildIndices.NUM_V2_CHILDREN
 				: ChildIndices.NUM_V1_CHILDREN;
+	}
+
+	@Override
+	public void initialize(MerkleInternal previous) {
+		if (tokens() == null) {
+			setChild(ChildIndices.ASSOCIATED_TOKENS, new MerkleAccountTokens());
+		}
 	}
 
 	/* --- FastCopyable --- */
