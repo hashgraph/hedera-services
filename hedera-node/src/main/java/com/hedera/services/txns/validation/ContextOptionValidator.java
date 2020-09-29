@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -62,10 +63,15 @@ public class ContextOptionValidator implements OptionValidator {
 	public static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
 	private final PropertySource properties;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
-	public ContextOptionValidator(PropertySource properties, TransactionContext txnCtx) {
+	public ContextOptionValidator(
+			PropertySource properties,
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties) {
 		this.properties = properties;
 		this.txnCtx = txnCtx;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -105,15 +111,13 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isAcceptableLength(TransferList accountAmounts) {
-		int maxLen = properties.getIntProperty("ledger.transfers.maxLen");
-
-		return accountAmounts.getAccountAmountsCount() <= maxLen;
+	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
+		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
 	}
 
 	@Override
 	public boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
-		int maxLen = properties.getIntProperty("ledger.token.transfers.maxLen");
+		int maxLen = dynamicProperties.maxTokenTransferListSize();
 
 		if (tokenTransferLists.size() > maxLen) {
 			return false;

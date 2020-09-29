@@ -22,6 +22,7 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -128,6 +129,8 @@ public class ContextOptionValidatorTest {
 	private long expiry = 2_000_000L;
 	private FileID target = asFile("0.0.123");
 
+	GlobalDynamicProperties dynamicProperties;
+
 	@BeforeEach
 	private void setup() throws Exception {
 		txnCtx = mock(TransactionContext.class);
@@ -139,6 +142,8 @@ public class ContextOptionValidatorTest {
 		given(accounts.get(MerkleEntityId.fromAccountId(deleted))).willReturn(deletedV);
 		given(accounts.get(fromContractId(contract))).willReturn(contractV);
 		given(accounts.get(fromContractId(deletedContract))).willReturn(deletedContractV);
+
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		topics = mock(FCMap.class);
 		missingMerkleTopic = TopicFactory.newTopic().memo("I'm not here").get();
@@ -155,7 +160,7 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new JFileInfo(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(properties, txnCtx);
+		subject = new ContextOptionValidator(properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(JFileInfo meta) throws Exception {
@@ -356,12 +361,10 @@ public class ContextOptionValidatorTest {
 		// setup:
 		TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
-		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(3);
+		given(dynamicProperties.maxTransferListSize()).willReturn(3);
 
 		// expect:
-		assertTrue(subject.isAcceptableLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.transfers.maxLen");
+		assertTrue(subject.isAcceptableTransfersLength(wrapper));
 	}
 
 	@Test
@@ -369,12 +372,10 @@ public class ContextOptionValidatorTest {
 		// setup:
 		TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
-		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(2);
+		given(dynamicProperties.maxTransferListSize()).willReturn(2);
 
 		// expect:
-		assertFalse(subject.isAcceptableLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.transfers.maxLen");
+		assertFalse(subject.isAcceptableTransfersLength(wrapper));
 	}
 
 	@Test
@@ -611,12 +612,10 @@ public class ContextOptionValidatorTest {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(4);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
 		assertTrue(subject.isAcceptableTokenTransfersLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
 	}
 
 	@Test
@@ -624,12 +623,10 @@ public class ContextOptionValidatorTest {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(2);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
 
 		// expect:
 		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
 	}
 
 	@Test
@@ -637,12 +634,10 @@ public class ContextOptionValidatorTest {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 
-		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(4);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
 		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
 	}
 
 	@Test
@@ -650,11 +645,9 @@ public class ContextOptionValidatorTest {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, bTId);
 
-		given(properties.getIntProperty("ledger.token.transfers.maxLen")).willReturn(2);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
 
 		// expect:
 		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
-		// and:
-		verify(properties).getIntProperty("ledger.token.transfers.maxLen");
 	}
 }

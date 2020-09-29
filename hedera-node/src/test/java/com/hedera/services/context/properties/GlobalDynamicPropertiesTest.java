@@ -77,6 +77,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(13L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
 		assertTrue(subject.shouldExportTokenBalances());
+		assertEquals(15L, subject.maxTransferListSize());
+		assertEquals(16L, subject.maxTokenTransferListSize());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -111,6 +113,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(14L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
 		assertFalse(subject.shouldExportTokenBalances());
+		assertEquals(16L, subject.maxTransferListSize());
+		assertEquals(17L, subject.maxTokenTransferListSize());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -130,5 +134,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("balances.nodeBalanceWarningThreshold")).willReturn(i + 12L);
 		given(properties.getStringProperty("balances.exportDir.path")).willReturn(balanceExportPaths[i % 2]);
 		given(properties.getBooleanProperty("balances.exportTokenBalances")).willReturn((i + 13) % 2 == 0);
+		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(i + 14);
+		given(properties.getIntProperty("ledger.tokenTransfers.maxLen")).willReturn(i + 15);
 	}
 }

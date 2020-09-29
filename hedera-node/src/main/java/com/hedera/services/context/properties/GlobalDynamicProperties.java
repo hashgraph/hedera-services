@@ -44,6 +44,8 @@ public class GlobalDynamicProperties {
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
 	private AccountID fundingAccount;
+	private int maxTransfersLen;
+	private int maxTokenTransfersLen;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -77,6 +79,8 @@ public class GlobalDynamicProperties {
 		nodeBalanceWarningThreshold = properties.getLongProperty("balances.nodeBalanceWarningThreshold");
 		pathToBalancesExportDir = properties.getStringProperty("balances.exportDir.path");
 		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
+		maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
+		maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -145,5 +149,13 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldExportTokenBalances() {
 		return shouldExportTokenBalances;
+	}
+
+	public int maxTransferListSize() {
+		return maxTransfersLen;
+	}
+
+	public int maxTokenTransferListSize() {
+		return maxTokenTransfersLen;
 	}
 }

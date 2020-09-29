@@ -173,8 +173,6 @@ public class StandardizedPropertySources implements PropertySources {
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);
 		source.put("ledger.autoRenewPeriod.minDuration", PropertiesLoader::getMinimumAutorenewDuration);
 		source.put("ledger.records.ttl", PropertiesLoader::getThresholdTxRecordTTL);
-		source.put("ledger.transfers.maxLen", PropertiesLoader::getTransferAccountListSize);
-		source.put("ledger.token.transfers.maxLen", PropertiesLoader::getTokenTransfersListSize);
 		source.put("hedera.recordStream.logDir", PropertiesLoader::getRecordLogDir);
 		source.put("hedera.recordStream.logPeriod", PropertiesLoader::getRecordLogPeriod);
 		source.put("throttlingTps", PropertiesLoader::getThrottlingTps);

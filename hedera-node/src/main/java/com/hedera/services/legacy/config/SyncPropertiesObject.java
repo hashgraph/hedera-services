@@ -43,9 +43,6 @@ public class SyncPropertiesObject {
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
 
-	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
-	private static int tokenTransfersListSizeLimit = ApplicationConstants.TOKEN_TRANSFERS_LIST_LIMIT;
-
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
 
@@ -65,9 +62,6 @@ public class SyncPropertiesObject {
 
 		minimumAutoRenewDuration = appConfig.getLong("minimumAutoRenewDuration", ApplicationConstants.MINIMUM_AUTORENEW_DURATION);
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
-
-		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
-		tokenTransfersListSizeLimit = appConfig.getInt("tokenTransfersListSizeLimit", ApplicationConstants.TOKEN_TRANSFERS_LIST_LIMIT);
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
@@ -106,12 +100,6 @@ public class SyncPropertiesObject {
 	static long getMAXIMUM_AUTORENEW_DURATION() {
 		return maximumAutoRenewDuration;
 	}
-
-	static int getTransferListSizeLimit() {
-		return transferListSizeLimit;
-	}
-
-	static int getTokenTransfersListSizeLimit() { return tokenTransfersListSizeLimit; }
 
 	static int getLocalCallEstReturnBytes() {
 		return localCallEstReturnBytes;

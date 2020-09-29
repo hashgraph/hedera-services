@@ -101,6 +101,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.createThresholdRecords", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
+			entry("ledger.transfers.maxLen", 10),
+			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("precheck.account.maxLookupRetries", 10),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", 10),

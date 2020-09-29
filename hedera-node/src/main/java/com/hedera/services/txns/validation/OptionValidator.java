@@ -53,7 +53,7 @@ public interface OptionValidator {
 	boolean isValidEntityMemo(String memo);
 	boolean isValidTxnDuration(long duration);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
-	boolean isAcceptableLength(TransferList accountAmounts);
+	boolean isAcceptableTransfersLength(TransferList accountAmounts);
 	boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);

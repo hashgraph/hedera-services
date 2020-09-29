@@ -104,12 +104,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getGetTopicInfoBurstPeriod();
 	}
 
-	public static int getTransferAccountListSize() {
-		return SyncPropertiesObject.getTransferListSizeLimit();
-	}
-
-	public static int getTokenTransfersListSize() { return SyncPropertiesObject.getTokenTransfersListSizeLimit(); }
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}

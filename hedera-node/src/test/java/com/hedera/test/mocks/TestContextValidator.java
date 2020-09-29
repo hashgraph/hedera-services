@@ -76,7 +76,7 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isAcceptableLength(TransferList accountAmounts) {
+	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
 		throw new UnsupportedOperationException();
 	}
 
