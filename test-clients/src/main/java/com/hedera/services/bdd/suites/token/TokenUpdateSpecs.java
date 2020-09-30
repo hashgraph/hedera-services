@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,12 +31,12 @@ import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -454,6 +453,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.supplyKey("newSupplyKey")
 								.wipeKey("newWipeKey")
 				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance("primary", 0),
+						getAccountBalance("newTokenTreasury")
+								.hasTokenBalance("primary", 500),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")),
 						getAccountInfo("newTokenTreasury")
