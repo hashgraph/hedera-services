@@ -165,16 +165,6 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		return Query.newBuilder().setContractCallLocal(query).build();
 	}
 
-//	private void validateAddressSize(int size) {
-//		int retVal = 0;
-//		ByteString functionalResults = response.getContractCallLocal().getFunctionResult().getContractCallResult();
-//		byte[] result = functionalResults.toByteArray();
-//		if (result != null && result.length > 0) {
-//			retVal = decodeGetCodeSizeResult(result);
-//		}
-//
-//	}
-
 	@Override
 	protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
 		return spec.fees().forOp(HederaFunctionality.ContractCallLocal, scFees.getCostForQueryByIDOnly());

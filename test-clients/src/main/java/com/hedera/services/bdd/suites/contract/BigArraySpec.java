@@ -21,10 +21,12 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -81,27 +83,31 @@ public class BigArraySpec extends HapiApiSuite {
 				.when(
 						withOpContext((spec, opLog) -> {
 							int kbPerStep = 16;
+							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int sizeNow = kbPerStep; sizeNow < MAX_CONTRACT_STORAGE_ALLOWED; sizeNow += kbPerStep) {
 								var subOp1 = contractCall(
 										"bigArrayContract", BA_GROWTO_ABI, sizeNow)
 										.gas(300_000L)
 										.logged();
-								CustomSpecAssert.allRunFor(spec, subOp1);
+								subOps.add(subOp1);
 							}
+							CustomSpecAssert.allRunFor(spec, subOps);
 						})
 				)
 				.then(
 						withOpContext((spec, opLog) -> {
 							long numberOfIterations = 10;
+							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int i = 0; i < numberOfIterations; i++) {
 								var subOp1 = contractCall(
 										"bigArrayContract", BA_CHANGEARRAY_ABI,
 										ThreadLocalRandom.current().nextInt(1000))
 										.logged();
-								CustomSpecAssert.allRunFor(spec, subOp1);
+								subOps.add(subOp1);
 							}
+							CustomSpecAssert.allRunFor(spec, subOps);
 						})
 				);
 	}
