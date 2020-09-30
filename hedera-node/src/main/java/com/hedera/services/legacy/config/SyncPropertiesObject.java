@@ -32,8 +32,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
 public class SyncPropertiesObject {
 	// Tx record & receipt ttl setting in seconds
 	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
-	private static int txMinDuration = ApplicationConstants.TX_MIN_DUR;
-	private static int txMaxDuration = ApplicationConstants.TX_MAX_DUR;
 	private static int txMinRemaining = ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS;
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
@@ -53,8 +51,6 @@ public class SyncPropertiesObject {
 		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
 		// Tx record & receipt ttl setting in seconds
 		thresholdTxRecordTTL = appConfig.getInt("thresholdTxRecordTTL", ApplicationConstants.THRESH_REC_TTL);
-		txMinDuration = appConfig.getInt("txMinimumDuration", ApplicationConstants.TX_MIN_DUR);
-		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
 		// default valid duration of the contract in seconds
@@ -71,14 +67,6 @@ public class SyncPropertiesObject {
 
 	static int getThresholdTxRecordTTL() {
 		return thresholdTxRecordTTL;
-	}
-
-	static int getTxMinDuration() {
-		return txMinDuration;
-	}
-
-	static int getTxMaxDuration() {
-		return txMaxDuration;
 	}
 
 	static int getTxMinRemaining() {

@@ -86,9 +86,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidTxnDuration(long duration) {
-		long minDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
-
-		return duration >= minDuration && duration <= dynamicProperties.maxTxnDuration();
+		return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
 	}
 
 	@Override
@@ -158,7 +156,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (symbol.length() < 1) {
 			return MISSING_TOKEN_SYMBOL;
 		}
-		if (symbol.length() > properties.getIntProperty("tokens.maxSymbolLength")) {
+		if (symbol.length() > dynamicProperties.maxTokenSymbolLength()) {
 			return TOKEN_SYMBOL_TOO_LONG;
 		}
 		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
@@ -171,7 +169,7 @@ public class ContextOptionValidator implements OptionValidator {
 		if (name.length() < 1) {
 			return MISSING_TOKEN_NAME;
 		}
-		if (name.length() > properties.getIntProperty("tokens.maxTokenNameLength")) {
+		if (name.length() > dynamicProperties.maxTokenNameLength()) {
 			return TOKEN_NAME_TOO_LONG;
 		}
 		return OK;

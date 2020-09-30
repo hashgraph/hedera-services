@@ -57,8 +57,8 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidTxnDuration(long duration) {
-		long minDuration = PropertiesLoader.getTxMinDuration();
-		long maxDuration = PropertiesLoader.getTxMaxDuration();
+		long minDuration = 15;
+		long maxDuration = 180;
 
 		return duration >= minDuration && duration <= maxDuration;
 	}

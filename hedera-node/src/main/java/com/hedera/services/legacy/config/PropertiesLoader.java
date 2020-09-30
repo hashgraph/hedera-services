@@ -160,14 +160,6 @@ public class PropertiesLoader {
 		return SyncPropertiesObject.getTxMinRemaining();
 	}
 
-	public static int getTxMinDuration() {
-		return SyncPropertiesObject.getTxMinDuration();
-	}
-
-	public static int getTxMaxDuration() {
-		return SyncPropertiesObject.getTxMaxDuration();
-	}
-
 	public static boolean isEnableRecordStreaming() {
 		return AsyncPropertiesObject.isEnableRecordStreaming();
 	}

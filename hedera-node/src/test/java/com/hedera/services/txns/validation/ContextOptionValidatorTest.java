@@ -291,24 +291,20 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void rejectsBriefTxnDuration() {
-		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(2L);
+		given(dynamicProperties.minTxnDuration()).willReturn(2L);
 		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
 		// expect:
 		assertFalse(subject.isValidTxnDuration(1L));
-		// and:
-		verify(properties).getLongProperty("hedera.transaction.minValidDuration");
 	}
 
 	@Test
 	public void rejectsProlongedTxnDuration() {
-		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(2L);
+		given(dynamicProperties.minTxnDuration()).willReturn(2L);
 		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
 		// expect:
 		assertFalse(subject.isValidTxnDuration(11L));
-		// and:
-		verify(properties).getLongProperty("hedera.transaction.minValidDuration");
 	}
 
 	@Test
@@ -545,12 +541,10 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void acceptsReasonableTokenSymbol() {
-		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
 
 		// expect:
 		assertEquals(OK, subject.tokenSymbolCheck("AS"));
-		// and:
-		verify(properties).getIntProperty("tokens.maxSymbolLength");
 	}
 
 	@Test
@@ -561,33 +555,26 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void rejectsTooLongTokenSymbol() {
-		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
 
 		// expect:
 		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.tokenSymbolCheck("ASDF"));
-		// and:
-		verify(properties).getIntProperty("tokens.maxSymbolLength");
 	}
 
 	@Test
 	public void rejectsInvalidTokenSymbol() {
-		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(3);
+		given(dynamicProperties.maxTokenSymbolLength()).willReturn(3);
 
 		// expect:
 		assertEquals(INVALID_TOKEN_SYMBOL, subject.tokenSymbolCheck("!!!"));
-
-		// and:
-		verify(properties).getIntProperty("tokens.maxSymbolLength");
 	}
 
 	@Test
 	public void acceptsReasonableTokenName() {
-		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(100);
+		given(dynamicProperties.maxTokenNameLength()).willReturn(100);
 
 		// expect:
 		assertEquals(OK, subject.tokenNameCheck("ASDF"));
-		// and:
-		verify(properties).getIntProperty("tokens.maxTokenNameLength");
 	}
 
 	@Test
@@ -598,12 +585,10 @@ public class ContextOptionValidatorTest {
 
 	@Test
 	public void rejectsTooLongTokenName() {
-		given(properties.getIntProperty("tokens.maxTokenNameLength")).willReturn(3);
+		given(dynamicProperties.maxTokenNameLength()).willReturn(3);
 
 		// expect:
 		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("ASDF"));
-		// and:
-		verify(properties).getIntProperty("tokens.maxTokenNameLength");
 	}
 
 	@Test

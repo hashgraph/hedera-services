@@ -43,7 +43,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxTokensNameLength() {
+	public int maxTokenNameLength() {
 		return 100;
 	}
 
