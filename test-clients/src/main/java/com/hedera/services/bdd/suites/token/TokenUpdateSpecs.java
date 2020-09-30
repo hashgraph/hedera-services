@@ -36,10 +36,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -71,6 +74,9 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesAlreadyDeletedToken(),
 						validatesMissingRef(),
 						treasuryEvolves(),
+						deletedAutoRenewAccountCheckHolds(),
+						renewalPeriodCheckHolds(),
+						invalidTreasuryCheckHolds()
 				}
 		);
 	}
@@ -330,6 +336,64 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.symbol(numericSymbol)
 								.hasPrecheck(INVALID_TOKEN_SYMBOL)
+				);
+	}
+
+	public HapiApiSpec deletedAutoRenewAccountCheckHolds() {
+		return defaultHapiSpec("DeletedAutoRenewAccountCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate("autoRenewAccount"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						cryptoDelete("autoRenewAccount"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.autoRenewAccount("autoRenewAccount")
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT)
+				);
+	}
+
+	public HapiApiSpec renewalPeriodCheckHolds() {
+		return defaultHapiSpec("RenewalPeriodCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("autoRenewAccount")
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(-1123)
+								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+						tokenUpdate("tbu")
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(0)
+								.hasKnownStatus(INVALID_RENEWAL_PERIOD)
+				);
+	}
+
+	public HapiApiSpec invalidTreasuryCheckHolds() {
+		return defaultHapiSpec("InvalidTreasuryCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("invalidTreasury")
+				).when(
+						cryptoDelete("invalidTreasury"),
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.treasury("invalidTreasury")
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
 				);
 	}
 
