@@ -960,15 +960,16 @@ public class ServicesContext {
 								this::topics, validator(), txnCtx()))),
 				/* Token */
 				entry(TokenCreate,
-						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
+								validator(),
 								tokenStore(),
 								ledger(),
 								txnCtx(),
 								HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenTransact,
-						List.of(new TokenTransferTransitionLogic(ledger(), txnCtx()))),
+						List.of(new TokenTransferTransitionLogic(ledger(), validator(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1143,7 +1144,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(properties(), txnCtx());
+			validator = new ContextOptionValidator(properties(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}

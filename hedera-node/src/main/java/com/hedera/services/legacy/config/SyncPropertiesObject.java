@@ -32,8 +32,6 @@ import com.hedera.services.legacy.logic.CustomProperties;
 public class SyncPropertiesObject {
 	// Tx record & receipt ttl setting in seconds
 	private static int thresholdTxRecordTTL = ApplicationConstants.THRESH_REC_TTL;
-	private static int txMinDuration = ApplicationConstants.TX_MIN_DUR;
-	private static int txMaxDuration = ApplicationConstants.TX_MAX_DUR;
 	private static int txMinRemaining = ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS;
 
 	private static int keyExpansionDepth = ApplicationConstants.KEY_EXPANSION_DEPTH;
@@ -42,8 +40,6 @@ public class SyncPropertiesObject {
 
 	private static long minimumAutoRenewDuration = ApplicationConstants.MINIMUM_AUTORENEW_DURATION;
 	private static long maximumAutoRenewDuration= ApplicationConstants.MAXIMUM_AUTORENEW_DURATION;
-
-	private static int transferListSizeLimit = ApplicationConstants.TRANSFER_LST_LIMIT;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	private static int localCallEstReturnBytes = ApplicationConstants.LOCAL_CALLEST_RET_BYTES;
@@ -55,8 +51,6 @@ public class SyncPropertiesObject {
 		keyExpansionDepth = appConfig.getInt("keyExpansionDepth", ApplicationConstants.KEY_EXPANSION_DEPTH);
 		// Tx record & receipt ttl setting in seconds
 		thresholdTxRecordTTL = appConfig.getInt("thresholdTxRecordTTL", ApplicationConstants.THRESH_REC_TTL);
-		txMinDuration = appConfig.getInt("txMinimumDuration", ApplicationConstants.TX_MIN_DUR);
-		txMaxDuration = appConfig.getInt("txMaximumDuration", ApplicationConstants.TX_MAX_DUR);
 		txMinRemaining = appConfig.getInt("txMinimumRemaining", ApplicationConstants.TXN_MIN_VALIDITY_BUFFER_SECS);
 
 		// default valid duration of the contract in seconds
@@ -64,8 +58,6 @@ public class SyncPropertiesObject {
 
 		minimumAutoRenewDuration = appConfig.getLong("minimumAutoRenewDuration", ApplicationConstants.MINIMUM_AUTORENEW_DURATION);
 		maximumAutoRenewDuration = appConfig.getLong("maximumAutoRenewDuration", ApplicationConstants.MAXIMUM_AUTORENEW_DURATION);
-
-		transferListSizeLimit = appConfig.getInt("transferListSizeLimit", ApplicationConstants.TRANSFER_LST_LIMIT);
 
 		// Estimates for calculating fees for Smart Contract local calls
 		localCallEstReturnBytes = appConfig.getInt("localCallEstReturnBytes", ApplicationConstants.LOCAL_CALLEST_RET_BYTES);
@@ -75,14 +67,6 @@ public class SyncPropertiesObject {
 
 	static int getThresholdTxRecordTTL() {
 		return thresholdTxRecordTTL;
-	}
-
-	static int getTxMinDuration() {
-		return txMinDuration;
-	}
-
-	static int getTxMaxDuration() {
-		return txMaxDuration;
 	}
 
 	static int getTxMinRemaining() {
@@ -103,10 +87,6 @@ public class SyncPropertiesObject {
 
 	static long getMAXIMUM_AUTORENEW_DURATION() {
 		return maximumAutoRenewDuration;
-	}
-
-	static int getTransferListSizeLimit() {
-		return transferListSizeLimit;
 	}
 
 	static int getLocalCallEstReturnBytes() {

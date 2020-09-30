@@ -61,9 +61,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 						senderSigsAreValid(),
 						balancesAreChecked(),
-						nonZeroNetTransfersRejected(),
+						duplicateAccountsInTokenTransferRejected(),
 						allRequiredSigsAreChecked(),
 						txnsAreAtomic(),
+						nonZeroTransfersRejected()
 				}
 		);
 	}
@@ -213,27 +214,35 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec nonZeroNetTransfersRejected() {
-		return defaultHapiSpec("NonZeroNetTransfersRejected")
+	public HapiApiSpec duplicateAccountsInTokenTransferRejected() {
+		return defaultHapiSpec("DuplicateAccountsInTokenTransferRejected")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate("firstTreasury"),
 						cryptoCreate("beneficiary")
 				).when(
 						tokenCreate(A_TOKEN)
-								.initialSupply(100)
-								.treasury("firstTreasury"),
-						tokenAssociate("beneficiary", A_TOKEN)
 				).then(
 						tokenTransact(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(1, A_TOKEN).from("firstTreasury")
-						).payingWith("payer")
-								.signedBy("payer", "firstTreasury")
-								.hasKnownStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+						)
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
 				);
 	}
 
+	public HapiApiSpec nonZeroTransfersRejected() {
+		return defaultHapiSpec("NonZeroTransfersRejected")
+				.given(
+						cryptoCreate("firstTreasury")
+				).when(
+						tokenCreate(A_TOKEN)
+				).then(
+						tokenTransact(
+								moving(1, A_TOKEN).from("firstTreasury")
+						)
+								.hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+				);
+	}
 
 	public HapiApiSpec balancesChangeOnTokenTransfer() {
 		return defaultHapiSpec("BalancesChangeOnTokenTransfer")

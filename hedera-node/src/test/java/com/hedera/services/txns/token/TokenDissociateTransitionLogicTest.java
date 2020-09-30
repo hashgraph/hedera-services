@@ -36,10 +36,13 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.any;
@@ -119,6 +122,30 @@ class TokenDissociateTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenDissociateTxn));
+	}
+
+	@Test
+	public void rejectsMissingAccount() {
+		givenMissingAccount();
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenDissociateTxn));
+	}
+
+	@Test
+	public void rejectsDuplicateTokens() {
+		givenDuplicateTokens();
+
+		// expect:
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.syntaxCheck().apply(tokenDissociateTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenDissociateTxn = TransactionBody.newBuilder()
 				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
@@ -128,5 +155,20 @@ class TokenDissociateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.resolve(id)).willReturn(id);
+	}
+
+	private void givenMissingAccount() {
+		tokenDissociateTxn = TransactionBody.newBuilder()
+				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder())
+				.build();
+	}
+
+	private void givenDuplicateTokens() {
+		tokenDissociateTxn = TransactionBody.newBuilder()
+				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
+						.setAccount(account)
+						.addTokens(id)
+						.addTokens(id))
+				.build();
 	}
 }

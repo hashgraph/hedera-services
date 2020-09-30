@@ -91,7 +91,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.autoRenewAccount("autoRenew")
 								.autoRenewPeriod(Long.MAX_VALUE)
-								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+								.hasPrecheck(INVALID_RENEWAL_PERIOD),
 						tokenCreate("primary")
 								.signedBy(GENESIS)
 								.autoRenewAccount("autoRenew")
@@ -239,11 +239,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.name("")
 								.logged()
-								.hasKnownStatus(MISSING_TOKEN_NAME),
+								.hasPrecheck(MISSING_TOKEN_NAME),
 						tokenCreate("primary")
 								.name(longName)
 								.logged()
-								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
+								.hasPrecheck(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
@@ -284,19 +284,19 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("nonAlphanumeric")
 								.payingWith("payer")
 								.symbol("!")
-								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
+								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("missingSymbol")
 								.payingWith("payer")
 								.symbol("")
-								.hasKnownStatus(MISSING_TOKEN_SYMBOL),
+								.hasPrecheck(MISSING_TOKEN_SYMBOL),
 						tokenCreate("whiteSpaces")
 								.payingWith("payer")
 								.symbol(" ")
-								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
+								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
 								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
-								.hasKnownStatus(TOKEN_SYMBOL_TOO_LONG),
+								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
 								.symbol(firstToken)
 								.payingWith("payer")
@@ -348,19 +348,19 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("sinking")
 								.payingWith("payer")
 								.initialSupply(-1L)
-								.hasKnownStatus(INVALID_TOKEN_INITIAL_SUPPLY),
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
 						tokenCreate("bad decimals")
 								.payingWith("payer")
 								.decimals(-1)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
+								.hasPrecheck(INVALID_TOKEN_DECIMALS),
 						tokenCreate("bad decimals")
 								.payingWith("payer")
 								.decimals(1 << 31)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
+								.hasPrecheck(INVALID_TOKEN_DECIMALS),
 						tokenCreate("bad initial supply")
 								.payingWith("payer")
 								.initialSupply(1L << 63)
-								.hasKnownStatus(INVALID_TOKEN_INITIAL_SUPPLY)
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY)
 				);
 	}
 
