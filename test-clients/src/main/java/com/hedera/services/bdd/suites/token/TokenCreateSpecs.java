@@ -224,7 +224,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				.given().when().then(
 						tokenCreate("primary")
 								.expiry(1000)
-								.hasKnownStatus(INVALID_EXPIRATION_TIME)
+								.hasPrecheck(INVALID_EXPIRATION_TIME)
 				);
 	}
 
