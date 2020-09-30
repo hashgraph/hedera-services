@@ -1,22 +1,45 @@
 package com.hedera.services.files;
 
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.swirlds.common.FastCopyable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleLeaf;
+import com.swirlds.common.merkle.utility.AbstractMerkleNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.HashMap;
 
-public class SpecialFileSystem {
+import static com.hedera.services.legacy.logic.ApplicationConstants.SPECIAL_FILESYSTEM_DIR;
+import static com.swirlds.common.CommonUtils.hex;
+
+public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf, FastCopyable<SpecialFileSystem> {
+	private final static int HASH_BYTES = 48;
+	private final static int MERKLE_VERSION = 1;
+	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
 	private static final Logger log = LogManager.getLogger(SpecialFileSystem.class);
-	private static String fileSystemLocation = "specialFiles/";
-	Set<FileID> fileSet = new HashSet<>();
+
+	private String fileSystemLocation;
+	// Map of fileID and file hash bytes
+	HashMap<FileID, byte[]> fileMap = new HashMap<>();
 
 	public SpecialFileSystem() {
+		fileSystemLocation = SPECIAL_FILESYSTEM_DIR;
+	}
+
+	public SpecialFileSystem(AccountID nodeAccountID) {
+		fileSystemLocation = SPECIAL_FILESYSTEM_DIR + EntityIdUtils.asLiteralString(nodeAccountID) + File.separator;
 		// Create empty file 0.0.150
 		FileID fid150 = FileID.newBuilder()
 				.setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM)
@@ -26,10 +49,31 @@ public class SpecialFileSystem {
 		createEmptyIfNotExist(fid150);
 	}
 
+	public SpecialFileSystem(HashMap<FileID, byte[]> fileMap, String fileSystemLocation) {
+		this.fileSystemLocation = fileSystemLocation;
+		this.fileMap = (HashMap<FileID, byte[]>) fileMap.clone();
+	}
+
+	public byte[] getFileHash(FileID fileID) {
+		byte[] fileBytes = getFileContent(fileID);
+		try {
+			return MessageDigest.getInstance("SHA-384").digest(fileBytes);
+		} catch (NoSuchAlgorithmException e) {
+			log.error("Error when get hash of file {}", fileID);
+			return null;
+		}
+	}
+
 	private void createEmptyIfNotExist(FileID fileID) {
 		File testFile = new File(fileSystemLocation + fileIDtoDotString(fileID));
 		if (testFile.exists()) {
-			log.info("File {} already exists", fileID);
+			try {
+				byte[] hash = MessageDigest.getInstance("SHA-384").digest(getFileContent(fileID));
+				fileMap.put(fileID, hash);
+				log.info("File {} already exists, loading its hash {}", fileID, hash);
+			} catch (NoSuchAlgorithmException e) {
+				log.error("Error when calculating hash of file {}", fileID);
+			}
 		} else {
 			log.info("Creating empty File {}", fileID);
 			put(fileID, new byte[0]);
@@ -39,7 +83,8 @@ public class SpecialFileSystem {
 	private static String fileIDtoDotString(FileID fileID) {
 		return "File" + fileID.getShardNum() + "." + fileID.getRealmNum() + "." + fileID.getFileNum();
 	}
-	public byte[] get(FileID fileID) {
+
+	public byte[] getFileContent(FileID fileID) {
 		try {
 			return FileUtils.readFileToByteArray(new File(fileSystemLocation + fileIDtoDotString(fileID)));
 		} catch (IOException e) {
@@ -49,15 +94,83 @@ public class SpecialFileSystem {
 	}
 
 	public void put(FileID fileID, byte[] content) {
-		fileSet.add(fileID);
 		try {
+			byte[] hash = MessageDigest.getInstance("SHA-384").digest(content);
+			fileMap.put(fileID, hash);
 			FileUtils.writeByteArrayToFile(new File(fileSystemLocation + fileIDtoDotString(fileID)), content);
 		} catch (IOException e) {
-			log.error("{} Error when writing fileID {} to local filesystem", fileID, e);
+			log.error("Error when writing fileID {} to local filesystem", fileID, e);
+		} catch (NoSuchAlgorithmException e) {
+			log.error("Error when calculating hash of file {}", fileID);
 		}
 	}
 
 	public boolean isSpeicalFileID(FileID fileID) {
-		return fileSet.contains(fileID);
+		return fileMap.containsKey(fileID);
+	}
+
+	@Override
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		int mapSize = in.readInt();
+		for (int i = 0; i < mapSize; i++) {
+			long realmID = in.readLong();
+			long shardID = in.readLong();
+			long fileNum = in.readLong();
+			FileID fileID = FileID.newBuilder()
+					.setFileNum(fileNum)
+					.setRealmNum(realmID)
+					.setShardNum(shardID).build();
+			byte[] hash = in.readByteArray(HASH_BYTES);
+
+			//Verify if the file system has the same hash loaded form state
+			byte[] fileSystemHash = getFileHash(fileID);
+			if (Arrays.equals(hash, fileSystemHash)) {
+				fileMap.put(fileID, hash);
+			} else {
+				log.error("Error: File hash from state does not match file system, from state: {}", hex(hash));
+				log.error("Error: File hash from state does not match file system, from file : {}",
+						hex(fileSystemHash));
+				throw new IOException("File hash from state does not match file system");
+			}
+		}
+	}
+
+	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeInt(fileMap.size());
+		fileMap.keySet()
+				.stream()
+				.sorted(HederaLedger.FILE_ID_COMPARATOR)
+				.forEach(fileID -> {
+					try {
+						out.writeLong(fileID.getShardNum());
+						out.writeLong(fileID.getRealmNum());
+						out.writeLong(fileID.getFileNum());
+						out.writeByteArray(getFileHash(fileID));
+					} catch (IOException e) {
+						log.error("Error when serialize {}", fileID);
+					}
+				});
+	}
+
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return MERKLE_VERSION;
+	}
+
+	@Override
+	public SpecialFileSystem copy() {
+		SpecialFileSystem newCopy = new SpecialFileSystem(fileMap, fileSystemLocation);
+		return newCopy;
+	}
+
+	@Override
+	public void delete() {
+
 	}
 }

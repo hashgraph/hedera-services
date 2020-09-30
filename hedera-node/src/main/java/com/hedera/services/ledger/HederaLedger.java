@@ -39,6 +39,7 @@ import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -120,7 +121,10 @@ public class HederaLedger {
 			.comparingLong(TokenID::getTokenNum)
 			.thenComparingLong(TokenID::getRealmNum)
 			.thenComparingLong(TokenID::getShardNum);
-
+	public static final Comparator<FileID> FILE_ID_COMPARATOR = Comparator
+			.comparingLong(FileID::getFileNum)
+			.thenComparingLong(FileID::getShardNum)
+			.thenComparingLong(FileID::getRealmNum);
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();

@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
@@ -92,7 +93,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int TOKENS = 5;
 		static final int NUM_080_CHILDREN = 6;
 		static final int TOKEN_ASSOCIATIONS = 6;
-		static final int NUM_090_CHILDREN = 7;
+		static final int SPECIAL_FILE_SYSTEM = 7;
+		static final int NUM_090_CHILDREN = 8;
 	}
 
 	ServicesContext ctx;
@@ -160,7 +162,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
-		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
+		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
+		ctx = new ServicesContext(nodeId, platform, this, properties);
+
+		if (getNumberOfChildren() < ChildIndices.SPECIAL_FILE_SYSTEM) {
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
@@ -178,6 +183,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
 					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
+			setChild(ChildIndices.SPECIAL_FILE_SYSTEM, new SpecialFileSystem(ctx.nodeAccount()));
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
@@ -185,8 +191,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			printHashes();
 		}
 
-		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext(nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
@@ -234,7 +238,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				storage().copy(),
 				accounts().copy(),
 				tokens().copy(),
-				tokenAssociations().copy()));
+				tokenAssociations().copy(),
+				getSpecialFileSystem().copy()));
 	}
 
 	@Override
@@ -335,5 +340,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public AddressBook addressBook() {
 		return getChild(ChildIndices.ADDRESS_BOOK);
+	}
+
+	public SpecialFileSystem getSpecialFileSystem () {
+		return getChild((ChildIndices.SPECIAL_FILE_SYSTEM));
 	}
 }

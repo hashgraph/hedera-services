@@ -421,7 +421,6 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private SpecialFileSystem specialFileSystem;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 
 	/* Context-free infrastructure. */
@@ -1010,13 +1009,6 @@ public class ServicesContext {
 			ids = new SeqNoEntityIdSource(this::seqNo);
 		}
 		return ids;
-	}
-
-	public SpecialFileSystem specialFileSystem() {
-		if (specialFileSystem == null) {
-			specialFileSystem = new SpecialFileSystem();
-		}
-		return specialFileSystem;
 	}
 
 	public TransactionContext txnCtx() {
@@ -1627,5 +1619,9 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public SpecialFileSystem specialFileSystem() {
+		return state.getSpecialFileSystem();
 	}
 }

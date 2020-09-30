@@ -129,7 +129,7 @@ public class TieredHederaFs implements HederaFs {
 	public byte[] cat(FileID id) {
 		assertUsable(id);
 		if (specialFileSystem.isSpeicalFileID(id)) {
-			return specialFileSystem.get(id);
+			return specialFileSystem.getFileContent(id);
 		} else {
 			return data.get(id);
 		}
@@ -171,7 +171,7 @@ public class TieredHederaFs implements HederaFs {
 		assertUsable(id);
 		byte[] contents;
 		if (specialFileSystem.isSpeicalFileID(id)) {
-			contents = specialFileSystem.get(id);
+			contents = specialFileSystem.getFileContent(id);
 		} else {
 			contents = data.get(id);
 		}

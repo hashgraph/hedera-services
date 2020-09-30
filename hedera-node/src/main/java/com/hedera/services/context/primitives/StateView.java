@@ -160,7 +160,7 @@ public class StateView {
 
 	public Optional<byte[]> contentsOf(FileID id) {
 		if (specialFileSystem.isSpeicalFileID(id)) {
-			return Optional.ofNullable(specialFileSystem.get(id));
+			return Optional.ofNullable(specialFileSystem.getFileContent(id));
 		} else {
 			return Optional.ofNullable(fileContents.get(id));
 		}
