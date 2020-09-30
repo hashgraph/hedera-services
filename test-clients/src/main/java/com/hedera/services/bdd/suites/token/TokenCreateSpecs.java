@@ -68,7 +68,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesTreasuryAccount(),
 						autoRenewValidationWorks(),
 						creationSetsCorrectExpiry(),
-						creationHappyPath()
+						creationHappyPath(),
+						creationValidatesExpiry()
 				}
 		);
 	}
@@ -218,6 +219,14 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec creationValidatesExpiry() {
+		return defaultHapiSpec("CreationValidatesExpiry")
+				.given().when().then(
+						tokenCreate("primary")
+								.expiry(1000)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME)
+				);
+	}
 
 	public HapiApiSpec creationValidatesName() {
 		String longName = "a".repeat(MAX_NAME_LENGTH + 1);
