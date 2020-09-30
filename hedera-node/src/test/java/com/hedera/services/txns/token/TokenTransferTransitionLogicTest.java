@@ -39,6 +39,8 @@ import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -82,7 +84,7 @@ class TokenTransferTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 
 		txnCtx = mock(TransactionContext.class);
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(true);
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(OK);
 
 		subject = new TokenTransferTransitionLogic(ledger, validator, txnCtx);
 	}
@@ -145,12 +147,30 @@ class TokenTransferTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsIncorrectTransfersLength() {
+	public void rejectsExceedingTransfersLength() {
 		givenValidTxnCtx();
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(false);
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// expect:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsEmptyTokenTransfersBody() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_BODY);
+
+		// expect:
+		assertEquals(EMPTY_TOKEN_TRANSFER_BODY, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsEmptyTokenTransferAccountAmounts() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
+
+		// expect:
+		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(tokenTransactTxn));
 	}
 
 	@Test
