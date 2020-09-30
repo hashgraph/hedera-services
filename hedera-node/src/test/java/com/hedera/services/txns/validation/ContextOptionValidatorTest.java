@@ -628,7 +628,7 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	public void rejectsEmptyTokenTransfersEmptyAccountAmounts() {
+	public void rejectsEmptyTokenTransferAccountAmounts() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, bTId);
 

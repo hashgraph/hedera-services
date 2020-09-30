@@ -156,7 +156,7 @@ class TokenTransferTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsEmptyTokenTransfersBody() {
+	public void rejectsEmptyTokenTransferBody() {
 		givenValidTxnCtx();
 		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_BODY);
 
