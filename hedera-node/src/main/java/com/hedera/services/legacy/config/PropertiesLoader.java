@@ -104,10 +104,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getGetTopicInfoBurstPeriod();
 	}
 
-	public static int getTransferAccountListSize() {
-		return SyncPropertiesObject.getTransferListSizeLimit();
-	}
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}
@@ -162,14 +158,6 @@ public class PropertiesLoader {
 
 	public static int getTxMinRemaining() {
 		return SyncPropertiesObject.getTxMinRemaining();
-	}
-
-	public static int getTxMinDuration() {
-		return SyncPropertiesObject.getTxMinDuration();
-	}
-
-	public static int getTxMaxDuration() {
-		return SyncPropertiesObject.getTxMaxDuration();
 	}
 
 	public static boolean isEnableRecordStreaming() {

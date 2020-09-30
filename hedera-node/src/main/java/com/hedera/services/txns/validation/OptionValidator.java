@@ -20,8 +20,10 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -30,13 +32,13 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Defines a type able to divine the validity of various options
@@ -51,9 +53,12 @@ public interface OptionValidator {
 	boolean isValidEntityMemo(String memo);
 	boolean isValidTxnDuration(long duration);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
-	boolean isAcceptableLength(TransferList accountAmounts);
+	boolean isAcceptableTransfersLength(TransferList accountAmounts);
+	boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
+	ResponseCodeEnum tokenSymbolCheck(String symbol);
+	ResponseCodeEnum tokenNameCheck(String name);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);

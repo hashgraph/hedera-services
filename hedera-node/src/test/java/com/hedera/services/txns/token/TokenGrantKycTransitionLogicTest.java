@@ -35,10 +35,13 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -118,6 +121,30 @@ class TokenGrantKycTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenGrantKycTxn));
+	}
+
+	@Test
+	public void rejectsMissingToken() {
+		givenMissingToken();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenGrantKycTxn));
+	}
+
+	@Test
+	public void rejectsMissingAccount() {
+		givenMissingAccount();
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenGrantKycTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenGrantKycTxn = TransactionBody.newBuilder()
 				.setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
@@ -127,5 +154,18 @@ class TokenGrantKycTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+	}
+
+	private void givenMissingToken() {
+		tokenGrantKycTxn = TransactionBody.newBuilder()
+				.setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder())
+				.build();
+	}
+
+	private void givenMissingAccount() {
+		tokenGrantKycTxn = TransactionBody.newBuilder()
+				.setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
+						.setToken(tokenId))
+				.build();
 	}
 }

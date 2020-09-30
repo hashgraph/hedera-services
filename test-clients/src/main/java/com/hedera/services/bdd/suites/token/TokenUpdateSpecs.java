@@ -288,7 +288,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).then(
 						tokenUpdate("tbu")
 								.name(tooLongName)
-								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
+								.hasPrecheck(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
