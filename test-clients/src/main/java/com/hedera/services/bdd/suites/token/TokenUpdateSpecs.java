@@ -39,13 +39,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
+	private static final int MAX_SYMBOL_LENGTH = 32;
 
 	private static String TOKEN_TREASURY = "treasury";
 
@@ -61,6 +64,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validAutoRenewWorks(),
 						validatesMissingAdminKey(),
 						tooLongNameCheckHolds(),
+						tooLongSymbolCheckHolds(),
+						numericSymbolCheckHolds(),
 						nameChanges(),
 						keysChange(),
 						validatesAlreadyDeletedToken(),
@@ -289,6 +294,42 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.name(tooLongName)
 								.hasPrecheck(TOKEN_NAME_TOO_LONG)
+				);
+	}
+
+	public HapiApiSpec tooLongSymbolCheckHolds() {
+		var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH+1);
+
+		return defaultHapiSpec("TooLongSymbolCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.symbol(tooLongSymbol)
+								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG)
+				);
+	}
+
+	public HapiApiSpec numericSymbolCheckHolds() {
+		var numericSymbol = "1234a";
+
+		return defaultHapiSpec("NumericSymbolCheckHolds")
+				.given(
+						newKeyNamed("adminKey"),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("tbu")
+								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY)
+				).then(
+						tokenUpdate("tbu")
+								.symbol(numericSymbol)
+								.hasPrecheck(INVALID_TOKEN_SYMBOL)
 				);
 	}
 
