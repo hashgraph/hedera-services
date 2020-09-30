@@ -165,7 +165,6 @@ public class StandardizedPropertySources implements PropertySources {
 		BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
 		/* Global/dynamic properties. */
-		source.put("hedera.transaction.maxValidDuration", () -> PropertiesLoader.getTxMaxDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidDuration", () -> PropertiesLoader.getTxMinDuration() & LONG_MASK);
 		source.put("hedera.transaction.minValidityBufferSecs", PropertiesLoader::getTxMinRemaining);
 		source.put("ledger.autoRenewPeriod.maxDuration", PropertiesLoader::getMaximumAutorenewDuration);

@@ -61,7 +61,8 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("accountBalanceExportEnabled", "balances.exportEnabled"),
 			entry("nodeAccountBalanceValidity", "balances.nodeBalanceWarningThreshold"),
 			entry("accountBalanceExportDir", "balances.exportDir.path"),
-			entry("transferListSizeLimit", "ledger.transfers.maxLen")
+			entry("transferListSizeLimit", "ledger.transfers.maxLen"),
+			entry("txMaximumDuration", "hedera.transaction.maxValidDuration")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
 			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),

@@ -126,4 +126,14 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int maxTokenTransferListSize() {
 		return 10;
 	}
+
+	@Override
+	public int maxMemoUtf8Bytes() {
+		return 100;
+	}
+
+	@Override
+	public long maxTxnDuration() {
+		return 180L;
+	}
 }

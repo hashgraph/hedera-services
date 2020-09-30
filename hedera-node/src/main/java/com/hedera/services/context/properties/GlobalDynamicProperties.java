@@ -47,6 +47,7 @@ public class GlobalDynamicProperties {
 	private int maxTransfersLen;
 	private int maxTokenTransfersLen;
 	private int maxMemoUtf8Bytes;
+	private long maxTxnDuration;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -83,6 +84,7 @@ public class GlobalDynamicProperties {
 		maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
 		maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
 		maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
+		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 	}
 
 	public long defaultContractSendThreshold() {
@@ -163,5 +165,9 @@ public class GlobalDynamicProperties {
 
 	public int maxMemoUtf8Bytes() {
 		return maxMemoUtf8Bytes;
+	}
+
+	public long maxTxnDuration() {
+		return maxTxnDuration;
 	}
 }

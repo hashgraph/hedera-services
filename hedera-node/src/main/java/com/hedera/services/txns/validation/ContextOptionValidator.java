@@ -87,9 +87,8 @@ public class ContextOptionValidator implements OptionValidator {
 	@Override
 	public boolean isValidTxnDuration(long duration) {
 		long minDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
-		long maxDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 
-		return duration >= minDuration && duration <= maxDuration;
+		return duration >= minDuration && duration <= dynamicProperties.maxTxnDuration();
 	}
 
 	@Override

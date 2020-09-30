@@ -80,6 +80,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(15, subject.maxTransferListSize());
 		assertEquals(16, subject.maxTokenTransferListSize());
 		assertEquals(17, subject.maxMemoUtf8Bytes());
+		assertEquals(18L, subject.maxTxnDuration());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -117,6 +118,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(16, subject.maxTransferListSize());
 		assertEquals(17, subject.maxTokenTransferListSize());
 		assertEquals(18, subject.maxMemoUtf8Bytes());
+		assertEquals(19L, subject.maxTxnDuration());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -139,5 +141,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(i + 14);
 		given(properties.getIntProperty("ledger.tokenTransfers.maxLen")).willReturn(i + 15);
 		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(i + 16);
+		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(i + 17L);
 	}
 }

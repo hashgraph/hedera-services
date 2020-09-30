@@ -292,7 +292,7 @@ public class ContextOptionValidatorTest {
 	@Test
 	public void rejectsBriefTxnDuration() {
 		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(2L);
-		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(10L);
+		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
 		// expect:
 		assertFalse(subject.isValidTxnDuration(1L));
@@ -303,13 +303,12 @@ public class ContextOptionValidatorTest {
 	@Test
 	public void rejectsProlongedTxnDuration() {
 		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(2L);
-		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(10L);
+		given(dynamicProperties.maxTxnDuration()).willReturn(10L);
 
 		// expect:
 		assertFalse(subject.isValidTxnDuration(11L));
 		// and:
 		verify(properties).getLongProperty("hedera.transaction.minValidDuration");
-		verify(properties).getLongProperty("hedera.transaction.maxValidDuration");
 	}
 
 	@Test
