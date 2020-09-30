@@ -80,8 +80,9 @@ public class TokenTransferTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		TokenTransfersTransactionBody op = txnBody.getTokenTransfers();
 
-		if (!validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList())) {
-			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+		var validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
+		if (validity != OK) {
+			return validity;
 		}
 
 		return checkTokenTransfers(op.getTokenTransfersList());

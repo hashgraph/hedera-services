@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -120,6 +121,10 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
 						tokenAssociate("misc", "1.2.3")
 								.hasKnownStatus(INVALID_TOKEN_ID),
+						tokenAssociate("misc", "1.2.3", "1.2.3")
+								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+						tokenDissociate("misc", "1.2.3", "1.2.3")
+								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + 1
 						)).payingWith(ADDRESS_BOOK_CONTROL),

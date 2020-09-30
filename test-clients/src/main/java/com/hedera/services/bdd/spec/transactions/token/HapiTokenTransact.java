@@ -60,12 +60,12 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 	public static class TokenMovement {
 		private final long amount;
 		private final String token;
-		private final String sender;
+		private final Optional<String> sender;
 		private final Optional<String> receiver;
 
 		TokenMovement(
 				String token,
-				String sender,
+				Optional<String> sender,
 				long amount,
 				Optional<String> receiver
 		) {
@@ -76,17 +76,22 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 		}
 
 		public List<Map.Entry<String, Long>> generallyInvolved() {
-			Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(sender, -amount);
-			return receiver.isPresent()
-					? List.of(senderEntry, new AbstractMap.SimpleEntry<>(receiver.get(), -amount))
-					: List.of(senderEntry);
+			if (sender.isPresent()) {
+				Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(sender.get(), -amount);
+				return receiver.isPresent()
+						? List.of(senderEntry, new AbstractMap.SimpleEntry<>(receiver.get(), -amount))
+						: List.of(senderEntry);
+			}
+			return List.of();
 		}
 
 		public TokenTransferList specializedFor(HapiApiSpec spec) {
 			var scopedTransfers = TokenTransferList.newBuilder();
 			var id = spec.registry().getTokenID(token);
 			scopedTransfers.setToken(id);
-			scopedTransfers.addTransfers(adjustment(sender, -amount, spec));
+			if (sender.isPresent()) {
+				scopedTransfers.addTransfers(adjustment(sender.get(), -amount, spec));
+			}
 			if (receiver.isPresent()) {
 				scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
 			}
@@ -110,11 +115,15 @@ public class HapiTokenTransact extends HapiTxnOp<HapiTokenTransact> {
 			}
 
 			public TokenMovement between(String sender, String receiver) {
-				return new TokenMovement(token, sender, amount, Optional.of(receiver));
+				return new TokenMovement(token, Optional.of(sender), amount, Optional.of(receiver));
 			}
 
 			public TokenMovement from(String magician) {
-				return new TokenMovement(token, magician, amount, Optional.empty());
+				return new TokenMovement(token, Optional.of(magician), amount, Optional.empty());
+			}
+
+			public TokenMovement empty() {
+				return new TokenMovement(token, Optional.empty(), amount, Optional.empty());
 			}
 		}
 

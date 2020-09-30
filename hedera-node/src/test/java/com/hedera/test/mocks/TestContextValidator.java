@@ -81,7 +81,7 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
+	public ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
 		throw new UnsupportedOperationException();
 	}
 
