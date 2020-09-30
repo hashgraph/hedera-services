@@ -548,7 +548,7 @@ public class HederaTokenStore implements TokenStore {
 				var newName = changes.getName();
 				token.setName(newName);
 			}
-			if (changes.hasTreasury()) {
+			if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
 				var treasuryId = ofNullableAccountId(changes.getTreasury());
 				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
