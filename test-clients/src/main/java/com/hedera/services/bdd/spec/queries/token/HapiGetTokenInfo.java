@@ -25,8 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -34,21 +32,17 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 
 public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenInfo.class);
@@ -179,9 +173,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		}
 
 		if (expectedAutoRenewAccount.isPresent()) {
+			var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
 			Assert.assertEquals(
 					"Wrong auto renew account!",
-					expectedAutoRenewAccount.get(),
+					id,
 					actualInfo.getAutoRenewAccount());
 		}
 
@@ -190,6 +185,28 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					"Wrong auto renew period!",
 					expectedAutoRenewPeriod.getAsLong(),
 					actualInfo.getAutoRenewPeriod());
+		}
+
+		if (expectedTotalSupply.isPresent()) {
+			Assert.assertEquals(
+					"Wrong total supply!",
+					expectedTotalSupply.getAsLong(),
+					actualInfo.getTotalSupply());
+		}
+
+		if (expectedDecimals.isPresent()) {
+			Assert.assertEquals(
+					"Wrong decimals!",
+					expectedDecimals.getAsInt(),
+					actualInfo.getDecimals());
+		}
+
+		if (expectedTreasury.isPresent()) {
+			var id = TxnUtils.asId(expectedTreasury.get(), spec);
+			Assert.assertEquals(
+					"Wrong treasury account!",
+					id,
+					actualInfo.getTreasury());
 		}
 
 		var registry = spec.registry();
@@ -205,6 +222,41 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedExpiry,
 				(n, r) -> r.getTokenExpiry(token),
 				"Wrong token expiry!",
+				registry);
+
+		assertFor(
+				actualInfo.getFreezeKey(),
+				expectedFreezeKey,
+				(n, r) -> r.getFreezeKey(token),
+				"Wrong token freeze key!",
+				registry);
+
+		assertFor(
+				actualInfo.getAdminKey(),
+				expectedAdminKey,
+				(n, r) -> r.getAdminKey(token),
+				"Wrong token admin key!",
+				registry);
+
+		assertFor(
+				actualInfo.getWipeKey(),
+				expectedWipeKey,
+				(n, r) -> r.getWipeKey(token),
+				"Wrong token wipe key!",
+				registry);
+
+		assertFor(
+				actualInfo.getKycKey(),
+				expectedKycKey,
+				(n, r) -> r.getKycKey(token),
+				"Wrong token KYC key!",
+				registry);
+
+		assertFor(
+				actualInfo.getSupplyKey(),
+				expectedSupplyKey,
+				(n, r) -> r.getSupplyKey(token),
+				"Wrong token supply key!",
 				registry);
 	}
 

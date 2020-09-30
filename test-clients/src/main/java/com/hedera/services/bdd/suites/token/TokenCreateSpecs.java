@@ -24,12 +24,9 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static java.time.LocalDate.now;
 
 public class TokenCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
@@ -60,19 +56,19 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						creationValidatesSymbol(),
-//						treasuryHasCorrectBalance(),
-//						creationRequiresAppropriateSigs(),
-//						initialSupplyMustBeSane(),
-//						numAccountsAllowedIsDynamic(),
-//						creationYieldsExpectedToken(),
-//						creationSetsExpectedName(),
-//						creationValidatesName(),
-//						creationRequiresAppropriateSigs(),
-//						creationValidatesTreasuryAccount(),
-//						autoRenewValidationWorks(),
+						creationValidatesSymbol(),
+						treasuryHasCorrectBalance(),
+						creationRequiresAppropriateSigs(),
+						initialSupplyMustBeSane(),
+						numAccountsAllowedIsDynamic(),
+						creationYieldsExpectedToken(),
+						creationSetsExpectedName(),
+						creationValidatesName(),
+						creationRequiresAppropriateSigs(),
+						creationValidatesTreasuryAccount(),
+						autoRenewValidationWorks(),
 						creationSetsCorrectExpiry(),
-//						creationHappyPath()
+						creationHappyPath()
 				}
 		);
 	}
@@ -170,43 +166,29 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.kycKey("kycKey")
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
+								.via("createTxn")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
 							var createTxn = getTxnRecord("createTxn");
 							allRunFor(spec, createTxn);
-							var record = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
-
-							getTokenInfo("primary")
-									.logged()
-									.hasRegisteredId("primary")
-									.hasName(saltedName)
-									.hasTreasury(TOKEN_TREASURY)
-									.hasAutoRenewAccount("autoRenewAccount")
-									.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
-									.hasDecimals(1)
-									.hasAdminKey("adminKey")
-									.hasFreezeKey("freezeKey")
-									.hasFreezeDefault(TokenFreezeStatus.Frozen)
-									.hasKycKey("kycKey")
-									.hasSupplyKey("supplyKey")
-									.hasWipeKey("wipeKey")
-									.hasTotalSupply(500);
+							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
+							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
 						}),
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")
 								.hasName(saltedName)
 								.hasTreasury(TOKEN_TREASURY)
-								.hasAutoRenewAccount("autoRenewAccount")
 								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+								.hasValidExpiry()
 								.hasDecimals(1)
 								.hasAdminKey("adminKey")
 								.hasFreezeKey("freezeKey")
-								.hasFreezeDefault(TokenFreezeStatus.Frozen)
 								.hasKycKey("kycKey")
 								.hasSupplyKey("supplyKey")
 								.hasWipeKey("wipeKey")
 								.hasTotalSupply(500)
+								.hasAutoRenewAccount("autoRenewAccount")
 				);
 	}
 
