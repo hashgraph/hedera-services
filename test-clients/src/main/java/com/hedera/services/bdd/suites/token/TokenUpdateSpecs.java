@@ -21,7 +21,9 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +37,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenTransact.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -52,6 +55,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
 	private static final int MAX_NAME_LENGTH = 100;
 	private static final int MAX_SYMBOL_LENGTH = 32;
+	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
 
@@ -76,7 +80,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						treasuryEvolves(),
 						deletedAutoRenewAccountCheckHolds(),
 						renewalPeriodCheckHolds(),
-						invalidTreasuryCheckHolds()
+						invalidTreasuryCheckHolds(),
+						updateHappyPath()
 				}
 		);
 	}
@@ -366,6 +371,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate("tbu")
 								.adminKey("adminKey")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate("withAutoRenewAcc")
+								.adminKey("adminKey")
+								.autoRenewAccount("autoRenewAccount")
 								.treasury(TOKEN_TREASURY)
 				).then(
 						tokenUpdate("tbu")
@@ -375,6 +384,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.autoRenewAccount("autoRenewAccount")
 								.autoRenewPeriod(0)
+								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+						tokenUpdate("withAutoRenewAcc")
+								.autoRenewPeriod(-1)
+								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+						tokenUpdate("withAutoRenewAcc")
+								.autoRenewPeriod(100000000000L)
 								.hasKnownStatus(INVALID_RENEWAL_PERIOD)
 				);
 	}
@@ -394,6 +409,67 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate("tbu")
 								.treasury("invalidTreasury")
 								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+				);
+	}
+
+	public HapiApiSpec updateHappyPath() {
+		String saltedName = salted("primary");
+		String newSaltedName = salted("primary");
+		return defaultHapiSpec("UpdateHappyPath")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("newTokenTreasury"),
+						cryptoCreate("autoRenewAccount"),
+						cryptoCreate("newAutoRenewAccount"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("newFreezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("newKycKey"),
+						newKeyNamed("supplyKey"),
+						newKeyNamed("newSupplyKey"),
+						newKeyNamed("wipeKey"),
+						newKeyNamed("newWipeKey"),
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.initialSupply(500)
+								.decimals(1)
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.kycKey("kycKey")
+								.supplyKey("supplyKey")
+								.wipeKey("wipeKey")
+				).when(
+						tokenAssociate("newTokenTreasury", "primary"),
+						tokenUpdate("primary")
+								.name(newSaltedName)
+								.treasury("newTokenTreasury")
+								.autoRenewAccount("newAutoRenewAccount")
+								.autoRenewPeriod(101)
+								.freezeKey("newFreezeKey")
+								.kycKey("newKycKey")
+								.supplyKey("newSupplyKey")
+								.wipeKey("newWipeKey")
+				).then(
+						getAccountInfo(TOKEN_TREASURY)
+								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")),
+						getAccountInfo("newTokenTreasury")
+								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")),
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasName(newSaltedName)
+								.hasTreasury("newTokenTreasury")
+								.hasFreezeKey("newFreezeKey")
+								.hasKycKey("newKycKey")
+								.hasSupplyKey("newSupplyKey")
+								.hasWipeKey("newWipeKey")
+								.hasTotalSupply(500)
+								.hasAutoRenewAccount("newAutoRenewAccount")
+								.hasAutoRenewPeriod(101L)
 				);
 	}
 

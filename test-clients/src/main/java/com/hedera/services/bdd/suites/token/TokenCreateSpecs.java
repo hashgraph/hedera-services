@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -32,6 +33,7 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -188,7 +190,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasSupplyKey("supplyKey")
 								.hasWipeKey("wipeKey")
 								.hasTotalSupply(500)
-								.hasAutoRenewAccount("autoRenewAccount")
+								.hasAutoRenewAccount("autoRenewAccount"),
+						getAccountInfo(TOKEN_TREASURY)
+								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary"))
 				);
 	}
 
