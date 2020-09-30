@@ -146,7 +146,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationHappyPath")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate("autoRenewAccount"),
 						newKeyNamed("adminKey"),
@@ -196,7 +195,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationSetsCorrectExpiry() {
 		return defaultHapiSpec("CreationSetsCorrectExpiry")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						cryptoCreate("autoRenew")
 				).when(
