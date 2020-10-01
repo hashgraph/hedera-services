@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.utils.IdUtils;
@@ -45,6 +46,7 @@ class ExpiringCreationsTest {
 	AccountID effPayer = IdUtils.asAccount("0.0.13257");
 	TransactionRecord record = DomainSerdesTest.recordOne().asGrpc();
 
+	RecordCache recordCache;
 	HederaLedger ledger;
 	ExpiryManager expiries;
 	PropertySource properties;
@@ -56,11 +58,14 @@ class ExpiringCreationsTest {
 		ledger = mock(HederaLedger.class);
 		expiries = mock(ExpiryManager.class);
 		properties = mock(PropertySource.class);
+		recordCache = mock(RecordCache.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.shouldCreatePayerRecords()).willReturn(true);
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(historyTtl);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(cacheTtl);
 
 		subject = new ExpiringCreations(expiries, properties, dynamicProperties);
+		subject.setRecordCache(recordCache);
 		subject.setLedger(ledger);
 	}
 
@@ -90,6 +95,29 @@ class ExpiringCreationsTest {
 		verify(ledger, times(2)).addRecord(argThat(effPayer::equals), captor.capture());
 		// and:
 		Assertions.assertSame(captor.getAllValues().get(0), captor.getAllValues().get(1));
+	}
+
+	@Test
+	public void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
+		given(dynamicProperties.shouldCreatePayerRecords()).willReturn(false);
+
+		// given:
+		long expectedExpiry = now + cacheTtl;
+		// and:
+		var expected = ExpirableTxnRecord.fromGprc(record);
+		expected.setExpiry(expectedExpiry);
+		expected.setSubmittingMember(submittingMember);
+
+		// when:
+		var actual = subject.createExpiringPayerRecord(effPayer, record, now, submittingMember);
+
+		// then:
+		verify(ledger, never()).addPayerRecord(any(), any());
+		verify(recordCache).trackForExpiry(expected);
+		// and:
+		verify(expiries, never()).trackPayerRecord(effPayer, expectedExpiry);
+		// and:
+		Assertions.assertEquals(expected, actual);
 	}
 
 	@Test

@@ -1062,7 +1062,8 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(recordCache(), txnHistories());
+			expiries = new ExpiryManager(txnHistories());
+			expiries.setRecordCache(recordCache());
 		}
 		return expiries;
 	}

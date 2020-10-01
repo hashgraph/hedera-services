@@ -39,16 +39,19 @@ import java.util.List;
 import java.util.Map;
 
 public class ExpiryManager {
-	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private RecordCache recordCache;
 
 	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
 	MonotonicFullQueueExpiries<Long> historicalExpiries = new MonotonicFullQueueExpiries<>();
 
-	public ExpiryManager(RecordCache recordCache, Map<TransactionID, TxnIdRecentHistory> txnHistories) {
-		this.recordCache = recordCache;
+	public ExpiryManager(Map<TransactionID, TxnIdRecentHistory> txnHistories) {
 		this.txnHistories = txnHistories;
+	}
+
+	public void setRecordCache(RecordCache recordCache) {
+		this.recordCache = recordCache;
 	}
 
 	public void trackHistoricalRecord(AccountID payer, long expiry) {

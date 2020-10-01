@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -65,6 +66,7 @@ import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class RecordCacheTest {
+	long someExpiry = 1_234_567L;
 	long submittingMember = 1L;
 	private TransactionID txnIdA = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
@@ -113,6 +115,40 @@ class RecordCacheTest {
 		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
 		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
 		subject = new RecordCache(creator, receiptCache, histories);
+	}
+
+	@Test
+	public void doesDiForCreator() {
+		// expect:
+		creator.setRecordCache(subject);
+	}
+
+	@Test
+	public void expiresOtherForgottenHistory() {
+		// setup:
+		record.setExpiry(someExpiry);
+		subject.setPostConsensus(txnIdA, SUCCESS, record);
+		subject.trackForExpiry(record);
+
+		// when:
+		subject.forgetAnyOtherExpiredHistory(someExpiry - 1);
+
+		// then:
+		assertFalse(subject.isReceiptPresent(txnIdA));
+	}
+
+	@Test
+	public void tracksExpiringTxnIds() {
+		// setup:
+		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
+		// and:
+		record.setExpiry(someExpiry);
+
+		// when:
+		subject.trackForExpiry(record);
+
+		// then:
+		verify(subject.recordExpiries).track(txnIdA, someExpiry);
 	}
 
 	@Test
