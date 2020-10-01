@@ -67,6 +67,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	private boolean shouldAlsoRegisterAsAccount = true;
 	private boolean useDeprecatedAdminKey = false;
 	private final String contract;
+	private Optional<Long> gas = Optional.empty();
 	Optional<String> key = Optional.empty();
 	Optional<Long> autoRenewPeriodSecs = Optional.empty();
 	Optional<Long> balance = Optional.empty();
@@ -138,6 +139,12 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		balance = Optional.of(initial);
 		return this;
 	}
+
+	public HapiContractCreate gas(long amount) {
+		gas = Optional.of(amount);
+		return this;
+	}
+
 	public HapiContractCreate memo(String s)	 {
 		memo = Optional.of(s);
 		return this;
@@ -212,6 +219,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p).build()));
 							balance.ifPresent(a -> b.setInitialBalance(a));
 							memo.ifPresent(m -> b.setMemo(m));
+							gas.ifPresent(a -> b.setGas(a));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
 						}
 				);
