@@ -147,4 +147,8 @@ public class RecordCache {
 		}
 		return null;
 	}
+
+	public void forgetAnyOtherExpiredHistory(long at) {
+		throw new AssertionError("Not implemented!");
+	}
 }

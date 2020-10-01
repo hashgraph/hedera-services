@@ -20,7 +20,9 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -37,13 +39,15 @@ import java.util.List;
 import java.util.Map;
 
 public class ExpiryManager {
+	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
 	MonotonicFullQueueExpiries<Long> historicalExpiries = new MonotonicFullQueueExpiries<>();
 
-	public ExpiryManager(Map<TransactionID, TxnIdRecentHistory> txnHistories) {
+	public ExpiryManager(RecordCache recordCache, Map<TransactionID, TxnIdRecentHistory> txnHistories) {
+		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
 	}
 
@@ -104,6 +108,7 @@ public class ExpiryManager {
 		while (payerExpiries.hasExpiringAt(now)) {
 			ledger.purgeExpiredPayerRecords(accountWith(payerExpiries.expireNextAt(now)), now, this::updateHistory);
 		}
+		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
 
 	void updateHistory(ExpirableTxnRecord record) {

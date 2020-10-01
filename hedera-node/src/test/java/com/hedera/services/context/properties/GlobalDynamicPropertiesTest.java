@@ -50,6 +50,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(properties);
 
 		// expect:
+		assertFalse(subject.shouldCreatePayerRecords());
 		assertFalse(subject.shouldCreateThresholdRecords());
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolLength());
@@ -66,6 +67,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(properties);
 
 		// expect:
+		assertTrue(subject.shouldCreatePayerRecords());
 		assertTrue(subject.shouldCreateThresholdRecords());
 		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolLength());
@@ -77,6 +79,7 @@ class GlobalDynamicPropertiesTest {
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolLength")).willReturn(i + 1);
+		given(properties.getBooleanProperty("ledger.createPayerRecords")).willReturn((i % 2) == 0);
 		given(properties.getBooleanProperty("ledger.createThresholdRecords")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long)i + 2);
 		given(properties.getLongProperty("contracts.defaultSendThreshold")).willReturn((long)i + 3);

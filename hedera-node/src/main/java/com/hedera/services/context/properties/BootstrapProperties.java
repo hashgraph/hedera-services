@@ -199,6 +199,7 @@ public class BootstrapProperties implements PropertySource {
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
 			"contracts.defaultReceiveThreshold",
 			"contracts.defaultSendThreshold",
+			"ledger.createPayerRecords",
 			"ledger.createThresholdRecords",
 			"ledger.maxAccountNum",
 			"tokens.maxPerAccount",
@@ -240,6 +241,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("bootstrap.rates.nextCentEquiv", AS_INT),
 			entry("bootstrap.rates.nextExpiry", AS_LONG),
 			entry("bootstrap.system.entityExpiry", AS_LONG),
+			entry("ledger.createPayerRecords", AS_BOOLEAN),
 			entry("ledger.createThresholdRecords", AS_BOOLEAN),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),

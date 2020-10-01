@@ -1062,14 +1062,14 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(txnHistories());
+			expiries = new ExpiryManager(recordCache(), txnHistories());
 		}
 		return expiries;
 	}
 
 	public ExpiringCreations creator() {
 		if (creator == null) {
-			creator = new ExpiringCreations(expiries(), properties());
+			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
 		}
 		return creator;
 	}

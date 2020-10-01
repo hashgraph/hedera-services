@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -48,16 +49,18 @@ class ExpiringCreationsTest {
 	ExpiryManager expiries;
 	PropertySource properties;
 	ExpiringCreations subject;
+	GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	public void setup() {
 		ledger = mock(HederaLedger.class);
 		expiries = mock(ExpiryManager.class);
 		properties = mock(PropertySource.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(properties.getIntProperty("ledger.records.ttl")).willReturn(historyTtl);
 		given(properties.getIntProperty("cache.records.ttl")).willReturn(cacheTtl);
 
-		subject = new ExpiringCreations(expiries, properties);
+		subject = new ExpiringCreations(expiries, properties, dynamicProperties);
 		subject.setLedger(ledger);
 	}
 
