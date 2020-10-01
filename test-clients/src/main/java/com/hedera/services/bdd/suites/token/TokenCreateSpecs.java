@@ -151,7 +151,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
 				.given(
-						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						tokenCreate("primary")
