@@ -63,7 +63,9 @@ public class RecordCache {
 			Map<TransactionID, TxnIdRecentHistory> histories
 	) {
 		this.creator = creator;
-		creator.setRecordCache(this);
+		if (creator != null) {
+			creator.setRecordCache(this);
+		}
 		this.histories = histories;
 		this.timedReceiptCache = timedReceiptCache;
 	}

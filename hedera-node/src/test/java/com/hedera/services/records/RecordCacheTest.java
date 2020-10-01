@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -126,12 +127,15 @@ class RecordCacheTest {
 	@Test
 	public void expiresOtherForgottenHistory() {
 		// setup:
+		subject = new RecordCache(creator, receiptCache, new HashMap<>());
+
+		// given:
 		record.setExpiry(someExpiry);
 		subject.setPostConsensus(txnIdA, SUCCESS, record);
 		subject.trackForExpiry(record);
 
 		// when:
-		subject.forgetAnyOtherExpiredHistory(someExpiry - 1);
+		subject.forgetAnyOtherExpiredHistory(someExpiry + 1);
 
 		// then:
 		assertFalse(subject.isReceiptPresent(txnIdA));
