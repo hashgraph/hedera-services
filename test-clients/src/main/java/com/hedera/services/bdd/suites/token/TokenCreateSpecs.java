@@ -59,7 +59,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
@@ -74,8 +74,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationSetsCorrectExpiry(),
 						creationHappyPath(),
 						creationWithoutKYCSetsCorrectStatus(),
-						creationValidatesExpiry()
-				}
+						creationValidatesExpiry(),
+						creationValidatesFreezeDefaultWithNoFreezeKey()
 		);
 	}
 
@@ -253,6 +253,17 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.expiry(1000)
 								.hasPrecheck(INVALID_EXPIRATION_TIME)
+				);
+	}
+
+	public HapiApiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
+		return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
+				.given()
+				.when()
+				.then(
+						tokenCreate("primary")
+								.freezeDefault(true)
+								.hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY)
 				);
 	}
 
