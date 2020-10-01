@@ -24,6 +24,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -458,9 +460,17 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getAccountBalance("newTokenTreasury")
 								.hasTokenBalance("primary", 500),
 						getAccountInfo(TOKEN_TREASURY)
-								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")),
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.balance(0)
+								),
 						getAccountInfo("newTokenTreasury")
-								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")),
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.freeze(TokenFreezeStatus.Unfrozen)
+												.kyc(TokenKycStatus.Granted)
+												.balance(500)
+								),
 						getTokenInfo("primary")
 								.logged()
 								.hasRegisteredId("primary")

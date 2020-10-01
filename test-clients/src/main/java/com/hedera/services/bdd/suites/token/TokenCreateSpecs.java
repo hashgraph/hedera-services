@@ -25,6 +25,8 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,6 +73,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						autoRenewValidationWorks(),
 						creationSetsCorrectExpiry(),
 						creationHappyPath(),
+						creationWithoutKYCSetsCorrectStatus(),
 						creationValidatesExpiry()
 				}
 		);
@@ -144,6 +147,25 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec creationWithoutKYCSetsCorrectStatus() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
+				.given(
+						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getAccountInfo(TOKEN_TREASURY)
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.kyc(TokenKycStatus.KycNotApplicable)
+								)
+				);
+	}
+
 	public HapiApiSpec creationHappyPath() {
 		String saltedName = salted("primary");
 		return defaultHapiSpec("CreationHappyPath")
@@ -192,7 +214,12 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getAccountInfo(TOKEN_TREASURY)
-								.hasToken(HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary"))
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.balance(500)
+												.kyc(TokenKycStatus.Granted)
+												.freeze(TokenFreezeStatus.Unfrozen)
+								)
 				);
 	}
 
