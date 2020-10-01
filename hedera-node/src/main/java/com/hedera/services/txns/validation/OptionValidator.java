@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCode;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -54,11 +55,11 @@ public interface OptionValidator {
 	boolean isValidTxnDuration(long duration);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
-	boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 	ResponseCodeEnum tokenNameCheck(String name);
+	ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);

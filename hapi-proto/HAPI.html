@@ -8267,19 +8267,30 @@ by HAPI.</p></td>
                 <td><p>An attempted operation is invalid because the account is a treasury</p></td>
               </tr>
             
-
               <tr>
                 <td>TOKEN_ID_REPEATED_IN_TOKEN_LIST</td>
                 <td>197</td>
                 <td><p>Same TokenIDs present in the token list</p></td>
               </tr>
-
+            
               <tr>
                 <td>TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED</td>
                 <td>198</td>
                 <td><p>Exceeded the number of token transfers (both from and to) allowed for token transfer list</p></td>
               </tr>
-
+            
+              <tr>
+                <td>EMPTY_TOKEN_TRANSFER_BODY</td>
+                <td>199</td>
+                <td><p>TokenTransfersTransactionBody has no TokenTransferList</p></td>
+              </tr>
+            
+              <tr>
+                <td>EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS</td>
+                <td>200</td>
+                <td><p>TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts</p></td>
+              </tr>
+            
           </tbody>
         </table>
       

@@ -74,6 +74,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
@@ -599,39 +602,48 @@ public class ContextOptionValidatorTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertTrue(subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(OK, subject.isAcceptableTokenTransfersLength(wrapper));
 	}
 
 	@Test
-	public void rejectsInvalidTokenTransfersLength() {
+	public void rejectsExceedingTokenTransfersLength() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
 
 		// expect:
-		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
 	}
 
 	@Test
-	public void rejectsInvalidTokenTransfersAccountAmountsLength() {
+	public void rejectsExceedingTokenTransfersAccountAmountsLength() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
 	}
 
 	@Test
-	public void rejectsInvalidTokenTransfersEmptyAccountAmounts() {
+	public void rejectsEmptyTokenTransferAccountAmounts() {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, bTId);
 
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
 
 		// expect:
-		assertFalse(subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.isAcceptableTokenTransfersLength(wrapper));
+	}
+
+	@Test
+	public void rejectsEmptyTokenTransfersBody() {
+		// setup:
+		List<TokenTransferList> wrapper = List.of();
+
+		// expect:
+		assertEquals(EMPTY_TOKEN_TRANSFER_BODY, subject.isAcceptableTokenTransfersLength(wrapper));
 	}
 }

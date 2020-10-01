@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
@@ -50,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static java.util.stream.IntStream.range;
 
 /**
@@ -113,28 +116,33 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
+	public ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
 		int maxLen = dynamicProperties.maxTokenTransferListSize();
+		int tokenTransferListsSize = tokenTransferLists.size();
 
-		if (tokenTransferLists.size() > maxLen) {
-			return false;
+		if (tokenTransferListsSize == 0) {
+			return EMPTY_TOKEN_TRANSFER_BODY;
+		}
+
+		if (tokenTransferListsSize > maxLen) {
+			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 
 		int count = 0;
 		for (var tokenTransferList : tokenTransferLists) {
 			int transferCounts = tokenTransferList.getTransfersCount();
 			if (transferCounts == 0) {
-				return false;
+				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 			}
 
 			count += transferCounts;
 
 			if (count > maxLen) {
-				return false;
+				return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 			}
 		}
 
-		return true;
+		return OK;
 	}
 
 	@Override
