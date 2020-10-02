@@ -111,22 +111,17 @@ public class TestHelper {
   public static String fileName = TestHelper.getStartUpFile();
   public static Map<String, List<AccountKeyListObj>> getKeyFromFile(String strPath) throws IOException {
     log.info("Startup File Path: "+strPath);
-    File tempFile =null;
     try { new File(strPath); }catch (Throwable t) {}
     Path path;
-    if(tempFile==null || !tempFile.exists()) {
-      try {
-        int index = strPath.lastIndexOf("\\");
-        if (index <= 0) {
-			index =  strPath.lastIndexOf("/");
-		}
-        String localStartUpFile = strPath.substring(index+1);
-        path = Paths.get(TestHelper.class.getClassLoader().getResource(localStartUpFile).toURI());
-      }catch (Exception e) {
-        log.info("Error while loading startup file "+e.getMessage());
-        path = Paths.get(strPath);
+    try {
+      int index = strPath.lastIndexOf("\\");
+      if (index <= 0) {
+          index =  strPath.lastIndexOf("/");
       }
-    }else {
+      String localStartUpFile = strPath.substring(index+1);
+      path = Paths.get(TestHelper.class.getClassLoader().getResource(localStartUpFile).toURI());
+    }catch (Exception e) {
+      log.info("Error while loading startup file "+e.getMessage());
       path = Paths.get(strPath);
     }
     log.info("Loading Startup File: "+path.toString());

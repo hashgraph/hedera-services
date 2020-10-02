@@ -239,6 +239,8 @@ public class FileServiceIT {
   public void test02CreateFile()
       throws InvalidKeySpecException, DecoderException, InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, Exception {
     log.info("@@@ upload file at: " + localPath + "; file size in byte = " + fileData.size());
+    log.info("host : " + host);
+    log.info("node number : " + defaultListeningNodeAccountID.getAccountNum() );
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
     SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();

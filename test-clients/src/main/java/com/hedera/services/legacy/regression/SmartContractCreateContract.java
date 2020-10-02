@@ -71,7 +71,7 @@ import org.junit.Assert;
  *
  * @author Peter
  */
-public class SmartContractCreateContract {
+public class SmartContractCreateContract extends LegacySmartContractTest {
   private static long DAY_SEC = 24 * 60 * 60; // secs in a day
   private final Logger log = LogManager.getLogger(SmartContractCreateContract.class);
 
@@ -95,6 +95,19 @@ public class SmartContractCreateContract {
   private static long contractDuration;
 
   public static void main(String args[]) throws Exception {
+
+    int numberOfReps = 1;
+    if ((args.length) > 0) {
+      numberOfReps = Integer.parseInt(args[0]);
+    }
+    for (int i = 0; i < numberOfReps; i++) {
+      SmartContractCreateContract scSs = new SmartContractCreateContract();
+      scSs.demo(host, nodeAccount);
+    }
+
+  }
+
+  private void setUp() {
     Properties properties = TestHelper.getApplicationProperties();
     contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
     host = properties.getProperty("host");
@@ -103,18 +116,8 @@ public class SmartContractCreateContract {
     node_shard_number = Long.parseLong(properties.getProperty("NODE_REALM_NUMBER"));
     node_realm_number = Long.parseLong(properties.getProperty("NODE_SHARD_NUMBER"));
     nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
-        .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
+            .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
-
-    int numberOfReps = 1;
-    if ((args.length) > 0) {
-      numberOfReps = Integer.parseInt(args[0]);
-    }
-    for (int i = 0; i < numberOfReps; i++) {
-      SmartContractCreateContract scSs = new SmartContractCreateContract();
-      scSs.demo();
-    }
-
   }
 
   private void loadGenesisAndNodeAcccounts() throws Exception {
@@ -443,14 +446,18 @@ public class SmartContractCreateContract {
     return txRec;
   }
 
-  public void demo() throws Exception {
+  public void demo(String grpcHost, AccountID nodeAccountID) throws Exception {
+    log.info("-------------- STARTING SmartContractCreateContract Regression");
+    setUp();
+    host = grpcHost;
+    nodeAccount = nodeAccountID;
     loadGenesisAndNodeAcccounts();
 
-    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+    ManagedChannel channel = ManagedChannelBuilder.forAddress(SmartContractCreateContract.host, port)
         .usePlaintext(true)
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
-        nodeAccount);
+            SmartContractCreateContract.nodeAccount);
     channel.shutdown();
 
     KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
@@ -491,6 +498,9 @@ public class SmartContractCreateContract {
 
     // Marker message for regression report
     log.info("Regression summary: This run is successful.");
+    // Marker message for regression report
+    log.info("-------------- RESULTS OF SmartContractCreateContract ----------------------");
+    log.info("SmartContractCreateContract Regression summary: This run is successful.");
   }
 
   private ContractInfo getContractInfo(AccountID payerAccount,

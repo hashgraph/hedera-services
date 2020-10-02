@@ -75,11 +75,13 @@ import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
+import com.hedera.services.legacy.regression.SmartContractAggregatedTests;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -236,14 +238,22 @@ public class SuiteRunner {
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* The instance id of the suiteRunner running on the client. */
 	private static final String PAYER_ID_ARG = "-PAYER";
+	/**/
+	private static final String LEGACY_SMART_CONTRACT_TESTS="SmartContractAggregatedTests";
 
-	public static void main(String... args) {
+	public static void main(String... args) throws Exception {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
 		new org.ethereum.crypto.HashUtil();
 
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));
-		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
+		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
+			SmartContractAggregatedTests.main(
+					new String[]{
+							System.getenv("NODES").split(":")[0],
+							args[1],
+							"1"});
+		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
 			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
