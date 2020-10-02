@@ -23,7 +23,6 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,7 +32,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
