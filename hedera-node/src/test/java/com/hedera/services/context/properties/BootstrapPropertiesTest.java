@@ -86,6 +86,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.numReservedSystemEntities", 1_000L),
 			entry("hedera.realm", 0L),
 			entry("hedera.shard", 0L),
+			entry("ledger.createPayerRecords", false),
 			entry("ledger.createThresholdRecords", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
