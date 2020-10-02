@@ -444,7 +444,7 @@ class HederaTokenStoreTest {
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given((boolean)tokenRelsLedger.get(Map.entry(sponsor, misc), IS_FROZEN)).willReturn(true);
+		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
 
 		// when:
 		var status = subject.dissociate(sponsor, List.of(misc));
