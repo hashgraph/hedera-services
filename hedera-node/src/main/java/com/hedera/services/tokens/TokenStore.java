@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -52,6 +53,7 @@ public interface TokenStore {
 	boolean exists(TokenID id);
 	boolean isKnownTreasury(AccountID id);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+	boolean isFrozen(Map.Entry<AccountID, TokenID> relationship);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);

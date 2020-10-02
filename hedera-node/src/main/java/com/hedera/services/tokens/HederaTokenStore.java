@@ -185,6 +185,11 @@ public class HederaTokenStore implements TokenStore {
 	}
 
 	@Override
+	public boolean isFrozen(Map.Entry<AccountID, TokenID> relationship) {
+		return (boolean)tokenRelsLedger.get(relationship, IS_FROZEN);
+	}
+
+	@Override
 	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
 		return fullySanityChecked(aId, tokens, (account, tokenIds) -> {
 			var accountTokens = hederaLedger.getAssociatedTokens(aId);
@@ -196,6 +201,9 @@ public class HederaTokenStore implements TokenStore {
 					return ACCOUNT_IS_TREASURY;
 				}
 				var relationship = asTokenRel(aId, tId);
+				if (isFrozen(relationship)) {
+					return ACCOUNT_FROZEN_FOR_TOKEN;
+				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
 					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
