@@ -23,7 +23,6 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hederahashgraph.api.proto.java.FeeData;

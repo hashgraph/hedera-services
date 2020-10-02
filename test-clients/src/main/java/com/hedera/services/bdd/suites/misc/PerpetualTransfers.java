@@ -47,7 +47,7 @@ public class PerpetualTransfers extends HapiApiSuite {
 
 	private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
+	private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
 	public static void main(String... args) {
 		new PerpetualTransfers().runSuiteSync();
@@ -88,7 +88,9 @@ public class PerpetualTransfers extends HapiApiSuite {
 				var to = fromAtoB.get() ? "B" : "A";
 				fromAtoB.set(!fromAtoB.get());
 
-				var op = cryptoTransfer(tinyBarsFromTo(from, to, 1)).deferStatusResolution();
+				var op = cryptoTransfer(tinyBarsFromTo(from, to, 1))
+						.noLogging()
+						.deferStatusResolution();
 
 				return Optional.of(op);
 			}
