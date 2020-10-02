@@ -53,7 +53,6 @@ public interface TokenStore {
 	boolean exists(TokenID id);
 	boolean isKnownTreasury(AccountID id);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
-	boolean isFrozen(Map.Entry<AccountID, TokenID> relationship);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);

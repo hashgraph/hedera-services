@@ -80,11 +80,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public boolean isFrozen(Map.Entry<AccountID, TokenID> relationship) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
 		throw new UnsupportedOperationException();
 	}

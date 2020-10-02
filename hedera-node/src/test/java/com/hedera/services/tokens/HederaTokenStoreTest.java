@@ -446,7 +446,7 @@ class HederaTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		subject = spy(subject);
 		given(subject.isTreasuryForToken(sponsor, misc)).willReturn(false);
-		given(subject.isFrozen(Map.entry(sponsor, misc))).willReturn(true);
+		given((boolean)tokenRelsLedger.get(Map.entry(sponsor, misc), IS_FROZEN)).willReturn(true);
 
 		// when:
 		var status = subject.dissociate(sponsor, List.of(misc));
@@ -903,23 +903,6 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertTrue(subject.isKnownTreasury(treasury));
-	}
-
-	@Test
-	public void isFrozenAccountWorks() {
-		var relationship = Map.entry(sponsor, misc);
-		given(tokenRelsLedger.get(relationship, IS_FROZEN)).willReturn(true);
-
-		// expect:
-		assertTrue(subject.isFrozen(relationship));
-	}
-
-	@Test
-	public void isFrozenAccountReturnsFalse() {
-		var relationship = Map.entry(sponsor, misc);
-
-		// expect:
-		assertFalse(subject.isFrozen(relationship));
 	}
 
 	@Test
