@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -550,6 +551,22 @@ public class HapiSpecRegistry {
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {
 		return get(name, ContractGetInfoResponse.ContractInfo.class);
 	}
+
+	public void saveAccountInfo(String name, CryptoGetInfoResponse.AccountInfo info) {
+		put(name, info);
+	}
+
+	public void removeAccountInfo(String name) {
+		try {
+			remove(name, CryptoGetInfoResponse.AccountInfo.class);
+		} catch (Exception ignore) {
+		}
+	}
+
+	public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
+		return get(name, CryptoGetInfoResponse.AccountInfo.class);
+	}
+
 
 	public <T> T getId(String name, Class<T> type) {
 		return get(name, type);
