@@ -37,8 +37,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
-import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
-
 
 public class FreezeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
@@ -103,7 +101,7 @@ public class FreezeSuite extends HapiApiSuite {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		final byte[] hash = sha384Digest(bytes);
+		final byte[] hash = UpdateFile150.sha384Digest(bytes);
 
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(

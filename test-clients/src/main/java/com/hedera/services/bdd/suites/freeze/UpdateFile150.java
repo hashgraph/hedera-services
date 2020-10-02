@@ -9,6 +9,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.bip39utils.CryptoUtils.sha384Digest;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 
 public class UpdateFile150 extends HapiApiSuite {
@@ -107,7 +108,7 @@ public class UpdateFile150 extends HapiApiSuite {
 	 * A correct update feature with file hash
 	 */
 	private HapiApiSpec updateWithShortContent() {
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(100);
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(30*4096);
 		return defaultHapiSpec("updateWithShortContent")
 				.given(
 						withOpContext((spec, opLog) -> {
@@ -209,4 +210,16 @@ public class UpdateFile150 extends HapiApiSuite {
 				).then(
 				);
 	}
+
+	public static byte[] sha384Digest( byte[] message) {
+		MessageDigest digest = null;
+		try {
+			digest = MessageDigest.getInstance("SHA-384");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		byte[] hash = digest.digest(message);
+		return hash;
+	}
+
 }
