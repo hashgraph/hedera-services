@@ -115,8 +115,7 @@ public class FreezeHandler {
 
 	public void handleUpdateFeature() {
 		if (updateFeatureFile == null) {
-			log.error("{} Update file id is not defined", LOG_PREFIX);
-			log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+			log.info("{} Update file id is not defined, no update will be conducted", LOG_PREFIX);
 			return;
 		}
 		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);

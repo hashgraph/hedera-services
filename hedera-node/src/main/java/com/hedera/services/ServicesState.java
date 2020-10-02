@@ -301,6 +301,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  Topics            :: %s\n" +
 						"  Tokens            :: %s\n" +
 						"  TokenAssociations :: %s\n" +
+						"  SpecialFileSystem :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s",
 				getHash(),
@@ -309,6 +310,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				topics().getHash(),
 				tokens().getHash(),
 				tokenAssociations().getHash(),
+				getSpecialFileSystem().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash()));
 	}
