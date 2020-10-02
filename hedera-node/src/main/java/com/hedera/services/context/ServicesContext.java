@@ -60,7 +60,6 @@ import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
@@ -991,7 +990,7 @@ public class ServicesContext {
 	public RecordCache recordCache() {
 		if (recordCache == null) {
 			recordCache = new RecordCache(
-					creator(),
+					this,
 					new RecordCacheFactory(properties()).getRecordCache(),
 					txnHistories());
 		}
@@ -1062,8 +1061,8 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(txnHistories());
-			expiries.setRecordCache(recordCache());
+			var histories = txnHistories();
+			expiries = new ExpiryManager(recordCache(), histories);
 		}
 		return expiries;
 	}
@@ -1071,6 +1070,7 @@ public class ServicesContext {
 	public ExpiringCreations creator() {
 		if (creator == null) {
 			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
+			creator.setRecordCache(recordCache());
 		}
 		return creator;
 	}

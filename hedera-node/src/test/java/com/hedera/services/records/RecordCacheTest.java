@@ -21,7 +21,8 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.services.context.ServicesContext;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -104,7 +105,8 @@ class RecordCacheTest {
 
 	private ExpirableTxnRecord record = ExpirableTxnRecord.fromGprc(aRecord);
 
-	private EntityCreator creator;
+	private ExpiringCreations creator;
+	private ServicesContext ctx;
 	private Cache<TransactionID, Boolean> receiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
@@ -112,22 +114,18 @@ class RecordCacheTest {
 
 	@BeforeEach
 	private void setup() {
-		creator = mock(EntityCreator.class);
+		creator = mock(ExpiringCreations.class);
+		ctx = mock(ServicesContext.class);
+		given(ctx.creator()).willReturn(creator);
 		histories = (Map<TransactionID, TxnIdRecentHistory>)mock(Map.class);
 		receiptCache = (Cache<TransactionID, Boolean>)mock(Cache.class);
-		subject = new RecordCache(creator, receiptCache, histories);
-	}
-
-	@Test
-	public void doesDiForCreator() {
-		// expect:
-		creator.setRecordCache(subject);
+		subject = new RecordCache(ctx, receiptCache, histories);
 	}
 
 	@Test
 	public void expiresOtherForgottenHistory() {
 		// setup:
-		subject = new RecordCache(creator, receiptCache, new HashMap<>());
+		subject = new RecordCache(ctx, receiptCache, new HashMap<>());
 
 		// given:
 		record.setExpiry(someExpiry);

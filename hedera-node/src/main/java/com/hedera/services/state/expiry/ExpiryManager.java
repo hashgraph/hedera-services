@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
@@ -39,19 +38,19 @@ import java.util.List;
 import java.util.Map;
 
 public class ExpiryManager {
+	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private RecordCache recordCache;
 
 	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
 	MonotonicFullQueueExpiries<Long> historicalExpiries = new MonotonicFullQueueExpiries<>();
 
-	public ExpiryManager(Map<TransactionID, TxnIdRecentHistory> txnHistories) {
-		this.txnHistories = txnHistories;
-	}
-
-	public void setRecordCache(RecordCache recordCache) {
+	public ExpiryManager(
+			RecordCache recordCache,
+			Map<TransactionID, TxnIdRecentHistory> txnHistories
+	) {
 		this.recordCache = recordCache;
+		this.txnHistories = txnHistories;
 	}
 
 	public void trackHistoricalRecord(AccountID payer, long expiry) {

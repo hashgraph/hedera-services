@@ -86,8 +86,7 @@ class ExpiryManagerTest {
 
 		ledger = mock(HederaLedger.class);
 
-		subject = new ExpiryManager(txnHistories);
-		subject.setRecordCache(recordCache);
+		subject = new ExpiryManager(recordCache, txnHistories);
 	}
 
 	@Test

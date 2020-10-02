@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.sha384HashOf;
@@ -51,21 +53,18 @@ public class RecordCache {
 
 	public static final Boolean MARKER = Boolean.TRUE;
 
-	private EntityCreator creator;
+	private ServicesContext ctx;
 	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
 	MonotonicFullQueueExpiries<TransactionID> recordExpiries = new MonotonicFullQueueExpiries<>();
 
 	public RecordCache(
-			EntityCreator creator,
+			ServicesContext ctx,
 			Cache<TransactionID, Boolean> timedReceiptCache,
 			Map<TransactionID, TxnIdRecentHistory> histories
 	) {
-		this.creator = creator;
-		if (creator != null) {
-			creator.setRecordCache(this);
-		}
+		this.ctx = ctx;
 		this.histories = histories;
 		this.timedReceiptCache = timedReceiptCache;
 	}
@@ -97,7 +96,7 @@ public class RecordCache {
 				.setTransactionHash(sha384HashOf(accessor))
 				.setConsensusTimestamp(asTimestamp(consensusTimestamp))
 				.build();
-		var record = creator.createExpiringPayerRecord(
+		var record = ctx.creator().createExpiringPayerRecord(
 				effectivePayer,
 				grpc,
 				consensusTimestamp.getEpochSecond(),
