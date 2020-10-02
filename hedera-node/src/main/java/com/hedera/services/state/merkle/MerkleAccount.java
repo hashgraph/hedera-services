@@ -138,13 +138,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 	}
 
 	@Override
-	protected void onDelete() {
-		super.onDelete();
-		records().delete();
-		payerRecords().delete();
-	}
-
-	@Override
 	@Deprecated
 	public void copyFrom(SerializableDataInputStream in) {
 		throw new UnsupportedOperationException();

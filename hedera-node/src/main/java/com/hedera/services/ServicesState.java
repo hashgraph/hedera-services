@@ -153,6 +153,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		}
 	}
 
+	@Override
+	public void genesisInit(Platform platform, AddressBook addressBook) {
+		this.init(platform, addressBook);
+	}
+
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
