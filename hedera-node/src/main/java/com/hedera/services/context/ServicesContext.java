@@ -1026,7 +1026,7 @@ public class ServicesContext {
 	public RecordCache recordCache() {
 		if (recordCache == null) {
 			recordCache = new RecordCache(
-					creator(),
+					this,
 					new RecordCacheFactory(properties()).getRecordCache(),
 					txnHistories());
 		}
@@ -1130,7 +1130,8 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(txnHistories());
+			var histories = txnHistories();
+			expiries = new ExpiryManager(recordCache(), histories);
 		}
 		return expiries;
 	}
@@ -1138,6 +1139,7 @@ public class ServicesContext {
 	public ExpiringCreations creator() {
 		if (creator == null) {
 			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
+			creator.setRecordCache(recordCache());
 		}
 		return creator;
 	}
