@@ -39,10 +39,12 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 				.setShardNum(ApplicationConstants.DEFAULT_FILE_SHARD).build();
 
 		createEmptyIfNotExist(fid150);
+		invalidateHash();
 	}
 
 	public SpecialFileSystem(HashMap<FileID, byte[]> fileMap) {
 		this.fileMap = (HashMap<FileID, byte[]>) fileMap.clone();
+		invalidateHash();
 	}
 
 	public byte[] getFileHash(FileID fileID) {
@@ -87,8 +89,10 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 	public synchronized void put(FileID fileID, byte[] content) {
 		try {
 			byte[] hash = MessageDigest.getInstance("SHA-384").digest(content);
+			log.info("New file size {} with hash {}", content.length, hex(hash));
 			fileMap.put(fileID, hash);
 			FileUtils.writeByteArrayToFile(new File(SPECIAL_FILESYSTEM_DIR + fileIDtoDotString(fileID)), content);
+			invalidateHash();
 		} catch (IOException e) {
 			log.error("Error when writing fileID {} to local filesystem", fileID, e);
 		} catch (NoSuchAlgorithmException e) {
@@ -112,18 +116,10 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 					.setRealmNum(realmID)
 					.setShardNum(shardID).build();
 			byte[] hash = in.readByteArray(HASH_BYTES);
-
-			//Verify if the file system has the same hash loaded form state
-			byte[] fileSystemHash = getFileHash(fileID);
-			if (Arrays.equals(hash, fileSystemHash)) {
-				fileMap.put(fileID, hash);
-			} else {
-				log.error("Error: File hash from state does not match file system, from state: {}", hex(hash));
-				log.error("Error: File hash from state does not match file system, from file : {}",
-						hex(fileSystemHash));
-				throw new IOException("File hash from state does not match file system");
-			}
+			log.info("Read file {} with hash {}", fileID, hex(hash));
+			fileMap.put(fileID, hash);
 		}
+		invalidateHash();
 	}
 
 	@Override
@@ -137,7 +133,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 						out.writeLong(fileID.getShardNum());
 						out.writeLong(fileID.getRealmNum());
 						out.writeLong(fileID.getFileNum());
-						out.writeByteArray(getFileHash(fileID));
+						out.writeByteArray(fileMap.get(fileID));
 					} catch (IOException e) {
 						log.error("Error when serialize {}", fileID);
 					}
@@ -156,12 +152,25 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 
 	@Override
 	public SpecialFileSystem copy() {
-		SpecialFileSystem newCopy = new SpecialFileSystem(fileMap);
+		SpecialFileSystem newCopy = this; //new SpecialFileSystem(fileMap, this.fileSystemLocation);
 		return newCopy;
 	}
 
 	@Override
 	public void delete() {
 
+	}
+
+	public void verifyHash() {
+		for (FileID fileID : fileMap.keySet()) {
+			//Verify if the file system has the same hash loaded form state
+			byte[] hash = fileMap.get(fileID);
+			byte[] fileSystemHash = getFileHash(fileID);
+			if (!Arrays.equals(hash, fileSystemHash)) {
+				log.error("Error: File hash from state does not match file system, from state: {}", hex(hash));
+				log.error("Error: File hash from state does not match file system, from file : {}",
+						hex(fileSystemHash));
+			}
+		}
 	}
 }
