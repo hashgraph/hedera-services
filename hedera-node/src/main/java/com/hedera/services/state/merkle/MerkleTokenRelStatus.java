@@ -26,15 +26,14 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleNode implements FCMValue, MerkleLeaf {
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue {
 	static final int RELEASE_090_VERSION = 1;
 
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
@@ -151,9 +150,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleNode implements FCMValue
 	public MerkleTokenRelStatus copy() {
 		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
 	}
-
-	@Override
-	public void delete() { }
 
 	@Override
 	@Deprecated

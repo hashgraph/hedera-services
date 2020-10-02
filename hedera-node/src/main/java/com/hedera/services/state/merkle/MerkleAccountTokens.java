@@ -21,12 +21,10 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,14 +35,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
 
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = 3_000;
@@ -123,11 +120,6 @@ public class MerkleAccountTokens extends AbstractMerkleNode implements MerkleLea
 		return MoreObjects.toStringHelper(this)
 				.add("tokens", readableTokenIds())
 				.toString();
-	}
-
-	@Override
-	public void delete() {
-
 	}
 
 	public String readableTokenIds() {
