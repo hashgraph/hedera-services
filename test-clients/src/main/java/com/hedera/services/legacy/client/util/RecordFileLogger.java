@@ -23,6 +23,7 @@ package com.hedera.services.legacy.client.util;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.LiveHash;
@@ -100,12 +101,7 @@ public class RecordFileLogger implements LoggerInterface {
 	public static void storeRecord(long counter, Instant consensusTimeStamp, Transaction transaction, TransactionRecord txRecord) throws InvalidProtocolBufferException {
 		// called for each record so it can be processed, transformed and stored
 		// these are sample transaction and record parsing
-		TransactionBody body = null;
-		if (transaction.hasBody()) {
-			body = transaction.getBody();
-		} else {
-			body = TransactionBody.parseFrom(transaction.getBodyBytes());
-		}
+		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
 
 		// TransactionID - unique for each transaction, the combination of the three
 		// values below uniquely identifies a transaction within Hedera

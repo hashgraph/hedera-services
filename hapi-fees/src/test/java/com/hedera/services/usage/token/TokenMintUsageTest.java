@@ -1,5 +1,25 @@
 package com.hedera.services.usage.token;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -7,7 +27,6 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -30,9 +49,7 @@ public class TokenMintUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	String symbol = "ABCDEFGHIJ";
 	TokenID id = IdUtils.asToken("0.0.75231");
-	TokenRef token;
 
 	TokenMintTransactionBody op;
 	TransactionBody txn;
@@ -53,26 +70,8 @@ public class TokenMintUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForSymbolRef() {
-		givenSymbolRefOp();
-		// and:
-		subject = TokenMintUsage.newEstimate(txn, sigUsage);
-
-		// when:
-		var actual = subject.get();
-
-		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(symbol.length());
-		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 1) *
-				USAGE_PROPERTIES.legacyReceiptStorageSecs());
-	}
-
-	@Test
-	public void createsExpectedDeltaForIdRef() {
-		givenIdRefOp();
+	public void createsExpectedDelta() {
+		givenOp();
 		// and:
 		subject = TokenMintUsage.newEstimate(txn, sigUsage);
 
@@ -88,16 +87,9 @@ public class TokenMintUsageTest {
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
-	private void givenSymbolRefOp() {
+	private void givenOp() {
 		op = TokenMintTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setSymbol(symbol))
-				.build();
-		setTxn();
-	}
-
-	private void givenIdRefOp() {
-		op = TokenMintTransactionBody.newBuilder()
-				.setToken(TokenRef.newBuilder().setTokenId(id))
+				.setToken(id)
 				.build();
 		setTxn();
 	}

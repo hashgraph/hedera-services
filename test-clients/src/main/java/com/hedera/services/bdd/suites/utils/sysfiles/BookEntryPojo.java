@@ -23,15 +23,12 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -97,7 +94,7 @@ public class BookEntryPojo {
 	public static String asHexEncodedSha384HashFor(long nodeId) {
 		try {
 			var crtBytes = Files.readAllBytes(Paths.get(CRTS_DIR, String.format("node%d.crt", nodeId)));
-			var crtHash = MessageDigest.getInstance("SHA-384").digest(crtBytes);
+			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
 			return Hex.encodeHexString(crtHash);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);

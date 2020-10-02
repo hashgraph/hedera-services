@@ -105,7 +105,6 @@ public class DynamicRestartTest extends TestHelperComplex {
         fileDuration = Long.parseLong(properties.getProperty("FILE_DURATION"));
         contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
         account55 = RequestBuilder.getAccountIdBuild(55l, 0l, 0l);
-        TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
         nodeID = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
         readGenesisInfo();
         createStubs();
@@ -220,7 +219,7 @@ public class DynamicRestartTest extends TestHelperComplex {
         Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
         keys.add(payerKey);
         Transaction paymentTxSigned = TransactionSigner
-                .signTransactionComplex(unSignedTransferTx, keys, pubKey2privKeyMap);
+                .signTransactionComplexWithSigMap(unSignedTransferTx, keys, pubKey2privKeyMap);
         return paymentTxSigned;
     }
 
@@ -306,7 +305,7 @@ public class DynamicRestartTest extends TestHelperComplex {
         keys.add(payerKey);
         keys.add(fromKey);
         Transaction paymentTxSigned = TransactionSigner
-                .signTransactionComplex(paymentTx, keys, pubKey2privKeyMap);
+                .signTransactionComplexWithSigMap(paymentTx, keys, pubKey2privKeyMap);
         return paymentTxSigned;
     }
 
@@ -333,12 +332,11 @@ public class DynamicRestartTest extends TestHelperComplex {
                                                           List<Key> waclKeyList, Timestamp fileExp, String memo) throws Throwable {
         log.info("@@@ upload file: file size in byte = " + fileData.size());
         Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-        SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
         Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
                 payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
                 nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true,
-                memo, signatures, fileData,
+                memo, fileData,
                 fileExp, waclKeyList);
         TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
                 .extractTransactionBody(FileCreateRequest);
@@ -350,7 +348,7 @@ public class DynamicRestartTest extends TestHelperComplex {
         keys.add(payerKey);
         keys.add(waclKey);
         Transaction filesigned = TransactionSigner
-                .signTransactionComplex(FileCreateRequest, keys, pubKey2privKeyMap);
+                .signTransactionComplexWithSigMap(FileCreateRequest, keys, pubKey2privKeyMap);
         TransactionBody txBody = TransactionBody.parseFrom(filesigned.getBodyBytes());
         if (txBody.getTransactionID() == null || !txBody.getTransactionID().hasTransactionValidStart()) {
             return createFile(payerID, nodeID, fileData, waclKeyList, fileExp, memo);
@@ -524,10 +522,7 @@ public class DynamicRestartTest extends TestHelperComplex {
                         nodeRealmNum, nodeShardNum, transactionFee, timestamp,
                         txDuration, generateRecord, txMemo, gas, fileId, constructorParameters,
                         initialBalance,
-                        autoRenewalPeriod, SignatureList.newBuilder()
-                                .addSigs(Signature.newBuilder()
-                                        .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                                .build(), contractMemo, adminKey);
+                        autoRenewalPeriod, contractMemo, adminKey);
 
         transaction = TransactionSigner.signTransaction(transaction, keys);
         transactionFee = FeeClient.getContractCreateFee(transaction, keys.size());
@@ -535,10 +530,7 @@ public class DynamicRestartTest extends TestHelperComplex {
                 .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
                         nodeRealmNum, nodeShardNum, transactionFee, timestamp,
                         txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-                        autoRenewalPeriod, SignatureList.newBuilder()
-                                .addSigs(Signature.newBuilder()
-                                        .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                                .build(), contractMemo, adminKey);
+                        autoRenewalPeriod, contractMemo, adminKey);
 
         transaction = TransactionSigner.signTransaction(transaction, keys);
         return transaction;

@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingAccounts implements BackingAccounts<AccountID, MerkleAccount> {
+public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	final AccountID GENESIS = IdUtils.asAccount("0.0.2");
 	final long GENESIS_BALANCE = 50_000_000_000L;
 
@@ -40,11 +40,6 @@ public class HashMapBackingAccounts implements BackingAccounts<AccountID, Merkle
 			genesisAccount.setBalance(GENESIS_BALANCE);
 		} catch (Exception ignore) {}
 		accounts.put(GENESIS, genesisAccount);
-	}
-
-	@Override
-	public MerkleAccount getTokenCopy(AccountID id) {
-		return getRef(id).tokenCopy();
 	}
 
 	@Override

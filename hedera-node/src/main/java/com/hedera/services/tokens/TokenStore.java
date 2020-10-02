@@ -30,12 +30,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRef;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 
 /**
  * Defines a type able to manage arbitrary tokens.
@@ -46,14 +45,13 @@ public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 	void setHederaLedger(HederaLedger ledger);
 
 	void apply(TokenID id, Consumer<MerkleToken> change);
 	boolean exists(TokenID id);
-	boolean symbolExists(String symbol);
-	boolean nameExists(String name);
-	TokenID lookup(String symbol);
+	boolean isKnownTreasury(AccountID id);
+	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 	MerkleToken get(TokenID id);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
@@ -64,6 +62,8 @@ public interface TokenStore {
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
@@ -71,25 +71,22 @@ public interface TokenStore {
 	void rollbackCreation();
 	boolean isCreationPending();
 
-	default TokenID resolve(TokenRef ref) {
-		String symbol;
-		TokenID id;
-		if (ref.hasTokenId()) {
-			return exists(id = ref.getTokenId()) ? id : MISSING_TOKEN;
-		} else {
-			return symbolExists(symbol = ref.getSymbol()) ? lookup(symbol) : MISSING_TOKEN;
-		}
+	default TokenID resolve(TokenID id) {
+		return exists(id) ? id : MISSING_TOKEN;
 	}
 
-	default ResponseCodeEnum delete(TokenRef ref) {
-		var id = resolve(ref);
-		if (id == MISSING_TOKEN) {
-			return INVALID_TOKEN_REF;
+	default ResponseCodeEnum delete(TokenID id) {
+		var idRes = resolve(id);
+		if (idRes == MISSING_TOKEN) {
+			return INVALID_TOKEN_ID;
 		}
 
 		var token = get(id);
 		if (token.adminKey().isEmpty()) {
-			return TOKEN_IS_IMMUTABlE;
+			return TOKEN_IS_IMMUTABLE;
+		}
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
 		}
 
 		apply(id, DELETION);

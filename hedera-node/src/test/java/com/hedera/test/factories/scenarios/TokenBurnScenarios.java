@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenBurnFactory.newSignedTokenBurn;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenBurnScenarios implements TxnHandlingScenario {
 	BURN_WITH_SUPPLY_KEYED_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenBurn()
-							.burning(asIdRef(KNOWN_TOKEN_WITH_SUPPLY))
+							.burning(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
 			));
@@ -43,7 +42,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenBurn()
-							.burning(asIdRef(UNKNOWN_TOKEN))
+							.burning(UNKNOWN_TOKEN)
 							.get()
 			));
 		}
@@ -53,7 +52,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenBurn()
-							.burning(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.burning(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
 			));
 		}

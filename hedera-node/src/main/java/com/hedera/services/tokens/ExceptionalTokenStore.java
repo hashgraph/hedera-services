@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
@@ -52,7 +53,27 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isKnownTreasury(AccountID aId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -89,10 +110,14 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public void setLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) { }
+	public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+		/* No-op */
+	}
 
 	@Override
-	public void setHederaLedger(HederaLedger ledger) { }
+	public void setHederaLedger(HederaLedger ledger) {
+		/* No-op */
+	}
 
 	@Override
 	public void apply(TokenID id, Consumer<MerkleToken> change) {
@@ -101,21 +126,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public boolean exists(TokenID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean symbolExists(String symbol) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean nameExists(String name) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public TokenID lookup(String symbol) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -138,6 +148,4 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
-
-
 }

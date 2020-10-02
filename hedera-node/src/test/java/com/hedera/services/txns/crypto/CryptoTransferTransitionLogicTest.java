@@ -29,7 +29,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -183,7 +182,7 @@ public class CryptoTransferTransitionLogicTest {
 	@Test
 	public void rejectsUndulyLongTransferList() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		given(validator.isAcceptableLength(any())).willReturn(false);
+		given(validator.isAcceptableTransfersLength(any())).willReturn(false);
 
 		// expect:
 		assertEquals(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(cryptoTransferTxn));
@@ -211,6 +210,6 @@ public class CryptoTransferTransitionLogicTest {
 
 
 	private void withRubberstampingValidator() {
-		given(validator.isAcceptableLength(any())).willReturn(true);
+		given(validator.isAcceptableTransfersLength(any())).willReturn(true);
 	}
 }

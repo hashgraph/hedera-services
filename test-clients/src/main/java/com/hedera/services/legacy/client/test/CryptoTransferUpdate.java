@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -83,9 +82,7 @@ public class CryptoTransferUpdate extends ClientBaseThread {
    * Create a pair of two accounts, do transferTimes then create new account pair and do transfer
    * again Keep total throughput at target TPS
    */
-  public CryptoTransferUpdate(String host, int port, long nodeAccountNumber, boolean useSigMap,
-      String[] args, int index) {
-    this.useSigMap = useSigMap;
+  public CryptoTransferUpdate(String host, int port, long nodeAccountNumber, String[] args, int index) {
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;
@@ -220,9 +217,7 @@ public class CryptoTransferUpdate extends ClientBaseThread {
             }
           }
 
-          if (useSigMap) {
-            Common.addKeyMap(fromAccountKeyPair, pubKey2privKeyMap);
-          }
+          Common.addKeyMap(fromAccountKeyPair, pubKey2privKeyMap);
 
           if (!testingUpdate) {
             toAccountKeyPair = new KeyPairGenerator().generateKeyPair();
@@ -247,10 +242,7 @@ public class CryptoTransferUpdate extends ClientBaseThread {
               verifyBalance(txID, preBalance, true);
             }
 
-
-            if (useSigMap) {
-              Common.addKeyMap(toAccountKeyPair, pubKey2privKeyMap);
-            }
+            Common.addKeyMap(toAccountKeyPair, pubKey2privKeyMap);
           }
 
           if (fromAccount == null) {
@@ -421,12 +413,11 @@ public class CryptoTransferUpdate extends ClientBaseThread {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
         transactionDuration,
-        generateRecord, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+        generateRecord, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
     List<List<PrivateKey>> privKeysList = new ArrayList<>();
@@ -439,18 +430,14 @@ public class CryptoTransferUpdate extends ClientBaseThread {
     privKeysList.add(fromPrivKeyList);
 
     Transaction signedTx;
-    if (useSigMap) {
-      List<Key> keys = new ArrayList<>();
-      keys.add(Common.PrivateKeyToKey(payerAccountKey));
-      keys.add(Common.PrivateKeyToKey(fromKey));
-      try {
-        signedTx = TransactionSigner.signTransactionComplex(transferTx, keys, pubKey2privKeyMap);
-      } catch (Exception e) {
-        e.printStackTrace();
-        return null;
-      }
-    } else {
-      signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    List<Key> keys = new ArrayList<>();
+    keys.add(Common.PrivateKeyToKey(payerAccountKey));
+    keys.add(Common.PrivateKeyToKey(fromKey));
+    try {
+      signedTx = TransactionSigner.signTransactionComplexWithSigMap(transferTx, keys, pubKey2privKeyMap);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
     return signedTx;
   }
@@ -468,9 +455,7 @@ public class CryptoTransferUpdate extends ClientBaseThread {
     return RequestBuilder.getAccountUpdateRequest(accountID, payerAccountNum, 0l,
             0l, nodeAccountNum, 0l,
             0l, transactionFee, startTime,
-            transactionDuration, true, "Update Account",
-            100l, 100l,
-            autoRenew, SignatureList.newBuilder().getDefaultInstanceForType());
+            transactionDuration, true, "Update Account", autoRenew);
   }
 
   private Transaction MyUpdateTran(AccountID accountID, KeyPair payerKey, long transactionFee) {
@@ -482,19 +467,14 @@ public class CryptoTransferUpdate extends ClientBaseThread {
     privateKeyList.add(payerKey.getPrivate());
     privateKeyList.add(payerKey.getPrivate());
     Transaction signUpdate;
-    if (useSigMap) {
-
-      List<Key> keys = new ArrayList<>();
-      keys.add(Common.keyPairToKey(payerKey));
-      keys.add(Common.keyPairToKey(payerKey));
-      try {
-        signUpdate = TransactionSigner.signTransactionComplex(transaction, keys, pubKey2privKeyMap);
-      } catch (Exception e) {
-        e.printStackTrace();
-        return null;
-      }
-    } else {
-      signUpdate = TransactionSigner.signTransaction(transaction, privateKeyList);
+    List<Key> keys = new ArrayList<>();
+    keys.add(Common.keyPairToKey(payerKey));
+    keys.add(Common.keyPairToKey(payerKey));
+    try {
+      signUpdate = TransactionSigner.signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
     return signUpdate;
 

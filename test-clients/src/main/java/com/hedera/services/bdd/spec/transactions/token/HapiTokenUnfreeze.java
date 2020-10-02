@@ -82,7 +82,7 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
 				.<TokenUnfreezeAccountTransactionBody, TokenUnfreezeAccountTransactionBody.Builder>body(
 						TokenUnfreezeAccountTransactionBody.class, b -> {
 							b.setAccount(aId);
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 						});
 		return b -> b.setTokenUnfreeze(opBody);
 	}

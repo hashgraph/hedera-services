@@ -20,7 +20,6 @@ package com.hedera.services.sigs.metadata.lookups;
  * ‍
  */
 
-import com.hedera.services.legacy.exception.InvalidTopicIDException;
 import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -37,16 +36,6 @@ public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
 
 	public DefaultFCMapTopicLookup(Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics) {
 		this.topics = topics;
-	}
-
-	@Override
-	public TopicSigningMetadata lookup(TopicID id) throws Exception {
-		MerkleTopic merkleTopic = topics.get().get(fromTopicId(id));
-		if ((merkleTopic == null) || merkleTopic.isDeleted()) {
-			throw new InvalidTopicIDException("Invalid topic!", id);
-		}
-		return new TopicSigningMetadata(merkleTopic.hasAdminKey() ? merkleTopic.getAdminKey() : null,
-				merkleTopic.hasSubmitKey() ? merkleTopic.getSubmitKey() : null);
 	}
 
 	@Override

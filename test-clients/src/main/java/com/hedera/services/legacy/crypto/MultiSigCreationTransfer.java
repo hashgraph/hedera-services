@@ -20,10 +20,10 @@ package com.hedera.services.legacy.crypto;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -142,7 +142,7 @@ public class MultiSigCreationTransfer {
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId1 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
@@ -171,7 +171,7 @@ public class MultiSigCreationTransfer {
     log.info("Pre Check Response of Create second multiSig account :: " + response
         .getNodeTransactionPrecheckCode().name());
 
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);
@@ -193,7 +193,7 @@ public class MultiSigCreationTransfer {
         "Pre Check Response of Create Third account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId4 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId4);
@@ -223,7 +223,7 @@ public class MultiSigCreationTransfer {
     Assert.assertEquals(ResponseCodeEnum.OK, transferRes.getNodeTransactionPrecheckCode());
     log.info(
         "Pre Check Response transfer :: " + transferRes.getNodeTransactionPrecheckCode().name());
-    TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
+    TransactionBody transferBody = CommonUtils.extractTransactionBody(transfer1);
     TransactionReceipt txReceipt = TestHelper
         .getTxReceipt(transferBody.getTransactionID(), stub);
     Assert.assertNotNull(txReceipt);
@@ -289,24 +289,21 @@ public class MultiSigCreationTransfer {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
-    privKeysList.add(fromKey);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.addAll(fromKey);
 
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transactionFee = FeeClient.getTransferFee(signedTx,privKeysList.size());
     transferTx =
@@ -315,10 +312,10 @@ public class MultiSigCreationTransfer {
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
     return signedTx;
   }
 
@@ -330,22 +327,21 @@ public class MultiSigCreationTransfer {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    privKeysList.add(payerPrivKeyList);
-    privKeysList.add(fromPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.addAll(payerPrivKeyList);
+    privKeysList.addAll(fromPrivKeyList);
 
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transactionFee = FeeClient.getTransferFee(signedTx,privKeysList.size()) * 2;
 
@@ -355,10 +351,10 @@ public class MultiSigCreationTransfer {
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     return signedTx;
   }

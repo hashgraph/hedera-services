@@ -20,12 +20,14 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.core.jproto.JKey;
-
-import java.util.List;
-import java.util.Optional;
-
 public enum KeyOrderingFailure {
-	NONE, MISSING_FILE, MISSING_ACCOUNT, MISSING_AUTORENEW_ACCOUNT, MISSING_TOKEN, INVALID_TOPIC
+	NONE,
+	MISSING_FILE,
+	MISSING_ACCOUNT,
+	INVALID_CONTRACT,
+	IMMUTABLE_CONTRACT,
+	MISSING_AUTORENEW_ACCOUNT,
+	MISSING_TOKEN,
+	INVALID_TOPIC,
+	MISSING_TOKEN_TREASURY
 }

@@ -166,10 +166,7 @@ public class SameTxMultipleNodesTests extends BaseFeeTests {
             .getCreateContractRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
                     useNodeAccount.getAccountNum(), useNodeAccount.getRealmNum(), useNodeAccount.getShardNum(), transactionFee, timestamp,
                     txDuration, true, "txMemo-"+memo, gas, contractFile, null,0,
-                    contractAutoRenew, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                            .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                            .build(),
-                    memo, null);
+                    contractAutoRenew, memo, null);
 
     transaction = TransactionSigner.signTransaction(transaction, adminPrivateKeys);
     transactionFee = FeeClient.getContractCreateFee(transaction, adminPrivateKeys.size());
@@ -177,10 +174,7 @@ public class SameTxMultipleNodesTests extends BaseFeeTests {
             .getCreateContractRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
                     useNodeAccount.getAccountNum(), useNodeAccount.getRealmNum(), useNodeAccount.getShardNum(), transactionFee, timestamp,
                     txDuration, true, "txMemo-"+memo, gas, contractFile, null, 0,
-                    contractAutoRenew, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                            .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                            .build(),
-                    memo, null);
+                    contractAutoRenew, memo, null);
 
     transaction = TransactionSigner.signTransaction(transaction, adminPrivateKeys);
     return transaction;
@@ -201,10 +195,7 @@ public class SameTxMultipleNodesTests extends BaseFeeTests {
                     nodeRealmNum, nodeShardNum, transactionFee, timestamp,
                     txDuration, generateRecord, txMemo, gas, fileId, constructorParameters,
                     initialBalance,
-                    autoRenewalPeriod, SignatureList.newBuilder()
-                            .addSigs(Signature.newBuilder()
-                                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                            .build(), contractMemo, adminKey);
+                    autoRenewalPeriod, contractMemo, adminKey);
 
     transaction = TransactionSigner.signTransaction(transaction, keys);
     transactionFee = FeeClient.getContractCreateFee(transaction, keys.size());
@@ -212,10 +203,7 @@ public class SameTxMultipleNodesTests extends BaseFeeTests {
             .getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
                     nodeRealmNum, nodeShardNum, transactionFee, timestamp,
                     txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-                    autoRenewalPeriod, SignatureList.newBuilder()
-                            .addSigs(Signature.newBuilder()
-                                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                            .build(), contractMemo, adminKey);
+                    autoRenewalPeriod, contractMemo, adminKey);
 
     transaction = TransactionSigner.signTransaction(transaction, keys);
     return transaction;

@@ -21,8 +21,10 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -45,6 +47,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -83,14 +87,17 @@ public abstract class HapiSpecOperation {
 	protected boolean loggingOff = false;
 	protected boolean suppressStats = false;
 	protected boolean verboseLoggingOn = false;
-	protected boolean shouldRegisterTxnId = false;
+	protected boolean shouldRegisterTxn = false;
 	protected boolean useDefaultTxnAsCostAnswerPayment = false;
 	protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
 	protected boolean usePresetTimestamp = false;
+	protected boolean asTxnWithOnlySigMap = false;
+	protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
+	protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
 
 	protected boolean useTls = false;
+	protected HapiSpecSetup.TxnConfig txnConfig = HapiSpecSetup.TxnConfig.ALTERNATE;
 	protected boolean useRandomNode = false;
-	protected boolean useLegacySignature = false;
 	protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
 	protected Optional<SigMapGenerator.Nature> sigMapGen = Optional.empty();
 	protected Optional<List<Function<HapiApiSpec, Key>>> signers = Optional.empty();
@@ -139,6 +146,10 @@ public abstract class HapiSpecOperation {
 		useTls = spec.setup().getConfigTLS();
 	}
 
+	protected void configureTxnFor(HapiApiSpec spec) {
+		txnConfig = spec.setup().txnConfig();
+	}
+
 	protected void fixNodeFor(HapiApiSpec spec) {
 		if (node.isPresent()) {
 			return;
@@ -161,6 +172,7 @@ public abstract class HapiSpecOperation {
 
 	public Optional<Throwable> execFor(HapiApiSpec spec) {
 		pauseIfRequested();
+		configureTxnFor(spec);
 		try {
 			boolean hasCompleteLifecycle = submitOp(spec);
 
@@ -168,8 +180,8 @@ public abstract class HapiSpecOperation {
 				spec.incrementNumLedgerOps();
 			}
 
-			if (shouldRegisterTxnId) {
-				saveTxnId(spec);
+			if (shouldRegisterTxn) {
+				registerTxnSubmitted(spec);
 			}
 
 			if (hasCompleteLifecycle) {
@@ -194,8 +206,9 @@ public abstract class HapiSpecOperation {
 		});
 	}
 
-	private void saveTxnId(HapiApiSpec spec) throws Throwable {
+	private void registerTxnSubmitted(HapiApiSpec spec) throws Throwable {
 		if (txnSubmitted != Transaction.getDefaultInstance()) {
+			spec.registry().saveBytes(txnName, txnSubmitted.toByteString());
 			TransactionID txnId = extractTxnId(txnSubmitted);
 			spec.registry().saveTxnId(txnName, txnId);
 		}
@@ -260,17 +273,43 @@ public abstract class HapiSpecOperation {
 			txn = getSigned(spec, spec.txns().getReadyToSign(netDef), keys);
 		}
 
-		return txn;
+		return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);
+	}
+
+	private Transaction finalizedTxnFromTxnWithBodyBytesAndSigMap(Transaction txnWithBodyBytesAndSigMap
+	) throws Throwable {
+		if (asTxnWithOnlySigMap) {
+			return txnWithBodyBytesAndSigMap.toBuilder().clearBodyBytes().build();
+		}
+
+		ByteString bodyByteString = CommonUtils.extractTransactionBodyByteString(txnWithBodyBytesAndSigMap);
+		SignatureMap sigMap = CommonUtils.extractSignatureMap(txnWithBodyBytesAndSigMap);
+		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+				.setBodyBytes(bodyByteString)
+				.setSigMap(sigMap)
+				.build();
+		Transaction.Builder txnWithSignedTxnBytesBuilder =
+				Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.toByteString());
+
+		if (asTxnWithSignedTxnBytesAndSigMap) {
+			return txnWithSignedTxnBytesBuilder.setSigMap(sigMap).build();
+		}
+
+		if (asTxnWithSignedTxnBytesAndBodyBytes) {
+			return txnWithSignedTxnBytesBuilder.setBodyBytes(bodyByteString).build();
+		}
+
+		if (HapiSpecSetup.TxnConfig.OLD == txnConfig) {
+			return txnWithBodyBytesAndSigMap;
+		}
+
+		return txnWithSignedTxnBytesBuilder.build();
 	}
 
 	private Transaction getSigned(HapiApiSpec spec, Transaction.Builder builder, List<Key> keys) throws Throwable {
-		if (useLegacySignature) {
-			return spec.keys().listSign(builder, keys, overrides);
-		} else {
-			return sigMapGen.isPresent()
-					? spec.keys().sign(builder, keys, overrides, sigMapGen.get())
-					: spec.keys().sign(builder, keys, overrides);
-		}
+		return sigMapGen.isPresent()
+				? spec.keys().sign(builder, keys, overrides, sigMapGen.get())
+				: spec.keys().sign(builder, keys, overrides);
 	}
 
 	private void setKeyControlOverrides(HapiApiSpec spec) {

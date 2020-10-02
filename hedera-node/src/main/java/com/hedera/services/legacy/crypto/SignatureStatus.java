@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenRef;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class SignatureStatus {
   private FileID fileId;
   private ContractID contractId;
   private TopicID topicId;
-  private TokenRef tokenRef;
+  private TokenID tokenId;
 
   public SignatureStatus(final SignatureStatusCode statusCode, final ResponseCodeEnum responseCode,
       final boolean handlingTransaction, final TransactionID transactionID,
@@ -58,12 +58,12 @@ public class SignatureStatus {
 
   public SignatureStatus(final SignatureStatusCode statusCode, final ResponseCodeEnum responseCode,
           final boolean handlingTransaction, final TransactionID transactionID,
-          final TokenRef tokenRef) {
+          final TokenID tokenID) {
     this.statusCode = statusCode;
     this.responseCode = responseCode;
     this.handlingTransaction = handlingTransaction;
     this.transactionId = transactionID;
-    this.tokenRef = tokenRef;
+    this.tokenId = tokenID;
   }
 
   public ResponseCodeEnum getResponseCode() {
@@ -133,9 +133,9 @@ public class SignatureStatus {
         formatArguments.add(format(transactionId));
         formatArguments.add(readableId(topicId));
         break;
-      case INVALID_TOKEN_REF:
+      case INVALID_TOKEN_ID:
         formatArguments.add(format(transactionId));
-        formatArguments.add(tokenRef.hasTokenId() ? readableId(tokenRef.getTokenId()) : tokenRef.getSymbol());
+        formatArguments.add(readableId(tokenId));
         break;
       case SUCCESS:
       case INVALID_PROTOCOL_BUFFER:
