@@ -101,7 +101,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.transaction.minValidDuration", 15L),
 			entry("hedera.transaction.maxValidDuration", 180L),
 			entry("ledger.fundingAccount", 98L),
-			entry("ledger.createPayerRecords", false),
+			entry("ledger.createPayerRecords", true),
 			entry("ledger.createThresholdRecords", false),
 			entry("ledger.maxAccountNum", 100_000_000L),
 			entry("ledger.numSystemAccounts", 100),
