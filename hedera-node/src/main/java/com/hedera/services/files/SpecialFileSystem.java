@@ -56,6 +56,10 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 		invalidateHash();
 	}
 
+	public HashMap<FileID, byte[]> getFileMap() {
+		return fileMap;
+	}
+
 	public byte[] getFileHash(FileID fileID) {
 		byte[] fileBytes = getFileContent(fileID);
 		try {

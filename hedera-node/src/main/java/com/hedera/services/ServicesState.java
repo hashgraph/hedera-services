@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
@@ -187,6 +188,12 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 			merkleDigest.accept(this);
+			// if loaded from state, SpecialFileSystem is created with non-args constructor
+			// re-init SpecialFileSystem so it has nodeAccountID setup correctly
+			SpecialFileSystem preSpecialFileSystem = getChild(ChildIndices.SPECIAL_FILE_SYSTEM);
+			setChild(ChildIndices.SPECIAL_FILE_SYSTEM,
+					new SpecialFileSystem(preSpecialFileSystem.getFileMap(),
+							EntityIdUtils.asLiteralString(ctx.nodeAccount())));
 			printHashes();
 		}
 
