@@ -439,6 +439,23 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void dissociatingRejectsFrozenAccount() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		subject = spy(subject);
+		given(subject.isTreasuryForToken(sponsor, misc)).willReturn(false);
+		given(subject.isFrozen(Map.entry(sponsor, misc))).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
 	public void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
@@ -886,6 +903,23 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertTrue(subject.isKnownTreasury(treasury));
+	}
+
+	@Test
+	public void isFrozenAccountWorks() {
+		var relationship = Map.entry(sponsor, misc);
+		given(tokenRelsLedger.get(relationship, IS_FROZEN)).willReturn(true);
+
+		// expect:
+		assertTrue(subject.isFrozen(relationship));
+	}
+
+	@Test
+	public void isFrozenAccountReturnsFalse() {
+		var relationship = Map.entry(sponsor, misc);
+
+		// expect:
+		assertFalse(subject.isFrozen(relationship));
 	}
 
 	@Test

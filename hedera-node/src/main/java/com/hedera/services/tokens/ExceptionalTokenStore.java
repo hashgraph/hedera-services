@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public enum ExceptionalTokenStore implements TokenStore {
@@ -75,6 +76,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isFrozen(Map.Entry<AccountID, TokenID> relationship) {
 		throw new UnsupportedOperationException();
 	}
 
