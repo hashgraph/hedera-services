@@ -196,6 +196,9 @@ public class HederaTokenStore implements TokenStore {
 					return ACCOUNT_IS_TREASURY;
 				}
 				var relationship = asTokenRel(aId, tId);
+				if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
+					return ACCOUNT_FROZEN_FOR_TOKEN;
+				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
 					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;

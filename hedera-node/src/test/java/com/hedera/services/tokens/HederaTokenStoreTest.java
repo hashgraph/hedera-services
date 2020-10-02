@@ -439,6 +439,21 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void dissociatingRejectsFrozenAccount() {
+		// setup:
+		var tokens = mock(MerkleAccountTokens.class);
+		given(tokens.includes(misc)).willReturn(true);
+		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
+		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
+
+		// when:
+		var status = subject.dissociate(sponsor, List.of(misc));
+
+		// expect:
+		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
+	}
+
+	@Test
 	public void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
