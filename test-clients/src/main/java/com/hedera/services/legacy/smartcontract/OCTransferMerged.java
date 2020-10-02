@@ -339,7 +339,6 @@ public class OCTransferMerged {
 
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();;
     Duration transactionDuration = RequestBuilder.getDuration(180);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);

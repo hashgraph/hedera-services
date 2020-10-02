@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -49,16 +50,11 @@ import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.regression.Utilities;
-import com.hedera.services.legacy.regression.umbrella.FileServiceTest;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,7 +135,7 @@ public class CryptoLiveHashTest {
             .name());
 
     AccountID newlyCreateAccountId1 = null;
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     try {
       newlyCreateAccountId1 = TestHelper
           .getTxReceipt(body.getTransactionID(), stub).getAccountID();
@@ -151,18 +147,10 @@ public class CryptoLiveHashTest {
     log.info("--------------------------------------");
 
     // creating the request for crypto claims
-    byte[] messageDigest = null;
-
-    MessageDigest md = MessageDigest.getInstance("SHA-384");
-    messageDigest = md.digest("achal".getBytes());
-    log.info(messageDigest + " :: are the claim bytes");
-
     List<Key> waclPubKeyList = new ArrayList<>();
 
     waclPrivKeyList = new ArrayList<>();
     genWacl(5, waclPubKeyList, waclPrivKeyList);
-
-    List<PrivateKey> privKeys = Collections.singletonList(firstPair.getPrivate());
 
     byte[] pubKey = ((EdDSAPublicKey) firstPair.getPublic()).getAbyte();
     Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
@@ -179,13 +167,14 @@ public class CryptoLiveHashTest {
     long transactionFee = 100000;
     boolean generateRecord = false;
     String memo = "add claims";
-    ByteString claimbyteString = ByteString.copyFrom(messageDigest);
-    LiveHash claim = LiveHash.newBuilder().setHash(claimbyteString).setAccountId(newlyCreateAccountId1)
+
+    ByteString liveHashBS = CommonUtils.sha384HashOf("liveHash".getBytes());
+    LiveHash liveHash = LiveHash.newBuilder().setHash(liveHashBS).setAccountId(newlyCreateAccountId1)
         .setKeys(KeyList.newBuilder().addAllKeys(waclPubKeyList).build()).setDuration(
             Duration.newBuilder().setSeconds(timestamp.getSeconds() + 10000000000l).build())
         .build();
     CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = CryptoAddLiveHashTransactionBody.
-        newBuilder().setLiveHash(claim).build();
+        newBuilder().setLiveHash(liveHash).build();
 
     TransactionID transactionID = TransactionID.newBuilder().setAccountID(newlyCreateAccountId1)
         .setTransactionValidStart(timestamp).build();
@@ -208,18 +197,7 @@ public class CryptoLiveHashTest {
     Transaction signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(firstPair.getPrivate()));
     log.info(signedTransaction + ":: is the signed transaction");
-    Transaction signedTransactiontKeys = null;
-    try {
-      signedTransactiontKeys = FileServiceTest.appendSignature(signedTransaction, waclPrivKeyList);
-    } catch (InvalidKeyException e) {
-      e.printStackTrace();
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    } catch (SignatureException e) {
-      e.printStackTrace();
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
+    Transaction signedTransactiontKeys = TransactionSigner.signTransaction(signedTransaction, waclPrivKeyList, true);
     log.info(signedTransactiontKeys + ":: is the transaction signed with the payer plus wacl");
 
     TransactionResponse response1 = stub.addLiveHash(signedTransactiontKeys);
@@ -240,7 +218,7 @@ public class CryptoLiveHashTest {
 
     CryptoGetLiveHashQuery cryptoGetLiveHashQuery = CryptoGetLiveHashQuery.newBuilder()
         .setAccountID(newlyCreateAccountId1)
-        .setHeader(queryHeader).setHash(claimbyteString).build();
+        .setHeader(queryHeader).setHash(liveHashBS).build();
     Query query = Query.newBuilder().setCryptoGetLiveHash(cryptoGetLiveHashQuery).build();
 
     Response cryptoGetLiveHashResponse = stub.getLiveHash(query);
@@ -268,7 +246,7 @@ public class CryptoLiveHashTest {
 
     CryptoDeleteLiveHashTransactionBody cryptoDeleteLiveHashTransactionBody = CryptoDeleteLiveHashTransactionBody
         .newBuilder()
-        .setAccountOfLiveHash(newlyCreateAccountId1).setLiveHashToDelete(claimbyteString).build();
+        .setAccountOfLiveHash(newlyCreateAccountId1).setLiveHashToDelete(liveHashBS).build();
     TransactionBody transactionBodyDeleteLiveHash = TransactionBody.newBuilder()
         .setTransactionID(transactionID1)
         .setNodeAccountID(nodeAccountID)
@@ -285,22 +263,9 @@ public class CryptoLiveHashTest {
     Transaction transaction1 = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     Transaction signedTransaction1 = TransactionSigner
         .signTransaction(transaction1, Collections.singletonList(firstPair.getPrivate()));
-
-    Transaction signedTransactiontKeys1 = null;
-    try {
-      signedTransactiontKeys1 = FileServiceIT.appendSignature(signedTransaction1, waclPrivKeyList);
-    } catch (InvalidKeyException e) {
-      e.printStackTrace();
-    } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
-    } catch (SignatureException e) {
-      e.printStackTrace();
-    } catch (DecoderException e) {
-      e.printStackTrace();
-    }
+    Transaction signedTransactiontKeys1 = TransactionSigner.signTransaction(signedTransaction1, waclPrivKeyList, true);
 
     TransactionResponse response2 = stub.deleteLiveHash(signedTransactiontKeys1);
-
     log.info(response2.getNodeTransactionPrecheckCode());
 
     txReceipt = TestHelper.getTxReceipt(transactionID1, stub);
@@ -318,7 +283,7 @@ public class CryptoLiveHashTest {
 
     CryptoGetLiveHashQuery cryptoGetLiveHashQuery2 = CryptoGetLiveHashQuery.newBuilder()
         .setAccountID(newlyCreateAccountId1)
-        .setHeader(queryHeader2).setHash(claimbyteString).build();
+        .setHeader(queryHeader2).setHash(liveHashBS).build();
     Query query2 = Query.newBuilder().setCryptoGetLiveHash(cryptoGetLiveHashQuery2).build();
 
     Response cryptoGetLiveHashResponse2 = stub.getLiveHash(query2);

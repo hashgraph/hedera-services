@@ -22,7 +22,9 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,11 +38,20 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -59,6 +70,7 @@ class TokenTransferTransitionLogicTest {
 			.build();
 
 	private HederaLedger ledger;
+	private OptionValidator validator;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 
@@ -68,11 +80,13 @@ class TokenTransferTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		ledger = mock(HederaLedger.class);
+		validator = mock(OptionValidator.class);
 		accessor = mock(PlatformTxnAccessor.class);
 
 		txnCtx = mock(TransactionContext.class);
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(OK);
 
-		subject = new TokenTransferTransitionLogic(ledger, txnCtx);
+		subject = new TokenTransferTransitionLogic(ledger, validator, txnCtx);
 	}
 
 	@Test
@@ -124,11 +138,203 @@ class TokenTransferTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsExceedingTransfersLength() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+
+		// expect:
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsEmptyTokenTransferBody() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_BODY);
+
+		// expect:
+		assertEquals(EMPTY_TOKEN_TRANSFER_BODY, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsEmptyTokenTransferAccountAmounts() {
+		givenValidTxnCtx();
+		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
+
+		// expect:
+		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsDuplicateTokens() {
+		givenDuplicateTokens();
+
+		// expect:
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsInvalidTokenDuplicateAccounts() {
+		givenInvalidTokenDuplicateAccounts();
+
+		// expect:
+		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsInvalidTokenAdjustment() {
+		givenInvalidTokenAdjustment();
+
+		// expect:
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsMissingTokenInTransfer() {
+		givenMissingTokenInTransfer();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsMissingAccountInTokenAccountAmount() {
+		givenMissingAccountInTokenAccountAmount();
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
+	@Test
+	public void rejectsInvalidTokenZeroAmounts() {
+		givenInvalidTokenZeroAmounts();
+
+		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.syntaxCheck().apply(tokenTransactTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenTransactTxn = TransactionBody.newBuilder()
 				.setTokenTransfers(xfers)
 				.build();
 		given(accessor.getTxn()).willReturn(tokenTransactTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+	}
+
+	private void givenDuplicateTokens() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), -1_000),
+										adjustFrom(asAccount("0.0.3"), +1_000)
+								)))
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), -1_000),
+										adjustFrom(asAccount("0.0.3"), +1_000)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
+	}
+
+	private void givenInvalidTokenDuplicateAccounts() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), -1_000),
+										adjustFrom(asAccount("0.0.2"), +1_000)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
+	}
+
+	private void givenInvalidTokenAdjustment() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), -1_000),
+										adjustFrom(asAccount("0.0.3"), -1_000)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
+	}
+
+	private void givenMissingTokenInTransfer() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), -1_000),
+										adjustFrom(asAccount("0.0.3"), +1_000)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
+	}
+
+	private void givenMissingAccountInTokenAccountAmount() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										AccountAmount.newBuilder()
+												.setAmount(-1000)
+												.build(),
+										adjustFrom(asAccount("0.0.3"), +1_000)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
+	}
+
+	private void givenInvalidTokenZeroAmounts() {
+		xfers = TokenTransfersTransactionBody.newBuilder()
+				.addTokenTransfers(
+						TokenTransferList.newBuilder()
+								.setToken(asToken("0.0.12345"))
+								.addAllTransfers(List.of(
+										adjustFrom(asAccount("0.0.2"), 0),
+										adjustFrom(asAccount("0.0.3"), 0)
+								))
+				)
+				.build();
+
+		tokenTransactTxn = TransactionBody.newBuilder()
+				.setTokenTransfers(xfers)
+				.build();
 	}
 }

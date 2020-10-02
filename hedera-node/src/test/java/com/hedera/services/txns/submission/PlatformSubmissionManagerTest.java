@@ -53,21 +53,24 @@ class PlatformSubmissionManagerTest {
 	TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
 	TransactionID uncheckedTxnId = TransactionID.newBuilder().setAccountID(asAccount("1.0.2")).build();
 	Transaction signedTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
 					.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-					.setTransactionID(txnId))
+					.setTransactionID(txnId)
+					.build().toByteString())
 			.build();
 	Transaction uncheckedSubTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
 					.setTransactionID(uncheckedTxnId)
 					.setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
-							.setTransactionBytes(signedTxn.toByteString())))
+							.setTransactionBytes(signedTxn.toByteString()))
+					.build().toByteString())
 			.build();
 	Transaction invalidUncheckedSubTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder()
+			.setBodyBytes(TransactionBody.newBuilder()
 					.setTransactionID(uncheckedTxnId)
 					.setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
-							.setTransactionBytes(ByteString.copyFrom("INVALID".getBytes()))))
+							.setTransactionBytes(ByteString.copyFrom("INVALID".getBytes())))
+					.build().toByteString())
 			.build();
 	SignedTxnAccessor accessor;
 	SignedTxnAccessor uncheckedAccessor;

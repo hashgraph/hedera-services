@@ -30,13 +30,5 @@ import com.hederahashgraph.api.proto.java.ContractID;
  * @author Michael Tinker
  */
 public interface ContractSigMetaLookup {
-	/**
-	 * Returns metadata for the given smart contract's signing activity; e.g.,
-	 * whether the contract has an admin key.
-	 *
-	 * @param contract the smart contract to recover signing metadata for.
-	 * @return the desired metadata.
-	 * @throws Exception if no appropriate metadata exists.
-	 */
-	ContractSigningMetadata lookup(ContractID contract) throws Exception;
+	SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id);
 }

@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -300,10 +298,7 @@ public class Common {
 				.getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
 						nodeRealmNum, nodeShardNum, transactionFee, timestamp,
 						txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-						autoRenewalPeriod, SignatureList.newBuilder()
-								.addSigs(Signature.newBuilder()
-										.setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-								.build(), contractMemo, adminKey);
+						autoRenewalPeriod, contractMemo, adminKey);
 
 		transaction = TransactionSigner.signTransaction(transaction, keys);
 
@@ -313,16 +308,13 @@ public class Common {
 				.getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
 						nodeRealmNum, nodeShardNum, transactionFee, timestamp,
 						txDuration, generateRecord, txMemo, gas, fileId, constructorParameters, initialBalance,
-						autoRenewalPeriod, SignatureList.newBuilder()
-								.addSigs(Signature.newBuilder()
-										.setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-								.build(), contractMemo, adminKey);
+						autoRenewalPeriod, contractMemo, adminKey);
 
 		List<Key> keyList = new ArrayList<>();
 		for (PrivateKey pk : keys) {
 			keyList.add(PrivateKeyToKey(pk));
 		}
-		transaction = TransactionSigner.signTransactionComplex(transaction, keyList, pubKey2privKeyMap);
+		transaction = TransactionSigner.signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
 		return transaction;
 	}
 
@@ -337,10 +329,7 @@ public class Common {
 		Transaction transaction = RequestBuilder
 				.getContractCallRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
 						nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-						txDuration, gas, contractId, functionData, value,
-						SignatureList.newBuilder().
-								addSigs(Signature.newBuilder()
-										.setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build());
+						txDuration, gas, contractId, functionData, value);
 
 		transaction = TransactionSigner.signTransaction(transaction, keys);
 
@@ -349,17 +338,14 @@ public class Common {
 		transaction = RequestBuilder
 				.getContractCallRequest(payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum,
 						nodeRealmNum, nodeShardNum, transactionFee, timestamp,
-						txDuration, gas, contractId, functionData, value,
-						SignatureList.newBuilder().
-								addSigs(Signature.newBuilder()
-										.setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build());
+						txDuration, gas, contractId, functionData, value);
 
 		List<Key> keyList = new ArrayList<>();
 		for (PrivateKey pk : keys) {
 			keyList.add(PrivateKeyToKey(pk));
 		}
 
-		return TransactionSigner.signTransactionComplex(transaction, keyList, pubKey2privKeyMap);
+		return TransactionSigner.signTransactionComplexWithSigMap(transaction, keyList, pubKey2privKeyMap);
 
 	}
 
@@ -408,8 +394,7 @@ public class Common {
 						nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
 						transactionDuration,
 						generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-						receiverSigRequired, autoRenewPeriod,
-						SignatureList.newBuilder().getDefaultInstanceForType());
+						receiverSigRequired, autoRenewPeriod);
 		List<Key> keys = new ArrayList<Key>();
 		keys.add(payerKey);
 		if (receiverSigRequired) {
@@ -419,7 +404,7 @@ public class Common {
 		Transaction transaction = null;
 		try {
 			transaction = TransactionSigner
-					.signTransactionComplex(createAccountRequest, keys, pubKey2privKeyMap);
+					.signTransactionComplexWithSigMap(createAccountRequest, keys, pubKey2privKeyMap);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -457,7 +442,7 @@ public class Common {
 		Transaction signDelete = null;
 		try {
 			signDelete = TransactionSigner
-					.signTransactionComplex(deletetx, keys, pubKey2privKeyMap);
+					.signTransactionComplexWithSigMap(deletetx, keys, pubKey2privKeyMap);
 		} catch (Exception e) {
 			return null;
 		}
@@ -485,24 +470,18 @@ public class Common {
 				.getTimestamp(Instant.now(Clock.systemUTC()));
 		Duration transactionDuration = RequestBuilder.getDuration(30);
 
-		SignatureList sigList = SignatureList.getDefaultInstance();
 		Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
 				nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 0, timestamp, transactionDuration,
 				false,
-				memo, sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+				memo, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
 				amount);
 		// sign the tx
-		List<List<PrivateKey>> privKeysList = new ArrayList<>();
-		List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-		payerPrivKeyList.add(payerAccountKey);
-		privKeysList.add(payerPrivKeyList);
+		List<PrivateKey> privKeysList = new ArrayList<>();
+		privKeysList.add(payerAccountKey);
+		privKeysList.add(fromKey);
 
-		List<PrivateKey> fromPrivKeyList = new ArrayList<>();
-		fromPrivKeyList.add(fromKey);
-		privKeysList.add(fromPrivKeyList);
-
-		Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+		Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
 		long transferFee = 0;
 		try {
@@ -514,10 +493,10 @@ public class Common {
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
 				nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
 				transactionDuration, false,
-				memo, sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+				memo, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
 				amount);
 
-		signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+		signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 		return signedTx;
 	}
 

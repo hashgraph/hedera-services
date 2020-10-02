@@ -27,9 +27,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.tokens.TokenStore;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -39,24 +41,28 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -72,10 +78,13 @@ class TokenUpdateTransitionLogicTest {
 	private TokenID target = IdUtils.asToken("1.2.666");
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
+	private String symbol = "SYMBOL";
+	private String name = "Name";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
 	private TransactionBody tokenUpdateTxn;
 	private MerkleToken token;
 
+	private OptionValidator validator;
 	private TokenStore store;
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
@@ -86,6 +95,7 @@ class TokenUpdateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
+		validator = mock(OptionValidator.class);
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
@@ -95,13 +105,14 @@ class TokenUpdateTransitionLogicTest {
 		given(token.treasury()).willReturn(EntityId.ofNullableAccountId(oldTreasury));
 		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
+		withAlwaysValidValidator();
 
 		txnCtx = mock(TransactionContext.class);
 
 		expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
 		given(expiryOnlyCheck.test(any())).willReturn(false);
 
-		subject = new TokenUpdateTransitionLogic(store, ledger, txnCtx, expiryOnlyCheck);
+		subject = new TokenUpdateTransitionLogic(validator, store, ledger, txnCtx, expiryOnlyCheck);
 	}
 
 	@Test
@@ -247,7 +258,7 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(TOKEN_IS_IMMUTABlE);
+		verify(txnCtx).setStatus(TOKEN_IS_IMMUTABLE);
 	}
 
 	@Test
@@ -333,6 +344,89 @@ class TokenUpdateTransitionLogicTest {
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsMissingToken() {
+		givenMissingToken();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsTooLongSymbol() {
+		givenValidTxnCtx();
+		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
+
+		// expect:
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidSymbol() {
+		givenValidTxnCtx();
+		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_SYMBOL, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsTooLongName() {
+		givenValidTxnCtx();
+		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
+
+		// expect:
+		assertEquals(TOKEN_SYMBOL_TOO_LONG, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidAdminKey() {
+		givenInvalidAdminKey();
+
+		// expect:
+		assertEquals(INVALID_ADMIN_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidKycKey() {
+		givenInvalidKycKey();
+
+		// expect:
+		assertEquals(INVALID_KYC_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidWipeKey() {
+		givenInvalidWipeKey();
+
+		// expect:
+		assertEquals(INVALID_WIPE_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidSupplyKey() {
+		givenInvalidSupplyKey();
+
+		// expect:
+		assertEquals(INVALID_SUPPLY_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidFreezeKey() {
+		givenInvalidFreezeKey();
+
+		// expect:
+		assertEquals(INVALID_FREEZE_KEY, subject.syntaxCheck().apply(tokenUpdateTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		givenValidTxnCtx(false);
 	}
@@ -349,6 +443,8 @@ class TokenUpdateTransitionLogicTest {
 	private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
 		var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setSymbol(symbol)
+						.setName(name)
 						.setToken(target));
 		if (withNewTreasury) {
 			builder.getTokenUpdateBuilder()
@@ -362,5 +458,56 @@ class TokenUpdateTransitionLogicTest {
 		given(ledger.isDeleted(newTreasury)).willReturn(false);
 		given(ledger.exists(oldTreasury)).willReturn(true);
 		given(ledger.isDeleted(oldTreasury)).willReturn(false);
+	}
+
+	private void givenMissingToken() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder())
+				.build();
+	}
+
+	private void givenInvalidFreezeKey() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setFreezeKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void givenInvalidAdminKey() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setAdminKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void givenInvalidWipeKey() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setWipeKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void givenInvalidSupplyKey() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setSupplyKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void givenInvalidKycKey() {
+		tokenUpdateTxn = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setToken(target)
+						.setKycKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void withAlwaysValidValidator() {
+		given(validator.tokenNameCheck(any())).willReturn(OK);
+		given(validator.tokenSymbolCheck(any())).willReturn(OK);
 	}
 }

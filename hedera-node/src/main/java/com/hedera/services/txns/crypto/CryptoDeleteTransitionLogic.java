@@ -64,6 +64,11 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
 			AccountID id = op.getDeleteAccountID();
+			if (ledger.isKnownTreasury(id)) {
+				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
+				return;
+			};
+
 			if (!ledger.allTokenBalancesVanish(id)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 				return;

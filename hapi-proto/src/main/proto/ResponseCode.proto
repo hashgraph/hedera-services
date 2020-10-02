@@ -204,7 +204,12 @@ enum ResponseCodeEnum {
   MISSING_TOKEN_NAME = 190; // Token Name is not provided
   TOKEN_NAME_TOO_LONG = 191; // Token Name is too long
   INVALID_WIPING_AMOUNT = 192; // The provided wipe amount must not be negative, zero or bigger than the token holder balance
-  TOKEN_IS_IMMUTABlE = 193; // Token does not have Admin key set, thus update/delete transactions cannot be performed
+  TOKEN_IS_IMMUTABLE = 193; // Token does not have Admin key set, thus update/delete transactions cannot be performed
   TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT = 194; // An <tt>associateToken</tt> operation specified a token already associated to the account
   TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES = 195; // An attempted operation is invalid until all token balances for the target account are zero
+  ACCOUNT_IS_TREASURY = 196; // An attempted operation is invalid because the account is a treasury
+  TOKEN_ID_REPEATED_IN_TOKEN_LIST = 197; // Same TokenIDs present in the token list
+  TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED = 198; // Exceeded the number of token transfers (both from and to) allowed for token transfer list
+  EMPTY_TOKEN_TRANSFER_BODY = 199; // TokenTransfersTransactionBody has no TokenTransferList
+  EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS = 200; // TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts
 }

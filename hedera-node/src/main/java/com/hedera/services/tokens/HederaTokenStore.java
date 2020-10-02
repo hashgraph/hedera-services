@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -65,28 +66,19 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -94,13 +86,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABlE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static java.util.stream.IntStream.range;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -122,6 +111,8 @@ public class HederaTokenStore implements TokenStore {
 	private HederaLedger hederaLedger;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
+
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
@@ -137,6 +128,10 @@ public class HederaTokenStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
+
+		tokens.get().forEach((key, value) -> {
+			addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
+		});
 	}
 
 	@Override
@@ -197,7 +192,13 @@ public class HederaTokenStore implements TokenStore {
 				if (!accountTokens.includes(tId)) {
 					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 				}
+				if (isTreasuryForToken(aId, tId)) {
+					return ACCOUNT_IS_TREASURY;
+				}
 				var relationship = asTokenRel(aId, tId);
+				if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
+					return ACCOUNT_FROZEN_FOR_TOKEN;
+				}
 				long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 				if (balance > 0) {
 					return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -302,9 +303,6 @@ public class HederaTokenStore implements TokenStore {
 			if (ofNullableAccountId(aId).equals(token.treasury())) {
 				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 			}
-			if (amount <= 0) {
-				return INVALID_WIPING_AMOUNT;
-			}
 
 			var relationship = asTokenRel(aId, tId);
 			long balance = (long)tokenRelsLedger.get(relationship, TOKEN_BALANCE);
@@ -336,9 +334,6 @@ public class HederaTokenStore implements TokenStore {
 			ResponseCodeEnum failure
 	) {
 		return tokenSanityCheck(tId, token -> {
-			if (amount <= 0) {
-				return failure;
-			}
 			if (!token.hasSupplyKey()) {
 				return TOKEN_HAS_NO_SUPPLY_KEY;
 			}
@@ -363,40 +358,18 @@ public class HederaTokenStore implements TokenStore {
 
 	@Override
 	public TokenCreationResult createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
-		var validity = symbolCheck(request.getSymbol());
-		if (validity != OK) {
-			return failure(validity);
-		}
-		validity = nameCheck(request.getName());
-		if (validity != OK) {
-			return failure(validity);
-		}
-		validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
 		}
 		if (request.hasAutoRenewAccount()) {
 			validity = accountCheck(request.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-			if (validity == OK) {
-				validity = isValidAutoRenewPeriod(request.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
-			}
 			if (validity != OK) {
 				return failure(validity);
 			}
-		} else {
-			if (request.getExpiry() <= now) {
-				return failure(INVALID_EXPIRATION_TIME);
-			}
 		}
-		validity = initialSupplyAndDecimalsCheck(request.getInitialSupply(), request.getDecimals());
-		if (validity != OK) {
-			return failure(validity);
-		}
+
 		var freezeKey = asUsableFcKey(request.getFreezeKey());
-		validity = freezeSemanticsCheck(freezeKey, request.getFreezeDefault());
-		if (validity != OK) {
-			return failure(validity);
-		}
 		var adminKey = asUsableFcKey(request.getAdminKey());
 		var kycKey = asUsableFcKey(request.getKycKey());
 		var wipeKey = asUsableFcKey(request.getWipeKey());
@@ -426,6 +399,28 @@ public class HederaTokenStore implements TokenStore {
 		return success(pendingId);
 	}
 
+
+	public void addKnownTreasury(AccountID aId, TokenID tId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			knownTreasuries.put(aId, new HashSet<>());
+		}
+		knownTreasuries.get(aId).add(tId);
+	}
+
+	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+		throwIfKnownTreasuryIsMissing(aId);
+		knownTreasuries.get(aId).remove(tId);
+		if (knownTreasuries.get(aId).isEmpty()) {
+			knownTreasuries.remove(aId);
+		}
+	}
+
+	private void throwIfKnownTreasuryIsMissing(AccountID aId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			throw new IllegalArgumentException(String.format("No such known treasury '%s'!", readableId(aId)));
+		}
+	}
+
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
 		if ((boolean)tokenRelsLedger.get(relationship, IS_FROZEN)) {
@@ -444,13 +439,6 @@ public class HederaTokenStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
-		if (initialSupply < 0) {
-			return INVALID_TOKEN_INITIAL_SUPPLY;
-		}
-		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
-	}
-
 	private boolean isValidAutoRenewPeriod(long secs) {
 		return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
 	}
@@ -466,6 +454,7 @@ public class HederaTokenStore implements TokenStore {
 		throwIfNoCreationPending();
 
 		tokens.get().put(fromTokenId(pendingId), pendingCreation);
+		addKnownTreasury(pendingCreation.treasury().toGrpcAccountId(), pendingId);
 
 		resetPendingCreation();
 	}
@@ -487,19 +476,7 @@ public class HederaTokenStore implements TokenStore {
 		var validity = OK;
 		var isExpiryOnly = affectsExpiryAtMost(changes);
 		var hasNewSymbol = changes.getSymbol().length() > 0;
-		if (hasNewSymbol) {
-			validity = symbolCheck(changes.getSymbol());
-			if (validity != OK) {
-				return validity;
-			}
-		}
 		var hasNewTokenName = changes.getName().length() > 0;
-		if (hasNewTokenName) {
-			validity = nameCheck(changes.getName());
-			if (validity != OK) {
-				return validity;
-			}
-		}
 		var hasAutoRenewAccount = changes.hasAutoRenewAccount();
 		if (hasAutoRenewAccount) {
 			validity = accountCheck(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
@@ -510,14 +487,9 @@ public class HederaTokenStore implements TokenStore {
 
 		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
 		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
-		Optional<JKey> newAdminKey = changes.hasAdminKey() ? asUsableFcKey(changes.getAdminKey()) : Optional.empty();
 		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
 		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
 
-		var keyValidity = keyValidity(changes, newKycKey, newAdminKey, newWipeKey, newSupplyKey, newFreezeKey);
-		if (keyValidity != OK) {
-			return keyValidity;
-		}
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
 			var candidateExpiry = changes.getExpiry();
@@ -543,7 +515,7 @@ public class HederaTokenStore implements TokenStore {
 				appliedValidity.set(TOKEN_HAS_NO_SUPPLY_KEY);
 			}
 			if (!token.hasAdminKey() && !isExpiryOnly) {
-				appliedValidity.set(TOKEN_IS_IMMUTABlE);
+				appliedValidity.set(TOKEN_IS_IMMUTABLE);
 			}
 			if (OK != appliedValidity.get()) {
 				return;
@@ -579,9 +551,11 @@ public class HederaTokenStore implements TokenStore {
 				var newName = changes.getName();
 				token.setName(newName);
 			}
-			if (changes.hasTreasury()) {
+			if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
 				var treasuryId = ofNullableAccountId(changes.getTreasury());
+				removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 				token.setTreasury(treasuryId);
+				addKnownTreasury(changes.getTreasury(), tId);
 			}
 			if (changes.getExpiry() != 0) {
 				token.setExpiry(changes.getExpiry());
@@ -627,32 +601,6 @@ public class HederaTokenStore implements TokenStore {
 		return action.apply(aId, tokenIds);
 	}
 
-	private ResponseCodeEnum keyValidity(
-			TokenUpdateTransactionBody op,
-			Optional<JKey> newKycKey,
-			Optional<JKey> newAdminKey,
-			Optional<JKey> newWipeKey,
-			Optional<JKey> newSupplyKey,
-			Optional<JKey> newFreezeKey
-	) {
-		if (op.hasAdminKey() && newAdminKey.isEmpty()) {
-			return INVALID_ADMIN_KEY;
-		}
-		if (op.hasKycKey() && newKycKey.isEmpty()) {
-			return INVALID_KYC_KEY;
-		}
-		if (op.hasWipeKey() && newWipeKey.isEmpty()) {
-			return INVALID_WIPE_KEY;
-		}
-		if (op.hasSupplyKey() && newSupplyKey.isEmpty()) {
-			return INVALID_SUPPLY_KEY;
-		}
-		if (op.hasFreezeKey() && newFreezeKey.isEmpty()) {
-			return INVALID_FREEZE_KEY;
-		}
-		return OK;
-	}
-
 	private void resetPendingCreation() {
 		pendingId = NO_PENDING_ID;
 		pendingCreation = null;
@@ -670,33 +618,17 @@ public class HederaTokenStore implements TokenStore {
 		}
 	}
 
-	private ResponseCodeEnum freezeSemanticsCheck(Optional<JKey> candidate, boolean freezeDefault) {
-		if (candidate.isEmpty() && freezeDefault) {
-			return TOKEN_HAS_NO_FREEZE_KEY;
-		}
-		return OK;
+
+	public boolean isKnownTreasury(AccountID aid) {
+		return knownTreasuries.containsKey(aid);
 	}
 
-	private ResponseCodeEnum symbolCheck(String symbol) {
-		if (symbol.length() < 1) {
-			return MISSING_TOKEN_SYMBOL;
+	@Override
+	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
+		if (!knownTreasuries.containsKey(aId)) {
+			return false;
 		}
-		if (symbol.length() > properties.maxTokenSymbolLength()) {
-			return TOKEN_SYMBOL_TOO_LONG;
-		}
-		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
-				? OK
-				: INVALID_TOKEN_SYMBOL;
-	}
-
-	private ResponseCodeEnum nameCheck(String name) {
-		if (name.length() < 1) {
-			return MISSING_TOKEN_NAME;
-		}
-		if (name.length() > properties.maxTokensNameLength()) {
-			return TOKEN_NAME_TOO_LONG;
-		}
-		return OK;
+		return knownTreasuries.get(aId).contains(tId);
 	}
 
 	private ResponseCodeEnum accountCheck(AccountID id, ResponseCodeEnum failure) {

@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.swirlds.common.Platform;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,10 +71,6 @@ public class TxnHandlerSubmissionFlow implements SubmissionFlow {
 
 		try {
 			SignedTxnAccessor accessor = new SignedTxnAccessor(signedTxn);
-
-			if (!accessor.getSignedTxn().hasBody() && accessor.getSignedTxn().getBodyBytes().isEmpty()) {
-				return responseWith(INVALID_TRANSACTION_BODY);
-			}
 
 			TxnValidityAndFeeReq metaValidity = metaValidityOf(accessor);
 			if (metaValidity.getValidity() != OK) {

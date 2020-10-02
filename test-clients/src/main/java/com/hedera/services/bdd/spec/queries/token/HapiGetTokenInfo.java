@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -59,13 +58,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedId = Optional.empty();
 	Optional<String> expectedSymbol = Optional.empty();
 	Optional<String> expectedName = Optional.empty();
+	Optional<String> expectedTreasury = Optional.empty();
 	Optional<String> expectedAdminKey = Optional.empty();
 	Optional<String> expectedKycKey = Optional.empty();
 	Optional<String> expectedFreezeKey = Optional.empty();
 	Optional<String> expectedSupplyKey = Optional.empty();
+	Optional<String> expectedWipeKey = Optional.empty();
 	Optional<Boolean> expectedDeletion = Optional.empty();
 	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
+	Optional<String> expectedAutoRenewAccount = Optional.empty();
+	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
+	Optional<Boolean> expectedExpiry = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -97,12 +101,28 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedId = Optional.of(token);
 		return this;
 	}
+	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
+		expectedAutoRenewPeriod = OptionalLong.of(renewPeriod);
+		return this;
+	}
+	public HapiGetTokenInfo hasAutoRenewAccount(String account) {
+		expectedAutoRenewAccount = Optional.of(account);
+		return this;
+	}
+	public HapiGetTokenInfo hasValidExpiry() {
+		expectedExpiry = Optional.of(true);
+		return this;
+	}
 	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
 	public HapiGetTokenInfo hasName(String name) {
 		expectedName = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasTreasury(String name) {
+		expectedTreasury = Optional.of(name);
 		return this;
 	}
 	public HapiGetTokenInfo hasFreezeKey(String name) {
@@ -121,6 +141,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedSupplyKey = Optional.of(name);
 		return this;
 	}
+	public HapiGetTokenInfo hasWipeKey(String name) {
+		expectedWipeKey = Optional.of(name);
+		return this;
+	}
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
@@ -135,11 +159,54 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
 		if (expectedSymbol.isPresent()) {
-			Assert.assertEquals("Wrong symbol!", expectedSymbol.get(), actualInfo.getSymbol());
+			Assert.assertEquals(
+					"Wrong symbol!",
+					expectedSymbol.get(),
+					actualInfo.getSymbol());
 		}
 
 		if (expectedName.isPresent()) {
-			Assert.assertEquals("Wrong name!", expectedName.get(), actualInfo.getName());
+			Assert.assertEquals(
+					"Wrong name!",
+					expectedName.get(),
+					actualInfo.getName());
+		}
+
+		if (expectedAutoRenewAccount.isPresent()) {
+			var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
+			Assert.assertEquals(
+					"Wrong auto renew account!",
+					id,
+					actualInfo.getAutoRenewAccount());
+		}
+
+		if (expectedAutoRenewPeriod.isPresent()) {
+			Assert.assertEquals(
+					"Wrong auto renew period!",
+					expectedAutoRenewPeriod.getAsLong(),
+					actualInfo.getAutoRenewPeriod());
+		}
+
+		if (expectedTotalSupply.isPresent()) {
+			Assert.assertEquals(
+					"Wrong total supply!",
+					expectedTotalSupply.getAsLong(),
+					actualInfo.getTotalSupply());
+		}
+
+		if (expectedDecimals.isPresent()) {
+			Assert.assertEquals(
+					"Wrong decimals!",
+					expectedDecimals.getAsInt(),
+					actualInfo.getDecimals());
+		}
+
+		if (expectedTreasury.isPresent()) {
+			var id = TxnUtils.asId(expectedTreasury.get(), spec);
+			Assert.assertEquals(
+					"Wrong treasury account!",
+					id,
+					actualInfo.getTreasury());
 		}
 
 		var registry = spec.registry();
@@ -148,6 +215,48 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedId,
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
+				registry);
+
+		assertFor(
+				actualInfo.getExpiry(),
+				expectedExpiry,
+				(n, r) -> r.getTokenExpiry(token),
+				"Wrong token expiry!",
+				registry);
+
+		assertFor(
+				actualInfo.getFreezeKey(),
+				expectedFreezeKey,
+				(n, r) -> r.getFreezeKey(token),
+				"Wrong token freeze key!",
+				registry);
+
+		assertFor(
+				actualInfo.getAdminKey(),
+				expectedAdminKey,
+				(n, r) -> r.getAdminKey(token),
+				"Wrong token admin key!",
+				registry);
+
+		assertFor(
+				actualInfo.getWipeKey(),
+				expectedWipeKey,
+				(n, r) -> r.getWipeKey(token),
+				"Wrong token wipe key!",
+				registry);
+
+		assertFor(
+				actualInfo.getKycKey(),
+				expectedKycKey,
+				(n, r) -> r.getKycKey(token),
+				"Wrong token KYC key!",
+				registry);
+
+		assertFor(
+				actualInfo.getSupplyKey(),
+				expectedSupplyKey,
+				(n, r) -> r.getSupplyKey(token),
+				"Wrong token supply key!",
 				registry);
 	}
 

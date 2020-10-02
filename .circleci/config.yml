@@ -725,7 +725,7 @@ commands:
     steps:
       - postgres-status
       - run:
-          name: Run umbrella test with << parameters.config-file >> <<# parameters.expect-unavailable-nodes >>(gRPC should be UNAVAILABLE due to freeze)<</ parameters.expect-unavailable-nodes >>
+          name: Run umbrella test with << parameters.config-file >> <<# parameters.expect-unavailable-nodes >>(PLATFROM should be INACTIVE due to freeze)<</ parameters.expect-unavailable-nodes >>
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
                 '/repo/.circleci/scripts/run-umbrella-test.sh \
@@ -2790,6 +2790,8 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
+      - run-eet-suites:
+          dsl-args: "SignedTransactionBytesRecordsSuite"
       - run-eet-suites:
           dsl-args: "TopicCreateSpecs"
       - run-eet-suites:

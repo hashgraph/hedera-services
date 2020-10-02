@@ -628,6 +628,9 @@ public class HederaLedger {
 		} while (lastZeroRemoved != -1);
 	}
 
+	public boolean isKnownTreasury(AccountID aId) {
+		return tokenStore.isKnownTreasury(aId);
+	}
 
 	public enum LedgerTxnEvictionStats {
 		INSTANCE;

@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -36,7 +37,6 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -106,7 +106,7 @@ public class NegativeCryptoDeleteTest {
         "Pre Check Response of Create first account :: " + response.getNodeTransactionPrecheckCode()
             .name());
 
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     TransactionReceipt txReceipt1 = TestHelper.getTxReceipt(body.getTransactionID(), stub);
     AccountID newlyCreateAccountId1 = txReceipt1.getAccountID();
     Assert.assertNotNull(newlyCreateAccountId1);
@@ -123,7 +123,7 @@ public class NegativeCryptoDeleteTest {
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
     log.info("Pre Check Response of Create second account :: " + response
         .getNodeTransactionPrecheckCode().name());
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);
@@ -152,11 +152,8 @@ public class NegativeCryptoDeleteTest {
     Transaction tx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     Transaction signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
-    List<PrivateKey> list = new ArrayList<>();
-//    list.add(firstPair.getPrivate());
-    Transaction signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list);
 
-    TransactionResponse response1 = stub.cryptoDelete(signedTransaction1);
+    TransactionResponse response1 = stub.cryptoDelete(signedTransaction);
     log.info(response1.getNodeTransactionPrecheckCode());
     Assert.assertEquals(response1.getNodeTransactionPrecheckCode(), ResponseCodeEnum.OK);
     TransactionReceipt txReceipt = null;
@@ -191,7 +188,7 @@ public class NegativeCryptoDeleteTest {
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
     List<PrivateKey> list1 = new ArrayList<>();
     list1.add(secondPair.getPrivate());
-    signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list1);
+    Transaction signedTransaction1 = TransactionSigner.signTransaction(signedTransaction, list1, true);
 
     response1 = stub.cryptoDelete(signedTransaction1);
     log.info(response1.getNodeTransactionPrecheckCode());
@@ -220,9 +217,7 @@ public class NegativeCryptoDeleteTest {
     tx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
-    List<PrivateKey> list2 = new ArrayList<>();
-    list2.add(secondPair.getPrivate());
-    signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list2);
+    signedTransaction1 = TransactionSigner.signTransaction(signedTransaction, list1, true);
 
     response1 = stub.cryptoDelete(signedTransaction1);
     log.info(response1.getNodeTransactionPrecheckCode());
@@ -252,11 +247,8 @@ public class NegativeCryptoDeleteTest {
     tx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
-    List<PrivateKey> list3 = new ArrayList<>();
-    list2.add(secondPair.getPrivate());
-    signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list3);
 
-    response1 = stub.cryptoDelete(signedTransaction1);
+    response1 = stub.cryptoDelete(signedTransaction);
     log.info(response1.getNodeTransactionPrecheckCode());
     Assert.assertEquals(response1.getNodeTransactionPrecheckCode(),
         ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
@@ -285,11 +277,8 @@ public class NegativeCryptoDeleteTest {
     tx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     signedTransaction = TransactionSigner
         .signTransaction(tx, Collections.singletonList(genesisPrivateKey));
-    List<PrivateKey> list4 = new ArrayList<>();
-    list1.add(secondPair.getPrivate());
-    signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list4);
 
-    response1 = stub.cryptoDelete(signedTransaction1);
+    response1 = stub.cryptoDelete(signedTransaction);
     log.info(response1.getNodeTransactionPrecheckCode());
     Assert.assertEquals(response1.getNodeTransactionPrecheckCode(), ResponseCodeEnum.OK);
     txReceipt = TestHelper.getTxReceipt(transactionID, stub);
@@ -323,7 +312,7 @@ public class NegativeCryptoDeleteTest {
     KeyPair thirdKeyPair = new KeyPairGenerator().generateKeyPair();
     List<PrivateKey> list5 = new ArrayList<>();
     list5.add(thirdKeyPair.getPrivate());
-    signedTransaction1 = FileServiceIT.appendSignature(signedTransaction, list5);
+    signedTransaction1 = TransactionSigner.signTransaction(signedTransaction, list5, true);
 
     response1 = stub.cryptoDelete(signedTransaction1);
     log.info(response1.getNodeTransactionPrecheckCode());

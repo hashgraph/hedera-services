@@ -104,14 +104,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getGetTopicInfoBurstPeriod();
 	}
 
-	public static int getTransferAccountListSize() {
-		return SyncPropertiesObject.getTransferListSizeLimit();
-	}
-
-	public static long getInitialGenesisCoins() {
-		return SyncPropertiesObject.getInitialGenesisCoins();
-	}
-
 	public static long getDefaultContractDurationInSec() {
 		return SyncPropertiesObject.getDefaultContractDurationSec();
 	}
@@ -156,22 +148,6 @@ public class PropertiesLoader {
 		return AsyncPropertiesObject.getRecordLogDir();
 	}
 
-	public static boolean isAccountBalanceExportEnabled() {
-		return AsyncPropertiesObject.isAccountBalanceExportEnabled();
-	}
-
-	public static String getAccountBalanceExportDir() {
-		return AsyncPropertiesObject.getAccountBalanceExportDir();
-	}
-
-	public static long accountBalanceExportPeriodMinutes() {
-		return AsyncPropertiesObject.accountBalanceExportPeriodMinutes();
-	}
-
-	public static long getNodeAccountBalanceValidity() {
-		return SyncPropertiesObject.getNodeAccountBalanceValidity();
-	}
-
 	public static int getRecordStreamQueueCapacity() {
 		return AsyncPropertiesObject.getRecordStreamQueueCapacity();
 	}
@@ -182,14 +158,6 @@ public class PropertiesLoader {
 
 	public static int getTxMinRemaining() {
 		return SyncPropertiesObject.getTxMinRemaining();
-	}
-
-	public static int getTxMinDuration() {
-		return SyncPropertiesObject.getTxMinDuration();
-	}
-
-	public static int getTxMaxDuration() {
-		return SyncPropertiesObject.getTxMaxDuration();
 	}
 
 	public static boolean isEnableRecordStreaming() {

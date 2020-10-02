@@ -23,13 +23,17 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -41,6 +45,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  */
 public class TokenBurnTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenBurnTransitionLogic.class);
+
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final TokenStore store;
 	private final TransactionContext txnCtx;
@@ -70,9 +76,27 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		}
 	}
 
-
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenBurn;
+	}
+
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
+
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		TokenBurnTransactionBody op = txnBody.getTokenBurn();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		if (op.getAmount() <= 0) {
+			return INVALID_TOKEN_BURN_AMOUNT;
+		}
+
+		return OK;
 	}
 }

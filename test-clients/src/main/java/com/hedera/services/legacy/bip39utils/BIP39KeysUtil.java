@@ -21,6 +21,7 @@ package com.hedera.services.legacy.bip39utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.*;
 
 import com.hederahashgraph.builder.RequestBuilder;
@@ -216,12 +217,11 @@ public class BIP39KeysUtil {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), txTransactionFees, timestamp, transactionDuration,
         true,
-        "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+        "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amount);
     // sign the tx
 
@@ -295,27 +295,14 @@ public class BIP39KeysUtil {
    */
   public static Transaction signTransactionNewWithSignatureMap(Transaction transaction,
       EDKeyPair edKeyPair) throws Exception {
-    Transaction rv = null;
-
-    byte[] bodyBytes;
-    if(transaction.hasBody()) {
-      bodyBytes = transaction.getBody().toByteArray();
-    }else {
-      bodyBytes = transaction.getBodyBytes().toByteArray();
-    }
+    byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
 
     SignaturePair sig = signAsSignaturePair(edKeyPair, bodyBytes);
-
     List<SignaturePair> pairs = new ArrayList<>();
     pairs.add(sig);
 
     SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
-    if(transaction.hasBody()) {
-      rv = Transaction.newBuilder().setBody(transaction.getBody()).setSigMap(sigsMap).build();
-    }else {
-      rv = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes()).setSigMap(sigsMap).build();
-    }
-    return rv;
+    return transaction.toBuilder().setSigMap(sigsMap).build();
   }
 
   private static SignaturePair signAsSignaturePair(EDKeyPair edKeyPair, byte[] bodyBytes) throws DecoderException {

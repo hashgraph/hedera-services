@@ -43,7 +43,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxTokensNameLength() {
+	public int maxTokenNameLength() {
 		return 100;
 	}
 
@@ -109,6 +109,31 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	@Override
 	public String pathToBalancesExportDir() {
-		return "data/accountBalances";
+		return "src/test/resources";
+	}
+
+	@Override
+	public boolean shouldExportTokenBalances() {
+		return true;
+	}
+
+	@Override
+	public int maxTransferListSize() {
+		return 10;
+	}
+
+	@Override
+	public int maxTokenTransferListSize() {
+		return 10;
+	}
+
+	@Override
+	public int maxMemoUtf8Bytes() {
+		return 100;
+	}
+
+	@Override
+	public long maxTxnDuration() {
+		return 180L;
 	}
 }

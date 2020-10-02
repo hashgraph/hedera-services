@@ -76,6 +76,12 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportBalances());
 		assertEquals(13L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
+		assertTrue(subject.shouldExportTokenBalances());
+		assertEquals(15, subject.maxTransferListSize());
+		assertEquals(16, subject.maxTokenTransferListSize());
+		assertEquals(17, subject.maxMemoUtf8Bytes());
+		assertEquals(18L, subject.maxTxnDuration());
+		assertEquals(19L, subject.minTxnDuration());
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
@@ -109,6 +115,12 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.shouldExportBalances());
 		assertEquals(14L, subject.nodeBalanceWarningThreshold());
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
+		assertFalse(subject.shouldExportTokenBalances());
+		assertEquals(16, subject.maxTransferListSize());
+		assertEquals(17, subject.maxTokenTransferListSize());
+		assertEquals(18, subject.maxMemoUtf8Bytes());
+		assertEquals(19L, subject.maxTxnDuration());
+		assertEquals(20L, subject.minTxnDuration());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -127,5 +139,11 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("balances.exportEnabled")).willReturn((i + 11) % 2 == 0);
 		given(properties.getLongProperty("balances.nodeBalanceWarningThreshold")).willReturn(i + 12L);
 		given(properties.getStringProperty("balances.exportDir.path")).willReturn(balanceExportPaths[i % 2]);
+		given(properties.getBooleanProperty("balances.exportTokenBalances")).willReturn((i + 13) % 2 == 0);
+		given(properties.getIntProperty("ledger.transfers.maxLen")).willReturn(i + 14);
+		given(properties.getIntProperty("ledger.tokenTransfers.maxLen")).willReturn(i + 15);
+		given(properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes")).willReturn(i + 16);
+		given(properties.getLongProperty("hedera.transaction.maxValidDuration")).willReturn(i + 17L);
+		given(properties.getLongProperty("hedera.transaction.minValidDuration")).willReturn(i + 18L);
 	}
 }

@@ -23,7 +23,6 @@ package com.hedera.services.tokens;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -65,6 +64,16 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isKnownTreasury(AccountID aId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isTreasuryForToken(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 

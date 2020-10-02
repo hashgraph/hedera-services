@@ -28,7 +28,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.legacy.services.stats.HederaNodeStats;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
@@ -45,18 +45,14 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Platform;
 import com.swirlds.common.PlatformStatus;
 import com.swirlds.fcmap.FCMap;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)

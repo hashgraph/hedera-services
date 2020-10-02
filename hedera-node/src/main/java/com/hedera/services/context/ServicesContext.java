@@ -31,6 +31,7 @@ import com.hedera.services.context.domain.trackers.ConsensusStatusCounts;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
@@ -68,6 +69,7 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -258,16 +260,12 @@ import com.hedera.services.legacy.netty.NettyServerManager;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.contracts.sources.BlobStorageSource;
 import com.hedera.services.legacy.service.FreezeServiceImpl;
-import com.hedera.services.legacy.service.GlobalFlag;
 import com.hedera.services.legacy.service.SmartContractServiceImpl;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.context.properties.PropertySources;
-import com.hedera.services.state.migration.DefaultStateMigrations;
-import com.hedera.services.legacy.services.fees.DefaultHbarCentExchange;
+import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.legacy.services.state.AwareProcessLogic;
-import com.hedera.services.legacy.services.state.export.DefaultBalancesExporter;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.utils.SleepingPause;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -432,7 +430,7 @@ public class ServicesContext {
 	static {
 		pause = SleepingPause.INSTANCE;
 		b64KeyReader = new LegacyEd25519KeyReader();
-		stateMigrations = new DefaultStateMigrations(SleepingPause.INSTANCE);
+		stateMigrations = new StdStateMigrations(SleepingPause.INSTANCE);
 		accountsExporter = new DefaultAccountsExporter();
 	}
 
@@ -850,7 +848,10 @@ public class ServicesContext {
 
 	public BalancesExporter balancesExporter() {
 		if (balancesExporter == null) {
-			balancesExporter = new DefaultBalancesExporter(platform, addressBook());
+			balancesExporter = new SignedStateBalancesExporter(
+					properties(),
+					platform()::sign,
+					globalDynamicProperties());
 		}
 		return balancesExporter;
 	}
@@ -963,15 +964,16 @@ public class ServicesContext {
 								this::topics, validator(), txnCtx()))),
 				/* Token */
 				entry(TokenCreate,
-						List.of(new TokenCreateTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
+								validator(),
 								tokenStore(),
 								ledger(),
 								txnCtx(),
 								HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenTransact,
-						List.of(new TokenTransferTransitionLogic(ledger(), txnCtx()))),
+						List.of(new TokenTransferTransitionLogic(ledger(), validator(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1058,7 +1060,7 @@ public class ServicesContext {
 
 	public HbarCentExchange exchange() {
 		if (exchange == null) {
-			exchange = new DefaultHbarCentExchange(txnCtx());
+			exchange = new AwareHbarCentExchange(txnCtx());
 		}
 		return exchange;
 	}
@@ -1146,7 +1148,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(properties(), txnCtx());
+			validator = new ContextOptionValidator(properties(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
@@ -1160,7 +1162,7 @@ public class ServicesContext {
 
 	public FreezeHandler freeze() {
 		if (freeze == null) {
-			freeze = new FreezeHandler(hfs(), platform);
+			freeze = new FreezeHandler(hfs(), platform(), exchange());
 		}
 		return freeze;
 	}
@@ -1206,7 +1208,7 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					txnCtx(),
 					this::midnightRates,
-					GlobalFlag.getInstance()::setExchangeRateSet,
+					exchange()::updateRates,
 					limitPercent -> (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent));
 		}
 		return exchangeRatesManager;
@@ -1360,7 +1362,7 @@ public class ServicesContext {
 							properties.getStringProperty("bootstrap.genesisB64Keystore.path"),
 							properties.getStringProperty("bootstrap.genesisB64Keystore.keyName")),
 					rates -> {
-						GlobalFlag.getInstance().setExchangeRateSet(rates);
+						exchange().updateRates(rates);
 						if (!midnightRates().isInitialized()) {
 							midnightRates().replaceWith(rates);
 						}

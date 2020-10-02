@@ -20,16 +20,16 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
-import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.utils.MiscUtils.functionOf;
@@ -43,11 +43,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 public class SignedTxnAccessor {
 	private byte[] txnBytes;
 	private byte[] signedTxnBytes;
-	private Transaction signedTxn4Log;
 	private Transaction signedTxn;
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
+	private ByteString hash;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -67,14 +67,10 @@ public class SignedTxnAccessor {
 	public SignedTxnAccessor(byte[] signedTxnBytes) throws InvalidProtocolBufferException {
 		this.signedTxnBytes = signedTxnBytes;
 		signedTxn = Transaction.parseFrom(signedTxnBytes);
-		if (signedTxn.hasBody()) {
-			txn = signedTxn.getBody();
-			txnBytes = txn.toByteArray();
-		} else {
-			txnBytes = signedTxn.getBodyBytes().toByteArray();
-			txn = TransactionBody.parseFrom(txnBytes);
-		}
+		txnBytes = CommonUtils.extractTransactionBodyBytes(signedTxn);
+		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
+		hash = CommonUtils.sha384HashOf(signedTxn);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxn) throws InvalidProtocolBufferException {
@@ -89,15 +85,7 @@ public class SignedTxnAccessor {
 	}
 
 	public Transaction getSignedTxn4Log() {
-		if (signedTxn4Log == null) {
-			try {
-				signedTxn4Log = signedTxn.hasBody() ? signedTxn : signedTxn.toBuilder()
-						.setBody(TransactionBody.parseFrom(signedTxn.getBodyBytes()))
-						.clearBodyBytes()
-						.build();
-			} catch (InvalidProtocolBufferException ignore) { }
-		}
-		return signedTxn4Log;
+		return signedTxn;
 	}
 
 	public byte[] getTxnBytes() {
@@ -106,10 +94,6 @@ public class SignedTxnAccessor {
 
 	public Transaction getSignedTxn() {
 		return signedTxn;
-	}
-
-	public List<Signature> getSigsList() {
-		return signedTxn.getSigs().getSigsList();
 	}
 
 	public TransactionBody getTxn() {
@@ -126,5 +110,9 @@ public class SignedTxnAccessor {
 
 	public byte[] getSignedTxnBytes() {
 		return signedTxnBytes;
+	}
+
+	public ByteString getHash() {
+		return hash;
 	}
 }

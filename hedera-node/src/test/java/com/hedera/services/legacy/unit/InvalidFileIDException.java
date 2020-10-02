@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.context;
+package com.hedera.services.legacy.unit;
 
 /*-
  * ‌
@@ -20,20 +20,18 @@ package com.hedera.services.legacy.services.context;
  * ‍
  */
 
-import com.hedera.services.context.CurrentPlatformStatus;
-import com.swirlds.common.PlatformStatus;
-import static com.swirlds.common.PlatformStatus.*;
+import com.hederahashgraph.api.proto.java.FileID;
 
-public class ContextPlatformStatus implements CurrentPlatformStatus {
-	private PlatformStatus current = STARTING_UP;
+public class InvalidFileIDException extends Exception {
+	private static final long serialVersionUID = 1L;
+	private FileID fileId;
 
-	@Override
-	public synchronized void set(PlatformStatus status) {
-		current = status;
+	public InvalidFileIDException(String message, FileID fileId) {
+		super(message);
+		this.fileId = fileId;
 	}
 
-	@Override
-	public synchronized PlatformStatus get() {
-		return current;
+	public FileID getFileId() {
+		return fileId;
 	}
 }

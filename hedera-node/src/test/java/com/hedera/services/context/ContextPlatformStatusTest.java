@@ -1,4 +1,4 @@
-package com.hedera.services.legacy.services.context;
+package com.hedera.services.context;
 
 /*-
  * ‌
@@ -20,6 +20,7 @@ package com.hedera.services.legacy.services.context;
  * ‍
  */
 
+import com.hedera.services.context.ContextPlatformStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;

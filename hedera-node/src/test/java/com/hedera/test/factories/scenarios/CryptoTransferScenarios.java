@@ -76,19 +76,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	QUERY_PAYMENT_MISSING_SIGS_SCENARIO_LIST {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedCryptoTransfer()
-							.useSigList()
-							.nonPayerKts(MISC_ACCOUNT_KT)
-							.transfers(
-									tinyBarsFromTo(DEFAULT_PAYER_ID, DEFAULT_NODE_ID, 1_000L),
-									tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L)
-							).get()
-			));
-		}
-	},
 	QUERY_PAYMENT_MISSING_SIGS_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
