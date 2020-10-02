@@ -53,7 +53,6 @@ class ExpiringCreationsTest {
 	GlobalDynamicProperties dynamicProperties;
 
 	ExpiringCreations subject;
-	GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	public void setup() {
