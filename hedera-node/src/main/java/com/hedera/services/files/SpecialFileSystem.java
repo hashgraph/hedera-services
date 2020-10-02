@@ -2,6 +2,8 @@ package com.hedera.services.files;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -30,20 +32,27 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 
 	// Map of fileID and file hash bytes
 	HashMap<FileID, byte[]> fileMap = new HashMap<>();
+	private String fileSystemLocation;
 
 	public SpecialFileSystem() {
+		fileSystemLocation = "empty";
+	}
+
+	public SpecialFileSystem(AccountID nodeAccountID) {
 		// Create empty file 0.0.150
 		FileID fid150 = FileID.newBuilder()
 				.setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM)
 				.setRealmNum(ApplicationConstants.DEFAULT_FILE_REALM)
 				.setShardNum(ApplicationConstants.DEFAULT_FILE_SHARD).build();
+		this.fileSystemLocation = EntityIdUtils.asLiteralString(nodeAccountID);
 
 		createEmptyIfNotExist(fid150);
 		invalidateHash();
 	}
 
-	public SpecialFileSystem(HashMap<FileID, byte[]> fileMap) {
+	public SpecialFileSystem(HashMap<FileID, byte[]> fileMap, String accountIDStr) {
 		this.fileMap = (HashMap<FileID, byte[]>) fileMap.clone();
+		this.fileSystemLocation = accountIDStr;
 		invalidateHash();
 	}
 
@@ -58,7 +67,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 	}
 
 	private void createEmptyIfNotExist(FileID fileID) {
-		File testFile = new File(SPECIAL_FILESYSTEM_DIR + fileIDtoDotString(fileID));
+		File testFile = new File(SPECIAL_FILESYSTEM_DIR + fileSystemLocation + File.separator + fileIDtoDotString(fileID));
 		if (testFile.exists()) {
 			try {
 				byte[] hash = MessageDigest.getInstance("SHA-384").digest(getFileContent(fileID));
@@ -79,7 +88,8 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 
 	public synchronized byte[] getFileContent(FileID fileID) {
 		try {
-			return FileUtils.readFileToByteArray(new File(SPECIAL_FILESYSTEM_DIR + fileIDtoDotString(fileID)));
+			return FileUtils.readFileToByteArray(
+					new File(SPECIAL_FILESYSTEM_DIR + fileSystemLocation + File.separator + fileIDtoDotString(fileID)));
 		} catch (IOException e) {
 			log.error("{} Error when reading fileID {} from local filesystem", fileID, e);
 			return new byte[0];
@@ -91,7 +101,9 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 			byte[] hash = MessageDigest.getInstance("SHA-384").digest(content);
 			log.info("New file size {} with hash {}", content.length, hex(hash));
 			fileMap.put(fileID, hash);
-			FileUtils.writeByteArrayToFile(new File(SPECIAL_FILESYSTEM_DIR + fileIDtoDotString(fileID)), content);
+			FileUtils.writeByteArrayToFile(
+					new File(SPECIAL_FILESYSTEM_DIR + fileSystemLocation + File.separator + fileIDtoDotString(fileID)),
+					content);
 			invalidateHash();
 		} catch (IOException e) {
 			log.error("Error when writing fileID {} to local filesystem", fileID, e);
