@@ -50,7 +50,7 @@ public class LegacyMerkleOptionalBlobTest {
 	}
 
 	@Test
-	public void testDeletes() throws SQLException {
+	public void testReleases() throws SQLException {
 		try (final BlobStoragePipeline pipeline = DbManager.getInstance().blob()) {
 			final long binaryObjectCountBefore = pipeline.retrieveNumberOfBlobs();
 
@@ -67,7 +67,7 @@ public class LegacyMerkleOptionalBlobTest {
 
 			assertEquals(binaryObjectCountBefore + 2, binaryObjectCountAfterCreate);
 
-			sv.delete();
+			sv.release();
 
 			final long binaryObjectCountAfterDelete = pipeline.retrieveNumberOfBlobs();
 

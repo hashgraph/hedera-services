@@ -210,7 +210,7 @@ public class MerkleAccountTest {
 		assertEquals(state.autoRenewSecs(), subject.getAutoRenewSecs());
 		assertEquals(state.senderThreshold(), subject.getSenderThreshold());
 		assertEquals(state.receiverThreshold(), subject.getReceiverThreshold());
-		assertEquals(state.isDeleted(), subject.isDeleted());
+		assertEquals(state.isReleased(), subject.isReleased());
 		assertEquals(state.isSmartContract(), subject.isSmartContract());
 		assertEquals(state.isReceiverSigRequired(), subject.isReceiverSigRequired());
 		assertEquals(state.memo(), subject.getMemo());
@@ -402,11 +402,11 @@ public class MerkleAccountTest {
 	@Test
 	public void delegatesDelete() {
 		// when:
-		subject.delete();
+		subject.release();
 
 		// then:
-		verify(records).delete();
-		verify(payerRecords).delete();
+		verify(records).release();
+		verify(payerRecords).release();
 	}
 
 	@Test

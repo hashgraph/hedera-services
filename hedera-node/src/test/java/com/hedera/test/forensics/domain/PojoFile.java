@@ -49,7 +49,7 @@ public class PojoFile {
 		var pojo = new PojoFile();
 		pojo.setPath(sk.getPath());
 		pojo.setBlobHash(value.getDelegate().getHash().toString());
-		pojo.setBlobDeleted(value.getDelegate().isDeleted());
+		pojo.setBlobDeleted(value.getDelegate().isReleased());
 		return pojo;
 	}
 

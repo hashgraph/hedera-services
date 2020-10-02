@@ -21,7 +21,6 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
@@ -390,7 +389,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 
 		// when:
-		subject.delete();
+		subject.release();
 
 		// then:
 		verify(storage).decrementReferenceCount();
