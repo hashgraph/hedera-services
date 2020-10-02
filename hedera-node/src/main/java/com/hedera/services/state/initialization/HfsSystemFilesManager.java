@@ -245,7 +245,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 						config.addNameValue(Setting.newBuilder()
 								.setName(String.valueOf(entry.getKey()))
 								.setValue(String.valueOf(entry.getValue()))));
-		log.info(sb.toString());
+//		log.info(sb.toString());
 		return config.build().toByteArray();
 	}
 

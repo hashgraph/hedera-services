@@ -87,7 +87,7 @@ public class ThrottlingPropsBuilder {
 						.sorted(THROTTLE_PROPERTY_ORDER)
 						.map(name -> String.format("%s=%s", name, throttleProps.getProperty(name)))
 						.collect(joining("\n  "));
-		displayFn.accept(msg);
+//		displayFn.accept(msg);
 		return throttleProps;
 	}
 
