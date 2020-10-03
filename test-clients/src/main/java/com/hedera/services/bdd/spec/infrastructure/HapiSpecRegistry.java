@@ -373,6 +373,30 @@ public class HapiSpecRegistry {
 		return get(name, Long.class);
 	}
 
+	public void saveIntValue(String name, Integer intVal) {
+		put(name, intVal);
+	}
+
+	public Integer getIntValue(String name) {
+		return get(name, Integer.class);
+	}
+
+	public void saveFloatValue(String name, Float floatVal) {
+		put(name, floatVal);
+	}
+
+	public Float getFloatValue(String name) {
+		return get(name, Float.class);
+	}
+
+	public void saveDoubleValue(String name, Double doubleVal) {
+		put(name, doubleVal);
+	}
+
+	public Double getDoubleValue(String name) {
+		return get(name, Double.class);
+	}
+
 	public void saveSigRequirement(String name, Boolean isRequired) {
 		put(name, isRequired);
 	}
