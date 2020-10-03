@@ -10,6 +10,9 @@
 set -eE
 
 create_new_directory () {
+    # Wait for database being stored during freeze stage then run the script to copy directory
+    sleep 60
+    
     new_directory_name="HapiApp2.0-"`date +%Y%m%dT%H%M%S`
     shell_echo $LINENO $0 "Creating new working directory $new_directory_name"
     mkdir -p ../$new_directory_name
@@ -86,6 +89,8 @@ shell_echo $LINENO $0 "HGCApp processID=$processId"
 # create new working directory
 create_new_directory
 update_sdk_files
+
+
 # detect current platform and restart java process
 if [[ "$unamestr" == 'Linux' ]]; then
     # useful set circle ci AWS environment variable
