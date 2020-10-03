@@ -88,7 +88,7 @@ if [[ -n $1 ]]; then
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.freeze.UpdateServerFiles -Dexec.args="$newFileDir $targeFileID" -Dexec.cleanupDaemonThreads=false
 
     echo "sleep to wait hgc server freeze then restart"
-    sleep 120
+    sleep 180
 
     #run client test after freeze
     mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.crypto.CryptoTransferSuite -Dexec.cleanupDaemonThreads=false
