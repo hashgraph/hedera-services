@@ -202,7 +202,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 			setBytecodeToDefaultContract(spec);
 		}
 		Optional<byte[]> params = abi.isPresent()
-				? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encode(args.get()))
+				? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
 				: Optional.empty();
 		FileID bytecodeFileId = TxnUtils.asFileId(bytecodeFile.get(), spec);
 		ContractCreateTransactionBody opBody = spec
