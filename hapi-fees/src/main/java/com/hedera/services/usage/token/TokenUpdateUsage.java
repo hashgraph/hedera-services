@@ -32,7 +32,6 @@ import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.token.TokenUsageUtils.keySizeIfPresent;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
@@ -123,7 +122,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 			usageEstimator.addRbs(rbsDelta);
 		}
 
-		long txnBytes = newMutableRb + TokenUsageUtils.idBpt() + noRbImpactBytes(op);
+		long txnBytes = newMutableRb + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(op);
 		usageEstimator.addBpt(txnBytes);
 		addTokenTransfersRecordRb(1, 2);
 

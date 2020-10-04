@@ -35,14 +35,12 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
 
 public class TokenGetInfoUsage {
 	private long rb = 0;
-	private final long customTb;
 
-	private TokenGetInfoUsage(long customTb) {
-		this.customTb = customTb;
+	private TokenGetInfoUsage() {
 	}
 
 	public static TokenGetInfoUsage newEstimate(Query query) {
-		return new TokenGetInfoUsage(TokenUsageUtils.idBpt());
+		return new TokenGetInfoUsage();
 	}
 
 	public TokenGetInfoUsage givenCurrentAdminKey(Optional<Key> adminKey) {
@@ -86,7 +84,7 @@ public class TokenGetInfoUsage {
 	}
 
 	public FeeData get() {
-		long bpt = BASIC_QUERY_HEADER + customTb;
+		long bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
 		long bpr = TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr() + rb;
 		var usage = FeeComponents.newBuilder()
 				.setBpt(bpt)
