@@ -43,7 +43,7 @@ public class TokenEntitySizesTest {
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 
 		// given:
-		long actual = subject.fixedBytesUsed();
+		long actual = subject.fixedBytesInTokenRepr();
 
 		// expect:
 		assertEquals(expected, actual);
@@ -61,7 +61,7 @@ public class TokenEntitySizesTest {
 				+ symbol.getBytes().length + name.getBytes().length;
 
 		// given:
-		long actual = subject.baseBytesUsed(symbol, name);
+		long actual = subject.totalBytesInfTokenReprGiven(symbol, name);
 
 		// expect:
 		assertEquals(expected, actual);
@@ -76,7 +76,7 @@ public class TokenEntitySizesTest {
 		var expected = 3 * BASIC_ENTITY_ID_SIZE + 8 * (8 + BASIC_ENTITY_ID_SIZE);
 
 		// then:
-		assertEquals(expected, subject.bytesUsedToRecordTransfers(numTokens, numTransfers));
+		assertEquals(expected, subject.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
 	}
 
 	@Test

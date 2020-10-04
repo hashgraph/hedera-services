@@ -44,7 +44,7 @@ public class TokenMintUsage extends TokenUsage<TokenMintUsage> {
 	public FeeData get() {
 		addAccountBpt();
 		addAmountBpt();
-		addTransfersRecordRb(1, 1);
+		addTokenTransfersRecordRb(1, 1);
 		return usageEstimator.get();
 	}
 }

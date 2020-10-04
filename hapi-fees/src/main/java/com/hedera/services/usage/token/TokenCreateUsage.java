@@ -45,9 +45,9 @@ public class TokenCreateUsage extends TokenUsage<TokenCreateUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenCreation();
+		var op = this.op.getTokenCreation();
 
-		var baseSize = tokenEntitySizes.baseBytesUsed(op.getSymbol(), op.getName());
+		var baseSize = tokenEntitySizes.totalBytesInfTokenReprGiven(op.getSymbol(), op.getName());
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasKycKey, TokenCreateTransactionBody::getKycKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasWipeKey, TokenCreateTransactionBody::getWipeKey);
 		baseSize += keySizeIfPresent(op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey);
@@ -58,12 +58,12 @@ public class TokenCreateUsage extends TokenUsage<TokenCreateUsage> {
 		}
 		var lifetime = op.hasAutoRenewAccount()
 				? op.getAutoRenewPeriod()
-				: ESTIMATOR_UTILS.relativeLifetime(tokenOp, op.getExpiry());
+				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry());
 
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);
 		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
-		addTransfersRecordRb(1, 1);
+		addTokenTransfersRecordRb(1, 1);
 
 		return usageEstimator.get();
 	}

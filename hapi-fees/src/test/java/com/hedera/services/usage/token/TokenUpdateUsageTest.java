@@ -25,6 +25,7 @@ import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -88,7 +89,7 @@ public class TokenUpdateUsageTest {
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
 
-		TokenUpdateUsage.estimatorFactory = factory;
+		TxnUsage.estimatorFactory = factory;
 	}
 
 	@Test
@@ -111,7 +112,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -156,7 +157,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -183,7 +184,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
