@@ -37,18 +37,18 @@ public enum TokenEntitySizes {
 	/* { treasury } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
-	public int fixedBytesUsed() {
+	public int fixedBytesInTokenRepr() {
 		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
 				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
 				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 	}
 
-	public int baseBytesUsed(String symbol, String name) {
-		return fixedBytesUsed() + symbol.length() + name.length();
+	public int totalBytesInfTokenReprGiven(String symbol, String name) {
+		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 
-	public int bytesUsedToRecordTransfers(int numTokens, int numTransfers) {
+	public int bytesUsedToRecordTokenTransfers(int numTokens, int numTransfers) {
 		return numTokens * BASIC_ENTITY_ID_SIZE + numTransfers * USAGE_PROPERTIES.accountAmountBytes();
 	}
 

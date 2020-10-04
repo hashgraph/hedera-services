@@ -66,7 +66,7 @@ public class TokenGetInfoUsageTest {
 				.givenCurrentSymbol(symbol);
 		// and:
 		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
-		var expectedBytes = expectedKeyBytes + TOKEN_ENTITY_SIZES.baseBytesUsed(symbol, name) + BASIC_ENTITY_ID_SIZE;
+		var expectedBytes = expectedKeyBytes + TOKEN_ENTITY_SIZES.totalBytesInfTokenReprGiven(symbol, name) + BASIC_ENTITY_ID_SIZE;
 
 		// when:
 		var usage = subject.get();

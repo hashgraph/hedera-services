@@ -20,51 +20,23 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.UsageProperties;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-public abstract class TokenUsage<T extends TokenUsage<T>> {
-	protected static final int AMOUNT_REPR_BYTES = 8;
-
-	static UsageProperties usageProperties = USAGE_PROPERTIES;
+public abstract class TokenUsage<T extends TokenUsage<T>> extends TxnUsage {
 	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
-	static EstimatorFactory estimatorFactory = TxnUsageEstimator::new;
-
-	protected final TransactionBody tokenOp;
-	protected final TxnUsageEstimator usageEstimator;
 
 	abstract T self();
 
 	protected TokenUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
-		this.tokenOp = tokenOp;
-		this.usageEstimator = usageEstimator;
+		super(tokenOp, usageEstimator);
 	}
 
-	protected void addAmountBpt() {
-		usageEstimator.addBpt(AMOUNT_REPR_BYTES);
-	}
-
-	protected void addAccountBpt() {
-		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
-	}
-
-	protected void addNetworkRecordRb(long rb) {
-		usageEstimator.addNetworkRbs(rb * usageProperties.legacyReceiptStorageSecs());
-	}
-
-	protected void addRecordRb(long rb) {
-		usageEstimator.addRbs(rb * usageProperties.legacyReceiptStorageSecs());
-	}
-
-	protected void addTransfersRecordRb(int numTokens, int numTransfers) {
-		addRecordRb(tokenEntitySizes.bytesUsedToRecordTransfers(numTokens, numTransfers));
+	protected void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
+		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
 	}
 
 	public T novelRelsLasting(int n, long secs) {

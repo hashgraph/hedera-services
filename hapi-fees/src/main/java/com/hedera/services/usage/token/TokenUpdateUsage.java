@@ -104,7 +104,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenUpdate();
+		var op = this.op.getTokenUpdate();
 
 		long newMutableRb = 0;
 		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
@@ -117,7 +117,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 		}
 		newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
 		newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(tokenOp, Math.max(op.getExpiry(), currentExpiry));
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(this.op, Math.max(op.getExpiry(), currentExpiry));
 		long rbsDelta = Math.max(0, newLifetime * (newMutableRb - currentMutableRb));
 		if (rbsDelta > 0) {
 			usageEstimator.addRbs(rbsDelta);
@@ -125,7 +125,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 
 		long txnBytes = newMutableRb + TokenUsageUtils.idBpt() + noRbImpactBytes(op);
 		usageEstimator.addBpt(txnBytes);
-		addTransfersRecordRb(1, 2);
+		addTokenTransfersRecordRb(1, 2);
 
 		return usageEstimator.get();
 	}
