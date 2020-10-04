@@ -22,9 +22,10 @@ package com.hedera.services.usage.token;
 
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.TxnUsage;
+import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
 public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
 	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;

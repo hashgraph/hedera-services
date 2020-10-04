@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.token.entities;
 
 /*-
  * ‌
@@ -23,6 +23,7 @@ package com.hedera.services.usage.token;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum TokenEntitySizes {
@@ -39,8 +40,8 @@ public enum TokenEntitySizes {
 
 	public int fixedBytesInTokenRepr() {
 		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
-				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * INT_SIZE
+				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 	}
 

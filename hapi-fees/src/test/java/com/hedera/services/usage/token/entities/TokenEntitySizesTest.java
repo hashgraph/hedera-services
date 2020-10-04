@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.token.entities;
 
 /*-
  * ‌
@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static com.hedera.services.usage.token.TokenEntitySizes.*;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.*;
 
 @RunWith(JUnitPlatform.class)
 public class TokenEntitySizesTest {
