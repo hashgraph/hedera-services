@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenFreezeUsage extends TokenUsage<TokenFreezeUsage> {
+public class TokenFreezeUsage extends TokenTxnUsage<TokenFreezeUsage> {
 	private TokenFreezeUsage(TransactionBody tokenFreezeOp, TxnUsageEstimator usageEstimator) {
 		super(tokenFreezeOp, usageEstimator);
 	}

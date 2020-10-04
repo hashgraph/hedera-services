@@ -34,7 +34,7 @@ import java.util.Optional;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
+public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 	private int currentNameLen;
 	private int currentSymbolLen;
 	private long currentExpiry;
