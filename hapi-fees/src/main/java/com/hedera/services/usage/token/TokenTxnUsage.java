@@ -26,16 +26,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
-public abstract class TokenUsage<T extends TokenUsage<T>> extends TxnUsage {
+public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
 	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
 
 	abstract T self();
 
-	protected TokenUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
+	protected TokenTxnUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
 		super(tokenOp, usageEstimator);
 	}
 
-	protected void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
+	void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
 		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
 	}
 

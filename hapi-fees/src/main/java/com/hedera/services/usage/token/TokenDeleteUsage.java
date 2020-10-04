@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenDeleteUsage extends TokenUsage<TokenDeleteUsage> {
+public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
 	private TokenDeleteUsage(TransactionBody tokenDeletionOp, TxnUsageEstimator usageEstimator) {
 		super(tokenDeletionOp, usageEstimator);
 	}
