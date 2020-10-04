@@ -36,7 +36,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Optional;
 
-import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 @RunWith(JUnitPlatform.class)

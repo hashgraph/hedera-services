@@ -21,27 +21,24 @@ package com.hedera.services.usage.token;
  */
 
 import com.hedera.services.usage.QueryUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.Optional;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
 
 public class TokenGetInfoUsage extends QueryUsage {
-	private TokenGetInfoUsage() {
+	private TokenGetInfoUsage(Query query) {
+		super(query.getTokenGetInfo().getHeader().getResponseType());
 		updateTb(BASIC_ENTITY_ID_SIZE);
 		updateRb(TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr());
 	}
 
 	public static TokenGetInfoUsage newEstimate(Query query) {
-		return new TokenGetInfoUsage();
+		return new TokenGetInfoUsage(query);
 	}
 
 	public TokenGetInfoUsage givenCurrentAdminKey(Optional<Key> adminKey) {
