@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenRevokeKycUsage extends TokenUsage<TokenRevokeKycUsage> {
+public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
 	private TokenRevokeKycUsage(TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
 		super(tokenRevokeKycOp, usageEstimator);
 	}

@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.usage.token.TokenUsage.tokenEntitySizes;
+import static com.hedera.services.usage.token.TokenTxnUsage.tokenEntitySizes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;

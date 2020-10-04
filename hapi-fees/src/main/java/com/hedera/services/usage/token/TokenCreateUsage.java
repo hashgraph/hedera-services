@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-public class TokenCreateUsage extends TokenUsage<TokenCreateUsage> {
+public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 	private TokenCreateUsage(TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
 		super(tokenCreationOp, usageEstimator);
 	}
