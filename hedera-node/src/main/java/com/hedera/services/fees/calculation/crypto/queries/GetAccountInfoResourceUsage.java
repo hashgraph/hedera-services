@@ -22,27 +22,22 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hedera.services.usage.crypto.CryptoGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
-import static java.util.Collections.EMPTY_LIST;
+import java.util.function.Function;
+
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetAccountInfoResourceUsage.class);
 
-	private final CryptoFeeBuilder usageEstimator;
-
-	public GetAccountInfoResourceUsage(CryptoFeeBuilder usageEstimator) {
-		this.usageEstimator = usageEstimator;
-	}
+	static Function<Query, CryptoGetInfoUsage> factory = CryptoGetInfoUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(Query query) {
@@ -57,14 +52,21 @@ public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator 
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
 		try {
-			CryptoGetInfoQuery infoQuery = query.getCryptoGetInfo();
-			MerkleEntityId key = MerkleEntityId.fromAccountId(infoQuery.getAccountID());
-			MerkleAccount account = view.accounts().get(key);
-
-			return usageEstimator.getAccountInfoQueryFeeMatrices(
-					mapJKey(account.getKey()),
-					EMPTY_LIST,
-					type);
+			var op = query.getCryptoGetInfo();
+			var key = fromAccountId(op.getAccountID());
+			if (view.accounts().containsKey(key)) {
+				var account = view.accounts().get(key);
+				var estimate = factory.apply(query)
+						.givenCurrentKey(asKeyUnchecked(account.getKey()))
+						.givenCurrentMemo(account.getMemo())
+						.givenCurrentTokenAssocs(account.tokens().numAssociations());
+				if (account.getProxy() != null) {
+					estimate.givenCurrentlyUsingProxy();
+				}
+				return estimate.get();
+			} else {
+				return FeeData.getDefaultInstance();
+			}
 		} catch (Exception illegal) {
 			log.warn("Usage estimation unexpectedly failed for {}!", query, illegal);
 			throw new IllegalArgumentException();
