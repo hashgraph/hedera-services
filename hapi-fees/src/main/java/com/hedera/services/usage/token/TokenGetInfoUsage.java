@@ -87,7 +87,7 @@ public class TokenGetInfoUsage {
 
 	public FeeData get() {
 		long bpt = BASIC_QUERY_HEADER + customTb;
-		long bpr = TOKEN_ENTITY_SIZES.fixedBytesUsed() + rb;
+		long bpr = TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr() + rb;
 		var usage = FeeComponents.newBuilder()
 				.setBpt(bpt)
 				.setBpr(bpr)

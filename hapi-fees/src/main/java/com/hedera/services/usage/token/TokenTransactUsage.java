@@ -43,7 +43,7 @@ public class TokenTransactUsage extends TokenUsage<TokenTransactUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenTransfers();
+		var op = this.op.getTokenTransfers();
 
 		int xfers = 0;
 		long xferBytes = 0;
@@ -53,7 +53,7 @@ public class TokenTransactUsage extends TokenUsage<TokenTransactUsage> {
 		}
 		xferBytes += xfers * usageProperties.accountAmountBytes();
 		usageEstimator.addBpt(xferBytes);
-		addTransfersRecordRb(op.getTokenTransfersCount(), xfers);
+		addTokenTransfersRecordRb(op.getTokenTransfersCount(), xfers);
 
 		return usageEstimator.get();
 	}
