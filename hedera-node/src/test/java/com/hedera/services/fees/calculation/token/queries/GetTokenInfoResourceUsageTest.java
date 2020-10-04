@@ -90,7 +90,6 @@ class GetTokenInfoResourceUsageTest {
 			.build();
 
 	Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
-	Query satisfiableCostAnswer = tokenInfoQuery(target, ANSWER_STATE_PROOF);
 
 	GetTokenInfoResourceUsage subject;
 

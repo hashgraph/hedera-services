@@ -680,7 +680,7 @@ public class ServicesContext {
 							new GetVersionInfoResourceUsage(),
 							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
 							/* Crypto */
-							new GetAccountInfoResourceUsage(cryptoFees),
+							new GetAccountInfoResourceUsage(),
 							new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
 							/* File */
 							new GetFileInfoResourceUsage(fileFees),
