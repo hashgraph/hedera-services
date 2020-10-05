@@ -23,6 +23,7 @@ package com.hedera.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -112,6 +113,8 @@ class ServicesStateTest {
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
+	SpecialFileSystem specialFileSystem;
+	SpecialFileSystem specialFileSystemCopy;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -150,16 +153,20 @@ class ServicesStateTest {
 		tokensCopy = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
+		specialFileSystem = mock(SpecialFileSystem.class);
+
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		topicsCopy = mock(FCMap.class);
 		storageCopy = mock(FCMap.class);
 		accountsCopy = mock(FCMap.class);
+		specialFileSystemCopy = mock(SpecialFileSystem.class);
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
 		given(tokens.copy()).willReturn(tokensCopy);
 		given(tokenAssociations.copy()).willReturn(tokenAssociationsCopy);
+		given(specialFileSystem.copy()).willReturn(specialFileSystemCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -271,6 +278,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.SPECIAL_FILE_SYSTEM, specialFileSystem);
 
 		// when:
 		subject.init(platform, book);
@@ -297,6 +305,8 @@ class ServicesStateTest {
 		Hash storageRootHash = new Hash("fdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsafdsa".getBytes());
 		Hash accountsRootHash = new Hash("asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf".getBytes());
 		Hash tokenRelsRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
+		Hash specialFileSystemHash = new Hash("123456781234567812345678123456781234567812345678".getBytes());
+
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		// and:
@@ -307,6 +317,8 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.SPECIAL_FILE_SYSTEM, specialFileSystem);
+
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
 				"  Overall           :: %s\n" +
@@ -315,6 +327,7 @@ class ServicesStateTest {
 				"  Topics            :: %s\n" +
 				"  Tokens            :: %s\n" +
 				"  TokenAssociations :: %s\n" +
+				"  SpecialFileSystem :: %s\n" +
 				"  NetworkContext    :: %s\n" +
 				"  AddressBook       :: %s",
 				overallHash,
@@ -323,6 +336,7 @@ class ServicesStateTest {
 				topicRootHash,
 				tokensRootHash,
 				tokenRelsRootHash,
+				specialFileSystemHash,
 				ctxHash,
 				bookHash);
 		subject.setHash(overallHash);
@@ -334,6 +348,7 @@ class ServicesStateTest {
 		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(book.getHash()).willReturn(bookHash);
+		given(specialFileSystem.getHash()).willReturn(specialFileSystemHash);
 
 		// when:
 		subject.printHashes();
@@ -355,6 +370,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
 		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.SPECIAL_FILE_SYSTEM, specialFileSystem);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -371,6 +387,7 @@ class ServicesStateTest {
 		assertEquals(accountsCopy, copy.accounts());
 		assertSame(tokensCopy, copy.tokens());
 		assertSame(tokenAssociationsCopy, copy.tokenAssociations());
+		assertSame(specialFileSystemCopy, copy.getSpecialFileSystem());
 	}
 
 	@Test

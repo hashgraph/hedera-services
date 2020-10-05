@@ -35,6 +35,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.files.SpecialFileSystem;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -165,7 +166,7 @@ class StateViewTest {
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
 
-		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, null);
+		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, new SpecialFileSystem());
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;

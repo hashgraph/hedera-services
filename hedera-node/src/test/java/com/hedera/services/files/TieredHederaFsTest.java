@@ -75,7 +75,7 @@ class TieredHederaFsTest {
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, JFileInfo> metadata;
-
+	SpecialFileSystem specialFileSystem;
 	TieredHederaFs subject;
 
 	@BeforeEach
@@ -96,6 +96,7 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
+		specialFileSystem = mock(SpecialFileSystem.class);
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -103,7 +104,7 @@ class TieredHederaFsTest {
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, null);
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, specialFileSystem);
 	}
 
 	@Test
