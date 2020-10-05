@@ -18,8 +18,11 @@ create_new_directory () {
     mkdir -p ../$new_directory_name
 
     shell_echo $LINENO $0 "Building symbolic link to $new_directory_name"
-    rm -f ../HapiApp2.0
-    ln -s ../$new_directory_name ../HapiApp2.0
+
+    cd ..
+    rm -f HapiApp2.0
+    ln -s $new_directory_name HapiApp2.0
+    cd -
 
     shell_echo $LINENO $0 "Copying existing file to new working directory $new_directory_name"
     cp -r ./ ../$new_directory_name

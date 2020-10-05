@@ -168,7 +168,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 
 	@Override
 	public SpecialFileSystem copy() {
-		SpecialFileSystem newCopy = this; //new SpecialFileSystem(fileMap, this.fileSystemLocation);
+		SpecialFileSystem newCopy = new SpecialFileSystem(fileMap, this.fileSystemLocation);
 		return newCopy;
 	}
 
