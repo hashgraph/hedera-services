@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class QueryFailuresSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(QueryFailuresSpec.class);
@@ -67,11 +68,11 @@ public class QueryFailuresSpec extends HapiApiSuite {
 								.hasAnswerOnlyPrecheck(INVALID_FILE_ID),
 						getFileContents("tbd")
 								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(FILE_DELETED)
+								.hasAnswerOnlyPrecheck(OK)
 						        .logged(),
 						getFileInfo("tbd")
 								.nodePayment(1_234L)
-								.hasAnswerOnlyPrecheck(FILE_DELETED)
+								.hasAnswerOnlyPrecheck(OK)
 						        .logged()
 				);
 	}
