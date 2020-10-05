@@ -2739,6 +2739,11 @@ jobs:
           dsl-args: "FileRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "FetchSystemFiles"
+      - run:
+          name: cat /repo/test-clients/remote-system-files/appProperties.txt
+          command: |
+            cat /repo/test-clients/remote-system-files/appProperties.txt
+
       - run-eet-suites:
           dsl-args: "VersionInfoSpec"
 
@@ -2787,13 +2792,6 @@ jobs:
           dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
-
-      - run-eet-suites:
-          dsl-args: "FetchSystemFiles"
-      - run:
-          name: cat /repo/test-clients/remote-system-files/appProperties.txt
-          command: |
-            cat /repo/test-clients/remote-system-files/appProperties.txt
       - run-eet-suites:
           dsl-args: "ChildStorageSpecs"
       - run-eet-suites:
@@ -2856,6 +2854,7 @@ jobs:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
       - validate-record-streams
+
 
   run-update-feature:
     parameters:
@@ -2920,6 +2919,7 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "ERROR: fakeParameter is not a valid setting name" swirlds.log'
+
   run-update-jar-files:
     parameters:
       runner:
@@ -2985,6 +2985,7 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+
   run-network-sim:
     parameters:
       runner:
@@ -3016,6 +3017,7 @@ jobs:
           name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+
   run-custom-migration:
     parameters:
       custom-migration-params:
