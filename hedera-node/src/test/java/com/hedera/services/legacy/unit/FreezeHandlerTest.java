@@ -125,13 +125,6 @@ public class FreezeHandlerTest {
 
 		freezeHandler.handleUpdateFeature();
 
-		//check whether file has been deleted as expected
-		File file1 = new File("new1.txt");
-		Assertions.assertFalse(file1.exists());
-
-		File file2 = new File("new1.txt");
-		Assertions.assertFalse(file2.exists());
-
 		//check whether new file has been added as expected
 		File file3 = new File("new3.txt");
 		Assertions.assertTrue(file3.exists());
