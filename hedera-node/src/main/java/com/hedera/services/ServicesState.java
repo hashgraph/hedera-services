@@ -97,13 +97,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	ServicesContext ctx;
 
 	public ServicesState() {
-		setImmutable(true);
 	}
 
 	public ServicesState(List<MerkleNode> children) {
 		super(ChildIndices.NUM_090_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
-		setImmutable(true);
 	}
 
 	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
@@ -113,8 +111,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		if (ctx != null) {
 			ctx.update(this);
 		}
-
-		setImmutable(true);
 	}
 
 	/* --- MerkleInternal --- */
@@ -235,6 +231,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	/* --- FastCopyable --- */
 	@Override
 	public synchronized ServicesState copy() {
+		setImmutable(true);
 		return new ServicesState(ctx, nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
