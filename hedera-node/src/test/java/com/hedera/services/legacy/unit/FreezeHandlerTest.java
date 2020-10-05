@@ -111,9 +111,10 @@ public class FreezeHandlerTest {
 	public void freeze_updateFeature() throws Exception {
 		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
 		byte[] data = Files.readAllBytes(Paths.get(zipFile));
-		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(2000L).build();
+		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
+		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
-		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID);
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
 
 		given(hfs.exists(fileID)).willReturn(true);
 		given(hfs.cat(fileID)).willReturn(data);
