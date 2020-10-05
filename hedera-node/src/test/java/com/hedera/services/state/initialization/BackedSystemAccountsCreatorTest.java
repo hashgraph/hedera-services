@@ -25,10 +25,10 @@ import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
-import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -77,7 +77,7 @@ class BackedSystemAccountsCreatorTest {
 	LegacyEd25519KeyReader legacyReader;
 
 	AddressBook book;
-	BackingAccounts<AccountID, MerkleAccount> backingAccounts;
+	BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	BackedSystemAccountsCreator subject;
 
@@ -120,7 +120,7 @@ class BackedSystemAccountsCreatorTest {
 		given(book.getSize()).willReturn(1);
 		given(book.getAddress(0L)).willReturn(address);
 
-		backingAccounts = (BackingAccounts<AccountID, MerkleAccount>)mock(BackingAccounts.class);
+		backingAccounts = (BackingStore<AccountID, MerkleAccount>)mock(BackingStore.class);
 		given(backingAccounts.idSet()).willReturn(Set.of(
 				accountWith(1),
 				accountWith(2),

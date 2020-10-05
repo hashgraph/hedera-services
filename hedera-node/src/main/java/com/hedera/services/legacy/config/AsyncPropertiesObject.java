@@ -52,12 +52,7 @@ public class AsyncPropertiesObject {
 	private static long recordLogPeriod = ApplicationConstants.RECORD_LOG_PERIOD;
 	private static String recordLogDir = ApplicationConstants.RECORD_LOG_DIR;
 	private static int recordStreamQueueCapacity = ApplicationConstants.RECORD_STREAM_QU_CAP;
-	
-	// properties for Export of Accounts Balance
-	private static boolean accountBalanceExportEnabled ;
-	private static String accountBalanceExportDir = ApplicationConstants.ACCT_BAL_EXP_DIR;
-	private static long accountBalanceExportPeriodMinutes = ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES;
-	
+
 	// Server Properties
 	private static String defaultListeningNodeAccount = ApplicationConstants.DEFAULT_LISTENING_NODE_ACCT;
 	private static int uniqueListeningPortFlag;
@@ -123,15 +118,6 @@ public class AsyncPropertiesObject {
 		 recordLogPeriod = appConfig.getLong("recordLogPeriod", ApplicationConstants.RECORD_LOG_PERIOD);
 		 recordLogDir = appConfig.getString("recordLogDir", ApplicationConstants.RECORD_LOG_DIR);
 		 recordStreamQueueCapacity = appConfig.getInt("recordStreamQueueCapacity", ApplicationConstants.RECORD_STREAM_QU_CAP);
-
-		// properties for Export of Accounts Balance
-		accountBalanceExportEnabled = appConfig.getBoolean("accountBalanceExportEnabled",false);
-
-		 accountBalanceExportDir = appConfig.getString("accountBalanceExportDir",
-				 ApplicationConstants.ACCT_BAL_EXP_DIR);
-
-		 accountBalanceExportPeriodMinutes = appConfig
-				.getLong("accountBalanceExportPeriodMinutes", ApplicationConstants.ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES);
 
 		// properties for timers
 		startStatsDumpTimer = appConfig.getBoolean("startStatsDumpTimer",false);
@@ -223,18 +209,6 @@ public class AsyncPropertiesObject {
 
 	static int getRecordStreamQueueCapacity() {
 		return recordStreamQueueCapacity;
-	}
-
-	static boolean isAccountBalanceExportEnabled() {
-		return accountBalanceExportEnabled;
-	}
-
-	static String getAccountBalanceExportDir() {
-		return accountBalanceExportDir;
-	}
-
-	static long accountBalanceExportPeriodMinutes() {
-		return accountBalanceExportPeriodMinutes;
 	}
 
 	static String getDefaultListeningNodeAccount() {

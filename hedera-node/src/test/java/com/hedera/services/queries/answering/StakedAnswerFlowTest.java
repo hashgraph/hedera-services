@@ -65,7 +65,7 @@ class StakedAnswerFlowTest {
 			.setTransactionValidStart(at)
 			.build();
 	Transaction userTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder().setTransactionID(userTxnId))
+			.setBodyBytes(TransactionBody.newBuilder().setTransactionID(userTxnId).build().toByteString())
 			.build();
 	SignedTxnAccessor userAccessor = SignedTxnAccessor.uncheckedFrom(userTxn);
 
@@ -74,7 +74,7 @@ class StakedAnswerFlowTest {
 			.setTransactionValidStart(at)
 			.build();
 	Transaction masterTxn = Transaction.newBuilder()
-			.setBody(TransactionBody.newBuilder().setTransactionID(masterTxnId))
+			.setBodyBytes(TransactionBody.newBuilder().setTransactionID(masterTxnId).build().toByteString())
 			.build();
 	SignedTxnAccessor masterAccessor = SignedTxnAccessor.uncheckedFrom(masterTxn);
 

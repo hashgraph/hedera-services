@@ -183,14 +183,14 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             accountID.getRealmNum(), accountID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
             nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, CryptoServiceTest.transactionDuration, true,
             "FileUpdate",
-            CryptoServiceTest.signatures, exchangeRateSet, fid);
+            exchangeRateSet, fid);
 
     List<Key> keys = new ArrayList<Key>();
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(accountID));
     // FeeSchedule file key is same as SpecialAccount key i.e. genesis  key
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(accountID));
     Transaction txSigned = TransactionSigner
-            .signTransactionComplex(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     TransactionResponse response = CryptoServiceTest.stub.updateFile(txSigned);
     Assert.assertEquals(precheckCode, response.getNodeTransactionPrecheckCode());
@@ -220,14 +220,14 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             specialAccountID.getRealmNum(), specialAccountID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
             nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, CryptoServiceTest.transactionDuration, true,
             "FileUpdate",
-            CryptoServiceTest.signatures, fileData, fid);
+            fileData, fid);
 
     List<Key> keys = new ArrayList<Key>();
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID));
     // FeeSchedule file key is same as SpecialAccount key i.e. genesis  key
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID));
     Transaction txSigned = TransactionSigner
-            .signTransactionComplex(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     TransactionResponse response = CryptoServiceTest.stub.updateFile(txSigned);
     Thread.sleep(NAP);
@@ -269,14 +269,14 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             specialAccountID.getRealmNum(), specialAccountID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
             nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, CryptoServiceTest.transactionDuration, true,
             "FileUpdate",
-            CryptoServiceTest.signatures, fileData, fid);
+            fileData, fid);
 
     List<Key> keys = new ArrayList<Key>();
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID));
     // FeeSchedule file key is same as SpecialAccount key i.e. genesis  key
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID));
     Transaction txSigned = TransactionSigner
-            .signTransactionComplex(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
 
     TransactionResponse response = CryptoServiceTest.stub.updateFile(txSigned);
     Thread.sleep(NAP);
@@ -293,9 +293,9 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             specialAccountID.getRealmNum(), specialAccountID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
             nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp1, CryptoServiceTest.transactionDuration, true,
             "FileAppend",
-            CryptoServiceTest.signatures, fileDataPart2, fid);
+            fileDataPart2, fid);
     Transaction txSignedAppend = TransactionSigner
-            .signTransactionComplex(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(fileAppendRequest, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionResponse appendResponse = CryptoServiceTest.stub.appendContent(txSignedAppend);
     Thread.sleep(NAP);
     body = TransactionBody.parseFrom(fileAppendRequest.getBodyBytes());
@@ -335,13 +335,13 @@ public class SystemFileUpdateTests extends BaseFeeTests {
             payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
             nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, CryptoServiceTest.transactionDuration, true,
             "FileUpdate",
-            CryptoServiceTest.signatures, fileData, fid);
+            fileData, fid);
 
     List<Key> keys = new ArrayList<Key>();
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(payerID));
     keys.add(TestHelperComplex.acc2ComplexKeyMap.get(specialAccountID)); // Fee Schedule File wacl key
     Transaction txSigned = TransactionSigner
-            .signTransactionComplex(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(FileUpdateRequest, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionResponse response = CryptoServiceTest.stub.updateFile(txSigned);
     Thread.sleep(NAP);
     Assert.assertEquals(ResponseCodeEnum.AUTHORIZATION_FAILED,response.getNodeTransactionPrecheckCode());

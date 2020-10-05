@@ -21,10 +21,7 @@ package com.hedera.test.factories.scenarios;
  */
 
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.keys.KeyFactory;
-import com.hedera.test.factories.keys.OverlappingKeyGenerator;
 import com.hedera.test.factories.sigs.SigMapGenerator;
-import com.hederahashgraph.api.proto.java.Transaction;
 
 import java.util.Set;
 
@@ -50,36 +47,12 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	FULL_PAYER_SIGS_VIA_LIST_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedSystemDelete()
-							.useSigList()
-							.payer(DILIGENT_SIGNING_PAYER_ID)
-							.payerKt(DILIGENT_SIGNING_PAYER_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT)
-							.file(MISC_FILE_ID).get()
-			));
-		}
-	},
 	MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedSystemDelete()
-							.payer(CARELESS_SIGNING_PAYER_ID)
-							.payerKt(CARELESS_SIGNING_PAYER_KT)
-							.nonPayerKts(MISC_FILE_WACL_KT)
-							.file(MISC_FILE_ID).get()
-			));
-		}
-	},
-	MISSING_PAYER_SIGS_VIA_LIST_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedSystemDelete()
-							.useSigList()
-							.payer(CARELESS_SIGNING_PAYER_ID)
-							.payerKt(CARELESS_SIGNING_PAYER_KT)
+							.payer(TOKEN_TREASURY_ID)
+							.payerKt(TOKEN_TREASURY_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
 							.file(MISC_FILE_ID).get()
 			));

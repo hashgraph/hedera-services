@@ -27,7 +27,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidFileIDException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.runner.RunWith;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -64,29 +64,34 @@ class HfsSigMetaLookupTest {
 		given(hfs.getattr(target)).willReturn(info);
 
 		// when:
-		var sigMeta = subject.lookup(target);
+		var safeSigMeta = subject.safeLookup(target);
 
 		// then:
-		assertEquals(wacl.toString(), sigMeta.getWacl().toString());
+		assertTrue(safeSigMeta.succeeded());
+		assertEquals(wacl.toString(), safeSigMeta.metadata().getWacl().toString());
 	}
 
 	@Test
-	public void omitsKeysForImmutableFile() throws Exception {
+	public void omitsKeysForImmutableFile() {
 		given(hfs.exists(target)).willReturn(true);
 		given(hfs.getattr(target)).willReturn(immutableInfo);
 
 		// when:
-		var sigMeta = subject.lookup(target);
+		var safeSigMeta = subject.safeLookup(target);
 
 		// then:
-		Assertions.assertTrue(sigMeta.getWacl().isEmpty());
+		assertTrue(safeSigMeta.succeeded());
+		assertTrue(safeSigMeta.metadata().getWacl().isEmpty());
 	}
 
 	@Test
 	public void throwsExpectedType() {
 		given(hfs.getattr(target)).willReturn(null);
 
+		// when:
+		var safeSigMeta = subject.safeLookup(target);
+
 		// expect:
-		Assertions.assertThrows(InvalidFileIDException.class, () -> subject.lookup(target));
+		Assertions.assertFalse(safeSigMeta.succeeded());
 	}
 }

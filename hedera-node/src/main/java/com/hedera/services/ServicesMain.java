@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -37,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -79,6 +81,12 @@ public class ServicesMain implements SwirldMain {
 			systemExits.fail(1);
 		}
 		try {
+			CommonUtils.getSha384Hash();
+		} catch (NoSuchAlgorithmException nsae) {
+			log.error(nsae);
+			systemExits.fail(1);
+		}
+		try {
 			Locale.setDefault(Locale.US);
 			ctx = CONTEXTS.lookup(nodeId.getId());
 			logInfoWithConsoleEcho(String.format(START_INIT_MSG_PATTERN, ctx.id().getId()));
@@ -114,8 +122,7 @@ public class ServicesMain implements SwirldMain {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
 			((ServicesState)signedState).printHashes();
 		}
-		if (ctx.properties().getBooleanProperty("hedera.exportBalancesOnNewSignedState") &&
-				ctx.balancesExporter().isTimeToExport(when)) {
+		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
 			try {
 				ctx.balancesExporter().toCsvFile((ServicesState) signedState, when);
 			} catch (IllegalStateException ise) {

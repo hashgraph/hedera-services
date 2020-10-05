@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,6 +42,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -63,17 +66,29 @@ public class ContractDeleteSuite extends HapiApiSuite {
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(new HapiApiSpec[] {
 				systemDeleteContractNotSupported(),
+				rejectsWithoutProperSig(),
 				systemDelThenUndelContractNotSupported()
 		});
 	}
 
+	HapiApiSpec rejectsWithoutProperSig() {
+		return defaultHapiSpec("ScDelete")
+				.given(
+						contractCreate("tbd")
+				).when( ).then(
+						contractDelete("tbd")
+								.signedBy(GENESIS)
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
 	List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-			defaultHapiSpec("ScDelete")
-				.given(
-						TxnVerbs.contractCreate("toBeDeleted")
-				).when().then(
-						TxnVerbs.contractDelete("toBeDeleted").hasKnownStatus(SUCCESS))
+				defaultHapiSpec("ScDelete")
+						.given(
+								contractCreate("toBeDeleted")
+						).when().then(
+						contractDelete("toBeDeleted").hasKnownStatus(SUCCESS))
 		);
 	}
 

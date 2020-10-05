@@ -26,7 +26,7 @@ import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.legacy.handler.TransactionHandler;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.txns.validation.BasicPrecheck;
 import com.hedera.services.utils.MiscUtils;
@@ -38,8 +38,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -130,18 +128,12 @@ public class RequestValidationTest {
         RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
             nodeAccRealm, nodeAccShard, transactionFee, timestamp, transactionDuration,
             generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().addSigs(
-                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
     Transaction nonMatchingTransaction =
         RequestBuilder.getCreateAccountBuilder(nodeAccnNum, nodeAccRealm, nodeAccShard, nodeAccnNum,
             nodeAccRealm + 1, nodeAccShard + 1, transactionFee, timestamp, transactionDuration,
             generateRecord, memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().addSigs(
-                Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
     TransactionBody matchingBody = CommonUtils.extractTransactionBody(matchingNodeAccTransaction);
     TransactionBody nonMatchingBody = CommonUtils.extractTransactionBody(nonMatchingTransaction);
     ResponseCodeEnum matchingPreCheckReturn = trHandler.validateNodeAccount(matchingBody);

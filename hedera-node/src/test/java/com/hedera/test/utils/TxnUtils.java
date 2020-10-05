@@ -21,24 +21,21 @@ package com.hedera.test.utils;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import java.util.List;
 import java.util.UUID;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 public class TxnUtils {
-	public static String txnToString(Transaction txn) throws InvalidProtocolBufferException {
-		return toReadableString(txn);
-	}
-
 	public static TransferList withAdjustments(AccountID a, long A, AccountID b, long B, AccountID c, long C) {
 		return TransferList.newBuilder()
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(A).build())
@@ -58,6 +55,68 @@ public class TxnUtils {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).build())
 				.build();
+	}
+
+	public static List<TokenTransferList> withTokenAdjustments(
+			TokenID a, AccountID aId, long A,
+			TokenID b, AccountID bId, long B,
+			TokenID c, AccountID cId, long C
+	) {
+		return List.of(
+				TokenTransferList.newBuilder()
+						.setToken(a)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(aId).setAmount(A).build())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(b)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(bId).setAmount(B).build())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(c)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(cId).setAmount(C).build())
+						.build()
+		);
+	}
+
+	public static List<TokenTransferList> withTokenAdjustments(
+			TokenID a, AccountID aId, long A,
+			TokenID b, AccountID bId, long B,
+			TokenID c, AccountID cId, long C,
+			TokenID d, AccountID dId, long D
+	) {
+		return List.of(
+				TokenTransferList.newBuilder()
+						.setToken(a)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(aId).setAmount(A).build())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(b)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(bId).setAmount(B).build())
+						.addTransfers(AccountAmount.newBuilder().setAccountID(cId).setAmount(C).build())
+						.addTransfers(AccountAmount.newBuilder().setAccountID(aId).setAmount(A).build())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(c)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(cId).setAmount(C).build())
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(d)
+						.addTransfers(AccountAmount.newBuilder().setAccountID(dId).setAmount(D).build())
+						.build()
+		);
+	}
+
+	public static List<TokenTransferList> withTokenAdjustments(
+			TokenID a, TokenID b
+	) {
+		return List.of(
+				TokenTransferList.newBuilder()
+						.setToken(a)
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(b)
+						.build()
+		);
 	}
 
 	public static Transaction payerSponsoredTransfer(

@@ -35,8 +35,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRef;
-import com.hederahashgraph.api.proto.java.TokenTransfers;
+import com.hederahashgraph.api.proto.java.TokenTransfersTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -161,10 +160,6 @@ public class TxnUtils {
 		return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
 	}
 
-	public static TokenRef asRef(TokenID id) {
-		return TokenRef.newBuilder().setTokenId(id).build();
-	}
-
 	public static TopicID asTopicId(String s, HapiApiSpec lookupSpec) {
 		return isIdLiteral(s) ? asTopic(s) : lookupSpec.registry().getTopicID(s);
 	}
@@ -188,7 +183,7 @@ public class TxnUtils {
 
 	public static String getTxnIDandType(Transaction txn) {
 		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableStringShortTxnID(txn);
+			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableTransactionID(txn);
 		} catch (InvalidProtocolBufferException e) {
 			log.error("Got Grpc protocol buffer error: ", e);
 		}
@@ -353,16 +348,12 @@ public class TxnUtils {
 	private static final SplittableRandom r = new SplittableRandom();
 	private static final char[] CANDIDATES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-	public static String readableTokenTransferList(TokenTransfers xfers) {
+	public static String readableTokenTransferList(TokenTransfersTransactionBody xfers) {
 		return xfers.getTokenTransfersList().stream()
 				.map(scopedXfers -> String.format("%s(%s)",
-						readableRef(scopedXfers.getToken()),
+						asTokenString(scopedXfers.getToken()),
 						readableTransferList(scopedXfers.getTransfersList())))
 				.collect(joining(", "));
-	}
-
-	public static String readableRef(TokenRef tr) {
-		return tr.hasTokenId() ? asTokenString(tr.getTokenId()) : tr.getSymbol();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {

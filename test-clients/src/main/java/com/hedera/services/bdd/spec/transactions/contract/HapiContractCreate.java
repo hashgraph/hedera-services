@@ -221,6 +221,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							memo.ifPresent(m -> b.setMemo(m));
 							gas.ifPresent(a -> b.setGas(a));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
+							gas.ifPresent(a -> b.setGas(a));
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);

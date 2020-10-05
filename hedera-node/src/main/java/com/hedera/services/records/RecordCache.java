@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.sha384HashOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
@@ -88,7 +87,7 @@ public class RecordCache {
 				.setTransactionID(txnId)
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(sha384HashOf(accessor))
+				.setTransactionHash(accessor.getHash())
 				.setConsensusTimestamp(asTimestamp(consensusTimestamp))
 				.build();
 		var record = creator.createExpiringPayerRecord(

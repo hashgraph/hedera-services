@@ -21,8 +21,12 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
+import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,10 +35,14 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -43,6 +51,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	private static String TOKEN_TREASURY = "treasury";
 	private static final int MAX_NAME_LENGTH = 100;
+	private static final long A_HUNDRED_SECONDS = 100;
 
 	public static void main(String... args) {
 		new TokenCreateSpecs().runSuiteSync();
@@ -50,25 +59,36 @@ public class TokenCreateSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
-						initialFloatMustBeSane(),
+						initialSupplyMustBeSane(),
 						numAccountsAllowedIsDynamic(),
-						autoRenewValidationWorks(),
 						creationYieldsExpectedToken(),
 						creationSetsExpectedName(),
-						creationValidatesName()
-				}
+						creationValidatesName(),
+						creationRequiresAppropriateSigs(),
+						creationValidatesTreasuryAccount(),
+						autoRenewValidationWorks(),
+						creationSetsCorrectExpiry(),
+						creationHappyPath(),
+						creationWithoutKYCSetsCorrectStatus(),
+						creationValidatesExpiry(),
+						creationValidatesFreezeDefaultWithNoFreezeKey()
 		);
 	}
 
 	public HapiApiSpec autoRenewValidationWorks() {
 		return defaultHapiSpec("AutoRenewValidationWorks")
 				.given(
-						cryptoCreate("autoRenew")
+						cryptoCreate("autoRenew"),
+						cryptoCreate("deletingAccount")
 				).when(
+						cryptoDelete("deletingAccount"),
+						tokenCreate("primary")
+								.autoRenewAccount("deletingAccount")
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
 						tokenCreate("primary")
 								.signedBy(GENESIS)
 								.autoRenewAccount("1.2.3")
@@ -76,7 +96,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.autoRenewAccount("autoRenew")
 								.autoRenewPeriod(Long.MAX_VALUE)
-								.hasKnownStatus(INVALID_RENEWAL_PERIOD),
+								.hasPrecheck(INVALID_RENEWAL_PERIOD),
 						tokenCreate("primary")
 								.signedBy(GENESIS)
 								.autoRenewAccount("autoRenew")
@@ -97,8 +117,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("freeze")
 				).when(
 						tokenCreate("primary")
-								.initialFloat(123)
-								.divisibility(4)
+								.initialSupply(123)
+								.decimals(4)
 								.freezeDefault(true)
 								.freezeKey("freeze")
 								.treasury(TOKEN_TREASURY)
@@ -127,6 +147,125 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	public HapiApiSpec creationWithoutKYCSetsCorrectStatus() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
+				.given(
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getAccountInfo(TOKEN_TREASURY)
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.kyc(TokenKycStatus.KycNotApplicable)
+								)
+				);
+	}
+
+	public HapiApiSpec creationHappyPath() {
+		String saltedName = salted("primary");
+		return defaultHapiSpec("CreationHappyPath")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("autoRenewAccount"),
+						newKeyNamed("adminKey"),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("kycKey"),
+						newKeyNamed("supplyKey"),
+						newKeyNamed("wipeKey")
+				).when(
+						tokenCreate("primary")
+								.name(saltedName)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount("autoRenewAccount")
+								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.initialSupply(500)
+								.decimals(1)
+								.adminKey("adminKey")
+								.freezeKey("freezeKey")
+								.kycKey("kycKey")
+								.supplyKey("supplyKey")
+								.wipeKey("wipeKey")
+								.via("createTxn")
+				).then(
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var createTxn = getTxnRecord("createTxn");
+							allRunFor(spec, createTxn);
+							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
+							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+						}),
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasName(saltedName)
+								.hasTreasury(TOKEN_TREASURY)
+								.hasAutoRenewPeriod(A_HUNDRED_SECONDS)
+								.hasValidExpiry()
+								.hasDecimals(1)
+								.hasAdminKey("adminKey")
+								.hasFreezeKey("freezeKey")
+								.hasKycKey("kycKey")
+								.hasSupplyKey("supplyKey")
+								.hasWipeKey("wipeKey")
+								.hasTotalSupply(500)
+								.hasAutoRenewAccount("autoRenewAccount"),
+						getAccountInfo(TOKEN_TREASURY)
+								.hasToken(
+										HapiGetAccountInfo.ExpectedTokenRel.relationshipWith("primary")
+												.balance(500)
+												.kyc(TokenKycStatus.Granted)
+												.freeze(TokenFreezeStatus.Unfrozen)
+								)
+				);
+	}
+
+	public HapiApiSpec creationSetsCorrectExpiry() {
+		return defaultHapiSpec("CreationSetsCorrectExpiry")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("autoRenew")
+				).when(
+						tokenCreate("primary")
+								.autoRenewAccount("autoRenew")
+								.autoRenewPeriod(A_HUNDRED_SECONDS)
+								.treasury(TOKEN_TREASURY)
+								.via("createTxn")
+				).then(
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var createTxn = getTxnRecord("createTxn");
+							allRunFor(spec, createTxn);
+							var timestamp = createTxn.getResponseRecord().getConsensusTimestamp().getSeconds();
+							spec.registry().saveExpiry("primary", timestamp + A_HUNDRED_SECONDS);
+						}),
+						getTokenInfo("primary")
+								.logged()
+								.hasRegisteredId("primary")
+								.hasValidExpiry()
+				);
+	}
+
+	public HapiApiSpec creationValidatesExpiry() {
+		return defaultHapiSpec("CreationValidatesExpiry")
+				.given().when().then(
+						tokenCreate("primary")
+								.expiry(1000)
+								.hasPrecheck(INVALID_EXPIRATION_TIME)
+				);
+	}
+
+	public HapiApiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
+		return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
+				.given()
+				.when()
+				.then(
+						tokenCreate("primary")
+								.freezeDefault(true)
+								.hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY)
+				);
+	}
 
 	public HapiApiSpec creationValidatesName() {
 		String longName = "a".repeat(MAX_NAME_LENGTH + 1);
@@ -139,11 +278,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.name("")
 								.logged()
-								.hasKnownStatus(MISSING_TOKEN_NAME),
+								.hasPrecheck(MISSING_TOKEN_NAME),
 						tokenCreate("primary")
 								.name(longName)
 								.logged()
-								.hasKnownStatus(TOKEN_NAME_TOO_LONG)
+								.hasPrecheck(TOKEN_NAME_TOO_LONG)
 				);
 	}
 
@@ -174,7 +313,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec creationValidatesSymbol() {
-		String hopefullyUnique = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
+		String firstToken = "FIRSTMOVER" + TxnUtils.randomUppercase(5);
 
 		return defaultHapiSpec("CreationValidatesSymbol")
 				.given(
@@ -184,28 +323,23 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("nonAlphanumeric")
 								.payingWith("payer")
 								.symbol("!")
-								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
+								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("missingSymbol")
 								.payingWith("payer")
 								.symbol("")
-								.hasKnownStatus(MISSING_TOKEN_SYMBOL),
+								.hasPrecheck(MISSING_TOKEN_SYMBOL),
 						tokenCreate("whiteSpaces")
 								.payingWith("payer")
 								.symbol(" ")
-								.hasKnownStatus(INVALID_TOKEN_SYMBOL),
+								.hasPrecheck(INVALID_TOKEN_SYMBOL),
 						tokenCreate("tooLong")
 								.payingWith("payer")
 								.symbol("ABCDEZABCDEZABCDEZABCDEZABCDEZABCDEZ")
-								.hasKnownStatus(TOKEN_SYMBOL_TOO_LONG),
+								.hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
 						tokenCreate("firstMoverAdvantage")
-								.symbol(hopefullyUnique)
+								.symbol(firstToken)
 								.payingWith("payer")
-				).then(
-						tokenCreate("tooLate")
-								.payingWith("payer")
-								.symbol(hopefullyUnique)
-								.hasKnownStatus(TOKEN_SYMBOL_ALREADY_IN_USE)
-				);
+				).then();
 	}
 
 	public HapiApiSpec creationRequiresAppropriateSigs() {
@@ -216,50 +350,64 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("adminKey")
 				).when().then(
 						tokenCreate("shouldntWork")
+								.treasury(TOKEN_TREASURY)
 								.payingWith("payer")
 								.adminKey("adminKey")
 								.signedBy("payer")
+								.hasKnownStatus(INVALID_SIGNATURE),
+						/* treasury must sign */
+						tokenCreate("shouldntWorkEither")
+								.treasury(TOKEN_TREASURY)
+								.payingWith("payer")
+								.adminKey("adminKey")
+								.signedBy("payer", "adminKey")
 								.hasKnownStatus(INVALID_SIGNATURE)
 				);
 	}
 
-	public HapiApiSpec initialFloatMustBeSane() {
-		return defaultHapiSpec("InitialFloatMustBeSane")
+	public HapiApiSpec creationValidatesTreasuryAccount() {
+		return defaultHapiSpec("CreationValidatesTreasuryAccount")
+				.given(
+						cryptoCreate(TOKEN_TREASURY)
+				).when(
+						cryptoDelete(TOKEN_TREASURY)
+				).then(
+						tokenCreate("shouldntWork")
+								.treasury(TOKEN_TREASURY)
+								.hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+				);
+	}
+
+	public HapiApiSpec initialSupplyMustBeSane() {
+		return defaultHapiSpec("InitialSupplyMustBeSane")
 				.given(
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS)
 				).when(
 				).then(
 						tokenCreate("sinking")
 								.payingWith("payer")
-								.initialFloat(-1L)
-								.hasKnownStatus(INVALID_INITIAL_SUPPLY),
-						tokenCreate("indivisible")
+								.initialSupply(-1L)
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
+						tokenCreate("bad decimals")
 								.payingWith("payer")
-								.divisibility(-1)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("indivisible")
+								.decimals(-1)
+								.hasPrecheck(INVALID_TOKEN_DECIMALS),
+						tokenCreate("bad decimals")
 								.payingWith("payer")
-								.divisibility(1)
-								.initialFloat(1L << 62)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("toobigdivisibility")
+								.decimals(1 << 31)
+								.hasPrecheck(INVALID_TOKEN_DECIMALS),
+						tokenCreate("bad initial supply")
 								.payingWith("payer")
-								.initialFloat(0)
-								.divisibility(19)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS),
-						tokenCreate("toobigdivisibility")
-								.payingWith("payer")
-								.initialFloat(10)
-								.divisibility(18)
-								.hasKnownStatus(INVALID_TOKEN_DECIMALS)
+								.initialSupply(1L << 63)
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY)
 				);
 	}
 
 	public HapiApiSpec treasuryHasCorrectBalance() {
 		String token = salted("myToken");
 
-		int divisibility = 1;
-		long tokenFloat = 100_000;
+		int decimals = 1;
+		long initialSupply = 100_000;
 
 		return defaultHapiSpec("TreasuryHasCorrectBalance")
 				.given(
@@ -268,13 +416,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).when(
 						tokenCreate(token)
 								.treasury(TOKEN_TREASURY)
-								.divisibility(divisibility)
-								.initialFloat(tokenFloat)
+								.decimals(decimals)
+								.initialSupply(initialSupply)
 								.payingWith("payer")
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTinyBars(A_HUNDRED_HBARS)
-								.hasTokenBalance(token, tokenFloat * 10)
+								.hasTokenBalance(token, initialSupply)
 				);
 	}
 

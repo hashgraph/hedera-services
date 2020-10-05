@@ -87,6 +87,7 @@ import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -438,7 +439,23 @@ public class TransactionHandler {
     return Math.max(feeInTinyBars, 1L);
   }
 
+  private ResponseCodeEnum validateTransactionContents(Transaction transaction) {
+    if (transaction.getSignedTransactionBytes().isEmpty() && transaction.getBodyBytes().isEmpty()) {
+      return INVALID_TRANSACTION_BODY;
+    }
+    if (!transaction.getSignedTransactionBytes().isEmpty() &&
+            (transaction.hasSigMap() || !transaction.getBodyBytes().isEmpty())) {
+      return INVALID_TRANSACTION;
+    }
+    return OK;
+  }
+
   public TxnValidityAndFeeReq validateTransactionPreConsensus(Transaction transaction, boolean isQueryPayment) {
+    ResponseCodeEnum returnCode = validateTransactionContents(transaction);
+    if (OK != returnCode) {
+      return new TxnValidityAndFeeReq(returnCode);
+    }
+
     if (platformStatus.get() != ACTIVE) {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
     }
@@ -456,7 +473,6 @@ public class TransactionHandler {
       return new TxnValidityAndFeeReq(ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS);
     }
 
-    ResponseCodeEnum returnCode = OK;
     long feeRequired = 0L;
     SignedTxnAccessor accessor = null;
     TransactionBody txn = TransactionBody.getDefaultInstance();

@@ -112,32 +112,6 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void setsExpectedPlatformSigsForListSignedFileUpdate() throws Throwable {
-		// given:
-		setupFor(LIST_SIGNED_FILE_UPDATE_NEW_WACL_SCENARIO);
-
-		// when:
-		actualStatus = invokeExpansionScenario();
-
-		// then:
-		statusMatches(successStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-	}
-
-	@Test
-	public void setsExpectedPlatformSigsIgnoresMissingOtherPartySigsForListSignedTxn() throws Throwable {
-		// given:
-		setupFor(PAYER_ONLY_LIST_SIGNED_FILE_UPDATE_NEW_WACL_SCENARIO);
-
-		// when:
-		actualStatus = invokeExpansionScenario();
-
-		// then:
-		statusMatches(successStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
-	}
-
-	@Test
 	public void setsExpectedErrorForBadPayer() throws Throwable {
 		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
@@ -196,18 +170,6 @@ public class SigOpsRegressionTest {
 		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
 		// and:
 		allVerificationStatusesAre(vs -> VerificationStatus.VALID.equals(vs));
-	}
-
-	@Test
-	public void rejectsFailedSigCreationResult() throws Throwable {
-		// given:
-		setupFor(PAYER_ONLY_LIST_SIGNED_FILE_UPDATE_NEW_WACL_SCENARIO);
-
-		// when:
-		actualStatus = invokeRationalizationScenario();
-
-		// then:
-		statusMatches(sigCreationFailureStatus);
 	}
 
 	@Test

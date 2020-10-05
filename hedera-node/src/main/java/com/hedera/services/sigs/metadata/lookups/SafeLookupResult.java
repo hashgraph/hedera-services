@@ -26,6 +26,8 @@ import com.hedera.services.sigs.order.KeyOrderingFailure;
 import java.util.EnumMap;
 import java.util.Optional;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
@@ -49,6 +51,8 @@ public class SafeLookupResult<T> {
 		KNOWN_FAILURES.put(MISSING_FILE, new SafeLookupResult<>(MISSING_FILE));
 		KNOWN_FAILURES.put(MISSING_TOKEN, new SafeLookupResult<>(MISSING_TOKEN));
 		KNOWN_FAILURES.put(MISSING_ACCOUNT, new SafeLookupResult<>(MISSING_ACCOUNT));
+		KNOWN_FAILURES.put(INVALID_CONTRACT, new SafeLookupResult<>(INVALID_CONTRACT));
+		KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
 		KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
 		KNOWN_FAILURES.put(MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
 	}

@@ -88,10 +88,9 @@ public class ContractCall extends ClientBaseThread {
   private Thread checkThread;
   private Thread checkExpiredRecordThread;
 
-  public ContractCall(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index)
+  public ContractCall(String host, int port, long nodeAccountNumber, String [] args, int index)
   {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
-    this.useSigMap = useSigMap;
+    super(host, port, nodeAccountNumber, args, index);
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;

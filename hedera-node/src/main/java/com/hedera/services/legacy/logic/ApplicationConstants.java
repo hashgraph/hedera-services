@@ -23,11 +23,9 @@ package com.hedera.services.legacy.logic;
 public class ApplicationConstants {
 	public static String NETTY_MODE_DEV = "DEV";
 
-	public static String LEDGER_PATH = "/{0}/";
 	// Default values
 	public static long DEFAULT_FEE = 100000l;
 
-	// Signature Algorithm Type Constants
 	public static String EXPORTED_ACCOUNT_PATH = "exportedAccountPath";
 	public static long EXCHANGE_RATE_FILE_ACCOUNT_NUM = 112;
 	public static long DEFAULT_FILE_SHARD = 0;
@@ -43,24 +41,16 @@ public class ApplicationConstants {
 	public static int RECORD_LOG_PERIOD = 2;
 	public static String RECORD_LOG_DIR = "data/recordstreams/";
 	public static int RECORD_STREAM_QU_CAP = 500;
-	public static String ACCT_BAL_EXP_DIR = "data/accountBalances/";
-	public static int ACCOUNT_BALANCE_EXPORT_PERIOD_MINUTES = 10;
 
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
 	public static int THRESH_REC_TTL = 90000;
-	public static int TX_MIN_DUR = 5;
-	public static int TX_MAX_DUR = 180;
 	public static int TXN_MIN_VALIDITY_BUFFER_SECS = 10;
-
-	public static long INITIAL_GENESIS_COINS = 5000000000000000000l;
 
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 
 	public static long MINIMUM_AUTORENEW_DURATION = 1l;
 	public static long MAXIMUM_AUTORENEW_DURATION = 1000000000l;
-
-	public static int TRANSFER_LST_LIMIT = 10;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;

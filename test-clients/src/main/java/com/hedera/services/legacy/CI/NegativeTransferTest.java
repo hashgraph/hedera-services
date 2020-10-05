@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -292,14 +291,13 @@ public class NegativeTransferTest {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
     // get the transaction body
     ByteString transferBodyBytes = transferTx.getBodyBytes();
@@ -326,68 +324,20 @@ public class NegativeTransferTest {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
 
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
-  }
-
-  public static Transaction createTransferNInvalidAccountsAmounts(AccountID fromAccount,
-      PrivateKey fromKey, AccountID toAccount,
-      AccountID payerAccount, PrivateKey payerAccountKey, AccountID nodeAccount,
-      long amount) {
-    Timestamp timestamp = RequestBuilder
-        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
-    Duration transactionDuration = RequestBuilder.getDuration(30);
-
-    SignatureList sigList = SignatureList.getDefaultInstance();
-    Transaction transferTx =
-        RequestBuilder
-            .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
-                payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-                nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 5000000000000000000L,
-                timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
-                -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
-
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(payerAcctSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
-
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
+    return TransactionSigner.signTransaction(transferTx, privKeysList);
   }
 
   public static Transaction createTransferNInvalidAccountsAmountsDifference(AccountID fromAccount,
@@ -397,34 +347,28 @@ public class NegativeTransferTest {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(30);
     long amountReceived = amount + 112;
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 0, timestamp, transactionDuration,
         false,
-        "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+        "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amountReceived);
     // sign the tx
-    List<List<PrivateKey>> privKeysList = new ArrayList<>();
-    List<PrivateKey> payerPrivKeyList = new ArrayList<>();
-    payerPrivKeyList.add(payerAccountKey);
-    privKeysList.add(payerPrivKeyList);
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(payerAccountKey);
+    privKeysList.add(fromKey);
 
-    List<PrivateKey> fromPrivKeyList = new ArrayList<>();
-    fromPrivKeyList.add(fromKey);
-    privKeysList.add(fromPrivKeyList);
-
-    Transaction signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
 
     long transferFee = FeeClient.getTransferFee(signedTx, privKeysList.size());
     transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
         payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
         nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
         transactionDuration, false,
-        "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+        "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
         amountReceived);
 
-    signedTx = TransactionSigner.signTransactionNew(transferTx, privKeysList);
+    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
     return signedTx;
 
   }
@@ -437,32 +381,18 @@ public class NegativeTransferTest {
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx =
         RequestBuilder
             .getCryptoTransferRequest(payerAccount.getAccountNum(), payerAccount.getRealmNum(),
                 payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50,
                 timestamp, transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(),
                 -amount, toAccount.getAccountNum(), amount);
-    // get the transaction body
-    ByteString txBodyBytes = transferTx.getBodyBytes();
-    // Payer Account will sign this transaction
-    ByteString payerAcctSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), payerAccountKey);
-    // from Account will sign the key
-    ByteString fromAccountSig = TransactionSigner
-        .signBytes(txBodyBytes.toByteArray(), fromKey);
 
-    Signature signaturePayeeAcct = Signature.newBuilder().setEd25519(fromAccountSig).build();
-    Signature fromAccountObj = Signature.newBuilder().setEd25519(fromAccountSig).build();
+    List<PrivateKey> privKeysList = new ArrayList<>();
+    privKeysList.add(fromKey);
 
-    SignatureList newsigList = SignatureList.newBuilder().addSigs(signaturePayeeAcct)
-        .addSigs(fromAccountObj)
-        .build();
-
-    return Transaction.newBuilder().setBodyBytes(txBodyBytes).setSigs(newsigList).build();
+    return TransactionSigner.signTransaction(transferTx, privKeysList);
   }
-
 }

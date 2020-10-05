@@ -47,8 +47,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -228,9 +226,6 @@ public class MaxFileSizeTest {
 		Transaction updateContractRequest = RequestBuilder.getContractUpdateRequest(payerAccount, nodeAccount,
 				MAX_TX_FEE, timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
 				expirationTime,
-				SignatureList.newBuilder()
-						.addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-						.build(),
 				contractMemo);
 		updateContractRequest = TransactionSigner.signTransactionComplexWithSigMap(updateContractRequest, keyList,
 				pubKey2privKeyMap);
@@ -337,10 +332,9 @@ public class MaxFileSizeTest {
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
 		Duration transactionDuration = RequestBuilder.getDuration(120);
 		ByteString fileData = ByteString.copyFrom(fileContent);
-		SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 		Transaction fileCreateRequest = RequestBuilder.getFileCreateBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
-				timestamp, transactionDuration, true, "FileCreate", signatures, fileData, fileExp, waclPubKeyList);
+				timestamp, transactionDuration, true, "FileCreate", fileData, fileExp, waclPubKeyList);
 		
 		List<Key> keyList = new ArrayList<>();
         Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
@@ -376,10 +370,9 @@ public class MaxFileSizeTest {
 		Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp, fileDuration);
 		Duration transactionDuration = RequestBuilder.getDuration(120);
 		ByteString fileData = ByteString.copyFrom(fileContent);
-		SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 		Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerAccount.getAccountNum(),
 				payerAccount.getRealmNum(), payerAccount.getShardNum(), this.node_account_number, 0l, 0l, MAX_TX_FEE,
-				timestamp, transactionDuration, true, "fileAppend", signatures, fileData, fileToAppend);
+				timestamp, transactionDuration, true, "fileAppend", fileData, fileToAppend);
 		
 		List<Key> keyList = new ArrayList<>();
         Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();

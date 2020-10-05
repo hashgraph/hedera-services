@@ -67,8 +67,8 @@ public class RecordStream implements Runnable {
 
 	static final byte TYPE_PREV_HASH = 1;       // next 48 bytes are hash384 of previous files
 	static final byte TYPE_RECORD = 2;          // next data type is transaction and its record
-	static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
-	static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of the file to be signed
+	public static final byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
+	public static final byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of the file to be signed
 
 	private String logDirectory;
 	private String nodeAccountID;

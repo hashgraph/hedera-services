@@ -45,7 +45,6 @@ import java.util.Optional;
 
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
-import static com.hedera.services.legacy.logic.ApplicationConstants.*;
 
 @RunWith(JUnitPlatform.class)
 public class FeeCalcUtilsTest {
@@ -54,6 +53,7 @@ public class FeeCalcUtilsTest {
 	 * Default value for the prefix for the virtual metadata file
 	 */
 	public static String ARTIFACTS_PREFIX_FILE_INFO = "k";
+	public static String LEDGER_PATH = "/{0}/";
 	private final MerkleEntityId key = new MerkleEntityId(0, 0, 1234);
 
 	public static String pathOf(FileID fid) {

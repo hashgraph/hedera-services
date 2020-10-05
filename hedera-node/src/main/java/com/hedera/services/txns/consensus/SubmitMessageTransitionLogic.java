@@ -31,6 +31,7 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -101,8 +102,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 			topics.get().put(topicId, mutableTopic);
 			transactionContext.setTopicRunningHash(mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
 			transactionContext.setStatus(SUCCESS);
-		} catch (Exception e) {
-			// Should not hit this - updateRunningHash should not throw due to NoSuchAlgorithmException (SHA384)
+		} catch (IOException e) {
 			log.error("Updating topic running hash failed.", e);
 			transactionContext.setStatus(INVALID_TRANSACTION);
 		}

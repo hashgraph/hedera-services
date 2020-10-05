@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -121,8 +120,6 @@ public class GrpcStub {
 			FileID fileID,
 			Map<String, PrivateKey> pubKey2privKeyMap){
 
-		SignatureList signatures = SignatureList.newBuilder()
-				.getDefaultInstanceForType();
 		Timestamp timestamp = RequestBuilder
 				.getTimestamp(Instant.now(Clock.systemUTC()));
 		Duration transactionDuration = Duration.newBuilder().setSeconds(2 * 60).build();
@@ -144,9 +141,9 @@ public class GrpcStub {
 					Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(
 							payerAccount.getAccountNum(), 0L, 0L,
 							nodeID.getAccountNum(), 0L, 0L, TestHelper.getFileMaxFee(),
-							timestamp, transactionDuration, true, "FileDelete", signatures, fileID);
+							timestamp, transactionDuration, true, "FileDelete", fileID);
 
-					Transaction txSigned = TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, pubKey2privKeyMap);
+					Transaction txSigned = TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, pubKey2privKeyMap);
 
 					return txSigned;
 				} catch (Exception e) {

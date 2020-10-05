@@ -82,7 +82,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 				.txns()
 				.<TokenMintTransactionBody, TokenMintTransactionBody.Builder>body(
 						TokenMintTransactionBody.class, b -> {
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 							b.setAmount(amount);
 						});
 		return b -> b.setTokenMint(opBody);

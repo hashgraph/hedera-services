@@ -162,7 +162,7 @@ public class SameTxTwoDifferentNodesTests extends BaseClient {
             payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
             nodeAccountID.getRealmNum(), nodeAccountID.getShardNum(), TestHelper.getCryptoMaxFee(), timestamp,
             transactionDuration, true,
-            memo, signatures, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
+            memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
             amount);
 
     Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
@@ -175,7 +175,7 @@ public class SameTxTwoDifferentNodesTests extends BaseClient {
       keys.add(toKey);
     }
     Transaction paymentTxSigned = TransactionSigner
-            .signTransactionComplex(transferTx, keys, pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(transferTx, keys, pubKey2privKeyMap);
     return paymentTxSigned;
   }
 
