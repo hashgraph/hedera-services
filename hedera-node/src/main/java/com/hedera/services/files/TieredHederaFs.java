@@ -116,6 +116,7 @@ public class TieredHederaFs implements HederaFs {
 
 		var fid = ids.newFileId(sponsor);
 		data.put(fid, contents);
+		metadata.put(fid, attr);
 
 		return fid;
 	}
