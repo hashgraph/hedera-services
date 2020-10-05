@@ -104,6 +104,7 @@ public abstract class HapiSpecOperation {
 	protected Optional<ControlForKey[]> controlOverrides = Optional.empty();
 	protected Map<Key, SigControl> overrides = Collections.EMPTY_MAP;
 
+	protected Optional<Long> gas = Optional.empty();
 	protected Optional<Long> fee = Optional.empty();
 	protected Optional<Long> submitDelay = Optional.empty();
 	protected Optional<Long> validDurationSecs = Optional.empty();

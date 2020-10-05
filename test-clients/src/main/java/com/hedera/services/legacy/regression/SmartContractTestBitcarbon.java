@@ -74,17 +74,17 @@ import org.apache.commons.collections4.Predicate;
  *
  * @author Peter
  */
-public class SmartContractBitcarbon {
+public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
   private static final String ARBITRARY_ADDRESS = "1234567890123456789012345678901234567890";
   private static long DAY_SEC = 24 * 60 * 60; // secs in a day
-  private final Logger log = LogManager.getLogger(SmartContractBitcarbon.class);
+  private final Logger log = LogManager.getLogger(SmartContractTestBitcarbon.class);
 
 
   private static final int MAX_RECEIPT_RETRIES = 60;
-  public static final String ADDRESS_BOOK_BIN = "/testfiles/AddressBook.bin";
-  public static final String JURISDICTIONS_BIN = "/testfiles/Jurisdictions.bin";
-  public static final String MINTERS_BIN = "/testfiles/Minters.bin";
+  public static final String ADDRESS_BOOK_BIN = "testfiles/AddressBook.bin";
+  public static final String JURISDICTIONS_BIN = "testfiles/Jurisdictions.bin";
+  public static final String MINTERS_BIN = "testfiles/Minters.bin";
 
   private static final String SC_JUR_CONSTRUCTOR_ABI = "{\"inputs\":[{\"name\":\"_admin\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}\n";
   private static final String SC_JUR_ADD_ABI = "{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"taxRate\",\"type\":\"uint256\"},{\"name\":\"inventory\",\"type\":\"address\"},{\"name\":\"reserve\",\"type\":\"address\"}],\"name\":\"add\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
@@ -112,24 +112,13 @@ public class SmartContractBitcarbon {
 
 
   public static void main(String args[]) throws Exception {
-    Properties properties = TestHelper.getApplicationProperties();
-    contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
-    host = properties.getProperty("host");
-    port = Integer.parseInt(properties.getProperty("port"));
-    node_account_number = Utilities.getDefaultNodeAccount();
-    node_shard_number = Long.parseLong(properties.getProperty("NODE_REALM_NUMBER"));
-    node_realm_number = Long.parseLong(properties.getProperty("NODE_SHARD_NUMBER"));
-    nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
-        .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
-    localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
-
     int numberOfReps = 1;
     if ((args.length) > 0) {
       numberOfReps = Integer.parseInt(args[0]);
     }
     for (int i = 0; i < numberOfReps; i++) {
-      SmartContractBitcarbon scSs = new SmartContractBitcarbon();
-      scSs.demo();
+      SmartContractTestBitcarbon scSs = new SmartContractTestBitcarbon();
+      scSs.demo(host, nodeAccount);
     }
 
   }
@@ -570,15 +559,17 @@ public class SmartContractBitcarbon {
     TransactionRecord txRec = callContract(payerAccount, contractId, dataToSet, expectedStatus);
     return txRec;
   }
-
-    public void demo() throws Exception {
+  public void demo(String grpcHost, AccountID nodeAccount) throws Exception {
+    setUp();
+    host = grpcHost;
+    SmartContractTestBitcarbon.nodeAccount = nodeAccount;
     loadGenesisAndNodeAcccounts();
 
     ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
         .usePlaintext(true)
         .build();
     TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
-        nodeAccount);
+            SmartContractTestBitcarbon.nodeAccount);
     channel.shutdown();
 
     KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
@@ -684,6 +675,19 @@ public class SmartContractBitcarbon {
 
     // Marker message for regression report
     log.info("Regression summary: This run is successful.");
+  }
+
+  private void setUp() {
+    Properties properties = TestHelper.getApplicationProperties();
+    contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
+    host = properties.getProperty("host");
+    port = Integer.parseInt(properties.getProperty("port"));
+    node_account_number = Utilities.getDefaultNodeAccount();
+    node_shard_number = Long.parseLong(properties.getProperty("NODE_REALM_NUMBER"));
+    node_realm_number = Long.parseLong(properties.getProperty("NODE_SHARD_NUMBER"));
+    nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
+            .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
+    localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
   }
 
   private byte[] parseJurisdictionsAddEvent(TransactionRecord addRecord) {

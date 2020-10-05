@@ -32,6 +32,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -57,11 +58,9 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-			new HapiApiSpec[] {
-//					impureCallFails(),
-					lowBalanceFails(),
-			}
+		return allOf(
+			positiveSpecs(),
+			negativeSpecs()
 		);
 	}
 
@@ -123,24 +122,24 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec lowBalanceFails() {
-		final long ADEQUATE_QUERY_PAYMENT = 500_000L;
+		final long ADEQUATE_QUERY_PAYMENT = 500_000_000L;
 
 		return defaultHapiSpec("LowBalanceFails")
 				.given(
-						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
+						fileCreate("parentDelegateBytecode")
+								.path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
 						TxnVerbs.cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI)
 				).then(
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
-								.via("localCall")
 								.logged()
 								.payingWith("payer")
-								.nodePayment(ADEQUATE_QUERY_PAYMENT),
+								.nodePayment(ADEQUATE_QUERY_PAYMENT)
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountBalance("payer").logged(),
 						UtilVerbs.sleepFor(1_000L),
-						getTxnRecord("localCall").logged(),
 						getAccountBalance("payer").logged()
 				);
 	}
@@ -155,6 +154,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				).then(
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
 								.maxResultSize(1L)
+								.nodePayment(1_234_567)
 								.hasAnswerOnlyPrecheck(RESULT_SIZE_LIMIT_EXCEEDED));
 	}
 
