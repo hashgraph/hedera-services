@@ -21,16 +21,12 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.TokenViewMergeable;
+import com.hedera.services.ServicesState;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.legacy.exception.NegativeAccountBalanceException;
-import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -38,6 +34,7 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,26 +45,20 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.P;
-import static com.hedera.services.state.merkle.MerkleAccountState.NO_TOKEN_RELATIONSHIPS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_NO_TOKEN_RELATIONSHIP;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static java.util.stream.Collectors.toList;
 
-public class MerkleAccount extends AbstractMerkleInternal
-		implements FCMValue, MerkleInternal, TokenViewMergeable<MerkleAccount> {
-
+public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
-	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ =
-			new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
+	static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 	static {
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
 
-	static final int MERKLE_VERSION = 1;
+	static final int RELEASE_080_VERSION = 1;
+	static final int RELEASE_090_VERSION = 2;
+	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -75,14 +66,18 @@ public class MerkleAccount extends AbstractMerkleInternal
 	@Deprecated
 	public static final Provider LEGACY_PROVIDER = new Provider();
 
-	/* Order of v1 Merkle node children */
-	static final int STATE_CHILD_INDEX = 0;
-	static final int RECORDS_CHILD_INDEX = 1;
-	static final int PAYER_RECORDS_CHILD_INDEX = 2;
-	static final int NUM_V1_CHILDREN = 3;
+	/* Order of Merkle node children */
+	static class ChildIndices {
+		static final int STATE = 0;
+		static final int RECORDS = 1;
+		static final int PAYER_RECORDS = 2;
+		static final int NUM_V1_CHILDREN = 3;
+		static final int ASSOCIATED_TOKENS = 3;
+		static final int NUM_V2_CHILDREN = 4;
+	}
 
 	public MerkleAccount(List<MerkleNode> children) {
-		super(NUM_V1_CHILDREN);
+		super(ChildIndices.NUM_V2_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -90,7 +85,8 @@ public class MerkleAccount extends AbstractMerkleInternal
 		this(List.of(
 				new MerkleAccountState(),
 				new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER),
-				new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER)));
+				new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER),
+				new MerkleAccountTokens()));
 	}
 
 	/* --- MerkleInternal --- */
@@ -106,7 +102,16 @@ public class MerkleAccount extends AbstractMerkleInternal
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		return NUM_V1_CHILDREN;
+		return version == RELEASE_090_VERSION
+				? ChildIndices.NUM_V2_CHILDREN
+				: ChildIndices.NUM_V1_CHILDREN;
+	}
+
+	@Override
+	public void initialize(MerkleInternal previous) {
+		if (tokens() == null) {
+			setChild(ChildIndices.ASSOCIATED_TOKENS, new MerkleAccountTokens());
+		}
 	}
 
 	/* --- FastCopyable --- */
@@ -129,7 +134,11 @@ public class MerkleAccount extends AbstractMerkleInternal
 			throw new IllegalStateException("Tried to make a copy of an immutable MerkleAccount!");
 		}
 
-		return new MerkleAccount(List.of(state().copy(), records().copy(), payerRecords().copy()));
+		return new MerkleAccount(List.of(
+				state().copy(),
+				records().copy(),
+				payerRecords().copy(),
+				tokens().copy()));
 	}
 
 	@Override
@@ -150,29 +159,6 @@ public class MerkleAccount extends AbstractMerkleInternal
 		throw new UnsupportedOperationException();
 	}
 
-	/* --- Token support --- */
-	public MerkleAccount tokenCopy() {
-		return new MerkleAccount(List.of(state().copy(), IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
-	}
-
-	@Override
-	public String readableTokenRelationships() {
-		return state().readableTokenRels();
-	}
-
-	@Override
-	public void mergeTokenPropertiesFrom(MerkleAccount viewSoFar) {
-		state().setTokenRels(viewSoFar.state().getTokenRels());
-	}
-
-	public List<RawTokenRelationship> explicitTokenRels() {
-		return state().explicitTokenRels();
-	}
-
-	public ResponseCodeEnum wipeTokenRelationship(TokenID id) {
-		return state().wipeTokenRelationship(id);
-	}
-
 	/* ---- Object ---- */
 	@Override
 	public boolean equals(Object o) {
@@ -185,12 +171,13 @@ public class MerkleAccount extends AbstractMerkleInternal
 		var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
 				this.records().equals(that.records()) &&
-				this.payerRecords().equals(that.payerRecords());
+				this.payerRecords().equals(that.payerRecords()) &&
+				this.tokens().equals(that.tokens());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), payerRecords());
+		return Objects.hash(state(), records(), payerRecords(), tokens());
 	}
 
 	@Override
@@ -199,29 +186,37 @@ public class MerkleAccount extends AbstractMerkleInternal
 				.add("state", state())
 				.add("# records", records().size())
 				.add("# payer records", payerRecords().size())
+				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
 	/* ----  Merkle children  ---- */
-
 	public MerkleAccountState state() {
-		return getChild(STATE_CHILD_INDEX);
+		return getChild(ChildIndices.STATE);
 	}
 
 	public FCQueue<ExpirableTxnRecord> records() {
-		return getChild(RECORDS_CHILD_INDEX);
+		return getChild(ChildIndices.RECORDS);
 	}
 
 	public FCQueue<ExpirableTxnRecord> payerRecords() {
-		return getChild(PAYER_RECORDS_CHILD_INDEX);
+		return getChild(ChildIndices.PAYER_RECORDS);
 	}
 
 	public void setRecords(FCQueue<ExpirableTxnRecord> records) {
-		setChild(RECORDS_CHILD_INDEX, records);
+		setChild(ChildIndices.RECORDS, records);
 	}
 
 	public void setPayerRecords(FCQueue<ExpirableTxnRecord> payerRecords) {
-		setChild(PAYER_RECORDS_CHILD_INDEX, payerRecords);
+		setChild(ChildIndices.PAYER_RECORDS, payerRecords);
+	}
+
+	public MerkleAccountTokens tokens() {
+		return getChild(ChildIndices.ASSOCIATED_TOKENS);
+	}
+
+	public void setTokens(MerkleAccountTokens tokens) {
+		setChild(ChildIndices.ASSOCIATED_TOKENS, tokens);
 	}
 
 	/* ----  Bean  ---- */
@@ -250,54 +245,6 @@ public class MerkleAccount extends AbstractMerkleInternal
 			throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
 		}
 		state().setHbarBalance(balance);
-	}
-
-	public int numTokenRelationships() {
-		return state().numTokenRelationships();
-	}
-
-	public boolean hasRelationshipWith(TokenID id) {
-		return state().hasRelationshipWith(id);
-	}
-
-	public long getTokenBalance(TokenID token) {
-		return state().getTokenBalance(token);
-	}
-
-	public void adjustTokenBalance(TokenID id, MerkleToken token, long adjustment) {
-		state().adjustTokenBalance(id, token, adjustment);
-	}
-
-	public List<TokenBalance> getAllExplicitTokenBalances() {
-		return state().getAllExplicitTokenBalances();
-	}
-
-	public ResponseCodeEnum validityOfAdjustment(TokenID id, MerkleToken token, long adjustment) {
-		return state().validityOfAdjustment(id, token, adjustment);
-	}
-
-	public void grantKyc(TokenID id, MerkleToken token) {
-		state().grantKyc(id, token);
-	}
-
-	public void revokeKyc(TokenID id, MerkleToken token) {
-		state().revokeKyc(id, token);
-	}
-
-	public boolean isKycGranted(TokenID id, MerkleToken token) {
-		return state().isKycGranted(id, token);
-	}
-
-	public void freeze(TokenID id, MerkleToken token) {
-		state().freeze(id, token);
-	}
-
-	public void unfreeze(TokenID id, MerkleToken token) {
-		state().unfreeze(id, token);
-	}
-
-	public boolean isFrozen(TokenID id, MerkleToken token) {
-		return state().isFrozen(id, token);
 	}
 
 	public long getReceiverThreshold() {
@@ -407,8 +354,7 @@ public class MerkleAccount extends AbstractMerkleInternal
 					expiry, balance, autoRenewSecs, senderThreshold, receiverThreshold,
 					memo,
 					deleted, smartContract, receiverSigRequired,
-					proxy,
-					NO_TOKEN_RELATIONSHIPS);
+					proxy);
 
 			var records = new FCQueue<>(ExpirableTxnRecord.LEGACY_PROVIDER);
 			serdes.deserializeIntoRecords(in, records);

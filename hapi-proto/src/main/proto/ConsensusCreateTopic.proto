@@ -27,7 +27,6 @@ option java_multiple_files = true;
 
 import "BasicTypes.proto";
 import "Duration.proto";
-import "Timestamp.proto";
 
 // See [ConsensusService.createTopic()](#proto.ConsensusService)
 message ConsensusCreateTopicTransactionBody {

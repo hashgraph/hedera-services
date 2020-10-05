@@ -363,7 +363,6 @@ public class OCTransferStepOne {
 
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();;
     Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION_SEC);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);

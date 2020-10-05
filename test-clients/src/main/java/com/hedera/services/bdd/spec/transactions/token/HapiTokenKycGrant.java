@@ -84,7 +84,7 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
 				.<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(
 						TokenGrantKycTransactionBody.class, b -> {
 							b.setAccount(aId);
-							b.setToken(TxnUtils.asRef(tId));
+							b.setToken(tId);
 						});
 		return b -> b.setTokenGrantKyc(opBody);
 	}

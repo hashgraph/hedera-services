@@ -23,7 +23,6 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 import static com.hedera.test.factories.txns.TokenGrantKycFactory.newSignedTokenGrantKyc;
 
 public enum TokenKycGrantScenarios implements TxnHandlingScenario {
@@ -32,7 +31,7 @@ public enum TokenKycGrantScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenGrantKyc()
-							.granting(asIdRef(KNOWN_TOKEN_WITH_KYC), MISC_ACCOUNT)
+							.granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));

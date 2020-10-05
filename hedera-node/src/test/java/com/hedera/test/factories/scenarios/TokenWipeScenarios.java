@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenWipeScenarios implements TxnHandlingScenario {
 	VALID_WIPE_WITH_EXTANT_TOKEN {
@@ -32,7 +31,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenWipe()
-							.wiping(asIdRef(KNOWN_TOKEN_WITH_WIPE), MISC_ACCOUNT)
+							.wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_WIPE_KT)
 							.get()
 			));
@@ -43,7 +42,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenWipe()
-							.wiping(asIdRef(UNKNOWN_TOKEN), MISC_ACCOUNT)
+							.wiping(UNKNOWN_TOKEN, MISC_ACCOUNT)
 							.get()
 			));
 		}
@@ -53,7 +52,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenWipe()
-							.wiping(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS), MISC_ACCOUNT)
+							.wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));

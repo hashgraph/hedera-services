@@ -23,6 +23,7 @@ package com.hedera.services.legacy.crypto;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt64Value;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -177,7 +178,7 @@ public class CryptoUpdateTest {
 				"Pre Check Response of Create Account :: " + response.getNodeTransactionPrecheckCode()
 						.name());
 
-		TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
 		AccountID newAccountId = TestHelper
 				.getTxReceipt(body.getTransactionID(), stub).getAccountID();
 		Assert.assertNotNull(newAccountId);
@@ -208,7 +209,7 @@ public class CryptoUpdateTest {
 				sendRecordThreshold, receiveRecordThreshold);
 		Transaction transaction = updateAccountTxBuilder(null, null,
 				null, null, cryptoUpdateBuilder);
-		System.out.println(TransactionBody.parseFrom(transaction.getBodyBytes()));
+		System.out.println(CommonUtils.extractTransactionBody(transaction));
 		signAndSubmitTx(transaction);
 	}
 
@@ -223,7 +224,7 @@ public class CryptoUpdateTest {
 		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
 		log.info(
 				"Pre Check Response updateAccount :: " + response.getNodeTransactionPrecheckCode().name());
-		TransactionBody updateAccountBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+		TransactionBody updateAccountBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionReceipt txReceipt = TestHelper.getTxReceipt(updateAccountBody.getTransactionID(), stub);
 		Assert.assertTrue(ResponseCodeEnum.OK == txReceipt.getStatus() ||
 				ResponseCodeEnum.SUCCESS == txReceipt.getStatus());

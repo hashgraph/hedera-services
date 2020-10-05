@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);

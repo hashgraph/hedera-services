@@ -20,6 +20,8 @@ package com.hederahashgraph.fee;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
@@ -163,46 +165,6 @@ public class FeeBuilder {
   }
 
   /**
-   * This method is invoked by individual Fee builder classes to calculated the number of signatures
-   * in transaction.
-   */
-  public static long getVPT(Transaction tx) {
-    // need to verify recursive depth of signatures
-    if (tx == null) {
-      return 0;
-    }
-    Signature sig = Signature.newBuilder().setSignatureList(tx.getSigs()).build();
-    return calculateNoOfSigs(sig, 0);
-  }
-
-  public static int calculateNoOfSigsInList(SignatureList signatureList) {
-    if (signatureList == null) {
-      return 0;
-    }
-    Signature sig = Signature.newBuilder().setSignatureList(signatureList).build();
-    return calculateNoOfSigs(sig, 0);
-  }
-
-  /**
-   * This method returns the gas converted to hashbar units. (This needs to be updated)
-   */
-  public static long getGas(Transaction tx) throws Exception {
-    long gas = 0;
-    TransactionBody body;
-    if (tx.hasBody()) {
-      body = tx.getBody();
-    } else {
-      body = TransactionBody.parseFrom(tx.getBodyBytes());
-    }
-    if (body.hasContractCreateInstance()) {
-      gas = body.getContractCreateInstance().getGas();
-    } else if (body.hasContractCall()) {
-      gas = body.getContractCall().getGas();
-    }
-    return gas * 1; // 1 Gas = 1 hashbars - need to get from standard configuration
-  }
-
-  /**
    * This method returns the Key size in bytes
    */
   public static int getAccountKeyStorageSize(Key key) {
@@ -222,27 +184,6 @@ public class FeeBuilder {
       e.printStackTrace();
     }
     return keyStorageSize;
-  }
-
-
-  /**
-   * This method calculates number of signature in Signature object
-   */
-  private static int calculateNoOfSigs(Signature sig, int count) {
-    if (sig.hasSignatureList()) {
-      List<Signature> sigList = sig.getSignatureList().getSigsList();
-      for (int i = 0; i < sigList.size(); i++) {
-        count = calculateNoOfSigs(sigList.get(i), count);
-      }
-    } else if (sig.hasThresholdSignature()) {
-      List<Signature> sigList = sig.getThresholdSignature().getSigs().getSigsList();
-      for (int i = 0; i < sigList.size(); i++) {
-        count = calculateNoOfSigs(sigList.get(i), count);
-      }
-    } else {
-      count++;
-    }
-    return count;
   }
 
   /**
@@ -326,24 +267,17 @@ public class FeeBuilder {
   }
 
   public static int getSignatureCount(Transaction transaction) {
-    if (transaction.hasSigMap()) {
-      return transaction.getSigMap().getSigPairCount();
-    } else if (transaction.hasSigs()) {
-      Signature sig = Signature.newBuilder().setSignatureList(transaction.getSigs()).build();
-      return calculateNoOfSigs(sig, 0);
-    } else {
-      return 0;
-    }
+    try {
+      return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
+    } catch (InvalidProtocolBufferException ignoreToReturnZeroCount) { }
+    return 0;
   }
 
   public static int getSignatureSize(Transaction transaction) {
-    if (transaction.hasSigMap()) {
-      return transaction.getSigMap().toByteArray().length;
-    } else if (transaction.hasSigs()) {
-      return transaction.getSigs().toByteArray().length;
-    } else {
-      return 0;
-    }
+    try {
+      return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
+    } catch (InvalidProtocolBufferException ignoreToReturnZeroSize) { }
+    return 0;
   }
 
   /**
@@ -414,7 +348,6 @@ public class FeeBuilder {
     return (BASIC_RECEIPT_SIZE) * (RECIEPT_STORAGE_TIME_SEC);
   }
 
-  // does not account for transferlist due to threshold record generation
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {
     int txRecordSize = BASIC_TX_RECORD_SIZE;
     if (txBody.getMemo() != null) {
@@ -436,12 +369,10 @@ public class FeeBuilder {
 	long txRecordSize = getTransactionRecordSize(txRecord);    
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
-  
-  
+
   public static int getHoursFromSec(int valueInSeconds) {	  
 	  return valueInSeconds==0 ? 0 : Math.max(1,(valueInSeconds/HRS_DIVISOR));
   }
-
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
 	
@@ -492,8 +423,7 @@ public class FeeBuilder {
 
     return contResult;
   }
-  
-  
+
   public static long getTransactionRecordFeeInTinyCents(TransactionRecord txRecord,long feeCoeffRBH, int timeInSec) {
 	  if(txRecord == null) {
         return 0;
@@ -502,7 +432,6 @@ public class FeeBuilder {
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
 	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  
   }
-
 
   public static int getQueryTransactionSize() {
     int commonTxBodyBytes =
@@ -534,6 +463,4 @@ public class FeeBuilder {
     return (responseType == ResponseType.ANSWER_STATE_PROOF
         || responseType == ResponseType.COST_ANSWER_STATE_PROOF) ? STATE_PROOF_SIZE : 0;
   }
-
-
 }

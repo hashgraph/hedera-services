@@ -21,10 +21,8 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.ledger.accounts.TestAccount;
-import com.hedera.services.tokens.TokenScope;
 
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public enum TestAccountProperty implements BeanProperty<TestAccount> {
@@ -61,27 +59,4 @@ public enum TestAccountProperty implements BeanProperty<TestAccount> {
 			return TestAccount::getThing;
 		}
 	},
-	TOKEN {
-		@Override
-		public Function<TestAccount, Object> getter() {
-			throw new UnsupportedOperationException("Token property requires a scope!");
-		}
-
-		@Override
-		public BiFunction<TestAccount, TokenScope, Object> scopedGetter() {
-			return (a, s) -> a.getTokenThing() - s.id().getTokenNum();
-		}
-
-		@Override
-		public BiConsumer<TestAccount, Object> setter() {
-			return (a, v) -> {
-				if (v instanceof TokenScopedPropertyValue) {
-					var sv = (TokenScopedPropertyValue)v;
-					a.setTokenThing((long)sv.value() + sv.id().getTokenNum());
-				} else {
-					throw new IllegalArgumentException("Can only set token-scoped values!");
-				}
-			};
-		}
-	}
 }

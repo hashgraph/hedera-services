@@ -324,6 +324,7 @@ public class HapiApiSpec implements Runnable {
 	private static Map ciPropsSource;
 	private static String dynamicNodes;
 	private static String tlsFromCi;
+	private static String txnFromCi;
 	private static String defaultPayer;
 	private static String nodeSelectorFromCi;
 	private static String defaultNodeAccount;
@@ -334,11 +335,13 @@ public class HapiApiSpec implements Runnable {
 			String payer,
 			String suggestedNode,
 			String envTls,
+			String envTxn,
 			String envNodeSelector,
 			Map<String, String> overrides
 	) {
 		runningInCi = true;
 		tlsFromCi = envTls;
+		txnFromCi = envTxn;
 		dynamicNodes = nodes;
 		defaultPayer = payer;
 		defaultNodeAccount = String.format("0.0.%s", suggestedNode);
@@ -376,6 +379,7 @@ public class HapiApiSpec implements Runnable {
 					this.put("default.node", defaultNodeAccount);
 					this.put("ci.properties.map", ciPropertiesMap);
 					this.put("tls", tlsFromCi);
+					this.put("txn", txnFromCi);
 			}};
 			ciPropsSource.putAll(otherOverrides);
 		}

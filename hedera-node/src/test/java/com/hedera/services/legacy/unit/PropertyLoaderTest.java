@@ -127,20 +127,13 @@ public class PropertyLoaderTest {
   @Test
   public void testAPPChangeProperties() throws Exception {
     int thresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    int txMaxDuration = PropertiesLoader.getTxMaxDuration();
     assertEquals(90000, thresholdTxRecordTTL);
-    assertEquals(120, txMaxDuration);
     ServicesConfigurationList servicesConfigurationList = getAPPConfigPropProto(RECIEPT_TTL_UPD,THRESHOLD_TTL_UPD,TX_MAX_DURATION_UPD);
     // now reload properties 
     PropertiesLoader.populateApplicationPropertiesWithProto(servicesConfigurationList);
     int newThresholdTxRecordTTL = PropertiesLoader.getThresholdTxRecordTTL();
-    int newTxMaxDuration = PropertiesLoader.getTxMaxDuration();
     assertNotEquals(thresholdTxRecordTTL, newThresholdTxRecordTTL);
-    assertNotEquals(txMaxDuration, newTxMaxDuration);
     assertEquals(80000, newThresholdTxRecordTTL);
-    assertEquals(220, newTxMaxDuration);
-    
-    
 
     // delete the files after test.
     File appProp = new File(APP_CONFIG_FILE_PATH);

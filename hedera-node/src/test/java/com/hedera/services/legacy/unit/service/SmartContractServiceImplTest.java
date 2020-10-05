@@ -37,10 +37,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.ServicesNodeType;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
-import com.hedera.services.legacy.services.context.ContextPlatformStatus;
+import com.hedera.services.context.ContextPlatformStatus;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -79,7 +78,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
 import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -104,9 +102,6 @@ import io.grpc.stub.StreamObserver;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -365,7 +360,7 @@ public class SmartContractServiceImplTest {
 			trx = RequestBuilder.getCryptoTransferRequest(payerAccountId.getAccountNum(),
 					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
 					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 800, timestamp,
-					transactionDuration, false, "test", sigList, payerAccountId.getAccountNum(), -100l,
+					transactionDuration, false, "test", payerAccountId.getAccountNum(), -100l,
 					nodeAccountId.getAccountNum(), 100l);
 		}
 
@@ -376,11 +371,7 @@ public class SmartContractServiceImplTest {
 					payerAccountId.getRealmNum(), payerAccountId.getShardNum(), nodeAccountId.getAccountNum(),
 					nodeAccountId.getRealmNum(), nodeAccountId.getShardNum(), 50000000000l, timestamp,
 					transactionDuration, true, "createContract", DEFAULT_CONTRACT_OP_GAS, fileID,
-					ByteString.EMPTY, 0, transactionDuration,
-					SignatureList.newBuilder().addSigs(
-							Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-							.build(),
-					"");
+					ByteString.EMPTY, 0, transactionDuration, "");
 		}
 
 		return trx;

@@ -248,6 +248,10 @@ public class HapiSpecRegistry {
 		put(name + "Freeze", key, Key.class);
 	}
 
+	public void saveExpiry(String name, Long value) {
+		put(name + "Expiry", value, Long.class);
+	}
+
 	public void saveSupplyKey(String name, Key key) {
 		put(name + "Supply", key, Key.class);
 	}
@@ -299,6 +303,8 @@ public class HapiSpecRegistry {
 	public Key getKycKey(String name) {
 		return get(name + "Kyc", Key.class);
 	}
+
+	public Long getTokenExpiry(String name) { return get(name + "Expiry", Long.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -381,11 +387,9 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean isSigRequired(String name) {
-		try {
-			return get(name, Boolean.class);
-		} catch (Throwable ignore) {
-		}
-		return setup.defaultReceiverSigRequired();
+		return registry.containsKey(full(name, Boolean.class))
+				? get(name, Boolean.class)
+				: setup.defaultReceiverSigRequired();
 	}
 
 	public boolean hasSigRequirement(String name) {

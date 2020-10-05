@@ -57,7 +57,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -195,16 +194,12 @@ public class ProtectedEntityTests extends BaseClient {
           .getCryptoUpdateAccountBuilder().setKey(newKey).build();
       TransactionBody newTxBody = builder.setCryptoUpdateAccount(newUpdateBody).build();
       log.info("\n-----------------------------------\nupdateAccount with new keys: tx body = " + newTxBody);
-      if(updateTx.hasBody()) {
-        updateTx = Transaction.newBuilder().setBody(newTxBody).build();
-      } else {
-        updateTx = Transaction.newBuilder().setBodyBytes(newTxBody.toByteString()).build();
-      }
+      updateTx = Transaction.newBuilder().setBodyBytes(newTxBody.toByteString()).build();
       keys.add(newKey);
     }
 
     Transaction signUpdate = TransactionSigner
-        .signTransactionComplex(updateTx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(updateTx, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
     TransactionResponse response = cstub.updateAccount(signUpdate);
@@ -242,11 +237,6 @@ public class ProtectedEntityTests extends BaseClient {
     ProtectedEntityTests tester = new ProtectedEntityTests(testConfigFilePath);
     long[] sysAccountToFund = {3, 49, 50, 51, 55, 56, 57, 58, 59, 60, 80, 81, 100, 45, 46};
     tester.init(sysAccountToFund);
-    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.Body;
-    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList;
-    tester.runTests();
-    TransactionSigner.TX_BODY_FORMAT = TransactionSigner.TX_BODY_FORMAT_ENUM.BodyBytes;
-    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     tester.runTests();
   }
 
@@ -505,8 +495,8 @@ public class ProtectedEntityTests extends BaseClient {
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
-        nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true, "FileDelete",
-        signatures, fid);
+        nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp,
+        transactionDuration, true, "FileDelete", fid);
   
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key waclKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(waclKeyList)).build();
@@ -514,7 +504,7 @@ public class ProtectedEntityTests extends BaseClient {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction txSigned =
-        TransactionSigner.signTransactionComplex(FileDeleteRequest, keys, pubKey2privKeyMap);
+        TransactionSigner.signTransactionComplexWithSigMap(FileDeleteRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
@@ -609,7 +599,7 @@ public class ProtectedEntityTests extends BaseClient {
     keys.add(payerKey);
     keys.add(accKey);
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
 
     TransactionResponse response = cstub.cryptoDelete(signTx);
     log.info("cryptoDelete Response :: " + response.getNodeTransactionPrecheckCodeValue());
@@ -700,7 +690,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
     
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
     if(entityID instanceof FileID) {
@@ -796,7 +786,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
 
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     TransactionResponse response = null;
     if(entityID instanceof FileID) {
@@ -867,7 +857,7 @@ public class ProtectedEntityTests extends BaseClient {
     List<Key> keys = new ArrayList<Key>();
     keys.add(payerKey);
     Transaction signTx = TransactionSigner
-        .signTransactionComplex(tx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(tx, keys, pubKey2privKeyMap);
   
     FreezeServiceBlockingStub frstub = FreezeServiceGrpc.newBlockingStub(channel);
     TransactionResponse response = frstub.freeze(signTx);
@@ -955,7 +945,7 @@ public class ProtectedEntityTests extends BaseClient {
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), fee , timestamp, fileExp, transactionDuration, true,
         "FileUpdate",
-        signatures, fileData , fid, wacl);
+        fileData , fid, wacl);
   
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     List<Key> keys = new ArrayList<Key>();
@@ -973,7 +963,7 @@ public class ProtectedEntityTests extends BaseClient {
     }
     
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(FileUpdateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileUpdateRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info(
@@ -1145,7 +1135,7 @@ public class ProtectedEntityTests extends BaseClient {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), fee, timestamp, transactionDuration, true,
-        "FileAppend", signatures, fileData,
+        "FileAppend", fileData,
         fid);
   
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
@@ -1160,7 +1150,7 @@ public class ProtectedEntityTests extends BaseClient {
       keys.add(waclKey);
     }
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(fileAppendRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(fileAppendRequest, keys, pubKey2privKeyMap);
   
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);
@@ -1212,13 +1202,8 @@ public class ProtectedEntityTests extends BaseClient {
         updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, feeFileWacl, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, 
             ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
 
-        // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
-          updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE, false);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
-          // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
-          updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
-        } 
+        // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
+        updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS, false);
 
         // fails with no fee
         updateLargeFile(feeBytes, feeSchedule111, payer, nodeID, null, ResponseCodeEnum.INSUFFICIENT_TX_FEE, null, ResponseCodeEnum.INSUFFICIENT_TX_FEE, null, true);
@@ -1319,16 +1304,9 @@ public class ProtectedEntityTests extends BaseClient {
         updateFileWithFee(addressBook101, payer, nodeID, addressFileWacl, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
         updateFileWithFee(addressBook102, payer, nodeID, addressFileWacl, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
 
-        // fails without wacl
-        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
-          //Tiru
-          updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-          updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
-          // success due to payer and address files share the same key, with sig map, wacl is implicitly signed as payer is signing
-          updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
-          updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
-        } 
+        // success due to payer and address files share the same key, with sig map, wacl is implicitly signed as payer is signing
+        updateFileWithFee(addressBook101, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
+        updateFileWithFee(addressBook102, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
         
         // fails without fee
         updateFileWithNoFee(addressBook101, payer, nodeID, addressFileWacl, null, ResponseCodeEnum.INSUFFICIENT_TX_FEE, null);
@@ -1412,13 +1390,8 @@ public class ProtectedEntityTests extends BaseClient {
         updateFileWithFee(exchangeRate112, payer, nodeID, exchangeRateFileWacl, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
         isSmallExchangeRateUpdate = true; // reset flag
 
-        // fails with no wacl signing
-        if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureList)) {
-          updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.INVALID_SIGNATURE);
-        } else if(TransactionSigner.SIGNATURE_FORMAT.equals(TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap)) {
-          // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
-          updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
-        } 
+        // success due to payer and exchange file share the same key, with sig map, wacl is implicitly signed as payer is signing
+        updateFileWithFee(exchangeRate112, payer, nodeID, null, null, ResponseCodeEnum.OK, ResponseCodeEnum.SUCCESS);
 
         // fails with no fee
         updateFileWithNoFee(exchangeRate112, payer, nodeID, exchangeRateFileWacl, null, ResponseCodeEnum.INSUFFICIENT_TX_FEE, null);
@@ -1469,7 +1442,7 @@ public class ProtectedEntityTests extends BaseClient {
       Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
       long transactionFee, Timestamp timestamp, Timestamp fileExpTime,
       Duration transactionDuration, boolean generateRecord, String memo,
-      SignatureList signatures, ByteString data, FileID fid, KeyList keys) {
+      ByteString data, FileID fid, KeyList keys) {
     FileUpdateTransactionBody.Builder builder = FileUpdateTransactionBody.newBuilder()
         .setContents(data)
         .setFileID(fid);
@@ -1489,7 +1462,7 @@ public class ProtectedEntityTests extends BaseClient {
     body.setFileUpdate(builder);
     byte[] bodyBytesArr = body.build().toByteArray();
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).setSigs(signatures).build();
+    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
 
   private static TransactionBody.Builder getTransactionBody(Long payerAccountNum,

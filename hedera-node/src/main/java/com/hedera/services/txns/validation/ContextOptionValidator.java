@@ -21,6 +21,7 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -28,6 +29,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
@@ -37,11 +39,21 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static java.util.stream.IntStream.range;
 
 /**
  * Implements an {@link OptionValidator} that relies an injected instance
@@ -54,10 +66,15 @@ public class ContextOptionValidator implements OptionValidator {
 	public static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
 	private final PropertySource properties;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
-	public ContextOptionValidator(PropertySource properties, TransactionContext txnCtx) {
+	public ContextOptionValidator(
+			PropertySource properties,
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties) {
 		this.properties = properties;
 		this.txnCtx = txnCtx;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -72,10 +89,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidTxnDuration(long duration) {
-		long minDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
-		long maxDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
-
-		return duration >= minDuration && duration <= maxDuration;
+		return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
 	}
 
 	@Override
@@ -97,16 +111,43 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public boolean isAcceptableLength(TransferList accountAmounts) {
-		int maxLen = properties.getIntProperty("ledger.transfers.maxLen");
+	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
+		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
+	}
 
-		return accountAmounts.getAccountAmountsCount() <= maxLen;
+	@Override
+	public ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
+		int maxLen = dynamicProperties.maxTokenTransferListSize();
+		int tokenTransferListsSize = tokenTransferLists.size();
+
+		if (tokenTransferListsSize == 0) {
+			return EMPTY_TOKEN_TRANSFER_BODY;
+		}
+
+		if (tokenTransferListsSize > maxLen) {
+			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+		}
+
+		int count = 0;
+		for (var tokenTransferList : tokenTransferLists) {
+			int transferCounts = tokenTransferList.getTransfersCount();
+			if (transferCounts == 0) {
+				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+			}
+
+			count += transferCounts;
+
+			if (count > maxLen) {
+				return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+			}
+		}
+
+		return OK;
 	}
 
 	@Override
 	public boolean isValidEntityMemo(@Nullable String memo) {
-		var maxUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
-		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= maxUtf8Bytes);
+		return (null == memo) || (StringUtils.getBytesUtf8(memo).length <= dynamicProperties.maxMemoUtf8Bytes());
 	}
 
 	@Override
@@ -116,6 +157,30 @@ public class ContextOptionValidator implements OptionValidator {
 		return Optional.ofNullable(merkleTopic)
 				.map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
 				.orElse(INVALID_TOPIC_ID);
+	}
+
+	@Override
+	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
+		if (symbol.length() < 1) {
+			return MISSING_TOKEN_SYMBOL;
+		}
+		if (symbol.length() > dynamicProperties.maxTokenSymbolLength()) {
+			return TOKEN_SYMBOL_TOO_LONG;
+		}
+		return range(0, symbol.length()).mapToObj(symbol::charAt).allMatch(Character::isUpperCase)
+				? OK
+				: INVALID_TOKEN_SYMBOL;
+	}
+
+	@Override
+	public ResponseCodeEnum tokenNameCheck(String name) {
+		if (name.length() < 1) {
+			return MISSING_TOKEN_NAME;
+		}
+		if (name.length() > dynamicProperties.maxTokenNameLength()) {
+			return TOKEN_NAME_TOO_LONG;
+		}
+		return OK;
 	}
 
 	/* Not applicable until auto-renew is implemented. */

@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.hedera.services.legacy.config.PropertiesLoader;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.unit.handler.CryptoHandlerTestHelper;
 import com.hedera.services.legacy.util.ComplexKeyManager;
@@ -47,7 +46,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -119,21 +117,21 @@ public class CryptoTxRecordTransferListTest {
 			transferAccountID = RequestBuilder.getAccountIdBuild(1021l, 0l, 0l);
 			createAccount(payerAccountId, payerBalance, keys);
 			createAccount(nodeAccountId, nodeBalance, keys);
-			createAccount(feeAccount, 1000l, keys);		
+			createAccount(feeAccount, 1000l, keys);
 			createAccount(deleteAccountID, deleteAcctBalance, keys);
 			createAccount(transferAccountID, transferAccountBalance, keys);
 			Instant consensusTimestamp = Instant.now(Clock.systemUTC()).plusSeconds(20);
 			TransactionBody txBody = getDeleteTransactionBody();
 			CryptoHandlerTestHelper crHandler = new CryptoHandlerTestHelper(fcMap, null);
-			TransactionRecord trRecord = crHandler.cryptoDelete(txBody, consensusTimestamp);			
+			TransactionRecord trRecord = crHandler.cryptoDelete(txBody, consensusTimestamp);
 			for(AccountAmount accountAmount : trRecord.getTransferList().getAccountAmountsList()) {
 				if(accountAmount.getAccountID().equals(deleteAccountID)) {
 					Assert.assertEquals(-deleteAcctBalance, accountAmount.getAmount());
 				}else if(accountAmount.getAccountID().equals(transferAccountID)) {
 					Assert.assertEquals(deleteAcctBalance, accountAmount.getAmount());
 				}
-			
-			}		
+
+			}
 		}
 	    
 		@Test
@@ -210,17 +208,16 @@ public class CryptoTxRecordTransferListTest {
 
 	private TransactionBody getDeleteTransactionBody() {
 
-		
+
 		Instant startTimeInstant = Instant.now(Clock.systemUTC()).minusSeconds(-10);
 		Timestamp startTime = RequestBuilder.getTimestamp(startTimeInstant);
 		Duration transactionDuration = RequestBuilder.getDuration(100);
-		
-		
-		
+
+
+
 		Transaction deleteTx = RequestBuilder.getAccountDeleteRequest(deleteAccountID, transferAccountID,
 			       payerAccount,  0l, 0l,  nodeAccount, 0l, 0l, 1000000l,
-			       startTime,  transactionDuration, false, "Delete Account Test",
-			       SignatureList.getDefaultInstance());
+			       startTime,  transactionDuration, false, "Delete Account Test");
 		TransactionBody txBody = null;
 		 try {
 			txBody =
@@ -229,7 +226,7 @@ public class CryptoTxRecordTransferListTest {
 			e.printStackTrace();
 		}
 		 return txBody;
-		 
+
 	}
 		
 

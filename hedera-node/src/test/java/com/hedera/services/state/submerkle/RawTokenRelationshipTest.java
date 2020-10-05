@@ -41,7 +41,7 @@ class RawTokenRelationshipTest {
 	boolean kyc = false;
 
 	MerkleToken token;
-	RawTokenRelationship subject = new RawTokenRelationship(balance, num, frozen, kyc);
+	RawTokenRelationship subject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
 
 	@BeforeEach
 	void setUp() {
@@ -53,16 +53,16 @@ class RawTokenRelationshipTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
-				"RawTokenRelationship{tokenNum=123, balance=234, frozen=true, kycGranted=false}",
+				"RawTokenRelationship{token=0.0.123, balance=234, frozen=true, kycGranted=false}",
 				subject.toString());
 	}
 
 	@Test
 	public void objectContractMet() {
 		// given:
-		var identicalSubject = new RawTokenRelationship(balance, num, frozen, kyc);
+		var identicalSubject = new RawTokenRelationship(balance, 0, 0, num, frozen, kyc);
 		// and:
-		var otherSubject = new RawTokenRelationship(balance * 2, num - 1, !frozen, !kyc);
+		var otherSubject = new RawTokenRelationship(balance * 2, 0, 0, num - 1, !frozen, !kyc);
 
 		// expect:
 		assertNotEquals(subject, null);
@@ -102,7 +102,7 @@ class RawTokenRelationshipTest {
 	@Test
 	public void grpcConversionRecognizesApplicableUnfozen() {
 		// setup:
-		subject = new RawTokenRelationship(subject.getBalance(), subject.getTokenNum(), false, false);
+		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, false);
 
 		given(token.hasFreezeKey()).willReturn(true);
 
@@ -133,7 +133,7 @@ class RawTokenRelationshipTest {
 	@Test
 	public void grpcConversionRecognizesApplicableGranted() {
 		// setup:
-		subject = new RawTokenRelationship(subject.getBalance(), subject.getTokenNum(), false, true);
+		subject = new RawTokenRelationship(subject.getBalance(), 0, 0, subject.getTokenNum(), false, true);
 
 		given(token.hasKycKey()).willReturn(true);
 

@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -298,8 +297,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
   private static Transaction createAccountValidateTxTestCaseStartTimeValidation(
@@ -325,8 +323,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
 
@@ -354,8 +351,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
   private static Transaction createAccountValidateTxBodyThresholdTestCase(
@@ -383,8 +379,7 @@ public class NegativeAccountCreateTest {
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             transactionFee, timestamp, transactionDuration, generateRecord,
             memo, threshold, keyList, initialBalance, sendRecordThreshold,
-            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-            SignatureList.newBuilder().getDefaultInstanceForType());
+            receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
 

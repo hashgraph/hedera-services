@@ -57,7 +57,7 @@ import "ConsensusSubmitMessage.proto";
 import "UncheckedSubmit.proto";
 
 import "TokenCreate.proto";
-import "TokenTransact.proto";
+import "TokenTransfer.proto";
 import "TokenFreezeAccount.proto";
 import "TokenUnfreezeAccount.proto";
 import "TokenGrantKyc.proto";
@@ -67,6 +67,8 @@ import "TokenUpdate.proto";
 import "TokenMint.proto";
 import "TokenBurn.proto";
 import "TokenWipeAccount.proto";
+import "TokenAssociate.proto";
+import "TokenDissociate.proto";
 
 /* A single transaction. All transaction types are possible here. */
 message TransactionBody {
@@ -105,7 +107,7 @@ message TransactionBody {
     UncheckedSubmitBody uncheckedSubmit = 28;
 
     TokenCreateTransactionBody tokenCreation = 29; // Creates a token instance
-    TokenTransfers tokenTransfers = 30; // Transfers tokens between accounts
+    TokenTransfersTransactionBody tokenTransfers = 30; // Transfers tokens between accounts
     TokenFreezeAccountTransactionBody tokenFreeze = 31; // Freezes account not to be able to transact with a token
     TokenUnfreezeAccountTransactionBody tokenUnfreeze = 32; // Unfreezes account for a token
     TokenGrantKycTransactionBody tokenGrantKyc = 33; // Grants KYC to an account for a token
@@ -115,5 +117,7 @@ message TransactionBody {
     TokenMintTransactionBody tokenMint = 37; // Mints new tokens to a token's treasury account
     TokenBurnTransactionBody tokenBurn = 38; // Burns tokens from a token's treasury account
     TokenWipeAccountTransactionBody tokenWipe = 39; // Wipes amount of tokens from an account
+    TokenAssociateTransactionBody tokenAssociate = 40; // Associate tokens to an account
+    TokenDissociateTransactionBody tokenDissociate = 41; // Dissociate tokens from an account
   }
 }

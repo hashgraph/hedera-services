@@ -21,8 +21,8 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.api.proto.java.Transaction.BodyDataCase;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
@@ -168,15 +168,7 @@ public class BaseClient extends SmartContractServiceTest {
     AccountID accountID = null;
     if (retrieveTxReceipt) {
       log.debug("preparing to getTransactionReceipts....");
-      TransactionID transactionID;
-      // This switch is needed because the body can have either form, depending on a coin flip in
-      // TransactionSigner.signTransactionComplex()
-      if (createAccountRequest.getBodyDataCase() == BodyDataCase.BODYBYTES) {
-        TransactionBody body = TransactionBody.parseFrom(createAccountRequest.getBodyBytes());
-        transactionID = body.getTransactionID();
-     } else {
-       transactionID = createAccountRequest.getBody().getTransactionID();
-      }
+      TransactionID transactionID = CommonUtils.extractTransactionBody(createAccountRequest).getTransactionID();
 
       Query query = Query.newBuilder()
           .setTransactionGetReceipt(
@@ -320,14 +312,13 @@ public class BaseClient extends SmartContractServiceTest {
                     nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
                     transactionDuration,
                     generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-                    receiverSigRequired, autoRenewPeriod,
-                    SignatureList.newBuilder().getDefaultInstanceForType());
+                    receiverSigRequired, autoRenewPeriod);
     List<Key> keys = new ArrayList<>();
     keys.add(payerKey);
     if (receiverSigRequired) {
       keys.add(key);
     }
-    Transaction txFirstSigned = TransactionSigner.signTransactionComplex(createAccountRequest, keys,
+    Transaction txFirstSigned = TransactionSigner.signTransactionComplexWithSigMap(createAccountRequest, keys,
             pubKey2privKeyMap);
     TransactionBody transferBody = TransactionBody.parseFrom(txFirstSigned.getBodyBytes());
     if (transferBody.getTransactionID() == null || !transferBody.hasTransactionID()) {

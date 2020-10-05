@@ -40,8 +40,8 @@ public class ContractTransferListCheck extends ContractCall {
    * At the end of submitting transactions, pull events file and records file from node
    * and compare again saved transactionID and transactionRecord
    */
-  public ContractTransferListCheck(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index) {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
+  public ContractTransferListCheck(String host, int port, long nodeAccountNumber, String [] args, int index) {
+    super(host, port, nodeAccountNumber, args, index);
     this.isCheckTransferList = true;
   }
 }

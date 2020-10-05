@@ -95,8 +95,7 @@ public class BootstrapProperties implements PropertySource {
 				.stream()
 				.forEach(prop -> bootstrapProps.put(
 						prop,
-						PROP_TRANSFORMS.getOrDefault(prop, s -> s)
-								.apply(resourceProps.getProperty(prop))));
+						transformFor(prop).apply(resourceProps.getProperty(prop))));
 
 		var msg = "Resolved bootstrap properties:\n  " + BOOTSTRAP_PROP_NAMES.stream()
 				.sorted()
@@ -188,14 +187,24 @@ public class BootstrapProperties implements PropertySource {
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
+			"balances.exportDir.path",
+			"balances.exportEnabled",
+			"balances.exportPeriodSecs",
+			"balances.exportTokenBalances",
+			"balances.nodeBalanceWarningThreshold",
 			"cache.records.ttl",
 			"contracts.defaultReceiveThreshold",
 			"contracts.defaultSendThreshold",
 			"contracts.maxStorageKb",
 			"files.maxSizeKb",
+			"hedera.transaction.maxMemoUtf8Bytes",
+			"hedera.transaction.maxValidDuration",
+			"hedera.transaction.minValidDuration",
 			"ledger.createThresholdRecords",
 			"ledger.fundingAccount",
 			"ledger.maxAccountNum",
+			"ledger.transfers.maxLen",
+			"ledger.tokenTransfers.maxLen",
 			"rates.intradayChangeLimitPercent",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolLength",
@@ -215,6 +224,10 @@ public class BootstrapProperties implements PropertySource {
 					.flatMap(Set::stream)
 					.collect(toSet()));
 
+	public static Function<String, Object> transformFor(String prop) {
+		return PROP_TRANSFORMS.getOrDefault(prop, AS_STRING);
+	}
+
 	static final Map<String, Function<String, Object>> PROP_TRANSFORMS = Map.ofEntries(
 			entry("accounts.addressBookAdmin", AS_LONG),
 			entry("accounts.exchangeRatesAdmin", AS_LONG),
@@ -226,7 +239,11 @@ public class BootstrapProperties implements PropertySource {
 			entry("accounts.systemAdmin.firstManaged", AS_LONG),
 			entry("accounts.systemAdmin.lastManaged", AS_LONG),
 			entry("accounts.treasury", AS_LONG),
+			entry("balances.exportEnabled", AS_BOOLEAN),
+			entry("balances.exportPeriodSecs", AS_INT),
+			entry("balances.nodeBalanceWarningThreshold", AS_LONG),
 			entry("cache.records.ttl", AS_INT),
+			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),
@@ -239,6 +256,9 @@ public class BootstrapProperties implements PropertySource {
 			entry("hedera.profiles.active", AS_PROFILE),
 			entry("hedera.realm", AS_LONG),
 			entry("hedera.shard", AS_LONG),
+			entry("hedera.transaction.maxMemoUtf8Bytes", AS_INT),
+			entry("hedera.transaction.maxValidDuration", AS_LONG),
+			entry("hedera.transaction.minValidDuration", AS_LONG),
 			entry("precheck.account.maxLookupRetries", AS_INT),
 			entry("precheck.account.lookupRetryBackoffIncrementMs", AS_INT),
 			entry("bootstrap.ledger.nodeAccounts.initialBalance", AS_LONG),
@@ -256,6 +276,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("ledger.createThresholdRecords", AS_BOOLEAN),
 			entry("ledger.maxAccountNum", AS_LONG),
 			entry("ledger.numSystemAccounts", AS_INT),
+			entry("ledger.transfers.maxLen", AS_INT),
+			entry("ledger.tokenTransfers.maxLen", AS_INT),
 			entry("ledger.totalTinyBarFloat", AS_LONG),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxSymbolLength", AS_INT),

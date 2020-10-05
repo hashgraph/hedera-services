@@ -78,6 +78,7 @@ public class HapiSpecSetup {
 
 	public enum NodeSelection { FIXED, RANDOM }
 	public enum TlsConfig { ON, OFF, ALTERNATE }
+	public enum TxnConfig { NEW, OLD, ALTERNATE }
 
 	public HapiSpecSetup(HapiPropertySource props) {
 		this.props = props;
@@ -229,8 +230,9 @@ public class HapiSpecSetup {
 	public long defaultThroughputObsExpiryMs() { return props.getLong("default.throughputObs.expiry.ms"); }
 	public long defaultThroughputObsSleepMs() { return props.getLong("default.throughputObs.sleep.ms"); }
 	public String defaultTokenSymbol() { return props.get("default.token.symbol"); }
-	public long defaultTokenFloat() { return props.getLong("default.token.float"); }
-	public int defaultTokenDivisibility() { return props.getInteger("default.token.divisibility"); }
+	public String defaultTokenName() { return props.get("default.token.name"); }
+	public long defaultTokenInitialSupply() { return props.getLong("default.token.initialSupply"); }
+	public int defaultTokenDecimals() { return props.getInteger("default.token.decimals"); }
 	public int defaultTopicRunningHashVersion() { return props.getInteger("default.topic.runningHash.version"); }
 	public AccountID defaultTransfer() {
 		return props.getAccount("default.transfer");
@@ -352,6 +354,17 @@ public class HapiSpecSetup {
 		return useTls;
 	}
 
+	public TxnConfig txnConfig() {
+		TxnConfig config = props.getTxnConfig("txn");
+		if (TxnConfig.ALTERNATE == config) {
+			if (r.nextBoolean()) {
+				return TxnConfig.NEW;
+			} else {
+				return TxnConfig.OLD;
+			}
+		}
+		return config;
+	}
 	public long txnStartOffsetSecs() {
 		return props.getLong("txn.start.offset.secs");
 	}

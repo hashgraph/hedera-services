@@ -30,7 +30,6 @@ import "BasicTypes.proto";
 import "TransactionReceipt.proto";
 import "CryptoTransfer.proto";
 import "ContractCallLocal.proto";
-import "TokenTransact.proto";
 
 /* Response when the client sends the node TransactionGetRecordResponse */
 message TransactionRecord {
@@ -45,5 +44,5 @@ message TransactionRecord {
         ContractFunctionResult contractCreateResult = 8; // Record of the value returned by the smart contract constructor (if it completed and didn't fail) from ContractCreateTransaction
     }
     TransferList transferList = 10; // All hbar transfers as a result of this transaction, such as fees, or transfers performed by the transaction, or by a smart contract it calls, or by the creation of threshold records that it triggers.
-    repeated TokenTransferList tokenTransferLists = 11;
+    repeated TokenTransferList tokenTransferLists = 11; // All Token transfers as a result of this transaction
 }

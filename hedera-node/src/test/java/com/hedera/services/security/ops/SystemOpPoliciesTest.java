@@ -549,7 +549,7 @@ class SystemOpPoliciesTest {
 	}
 
 	private SignedTxnAccessor accessor(TransactionBody.Builder txn) throws InvalidProtocolBufferException {
-		return new SignedTxnAccessor(Transaction.newBuilder().setBody(txn).build());
+		return new SignedTxnAccessor(Transaction.newBuilder().setBodyBytes(txn.build().toByteString()).build());
 	}
 
 	private TransactionBody.Builder civilianTxn() {

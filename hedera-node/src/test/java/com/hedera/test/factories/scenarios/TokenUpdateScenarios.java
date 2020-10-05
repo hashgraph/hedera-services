@@ -24,7 +24,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenUpdateFactory.newSignedTokenUpdate;
-import static com.hedera.test.utils.IdUtils.asIdRef;
 
 public enum TokenUpdateScenarios implements TxnHandlingScenario {
 	UPDATE_WITH_NO_KEYS_AFFECTED {
@@ -32,7 +31,18 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.get()
+			));
+		}
+	},
+	UPDATE_REPLACING_TREASURY {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenUpdate()
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.newTreasury(TOKEN_TREASURY)
 							.get()
 			));
 		}
@@ -42,7 +52,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAdmin(TOKEN_REPLACE_KT)
 							.get()
 			));
@@ -53,7 +63,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_WITH_SUPPLY))
+							.updating(KNOWN_TOKEN_WITH_SUPPLY)
 							.replacingSupply()
 							.get()
 			));
@@ -64,7 +74,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_WITH_KYC))
+							.updating(KNOWN_TOKEN_WITH_KYC)
 							.replacingKyc()
 							.get()
 			));
@@ -75,7 +85,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_WITH_FREEZE))
+							.updating(KNOWN_TOKEN_WITH_FREEZE)
 							.replacingFreeze()
 							.get()
 			));
@@ -86,7 +96,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_WITH_WIPE))
+							.updating(KNOWN_TOKEN_WITH_WIPE)
 							.replacingWipe()
 							.get()
 			));
@@ -97,7 +107,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(UNKNOWN_TOKEN))
+							.updating(UNKNOWN_TOKEN)
 							.get()
 			));
 		}
@@ -107,7 +117,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_IMMUTABLE))
+							.updating(KNOWN_TOKEN_IMMUTABLE)
 							.get()
 			));
 		}
@@ -117,7 +127,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(MISC_ACCOUNT)
 							.get()
 			));
@@ -128,7 +138,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(asIdRef(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(MISSING_ACCOUNT)
 							.get()
 			));

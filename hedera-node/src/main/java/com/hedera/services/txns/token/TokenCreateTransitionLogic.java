@@ -24,18 +24,29 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.txns.validation.TokenListChecks.checkKey;
+import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
+import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 
 /**
  * Provides the state transition for token creation.
@@ -45,15 +56,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class TokenCreateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenCreateTransitionLogic.class);
 
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
+
+	private final OptionValidator validator;
 	private final TokenStore store;
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 
 	public TokenCreateTransitionLogic(
+			OptionValidator validator,
 			TokenStore store,
 			HederaLedger ledger,
 			TransactionContext txnCtx
 	) {
+		this.validator = validator;
 		this.store = store;
 		this.ledger = ledger;
 		this.txnCtx = txnCtx;
@@ -78,9 +94,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var created = result.getCreated().get();
 		var treasury = op.getTreasury();
-		var scaledInitialFloat = initialTinyFloat(op.getInitialSupply(), op.getDecimals());
-
 		var status = OK;
+		status = store.associate(treasury, List.of(created));
+		if (status != OK) {
+			abortWith(status);
+			return;
+		}
 		if (op.hasFreezeKey()) {
 			status = ledger.unfreeze(treasury, created);
 		}
@@ -88,7 +107,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			status = ledger.grantKyc(treasury, created);
 		}
 		if (status == OK) {
-			status = ledger.adjustTokenBalance(treasury, created, scaledInitialFloat);
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
 		}
 
 		if (status != OK) {
@@ -99,13 +118,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
-	}
-
-	/* The preconditions on validity of this computation must be enforced by the TokenStore. */
-	private long initialTinyFloat(long initialFloat, int divisibility) {
-		return BigInteger.valueOf(initialFloat)
-				.multiply(BigInteger.valueOf(10).pow(divisibility))
-				.longValueExact();
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {
@@ -119,5 +131,64 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenCreation;
+	}
+
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
+
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		TokenCreateTransactionBody op = txnBody.getTokenCreation();
+
+		var validity = validator.tokenSymbolCheck(op.getSymbol());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validator.tokenNameCheck(op.getName());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		if (validity != OK) {
+			return validity;
+		}
+
+		if (!op.hasTreasury()) {
+			return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+		}
+
+		validity = checkKeys(op.hasAdminKey(), op.getAdminKey(),
+							 op.hasKycKey(), op.getKycKey(),
+							 op.hasWipeKey(), op.getWipeKey(),
+							 op.hasSupplyKey(), op.getSupplyKey());
+		if (validity != OK) {
+			return validity;
+		}
+
+		if (op.hasFreezeKey()) {
+			validity = checkKey(op.getFreezeKey(), INVALID_FREEZE_KEY);
+			if (validity != OK) {
+				return validity;
+			}
+		} else {
+			if (op.getFreezeDefault()) {
+				return TOKEN_HAS_NO_FREEZE_KEY;
+			}
+		}
+
+		if (op.hasAutoRenewAccount()) {
+			validity = validator.isValidAutoRenewPeriod(Duration.newBuilder()
+					.setSeconds(op.getAutoRenewPeriod()).build()) ? OK : INVALID_RENEWAL_PERIOD;
+			return validity;
+		} else {
+			if (op.getExpiry() <= txnCtx.consensusTime().getEpochSecond()) {
+				return INVALID_EXPIRATION_TIME;
+			}
+		}
+
+		return OK;
 	}
 }

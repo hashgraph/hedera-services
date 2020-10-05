@@ -66,10 +66,9 @@ public class ContractBigArray extends ClientBaseThread {
   private boolean checkRunning = true;
   private boolean checkRecord = false;
 
-  public ContractBigArray(String host, int port, long nodeAccountNumber, boolean useSigMap, String[] args, int index)
+  public ContractBigArray(String host, int port, long nodeAccountNumber, String[] args, int index)
   {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
-    this.useSigMap = useSigMap;
+    super(host, port, nodeAccountNumber, args, index);
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;
@@ -102,9 +101,7 @@ public class ContractBigArray extends ClientBaseThread {
                       genesisPrivateKey, stub, crAccountKeyPair);
       accountKeys.put(crAccount, Collections.singletonList(crAccountKeyPair.getPrivate()));
 
-      if(useSigMap){
-        Common.addKeyMap(crAccountKeyPair, pubKey2privKeyMap);
-      }
+      Common.addKeyMap(crAccountKeyPair, pubKey2privKeyMap);
 
       Assert.assertNotNull(crAccount);
       Assert.assertNotEquals(0, crAccount.getAccountNum());
