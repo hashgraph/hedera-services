@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.fcmap.FCMap;
@@ -56,6 +57,7 @@ import java.util.Date;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 
+import static java.lang.Thread.sleep;
 import static org.mockito.BDDMockito.*;
 
 @RunWith(JUnitPlatform.class)
@@ -86,6 +88,8 @@ public class FreezeHandlerTest {
 		exchange = mock(HbarCentExchange.class);
 		given(exchange.activeRates()).willReturn(rates);
 		platform = Mockito.mock(Platform.class);
+
+		given(platform.getSelfId()).willReturn(new NodeId(false,1));
 
 		freezeHandler = new FreezeHandler(hfs, platform, exchange);
 	}
@@ -124,6 +128,9 @@ public class FreezeHandlerTest {
 		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
 
 		freezeHandler.handleUpdateFeature();
+
+		// Wait script to finish
+		sleep(2000);
 
 		//check whether new file has been added as expected
 		File file3 = new File("new3.txt");
