@@ -447,6 +447,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return self();
 	}
 
+	public T gas(long amount) {
+		if (amount > 0) {
+			gas = Optional.of(amount);
+		}
+		return self();
+	}
+
 	public T fee(long amount) {
 		if (amount >= 0) {
 			fee = Optional.of(amount);

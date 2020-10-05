@@ -29,8 +29,11 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.BigArraySpec;
 import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
+import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -194,6 +197,9 @@ public class SuiteRunner {
 		put("MultipleSelfDestructsAreSafe", aof(new IssueXXXXSpec()));
 		put("ContractQueriesStressTests", aof(new ContractQueriesStressTests()));
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
+		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
+		put("ContractCreateSuite", aof(new ContractCreateSuite()));
+		put("BigArraySpec", aof(new BigArraySpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));

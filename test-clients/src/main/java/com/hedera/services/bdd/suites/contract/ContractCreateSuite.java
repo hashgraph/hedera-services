@@ -49,6 +49,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
 	final String PATH_TO_INVALID_BYTECODE = "src/main/resource/testfiles/CorruptOne.bin";
+	final String PATH_TO_SIMPLE_STORAGE_BYTECODE = "src/main/resource/testfiles/simpleStorage.bin";
 	final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 
 	public static void main(String... args) {
@@ -71,10 +72,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
-//				rejectsInsufficientFee(),
-//				rejectsInvalidBytecode(),
-//				revertsNonzeroBalance(),
-				createFailsIfMissingSigs()
+				rejectsInsufficientFee(),
+				rejectsInvalidBytecode(),
+				revertsNonzeroBalance(),
+				createFailsIfMissingSigs(),
+				rejectsInsufficientGas()
 		);
 	}
 
@@ -109,6 +111,19 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.adminKeyShape(shape)
 								.bytecode("contractFile")
 								.sigControl(forKey("testContract", validSig))
+				);
+	}
+
+	private HapiApiSpec rejectsInsufficientGas() {
+		return defaultHapiSpec("RejectsInsufficientGas")
+				.given(
+						TxnVerbs.fileCreate("simpleStorageBytecode")
+								.path(PATH_TO_SIMPLE_STORAGE_BYTECODE)
+				).when().then(
+						TxnVerbs.contractCreate("simpleStorage")
+								.bytecode("simpleStorageBytecode")
+								.gas(0L)
+								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
 	}
 

@@ -803,56 +803,29 @@ commands:
     steps:
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
+      - run-eet-suites:
+          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "BigArraySpec -TLS=on -NODE=random"
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractDeletePayable
           args: '1'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPay
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivable
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorage
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageWithEvents
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.BigArray
-          other-args: '1 32'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
@@ -2648,58 +2621,34 @@ jobs:
           active-status-timeout-secs: 120
       - run-umbrella-test:
           config-file: umbrella.properties.altOCRegPostFreeze
+      - run-eet-suites:
+          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "BigArraySpec -TLS=on -NODE=random"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCallLocal
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractDeletePayable
           args: '1'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCalls
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractNegativeCreates
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPay
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivable
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
           args: '1'
       - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorage
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageWithEvents
-          args: '1'
-      - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.BigArray
-          other-args: '1 32'
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
       - run-property-driven-scenario-test:
           fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractSimpleStorageLinked
       - run:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
@@ -2910,14 +2859,16 @@ jobs:
       - run-eet-suites:
           dsl-args: "MultipleSelfDestructsAreSafe"
       - postgres-get-counts
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCRUD
-      - postgres-verify-counts:
-          expected-difference: 3
       - run-eet-suites:
           dsl-args: "ContractCallSuite -TLS=on -NODE=random"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPay
+      - postgres-verify-counts:
+          expected-difference: 17
+      - run-eet-suites:
+          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "BigArraySpec -TLS=on -NODE=random"
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
       - run-scenario-test:
