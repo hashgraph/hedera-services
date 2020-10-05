@@ -76,7 +76,7 @@ public class SmartContractCreateContract extends LegacySmartContractTest {
   private final Logger log = LogManager.getLogger(SmartContractCreateContract.class);
 
   private static final int MAX_RECEIPT_RETRIES = 60;
-  public static final String CREATE_TRIVIAL_BIN = "/testfiles/CreateTrivial.bin";
+  public static final String CREATE_TRIVIAL_BIN = "src/main/resource/CreateTrivial.bin";
   private static final int CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
   private static final String SC_CT_CREATE_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
   private static final String SC_CT_GETINDIRECT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
