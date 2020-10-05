@@ -12,20 +12,27 @@ set -eE
 create_new_directory () {
     # Wait for database being stored during freeze stage then run the script to copy directory
     sleep 60
-    
+
     new_directory_name="HapiApp2.0-"`date +%Y%m%dT%H%M%S`
     shell_echo $LINENO $0 "Creating new working directory $new_directory_name"
     mkdir -p ../$new_directory_name
 
+    shell_echo $LINENO $0 "Building symbolic link to $new_directory_name"
+    rm -f ../HapiApp2.0
+    ln -s ../$new_directory_name ../HapiApp2.0
+
     shell_echo $LINENO $0 "Copying existing file to new working directory $new_directory_name"
     cp -r ./ ../$new_directory_name
 
-    shell_echo $LINENO $0 "Building symbolic link to $new_directory_name"
-    cd ..
-    rm -f HapiApp2.0
-    ln -s $new_directory_name HapiApp2.0
-    ls -ltr >> $OUTPUT
-    cd $new_directory_name
+    cd ../$new_directory_name
+
+    # direct output to new directory
+    if [ -f $SERVICE_LOG4J2 ]; then
+        OUTPUT=../$new_directory_name/hgcaa.log
+    else
+        OUTPUT=../$new_directory_name/output/hgcaa.log
+    fi
+
 }
 
 update_sdk_files () {
