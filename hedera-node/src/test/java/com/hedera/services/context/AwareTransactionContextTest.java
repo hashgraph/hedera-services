@@ -49,7 +49,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
-import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -73,7 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hedera.services.utils.MiscUtils.uncheckedSha384Hash;
 
 @RunWith(JUnitPlatform.class)
 public class AwareTransactionContextTest {
@@ -117,7 +115,7 @@ public class AwareTransactionContextTest {
 	private TransactionBody txn;
 	private TransactionRecord record;
 	private String memo = "Hi!";
-	private ByteString hash = ByteString.copyFrom(uncheckedSha384Hash(memo.getBytes()));
+	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
 	private TransactionID txnId = TransactionID.newBuilder()
 					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 					.setAccountID(payer)
@@ -167,6 +165,7 @@ public class AwareTransactionContextTest {
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getSignedTxn()).willReturn(signedTxn);
 		given(accessor.getPayer()).willReturn(payer);
+		given(accessor.getHash()).willReturn(hash);
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);

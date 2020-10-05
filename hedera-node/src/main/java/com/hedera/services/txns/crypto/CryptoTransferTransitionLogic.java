@@ -117,7 +117,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			responseCode = ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 		} else if (!isNetZeroAdjustment(accountAmounts)) {
 			responseCode = INVALID_ACCOUNT_AMOUNTS;
-		} else if (!validator.isAcceptableLength(accountAmounts)) {
+		} else if (!validator.isAcceptableTransfersLength(accountAmounts)) {
 			responseCode = TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		} else {
 			responseCode = OK;

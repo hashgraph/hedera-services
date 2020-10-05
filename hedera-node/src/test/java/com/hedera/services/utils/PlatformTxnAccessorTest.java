@@ -22,19 +22,19 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.goterl.lazycode.lazysodium.interfaces.Sign;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.BDDMockito.*;
 
@@ -165,23 +165,6 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void usesBodyCorrectly() throws Exception {
-		// given:
-		Transaction signedTxnWithBody = Transaction.newBuilder()
-				.setBody(someTxn)
-				.build();
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
-
-		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-
-		// then:
-		assertEquals(someTxn, subject.getTxn());
-		assertThat(List.of(subject.getTxnBytes()), contains(someTxn.toByteArray()));
-	}
-
-	@Test
 	public void usesBodyBytesCorrectly() throws Exception {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
@@ -215,14 +198,41 @@ public class PlatformTxnAccessorTest {
 		Transaction signedTxn4Log = subject.getSignedTxn4Log();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
-				.setBodyBytes(signedTxn4Log.getBody().toByteString())
-				.clearBody()
+				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
 				.build();
 
 		// then:
-		assertEquals(ByteString.EMPTY, signedTxn4Log.getBodyBytes());
-		assertEquals(someTxn, signedTxn4Log.getBody());
+		assertEquals(someTxn, CommonUtils.extractTransactionBody(signedTxn4Log));
 		assertEquals(signedTxnWithBody, asBodyBytes);
+	}
+
+	@Test
+	public void getsCorrectLoggableFormWithSignedTransactionBytes() throws Exception {
+		SignedTransaction signedTxn = SignedTransaction.newBuilder().
+				setBodyBytes(someTxn.toByteString()).
+				setSigMap(SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
+						.setEd25519(ByteString.copyFrom("FAKE".getBytes())).build())).build();
+
+		Transaction txn = Transaction.newBuilder().
+				setSignedTransactionBytes(signedTxn.toByteString()).build();
+
+		com.swirlds.common.Transaction platformTxn =
+				new com.swirlds.common.Transaction(txn.toByteArray());
+
+		// when:
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+
+		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
+		Transaction asBodyBytes = signedTxn4Log
+				.toBuilder()
+				.setSignedTransactionBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
+				.build();
+
+		// then:
+		assertEquals(signedTxnBytes, txn.getSignedTransactionBytes());
+		assertEquals(signedTxn.getBodyBytes(), asBodyBytes.getSignedTransactionBytes());
 	}
 
 	@Test

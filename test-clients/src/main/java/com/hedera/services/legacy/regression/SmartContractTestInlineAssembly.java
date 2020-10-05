@@ -72,7 +72,7 @@ import org.junit.Assert;
  *
  * @author Constantin
  */
-public class SmartContractInlineAssembly {
+public class SmartContractTestInlineAssembly extends LegacySmartContractTest {
 	private static long DAY_SEC = 24 * 60 * 60; // secs in a day
 	  private final Logger log = LogManager.getLogger(SmartContractSimpleStorage.class);
 
@@ -97,25 +97,14 @@ public class SmartContractInlineAssembly {
 	  private static long contractDuration;
 
 	  public static void main(String args[]) throws Exception {
-	    Properties properties = TestHelper.getApplicationProperties();
-			contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
-	    host = properties.getProperty("host");
-	    port = Integer.parseInt(properties.getProperty("port"));
-	    node_account_number = Utilities.getDefaultNodeAccount();
-	    node_shard_number = Long.parseLong(properties.getProperty("NODE_REALM_NUMBER"));
-	    node_realm_number = Long.parseLong(properties.getProperty("NODE_SHARD_NUMBER"));
-	    nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
-	        .setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
-
 	    int numberOfReps = 1;
 	    if ((args.length) > 0) {
 	      numberOfReps = Integer.parseInt(args[0]);
 	    }
 	    for (int i = 0; i < numberOfReps; i++) {
-	    	SmartContractInlineAssembly scSs = new SmartContractInlineAssembly();
-	      scSs.demo();
+	    	SmartContractTestInlineAssembly scSs = new SmartContractTestInlineAssembly();
+	      scSs.demo(host, nodeAccount);
 	    }
-
 	  }
 
 
@@ -269,7 +258,6 @@ public class SmartContractInlineAssembly {
 	    Timestamp timestamp = RequestBuilder
 	        .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(-1 * TestHelper.DEFAULT_WIND_SEC));
 	    Duration transactionDuration = RequestBuilder.getDuration(TestHelper.TX_DURATION);
-	    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
 	    ByteString dataBstr = ByteString.EMPTY;
 	    if (data != null) {
 	      dataBstr = ByteString.copyFrom(data);
@@ -480,21 +468,24 @@ public class SmartContractInlineAssembly {
 	    return bySolidityReturn;
 	  }
 
-	  public void demo() throws Exception {
+	  public void demo(String grpcHost, AccountID nodeAccount) throws Exception {
+	  	setUp();
+	  	host = grpcHost;
+	  	SmartContractTestInlineAssembly.nodeAccount = nodeAccount;
 	    loadGenesisAndNodeAcccounts();
 
-			ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-					.usePlaintext(true)
-					.build();
-			TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
-					nodeAccount);
-			channel.shutdown();
+		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
+				.usePlaintext(true)
+				.build();
+		TestHelper.initializeFeeClient(channel, genesisAccount, accountKeyPairs.get(genesisAccount),
+				SmartContractTestInlineAssembly.nodeAccount);
+		channel.shutdown();
 
 		KeyPair crAccountKeyPair = new KeyPairGenerator().generateKeyPair();
 	    AccountID crAccount = createAccount(crAccountKeyPair, genesisAccount, TestHelper.getCryptoMaxFee() * 10);
 	    log.info("Account created successfully");
-	    String fileName = "InlineTest.bin";
-	    String secondaryFileName = "simpleStorage.bin";
+	    String fileName = "testfiles/InlineTest.bin";
+	    String secondaryFileName = "testfiles/simpleStorage.bin";
 	    ContractID simpleStorageContractId = null;
 	    if (crAccount != null) {
 	      FileID codeSizeFileId = LargeFileUploadIT
@@ -507,7 +498,7 @@ public class SmartContractInlineAssembly {
 	        log.info("Contract created successfully");
 	        FileID simpleStorageFileID = LargeFileUploadIT
 	  	          .uploadFile(crAccount, secondaryFileName, crAccountKeyPair);
-			if (codeSizeFileId != null) {
+			if (simpleStorageFileID != null) {
 				log.info("Secondary Smart Contract file uploaded successfully");
 				simpleStorageContractId = createContract(crAccount, simpleStorageFileID,
 				    contractDuration);
@@ -528,8 +519,19 @@ public class SmartContractInlineAssembly {
         }
       }
 
+	private void setUp() {
+		Properties properties = TestHelper.getApplicationProperties();
+		contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
+		host = properties.getProperty("host");
+		port = Integer.parseInt(properties.getProperty("port"));
+		node_account_number = Utilities.getDefaultNodeAccount();
+		node_shard_number = Long.parseLong(properties.getProperty("NODE_REALM_NUMBER"));
+		node_realm_number = Long.parseLong(properties.getProperty("NODE_SHARD_NUMBER"));
+		nodeAccount = AccountID.newBuilder().setAccountNum(node_account_number)
+				.setRealmNum(node_shard_number).setShardNum(node_realm_number).build();
+	}
 
-	  private ContractInfo getContractInfo(AccountID payerAccount,
+	private ContractInfo getContractInfo(AccountID payerAccount,
 	      ContractID contractId) throws Exception {
 	    ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
 	        .usePlaintext(true)

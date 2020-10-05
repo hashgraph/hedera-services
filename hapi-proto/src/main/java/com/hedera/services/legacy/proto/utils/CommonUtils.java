@@ -20,10 +20,14 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
@@ -39,6 +43,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 /**
@@ -215,14 +221,9 @@ public class CommonUtils {
   public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
     String rv = null;
     try {
-      TransactionBody body;
-      if (grpcTransaction.hasBody()) {
-        body = grpcTransaction.getBody();
-      } else {
-        body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
-      }
-      rv = "body=" + TextFormat.shortDebugString(body) + "; sigs=" + TextFormat.shortDebugString(
-          grpcTransaction.hasSigs() ? grpcTransaction.getSigs() : grpcTransaction.getSigMap());
+      TransactionBody body = extractTransactionBody(grpcTransaction);
+      rv = "body=" + TextFormat.shortDebugString(body) + "; sigs="
+              + TextFormat.shortDebugString(extractSignatureMap(grpcTransaction));
     } catch (InvalidProtocolBufferException e) {
       throw e;
     }
@@ -234,48 +235,79 @@ public class CommonUtils {
    *
    * @return generated readable string
    */
-  public static String toReadableStringShort(
+  public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {
-    String rv = null;
-    TransactionBody body;
-    if (grpcTransaction.hasBody()) {
-      body = grpcTransaction.getBody();
-    } else {
-      body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
-    }
-    rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID()) + "; memo=" + body
-            .getMemo();
+    TransactionBody body = extractTransactionBody(grpcTransaction);
+    String rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
     return rv;
   }
 
-  /**
-   * Generates a short human readable string for grpc transaction ID.
-   *
-   * @return generated readable string
-   */
-  public static String toReadableStringShortTxnID(
-          Transaction grpcTransaction) throws InvalidProtocolBufferException {
-    String rv = null;
-    TransactionBody body;
-    if (grpcTransaction.hasBody()) {
-      body = grpcTransaction.getBody();
-    } else {
-      body = TransactionBody.parseFrom(grpcTransaction.getBodyBytes());
-    }
-    rv = "txID=" + TextFormat.shortDebugString(body.getTransactionID());
-    return rv;
-  }
-
-
-  public static TransactionBody extractTransactionBody(Transaction transaction)
+  public static ByteString extractTransactionBodyByteString(TransactionOrBuilder transaction)
       throws InvalidProtocolBufferException {
-    TransactionBody bodyToReturn;
-    if (transaction.hasBody()) {
-      bodyToReturn = transaction.getBody();
-    } else {
-      bodyToReturn = TransactionBody.parseFrom(transaction.getBodyBytes());
+    ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
+    if (!signedTransactionBytes.isEmpty()) {
+      return SignedTransaction.parseFrom(signedTransactionBytes).getBodyBytes();
     }
-    return bodyToReturn;
+
+    return transaction.getBodyBytes();
+  }
+
+  public static byte[] extractTransactionBodyBytes(TransactionOrBuilder transaction)
+          throws InvalidProtocolBufferException {
+    return extractTransactionBodyByteString(transaction).toByteArray();
+  }
+
+  public static TransactionBody extractTransactionBody(TransactionOrBuilder transaction)
+          throws InvalidProtocolBufferException {
+    return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
+  }
+
+  public static SignatureMap extractSignatureMap(TransactionOrBuilder transaction)
+          throws InvalidProtocolBufferException {
+    ByteString signedTransactionBytes = transaction.getSignedTransactionBytes();
+    if (!signedTransactionBytes.isEmpty()) {
+      return SignedTransaction.parseFrom(signedTransactionBytes).getSigMap();
+    }
+
+    return transaction.getSigMap();
+  }
+
+  public static SignatureMap extractSignatureMapOrUseDefault(TransactionOrBuilder transaction) {
+    try {
+      return extractSignatureMap(transaction);
+    } catch (InvalidProtocolBufferException ignoreToReturnDefault) { }
+    return SignatureMap.getDefaultInstance();
+  }
+
+  public static Transaction.Builder toTransactionBuilder(TransactionOrBuilder transactionOrBuilder) {
+    if (transactionOrBuilder instanceof Transaction) {
+      return ((Transaction) transactionOrBuilder).toBuilder();
+    }
+
+    return (Transaction.Builder) transactionOrBuilder;
+  }
+
+  public static MessageDigest getSha384Hash() throws NoSuchAlgorithmException {
+    return MessageDigest.getInstance("SHA-384");
+  }
+
+  public static byte[] noThrowSha384HashOf(byte[] byteArray) {
+    try {
+      return getSha384Hash().digest(byteArray);
+    } catch (NoSuchAlgorithmException ignoreToReturnEmptyByteArray) { }
+    return new byte[0];
+  }
+
+  public static ByteString sha384HashOf(byte[] byteArray) {
+    return ByteString.copyFrom(noThrowSha384HashOf(byteArray));
+  }
+
+  public static ByteString sha384HashOf(Transaction transaction) {
+    if (transaction.getSignedTransactionBytes().isEmpty()) {
+      return sha384HashOf(transaction.toByteArray());
+    }
+
+    return sha384HashOf(transaction.getSignedTransactionBytes().toByteArray());
   }
 
   public static void writeTxId2File(String txIdString) throws IOException {

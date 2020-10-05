@@ -242,13 +242,12 @@ public class ExpiredTxRecordTests extends BaseClient {
         Timestamp timestamp = ExpiredTxRecordTests.getDefaultCurrentTimestampUTC();
         Duration transactionDuration = RequestBuilder.getDuration(30);
 
-        SignatureList sigList = SignatureList.getDefaultInstance();
         long transferFee = 1000000;
         Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
                 payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
                 transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
                 amount);
         Transaction signedTx = ExpiredTxRecordTests.signTransactionWithHexKeys(transferTx, payerPublicKeyHex, payerPrivateKeyHex);
         return signedTx;
@@ -261,13 +260,12 @@ public class ExpiredTxRecordTests extends BaseClient {
         Timestamp timestamp = ExpiredTxRecordTests.getDefaultCurrentTimestampUTC();
         Duration transactionDuration = RequestBuilder.getDuration(txDuration);
 
-        SignatureList sigList = SignatureList.getDefaultInstance();
         long transferFee = 1000000;
         Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
                 payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
                 nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
                 transactionDuration, false,
-                "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+                "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
                 amount);
         Transaction signedTx = TransactionSigner.signTransactionComplexWithSigMap(transferTx, keyList,
                 pubKey2privKeyMap);

@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -51,7 +49,6 @@ import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.FeeClient;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.file.LargeFileUploadIT;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import io.grpc.ManagedChannel;
@@ -242,10 +239,7 @@ public class TransactionInsufficientFeeCost {
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp,
             transactionDuration, true, "", 250000L, contractFile, ByteString.EMPTY, 0L,
-            contractAutoRenew, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), CONTRACT_MEMO_STRING_1, adminKey);
+            contractAutoRenew, CONTRACT_MEMO_STRING_1, adminKey);
     transaction = TransactionSigner.signTransaction(transaction, keyList);
     TransactionResponse response = stub.createContract(transaction);
     Assert.assertNotNull(response);
@@ -263,10 +257,7 @@ public class TransactionInsufficientFeeCost {
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp,
             transactionDuration, true, "", 250000L, contractFile, ByteString.EMPTY, 0L,
-            contractAutoRenew, SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build(), "", adminKey);
+            contractAutoRenew, "", adminKey);
     transaction = TransactionSigner.signTransaction(transaction, keyList);
     response = stub.createContract(transaction);
     Assert.assertNotNull(response);
@@ -340,8 +331,7 @@ public class TransactionInsufficientFeeCost {
     Transaction updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, feeOffered, timestamp,
             transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-            expirationTime, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), contractMemo);
+            expirationTime, contractMemo);
     updateContractRequest = TransactionSigner.signTransaction(updateContractRequest, keyList);
     TransactionResponse response = stub.updateContract(updateContractRequest);
     Assert.assertNotNull(response);
@@ -356,8 +346,7 @@ public class TransactionInsufficientFeeCost {
     updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, feeOffered, timestamp,
             transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-            expirationTime, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), contractMemo);
+            expirationTime, contractMemo);
     updateContractRequest = TransactionSigner.signTransaction(updateContractRequest, keyList);
     response = stub.updateContract(updateContractRequest);
     Assert.assertNotNull(response);
@@ -391,11 +380,7 @@ public class TransactionInsufficientFeeCost {
     // First time through get INSUFFICIENT_TX_FEE and the cost
     Transaction deleteContractRequest = RequestBuilder
         .getDeleteContractRequest(payerAccount, nodeAccount, feeOffered, timestamp,
-            transactionDuration, contractId, null, null, true, "",
-            SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
+            transactionDuration, contractId, null, null, true, "");
     deleteContractRequest = TransactionSigner.signTransaction(deleteContractRequest, keyList);
     TransactionResponse response = stub.deleteContract(deleteContractRequest);
     Assert.assertNotNull(response);
@@ -410,11 +395,7 @@ public class TransactionInsufficientFeeCost {
     timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     deleteContractRequest = RequestBuilder
         .getDeleteContractRequest(payerAccount, nodeAccount, feeOffered, timestamp,
-            transactionDuration, contractId, null, null, true, "",
-            SignatureList.newBuilder()
-                .addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-                .build());
+            transactionDuration, contractId, null, null, true, "");
     deleteContractRequest = TransactionSigner.signTransaction(deleteContractRequest, keyList);
     response = stub.deleteContract(deleteContractRequest);
     Assert.assertNotNull(response);
@@ -473,10 +454,7 @@ public class TransactionInsufficientFeeCost {
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp,
-            transactionDuration, 250000, contractToCall, dataBstr, 0,
-            SignatureList.newBuilder().
-                addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build());
+            transactionDuration, 250000, contractToCall, dataBstr, 0);
     callContractRequest = TransactionSigner.signTransaction(callContractRequest, keyList);
     TransactionResponse response = stub.contractCallMethod(callContractRequest);
     Assert.assertNotNull(response);
@@ -493,10 +471,7 @@ public class TransactionInsufficientFeeCost {
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
             feeOffered, timestamp,
-            transactionDuration, 250000, contractToCall, dataBstr, 0,
-            SignatureList.newBuilder().
-                addSigs(Signature.newBuilder()
-                    .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build());
+            transactionDuration, 250000, contractToCall, dataBstr, 0);
     callContractRequest = TransactionSigner.signTransaction(callContractRequest, keyList);
     response = stub.contractCallMethod(callContractRequest);
     Assert.assertNotNull(response);
@@ -540,12 +515,11 @@ public class TransactionInsufficientFeeCost {
     long feeOffered = INITIAL_FEE_OFFERED;
 
     // First time through get INSUFFICIENT_TX_FEE and the cost
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(
         fromAccount.getAccountNum(), fromAccount.getRealmNum(), fromAccount.getShardNum(),
         nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
         feeOffered, timestamp, transactionDuration,
-        true, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+        true, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
     transferTx = TransactionSigner.signTransaction(transferTx, keyList);
@@ -563,7 +537,7 @@ public class TransactionInsufficientFeeCost {
         fromAccount.getAccountNum(), fromAccount.getRealmNum(), fromAccount.getShardNum(),
         nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
         feeOffered, timestamp, transactionDuration,
-        true, "Test Transfer", sigList, fromAccount.getAccountNum(), -amount,
+        true, "Test Transfer", fromAccount.getAccountNum(), -amount,
         toAccount.getAccountNum(), amount);
     // sign the tx
     transferTx = TransactionSigner.signTransaction(transferTx, keyList);
@@ -598,9 +572,7 @@ public class TransactionInsufficientFeeCost {
         accountID.getAccountNum(), accountID.getRealmNum(), accountID.getShardNum(),
         nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
         feeOffered, timestamp,
-        transactionDuration, true, "Update Account",
-        100l, 100l,
-        accountAutoRenew, SignatureList.newBuilder().getDefaultInstanceForType());
+        transactionDuration, true, "Update Account", accountAutoRenew);
     cryptoUpdateRequest = TransactionSigner.signTransaction(cryptoUpdateRequest, keyList);
     TransactionResponse response = stub.updateAccount(cryptoUpdateRequest);
     Assert.assertNotNull(response);
@@ -616,9 +588,7 @@ public class TransactionInsufficientFeeCost {
         accountID.getAccountNum(), accountID.getRealmNum(), accountID.getShardNum(),
         nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
         feeOffered, timestamp,
-        transactionDuration, true, "Update Account",
-        100l, 100l,
-        accountAutoRenew, SignatureList.newBuilder().getDefaultInstanceForType());
+        transactionDuration, true, "Update Account", accountAutoRenew);
     cryptoUpdateRequest = TransactionSigner.signTransaction(cryptoUpdateRequest, keyList);
     response = stub.updateAccount(cryptoUpdateRequest);
     Assert.assertNotNull(response);
@@ -709,7 +679,6 @@ public class TransactionInsufficientFeeCost {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp,
         CustomPropertiesSingleton.getInstance().getContractDuration());
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     List<PrivateKey> keyList = new ArrayList<>();
     keyList.add(accountKeyPairs.get(payerAccount).getPrivate());
@@ -724,11 +693,11 @@ public class TransactionInsufficientFeeCost {
         .getFileCreateBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileCreate", signatures,
+            feeOffered, timestamp, transactionDuration, true, "FileCreate",
             fileData, fileExp, waclPubKeyList);
     Transaction filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs
-    Transaction filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    Transaction filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.createFile(filesigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE, response.getNodeTransactionPrecheckCode());
@@ -743,11 +712,11 @@ public class TransactionInsufficientFeeCost {
         .getFileCreateBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileCreate", signatures,
+            feeOffered, timestamp, transactionDuration, true, "FileCreate",
             fileData, fileExp, waclPubKeyList);
     filesignedByPayer = TransactionSigner.signTransaction(FileCreateRequest, keyList);
     // append wacl sigs
-    filesigned = FileServiceIT.appendSignature(filesignedByPayer, waclPrivKeyList);
+    filesigned = TransactionSigner.signTransaction(filesignedByPayer, waclPrivKeyList, true);
     response = stub.createFile(filesigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -767,7 +736,6 @@ public class TransactionInsufficientFeeCost {
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     List<PrivateKey> keyList = new ArrayList<>();
     keyList.add(accountKeyPairs.get(payerAccount).getPrivate());
@@ -777,10 +745,10 @@ public class TransactionInsufficientFeeCost {
         .getFileAppendBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileAppend", signatures,
+            feeOffered, timestamp, transactionDuration, true, "FileAppend",
             fileData, fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE, response.getNodeTransactionPrecheckCode());
@@ -795,10 +763,10 @@ public class TransactionInsufficientFeeCost {
         .getFileAppendBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileAppend", signatures,
+            feeOffered, timestamp, transactionDuration, true, "FileAppend",
             fileData, fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -819,7 +787,6 @@ public class TransactionInsufficientFeeCost {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Timestamp fileExp = ProtoCommonUtils.addSecondsToTimestamp(timestamp,
         CustomPropertiesSingleton.getInstance().getContractDuration());
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     List<PrivateKey> keyList = new ArrayList<>();
     keyList.add(accountKeyPairs.get(payerAccount).getPrivate());
@@ -829,10 +796,10 @@ public class TransactionInsufficientFeeCost {
         .getFileUpdateBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend", signatures,
+            feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend",
             fileData, fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE,
@@ -848,10 +815,10 @@ public class TransactionInsufficientFeeCost {
         .getFileUpdateBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend", signatures,
+            feeOffered, timestamp, fileExp, transactionDuration, true, "FileAppend",
             fileData, fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileAppendRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
@@ -870,7 +837,6 @@ public class TransactionInsufficientFeeCost {
         .build();
     FileServiceGrpc.FileServiceBlockingStub stub = FileServiceGrpc.newBlockingStub(channel);
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     List<PrivateKey> keyList = new ArrayList<>();
     keyList.add(accountKeyPairs.get(payerAccount).getPrivate());
@@ -880,10 +846,9 @@ public class TransactionInsufficientFeeCost {
         .getFileDeleteBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileDelete", signatures,
-            fid);
+            feeOffered, timestamp, transactionDuration, true, "FileDelete", fid);
     Transaction txSignedByPayer = TransactionSigner.signTransaction(fileDeleteRequest, keyList);
-    Transaction txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    Transaction txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     TransactionResponse response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_TX_FEE,
@@ -899,10 +864,9 @@ public class TransactionInsufficientFeeCost {
         .getFileDeleteBuilder(
             payerAccount.getAccountNum(), payerAccount.getRealmNum(), payerAccount.getShardNum(),
             nodeAccount.getAccountNum(), nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
-            feeOffered, timestamp, transactionDuration, true, "FileDelete", signatures,
-            fid);
+            feeOffered, timestamp, transactionDuration, true, "FileDelete", fid);
     txSignedByPayer = TransactionSigner.signTransaction(fileDeleteRequest, keyList);
-    txSigned = FileServiceIT.appendSignature(txSignedByPayer, waclPrivKeyList);
+    txSigned = TransactionSigner.signTransaction(txSignedByPayer, waclPrivKeyList, true);
     response = stub.appendContent(txSigned);
     Assert.assertNotNull(response);
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());

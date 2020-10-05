@@ -180,7 +180,7 @@ public class CryptoFeeTests extends BaseFeeTests {
     Transaction updateTx = TestHelperComplex.updateAccount(account_1, payerID,
         nodeID, duration, memo);
     Transaction signUpdate = TransactionSigner
-        .signTransactionComplex(updateTx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(updateTx, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionResponse response = CryptoServiceTest.cstub.updateAccount(signUpdate);
     Thread.sleep(NAP);
     Assert.assertNotNull(response);
@@ -481,7 +481,7 @@ public class CryptoFeeTests extends BaseFeeTests {
     Transaction deletetx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();   
    
     Transaction signDelete = TransactionSigner
-        .signTransactionComplex(deletetx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(deletetx, keys, TestHelperComplex.pubKey2privKeyMap);
     TransactionResponse response = CryptoServiceTest.cstub.cryptoDelete(signDelete);
     Thread.sleep(NAP);
     Assert.assertNotNull(response);
@@ -556,7 +556,7 @@ public class CryptoFeeTests extends BaseFeeTests {
     Transaction deletetx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
     
     Transaction signDelete = TransactionSigner
-        .signTransactionComplex(deletetx, keys, TestHelperComplex.pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(deletetx, keys, TestHelperComplex.pubKey2privKeyMap);
     
     log.info("deleteTransaction : " + signDelete);
     TransactionResponse deleteResponse = CryptoServiceTest.cstub.cryptoDelete(signDelete);

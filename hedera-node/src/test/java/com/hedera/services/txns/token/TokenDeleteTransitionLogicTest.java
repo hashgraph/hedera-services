@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -129,6 +130,22 @@ class TokenDeleteTransitionLogicTest {
 		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
+	@Test
+	public void acceptsValidTxn() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.syntaxCheck().apply(tokenDeleteTxn));
+	}
+
+	@Test
+	public void rejectsMissingToken() {
+		givenMissingToken();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.syntaxCheck().apply(tokenDeleteTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenDeleteTxn = TransactionBody.newBuilder()
 				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder()
@@ -136,5 +153,11 @@ class TokenDeleteTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+	}
+
+	private void givenMissingToken() {
+		tokenDeleteTxn = TransactionBody.newBuilder()
+				.setTokenDeletion(TokenDeleteTransactionBody.newBuilder())
+				.build();
 	}
 }

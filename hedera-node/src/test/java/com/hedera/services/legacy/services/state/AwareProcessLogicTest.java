@@ -20,6 +20,7 @@ package com.hedera.services.legacy.services.state;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
@@ -42,6 +43,7 @@ import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -81,6 +83,7 @@ class AwareProcessLogicTest {
 	ServicesContext ctx;
 	TransactionContext txnCtx;
 	TransactionBody txnBody;
+	TransactionBody nonMockTxnBody;
 	SmartContractRequestHandler contracts;
 	HederaFs hfs;
 
@@ -113,11 +116,11 @@ class AwareProcessLogicTest {
 		txnBody = mock(TransactionBody.class);
 		contracts = mock(SmartContractRequestHandler.class);
 		mockLog = mock(Logger.class);
+		nonMockTxnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+								.setAccountID(IdUtils.asAccount("0.0.2"))).build();
 		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-				.setBodyBytes(TransactionBody.newBuilder()
-						.setTransactionID(TransactionID.newBuilder()
-								.setAccountID(IdUtils.asAccount("0.0.2")))
-						.build().toByteString())
+				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 
 		AwareProcessLogic.log = mockLog;
@@ -158,8 +161,8 @@ class AwareProcessLogicTest {
 		final TransactionID txnId = mock(TransactionID.class);
 
 		given(txnAccessor.getSignedTxn()).willReturn(signedTxn);
+		given(signedTxn.getSignedTransactionBytes()).willReturn(ByteString.EMPTY);
 		given(txnAccessor.getTxn()).willReturn(txnBody);
-		given(signedTxn.hasSigs()).willReturn(false);
 		given(txnBody.getTransactionID()).willReturn(txnId);
 		given(txnBody.getTransactionValidDuration()).willReturn(Duration.getDefaultInstance());
 
@@ -213,6 +216,23 @@ class AwareProcessLogicTest {
 		verify(mockLog).error(argThat((String s) -> s.startsWith("Catastrophic invariant failure!")));
 	}
 
+	@Test
+	public void shortCircuitsWithWarningOnZeroStakeSignedTxnSubmission() {
+		// setup:
+		var now = Instant.now();
+		var then = now.minusMillis(1L);
+		SignedTransaction signedTxn = SignedTransaction.newBuilder().setBodyBytes(nonMockTxnBody.toByteString()).build();
+		Transaction platformSignedTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder().
+				setSignedTransactionBytes(signedTxn.toByteString()).build().toByteArray());
+
+		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+
+		// when:
+		subject.incorporateConsensusTxn(platformSignedTxn, now, 666);
+
+		// then:
+		verify(mockLog).warn(argThat((String s) -> s.startsWith("Ignoring a transaction submitted by zero-stake")));
+	}
 
 	@Test
 	@DisplayName("incorporateConsensusTxn assigns a failure due to memo size for ContractCreateInstance")
@@ -371,5 +391,4 @@ class AwareProcessLogicTest {
 		// then:
 		verify(contracts).updateContract(txnBody, now);
 	}
-
 }

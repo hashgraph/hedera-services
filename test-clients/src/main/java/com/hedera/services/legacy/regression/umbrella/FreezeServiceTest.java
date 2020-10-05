@@ -106,7 +106,6 @@ public class FreezeServiceTest extends TestHelperComplex {
     if (host == null) {
       this.host = properties.getProperty("host","localhost");
     }
-    TransactionSigner.SIGNATURE_FORMAT = TransactionSigner.SIGNATURE_FORMAT_ENUM.SignatureMap;
     nodeID = RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
     readGenesisInfo();
     createStubs();
@@ -241,7 +240,7 @@ public class FreezeServiceTest extends TestHelperComplex {
     Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
     keys.add(payerKey);
     Transaction paymentTxSigned = TransactionSigner
-        .signTransactionComplex(unSignedTransferTx, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(unSignedTransferTx, keys, pubKey2privKeyMap);
     return paymentTxSigned;
   }
 
@@ -326,7 +325,7 @@ public class FreezeServiceTest extends TestHelperComplex {
     keys.add(payerKey);
     keys.add(fromKey);
     Transaction paymentTxSigned = TransactionSigner
-            .signTransactionComplex(paymentTx, keys, pubKey2privKeyMap);
+            .signTransactionComplexWithSigMap(paymentTx, keys, pubKey2privKeyMap);
     return paymentTxSigned;
   }
 

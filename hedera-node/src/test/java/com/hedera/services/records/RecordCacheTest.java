@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.sha384HashOf;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -261,9 +260,10 @@ class RecordCacheTest {
 		Instant consensusTime = Instant.now();
 		TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
 		Transaction signedTxn = Transaction.newBuilder()
-				.setBody(TransactionBody.newBuilder()
-					.setTransactionID(txnId)
-					.setMemo("Catastrophe!"))
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setTransactionID(txnId)
+						.setMemo("Catastrophe!")
+						.build().toByteString())
 				.build();
 		// and:
 		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
@@ -283,7 +283,7 @@ class RecordCacheTest {
 				.setTransactionID(txnId)
 				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(sha384HashOf(accessor))
+				.setTransactionHash(accessor.getHash())
 				.setConsensusTimestamp(asTimestamp(consensusTime))
 				.build();
 		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);

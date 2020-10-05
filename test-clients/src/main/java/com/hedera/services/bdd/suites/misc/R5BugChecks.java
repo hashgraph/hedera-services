@@ -30,13 +30,10 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.SigControl.threshSigs;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -48,23 +45,12 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -72,7 +58,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.HapiApiSpec.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -105,7 +90,6 @@ public class R5BugChecks extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						runningHashComputedWithMessageHash(),
 //						genesisUpdatesFeesForFree(),
 //						canGetDeletedFileInfo(),
 //						enforcesSigRequirements(),
@@ -325,90 +309,6 @@ public class R5BugChecks extends HapiApiSuite {
 				).then(
 						freeze().startingIn(1).minutes().andLasting(1).minutes()
 				);
-	}
-
-	private HapiApiSpec runningHashComputedWithMessageHash() {
-		var eros = "Though like waves breaking it may be, /" +
-				"Or like a changed familiar tree, /" +
-				"Or like a stairway to the sea /" +
-				"Where down the blind are driven.";
-		AtomicReference<TopicID> miscId = new AtomicReference<>();
-		AtomicReference<ConsensusTopicInfo> origInfo = new AtomicReference<>();
-
-		return customHapiSpec("RunningHashComputedWithMessageHash")
-				.withProperties(Map.of(
-					"nodes", "127.0.0.1:50213:0.0.5",
-					"default.node", "0.0.5"
-				)).given(
-						createTopic("misc")
-				).when(
-						withOpContext((spec, opLog) -> {
-							var subOp = getTopicInfo("misc");
-							allRunFor(spec, subOp);
-							origInfo.set(subOp.getResponse().getConsensusGetTopicInfo().getTopicInfo());
-							System.out.println(origInfo.get());
-							miscId.set(spec.registry().getTopicID("misc"));
-						}),
-						submitMessageTo("misc")
-								.message(eros)
-								.via("submitTxn")
-				).then(
-						withOpContext((spec, opLog) -> {
-							var infoLookup = getTopicInfo("misc");
-							var recordLookup = getTxnRecord("submitTxn");
-							allRunFor(spec, infoLookup, recordLookup);
-
-							var record = recordLookup.getResponseRecord();
-							var newInfo = infoLookup.getResponse().getConsensusGetTopicInfo().getTopicInfo();
-							Assert.assertArrayEquals(
-									newHash(
-											miscId.get(),
-											origInfo.get(),
-											asInstant(record.getConsensusTimestamp()),
-											eros.getBytes(),
-											true,
-											true),
-									newInfo.getRunningHash().toByteArray());
-						})
-				);
-	}
-
-	private Instant asInstant(Timestamp stamp) {
-		return Instant.ofEpochSecond(stamp.getSeconds(), stamp.getNanos());
-	}
-
-	public byte[] newHash(
-			TopicID id,
-			ConsensusTopicInfo prevInfo,
-			Instant consensusTimestamp,
-			byte[] nextMessage,
-			boolean useHashOfNextMessage,
-			boolean includeHashVersion2
-	) throws Exception {
-		var baos = new ByteArrayOutputStream();
-		try (var out = new ObjectOutputStream(baos)) {
-			out.writeObject(runningHashFrom(prevInfo));
-			if (includeHashVersion2) {
-				out.writeLong(2L);
-			}
-			out.writeLong(id.getShardNum());
-			out.writeLong(id.getRealmNum());
-			out.writeLong(id.getTopicNum());
-			out.writeLong(consensusTimestamp.getEpochSecond());
-			out.writeInt(consensusTimestamp.getNano());
-			out.writeLong(prevInfo.getSequenceNumber() + 1);
-			out.writeObject(useHashOfNextMessage ? sha384HashOf(nextMessage) : nextMessage);
-			out.flush();
-			return sha384HashOf(baos.toByteArray());
-		}
-	}
-
-	private byte[] sha384HashOf(byte[] data) throws NoSuchAlgorithmException {
-		return MessageDigest.getInstance("SHA-384").digest(data);
-	}
-
-	private byte[] runningHashFrom(ConsensusTopicInfo topicInfo) {
-		return topicInfo.getRunningHash().isEmpty() ? new byte[48] : topicInfo.getRunningHash().toByteArray();
 	}
 
 	public static String readableTransferList(TransferList accountAmounts) {

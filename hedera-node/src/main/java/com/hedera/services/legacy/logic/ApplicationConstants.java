@@ -45,16 +45,12 @@ public class ApplicationConstants {
 	public static int KEY_EXPANSION_DEPTH = 100;
 	// Tx record & receipt ttl setting in seconds
 	public static int THRESH_REC_TTL = 90000;
-	public static int TX_MIN_DUR = 5;
-	public static int TX_MAX_DUR = 180;
 	public static int TXN_MIN_VALIDITY_BUFFER_SECS = 10;
 
 	public static long DEFAULT_CONTRACT_DURATION_IN_SEC = 7890000;
 
 	public static long MINIMUM_AUTORENEW_DURATION = 1l;
 	public static long MAXIMUM_AUTORENEW_DURATION = 1000000000l;
-
-	public static int TRANSFER_LST_LIMIT = 10;
 
 	// Estimates for calculating fees for Smart Contract local calls
 	public static int LOCAL_CALLEST_RET_BYTES = 64;

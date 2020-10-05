@@ -21,7 +21,6 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.client.util.Common;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -31,9 +30,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
-import com.hederahashgraph.api.proto.java.SignatureList.Builder;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -43,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hedera.services.legacy.client.test.ClientBaseThread;
 import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -54,16 +49,11 @@ import io.grpc.StatusRuntimeException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -71,7 +61,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -201,7 +190,7 @@ public class FileServiceTest extends CryptoServiceTest {
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, transactionDuration, true,
         "FileUpdate",
-        signatures, ByteString.copyFrom(fileData), fid, wacl);
+        ByteString.copyFrom(fileData), fid, wacl);
 
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key existingWaclKey = Key.newBuilder()
@@ -213,7 +202,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(existingWaclKey);
     keys.add(newWaclKey);
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(FileUpdateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileUpdateRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info(
@@ -250,7 +239,7 @@ public class FileServiceTest extends CryptoServiceTest {
     Transaction FileUpdateRequest = RequestBuilder.getFileUpdateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, fileExp, transactionDuration, true,
-        memo, signatures, fileData, fid, wacl);
+        memo, fileData, fid, wacl);
 
     Key payerKey = acc2ComplexKeyMap.get(payerID);
     Key existingWaclKey = Key.newBuilder()
@@ -262,7 +251,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(existingWaclKey);
     keys.add(newWaclKey);
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(FileUpdateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileUpdateRequest, keys, pubKey2privKeyMap);
 
     checkTxSize(txSigned);
     TransactionBody updateBody = TransactionBody.parseFrom(txSigned.getBodyBytes());
@@ -288,7 +277,7 @@ public class FileServiceTest extends CryptoServiceTest {
     Transaction FileDeleteRequest = RequestBuilder.getFileDeleteBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true,
-        "FileDelete", signatures,
+        "FileDelete",
         fid);
 
     Key payerKey = acc2ComplexKeyMap.get(payerID);
@@ -297,7 +286,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(FileDeleteRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileDeleteRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileDelete: request = " + txSigned);
@@ -331,12 +320,11 @@ public class FileServiceTest extends CryptoServiceTest {
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
     CustomPropertiesSingleton properties = CustomPropertiesSingleton.getInstance();
     Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(properties.getFileDurtion());
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true,
-        "FileCreate", signatures, fileData,
+        "FileCreate", fileData,
         fileExp, waclKeyList);
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
         .extractTransactionBody(FileCreateRequest);
@@ -348,7 +336,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction filesigned = TransactionSigner
-        .signTransactionComplex(FileCreateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileCreateRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileCreate: request = " + filesigned);
@@ -501,12 +489,11 @@ public class FileServiceTest extends CryptoServiceTest {
       List<Key> waclKeyList, Timestamp fileExp, String memo) throws Throwable {
     log.info("@@@ upload file: file size in byte = " + fileData.size());
     Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-    SignatureList signatures = SignatureList.newBuilder().getDefaultInstanceForType();
 
     Transaction FileCreateRequest = RequestBuilder.getFileCreateBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true,
-        memo, signatures, fileData,
+        memo, fileData,
         fileExp, waclKeyList);
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
         .extractTransactionBody(FileCreateRequest);
@@ -518,7 +505,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction filesigned = TransactionSigner
-        .signTransactionComplex(FileCreateRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(FileCreateRequest, keys, pubKey2privKeyMap);
     TransactionBody txBody = TransactionBody.parseFrom(filesigned.getBodyBytes());
     if (txBody.getTransactionID() == null || !txBody.getTransactionID()
         .hasTransactionValidStart()) {
@@ -611,7 +598,7 @@ public class FileServiceTest extends CryptoServiceTest {
     Transaction fileAppendRequest = RequestBuilder.getFileAppendBuilder(payerID.getAccountNum(),
         payerID.getRealmNum(), payerID.getShardNum(), nodeID.getAccountNum(), nodeID.getRealmNum(),
         nodeID.getShardNum(), TestHelper.getFileMaxFee(), timestamp, transactionDuration, true,
-        "FileAppend", signatures, fileData,
+        "FileAppend", fileData,
         fid);
 
     TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
@@ -624,7 +611,7 @@ public class FileServiceTest extends CryptoServiceTest {
     keys.add(payerKey);
     keys.add(waclKey);
     Transaction txSigned = TransactionSigner
-        .signTransactionComplex(fileAppendRequest, keys, pubKey2privKeyMap);
+        .signTransactionComplexWithSigMap(fileAppendRequest, keys, pubKey2privKeyMap);
 
     log.info("\n-----------------------------------");
     log.info("FileAppend: request = " + txSigned);
@@ -824,40 +811,6 @@ public class FileServiceTest extends CryptoServiceTest {
       }
     }
     return entry;
-  }
-
-  /**
-   * Append signatures to existing ones.
-   *
-   * @param transaction tx to append signatures.
-   * @param privKeys private keys
-   * @return transaction with appended sigs
-   */
-  public static Transaction appendSignature(Transaction transaction, List<PrivateKey> privKeys)
-      throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, DecoderException {
-
-    byte[] txByteArray = transaction.getBodyBytes().toByteArray();
-
-    List<Signature> currSigs = transaction.getSigs().getSigsList();
-    Builder allSigListBuilder = SignatureList.newBuilder();
-    Builder waclSigListBuilder = SignatureList.newBuilder();
-    allSigListBuilder.addAllSigs(currSigs);
-    for (PrivateKey privKey : privKeys) {
-      String payerAcctSig = null;
-      payerAcctSig = Common
-          .bytes2Hex(TransactionSigner.signBytes(txByteArray, privKey).toByteArray());
-      Signature signaturePayeeAcct = null;
-      signaturePayeeAcct = Signature.newBuilder()
-          .setEd25519(ByteString.copyFrom(ClientBaseThread.hexToBytes(payerAcctSig))).build();
-      waclSigListBuilder.addSigs(signaturePayeeAcct);
-    }
-
-    Signature waclSigs = Signature.newBuilder().setSignatureList(waclSigListBuilder.build())
-        .build();
-    allSigListBuilder.addSigs(waclSigs);
-    Transaction txSigned = Transaction.newBuilder().setBodyBytes(transaction.getBodyBytes())
-        .setSigs(allSigListBuilder.build()).build();
-    return txSigned;
   }
 
   /**

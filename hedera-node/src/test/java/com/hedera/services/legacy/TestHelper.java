@@ -92,8 +92,7 @@ public class TestHelper {
                     nodeAccount.getRealmNum(), nodeAccount.getShardNum(),
                     transactionFee, timestamp, transactionDuration, generateRecord,
                     memo, keyList.size(), keyList, initialBalance, sendRecordThreshold,
-                    receiveRecordThreshold, receiverSigRequired, autoRenewPeriod,
-                    SignatureList.newBuilder().getDefaultInstanceForType());
+                    receiveRecordThreshold, receiverSigRequired, autoRenewPeriod);
   }
 
 
@@ -103,12 +102,11 @@ public class TestHelper {
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(30);
 
-    SignatureList sigList = SignatureList.getDefaultInstance();
     Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
             payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
             nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 50, timestamp, transactionDuration,
             false,
-            "Test Transfer", sigList, fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
+            "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
             amount);
 
     return transferTx;

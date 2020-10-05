@@ -22,9 +22,7 @@ package com.hedera.services.bdd.spec.transactions.network;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -65,7 +63,7 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
 		var subOpBytes = subOp.serializeSignedTxnFor(spec);
 		if (verboseLoggingOn) {
 			log.info("Submitting unchecked: " +
-					TransactionBody.parseFrom(Transaction.parseFrom(subOpBytes).getBodyBytes()));
+					CommonUtils.extractTransactionBody(Transaction.parseFrom(subOpBytes)));
 		}
 		UncheckedSubmitBody opBody = spec
 				.txns()

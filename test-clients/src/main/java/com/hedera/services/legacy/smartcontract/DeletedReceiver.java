@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -142,7 +140,6 @@ public class DeletedReceiver {
     return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0),
         nodeAccount, payer,
         accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-
   }
 
   private AccountID createAccount(KeyPair keyPair, AccountID payerAccount, long initialBalance)
@@ -287,7 +284,6 @@ public class DeletedReceiver {
     Timestamp timestamp = RequestBuilder
         .getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
     Duration transactionDuration = RequestBuilder.getDuration(30);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);
@@ -344,8 +340,7 @@ public class DeletedReceiver {
     Transaction updateContractRequest = RequestBuilder
         .getContractUpdateRequest(payerAccount, nodeAccount, MAX_TX_FEE, timestamp,
             transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-            expirationTime, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), "");
+            expirationTime, "");
 
     updateContractRequest = TransactionSigner
         .signTransaction(updateContractRequest, accountKeys.get(payerAccount));

@@ -54,8 +54,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -151,7 +149,6 @@ public class ContractToContract {
 	private Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt) throws Exception {
 		return TestHelper.createTransfer(payer, accountKeys.get(payer).get(0), nodeAccount, payer,
 				accountKeys.get(payer).get(0), nodeAccount, transferAmt);
-
 	}
 
 	private AccountID createAccount(AccountID payerAccount, long initialBalance) throws Exception {
@@ -399,11 +396,8 @@ public class ContractToContract {
 		Timestamp timestamp = RequestBuilder.getTimestamp(Instant.now(Clock.systemUTC()).minusSeconds(13));
 		Duration transactionDuration = RequestBuilder.getDuration(30);
 		Transaction updateContractRequest = RequestBuilder.getContractUpdateRequest(payerAccount, nodeAccount, 100L,
-				timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null, expirationTime,
-				SignatureList.newBuilder()
-						.addSigs(Signature.newBuilder().setEd25519(ByteString.copyFrom("testsignature".getBytes())))
-						.build(),
-				"");
+				timestamp, transactionDuration, true, "", contractToUpdate, autoRenewPeriod,
+				null, null, expirationTime, "");
 
 		updateContractRequest = TransactionSigner.signTransaction(updateContractRequest, accountKeys.get(payerAccount));
 		TransactionResponse response = stub.updateContract(updateContractRequest);

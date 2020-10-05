@@ -9,12 +9,12 @@ fi
 CONFIG_FILE=$(echo $1 | tr -d ' ')
 TF_HOST_INDEX=$2
 NODE_ACCOUNT=$(echo $3 | tr -d ' ')
-GRPC_SHOULD_BE_UNAVAILABLE=$(echo $4 | tr -d ' ')
+PLATFORM_SHOULD_BE_INACTIVE=$(echo $4 | tr -d ' ')
 CONFIG_DIR="$TEST_CLIENTS_DIR/config"
 ACTIVE_PROPERTIES="$CONFIG_DIR/umbrellaTest.properties"
 
 cp "$CONFIG_DIR/$CONFIG_FILE" $ACTIVE_PROPERTIES
-if [ $GRPC_SHOULD_BE_UNAVAILABLE = "true" ]; then
+if [ $PLATFORM_SHOULD_BE_INACTIVE = "true" ]; then
   LOG_FILE="$TEST_CLIENTS_DIR/umbrellaRun.log"
   TIMEOUT_SECS=${5:-120}
   set +e
@@ -29,11 +29,11 @@ if [ $GRPC_SHOULD_BE_UNAVAILABLE = "true" ]; then
 
   SECS_WAITED=0
   SLEEP_SECS=$((TIMEOUT_SECS/10))
-  DETECTED_UNAVAILABILITY=false
+  DETECTED_INACTIVE_PLATFORM=false
   while true; do
-    grep -e 'UNAVAILABLE' $LOG_FILE
+    grep -e 'PLATFORM_NOT_ACTIVE' $LOG_FILE
     if [ $? -eq 0 ]; then
-      DETECTED_UNAVAILABILITY=true
+      DETECTED_INACTIVE_PLATFORM=true
       break
     fi
     ci_echo "No sign of frozen hosts yet after ${SECS_WAITED} secs..."
@@ -48,7 +48,7 @@ if [ $GRPC_SHOULD_BE_UNAVAILABLE = "true" ]; then
 
   kill $MVN_PID
   set -e
-  if [ $DETECTED_UNAVAILABILITY = "false" ]; then
+  if [ $DETECTED_INACTIVE_PLATFORM = "false" ]; then
     ci_echo "Remote nodes expected frozen, but appear available after $TIMEOUT_SECS secs!"
     exit 1
   fi

@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Signature;
-import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -468,8 +466,7 @@ public class SmartContractNonexistent {
 	    Transaction updateContractRequest = RequestBuilder
 	        .getContractUpdateRequest(payerAccount, nodeAccount, MAX_TX_FEE, timestamp,
 	            transactionDuration, true, "", contractToUpdate, autoRenewPeriod, null, null,
-	            null, SignatureList.newBuilder().addSigs(Signature.newBuilder()
-	                .setEd25519(ByteString.copyFrom("testsignature".getBytes()))).build(), "");
+	            null, "");
 
 			List<Key> keyList = new ArrayList<>();
 			HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();

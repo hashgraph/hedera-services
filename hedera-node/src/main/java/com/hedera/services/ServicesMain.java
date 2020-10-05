@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.SystemExits;
@@ -37,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -76,6 +78,12 @@ public class ServicesMain implements SwirldMain {
 	public void init(Platform ignore, NodeId nodeId) {
 		if (!StandardCharsets.UTF_8.equals(defaultCharset.get())) {
 			log.error("Default charset is {}, not UTF-8! Exiting.", defaultCharset.get());
+			systemExits.fail(1);
+		}
+		try {
+			CommonUtils.getSha384Hash();
+		} catch (NoSuchAlgorithmException nsae) {
+			log.error(nsae);
 			systemExits.fail(1);
 		}
 		try {

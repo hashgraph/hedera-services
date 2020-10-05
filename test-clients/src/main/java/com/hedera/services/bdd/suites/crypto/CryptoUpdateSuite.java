@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.keys.SigStyle;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -29,7 +28,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
-import static com.hedera.services.bdd.spec.keys.SigStyle.*;
 
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -85,41 +83,34 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-				updateWithUniqueSigs(SigStyle.MAP),
-				updateWithUniqueSigs(SigStyle.LIST),
-				updateWithOverlappingSigs(SigStyle.MAP),
-				updateWithOverlappingSigs(SigStyle.LIST),
-				updateWithOneEffectiveSig(SigStyle.MAP),
-				updateWithOneEffectiveSig(SigStyle.LIST)
+				updateWithUniqueSigs(),
+				updateWithOverlappingSigs(),
+				updateWithOneEffectiveSig()
 		);
 	}
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
-//				updateFailsWithInsufficientSigs(SigStyle.MAP),
-//				updateFailsWithInsufficientSigs(SigStyle.LIST),
+//				updateFailsWithInsufficientSigs(),
 //				updateFailsIfMissingSigs()
 //				cannotSetThresholdNegative()
 				updateWithEmptyKey()
 		);
 	}
 
-	private HapiApiSpec updateWithUniqueSigs(SigStyle style) {
-		String name = String.format("UpdateWithUnique%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
-		return defaultHapiSpec(name)
+	private HapiApiSpec updateWithUniqueSigs() {
+		return defaultHapiSpec("UpdateWithUniqueSigs")
 				.given(
 					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
 					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 					cryptoUpdate(TARGET_ACCOUNT)
 							.sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
-							.sigStyle(style)
 							.receiverSigRequired(true)
 				);
 	}
 
-	private HapiApiSpec updateWithOneEffectiveSig(SigStyle style) {
-		String name = String.format("UpdateWithOneEffective%sSig", (style == SigStyle.LIST) ? "Legacy" : "");
+	private HapiApiSpec updateWithOneEffectiveSig() {
 		KeyLabel ONE_UNIQUE_KEY = complex(
 				complex("X", "X", "X", "X", "X", "X", "X"),
 				complex("X", "X", "X", "X", "X", "X", "X"));
@@ -127,44 +118,39 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 				KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
 				KeyShape.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
 
-		return defaultHapiSpec(name)
+		return defaultHapiSpec("UpdateWithOneEffectiveSig")
 				.given(
 						newKeyNamed("repeatingKey").shape(TWO_LEVEL_THRESH).labels(ONE_UNIQUE_KEY),
 						cryptoCreate(TARGET_ACCOUNT).key("repeatingKey").balance(1_000_000_000L)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey("repeatingKey", SINGLE_SIG))
-								.sigStyle(style)
 								.receiverSigRequired(true)
-								.hasKnownStatus(style == MAP ? SUCCESS : INVALID_SIGNATURE)
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 
-	private HapiApiSpec updateWithOverlappingSigs(SigStyle style) {
-		String name = String.format("UpdateWithOverlapping%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
-		return defaultHapiSpec(name)
+	private HapiApiSpec updateWithOverlappingSigs() {
+		return defaultHapiSpec("UpdateWithOverlappingSigs")
 				.given(
 					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
 					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
-								.sigStyle(style)
 								.receiverSigRequired(true)
-								.hasKnownStatus(style == MAP ? SUCCESS : INVALID_SIGNATURE)
+								.hasKnownStatus(SUCCESS)
 				);
 	}
 
-	private HapiApiSpec updateFailsWithInsufficientSigs(SigStyle style) {
-		String name = String.format("UpdateFailsWithInsufficient%sSigs", (style == SigStyle.LIST) ? "Legacy" : "");
-		return defaultHapiSpec(name)
+	private HapiApiSpec updateFailsWithInsufficientSigs() {
+		return defaultHapiSpec("UpdateFailsWithInsufficientSigs")
 				.given(
 					newKeyNamed(TARGET_KEY).shape(TWO_LEVEL_THRESH).labels(OVERLAPPING_KEYS),
 					cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY)
 				).when().then(
 						cryptoUpdate(TARGET_ACCOUNT)
 								.sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
-								.sigStyle(style)
 								.receiverSigRequired(true)
 								.hasKnownStatus(INVALID_SIGNATURE)
 				);

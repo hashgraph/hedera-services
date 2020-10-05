@@ -29,8 +29,11 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.BigArraySpec;
 import com.hedera.services.bdd.suites.contract.ChildStorageSpec;
+import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -65,6 +68,7 @@ import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
+import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.records.ThresholdRecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
@@ -108,6 +112,7 @@ public class SuiteRunner {
 	private static final int SUITE_NAME_WIDTH = 32;
 
 	private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
+	private static final HapiSpecSetup.TxnConfig DEFAULT_TXN_CONFIG = HapiSpecSetup.TxnConfig.ALTERNATE;
 	private static final HapiSpecSetup.NodeSelection DEFAULT_NODE_SELECTOR = FIXED;
 
 	private static final int EXPECTED_DEV_NETWORK_SIZE = 3;
@@ -180,6 +185,7 @@ public class SuiteRunner {
 		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
 		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
 		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
+		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
 		/* Functional tests - CRYPTO */
 		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
@@ -191,8 +197,12 @@ public class SuiteRunner {
 		put("MultipleSelfDestructsAreSafe", aof(new IssueXXXXSpec()));
 		put("ContractQueriesStressTests", aof(new ContractQueriesStressTests()));
 		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
+		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
+		put("ContractCreateSuite", aof(new ContractCreateSuite()));
+		put("BigArraySpec", aof(new BigArraySpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
+		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
 		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
 		put("FileRecordSanityChecks", aof(new FileRecordsSanityCheckSuite()));
 		put("ContractRecordSanityChecks", aof(new ContractRecordsSanityCheckSuite()));
@@ -228,6 +238,7 @@ public class SuiteRunner {
 	static boolean globalPassFlag = true;
 
 	private static final String TLS_ARG = "-TLS";
+	private static final String TXN_ARG = "-TXN";
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
@@ -242,6 +253,7 @@ public class SuiteRunner {
 		log.info("Effective args :: " + List.of(effArgs));
 		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
+			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
 			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
@@ -256,6 +268,7 @@ public class SuiteRunner {
 					payer_id,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
+					txnOverride.substring(TXN_ARG.length() + 1),
 					nodeSelectorOverride.substring(NODE_SELECTOR_ARG.length() + 1),
 					otherOverrides);
 		}

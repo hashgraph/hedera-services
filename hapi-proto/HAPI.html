@@ -1470,6 +1470,21 @@
         
           
           <li>
+            <a href="#TransactionContents.proto">TransactionContents.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#proto.SignedTransaction"><span class="badge">M</span>SignedTransaction</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#TransactionGetFastRecord.proto">TransactionGetFastRecord.proto</a>
             <ul>
               
@@ -8252,6 +8267,30 @@ by HAPI.</p></td>
                 <td><p>An attempted operation is invalid because the account is a treasury</p></td>
               </tr>
             
+              <tr>
+                <td>TOKEN_ID_REPEATED_IN_TOKEN_LIST</td>
+                <td>197</td>
+                <td><p>Same TokenIDs present in the token list</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED</td>
+                <td>198</td>
+                <td><p>Exceeded the number of token transfers (both from and to) allowed for token transfer list</p></td>
+              </tr>
+            
+              <tr>
+                <td>EMPTY_TOKEN_TRANSFER_BODY</td>
+                <td>199</td>
+                <td><p>TokenTransfersTransactionBody has no TokenTransferList</p></td>
+              </tr>
+            
+              <tr>
+                <td>EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS</td>
+                <td>200</td>
+                <td><p>TokenTransfersTransactionBody has a TokenTransferList with no AccountAmounts</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -9674,24 +9713,17 @@ by HAPI.</p></td>
             <tbody>
               
                 <tr>
-                  <td>body</td>
-                  <td><a href="#proto.TransactionBody">TransactionBody</a></td>
+                  <td>signedTransactionBytes</td>
+                  <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>the body of the transaction, which needs to be signed </p></td>
+                  <td><p>SignedTransaction serialized into bytes </p></td>
                 </tr>
               
                 <tr>
                   <td>bodyBytes</td>
                   <td><a href="#bytes">bytes</a></td>
                   <td></td>
-                  <td><p>TransactionBody serialized into bytes , which needs to be signed </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sigs</td>
-                  <td><a href="#proto.SignatureList">SignatureList</a></td>
-                  <td></td>
-                  <td><p>The signatures on the body, to authorize the transaction; deprecated and to be succeeded by SignatureMap field </p></td>
+                  <td><p>TransactionBody serialized into bytes, which needs to be signed </p></td>
                 </tr>
               
                 <tr>
@@ -9718,12 +9750,12 @@ by HAPI.</p></td>
               <tbody>
               
                 <tr>
-                  <td>body</td>
+                  <td>bodyBytes</td>
                   <td><p>true</p></td>
                 </tr>
               
                 <tr>
-                  <td>sigs</td>
+                  <td>sigMap</td>
                   <td><p>true</p></td>
                 </tr>
               
@@ -10069,6 +10101,51 @@ by HAPI.</p></td>
               </tbody>
             </table>
             
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="TransactionContents.proto">TransactionContents.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="proto.SignedTransaction">SignedTransaction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>bodyBytes</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>TransactionBody serialized into bytes, which needs to be signed </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sigMap</td>
+                  <td><a href="#proto.SignatureMap">SignatureMap</a></td>
+                  <td></td>
+                  <td><p>The signatures on the body with the new format, to authorize the transaction </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
           
 
         

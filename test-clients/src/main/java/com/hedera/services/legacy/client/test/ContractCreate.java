@@ -55,10 +55,9 @@ public class ContractCreate extends ClientBaseThread {
   private FileID contractFileId;
   private boolean checkRunning = true;
 
-  public ContractCreate(String host, int port, long nodeAccountNumber, boolean useSigMap, String [] args, int index)
+  public ContractCreate(String host, int port, long nodeAccountNumber, String [] args, int index)
   {
-    super(host, port, nodeAccountNumber, useSigMap, args, index);
-    this.useSigMap = useSigMap;
+    super(host, port, nodeAccountNumber, args, index);
     this.nodeAccountNumber = nodeAccountNumber;
     this.host = host;
     this.port = port;

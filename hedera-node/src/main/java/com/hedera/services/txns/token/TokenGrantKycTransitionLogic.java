@@ -24,18 +24,25 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class TokenGrantKycTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenGrantKycTransitionLogic.class);
+
+	private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
 	private final TokenStore tokenStore;
 	private final HederaLedger ledger;
@@ -67,5 +74,24 @@ public class TokenGrantKycTransitionLogic implements TransitionLogic {
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenGrantKyc;
+	}
+
+	@Override
+	public Function<TransactionBody, ResponseCodeEnum> syntaxCheck() {
+		return SYNTAX_CHECK;
+	}
+
+	public ResponseCodeEnum validate(TransactionBody txnBody) {
+		TokenGrantKycTransactionBody op = txnBody.getTokenGrantKyc();
+
+		if (!op.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+
+		if (!op.hasAccount()) {
+			return INVALID_ACCOUNT_ID;
+		}
+
+		return OK;
 	}
 }

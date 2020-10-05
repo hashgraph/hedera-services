@@ -21,6 +21,7 @@ package com.hedera.services.legacy.smartcontract;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.regression.LegacySmartContractTest;
 import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -73,7 +74,7 @@ import org.junit.Assert;
  *
  * @author Constantin
  */
-public class OCTokenIT {
+public class OCTokenIT extends LegacySmartContractTest {
 
   private static long TX_DURATION_SEC = 3 * 60; // 3 minutes for tx dedup
   private static long DAY_SEC = 24 * 60 * 60; // secs in a day
@@ -125,21 +126,29 @@ public class OCTokenIT {
   }
 
   public static void main(String args[]) throws Exception {
+    OCTokenIT scOCT = new OCTokenIT();
+    Properties properties = getApplicationProperties();
+    OCTokenIT.grpcHost = properties.getProperty("host");
+    scOCT.demo(grpcHost, nodeAccount);
+  }
 
+  public void demo(String grpcHost, AccountID nodeAccount) throws Exception{
+
+    OCTokenIT.grpcHost = grpcHost;
+    OCTokenIT.nodeAccount = nodeAccount;
     Properties properties = getApplicationProperties();
     contractDuration = Long.parseLong(properties.getProperty("CONTRACT_DURATION"));
-    grpcHost = properties.getProperty("host");
     grpcPort = Integer.parseInt(properties.getProperty("port"));
     localCallGas = Long.parseLong(properties.getProperty("LOCAL_CALL_GAS"));
-    channelShared = ManagedChannelBuilder.forAddress(grpcHost, grpcPort)
-        .usePlaintext(true)
-        .build();
+    channelShared = ManagedChannelBuilder.forAddress(OCTokenIT.grpcHost, grpcPort)
+            .usePlaintext(true)
+            .build();
     cryptoStub = CryptoServiceGrpc.newBlockingStub(channelShared);
     sCServiceStub = SmartContractServiceGrpc.newBlockingStub(channelShared);
     loadGenesisAndNodeAcccounts();
 
     TestHelper.initializeFeeClient(channelShared, genesisAccount, accountKeyPairs.get(genesisAccount),
-        nodeAccount);
+            OCTokenIT.nodeAccount);
 
     Map<String, String> tokenOwners = new HashMap<String, String>();
 
@@ -164,7 +173,7 @@ public class OCTokenIT {
     tokenOwners.put("Alice", aliceEthAddress);
     tokenOwners.put("Bob", bobEthAddress);
 
-    String fileName = "octoken.bin";
+    String fileName = "testfiles/octoken.bin";
 
     if (tokenIssuer != null) {
 
@@ -173,7 +182,7 @@ public class OCTokenIT {
 
         long initialSupply = 1000_000L;
         ContractID ocTokenContract = createTokenContract(tokenIssuer, ocTokenCode, 1000_000L,
-            "OpenCrowd Token", "OCT");
+                "OpenCrowd Token", "OCT");
         crAccInfo = getCryptoGetAccountInfo(tokenIssuer);
         log.info("crAccInfo========>>>>>   " + crAccInfo);
         Assert.assertNotNull(ocTokenContract);
@@ -185,8 +194,8 @@ public class OCTokenIT {
         long balanceOfTokenIssuer = balanceOf(ocTokenContract, tokenIssuerEthAddress, tokenIssuer);
 
         System.out.println(
-            "@@@ Balance of token issuer  " + balanceOfTokenIssuer / tokenMultiplier + " " + symbol
-                + "  decimals = " + tokenDecimals);
+                "@@@ Balance of token issuer  " + balanceOfTokenIssuer / tokenMultiplier + " " + symbol
+                        + "  decimals = " + tokenDecimals);
         assert (initialSupply * tokenMultiplier) == balanceOfTokenIssuer;
 
         System.out.println("token owner transfers 1000 tokens to Alice ");
@@ -245,30 +254,26 @@ public class OCTokenIT {
         log.info("Get Tx records by account Id...");
         long fee = FeeClient.getFeeByID(HederaFunctionality.ContractGetRecords);
         Query query = TestHelper.getTxRecordByContractId(ocTokenContract, tokenIssuer,
-            tokenIssureKeyPair, nodeAccount, fee, ResponseType.COST_ANSWER);
+                tokenIssureKeyPair, OCTokenIT.nodeAccount, fee, ResponseType.COST_ANSWER);
         Response transactionRecord = sCServiceStub.getTxRecordByContractID(query);
         Assert.assertNotNull(transactionRecord);
 
         fee = transactionRecord.getContractGetRecordsResponse().getHeader().getCost();
         query = TestHelper.getTxRecordByContractId(ocTokenContract, tokenIssuer,
-            tokenIssureKeyPair, nodeAccount, fee, ResponseType.ANSWER_ONLY);
+                tokenIssureKeyPair, OCTokenIT.nodeAccount, fee, ResponseType.ANSWER_ONLY);
         transactionRecord = sCServiceStub.getTxRecordByContractID(query);
         Assert.assertNotNull(transactionRecord.getContractGetRecordsResponse());
         List<TransactionRecord> recordList = transactionRecord.getContractGetRecordsResponse()
-            .getRecordsList();
+                .getRecordsList();
         log.info("Tx Records List for contract ID " + ocTokenContract.getContractNum() + " :: "
-            + recordList.size());
+                + recordList.size());
         channelShared.shutdown();
         log.info("--------------------¯\\_(ツ)_/¯----------------------");
 
         // Marker message for regression report
         log.info("Regression summary: This run is successful.");
       }
-
-
     }
-
-
   }
 
   private static Transaction createQueryHeaderTransfer(AccountID payer, long transferAmt)
@@ -376,7 +381,6 @@ public class OCTokenIT {
 
     Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
     Duration transactionDuration = RequestBuilder.getDuration(TestHelper.TX_DURATION);
-    //payerAccountNum, payerRealmNum, payerShardNum, nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, timestamp, txDuration, gas, contractId, functionData, value, signatures
     ByteString dataBstr = ByteString.EMPTY;
     if (data != null) {
       dataBstr = ByteString.copyFrom(data);

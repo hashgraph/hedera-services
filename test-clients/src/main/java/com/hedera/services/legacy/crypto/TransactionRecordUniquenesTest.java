@@ -21,6 +21,7 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -125,7 +126,7 @@ public class TransactionRecordUniquenesTest {
             .name());
 
     AccountID newlyCreateAccountId1 = null;
-    TransactionBody body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    TransactionBody body = CommonUtils.extractTransactionBody(transaction);
     try {
       newlyCreateAccountId1 = TestHelper
           .getTxReceipt(body.getTransactionID(), stub).getAccountID();
@@ -146,7 +147,7 @@ public class TransactionRecordUniquenesTest {
     Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
     log.info("Pre Check Response of Create second account :: " + response
         .getNodeTransactionPrecheckCode().name());
-    body = TransactionBody.parseFrom(transaction.getBodyBytes());
+    body = CommonUtils.extractTransactionBody(transaction);
     AccountID newlyCreateAccountId2 = TestHelper
         .getTxReceipt(body.getTransactionID(), stub).getAccountID();
     Assert.assertNotNull(newlyCreateAccountId2);
@@ -166,7 +167,7 @@ public class TransactionRecordUniquenesTest {
     Assert.assertEquals(ResponseCodeEnum.OK, transferRes.getNodeTransactionPrecheckCode());
     log.info(
         "Pre Check Response transfer :: " + transferRes.getNodeTransactionPrecheckCode().name());
-    TransactionBody transferBody = TransactionBody.parseFrom(transfer1.getBodyBytes());
+    TransactionBody transferBody = CommonUtils.extractTransactionBody(transfer1);
     TransactionReceipt txReceipt = TestHelper
         .getTxReceipt(transferBody.getTransactionID(), stub);
     Assert.assertNotNull(txReceipt);
