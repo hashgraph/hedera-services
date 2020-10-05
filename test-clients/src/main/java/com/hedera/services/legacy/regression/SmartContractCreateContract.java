@@ -53,6 +53,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -467,7 +468,8 @@ public class SmartContractCreateContract extends LegacySmartContractTest {
     log.info("Account created successfully");
 
     FileID simpleStorageFileId = LargeFileUploadIT
-        .uploadFile(crAccount, CREATE_TRIVIAL_BIN, crAccountKeyPair);
+        .uploadFile(crAccount, CREATE_TRIVIAL_BIN, new ArrayList<>(
+                List.of(crAccountKeyPair.getPrivate())), host, nodeAccount);
     Assert.assertNotNull(simpleStorageFileId);
     Assert.assertNotEquals(0, simpleStorageFileId.getFileNum());
     log.info("Smart Contract file uploaded successfully");
