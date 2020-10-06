@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.crypto.entities;
 
 /*-
  * ‌
@@ -22,18 +22,25 @@ package com.hedera.services.usage.token;
 
 import com.hederahashgraph.api.proto.java.Key;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
-
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class TokenUsageUtils {
-	public static <T> long keySizeIfPresent(T op, Predicate<T> check, Function<T, Key> getter) {
-		return check.test(op)? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+public enum CryptoEntitySizes {
+	CRYPTO_ENTITY_SIZES;
+
+	/* { deleted, smartContract, receiverSigRequired } */
+	static int NUM_FLAGS_IN_BASE_ACCOUNT_REPRESENTATION = 3;
+	/* { expiry, hbarBalance, autoRenewSecs, senderThresh, receiverThresh } */
+	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 5;
+
+	public int bytesInTokenAssocRepr() {
+		return LONG_SIZE + 2 * BOOL_SIZE;
 	}
 
-	public static long idBpt() {
-		return BASIC_ENTITY_ID_SIZE;
+	public int fixedBytesInAccountRepr() {
+		return NUM_FLAGS_IN_BASE_ACCOUNT_REPRESENTATION * BOOL_SIZE
+				+ NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION * LONG_SIZE;
 	}
 }

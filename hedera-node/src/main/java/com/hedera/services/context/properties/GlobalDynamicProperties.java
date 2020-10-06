@@ -40,6 +40,7 @@ public class GlobalDynamicProperties {
 	private long defaultContractReceiveThreshold;
 	private long nodeBalanceWarningThreshold;
 	private String pathToBalancesExportDir;
+	private boolean shouldCreatePayerRecords;
 	private boolean shouldCreateThresholdRecords;
 	private boolean shouldExportBalances;
 	private boolean shouldExportTokenBalances;
@@ -61,6 +62,7 @@ public class GlobalDynamicProperties {
 	}
 
 	public void reload() {
+		shouldCreatePayerRecords = properties.getBooleanProperty("ledger.createPayerRecords");
 		shouldCreateThresholdRecords = properties.getBooleanProperty("ledger.createThresholdRecords");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokensSymbolLength = properties.getIntProperty("tokens.maxSymbolLength");
@@ -132,6 +134,10 @@ public class GlobalDynamicProperties {
 	public int ratesIntradayChangeLimitPercent() {
 		return ratesIntradayChangeLimitPercent;
         }
+
+	public boolean shouldCreatePayerRecords() {
+		return shouldCreatePayerRecords;
+	}
 
 	public boolean shouldCreateThresholdRecords() {
 		return shouldCreateThresholdRecords;

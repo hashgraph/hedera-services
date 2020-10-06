@@ -27,6 +27,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 
 import com.hedera.services.test.IdUtils;
+import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -70,7 +71,7 @@ public class TokenDissociateUsageTest {
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
 
-		TokenDissociateUsage.estimatorFactory = factory;
+		TxnUsage.estimatorFactory = factory;
 	}
 
 	@Test

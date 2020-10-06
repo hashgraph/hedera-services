@@ -24,7 +24,6 @@ import com.google.common.cache.CacheBuilder;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -55,10 +54,8 @@ import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResource
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.records.RecordCacheFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
@@ -118,7 +115,7 @@ public enum TestFeesFactory {
 						/* Meta */
 						new GetTxnRecordResourceUsage(recordCache, answerFunctions, cryptoFees),
 						/* Crypto */
-						new GetAccountInfoResourceUsage(cryptoFees),
+						new GetAccountInfoResourceUsage(),
 						new GetAccountRecordsResourceUsage(answerFunctions, cryptoFees),
 						/* Consensus */
 						new GetTopicInfoResourceUsage()

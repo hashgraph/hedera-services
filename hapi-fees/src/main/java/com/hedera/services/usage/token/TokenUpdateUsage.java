@@ -32,10 +32,9 @@ import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.token.TokenUsageUtils.keySizeIfPresent;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
+public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 	private int currentNameLen;
 	private int currentSymbolLen;
 	private long currentExpiry;
@@ -104,7 +103,7 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenUpdate();
+		var op = this.op.getTokenUpdate();
 
 		long newMutableRb = 0;
 		newMutableRb += keySizeIfPresent(op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
@@ -117,15 +116,15 @@ public class TokenUpdateUsage extends TokenUsage<TokenUpdateUsage> {
 		}
 		newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
 		newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
-		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(tokenOp, Math.max(op.getExpiry(), currentExpiry));
+		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(this.op, Math.max(op.getExpiry(), currentExpiry));
 		long rbsDelta = Math.max(0, newLifetime * (newMutableRb - currentMutableRb));
 		if (rbsDelta > 0) {
 			usageEstimator.addRbs(rbsDelta);
 		}
 
-		long txnBytes = newMutableRb + TokenUsageUtils.idBpt() + noRbImpactBytes(op);
+		long txnBytes = newMutableRb + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(op);
 		usageEstimator.addBpt(txnBytes);
-		addTransfersRecordRb(1, 2);
+		addTokenTransfersRecordRb(1, 2);
 
 		return usageEstimator.get();
 	}

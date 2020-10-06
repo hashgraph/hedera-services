@@ -27,6 +27,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 
 import com.hedera.services.test.IdUtils;
+import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -39,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.usage.token.TokenUsage.tokenEntitySizes;
+import static com.hedera.services.usage.token.TokenTxnUsage.tokenEntitySizes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -71,7 +72,7 @@ public class TokenAssociateUsageTest {
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
 
-		TokenAssociateUsage.estimatorFactory = factory;
+		TxnUsage.estimatorFactory = factory;
 	}
 
 	@Test

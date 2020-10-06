@@ -20,30 +20,28 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.FeeData;
+import com.hedera.services.usage.TxnUsage;
+import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 
-public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
-	private TokenRevokeKycUsage(TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
-		super(tokenRevokeKycOp, usageEstimator);
+public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
+	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
+
+	abstract T self();
+
+	protected TokenTxnUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
+		super(tokenOp, usageEstimator);
 	}
 
-	public static TokenRevokeKycUsage newEstimate(TransactionBody tokenRevokeKycOp, SigUsage sigUsage) {
-		return new TokenRevokeKycUsage(tokenRevokeKycOp, estimatorFactory.get(sigUsage, tokenRevokeKycOp, ESTIMATOR_UTILS));
+	void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
+		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
 	}
 
-	@Override
-	TokenRevokeKycUsage self() {
-		return this;
-	}
-
-	public FeeData get() {
-		addAccountBpt();
-		addAccountBpt();
-		return usageEstimator.get();
+	public T novelRelsLasting(int n, long secs) {
+		usageEstimator.addRbs(n * tokenEntitySizes.bytesUsedPerAccountRelationship() * secs);
+		return self();
 	}
 }

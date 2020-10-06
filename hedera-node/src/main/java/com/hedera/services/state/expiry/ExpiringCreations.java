@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,6 +37,9 @@ public class ExpiringCreations implements EntityCreator {
 	private TransactionRecord currentRecord = null;
 	private ExpirableTxnRecord currentExpirableRecord = null;
 
+	private HederaLedger ledger;
+	private RecordCache recordCache;
+	private final ExpiryManager expiries;
 	private final PropertySource properties;
 	private final GlobalDynamicProperties dynamicProperties;
 
@@ -49,16 +53,39 @@ public class ExpiringCreations implements EntityCreator {
 			PropertySource properties,
 			GlobalDynamicProperties dynamicProperties
 	) {
+		this.expiries = expiries;
 		this.properties = properties;
 		this.dynamicProperties = dynamicProperties;
 
-		payerTracker = expiries::trackPayerRecord;
+		payerTracker = this::trackPayerRecord;
 		historicalTracker = expiries::trackHistoricalRecord;
 	}
 
+	@Override
+	public void setRecordCache(RecordCache recordCache) {
+		this.recordCache = recordCache;
+	}
+
+	@Override
 	public void setLedger(HederaLedger ledger) {
-		payerRecordFn = ledger::addPayerRecord;
+		this.ledger = ledger;
+		payerRecordFn = this::updatePayerRecord;
 		historicalRecordFn = ledger::addRecord;
+	}
+
+	private void trackPayerRecord(AccountID effectivePayer, long expiry) {
+		if (dynamicProperties.shouldCreatePayerRecords()) {
+			expiries.trackPayerRecord(effectivePayer, expiry);
+		}
+	}
+
+	private long updatePayerRecord(AccountID id, ExpirableTxnRecord record) {
+		if (dynamicProperties.shouldCreatePayerRecords()) {
+			return ledger.addPayerRecord(id, record);
+		} else {
+			recordCache.trackForExpiry(record);
+			return 0L;
+		}
 	}
 
 	@Override

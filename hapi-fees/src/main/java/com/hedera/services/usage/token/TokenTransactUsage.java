@@ -27,8 +27,9 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
-public class TokenTransactUsage extends TokenUsage<TokenTransactUsage> {
+public class TokenTransactUsage extends TokenTxnUsage<TokenTransactUsage> {
 	private TokenTransactUsage(TransactionBody tokenTransactOp, TxnUsageEstimator usageEstimator) {
 		super(tokenTransactOp, usageEstimator);
 	}
@@ -43,17 +44,17 @@ public class TokenTransactUsage extends TokenUsage<TokenTransactUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenTransfers();
+		var op = this.op.getTokenTransfers();
 
 		int xfers = 0;
 		long xferBytes = 0;
 		for (TokenTransferList transfer : op.getTokenTransfersList()) {
-			xferBytes += TokenUsageUtils.idBpt();
+			xferBytes += BASIC_ENTITY_ID_SIZE;
 			xfers += transfer.getTransfersCount();
 		}
 		xferBytes += xfers * usageProperties.accountAmountBytes();
 		usageEstimator.addBpt(xferBytes);
-		addTransfersRecordRb(op.getTokenTransfersCount(), xfers);
+		addTokenTransfersRecordRb(op.getTokenTransfersCount(), xfers);
 
 		return usageEstimator.get();
 	}
