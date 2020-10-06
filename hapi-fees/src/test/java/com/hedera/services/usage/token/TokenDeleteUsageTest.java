@@ -24,6 +24,7 @@ import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.TxnUsage;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -64,7 +65,7 @@ public class TokenDeleteUsageTest {
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
 
-		TokenDeleteUsage.estimatorFactory = factory;
+		TxnUsage.estimatorFactory = factory;
 	}
 
 	@Test

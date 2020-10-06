@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.token.entities;
 
 /*-
  * ‌
@@ -23,6 +23,7 @@ package com.hedera.services.usage.token;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public enum TokenEntitySizes {
@@ -37,18 +38,18 @@ public enum TokenEntitySizes {
 	/* { treasury } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
-	public int fixedBytesUsed() {
+	public int fixedBytesInTokenRepr() {
 		return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 1
-				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+				+ NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * INT_SIZE
+				+ NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * LONG_SIZE
 				+ NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 	}
 
-	public int baseBytesUsed(String symbol, String name) {
-		return fixedBytesUsed() + symbol.length() + name.length();
+	public int totalBytesInfTokenReprGiven(String symbol, String name) {
+		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 
-	public int bytesUsedToRecordTransfers(int numTokens, int numTransfers) {
+	public int bytesUsedToRecordTokenTransfers(int numTokens, int numTransfers) {
 		return numTokens * BASIC_ENTITY_ID_SIZE + numTransfers * USAGE_PROPERTIES.accountAmountBytes();
 	}
 

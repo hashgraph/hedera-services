@@ -23,6 +23,7 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnId;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -70,6 +71,7 @@ class ExpiryManagerTest {
 	long expiry = 1_234_567L;
 	AccountID payer = IdUtils.asAccount("0.0.13257");
 
+	RecordCache recordCache;
 	HederaLedger ledger;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	Map<TransactionID, TxnIdRecentHistory> txnHistories;
@@ -80,10 +82,11 @@ class ExpiryManagerTest {
 	public void setup() {
 		accounts = new FCMap<>();
 		txnHistories = new HashMap<>();
+		recordCache = mock(RecordCache.class);
 
 		ledger = mock(HederaLedger.class);
 
-		subject = new ExpiryManager(txnHistories);
+		subject = new ExpiryManager(recordCache, txnHistories);
 	}
 
 	@Test
@@ -111,6 +114,8 @@ class ExpiryManagerTest {
 		// and:
 		System.out.println("Final payerExpiries: " + subject.payerExpiries.allExpiries);
 		System.out.println("Final historicalExpiries: " + subject.historicalExpiries.allExpiries);
+		// and:
+		verify(recordCache).forgetAnyOtherExpiredHistory(33);
 	}
 
 	private AccountID asAccount(long num) {
