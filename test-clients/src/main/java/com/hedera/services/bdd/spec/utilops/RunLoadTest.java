@@ -47,6 +47,7 @@ public class RunLoadTest extends UtilOp {
 	private static final long DEFAULT_DURATION = 30;
 	private static final TimeUnit DEFAULT_DURATION_UNIT = TimeUnit.SECONDS;
 	private static final int DEFAULT_THREADS = 1;
+	public static final int DEFAULT_SUBMIT_MESSAGE_SIZE = 256;
 
 	private DoubleSupplier targetTps = () -> DEFAULT_TPS_TARGET;
 	private IntSupplier tpsTolerancePercentage = () -> DEFAULT_TPS_TOLERANCE_PERCENTAGE;
@@ -54,6 +55,7 @@ public class RunLoadTest extends UtilOp {
 	private LongSupplier testDuration = () -> DEFAULT_DURATION;
 	private Supplier<TimeUnit> ofUnit = () -> DEFAULT_DURATION_UNIT;
 	private IntSupplier threads = () -> DEFAULT_THREADS;
+	private IntSupplier hcsSubmitMessageSize = () -> DEFAULT_SUBMIT_MESSAGE_SIZE;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -76,6 +78,11 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setNumberOfThreads(IntSupplier numberOfThreads) {
 		this.threads = numberOfThreads;
+		return this;
+	}
+
+	public RunLoadTest setHCSSubmitMessageSize(IntSupplier submitMessageSize) {
+		this.hcsSubmitMessageSize = submitMessageSize;
 		return this;
 	}
 
