@@ -83,6 +83,13 @@
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>comswirlds-staging</id>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1011/</url>
+    </repository>
+  </repositories>
+
   <modules>
     <module>hapi-proto</module>
     <module>hapi-fees</module>
