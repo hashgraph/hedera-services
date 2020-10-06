@@ -47,8 +47,8 @@
     <maven.compiler.target>12</maven.compiler.target>
 
     <!-- Plugin custom properties -->
-    <maven-jar.version>3.1.0</maven-jar.version>
-    <maven-source.version>3.1.0</maven-source.version>
+    <maven-jar.version>3.2.0</maven-jar.version>
+    <maven-source.version>3.2.0</maven-source.version>
     <maven-license.version>2.0.0</maven-license.version>
     <maven-compiler.version>3.8.1</maven-compiler.version>
     <maven-surefire.version>3.0.0-M5</maven-surefire.version>
@@ -80,6 +80,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+<!--    <project.build.outputTimestamp>2020-10-06T08:00:00Z</project.build.outputTimestamp>-->
   </properties>
 
   <modules>
