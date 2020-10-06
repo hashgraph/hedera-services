@@ -40,7 +40,7 @@ updateServiceMainJava()
     TARGET_DIR=../test-clients/updateFiles
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
-    find ./data -type f -name "*.jar" -newermt "$beforeTime" -exec rsync  {} $TARGET_DIR \;
+    find . -type f -name "H*.jar" -newermt "$beforeTime" -exec rsync  -R {} $TARGET_DIR \;
 
     if [[ -n "${CI}" ]]; then
         echo "Running on CIRCLECI, no need to restore"
