@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenAssociateUsage extends TokenUsage<TokenAssociateUsage> {
+public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
 	private long currentExpiry;
 
 	private TokenAssociateUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
@@ -49,10 +49,10 @@ public class TokenAssociateUsage extends TokenUsage<TokenAssociateUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenAssociate();
+		var op = this.op.getTokenAssociate();
 		addAccountBpt();
 		op.getTokensList().forEach(t -> addAccountBpt());
-		novelRelsLasting(op.getTokensCount(), ESTIMATOR_UTILS.relativeLifetime(tokenOp, currentExpiry));
+		novelRelsLasting(op.getTokensCount(), ESTIMATOR_UTILS.relativeLifetime(this.op, currentExpiry));
 		return usageEstimator.get();
 	}
 }

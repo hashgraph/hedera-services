@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenDissociateUsage extends TokenUsage<TokenDissociateUsage> {
+public class TokenDissociateUsage extends TokenTxnUsage<TokenDissociateUsage> {
 	private TokenDissociateUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
 		super(tokenOp, usageEstimator);
 	}
@@ -42,7 +42,7 @@ public class TokenDissociateUsage extends TokenUsage<TokenDissociateUsage> {
 	}
 
 	public FeeData get() {
-		var op = tokenOp.getTokenDissociate();
+		var op = this.op.getTokenDissociate();
 		addAccountBpt();
 		op.getTokensList().forEach(t -> addAccountBpt());
 		return usageEstimator.get();
