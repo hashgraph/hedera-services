@@ -20,26 +20,43 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.google.common.io.CharSink;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
 
+import java.nio.charset.Charset;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+//import org.bouncycastle.util.encoders.UTF8;
 
+import java.io.File;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -103,11 +120,48 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
 //                        UtilVerbs.blockingOrder(recordActionsDone())
                 )
                 .then(
-                        QueryVerbs.getFileInfo(MIGRATION_FILE).logged(),
+                        QueryVerbs.getFileInfo(MIGRATION_FILE).logged().saveToRegistry("migrationFile"),
                         QueryVerbs.getFileContents(MIGRATION_FILE).logged(),
-                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_A).logged(),
-                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_B).logged(),
-                        QueryVerbs.getContractInfo(MIGRATION_SMART_CONTRACT).logged()
+                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_A).logged().saveToRegistry("migrationAccountA"),
+                        QueryVerbs.getAccountInfo(MIGRATION_ACCOUNT_B).logged().saveToRegistry("migrationAccountB"),
+                        QueryVerbs.getContractInfo(MIGRATION_SMART_CONTRACT).logged().saveToRegistry("migrationContract"),
+                        UtilVerbs.withOpContext((spec, ctxLog ) -> {
+                            FileWriter fw = null;
+                            try {
+                                fw = new FileWriter("src/main/resource/migration_config_default.properties");
+                                ctxLog.info("File in resources");
+                                AccountID id = spec.setup().genesisAccount();
+                                String tmpId = asEntityId(id.getRealmNum(),id.getShardNum(), id.getAccountNum());
+                                fw.write("default.payer=" + tmpId + "\n");
+
+                                FileGetInfoResponse.FileInfo fileInfo = spec.registry().getFileInfo("migrationFile");
+                                tmpId = asEntityId(fileInfo.getFileID().getRealmNum(), fileInfo.getFileID().getShardNum(),fileInfo.getFileID().getFileNum());
+                                fw.write("migration.file.id=" + tmpId + "\n");
+
+                                CryptoGetInfoResponse.AccountInfo accountInfoA = spec.registry().getAccountInfo("migrationAccountA");
+                                CryptoGetInfoResponse.AccountInfo accountInfoB = spec.registry().getAccountInfo("migrationAccountB");
+                                tmpId = asEntityId(accountInfoA.getAccountID().getRealmNum(),accountInfoA.getAccountID().getShardNum(), accountInfoA.getAccountID().getAccountNum());
+                                fw.write("migration.crypto.AccountA.id=" + tmpId + "\n"  );
+                                tmpId = asEntityId(accountInfoB.getAccountID().getRealmNum(),accountInfoB.getAccountID().getShardNum(), accountInfoB.getAccountID().getAccountNum());
+                                fw.write("migration.crypto.AccountB.id=" + tmpId + "\n");
+
+                                ContractGetInfoResponse.ContractInfo contractInfo = spec.registry().getContractInfo("migrationContract");
+                                tmpId = asEntityId(contractInfo.getContractID().getRealmNum(),contractInfo.getContractID().getShardNum(), contractInfo.getContractID().getContractNum());
+                                fw.write("migration.smartContract.id=" + tmpId + "\n");
+
+                                fw.write("nodes=" + spec.setup().nodes().stream().map(NodeConnectInfo::uri).
+                                        collect(Collectors.joining(" ")));
+
+                                fw.flush();
+                            } catch (IOException e) {
+                                ctxLog.warn("Something wrong with File operation: {} ", e);
+                            } catch (Exception e) {
+                                ctxLog.warn("Unexpected error: {}", e);
+                            } finally {
+                                fw.close();
+                            }
+
+                        })
                 )
                 .saveContext(true);
     }
@@ -182,6 +236,10 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
                             AccountAmount.newBuilder().setAccountID(toAccount).setAmount(amount).build(),
                             AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(-1L * amount).build())).build();
         };
+    }
+
+    private String asEntityId(long realmId, long shardId, long num) {
+        return String.format("%d.%d.%d", realmId,shardId,num);
     }
 
     @Override
