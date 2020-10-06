@@ -362,7 +362,7 @@ class ServicesStateTest {
 		ServicesState copy = (ServicesState) subject.copy();
 
 		// then:
-		assertTrue(copy.isImmutable());
+		assertTrue(subject.isImmutable());
 		assertEquals(self, copy.nodeId);
 		assertEquals(bookCopy, copy.addressBook());
 		assertEquals(networkCtxCopy, copy.networkCtx());

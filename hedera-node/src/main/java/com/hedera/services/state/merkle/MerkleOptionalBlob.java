@@ -227,4 +227,11 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 				.add("delegate", delegate)
 				.toString();
 	}
+
+	@Override
+	public void onRelease() {
+		if (delegate != MISSING_DELEGATE) {
+			delegate.release();
+		}
+	}
 }

@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.state.merkle.MerkleAccount.IMMUTABLE_EMPTY_FCQ;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
@@ -405,8 +406,8 @@ public class MerkleAccountTest {
 		subject.release();
 
 		// then:
-		verify(records).release();
-		verify(payerRecords).release();
+		verify(records).decrementReferenceCount();
+		verify(payerRecords).decrementReferenceCount();
 	}
 
 	@Test
