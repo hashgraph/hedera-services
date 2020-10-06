@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenBurnUsage extends TokenUsage<TokenBurnUsage> {
+public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 	private TokenBurnUsage(TransactionBody tokenBurnOp, TxnUsageEstimator usageEstimator) {
 		super(tokenBurnOp, usageEstimator);
 	}
@@ -44,7 +44,7 @@ public class TokenBurnUsage extends TokenUsage<TokenBurnUsage> {
 	public FeeData get() {
 		addAccountBpt();
 		addAmountBpt();
-		addTransfersRecordRb(1, 1);
+		addTokenTransfersRecordRb(1, 1);
 		return usageEstimator.get();
 	}
 }

@@ -20,29 +20,25 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
+import com.hedera.services.usage.QueryUsage;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.Optional;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.usage.token.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
 
-public class TokenGetInfoUsage {
-	private long rb = 0;
-	private final long customTb;
-
-	private TokenGetInfoUsage(long customTb) {
-		this.customTb = customTb;
+public class TokenGetInfoUsage extends QueryUsage {
+	private TokenGetInfoUsage(Query query) {
+		super(query.getTokenGetInfo().getHeader().getResponseType());
+		updateTb(BASIC_ENTITY_ID_SIZE);
+		updateRb(TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr());
 	}
 
 	public static TokenGetInfoUsage newEstimate(Query query) {
-		return new TokenGetInfoUsage(TokenUsageUtils.idBpt());
+		return new TokenGetInfoUsage(query);
 	}
 
 	public TokenGetInfoUsage givenCurrentAdminKey(Optional<Key> adminKey) {
@@ -83,19 +79,5 @@ public class TokenGetInfoUsage {
 	public TokenGetInfoUsage givenCurrentlyUsingAutoRenewAccount() {
 		updateRb(BASIC_ENTITY_ID_SIZE);
 		return this;
-	}
-
-	public FeeData get() {
-		long bpt = BASIC_QUERY_HEADER + customTb;
-		long bpr = TOKEN_ENTITY_SIZES.fixedBytesUsed() + rb;
-		var usage = FeeComponents.newBuilder()
-				.setBpt(bpt)
-				.setBpr(bpr)
-				.build();
-		return ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
-	}
-
-	private void updateRb(long amount) {
-		rb += amount;
 	}
 }

@@ -79,19 +79,21 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	}
 
 	private HapiApiSpec xfer() {
-		final String NODES = "35.237.200.180:0.0.3";
+//		final String NODES = "35.237.200.180:0.0.3";
+		final String NODES = "34.94.106.61:0.0.3";
 		final long ONE_HBAR = 100_000_000L;
 		return customHapiSpec("xfer")
 				.withProperties(Map.of(
 						"nodes", NODES,
-						"default.payer", "0.0.950",
-						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+						"default.payer", "0.0.50",
+//						"startupAccounts.path", "src/main/resource/MainnetStartupAccount.txt"
+						"startupAccounts.path", "src/main/resource/StableTestnetAccount50StartupAccount.txt"
 				)).given(
 				).when(
-//						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 100 * ONE_HBAR))
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 100 * ONE_HBAR))
 				).then(
 						getAccountBalance(GENESIS).logged(),
-						getAccountBalance("0.0.55").logged()
+						getAccountBalance("0.0.56").logged()
 				);
 	}
 

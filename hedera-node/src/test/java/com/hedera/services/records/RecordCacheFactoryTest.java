@@ -20,15 +20,12 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.google.common.cache.Cache;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-
-import java.util.Optional;
 
 import static com.hedera.services.utils.SleepingPause.INSTANCE;
 import static com.hedera.test.utils.IdUtils.asAccount;
