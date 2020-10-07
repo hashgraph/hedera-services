@@ -871,7 +871,7 @@ public class ServicesContext {
 					txnCtx()::consensusTime,
 					DataMapFactory.dataMapFrom(blobStore()),
 					MetadataMapFactory.metaMapFrom(blobStore()),
-					specialFileSystem());
+					this::getCurrentSpecialFileSystem);
 			hfs.register(feeSchedulesManager());
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
@@ -880,6 +880,10 @@ public class ServicesContext {
 		return hfs;
 	}
 
+	SpecialFileSystem getCurrentSpecialFileSystem() {
+		return this.state.getSpecialFileSystem();
+	}
+	
 	public SoliditySigsVerifier soliditySigsVerifier() {
 		if (soliditySigsVerifier == null) {
 			soliditySigsVerifier = new TxnAwareSoliditySigsVerifier(

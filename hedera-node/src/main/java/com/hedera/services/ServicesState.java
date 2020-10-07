@@ -194,9 +194,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			setChild(ChildIndices.SPECIAL_FILE_SYSTEM,
 					new SpecialFileSystem(preSpecialFileSystem.getFileMap(),
 							EntityIdUtils.asLiteralString(ctx.nodeAccount())));
+			((SpecialFileSystem) getChild(ChildIndices.SPECIAL_FILE_SYSTEM)).verifyHash();
 			printHashes();
 		}
-
 
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);

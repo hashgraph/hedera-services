@@ -104,7 +104,11 @@ class TieredHederaFsTest {
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata, specialFileSystem);
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, this::getCurrentSpecialFileSystem);
+	}
+
+	private SpecialFileSystem getCurrentSpecialFileSystem() {
+		return specialFileSystem;
 	}
 
 	@Test

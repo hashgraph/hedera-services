@@ -76,7 +76,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 			try {
 				byte[] hash = MessageDigest.getInstance("SHA-384").digest(getFileContent(fileID));
 				fileMap.put(fileID, hash);
-				log.info("File {} already exists, loading its hash {}", fileID, hash);
+				log.info("File {} already exists, loading its hash {}", fileID, hex(hash));
 			} catch (NoSuchAlgorithmException e) {
 				log.error("Error when calculating hash of file {}", fileID);
 			}
