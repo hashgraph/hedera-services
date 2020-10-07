@@ -36,15 +36,26 @@ import com.hedera.services.bdd.suites.contract.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
 import com.hedera.services.bdd.suites.contract.DeprecatedContractKeySuite;
 import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
+import com.hedera.services.bdd.suites.contract.OCTokenSpec;
+import com.hedera.services.bdd.suites.contract.SmartContractFailFirstSpec;
+import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
+import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
+import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
+import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FetchSystemFiles;
+import com.hedera.services.bdd.suites.file.FileAppendSuite;
+import com.hedera.services.bdd.suites.file.FileDeleteSuite;
+import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
+import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.FreezeSuite;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
@@ -177,6 +188,11 @@ public class SuiteRunner {
 		put("ConsensusThrottlesSpecs", aof(new ConsensusThrottlesSuite()));
 		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
 		/* Functional tests - FILE */
+		put("FileAppendSuite", aof(new FileAppendSuite()));
+		put("FileUpdateSuite", aof(new FileUpdateSuite()));
+		put("FileDeleteSuite", aof(new FileDeleteSuite()));
+		put("UpdateFailuresSpec", aof(new UpdateFailuresSpec()));
+		put("ExchangeRateControlSuite", aof(new ExchangeRateControlSuite()));
 		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
 		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
 		/* Functional tests - TOKEN */
@@ -191,6 +207,8 @@ public class SuiteRunner {
 		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
 		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
 		put("CryptoQueriesStressTests", aof(new CryptoQueriesStressTests()));
+		put("CryptoCornerCasesSuite", aof(new CryptoCornerCasesSuite()));
+		put("CryptoGetInfoRegression", aof(new CryptoGetInfoRegression()));
 		/* Functional tests - CONTRACTS */
 		put("NewOpInConstructorSpecs", aof(new NewOpInConstructorSuite()));
 		put("DeprecatedContractKeySpecs", aof(new DeprecatedContractKeySuite()));
@@ -200,6 +218,10 @@ public class SuiteRunner {
 		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
 		put("ContractCreateSuite", aof(new ContractCreateSuite()));
 		put("BigArraySpec", aof(new BigArraySpec()));
+		put("SmartContractFailFirstSpec", aof(new SmartContractFailFirstSpec()));
+		put("OCTokenSpec", aof(new OCTokenSpec()));
+		put("SmartContractInlineAssemblyCheck", aof(new SmartContractInlineAssemblySpec()));
+		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
