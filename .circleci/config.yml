@@ -1012,13 +1012,13 @@ workflows:
           workflow-name: "nightly-mainnet-migration-regression"
 
   nightly-software-update-regression:
-    # triggers:
-    #   - schedule:
-    #       cron: "30 18,5 * * *"
-    #       filters:
-    #         branches:
-    #           only:
-    #             - master
+    triggers:
+      - schedule:
+          cron: "30 18,5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1918,7 +1918,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 334-D-File150-Test;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
