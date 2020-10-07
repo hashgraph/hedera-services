@@ -72,6 +72,12 @@ public class LoadTest extends HapiApiSuite {
 			usedArgs++;
 		}
 
+		if (args.length > 4) {
+			hcsSubmitMessage = OptionalInt.of(Integer.parseInt(args[4]));
+			log.info("Set hcsSubmitMessageSize as " + hcsSubmitMessage.getAsInt());
+			usedArgs++;
+		}
+
 		return usedArgs;
 	}
 
