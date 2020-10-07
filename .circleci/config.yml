@@ -2785,9 +2785,6 @@ jobs:
           dsl-args: "BigArraySpec -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
-          args: '1'
       - run-eet-suites:
           dsl-args: "OCTokenSpec -TLS=on -NODE=random"
       - run-eet-suites:
@@ -2836,8 +2833,6 @@ jobs:
       - run-umbrella-test
       - run-eet-suites:
           dsl-args: "OneOfEveryTxn"
-#      - run-scenario-test:
-#          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestBefore
       - run-eet-suites:
           dsl-args: "MigrationValidationPreSteps"
       - start-freeze:
@@ -2852,8 +2847,6 @@ jobs:
           active-status-timeout-secs: 180
           liveness-pattern-count: << parameters.liveness-pattern-count >>
           signed-state-pattern-count: << parameters.signed-state-pattern-count >>
-#      - run-scenario-test:
-#          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
       - run-eet-suites:
           dsl-args: "MigrationValidationPostSteps"
       - run-umbrella-test:
