@@ -127,12 +127,14 @@ class FileUpdateTransitionLogicTest {
 	@Test
 	public void doesntUpdateWaclIfNoNew() {
 		// setup:
+		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
 		ArgumentCaptor<JFileInfo> captor = ArgumentCaptor.forClass(JFileInfo.class);
 
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(
 				new JFileInfo(false, oldWacl, oldExpiry));
+		given(hfs.setattr(any(), any())).willReturn(res);
 
 		// when:
 		subject.doStateTransition();
@@ -145,9 +147,11 @@ class FileUpdateTransitionLogicTest {
 
 	@Test
 	public void doesntOverwriteIfNoContents() {
+		HederaFs.UpdateResult res = mock(HederaFs.UpdateResult.class);
 		givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY, UpdateTarget.KEY));
 		// and:
 		given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
+		given(hfs.setattr(any(), any())).willReturn(res);
 
 		// when:
 		subject.doStateTransition();
