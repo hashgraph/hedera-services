@@ -2719,7 +2719,7 @@ jobs:
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.FileServiceIT
       - postgres-verify-counts:
-          expected-difference: 1
+          expected-difference: 2
       - run-scenario-test:
           fqcn: com.hedera.services.legacy.file.SystemDeleteIT
       - run-eet-suites:
