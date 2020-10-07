@@ -628,7 +628,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 
 
     // Upload Minters file, "linking" address of AddressBook into the where needed.
-    FileID MintersFileId = LargeFileUploadIT.uploadFileWithSubst(
+    FileID MintersFileId = LargeFileUploadIT.uploadFileWithStringSubstitution(
         crAccount, MINTERS_BIN, new ArrayList<>(
                     List.of(crAccountKeyPair.getPrivate())),
         "_+AddressBook.sol:AddressBook_+", addressBookSolidityAddress, host, nodeAccount);

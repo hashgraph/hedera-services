@@ -89,11 +89,11 @@ public class LargeFileUploadIT extends FileServiceIT {
    *
    * @param payerAccountKeyPair the payer is a single keypair
    */
-  public static FileID uploadFileWithSubst(AccountID payerAccount, String filePath,
+  public static FileID uploadFileWithStringSubstitution(AccountID payerAccount, String filePath,
       KeyPair payerAccountKeyPair, String regex, String replacement) throws Exception {
     List<PrivateKey> payerAccountPrivateKeys = new ArrayList<>();
     payerAccountPrivateKeys.add(payerAccountKeyPair.getPrivate());
-    return uploadFileWithSubst(payerAccount, filePath, payerAccountPrivateKeys, regex, replacement,
+    return uploadFileWithStringSubstitution(payerAccount, filePath, payerAccountPrivateKeys, regex, replacement,
             null, null);
   }
 
@@ -146,7 +146,7 @@ public class LargeFileUploadIT extends FileServiceIT {
    * Upload a file with string substitution. If the file is larger than default size (4K), it will
    * be segmented into 4K parts and uploaded one at a time.
    */
-  public static FileID uploadFileWithSubst(AccountID payerAccount, String filePath,
+  public static FileID uploadFileWithStringSubstitution(AccountID payerAccount, String filePath,
       List<PrivateKey> payerAccountPrivateKeys, String regex, String replacement, String overridehost,
           AccountID overrideAccount) throws Exception {
     LargeFileUploadIT tester = new LargeFileUploadIT();

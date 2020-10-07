@@ -75,9 +75,8 @@ public class FeeClient {
     }
   }
   public static Map<HederaFunctionality, FeeData> getFeeScheduleMap() {
-    Map<HederaFunctionality, FeeData> feeSchMap = null;
+    Map<HederaFunctionality, FeeData> feeSchMap = new HashMap<>();
     try {
-      feeSchMap = new HashMap<>();
       File feeSchFile = new File("src/main/resource/feeSchedule.txt");
       InputStream fis = new FileInputStream(feeSchFile);
       byte[] fileBytes = new byte[(int) feeSchFile.length()];
