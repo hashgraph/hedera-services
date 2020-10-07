@@ -40,6 +40,8 @@ updateServiceMainJava()
     TARGET_DIR=../test-clients/updateFiles
     rm -rf $TARGET_DIR
     mkdir -p $TARGET_DIR
+
+    # search all changed jar files and copy to target directory, keeping the old directory hierarchy
     find . -type f -name "H*.jar" -newermt "$beforeTime" -exec rsync  -R {} $TARGET_DIR \;
 
     if [[ -n "${CI}" ]]; then
