@@ -1925,7 +1925,7 @@ jobs:
           no_output_timeout: 60m
           command: |
             cd /swirlds-platform/regression;
-            ./regression_services_circleci.sh AWS-Services-Daily-Mixed-4N-4C.json /repo
+            ./regression_services_circleci.sh AWS-Services-Daily-UmbrellaPerf-4N-4C.json /repo
 
       - run:
           name: Sync results of software update regression to AWS
