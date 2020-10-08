@@ -98,10 +98,6 @@ public class RandomMessageSubmit implements OpProvider {
                         .hasKnownStatusFrom(permissibleOutcomes)
                         .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 
-                if (r.nextBoolean()) {
-                        op = op.usePresetTimestamp();
-                }
-
                 return Optional.of(op);
         }
 }
