@@ -39,6 +39,7 @@ import com.hedera.services.bdd.suites.contract.NewOpInConstructorSuite;
 import com.hedera.services.bdd.suites.contract.OCTokenSpec;
 import com.hedera.services.bdd.suites.contract.SmartContractFailFirstSpec;
 import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
+import com.hedera.services.bdd.suites.contract.SmartContractPaySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -222,6 +223,7 @@ public class SuiteRunner {
 		put("OCTokenSpec", aof(new OCTokenSpec()));
 		put("SmartContractInlineAssemblyCheck", aof(new SmartContractInlineAssemblySpec()));
 		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
+		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
 		/* Functional tests - MIXED (record emphasis) */
 		put("ThresholdRecordCreationSpecs", aof(new ThresholdRecordCreationSuite()));
 		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
