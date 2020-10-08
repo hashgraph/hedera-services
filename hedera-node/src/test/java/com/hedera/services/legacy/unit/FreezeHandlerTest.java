@@ -137,4 +137,50 @@ public class FreezeHandlerTest {
 		Assertions.assertTrue(file3.exists());
 		file3.delete();
 	}
+
+	@Test
+	public void freezeOnlyNoUpdateFeature() throws Exception {
+
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
+
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+		freezeHandler.handleUpdateFeature();
+	}
+
+	@Test
+	public void freeze_updateAbort_EmptyFile() throws Exception {
+		byte[] data = new byte[0];
+		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
+		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
+
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
+
+		given(hfs.exists(fileID)).willReturn(true);
+		given(hfs.cat(fileID)).willReturn(data);
+
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+
+		freezeHandler.handleUpdateFeature();
+	}
+
+	@Test
+	public void freeze_updateFileHash_MisMatch() throws Exception {
+		byte[] data = new byte[0];
+		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
+
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
+
+		given(hfs.exists(fileID)).willReturn(true);
+		given(hfs.cat(fileID)).willReturn(new byte[100]);
+
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		TransactionRecord record = freezeHandler.freeze(txBody, consensusTime);
+		Assertions.assertEquals( record.getReceipt().getStatus() , ResponseCodeEnum.SUCCESS);
+
+		freezeHandler.handleUpdateFeature();
+	}
 }

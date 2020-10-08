@@ -97,6 +97,7 @@ class StateViewTest {
 	MerkleAccount contract;
 	MerkleAccount notContract;
 	PropertySource propertySource;
+	SpecialFileSystem specialFileSystem;
 
 	StateView subject;
 
@@ -165,8 +166,8 @@ class StateViewTest {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
-
-		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, new SpecialFileSystem());
+		specialFileSystem = mock(SpecialFileSystem.class);
+		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, specialFileSystem);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -433,5 +434,19 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsSpecialFileContents() {
+		FileID file150 = asFile("0.0.150");
+
+		given(specialFileSystem.getFileContent(file150)).willReturn(data);
+		given(specialFileSystem.isSpeicalFileID(file150)).willReturn(true);
+
+		// when
+		var stuff = subject.contentsOf(file150);
+
+		// then:
+		assertTrue(Arrays.equals(data, stuff.get()));
 	}
 }

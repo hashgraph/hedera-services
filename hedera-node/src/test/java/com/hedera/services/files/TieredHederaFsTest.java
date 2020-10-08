@@ -21,18 +21,21 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.AbstractMap;
@@ -40,15 +43,19 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
+import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
-import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
-import org.mockito.InOrder;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class TieredHederaFsTest {
@@ -96,7 +103,8 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
-		specialFileSystem = mock(SpecialFileSystem.class);
+		specialFileSystem = new SpecialFileSystem(AccountID.newBuilder()
+				.setAccountNum(3).build());
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -778,5 +786,35 @@ class TieredHederaFsTest {
 		assertEquals(fid, newFile);
 		verify(data).put(fid, origContents);
 		verify(metadata).put(fid, livingAttr);
+	}
+
+	@Test
+	public void createNewFile150ThenReadAndAppend() {
+		FileID fileID = FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM).build();
+		given(metadata.containsKey(fileID)).willReturn(true);
+		given(metadata.get(fileID)).willReturn(livingAttr);
+		// when:
+		var result = subject.overwrite(fileID, newContents);
+
+		// then:
+		assertEquals(SUCCESS, result.outcome());
+		assertTrue(result.fileReplaced());
+
+		// given:
+		var contents = subject.cat(fileID);
+
+		// then:
+		assertEquals(
+				new String(newContents),
+				new String(contents));
+
+		// when
+		subject.append(fileID, moreContents);
+
+		// then:
+		contents = subject.cat(fileID);
+		assertEquals(
+				new String(newContents) + new String(moreContents),
+				new String(contents));
 	}
 }

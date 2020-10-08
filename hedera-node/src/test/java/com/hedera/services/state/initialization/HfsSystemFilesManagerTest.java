@@ -252,6 +252,22 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
+	public void createsEmptyUpdateFeatureFile() {
+		FileID file150 = fileNumbers.toFid(fileNumbers.getUpdateFeatureFile());
+
+		// setup:
+		given(hfs.exists(file150)).willReturn(false);
+		given(hfs.getSpecialFileSystem()).willReturn(specialFileSystem);
+		given(specialFileSystem.isSpeicalFileID(file150)).willReturn(true);
+
+		// when:
+		subject.createEmptyUpdateFeatureFile();
+
+		// then:
+		verify(specialFileSystem).put(file150, new byte[0]);
+	}
+
+	@Test
 	public void loadsPropsFromHfsIfAvailable() {
 		given(hfs.exists(appPropsId)).willReturn(true);
 		given(hfs.cat(appPropsId)).willReturn(fromState.toByteArray());
