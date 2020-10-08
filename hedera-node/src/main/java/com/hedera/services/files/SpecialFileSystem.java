@@ -2,6 +2,7 @@ package com.hedera.services.files;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -20,15 +21,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.SPECIAL_FILESYSTEM_DIR;
 import static com.swirlds.common.CommonUtils.hex;
 
 public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf, FastCopyable<SpecialFileSystem> {
 	private final static int HASH_BYTES = 48;
-	private final static int MERKLE_VERSION = 1;
+	public final static int MERKLE_VERSION = 1;
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
-	private static final Logger log = LogManager.getLogger(SpecialFileSystem.class);
+	public static Logger log = LogManager.getLogger(SpecialFileSystem.class);
 
 	// Map of fileID and file hash bytes
 	HashMap<FileID, byte[]> fileMap = new HashMap<>();
@@ -95,7 +99,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 			return FileUtils.readFileToByteArray(
 					new File(SPECIAL_FILESYSTEM_DIR + fileSystemLocation + File.separator + fileIDtoDotString(fileID)));
 		} catch (IOException e) {
-			log.error("{} Error when reading fileID {} from local filesystem", fileID, e);
+			log.error(String.format("Error when reading fileID %s from local filesystem %s", fileID, e));
 			return new byte[0];
 		}
 	}
@@ -188,5 +192,34 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 						hex(fileSystemHash));
 			}
 		}
+	}
+
+	private boolean areEqualKeyValues(Map<FileID, byte[]> first, Map<FileID, byte[]> second) {
+		for (FileID key : first.keySet()) {
+			if(!Arrays.equals(first.get(key), second.get(key))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || SpecialFileSystem.class != o.getClass()) {
+			return false;
+		}
+		SpecialFileSystem that = (SpecialFileSystem) o;
+		if (!areEqualKeyValues(fileMap, that.fileMap)) {
+			return false;
+		}
+		return fileSystemLocation.equals(that.fileSystemLocation);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(fileMap, fileSystemLocation);
 	}
 }

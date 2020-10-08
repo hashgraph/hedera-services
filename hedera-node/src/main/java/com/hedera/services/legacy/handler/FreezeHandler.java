@@ -60,7 +60,7 @@ import static com.swirlds.common.CommonUtils.hex;
  * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
-	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+	public static Logger log = LogManager.getLogger(FreezeHandler.class);
 
 	private final Platform platform;
 	private final HederaFs hfs;
@@ -83,7 +83,7 @@ public class FreezeHandler {
 			Platform platform,
 			HbarCentExchange exchange
 	) {
-		
+
 		this.exchange = exchange;
 		this.platform = platform;
 		this.hfs = hfs;
@@ -125,7 +125,7 @@ public class FreezeHandler {
 
 	public void handleUpdateFeature() {
 		if (updateFeatureFile == null) {
-			log.info("{} Update file id is not defined, no update will be conducted", LOG_PREFIX);
+			log.info(String.format("%s Update file id is not defined, no update will be conducted", LOG_PREFIX));
 			return;
 		}
 		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
@@ -136,7 +136,7 @@ public class FreezeHandler {
 			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
 			byte[] fileBytes = hfs.cat(fileIDtoUse);
 			if ( fileBytes == null || fileBytes.length == 0) {
-				log.error("{} Update file is empty", LOG_PREFIX);
+				log.error(String.format("%s Update file is empty", LOG_PREFIX));
 				log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
 				return;
 			}
@@ -145,8 +145,7 @@ public class FreezeHandler {
 				if (Arrays.equals(readFileHash, updateFileHash)) {
 					updateFeatureWithFileContents(fileBytes);
 				} else {
-					log.error("{} File hash mismatch: tr {} vs file system {}", LOG_PREFIX,
-							hex(updateFileHash), hex(readFileHash));
+					log.error(String.format("%s File hash mismatch", LOG_PREFIX));
 					log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
 					log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
 					log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
@@ -155,7 +154,7 @@ public class FreezeHandler {
 				log.error("{} Exception {}", LOG_PREFIX, e);
 			}
 		} else {
-			log.error("{} File ID {} not found in file system ", LOG_PREFIX, fileIDtoUse);
+			log.error(String.format("%s File ID %s not found in file system ", LOG_PREFIX, fileIDtoUse));
 		}
 	}
 

@@ -816,5 +816,7 @@ class TieredHederaFsTest {
 		assertEquals(
 				new String(newContents) + new String(moreContents),
 				new String(contents));
+
+		assertEquals(subject.getSpecialFileSystem(), specialFileSystem);
 	}
 }
