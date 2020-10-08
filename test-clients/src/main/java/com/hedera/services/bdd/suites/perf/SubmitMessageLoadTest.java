@@ -55,7 +55,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 
 	private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
 	private static String topicID = null;
-	private static int messageSize = 40;
+	private static int messageSize = 256;
 	private static String pemFile = null;
 	public static void main(String... args) {
 		int usedArgs = parseArgs(args);
