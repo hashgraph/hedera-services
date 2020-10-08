@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 public class UmbrellaRedux extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 
-	public static final String DEFAULT_PROPERTIES = "regression-file_ops.properties";
+	public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
 
 	private AtomicLong duration = new AtomicLong(1);
 	private AtomicInteger maxOpsPerSec = new AtomicInteger(Integer.MAX_VALUE);

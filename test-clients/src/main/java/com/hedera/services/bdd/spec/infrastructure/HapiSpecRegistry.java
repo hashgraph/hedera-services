@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -573,6 +574,22 @@ public class HapiSpecRegistry {
 	public void removeContractInfo(String name) {
 		try {
 			remove(name, ContractGetInfoResponse.ContractInfo.class);
+		} catch (Exception ignore) {
+		}
+	}
+
+	public TransactionRecord getTransactionRecord(String name) {
+		return get(name, TransactionRecord.class);
+	}
+
+
+	public void saveTransactionRecord(String name, TransactionRecord txnRecord) {
+		put(name, txnRecord);
+	}
+
+	public void removeTransactionRecord(String name) {
+		try {
+			remove(name, TransactionRecord.class);
 		} catch (Exception ignore) {
 		}
 	}

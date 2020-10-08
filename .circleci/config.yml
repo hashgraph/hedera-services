@@ -2833,9 +2833,9 @@ jobs:
           dsl-args: "MigrationValidationPreSteps"
       - start-freeze:
           failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
-      - run-umbrella-test:
-          config-file: umbrellaTest.properties.alt5k
-          expect-unavailable-nodes: true
+      - run-eet-suites:
+          perf-run: true
+          dsl-args: "UmbrellaRedux duration=2,unit=MINUTES,maxOpsPerSec=30,props=regression-mixed_ops.properties,maxPendingOps=50"
       - validate-thaw:
           freeze-pattern-count: << parameters.freeze-pattern-count >>
       - restart-with-validations:
@@ -2845,8 +2845,9 @@ jobs:
           signed-state-pattern-count: << parameters.signed-state-pattern-count >>
       - run-eet-suites:
           dsl-args: "MigrationValidationPostSteps"
-      - run-umbrella-test:
-          config-file: umbrellaTest.properties.alt1k
+      - run-eet-suites:
+          perf-run: true
+          dsl-args: "UmbrellaRedux duration=1,unit=MINUTES,maxOpsPerSec=30,props=regression-mixed_ops.properties,maxPendingOps=50"
       - run:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
