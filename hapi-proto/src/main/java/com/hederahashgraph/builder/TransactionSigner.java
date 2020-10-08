@@ -226,7 +226,7 @@ public class TransactionSigner {
       }
     }
     
-    return rv;
+    return Math.min(3, rv);
   }
 
   /**
