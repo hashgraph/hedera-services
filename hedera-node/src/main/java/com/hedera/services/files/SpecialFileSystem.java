@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
 import static com.hedera.services.legacy.logic.ApplicationConstants.SPECIAL_FILESYSTEM_DIR;
 import static com.swirlds.common.CommonUtils.hex;
 
+/**
+ * Save some special system files in local file system instead of database to improve access efficiency
+ * File contents locate on local file system, but file hashes save in memory using a hash map
+ */
 public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf, FastCopyable<SpecialFileSystem> {
 	private final static int HASH_BYTES = 48;
 	public final static int MERKLE_VERSION = 1;
@@ -80,7 +84,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 			try {
 				byte[] hash = MessageDigest.getInstance("SHA-384").digest(getFileContent(fileID));
 				fileMap.put(fileID, hash);
-				log.info("File {} already exists, loading its hash {}", fileID, hex(hash));
+				log.info("File {} already exists, saving its hash in map {}", fileID, hex(hash));
 			} catch (NoSuchAlgorithmException e) {
 				log.error("Error when calculating hash of file {}", fileID);
 			}
