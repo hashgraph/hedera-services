@@ -22,7 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.files.DiskFs;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -109,12 +109,12 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private final PropertySource properties;
-	private DiskFs diskFs;
+	private MerkleDiskFs diskFs;
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
-			DiskFs diskFs
+			MerkleDiskFs diskFs
 	) {
 		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
@@ -124,7 +124,7 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
-			DiskFs diskFs
+			MerkleDiskFs diskFs
 	) {
 		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
@@ -136,7 +136,7 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
-			DiskFs diskFs,
+			MerkleDiskFs diskFs,
 			PropertySource properties
 	) {
 		this.topics = topics;
@@ -160,7 +160,7 @@ public class StateView {
 
 	public Optional<byte[]> contentsOf(FileID id) {
 		if (diskFs.contains(id)) {
-			return Optional.ofNullable(diskFs.getFileContent(id));
+			return Optional.ofNullable(diskFs.contentsOf(id));
 		} else {
 			return Optional.ofNullable(fileContents.get(id));
 		}

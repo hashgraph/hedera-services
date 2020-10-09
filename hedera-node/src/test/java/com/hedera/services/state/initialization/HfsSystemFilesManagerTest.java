@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.files.DiskFs;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
@@ -106,7 +106,7 @@ class HfsSystemFilesManagerTest {
 	AddressBook currentBook;
 	JFileInfo expectedInfo;
 	TieredHederaFs hfs;
-	DiskFs diskFs;
+	MerkleDiskFs diskFs;
 	MockFileNumbers fileNumbers;
 	PropertySource properties;
 	Consumer<ServicesConfigurationList> propertiesCb;
@@ -153,7 +153,7 @@ class HfsSystemFilesManagerTest {
 		data = mock(Map.class);
 		metadata = mock(Map.class);
 		hfs = mock(TieredHederaFs.class);
-		diskFs = mock(DiskFs.class);
+		diskFs = mock(MerkleDiskFs.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
 		given(hfs.diskFs()).willReturn(diskFs);
@@ -253,7 +253,7 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	public void createsEmptyUpdateFeatureFile() {
-		FileID file150 = fileNumbers.toFid(fileNumbers.getUpdateFeatureFile());
+		FileID file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 
 		// setup:
 		given(hfs.exists(file150)).willReturn(false);

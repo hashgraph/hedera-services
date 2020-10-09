@@ -23,7 +23,7 @@ package com.hedera.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.files.DiskFs;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -113,8 +113,8 @@ class ServicesStateTest {
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
 	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
-	DiskFs diskFs;
-	DiskFs diskFsCopy;
+	MerkleDiskFs diskFs;
+	MerkleDiskFs diskFsCopy;
 	ExchangeRates midnightRates;
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
@@ -153,14 +153,14 @@ class ServicesStateTest {
 		tokensCopy = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
-		diskFs = mock(DiskFs.class);
+		diskFs = mock(MerkleDiskFs.class);
 
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		topicsCopy = mock(FCMap.class);
 		storageCopy = mock(FCMap.class);
 		accountsCopy = mock(FCMap.class);
-		diskFsCopy = mock(DiskFs.class);
+		diskFsCopy = mock(MerkleDiskFs.class);
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);

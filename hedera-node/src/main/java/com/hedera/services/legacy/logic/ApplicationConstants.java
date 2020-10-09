@@ -33,7 +33,6 @@ public class ApplicationConstants {
 
 	// File number used to do system update
 	public static long UPDATE_FEATURE_FILE_ACCOUNT_NUM = 150;
-	public static String SPECIAL_FILESYSTEM_DIR = "data/specialFileSystem/";
 
 	public static String NO = "NO";
 	public static int ZERO = 0;

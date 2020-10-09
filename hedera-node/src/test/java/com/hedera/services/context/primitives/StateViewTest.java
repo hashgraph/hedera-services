@@ -35,7 +35,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.files.DiskFs;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -97,7 +97,7 @@ class StateViewTest {
 	MerkleAccount contract;
 	MerkleAccount notContract;
 	PropertySource propertySource;
-	DiskFs diskFs;
+	MerkleDiskFs diskFs;
 
 	StateView subject;
 
@@ -166,7 +166,7 @@ class StateViewTest {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
-		diskFs = mock(DiskFs.class);
+		diskFs = mock(MerkleDiskFs.class);
 		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
@@ -440,7 +440,7 @@ class StateViewTest {
 	public void getsSpecialFileContents() {
 		FileID file150 = asFile("0.0.150");
 
-		given(diskFs.getFileContent(file150)).willReturn(data);
+		given(diskFs.contentsOf(file150)).willReturn(data);
 		given(diskFs.contains(file150)).willReturn(true);
 
 		// when

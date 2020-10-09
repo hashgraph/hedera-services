@@ -51,7 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
-import com.hedera.services.files.DiskFs;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -880,7 +880,7 @@ public class ServicesContext {
 		return hfs;
 	}
 
-	DiskFs getCurrentSpecialFileSystem() {
+	MerkleDiskFs getCurrentSpecialFileSystem() {
 		return this.state.diskFs();
 	}
 	
@@ -1229,7 +1229,7 @@ public class ServicesContext {
 
 	public FreezeServiceImpl freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(txns(), submissionManager());
+			freezeGrpc = new FreezeServiceImpl(fileNums(), txns(), submissionManager());
 		}
 		return freezeGrpc;
 	}
@@ -1629,7 +1629,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public DiskFs specialFileSystem() {
+	public MerkleDiskFs specialFileSystem() {
 		return state.diskFs();
 	}
 }

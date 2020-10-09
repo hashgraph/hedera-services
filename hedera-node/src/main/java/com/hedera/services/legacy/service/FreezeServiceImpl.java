@@ -22,11 +22,14 @@ package com.hedera.services.legacy.service;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.legacy.handler.TransactionHandler;
 import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -53,22 +56,25 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 	private static final Logger log = LogManager.getLogger(FreezeServiceImpl.class);
 
-	private Platform platform;
+	private final FileID softwareUpdateZipFid;
 	private TransactionHandler txHandler;
 	private PlatformSubmissionManager submissionManager;
 
 	public FreezeServiceImpl(
+			FileNumbers fileNums,
 			TransactionHandler transactionHandler,
 			PlatformSubmissionManager submissionManager
 	) {
 		this.txHandler = transactionHandler;
 		this.submissionManager = submissionManager;
+
+		softwareUpdateZipFid = fileNums.toFid(fileNums.softwareUpdateZip());
 	}
 
 	/**
 	 * Validates startHour, startMin, endHour, and endMin in FreezeTransactionBody
 	 */
-	public static TxnValidityAndFeeReq validateFreezeTxBody(FreezeTransactionBody body) {
+	public TxnValidityAndFeeReq validateFreezeTxBody(FreezeTransactionBody body) {
 		int startHour = body.getStartHour();
 		int startMin = body.getStartMin();
 		int endHour = body.getEndHour();
@@ -78,13 +84,9 @@ public class FreezeServiceImpl extends FreezeServiceGrpc.FreezeServiceImplBase {
 			return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
 		}
 		if (body.hasUpdateFile()) {
-			// Check if FileID for update feature is the allowed default FileID
-			if (body.getUpdateFile().getFileNum() != ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM
-					|| body.getUpdateFile().getRealmNum() != DEFAULT_FILE_REALM
-					|| body.getUpdateFile().getShardNum() != DEFAULT_FILE_SHARD){
+			if (!body.getUpdateFile().equals(softwareUpdateZipFid)) {
 				return new TxnValidityAndFeeReq(ResponseCodeEnum.INVALID_FILE_ID);
 			}
-			// Check if file hash field is included
 			if (body.getFileHash() == null || body.getFileHash().isEmpty()) {
 				log.error("Missing file hash when update file ID is present");
 				return new TxnValidityAndFeeReq(INVALID_FREEZE_TRANSACTION_BODY);

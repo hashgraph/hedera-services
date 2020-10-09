@@ -50,6 +50,7 @@ hedera-node/data/recordstreams/
 hedera-node/data/saved/
 hedera-node/output/
 hedera-node/target/
+hedera-node/src/test/resources/diskFs
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp
