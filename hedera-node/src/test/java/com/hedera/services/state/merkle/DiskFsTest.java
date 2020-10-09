@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle;
 
-import com.hedera.services.files.SpecialFileSystem;
+import com.hedera.services.files.DiskFs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -26,9 +26,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
-public class SpecialFileSystemTest {
+public class DiskFsTest {
 
-	SpecialFileSystem subject;
+	DiskFs subject;
 	AccountID nodeAccount = AccountID.newBuilder()
 			.setAccountNum(3).build();
 	FileID file150 = asFile("0.0.150");
@@ -37,7 +37,7 @@ public class SpecialFileSystemTest {
 
 	@BeforeEach
 	private void setup() throws NoSuchAlgorithmException {
-		subject = new SpecialFileSystem(nodeAccount);
+		subject = new DiskFs(nodeAccount);
 		fileHash = MessageDigest.getInstance("SHA-384").digest(origContents);
 	}
 
@@ -49,19 +49,19 @@ public class SpecialFileSystemTest {
 		assertArrayEquals(fileHash, subject.getFileHash(file150));
 		assertArrayEquals(origContents, subject.getFileContent(file150));
 
-		SpecialFileSystem.log = mock(Logger.class);
-		subject.verifyHash();
-		verify(SpecialFileSystem.log, times(0))
+		DiskFs.log = mock(Logger.class);
+		subject.checkFileAndDiskHashesMatch();
+		verify(DiskFs.log, times(0))
 				.error(argThat((String s) -> s.contains("Error: File hash from state does not match")));
 	}
 
 	@Test
 	public void FileNotExist() {
 		// setup:
-		subject = new SpecialFileSystem();
-		SpecialFileSystem.log = mock(Logger.class);
+		subject = new DiskFs();
+		DiskFs.log = mock(Logger.class);
 		subject.getFileContent(file150);
-		verify(SpecialFileSystem.log)
+		verify(DiskFs.log)
 				.error(argThat((String s) -> s.contains("Error when reading fileID")));
 	}
 
@@ -105,10 +105,10 @@ public class SpecialFileSystemTest {
 		given(fin.readByteArray(48)).willReturn(fileHash);
 
 		// and:
-		var read = new SpecialFileSystem(nodeAccount);
+		var read = new DiskFs(nodeAccount);
 
 		// when:
-		read.deserialize(fin, SpecialFileSystem.MERKLE_VERSION);
+		read.deserialize(fin, DiskFs.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, read);

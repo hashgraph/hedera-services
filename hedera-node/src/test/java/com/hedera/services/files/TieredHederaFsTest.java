@@ -82,7 +82,7 @@ class TieredHederaFsTest {
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, JFileInfo> metadata;
-	SpecialFileSystem specialFileSystem;
+	DiskFs diskFs;
 	TieredHederaFs subject;
 
 	@BeforeEach
@@ -103,7 +103,7 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
-		specialFileSystem = new SpecialFileSystem(AccountID.newBuilder()
+		diskFs = new DiskFs(AccountID.newBuilder()
 				.setAccountNum(3).build());
 
 		clock = mock(Supplier.class);
@@ -115,8 +115,8 @@ class TieredHederaFsTest {
 		subject = new TieredHederaFs(ids, properties, clock, data, metadata, this::getCurrentSpecialFileSystem);
 	}
 
-	private SpecialFileSystem getCurrentSpecialFileSystem() {
-		return specialFileSystem;
+	private DiskFs getCurrentSpecialFileSystem() {
+		return diskFs;
 	}
 
 	@Test
@@ -817,6 +817,6 @@ class TieredHederaFsTest {
 				new String(newContents) + new String(moreContents),
 				new String(contents));
 
-		assertEquals(subject.getSpecialFileSystem(), specialFileSystem);
+		assertEquals(subject.diskFs(), diskFs);
 	}
 }

@@ -2,7 +2,6 @@ package com.hedera.services.files;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.logic.ApplicationConstants;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.legacy.logic.ApplicationConstants.SPECIAL_FILESYSTEM_DIR;
 import static com.swirlds.common.CommonUtils.hex;
@@ -32,21 +30,21 @@ import static com.swirlds.common.CommonUtils.hex;
  * Save some special system files in local file system instead of database to improve access efficiency
  * File contents locate on local file system, but file hashes save in memory using a hash map
  */
-public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf, FastCopyable<SpecialFileSystem> {
+public class DiskFs extends AbstractMerkleNode implements MerkleLeaf, FastCopyable<DiskFs> {
 	private final static int HASH_BYTES = 48;
 	public final static int MERKLE_VERSION = 1;
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;
-	public static Logger log = LogManager.getLogger(SpecialFileSystem.class);
+	public static Logger log = LogManager.getLogger(DiskFs.class);
 
 	// Map of fileID and file hash bytes
 	HashMap<FileID, byte[]> fileMap = new HashMap<>();
 	private String fileSystemLocation;
 
-	public SpecialFileSystem() {
+	public DiskFs() {
 		fileSystemLocation = "empty";
 	}
 
-	public SpecialFileSystem(AccountID nodeAccountID) {
+	public DiskFs(AccountID nodeAccountID) {
 		// Create empty file 0.0.150
 		FileID fid150 = FileID.newBuilder()
 				.setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM)
@@ -58,10 +56,9 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 		invalidateHash();
 	}
 
-	public SpecialFileSystem(HashMap<FileID, byte[]> fileMap, String accountIDStr) {
+	public DiskFs(HashMap<FileID, byte[]> fileMap, String fileSystemBasePath) {
 		this.fileMap = (HashMap<FileID, byte[]>) fileMap.clone();
-		this.fileSystemLocation = accountIDStr;
-		invalidateHash();
+		this.fileSystemLocation = fileSystemBasePath;
 	}
 
 	public HashMap<FileID, byte[]> getFileMap() {
@@ -124,7 +121,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 		}
 	}
 
-	public boolean isSpeicalFileID(FileID fileID) {
+	public boolean contains(FileID fileID) {
 		return fileMap.containsKey(fileID);
 	}
 
@@ -175,9 +172,8 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 	}
 
 	@Override
-	public SpecialFileSystem copy() {
-		SpecialFileSystem newCopy = new SpecialFileSystem(fileMap, this.fileSystemLocation);
-		return newCopy;
+	public DiskFs copy() {
+		return new DiskFs(fileMap, this.fileSystemLocation);
 	}
 
 	@Override
@@ -185,7 +181,7 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 
 	}
 
-	public void verifyHash() {
+	public void checkFileAndDiskHashesMatch() {
 		for (FileID fileID : fileMap.keySet()) {
 			//Verify if the file system has the same hash loaded form state
 			byte[] hash = fileMap.get(fileID);
@@ -212,10 +208,10 @@ public class SpecialFileSystem extends AbstractMerkleNode implements MerkleLeaf,
 		if (this == o) {
 			return true;
 		}
-		if (o == null || SpecialFileSystem.class != o.getClass()) {
+		if (o == null || DiskFs.class != o.getClass()) {
 			return false;
 		}
-		SpecialFileSystem that = (SpecialFileSystem) o;
+		DiskFs that = (DiskFs) o;
 		if (!areEqualKeyValues(fileMap, that.fileMap)) {
 			return false;
 		}

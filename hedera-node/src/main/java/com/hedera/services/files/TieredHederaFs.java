@@ -62,7 +62,7 @@ public class TieredHederaFs implements HederaFs {
 	final List<FileUpdateInterceptor> updateInterceptors = new ArrayList<>();
 
 	public static final int BYTES_PER_KB = 1024;
-	private Supplier<SpecialFileSystem> specialFileSystemSource;
+	private Supplier<DiskFs> specialFileSystemSource;
 	public enum IllegalArgumentType {
 		DELETED_FILE(ResponseCodeEnum.FILE_DELETED),
 		UNKNOWN_FILE(ResponseCodeEnum.INVALID_FILE_ID),
@@ -86,7 +86,7 @@ public class TieredHederaFs implements HederaFs {
 			Supplier<Instant> now,
 			Map<FileID, byte[]> data,
 			Map<FileID, JFileInfo> metadata,
-			Supplier<SpecialFileSystem> specialFileSystemSource
+			Supplier<DiskFs> specialFileSystemSource
 	) {
 		this.ids = ids;
 		this.now = now;
@@ -102,6 +102,10 @@ public class TieredHederaFs implements HederaFs {
 
 	public Map<FileID, JFileInfo> getMetadata() {
 		return metadata;
+	}
+
+	public DiskFs diskFs() {
+		return specialFileSystemSource.get();
 	}
 
 	@Override
@@ -129,7 +133,7 @@ public class TieredHederaFs implements HederaFs {
 	@Override
 	public byte[] cat(FileID id) {
 		assertUsable(id);
-		if (specialFileSystemSource.get().isSpeicalFileID(id)) {
+		if (specialFileSystemSource.get().contains(id)) {
 			return specialFileSystemSource.get().getFileContent(id);
 		} else {
 			return data.get(id);
@@ -171,7 +175,7 @@ public class TieredHederaFs implements HederaFs {
 	public UpdateResult append(FileID id, byte[] moreContents) {
 		assertUsable(id);
 		byte[] contents;
-		if (specialFileSystemSource.get().isSpeicalFileID(id)) {
+		if (specialFileSystemSource.get().contains(id)) {
 			contents = specialFileSystemSource.get().getFileContent(id);
 		} else {
 			contents = data.get(id);
@@ -257,7 +261,7 @@ public class TieredHederaFs implements HederaFs {
 		var verdict = judge(id, (interceptor, ignore) -> interceptor.preUpdate(id, newContents));
 
 		if (verdict.getValue()) {
-			if (specialFileSystemSource.get().isSpeicalFileID(id)) {
+			if (specialFileSystemSource.get().contains(id)) {
 				specialFileSystemSource.get().put(id, newContents);
 			} else {
 				data.put(id, newContents);
@@ -326,9 +330,5 @@ public class TieredHederaFs implements HederaFs {
 
 	private void throwIllegal(IllegalArgumentType type) {
 		throw new IllegalArgumentException(type.toString());
-	}
-
-	public SpecialFileSystem getSpecialFileSystem() {
-		return specialFileSystemSource.get();
 	}
 }

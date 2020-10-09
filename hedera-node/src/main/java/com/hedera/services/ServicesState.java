@@ -22,7 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.files.SpecialFileSystem;
+import com.hedera.services.files.DiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
@@ -36,7 +36,6 @@ import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
@@ -67,6 +66,7 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -94,7 +94,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int TOKENS = 5;
 		static final int NUM_080_CHILDREN = 6;
 		static final int TOKEN_ASSOCIATIONS = 6;
-		static final int SPECIAL_FILE_SYSTEM = 7;
+		static final int DISK_FS = 7;
 		static final int NUM_090_CHILDREN = 8;
 	}
 
@@ -165,7 +165,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var bootstrapProps = new BootstrapProperties();
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
 		ctx = new ServicesContext(nodeId, platform, this, properties);
-		if (getNumberOfChildren() < ChildIndices.SPECIAL_FILE_SYSTEM) {
+		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
+			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			var networkCtx = new MerkleNetworkContext(
 					UNKNOWN_CONSENSUS_TIME,
@@ -183,18 +184,20 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
 					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
-			setChild(ChildIndices.SPECIAL_FILE_SYSTEM, new SpecialFileSystem(ctx.nodeAccount()));
-			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
+			setChild(ChildIndices.DISK_FS, new DiskFs(ctx.nodeAccount()));
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
+
+			/* In a network where multiple nodes run on the same computer, each node's disk-based file
+			system must use a different path. Of course, these different paths cannot be part of shared
+			state! So we reinitialize the DiskFs that Platform read from state with this node's account,
+			which the DiskFs uses to scope the path to its disk-based storage. */
+			DiskFs unscopedDiskFs = getChild(ChildIndices.DISK_FS);
+			DiskFs nodeScopedDiskFs = new DiskFs(unscopedDiskFs.getFileMap(), asLiteralString(ctx.nodeAccount()));
+			setChild(ChildIndices.DISK_FS, nodeScopedDiskFs);
+			nodeScopedDiskFs.checkFileAndDiskHashesMatch();
+
 			merkleDigest.accept(this);
-			// if loaded from state, SpecialFileSystem is created with non-args constructor
-			// re-init SpecialFileSystem so it has nodeAccountID setup correctly
-			SpecialFileSystem preSpecialFileSystem = getChild(ChildIndices.SPECIAL_FILE_SYSTEM);
-			setChild(ChildIndices.SPECIAL_FILE_SYSTEM,
-					new SpecialFileSystem(preSpecialFileSystem.getFileMap(),
-							EntityIdUtils.asLiteralString(ctx.nodeAccount())));
-			((SpecialFileSystem) getChild(ChildIndices.SPECIAL_FILE_SYSTEM)).verifyHash();
 			printHashes();
 		}
 
@@ -246,7 +249,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				accounts().copy(),
 				tokens().copy(),
 				tokenAssociations().copy(),
-				getSpecialFileSystem().copy()));
+				diskFs().copy()));
 	}
 
 	@Override
@@ -309,7 +312,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  Topics            :: %s\n" +
 						"  Tokens            :: %s\n" +
 						"  TokenAssociations :: %s\n" +
-						"  SpecialFileSystem :: %s\n" +
+						"  DiskFs            :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s",
 				getHash(),
@@ -318,7 +321,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				topics().getHash(),
 				tokens().getHash(),
 				tokenAssociations().getHash(),
-				getSpecialFileSystem().getHash(),
+				diskFs().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash()));
 	}
@@ -351,7 +354,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		return getChild(ChildIndices.ADDRESS_BOOK);
 	}
 
-	public SpecialFileSystem getSpecialFileSystem () {
-		return getChild((ChildIndices.SPECIAL_FILE_SYSTEM));
+	public DiskFs diskFs() {
+		return getChild((ChildIndices.DISK_FS));
 	}
 }

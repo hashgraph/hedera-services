@@ -23,12 +23,11 @@ package com.hedera.services.state.initialization;
 public interface SystemFilesManager {
 	void createAddressBookIfMissing();
 	void createNodeDetailsIfMissing();
+	void createUpdateZipFileIfMissing();
 
 	void loadExchangeRates();
 	void loadFeeSchedules();
 
 	void loadApiPermissions();
 	void loadApplicationProperties();
-
-	void createEmptyUpdateFeatureFile();
 }
