@@ -45,6 +45,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 	private String file = MISSING_FILE;
 
 	private boolean immutable = false;
+	private Optional<String> saveFileInfoToReg = Optional.empty();
 	private Optional<Boolean> expectedDeleted = Optional.empty();
 	private Optional<String> expectedWacl = Optional.empty();
 	private Optional<LongSupplier> expectedExpiry = Optional.empty();
@@ -88,6 +89,11 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		return this;
 	}
 
+	public HapiGetFileInfo saveToRegistry(String name) {
+		saveFileInfoToReg = Optional.of(name);
+		return this;
+	}
+
 	public HapiGetFileInfo(String file) {
 		this.file = file;
 	}
@@ -102,6 +108,9 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 		response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
 		if (verboseLoggingOn) {
 			log.info("Info for file '" + file + "': " + response.getFileGetInfo());
+		}
+		if(saveFileInfoToReg.isPresent()) {
+			spec.registry().saveFileInfo(saveFileInfoToReg.get(), response.getFileGetInfo().getFileInfo());
 		}
 	}
 

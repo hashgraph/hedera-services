@@ -74,9 +74,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveTests() {
 		return Arrays.asList(
-//				vanillaTransferSucceeds(),
-//				complexKeyAcctPaysForOwnTransfer(),
-//				twoComplexKeysRequired(),
+				vanillaTransferSucceeds(),
+				complexKeyAcctPaysForOwnTransfer(),
+				twoComplexKeysRequired(),
 				systemBalancesCheck()
 		);
 	}
