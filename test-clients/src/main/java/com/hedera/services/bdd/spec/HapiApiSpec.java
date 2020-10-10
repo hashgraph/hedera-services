@@ -202,6 +202,13 @@ public class HapiApiSpec implements Runnable {
 		return true;
 	}
 
+	private void tearDown() {
+		if (finalizingExecutor != null) {
+			finalizingExecutor.shutdown();
+		}
+		this.clients().closeChannels();
+	}
+
 	private void exec(List<HapiSpecOperation> ops) {
 		if (status == ERROR) {
 			log.warn("'" + name + "' failed to initialize, being skipped!");
