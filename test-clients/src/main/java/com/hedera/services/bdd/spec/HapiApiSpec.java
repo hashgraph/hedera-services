@@ -206,7 +206,7 @@ public class HapiApiSpec implements Runnable {
 		if (finalizingExecutor != null) {
 			finalizingExecutor.shutdown();
 		}
-		this.clients().closeChannels();
+		this.clients().tearDown();
 	}
 
 	private void exec(List<HapiSpecOperation> ops) {
