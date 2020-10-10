@@ -240,12 +240,8 @@ public class HapiApiSpec implements Runnable {
 			if (finishingError.get().isPresent()) {
 				status = FAILED;
 			}
-		} else {
-			if (finalizingExecutor != null) {
-				finalizingExecutor.shutdown();
-				this.clients().closeChannels();
-			}
 		}
+		tearDown();
 		log.info(logPrefix() + "final status: " + status + "!");
 
 		if(saveContextFlag) {
@@ -290,7 +286,6 @@ public class HapiApiSpec implements Runnable {
 
 	private void finishFinalizingOps() {
 		if (pendingOps.isEmpty()) {
-			finalizingExecutor.shutdown();
 			return;
 		}
 		log.info(logPrefix() + "executed " + numLedgerOpsExecuted.get() + " ledger ops.");
@@ -299,8 +294,6 @@ public class HapiApiSpec implements Runnable {
 			startFinalizingOps();
 		}
 		finalizingFuture.join();
-		finalizingExecutor.shutdown();
-		this.clients().closeChannels();
 	}
 
 	public void offerFinisher(HapiSpecOpFinisher finisher) {
