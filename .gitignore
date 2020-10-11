@@ -14,6 +14,8 @@ compose-network/
 .settings
 
 # Logs/crash data
+logs/
+test-clients/devops-utils/validation-scenarios/logs/
 *.log
 hs_err_pid*
 
@@ -35,6 +37,7 @@ hedera-node/build.sh
 hedera-node/settingsUsed.txt
 hedera-node/data/accountBalances/
 hedera-node/data/apps/
+hedera-node/data/diskFs/
 hedera-node/data/config/*.bin
 hedera-node/data/config/*.properties
 hedera-node/data/lib/
