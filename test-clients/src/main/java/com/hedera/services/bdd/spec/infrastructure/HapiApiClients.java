@@ -48,7 +48,6 @@ import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +70,7 @@ public class HapiApiClients {
 	private final List<NodeConnectInfo> nodes;
 	private final Map<AccountID, String> stubIds;
 	private final Map<AccountID, String> tlsStubIds;
-	private static List<ManagedChannel> channels;
+	private static Map<String, ManagedChannel> channels = new HashMap<>();
 
 	private final ManagedChannel createNettyChannel(NodeConnectInfo node, boolean useTls) {
 		try {
@@ -98,7 +97,6 @@ public class HapiApiClients {
 						.usePlaintext()
 						.build();
 			}
-			channels.add(channel);
 			return channel;
 		} catch (Exception e) {
 			log.error("Error creating Netty channel", e);
@@ -107,7 +105,6 @@ public class HapiApiClients {
 	}
 
 	private HapiApiClients(List<NodeConnectInfo> nodes, AccountID defaultNode) {
-		this.channels = new ArrayList<>();
 		this.nodes = nodes;
 		stubIds = nodes
 				.stream()
@@ -117,25 +114,32 @@ public class HapiApiClients {
 				.collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
 		int before = stubCount();
 		nodes.forEach(node -> {
-			ManagedChannel channel = createNettyChannel(node, false);
 			String stubsId = node.uri();
-			scSvcStubs.computeIfAbsent(stubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(channel));
-			consSvcStubs.computeIfAbsent(stubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(channel));
-			fileSvcStubs.computeIfAbsent(stubsId, ignore -> FileServiceGrpc.newBlockingStub(channel));
-			tokenSvcStubs.computeIfAbsent(stubsId, ignore -> TokenServiceGrpc.newBlockingStub(channel));
-			cryptoSvcStubs.computeIfAbsent(stubsId, ignore -> CryptoServiceGrpc.newBlockingStub(channel));
-			freezeSvcStubs.computeIfAbsent(stubsId, ignore -> FreezeServiceGrpc.newBlockingStub(channel));
-			networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(channel));
+			if (!channels.containsKey(stubsId)) {
+				ManagedChannel channel = createNettyChannel(node, false);
+				channels.put(stubsId, channel);
+				scSvcStubs.computeIfAbsent(stubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(channel));
+				consSvcStubs.computeIfAbsent(stubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(channel));
+				fileSvcStubs.computeIfAbsent(stubsId, ignore -> FileServiceGrpc.newBlockingStub(channel));
+				tokenSvcStubs.computeIfAbsent(stubsId, ignore -> TokenServiceGrpc.newBlockingStub(channel));
+				cryptoSvcStubs.computeIfAbsent(stubsId, ignore -> CryptoServiceGrpc.newBlockingStub(channel));
+				freezeSvcStubs.computeIfAbsent(stubsId, ignore -> FreezeServiceGrpc.newBlockingStub(channel));
+				networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(channel));
+			}
 
-			ManagedChannel tlsChannel = createNettyChannel(node, true);
 			String tlsStubsId = node.tlsUri();
-			scSvcStubs.computeIfAbsent(tlsStubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(tlsChannel));
-			consSvcStubs.computeIfAbsent(tlsStubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(tlsChannel));
-			fileSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FileServiceGrpc.newBlockingStub(tlsChannel));
-			tokenSvcStubs.computeIfAbsent(tlsStubsId, ignore -> TokenServiceGrpc.newBlockingStub(tlsChannel));
-			cryptoSvcStubs.computeIfAbsent(tlsStubsId, ignore -> CryptoServiceGrpc.newBlockingStub(tlsChannel));
-			freezeSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FreezeServiceGrpc.newBlockingStub(tlsChannel));
-			networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(tlsChannel));
+			if (!channels.containsKey(tlsStubsId)) {
+				ManagedChannel tlsChannel = createNettyChannel(node, true);
+				channels.put(tlsStubsId, tlsChannel);
+				channels.computeIfAbsent(tlsStubsId, ignore -> tlsChannel);
+				scSvcStubs.computeIfAbsent(tlsStubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(tlsChannel));
+				consSvcStubs.computeIfAbsent(tlsStubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(tlsChannel));
+				fileSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FileServiceGrpc.newBlockingStub(tlsChannel));
+				tokenSvcStubs.computeIfAbsent(tlsStubsId, ignore -> TokenServiceGrpc.newBlockingStub(tlsChannel));
+				cryptoSvcStubs.computeIfAbsent(tlsStubsId, ignore -> CryptoServiceGrpc.newBlockingStub(tlsChannel));
+				freezeSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FreezeServiceGrpc.newBlockingStub(tlsChannel));
+				networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(tlsChannel));
+			}
 		});
 		int after = stubCount();
 		this.defaultNode = defaultNode;
@@ -209,7 +213,7 @@ public class HapiApiClients {
 		if (channels.isEmpty()) {
 			return;
 		}
-		channels.forEach(channel -> channel.shutdown());
+		channels.forEach((uri, channel) -> channel.shutdown());
 	}
 
 	private static void clearStubs() {
