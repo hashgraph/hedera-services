@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.reconnect;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +48,7 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
+						UtilVerbs.sleepFor(4 * 60 * 1000),
 						getAccountBalance("0.0.1001").logged().setNode("0.0.3"),
 						getAccountBalance("0.0.1002").logged().setNode("0.0.3"),
 						getAccountBalance("0.0.1001").logged().setNode("0.0.4"),
