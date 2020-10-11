@@ -40,7 +40,6 @@ import com.hederahashgraph.service.proto.java.NetworkServiceGrpc.NetworkServiceB
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -54,7 +53,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -73,7 +71,7 @@ public class HapiApiClients {
 	private final List<NodeConnectInfo> nodes;
 	private final Map<AccountID, String> stubIds;
 	private final Map<AccountID, String> tlsStubIds;
-	private List<ManagedChannel> channels;
+	private static List<ManagedChannel> channels;
 
 	private final ManagedChannel createNettyChannel(NodeConnectInfo node, boolean useTls) {
 		try {
@@ -207,14 +205,14 @@ public class HapiApiClients {
 	/**
 	 * Close all netty channels that are opened for clients
 	 */
-	private void closeChannels() {
+	private static void closeChannels() {
 		if (channels.isEmpty()) {
 			return;
 		}
 		channels.forEach(channel -> channel.shutdown());
 	}
 
-	private void clearStubs() {
+	private static void clearStubs() {
 		scSvcStubs.clear();
 		consSvcStubs.clear();
 		fileSvcStubs.clear();
@@ -224,7 +222,7 @@ public class HapiApiClients {
 		networkSvcStubs.clear();
 	}
 
-	public void tearDown() {
+	public static void tearDown() {
 		closeChannels();
 		clearStubs();
 	}

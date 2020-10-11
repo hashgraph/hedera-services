@@ -24,6 +24,7 @@ import com.google.common.math.Stats;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.stats.HapiStats;
 import com.hedera.services.bdd.spec.stats.OpObs;
@@ -42,7 +43,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -138,6 +138,7 @@ public abstract class HapiApiSuite {
 		runner.accept(specs);
 		finalSpecs = specs;
 		summarizeResults(getResultsLogger());
+		HapiApiClients.tearDown();
 		return finalOutcomeFor(finalSpecs);
 	}
 
