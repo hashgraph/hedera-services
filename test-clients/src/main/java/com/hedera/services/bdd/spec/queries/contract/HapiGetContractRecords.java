@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
 public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> {
 	private static final Logger log = LogManager.getLogger(HapiGetContractRecords.class);
 	private Optional<String> snapshotDirPath = Optional.empty();
+	private Optional<String> saveRecordNum = Optional.empty();
 	private Optional<String> expectationsDirPath = Optional.empty();
 	private Optional<BiConsumer<Logger, List<TransactionRecord>>> customLog = Optional.empty();
 
@@ -85,6 +86,11 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 		return this;
 	}
 
+	public HapiGetContractRecords saveRecordNumToRegistry(String key) {
+		saveRecordNum = Optional.of(key);
+		return this;
+	}
+
 	public HapiGetContractRecords checkingAgainst(String dirPath) {
 		expectationsDirPath = Optional.of(dirPath);
 		return this;
@@ -113,6 +119,9 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 		}
 		if (snapshotDirPath.isPresent()) {
 			saveSnapshots(spec, records);
+		}
+		if (saveRecordNum.isPresent()) {
+			spec.registry().saveIntValue(saveRecordNum.get(), records.size());
 		}
 		if (expectationsDirPath.isPresent()) {
 			checkExpectations(spec, records);
@@ -201,6 +210,4 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
 			Assert.fail("Impossible to meet expectations (on records)!");
 		}
 	}
-
-
 }

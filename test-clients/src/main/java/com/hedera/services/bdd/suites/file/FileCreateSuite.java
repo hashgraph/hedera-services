@@ -23,13 +23,20 @@ package com.hedera.services.bdd.suites.file;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -63,7 +70,8 @@ public class FileCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return Arrays.asList(
-				createFailsWithMissingSigs()
+				createFailsWithMissingSigs(),
+				createFailsWithPayerAccountNotFound()
 		);
 	}
 
@@ -84,6 +92,26 @@ public class FileCreateSuite extends HapiApiSuite {
 				);
 	}
 
+	private static Transaction replaceTxnNodeAccount(Transaction txn) {
+		AccountID badNodeAccount = AccountID.newBuilder().setAccountNum(2000).setRealmNum(0).setShardNum(0).build();
+		return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
+	}
+
+	private HapiApiSpec createFailsWithPayerAccountNotFound() {
+		KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
+		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
+
+		return defaultHapiSpec("CreateFailsWithPayerAccountNotFound")
+				.given(
+				).when(
+				).then(
+						fileCreate("test")
+								.waclShape(shape)
+								.sigControl(forKey("test", validSig))
+								.scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
+								.hasPrecheckFrom(INVALID_NODE_ACCOUNT)
+				);
+	}
 	@Override
 	protected Logger getResultsLogger() {
 		return log;

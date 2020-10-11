@@ -46,8 +46,8 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveTests()
-//				negativeTests()
+				positiveTests(),
+				negativeTests()
 		);
 	}
 

@@ -61,6 +61,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
+	Optional<String> saveTxnRecordToRegistry = Optional.empty();
 	Optional<String> registryEntry = Optional.empty();
 	Optional<String> topicToValidate = Optional.empty();
 	Optional<byte[]> lastMessagedSubmitted = Optional.empty();
@@ -90,6 +91,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord saveCreatedContractListToRegistry(String registryEntry) {
 		this.registryEntry = Optional.of(registryEntry);
+		return this;
+	}
+
+	public HapiGetTxnRecord saveTxnRecordToRegistry(String txnRecordEntry) {
+		this.saveTxnRecordToRegistry = Optional.of(txnRecordEntry);
 		return this;
 	}
 
@@ -214,6 +220,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			spec.registry().saveContractList(
 					registryEntry.get() + "CallResult",
 					record.getContractCallResult().getCreatedContractIDsList());
+		}
+		if(saveTxnRecordToRegistry.isPresent()) {
+			spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), record);
 		}
 	}
 

@@ -76,6 +76,7 @@ public class MigrationValidationPostSteps extends HapiApiSuite {
 
         if(args.length == 0){
             log.info("using default IDs for cryptoAccounts, files and smartContracts -- RUNNING CUSTOM NET MIGRATION ");
+            migrationPropertyPath = "migration_config_default";
         }
         else{
             migrationPropertyPath = args[0];

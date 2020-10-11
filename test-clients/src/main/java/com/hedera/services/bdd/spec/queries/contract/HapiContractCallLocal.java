@@ -58,6 +58,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 	private Optional<Long> gas = Optional.empty();
 	private Optional<Long> maxResultSize = Optional.empty();
 	private Optional<String> details = Optional.empty();
+	private Optional<String> saveResultToEntry = Optional.empty();
 	private Optional<ContractFnResultAsserts> expectations = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 
@@ -107,6 +108,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		return this;
 	}
 
+	public HapiContractCallLocal saveResultTo(String key) {
+		saveResultToEntry = Optional.of(key);
+		return this;
+	}
+
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		if (expectations.isPresent()) {
@@ -131,6 +137,10 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
 		if (verboseLoggingOn) {
 			log.info(spec.logPrefix() + this + " result = " + response.getContractCallLocal().getFunctionResult());
+		}
+
+		if(saveResultToEntry.isPresent()) {
+			spec.registry().saveBytes(saveResultToEntry.get(), response.getContractCallLocal().getFunctionResult().getContractCallResult());
 		}
 	}
 

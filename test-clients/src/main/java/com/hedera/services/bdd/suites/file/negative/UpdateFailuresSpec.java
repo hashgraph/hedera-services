@@ -51,14 +51,14 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						precheckAllowsMissing(),
-//						precheckAllowsDeleted(),
+						precheckAllowsMissing(),
+						precheckAllowsDeleted(),
 //						precheckScreensFees(),
-//						precheckRejectsPrematureExpiry(),
-//						precheckAllowsBadEncoding(),
+						precheckRejectsPrematureExpiry(),
+						precheckAllowsBadEncoding(),
 //						handleScreensFees(),
-//						handleIgnoresEarlierExpiry(),
-//						precheckRejectsUnauthorized(),
+						handleIgnoresEarlierExpiry(),
+						precheckRejectsUnauthorized(),
 						confusedUpdateCantExtendExpiry(),
 				}
 		);

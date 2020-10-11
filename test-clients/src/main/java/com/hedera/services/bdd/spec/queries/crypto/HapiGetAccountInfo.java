@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -54,6 +55,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
 	private final String account;
+	private Optional<String> registryEntry = Optional.empty();
 	private List<String> absentRelationships = new ArrayList<>();
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
 	Optional<AccountInfoAsserts> expectations = Optional.empty();
@@ -77,6 +79,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo saveToRegistry(String registryEntry) {
+		this.registryEntry = Optional.of(registryEntry);
+		return this;
+	}
 	public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
 		relationships.add(relationship);
 		return this;
@@ -143,6 +149,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (customLog.isPresent()) {
 			customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);
 		}
+		if (registryEntry.isPresent()) {
+			spec.registry().saveAccountInfo(registryEntry.get(), response.getCryptoGetInfo().getAccountInfo());
+		}
+
 	}
 
 	@Override
