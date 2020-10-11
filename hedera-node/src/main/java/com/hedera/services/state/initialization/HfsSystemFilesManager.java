@@ -188,7 +188,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private void materialize(FileID fid, JFileInfo info, byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		if (hfs.diskFs().contains(fid)) {
+		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
 			hfs.diskFs().put(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);

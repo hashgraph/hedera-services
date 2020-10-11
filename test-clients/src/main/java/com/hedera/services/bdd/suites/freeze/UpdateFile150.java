@@ -45,16 +45,17 @@ public class UpdateFile150 extends HapiApiSuite {
 	}
 
 	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-				updateWithWrongFileID(),
-				getUpdateFileInfo(),
-				missingFileHash(),
-				updateWithShortContent(),
-				updateWithLargeContent(),
-				notAllowedToDelete(),
-//				updateWithHash()
-				emptyUpdateFile(),
-				verifyFileHash()
+		return List.of(new HapiApiSpec[] {
+						updateWithWrongFileID(),
+						getUpdateFileInfo(),
+						missingFileHash(),
+						updateWithShortContent(),
+						updateWithLargeContent(),
+						notAllowedToDelete(),
+						emptyUpdateFile(),
+						verifyFileHash(),
+//						updateWithHash(),
+				}
 		);
 	}
 
@@ -108,7 +109,7 @@ public class UpdateFile150 extends HapiApiSuite {
 	 * A correct update feature with file hash
 	 */
 	private HapiApiSpec updateWithShortContent() {
-		final byte[] new4k = TxnUtils.randomUtf8Bytes(30*4096);
+		final byte[] new4k = TxnUtils.randomUtf8Bytes(30 * 4096);
 		return defaultHapiSpec("updateWithShortContent")
 				.given(
 						withOpContext((spec, opLog) -> {
@@ -211,7 +212,7 @@ public class UpdateFile150 extends HapiApiSuite {
 				);
 	}
 
-	public static byte[] sha384Digest( byte[] message) {
+	public static byte[] sha384Digest(byte[] message) {
 		MessageDigest digest = null;
 		try {
 			digest = MessageDigest.getInstance("SHA-384");
