@@ -104,6 +104,20 @@ public class HapiApiClients {
 		return null;
 	}
 
+	private void addStubs(NodeConnectInfo node, String uri, boolean useTls) {
+		if (!channels.containsKey(uri)) {
+			ManagedChannel channel = createNettyChannel(node, useTls);
+			channels.put(uri, channel);
+			scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
+			consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
+			fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
+			tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
+			cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
+			freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
+			networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
+		}
+	}
+
 	private HapiApiClients(List<NodeConnectInfo> nodes, AccountID defaultNode) {
 		this.nodes = nodes;
 		stubIds = nodes
@@ -114,31 +128,8 @@ public class HapiApiClients {
 				.collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
 		int before = stubCount();
 		nodes.forEach(node -> {
-			String stubsId = node.uri();
-			if (!channels.containsKey(stubsId)) {
-				ManagedChannel channel = createNettyChannel(node, false);
-				channels.put(stubsId, channel);
-				scSvcStubs.put(stubsId, SmartContractServiceGrpc.newBlockingStub(channel));
-				consSvcStubs.put(stubsId, ConsensusServiceGrpc.newBlockingStub(channel));
-				fileSvcStubs.put(stubsId, FileServiceGrpc.newBlockingStub(channel));
-				tokenSvcStubs.put(stubsId, TokenServiceGrpc.newBlockingStub(channel));
-				cryptoSvcStubs.put(stubsId, CryptoServiceGrpc.newBlockingStub(channel));
-				freezeSvcStubs.put(stubsId, FreezeServiceGrpc.newBlockingStub(channel));
-				networkSvcStubs.put(stubsId, NetworkServiceGrpc.newBlockingStub(channel));
-			}
-
-			String tlsStubsId = node.tlsUri();
-			if (!channels.containsKey(tlsStubsId)) {
-				ManagedChannel tlsChannel = createNettyChannel(node, true);
-				channels.put(tlsStubsId, tlsChannel);
-				scSvcStubs.put(tlsStubsId, SmartContractServiceGrpc.newBlockingStub(tlsChannel));
-				consSvcStubs.put(tlsStubsId, ConsensusServiceGrpc.newBlockingStub(tlsChannel));
-				fileSvcStubs.put(tlsStubsId, FileServiceGrpc.newBlockingStub(tlsChannel));
-				tokenSvcStubs.put(tlsStubsId, TokenServiceGrpc.newBlockingStub(tlsChannel));
-				cryptoSvcStubs.put(tlsStubsId, CryptoServiceGrpc.newBlockingStub(tlsChannel));
-				freezeSvcStubs.put(tlsStubsId, FreezeServiceGrpc.newBlockingStub(tlsChannel));
-				networkSvcStubs.put(stubsId, NetworkServiceGrpc.newBlockingStub(tlsChannel));
-			}
+			addStubs(node, node.uri(), false);
+			addStubs(node, node.tlsUri(), true);
 		});
 		int after = stubCount();
 		this.defaultNode = defaultNode;
