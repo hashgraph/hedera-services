@@ -214,6 +214,7 @@ public class HapiApiClients {
 			return;
 		}
 		channels.forEach((uri, channel) -> channel.shutdown());
+		channels.clear();
 	}
 
 	private static void clearStubs() {
