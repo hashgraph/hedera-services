@@ -492,7 +492,7 @@ public class ServicesContext {
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
 					() -> queryableTokenAssociations().get(),
-					specialFileSystem(),
+					this::diskFs,
 					properties());
 		}
 		return stateViews;
@@ -506,7 +506,7 @@ public class ServicesContext {
 					this::accounts,
 					this::storage,
 					this::tokenAssociations,
-					specialFileSystem(),
+					this::diskFs,
 					properties());
 		}
 		return currentView;
@@ -1629,7 +1629,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public MerkleDiskFs specialFileSystem() {
+	public MerkleDiskFs diskFs() {
 		return state.diskFs();
 	}
 }

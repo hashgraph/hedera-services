@@ -167,7 +167,12 @@ class StateViewTest {
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
 		diskFs = mock(MerkleDiskFs.class);
-		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource, diskFs);
+		subject = new StateView(
+				tokenStore,
+				StateView.EMPTY_TOPICS_SUPPLIER,
+				() -> contracts,
+				propertySource,
+				() -> diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
