@@ -118,27 +118,26 @@ public class HapiApiClients {
 			if (!channels.containsKey(stubsId)) {
 				ManagedChannel channel = createNettyChannel(node, false);
 				channels.put(stubsId, channel);
-				scSvcStubs.computeIfAbsent(stubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(channel));
-				consSvcStubs.computeIfAbsent(stubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(channel));
-				fileSvcStubs.computeIfAbsent(stubsId, ignore -> FileServiceGrpc.newBlockingStub(channel));
-				tokenSvcStubs.computeIfAbsent(stubsId, ignore -> TokenServiceGrpc.newBlockingStub(channel));
-				cryptoSvcStubs.computeIfAbsent(stubsId, ignore -> CryptoServiceGrpc.newBlockingStub(channel));
-				freezeSvcStubs.computeIfAbsent(stubsId, ignore -> FreezeServiceGrpc.newBlockingStub(channel));
-				networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(channel));
+				scSvcStubs.put(stubsId, SmartContractServiceGrpc.newBlockingStub(channel));
+				consSvcStubs.put(stubsId, ConsensusServiceGrpc.newBlockingStub(channel));
+				fileSvcStubs.put(stubsId, FileServiceGrpc.newBlockingStub(channel));
+				tokenSvcStubs.put(stubsId, TokenServiceGrpc.newBlockingStub(channel));
+				cryptoSvcStubs.put(stubsId, CryptoServiceGrpc.newBlockingStub(channel));
+				freezeSvcStubs.put(stubsId, FreezeServiceGrpc.newBlockingStub(channel));
+				networkSvcStubs.put(stubsId, NetworkServiceGrpc.newBlockingStub(channel));
 			}
 
 			String tlsStubsId = node.tlsUri();
 			if (!channels.containsKey(tlsStubsId)) {
 				ManagedChannel tlsChannel = createNettyChannel(node, true);
 				channels.put(tlsStubsId, tlsChannel);
-				channels.computeIfAbsent(tlsStubsId, ignore -> tlsChannel);
-				scSvcStubs.computeIfAbsent(tlsStubsId, ignore -> SmartContractServiceGrpc.newBlockingStub(tlsChannel));
-				consSvcStubs.computeIfAbsent(tlsStubsId, ignore -> ConsensusServiceGrpc.newBlockingStub(tlsChannel));
-				fileSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FileServiceGrpc.newBlockingStub(tlsChannel));
-				tokenSvcStubs.computeIfAbsent(tlsStubsId, ignore -> TokenServiceGrpc.newBlockingStub(tlsChannel));
-				cryptoSvcStubs.computeIfAbsent(tlsStubsId, ignore -> CryptoServiceGrpc.newBlockingStub(tlsChannel));
-				freezeSvcStubs.computeIfAbsent(tlsStubsId, ignore -> FreezeServiceGrpc.newBlockingStub(tlsChannel));
-				networkSvcStubs.computeIfAbsent(stubsId, ignore -> NetworkServiceGrpc.newBlockingStub(tlsChannel));
+				scSvcStubs.put(tlsStubsId, SmartContractServiceGrpc.newBlockingStub(tlsChannel));
+				consSvcStubs.put(tlsStubsId, ConsensusServiceGrpc.newBlockingStub(tlsChannel));
+				fileSvcStubs.put(tlsStubsId, FileServiceGrpc.newBlockingStub(tlsChannel));
+				tokenSvcStubs.put(tlsStubsId, TokenServiceGrpc.newBlockingStub(tlsChannel));
+				cryptoSvcStubs.put(tlsStubsId, CryptoServiceGrpc.newBlockingStub(tlsChannel));
+				freezeSvcStubs.put(tlsStubsId, FreezeServiceGrpc.newBlockingStub(tlsChannel));
+				networkSvcStubs.put(stubsId, NetworkServiceGrpc.newBlockingStub(tlsChannel));
 			}
 		});
 		int after = stubCount();
