@@ -151,6 +151,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
 			log.info("Created token associations FCMap after <=0.8.0 state restoration");
 		}
+		if (diskFs() == null) {
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
+			log.info("Created disk file system after <=0.9.0 state restoration");
+		}
 	}
 
 	/* --- SwirldState --- */
