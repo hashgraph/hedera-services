@@ -125,6 +125,7 @@ public class GetAccountBalanceAnswerTest {
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> tokenRels,
+				null,
 				propertySource);
 
 		optionValidator = mock(OptionValidator.class);

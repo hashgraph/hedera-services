@@ -9,9 +9,9 @@ package com.hedera.services.context.primitives;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -96,6 +97,7 @@ class StateViewTest {
 	MerkleAccount contract;
 	MerkleAccount notContract;
 	PropertySource propertySource;
+	MerkleDiskFs diskFs;
 
 	StateView subject;
 
@@ -164,8 +166,13 @@ class StateViewTest {
 		given(storage.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedStorage);
 		given(bytecode.get(argThat((byte[] bytes) -> Arrays.equals(cidAddress, bytes)))).willReturn(expectedBytecode);
 		propertySource = mock(PropertySource.class);
-
-		subject = new StateView(tokenStore, StateView.EMPTY_TOPICS_SUPPLIER, () -> contracts, propertySource);
+		diskFs = mock(MerkleDiskFs.class);
+		subject = new StateView(
+				tokenStore,
+				StateView.EMPTY_TOPICS_SUPPLIER,
+				() -> contracts,
+				propertySource,
+				() -> diskFs);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -432,5 +439,19 @@ class StateViewTest {
 
 		// then:
 		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsSpecialFileContents() {
+		FileID file150 = asFile("0.0.150");
+
+		given(diskFs.contentsOf(file150)).willReturn(data);
+		given(diskFs.contains(file150)).willReturn(true);
+
+		// when
+		var stuff = subject.contentsOf(file150);
+
+		// then:
+		assertTrue(Arrays.equals(data, stuff.get()));
 	}
 }

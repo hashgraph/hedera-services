@@ -24,9 +24,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.context.ContextPlatformStatus;
+import com.hedera.services.legacy.logic.ApplicationConstants;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -75,6 +77,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
@@ -153,7 +156,7 @@ public class FreezeServiceImplTest {
             TEST_USAGE_PRICES,
             exchange,
             TestFeesFactory.FEES_FACTORY.getWithExchange(exchange),
-            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource ),
+            () -> new StateView(() -> topicFCMap, () -> accountFCMap, propertySource, null),
             new BasicPrecheck(TestProperties.TEST_PROPERTIES, TestContextValidator.TEST_VALIDATOR),
             new QueryFeeCheck(() -> accountFCMap),
             new MockAccountNumbers(),
@@ -164,7 +167,7 @@ public class FreezeServiceImplTest {
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");
     GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
-    freezeService = new FreezeServiceImpl(transactionHandler, submissionManager);
+    freezeService = new FreezeServiceImpl(new MockFileNumbers(), transactionHandler, submissionManager);
 
   }
 
@@ -299,6 +302,57 @@ public class FreezeServiceImplTest {
 
     freezeService.freeze(signed, responseObserver);
   }
+
+  /**
+   * Only file ID 0.0.150 allowed for udpate feature
+   */
+  @Test
+  public void freeze_NotValidUpdateFileID_Test() throws Exception {
+
+    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
+            FileID.newBuilder().setFileNum(151L).build(),
+            new byte[48]);
+    Transaction signed = sign(freezeTx);
+    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+      @Override
+      public void onNext(TransactionResponse response) {
+        Assertions.assertEquals(INVALID_FILE_ID, response.getNodeTransactionPrecheckCode());
+      }
+
+      @Override
+      public void onError(Throwable t) {}
+
+      @Override
+      public void onCompleted() {}
+    };
+    freezeService.freeze(signed, responseObserver);
+  }
+
+  /**
+   * File hash value for update feature must be set in transaction body
+   */
+  @Test
+  public void freeze_UpdateFileHashInvalid_Test() throws Exception {
+
+    Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
+            FileID.newBuilder().setFileNum(150L).build(),
+            new byte[0]);
+    Transaction signed = sign(freezeTx);
+    StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
+      @Override
+      public void onNext(TransactionResponse response) {
+        Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
+      }
+
+      @Override
+      public void onError(Throwable t) {}
+
+      @Override
+      public void onCompleted() {}
+    };
+    freezeService.freeze(signed, responseObserver);
+  }
+
 
   /**
    * This is required to close all objects Else next set of test cases will fail
