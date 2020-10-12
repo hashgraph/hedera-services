@@ -59,7 +59,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 
 
 	private HapiApiSpec vanillaCreateSucceeds() {
-		long initialBalance = 50_000_000_000L;
+		long initialBalance = 500_000_000_000L;
 		return defaultHapiSpec("CryptoCreate")
 				.given().when().then(
 						withOpContext((spec, log)-> {

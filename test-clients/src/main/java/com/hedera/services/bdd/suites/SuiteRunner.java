@@ -278,9 +278,7 @@ public class SuiteRunner {
 	private static final String NODE_SELECTOR_ARG = "-NODE";
 	/* Specify the network size so that we can read the appropriate throttle settings for that network. */
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
-	/* The instance id of the suiteRunner running on the client. */
-	private static final String PAYER_ID_ARG = "-PAYER";
-	private static String payerId;
+	private static String payerId = DEFAULT_PAYER_ID;
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -297,7 +295,7 @@ public class SuiteRunner {
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 
-			var outcome = new CryptoCreateForSuiteRunner().runSuiteAsync();
+			createPayerAccount();
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
 					payerId,
@@ -325,6 +323,10 @@ public class SuiteRunner {
 		summarizeResults(byRunType);
 
 		System.exit(globalPassFlag ? 0 : 1);
+	}
+
+	private static void createPayerAccount() {
+		new CryptoCreateForSuiteRunner().runSuiteAsync();
 	}
 
 	private static String overrideOrDefault(String[] effArgs, String argPrefix, String defaultValue) {
@@ -499,10 +501,6 @@ public class SuiteRunner {
 	@SafeVarargs
 	public static <T> T[] aof(T... items) {
 		return items;
-	}
-
-	public static String getPayerId() {
-		return payerId;
 	}
 
 	public static void setPayerId(String payerId) {
