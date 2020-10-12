@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.transactions.system;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.transactions.system;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -34,9 +36,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -48,8 +52,9 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 	ChronoUnit delayUnit = SECONDS;
 	ChronoUnit durationUnit = SECONDS;
 	ZonedDateTime start, end;
-	private FileID fileID = null;
+	private String fileID = null;
 	private String fileName = null;
+	private Optional<byte[]> fileHash = Optional.empty();
 	@Override
 	protected HapiFreeze self() {
 		return this;
@@ -87,6 +92,20 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 		return this;
 	}
 
+	public HapiFreeze setFileID(String fileID) {
+		this.fileID = fileID;
+		return this;
+	}
+
+	public HapiFreeze setFileHash(byte[] data) {
+		fileHash = Optional.of(data);
+		return this;
+	}
+	public HapiFreeze setFileHash(String data) {
+		fileHash = Optional.of(data.getBytes());
+		return this;
+	}
+
 	@Override
 	public HederaFunctionality type() {
 		return Freeze;
@@ -106,12 +125,13 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 							b.setEndHour(end.getHour());
 							b.setEndMin(end.getMinute());
 							if (fileID!=null) {
-								b.setUpdateFile(fileID);
+								b.setUpdateFile(asFileId(fileID, spec));
 							}
 							if (fileName !=null){
 								FileID foundID = spec.registry().getFileId(fileName);
 								b.setUpdateFile(foundID);
 							}
+							fileHash.ifPresent(x -> b.setFileHash(ByteString.copyFrom(x)));
 						}
 				);
 		return b -> b.setFreeze(opBody);

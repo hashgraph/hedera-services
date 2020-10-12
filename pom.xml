@@ -47,8 +47,8 @@
     <maven.compiler.target>12</maven.compiler.target>
 
     <!-- Plugin custom properties -->
-    <maven-jar.version>3.1.0</maven-jar.version>
-    <maven-source.version>3.1.0</maven-source.version>
+    <maven-jar.version>3.2.0</maven-jar.version>
+    <maven-source.version>3.2.0</maven-source.version>
     <maven-license.version>2.0.0</maven-license.version>
     <maven-compiler.version>3.8.1</maven-compiler.version>
     <maven-surefire.version>3.0.0-M5</maven-surefire.version>
@@ -59,10 +59,10 @@
     <commons-codec.version>1.11</commons-codec.version>
     <eddsa.version>0.3.0</eddsa.version>
     <grpc.version>1.22.0</grpc.version>
-    <jackson-databind.version>2.9.9.1</jackson-databind.version>
+    <jackson-databind.version>2.9.10.5</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <log4j.version>2.13.2</log4j.version>
-    <netty.version>4.1.37.Final</netty.version>
+    <netty.version>4.1.52.Final</netty.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.12</junit.version>
@@ -80,6 +80,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+<!--    <project.build.outputTimestamp>2020-10-06T08:00:00Z</project.build.outputTimestamp>-->
   </properties>
 
   <modules>

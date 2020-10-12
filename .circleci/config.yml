@@ -381,7 +381,7 @@ commands:
             - provision-testnet-hosts:
                 liveness-timeout-secs: 120
                 var-file: '<< parameters.var-file >>'
-                var-region: "us-west-2"
+                var-region: "us-east-1"
       - when:
           condition: << parameters.use-existing-network >>
           steps:
@@ -811,21 +811,16 @@ commands:
           dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "BigArraySpec -TLS=on -NODE=random"
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
+      - run-eet-suites:
+          dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "OCTokenSpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "CharacterizationSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
@@ -2598,61 +2593,7 @@ jobs:
           workflow-name: "nightly-regression"
       - publish-platform-stats:
           source-desc: full regression
-  run-oc-regression:
-    parameters:
-      runner:
-        type: executor
-        default: ci-test-executor
-    executor: << parameters.runner >>
-    steps:
-      - run:
-          name: Set log level to WARN
-          command: /repo/.circleci/scripts/config-log4j-4reg.sh
-      - run-umbrella-test:
-          config-file: umbrella.properties.altOCRegPreFreeze
-      - publish-platform-stats:
-          source-desc: pre-freeze umbrella 100k
-      - start-freeze:
-          failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
-      - validate-thaw:
-          freeze-start-timeout-secs: 120
-      - restart-with-validations:
-          valid-ss-timeout-secs: 120
-          active-status-timeout-secs: 120
-      - run-umbrella-test:
-          config-file: umbrella.properties.altOCRegPostFreeze
-      - run-eet-suites:
-          dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
-      - run-eet-suites:
-          dsl-args: "ContractCallSuite -TLS=on -NODE=random"
-      - run-eet-suites:
-          dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
-      - run-eet-suites:
-          dsl-args: "BigArraySpec -TLS=on -NODE=random"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractBitcarbon
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractInlineAssembly
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractPayReceivableAmount
-          args: '1'
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.smartcontract.OCTokenIT
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
-      - run:
-          name: Set log level to INFO
-          command: /repo/.circleci/scripts/config-log4j-4normal.sh
-      - validate-record-streams
+
   long-consensus-tests:
     parameters:
       runner:
@@ -2691,42 +2632,6 @@ jobs:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
           dsl-args: "ConsensusThrottlesSpecs"
-
-  run-file-tests:
-    parameters:
-      runner:
-        type: executor
-        default: ci-test-executor
-      workflow-name:
-        type: string
-        default: ""
-    executor:
-      name: ci-test-executor
-      workflow-name:  << parameters.workflow-name >>
-    steps:
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
-      - postgres-get-counts
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
-      - postgres-verify-counts:
-          expected-difference: 2
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.LoadTestIT
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.FilePositiveNegativeTest
-      - postgres-get-counts
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.FileServiceIT
-      - postgres-verify-counts:
-          expected-difference: 1
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.SystemDeleteIT
-      - run-eet-suites:
-          dsl-args: "FileRecordSanityChecks"
-      - run-eet-suites:
-          dsl-args: "ProtectedFilesUpdateSuite"
-
   run-consensus-and-crypto-scenarios:
     parameters:
       runner:
@@ -2761,14 +2666,8 @@ jobs:
           dsl-args: "BucketThrottlingSpec"
       - run-eet-suites:
           dsl-args: "ControlAccountsExemptForUpdates"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.MultipleCryptoTransfers
-#      - run-scenario-test:
-#          fqcn: com.hedera.services.legacy.CI.TxRecordTest
-#      - run-scenario-test:
-#          fqcn: com.hedera.services.legacy.CI.NegativeAccountCreateTest
-#      - run-scenario-test:
-#          fqcn: com.hedera.services.legacy.CI.NegativeCryptoQueryTest
+      - run-eet-suites:
+          dsl-args: "CryptoTransferSuite"
       - run-eet-suites:
           dsl-args: "CryptoUpdateSuite -TLS=on"
       - run-eet-suites:
@@ -2777,6 +2676,7 @@ jobs:
           dsl-args: "CryptoRecordSanityChecks"
       - run-eet-suites:
           dsl-args: "SuperusersAreNeverThrottled"
+
   run-token-scenarios:
     parameters:
       runner:
@@ -2801,6 +2701,7 @@ jobs:
           dsl-args: "TokenManagementSpecs"
       - run-eet-suites:
           dsl-args: "TokenTransactSpecs"
+
   run-file-scenarios:
     parameters:
       runner:
@@ -2813,34 +2714,38 @@ jobs:
       name: ci-test-executor
       workflow-name:  << parameters.workflow-name >>
     steps:
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.FileBatchsignatureErrorTestCase
-      - postgres-get-counts
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.LargeFileUploadIT
-      - postgres-verify-counts:
-          expected-difference: 2
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.LoadTestIT
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.FilePositiveNegativeTest
-      - postgres-get-counts
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.FileServiceIT
-      - postgres-verify-counts:
-          expected-difference: 1
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.file.SystemDeleteIT
       - run-eet-suites:
-          dsl-args: "FileRecordSanityChecks"
+          dsl-args: "FileCreateSuite"
       - run-eet-suites:
-          dsl-args: "VersionInfoSpec"
+          dsl-args: "FileAppendSuite"
+      - run-eet-suites:
+          dsl-args: "FileUpdateSuite"
       - run-eet-suites:
           dsl-args: "ProtectedFilesUpdateSuite"
       - run-eet-suites:
           dsl-args: "PermissionSemanticsSpec"
       - run-eet-suites:
+          dsl-args: "ExchangeRateControlSuite"
+      - run-eet-suites:
           dsl-args: "SysDelSysUndelSpec"
+      - run-eet-suites:
+          dsl-args: "ExchangeRateControlSuite"
+      - run-eet-suites:
+          dsl-args: "UpdateFailuresSpec"
+      - run-eet-suites:
+          dsl-args: "QueryFailuresSpec"
+      - run-eet-suites:
+          dsl-args: "FileRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "FetchSystemFiles"
+      - run:
+          name: cat /repo/test-clients/remote-system-files/appProperties.txt
+          command: |
+            cat /repo/test-clients/remote-system-files/appProperties.txt
+
+      - run-eet-suites:
+          dsl-args: "VersionInfoSpec"
+
   run-smart-contract-scenarios:
     parameters:
       runner:
@@ -2866,30 +2771,36 @@ jobs:
       - run-eet-suites:
           dsl-args: "ContractCallLocalSuite -TLS=on -NODE=random"
       - run-eet-suites:
+          dsl-args: "ContractUpdateSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "ContractDeleteSuite -TLS=on -NODE=random"
+      - run-eet-suites:
           dsl-args: "ChildStorageSpecs -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "BigArraySpec -TLS=on -NODE=random"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractFailFirst
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.CI.SmartContractSelfDestruct
       - run-eet-suites:
-          dsl-args: "FetchSystemFiles"
-      - run:
-          name: cat /repo/test-clients/remote-system-files/appProperties.txt
-          command: |
-            cat /repo/test-clients/remote-system-files/appProperties.txt
+          dsl-args: "SmartContractInlineAssemblySpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "OCTokenSpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "CharacterizationSuite -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "SmartContractFailFirstSpec -TLS=on -NODE=random"
+      - run-eet-suites:
+          dsl-args: "SmartContractSelfDestructSpec -TLS=on -NODE=random"
       - run-eet-suites:
           dsl-args: "ChildStorageSpecs"
-      - run-property-driven-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.SmartContractCreateContract
-          args: '1'
       - run-eet-suites:
           dsl-args: "-A DeprecatedContractKeySpecs"
       - run-eet-suites:
           dsl-args: "ThresholdRecordCreationSpecs"
       - run-eet-suites:
           dsl-args: "ContractRecordSanityChecks"
+      - run-eet-suites:
+          dsl-args: "ContractGetBytecodeSuite"
+      - run-eet-suites:
+          dsl-args: "ContractRecordSanityChecks"
+
   run-umbrella-freeze-restart-test:
     parameters:
       freeze-pattern-count:
@@ -2917,13 +2828,13 @@ jobs:
       - run-umbrella-test
       - run-eet-suites:
           dsl-args: "OneOfEveryTxn"
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestBefore
+      - run-eet-suites:
+          dsl-args: "MigrationValidationPreSteps"
       - start-freeze:
           failure-log-pattern-sh: /repo/.circleci/scripts/frz-fail-pattern.sh
-      - run-umbrella-test:
-          config-file: umbrellaTest.properties.alt5k
-          expect-unavailable-nodes: true
+      - run-eet-suites:
+          perf-run: true
+          dsl-args: "UmbrellaRedux duration=2,unit=MINUTES,maxOpsPerSec=30,props=regression-mixed_ops.properties,maxPendingOps=50"
       - validate-thaw:
           freeze-pattern-count: << parameters.freeze-pattern-count >>
       - restart-with-validations:
@@ -2931,14 +2842,17 @@ jobs:
           active-status-timeout-secs: 180
           liveness-pattern-count: << parameters.liveness-pattern-count >>
           signed-state-pattern-count: << parameters.signed-state-pattern-count >>
-      - run-scenario-test:
-          fqcn: com.hedera.services.legacy.regression.DynamicRestartTestAfter
-      - run-umbrella-test:
-          config-file: umbrellaTest.properties.alt1k
+      - run-eet-suites:
+          dsl-args: "MigrationValidationPostSteps"
+      - run-eet-suites:
+          perf-run: true
+          dsl-args: "UmbrellaRedux duration=1,unit=MINUTES,maxOpsPerSec=30,props=regression-mixed_ops.properties,maxPendingOps=50"
       - run:
           name: Set log level to INFO
           command: /repo/.circleci/scripts/config-log4j-4normal.sh
       - validate-record-streams
+
+
   run-update-feature:
     parameters:
       runner:
@@ -3002,6 +2916,7 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "ERROR: fakeParameter is not a valid setting name" swirlds.log'
+
   run-update-jar-files:
     parameters:
       runner:
@@ -3067,6 +2982,7 @@ jobs:
           command: |
             /repo/.circleci/scripts/trap-failable-for-tf-cleanup.sh \
             '/repo/.circleci/scripts/scan-expected-logs.sh "<< parameters.new-marker >>" hgcaa.log'
+
   run-network-sim:
     parameters:
       runner:
@@ -3098,6 +3014,7 @@ jobs:
           name: Show logs after HGCApp restart
           command: |
             /repo/.circleci/scripts/show_logs.sh
+
   run-custom-migration:
     parameters:
       custom-migration-params:

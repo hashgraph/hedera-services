@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.freeze;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,15 +26,17 @@ import com.hedera.services.legacy.regression.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
-
 
 public class FreezeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
@@ -48,6 +50,7 @@ public class FreezeSuite extends HapiApiSuite {
 	private int endHour;
 	private int endMin;
 	private static String uploadPath = "updateSettings";
+	private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
 	public static void main(String... args) {
 
@@ -91,11 +94,21 @@ public class FreezeSuite extends HapiApiSuite {
 		}
 
 		log.info("Uploading file " + uploadFile);
+		File f = new File(uploadFile);
+		byte[] bytes = new byte[0];
+		try {
+			bytes = Files.readAllBytes(f.toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		final byte[] hash = UpdateFile150.sha384Digest(bytes);
+
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
-						fileCreate("newFile.zip").path(uploadFile)
+						fileUpdate(fileIDString).path(uploadFile)
 				).when(
-						freeze().setFileName("newFile.zip")
+						freeze().setFileID(fileIDString)
+								.setFileHash(hash)
 								.startingIn(60).seconds().andLasting(1).minutes()
 				).then(
 				);

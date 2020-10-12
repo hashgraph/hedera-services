@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-public class TokenGrantKycUsage extends TokenUsage<TokenGrantKycUsage> {
+public class TokenGrantKycUsage extends TokenTxnUsage<TokenGrantKycUsage> {
 	private TokenGrantKycUsage(TransactionBody tokenGrantKycOp, TxnUsageEstimator usageEstimator) {
 		super(tokenGrantKycOp, usageEstimator);
 	}

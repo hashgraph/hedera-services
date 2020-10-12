@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.context.ServicesContext;
@@ -65,6 +66,7 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -92,7 +94,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		static final int TOKENS = 5;
 		static final int NUM_080_CHILDREN = 6;
 		static final int TOKEN_ASSOCIATIONS = 6;
-		static final int NUM_090_CHILDREN = 7;
+		static final int DISK_FS = 7;
+		static final int NUM_090_CHILDREN = 8;
 	}
 
 	ServicesContext ctx;
@@ -160,14 +163,14 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
+		var diskFsBaseDirPath = bootstrapProps.getStringProperty("files.diskFsBaseDir.path");
+		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
+		ctx = new ServicesContext(nodeId, platform, this, properties);
 		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
+			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
-			var networkCtx = new MerkleNetworkContext(
-					UNKNOWN_CONSENSUS_TIME,
-					new SequenceNumber(seqStart),
-					new ExchangeRates());
 			setChild(ChildIndices.NETWORK_CTX,
-					networkCtx);
+					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
 			setChild(ChildIndices.TOPICS,
 					new FCMap<>(new MerkleEntityId.Provider(), new MerkleTopic.Provider()));
 			setChild(ChildIndices.STORAGE,
@@ -178,15 +181,24 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 					new FCMap<>(new MerkleEntityId.Provider(), MerkleToken.LEGACY_PROVIDER));
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
 					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
-			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
+			setChild(ChildIndices.DISK_FS,
+					new MerkleDiskFs(diskFsBaseDirPath, asLiteralString(ctx.nodeAccount())));
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
+
+			/* In a network where two or more nodes run on the same computer, each node's disk-based
+			file system must use a different path. So we update the object that Platform
+			constructed from state with this node's account, which the DiskFs will use to scope the
+			path to its disk-based storage. */
+			var restoredDiskFs = diskFs();
+			restoredDiskFs.setFsBaseDir(diskFsBaseDirPath);
+			restoredDiskFs.setFsNodeScopedDir(asLiteralString(ctx.nodeAccount()));
+			restoredDiskFs.checkHashesAgainstDiskContents();
+
 			merkleDigest.accept(this);
 			printHashes();
 		}
 
-		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext(nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
@@ -234,7 +246,8 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				storage().copy(),
 				accounts().copy(),
 				tokens().copy(),
-				tokenAssociations().copy()));
+				tokenAssociations().copy(),
+				diskFs().copy()));
 	}
 
 	@Override
@@ -297,6 +310,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 						"  Topics            :: %s\n" +
 						"  Tokens            :: %s\n" +
 						"  TokenAssociations :: %s\n" +
+						"  DiskFs            :: %s\n" +
 						"  NetworkContext    :: %s\n" +
 						"  AddressBook       :: %s",
 				getHash(),
@@ -305,6 +319,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				topics().getHash(),
 				tokens().getHash(),
 				tokenAssociations().getHash(),
+				diskFs().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash()));
 	}
@@ -335,5 +350,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 	public AddressBook addressBook() {
 		return getChild(ChildIndices.ADDRESS_BOOK);
+	}
+
+	public MerkleDiskFs diskFs() {
+		return getChild((ChildIndices.DISK_FS));
 	}
 }

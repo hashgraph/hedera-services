@@ -51,6 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -491,6 +492,7 @@ public class ServicesContext {
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
 					() -> queryableTokenAssociations().get(),
+					this::diskFs,
 					properties());
 		}
 		return stateViews;
@@ -504,6 +506,7 @@ public class ServicesContext {
 					this::accounts,
 					this::storage,
 					this::tokenAssociations,
+					this::diskFs,
 					properties());
 		}
 		return currentView;
@@ -680,7 +683,7 @@ public class ServicesContext {
 							new GetVersionInfoResourceUsage(),
 							new GetTxnRecordResourceUsage(recordCache(), answerFunctions(), cryptoFees),
 							/* Crypto */
-							new GetAccountInfoResourceUsage(cryptoFees),
+							new GetAccountInfoResourceUsage(),
 							new GetAccountRecordsResourceUsage(answerFunctions(), cryptoFees),
 							/* File */
 							new GetFileInfoResourceUsage(fileFees),
@@ -867,7 +870,8 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					txnCtx()::consensusTime,
 					DataMapFactory.dataMapFrom(blobStore()),
-					MetadataMapFactory.metaMapFrom(blobStore()));
+					MetadataMapFactory.metaMapFrom(blobStore()),
+					this::getCurrentSpecialFileSystem);
 			hfs.register(feeSchedulesManager());
 			hfs.register(exchangeRatesManager());
 			hfs.register(apiPermissionsReloading());
@@ -876,6 +880,10 @@ public class ServicesContext {
 		return hfs;
 	}
 
+	MerkleDiskFs getCurrentSpecialFileSystem() {
+		return this.state.diskFs();
+	}
+	
 	public SoliditySigsVerifier soliditySigsVerifier() {
 		if (soliditySigsVerifier == null) {
 			soliditySigsVerifier = new TxnAwareSoliditySigsVerifier(
@@ -1026,7 +1034,7 @@ public class ServicesContext {
 	public RecordCache recordCache() {
 		if (recordCache == null) {
 			recordCache = new RecordCache(
-					creator(),
+					this,
 					new RecordCacheFactory(properties()).getRecordCache(),
 					txnHistories());
 		}
@@ -1130,7 +1138,8 @@ public class ServicesContext {
 
 	public ExpiryManager expiries() {
 		if (expiries == null) {
-			expiries = new ExpiryManager(txnHistories());
+			var histories = txnHistories();
+			expiries = new ExpiryManager(recordCache(), histories);
 		}
 		return expiries;
 	}
@@ -1138,6 +1147,7 @@ public class ServicesContext {
 	public ExpiringCreations creator() {
 		if (creator == null) {
 			creator = new ExpiringCreations(expiries(), properties(), globalDynamicProperties());
+			creator.setRecordCache(recordCache());
 		}
 		return creator;
 	}
@@ -1219,7 +1229,7 @@ public class ServicesContext {
 
 	public FreezeServiceImpl freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(txns(), submissionManager());
+			freezeGrpc = new FreezeServiceImpl(fileNums(), txns(), submissionManager());
 		}
 		return freezeGrpc;
 	}
@@ -1617,5 +1627,9 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public MerkleDiskFs diskFs() {
+		return state.diskFs();
 	}
 }

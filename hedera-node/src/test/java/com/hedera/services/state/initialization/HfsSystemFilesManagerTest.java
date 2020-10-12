@@ -9,9 +9,9 @@ package com.hedera.services.state.initialization;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
@@ -105,6 +106,7 @@ class HfsSystemFilesManagerTest {
 	AddressBook currentBook;
 	JFileInfo expectedInfo;
 	TieredHederaFs hfs;
+	MerkleDiskFs diskFs;
 	MockFileNumbers fileNumbers;
 	PropertySource properties;
 	Consumer<ServicesConfigurationList> propertiesCb;
@@ -151,12 +153,14 @@ class HfsSystemFilesManagerTest {
 		data = mock(Map.class);
 		metadata = mock(Map.class);
 		hfs = mock(TieredHederaFs.class);
+		diskFs = mock(MerkleDiskFs.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
-
+		given(hfs.diskFs()).willReturn(diskFs);
 		fileNumbers = new MockFileNumbers();
 		fileNumbers.setShard(1L);
 		fileNumbers.setRealm(22L);
+		given(diskFs.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
 		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
@@ -245,6 +249,22 @@ class HfsSystemFilesManagerTest {
 		verify(data).put(
 				argThat(detailsId::equals),
 				argThat((byte[] bytes) -> Arrays.equals(expectedDetails.toByteArray(), bytes)));
+	}
+
+	@Test
+	public void createsEmptyUpdateFeatureFile() {
+		FileID file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
+
+		// setup:
+		given(hfs.exists(file150)).willReturn(false);
+		given(hfs.diskFs()).willReturn(diskFs);
+		given(diskFs.contains(file150)).willReturn(true);
+
+		// when:
+		subject.createUpdateZipFileIfMissing();
+
+		// then:
+		verify(diskFs).put(file150, new byte[0]);
 	}
 
 	@Test

@@ -9,9 +9,9 @@ package com.hedera.services.files;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,18 +21,23 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.legacy.core.jproto.JFileInfo;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.core.jproto.JFileInfo;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 
 import java.time.Instant;
 import java.util.AbstractMap;
@@ -40,15 +45,19 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Supplier;
 
+import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
-import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
-import org.mockito.InOrder;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class TieredHederaFsTest {
@@ -75,8 +84,10 @@ class TieredHederaFsTest {
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, JFileInfo> metadata;
-
+	MerkleDiskFs diskFs;
 	TieredHederaFs subject;
+
+	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -96,6 +107,10 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
+		diskFs = new MerkleDiskFs(
+				MOCK_DISKFS_DIR,
+				EntityIdUtils.asLiteralString(AccountID.newBuilder().setAccountNum(3).build()));
+		diskFs.put(FileID.newBuilder().setFileNum(150).build(), "Where, like a pillow on a bed /".getBytes());
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -103,7 +118,11 @@ class TieredHederaFsTest {
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxFileSizeKb()).willReturn(1);
 
-		subject = new TieredHederaFs(ids, properties, clock, data, metadata);
+		subject = new TieredHederaFs(ids, properties, clock, data, metadata, this::getCurrentSpecialFileSystem);
+	}
+
+	private MerkleDiskFs getCurrentSpecialFileSystem() {
+		return diskFs;
 	}
 
 	@Test
@@ -773,5 +792,37 @@ class TieredHederaFsTest {
 		assertEquals(fid, newFile);
 		verify(data).put(fid, origContents);
 		verify(metadata).put(fid, livingAttr);
+	}
+
+	@Test
+	public void createNewFile150ThenReadAndAppend() {
+		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
+		given(metadata.containsKey(fileID)).willReturn(true);
+		given(metadata.get(fileID)).willReturn(livingAttr);
+		// when:
+		var result = subject.overwrite(fileID, newContents);
+
+		// then:
+		assertEquals(SUCCESS, result.outcome());
+		assertTrue(result.fileReplaced());
+
+		// given:
+		var contents = subject.cat(fileID);
+
+		// then:
+		assertEquals(
+				new String(newContents),
+				new String(contents));
+
+		// when
+		subject.append(fileID, moreContents);
+
+		// then:
+		contents = subject.cat(fileID);
+		assertEquals(
+				new String(newContents) + new String(moreContents),
+				new String(contents));
+
+		assertEquals(subject.diskFs(), diskFs);
 	}
 }

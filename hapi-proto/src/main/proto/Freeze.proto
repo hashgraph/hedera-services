@@ -36,4 +36,5 @@ message FreezeTransactionBody {
     int32 endHour = 3; // The end hour (in UTC time), a value between 0 and 23
     int32 endMin = 4; // The end minute (in UTC time), a value between 0 and 59
     FileID updateFile = 5; // The ID of the file needs to be updated during a freeze transaction
+    bytes fileHash = 6; // The hash value of the file, used to verify file content before performing freeze and update
 }

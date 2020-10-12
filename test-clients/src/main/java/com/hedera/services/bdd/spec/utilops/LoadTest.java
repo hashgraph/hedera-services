@@ -42,7 +42,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalDouble targetTPS = OptionalDouble.empty();
 	public static OptionalInt testDurationMinutes = OptionalInt.empty();
 	public static OptionalInt threadNumber = OptionalInt.empty();
-	/** initial balance of payer account used for paying for performance test transactions*/
+	public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
+	/** initial balance of payer account used for paying for performance test transactions */
 	public static OptionalLong initialBalance = OptionalLong.of(500_000_000_000L);
 
 	public static int parseArgs(String... args) {
@@ -71,6 +72,12 @@ public class LoadTest extends HapiApiSuite {
 			usedArgs++;
 		}
 
+		if (args.length > 4) {
+			hcsSubmitMessage = OptionalInt.of(Integer.parseInt(args[4]));
+			log.info("Set hcsSubmitMessageSize as " + hcsSubmitMessage.getAsInt());
+			usedArgs++;
+		}
+
 		return usedArgs;
 	}
 
@@ -88,6 +95,8 @@ public class LoadTest extends HapiApiSuite {
 				.tolerance(settings::getTolerancePercentage)
 				.allowedSecsBelow(settings::getAllowedSecsBelow)
 				.setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
+				.setHCSSubmitMessageSize(
+						hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.lasting(
 						(testDurationMinutes.isPresent() ?
 								LoadTest::getTestDurationMinutes :

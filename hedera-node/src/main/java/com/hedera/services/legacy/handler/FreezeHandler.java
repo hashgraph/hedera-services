@@ -31,6 +31,9 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.Platform;
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,7 +41,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +52,7 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
+import static com.swirlds.common.CommonUtils.hex;
 
 /**
  * @author Qian
@@ -53,7 +60,7 @@ import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
  * 		transactions. Documentation available at index.html#proto.FreezeTransactionBody
  */
 public class FreezeHandler {
-	private static final Logger log = LogManager.getLogger(FreezeHandler.class);
+	public static Logger log = LogManager.getLogger(FreezeHandler.class);
 
 	private final Platform platform;
 	private final HederaFs hfs;
@@ -66,14 +73,17 @@ public class FreezeHandler {
 	private static String CMD_SCRIPT = "exec.sh";
 	private static String FULL_SCRIPT_PATH = TEMP_DIR + File.separator + CMD_SCRIPT;
 	private String LOG_PREFIX;
+	private static String ABORT_UDPATE_MESSAGE = "ABORT UPDATE PROCRESS";
 
 	private FileID updateFeatureFile;
+	private byte[] updateFileHash;
 
 	public FreezeHandler(
 			HederaFs hfs,
 			Platform platform,
 			HbarCentExchange exchange
 	) {
+
 		this.exchange = exchange;
 		this.platform = platform;
 		this.hfs = hfs;
@@ -87,6 +97,7 @@ public class FreezeHandler {
 		if (transactionBody.getFreeze().hasUpdateFile()) {
 			//save the file ID and will be used after platform goes into maintenance mode
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
+			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
 		try {
 			platform.setFreezeTime(
@@ -114,16 +125,36 @@ public class FreezeHandler {
 
 	public void handleUpdateFeature() {
 		if (updateFeatureFile == null) {
+			log.info(String.format("%s Update file id is not defined, no update will be conducted", LOG_PREFIX));
 			return;
 		}
-		log.info("{} running update with FileID {}", LOG_PREFIX, updateFeatureFile);
+		log.info("{} Running update with FileID {}", LOG_PREFIX, updateFeatureFile);
 
 		FileID fileIDtoUse = updateFeatureFile;
 		updateFeatureFile = null; // reset to null since next freeze may not need file update
 		if (hfs.exists(fileIDtoUse)) {
 			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
 			byte[] fileBytes = hfs.cat(fileIDtoUse);
-			updateFeatureWithFileContents(fileBytes);
+			if ( fileBytes == null || fileBytes.length == 0) {
+				log.error(String.format("%s Update file is empty", LOG_PREFIX));
+				log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+				return;
+			}
+			try {
+				byte[] readFileHash = MessageDigest.getInstance("SHA-384").digest(fileBytes);
+				if (Arrays.equals(readFileHash, updateFileHash)) {
+					updateFeatureWithFileContents(fileBytes);
+				} else {
+					log.error(String.format("%s File hash mismatch", LOG_PREFIX));
+					log.error("{} Hash from transaction body {}", LOG_PREFIX, hex(updateFileHash));
+					log.error("{} Hash from file system {}", LOG_PREFIX, hex(readFileHash));
+					log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
+				}
+			} catch (NoSuchAlgorithmException e) {
+				log.error("{} Exception {}", LOG_PREFIX, e);
+			}
+		} else {
+			log.error(String.format("%s File ID %s not found in file system ", LOG_PREFIX, fileIDtoUse));
 		}
 	}
 
@@ -144,16 +175,6 @@ public class FreezeHandler {
 			log.info("{} unzipping file to directory {} ", LOG_PREFIX, TEMP_DIR);
 			//unzip bytes stream to target directory
 			UnzipUtility.unzip(fileBytes, TEMP_DIR);
-
-			File sdk_directory = new File(TEMP_SDK_DIR);
-			if (sdk_directory.exists()) {
-				log.info("{} copying files from {} to {}", LOG_PREFIX, TEMP_SDK_DIR, TARGET_DIR);
-				// copy files recursively to sdk directory
-				FileUtils.copyDirectory(new File(TEMP_SDK_DIR), new File(TARGET_DIR));
-
-				log.info("{} deleting directory {}", LOG_PREFIX, TEMP_SDK_DIR);
-				FileUtils.deleteDirectory(sdk_directory);
-			}
 
 			File deleteTxt = new File(DELETE_FILE);
 			if (deleteTxt.exists()) {
