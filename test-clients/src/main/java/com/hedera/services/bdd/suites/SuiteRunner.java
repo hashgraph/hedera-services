@@ -22,6 +22,8 @@ package com.hedera.services.bdd.suites;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.ConsensusThrottlesSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
@@ -42,10 +44,10 @@ import com.hedera.services.bdd.suites.contract.SmartContractInlineAssemblySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractPaySpec;
 import com.hedera.services.bdd.suites.contract.SmartContractSelfDestructSpec;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.QueryPaymentSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -91,6 +93,8 @@ import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,9 +114,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
@@ -268,6 +280,7 @@ public class SuiteRunner {
 	private static final String NETWORK_SIZE_ARG = "-NETWORKSIZE";
 	/* The instance id of the suiteRunner running on the client. */
 	private static final String PAYER_ID_ARG = "-PAYER";
+	private static String payerId;
 
 	public static void main(String... args) {
 		/* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
@@ -284,12 +297,10 @@ public class SuiteRunner {
 					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
 
-			String payer_id = "0.0." + overrideOrDefault(effArgs,
-					PAYER_ID_ARG, DEFAULT_PAYER_ID).split("=")[1];
-
+			var outcome = new CryptoCreateForSuiteRunner().runSuiteAsync();
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
-					payer_id,
+					payerId,
 					args[1],
 					tlsOverride.substring(TLS_ARG.length() + 1),
 					txnOverride.substring(TXN_ARG.length() + 1),
@@ -489,4 +500,13 @@ public class SuiteRunner {
 	public static <T> T[] aof(T... items) {
 		return items;
 	}
+
+	public static String getPayerId() {
+		return payerId;
+	}
+
+	public static void setPayerId(String payerId) {
+		SuiteRunner.payerId = payerId;
+	}
+
 }
