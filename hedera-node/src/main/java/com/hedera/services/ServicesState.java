@@ -48,7 +48,10 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.common.notification.NotificationFactory;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,6 +68,7 @@ import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.swirlds.logging.LogMarker.RECONNECT;
 
 public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -192,6 +196,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
 		ctx = new ServicesContext(nodeId, platform, this, properties);
 		CONTEXTS.store(ctx);
+
+		NotificationFactory.getEngine().register(ReconnectCompleteListener.class, (notification) -> {
+			// code to initialize in-memory data
+		});
+
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
 
