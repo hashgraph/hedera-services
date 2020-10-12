@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.context.ContextPlatformStatus;
@@ -166,7 +167,7 @@ public class FreezeServiceImplTest {
             "./configuration/dev/application.properties",
             "./configuration/dev/api-permission.properties");
     GlobalFlag.getInstance().setExchangeRateSet(getDefaultExchangeRateSet());
-    freezeService = new FreezeServiceImpl(transactionHandler, submissionManager);
+    freezeService = new FreezeServiceImpl(new MockFileNumbers(), transactionHandler, submissionManager);
 
   }
 
@@ -309,7 +310,7 @@ public class FreezeServiceImplTest {
   public void freeze_NotValidUpdateFileID_Test() throws Exception {
 
     Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
-            FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM + 1).build(),
+            FileID.newBuilder().setFileNum(151L).build(),
             new byte[48]);
     Transaction signed = sign(freezeTx);
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
@@ -334,7 +335,7 @@ public class FreezeServiceImplTest {
   public void freeze_UpdateFileHashInvalid_Test() throws Exception {
 
     Transaction freezeTx = FreezeTestHelper.createFreezeTransaction(true, true,
-            FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM).build(),
+            FileID.newBuilder().setFileNum(150L).build(),
             new byte[0]);
     Transaction signed = sign(freezeTx);
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {

@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -44,6 +46,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -381,6 +384,30 @@ public class HapiSpecRegistry {
 		return get(name, Long.class);
 	}
 
+	public void saveIntValue(String name, Integer intVal) {
+		put(name, intVal);
+	}
+
+	public Integer getIntValue(String name) {
+		return get(name, Integer.class);
+	}
+
+	public void saveFloatValue(String name, Float floatVal) {
+		put(name, floatVal);
+	}
+
+	public Float getFloatValue(String name) {
+		return get(name, Float.class);
+	}
+
+	public void saveDoubleValue(String name, Double doubleVal) {
+		put(name, doubleVal);
+	}
+
+	public Double getDoubleValue(String name) {
+		return get(name, Double.class);
+	}
+
 	public void saveSigRequirement(String name, Boolean isRequired) {
 		put(name, isRequired);
 	}
@@ -554,9 +581,57 @@ public class HapiSpecRegistry {
 		}
 	}
 
+	public TransactionRecord getTransactionRecord(String name) {
+		return get(name, TransactionRecord.class);
+	}
+
+
+	public void saveTransactionRecord(String name, TransactionRecord txnRecord) {
+		put(name, txnRecord);
+	}
+
+	public void removeTransactionRecord(String name) {
+		try {
+			remove(name, TransactionRecord.class);
+		} catch (Exception ignore) {
+		}
+	}
+
 	public ContractGetInfoResponse.ContractInfo getContractInfo(String name) {
 		return get(name, ContractGetInfoResponse.ContractInfo.class);
 	}
+
+
+	public void saveFileInfo(String name, FileGetInfoResponse.FileInfo info) {
+		put(name, info);
+	}
+
+	public void removeFileInfo(String name) {
+		try {
+			remove(name, ContractGetInfoResponse.ContractInfo.class);
+		} catch (Exception ignore) {
+		}
+	}
+
+	public FileGetInfoResponse.FileInfo getFileInfo(String name) {
+		return get(name, FileGetInfoResponse.FileInfo.class);
+	}
+
+	public void saveAccountInfo(String name, CryptoGetInfoResponse.AccountInfo info) {
+		put(name, info);
+	}
+
+	public void removeAccountInfo(String name) {
+		try {
+			remove(name, CryptoGetInfoResponse.AccountInfo.class);
+		} catch (Exception ignore) {
+		}
+	}
+
+	public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
+		return get(name, CryptoGetInfoResponse.AccountInfo.class);
+	}
+
 
 	public <T> T getId(String name, Class<T> type) {
 		return get(name, type);

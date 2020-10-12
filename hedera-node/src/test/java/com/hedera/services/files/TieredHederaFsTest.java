@@ -26,6 +26,8 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JFileInfo;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.logic.ApplicationConstants;
+import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -82,8 +84,10 @@ class TieredHederaFsTest {
 	Supplier<Instant> clock;
 	Map<FileID, byte[]> data;
 	Map<FileID, JFileInfo> metadata;
-	SpecialFileSystem specialFileSystem;
+	MerkleDiskFs diskFs;
 	TieredHederaFs subject;
+
+	String MOCK_DISKFS_DIR = "src/test/resources/diskFs";
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -103,8 +107,10 @@ class TieredHederaFsTest {
 		ids = mock(EntityIdSource.class);
 		data = mock(Map.class);
 		metadata = mock(Map.class);
-		specialFileSystem = new SpecialFileSystem(AccountID.newBuilder()
-				.setAccountNum(3).build());
+		diskFs = new MerkleDiskFs(
+				MOCK_DISKFS_DIR,
+				EntityIdUtils.asLiteralString(AccountID.newBuilder().setAccountNum(3).build()));
+		diskFs.put(FileID.newBuilder().setFileNum(150).build(), "Where, like a pillow on a bed /".getBytes());
 
 		clock = mock(Supplier.class);
 		given(clock.get()).willReturn(now);
@@ -115,8 +121,8 @@ class TieredHederaFsTest {
 		subject = new TieredHederaFs(ids, properties, clock, data, metadata, this::getCurrentSpecialFileSystem);
 	}
 
-	private SpecialFileSystem getCurrentSpecialFileSystem() {
-		return specialFileSystem;
+	private MerkleDiskFs getCurrentSpecialFileSystem() {
+		return diskFs;
 	}
 
 	@Test
@@ -790,7 +796,7 @@ class TieredHederaFsTest {
 
 	@Test
 	public void createNewFile150ThenReadAndAppend() {
-		FileID fileID = FileID.newBuilder().setFileNum(ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM).build();
+		FileID fileID = FileID.newBuilder().setFileNum(150L).build();
 		given(metadata.containsKey(fileID)).willReturn(true);
 		given(metadata.get(fileID)).willReturn(livingAttr);
 		// when:
@@ -817,6 +823,6 @@ class TieredHederaFsTest {
 				new String(newContents) + new String(moreContents),
 				new String(contents));
 
-		assertEquals(subject.getSpecialFileSystem(), specialFileSystem);
+		assertEquals(subject.diskFs(), diskFs);
 	}
 }

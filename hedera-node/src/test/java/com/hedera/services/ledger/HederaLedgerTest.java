@@ -512,8 +512,7 @@ public class HederaLedgerTest {
 			new HederaAccountCustomizer()
 					.key(new JContractIDKey(0, 0, 2))
 					.customizing(genesisAccount);
-		} catch (Exception impossible) {
-		}
+		} catch (Exception impossible) { }
 		backingAccounts.put(genesis, genesisAccount);
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,

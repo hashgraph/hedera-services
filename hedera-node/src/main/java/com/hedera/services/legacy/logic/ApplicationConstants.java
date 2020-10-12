@@ -31,10 +31,6 @@ public class ApplicationConstants {
 	public static long DEFAULT_FILE_SHARD = 0;
 	public static long DEFAULT_FILE_REALM = 0;
 
-	// File number used to do system update
-	public static long UPDATE_FEATURE_FILE_ACCOUNT_NUM = 150;
-	public static String SPECIAL_FILESYSTEM_DIR = "data/specialFileSystem/";
-
 	public static String NO = "NO";
 	public static int ZERO = 0;
 	public static char P = 'p';

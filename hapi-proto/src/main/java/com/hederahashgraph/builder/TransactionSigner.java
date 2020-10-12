@@ -192,7 +192,7 @@ public class TransactionSigner {
    */
   private static int findMinPrefixLength(Set<Key> keys) {
     if (keys.size() == 1) {
-      return 1;
+      return 3;
     }
 
     int rv = 0;

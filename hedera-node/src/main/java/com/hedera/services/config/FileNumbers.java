@@ -36,9 +36,7 @@ public class FileNumbers {
 	private long exchangeRates = UNKNOWN_NUMBER;
 	private long apiPermissions = UNKNOWN_NUMBER;
 	private long applicationProperties = UNKNOWN_NUMBER;
-
-	private long systemFileCutoff = UNKNOWN_NUMBER;
-	private long updateFeatureFile = ApplicationConstants.UPDATE_FEATURE_FILE_ACCOUNT_NUM;
+	private long softwareUpdateZip = UNKNOWN_NUMBER;
 
 	public FileNumbers(HederaNumbers hederaNums, PropertySource properties) {
 		this.hederaNums = hederaNums;
@@ -87,8 +85,11 @@ public class FileNumbers {
 		return apiPermissions;
 	}
 
-	public long getUpdateFeatureFile() {
-		return updateFeatureFile;
+	public long softwareUpdateZip() {
+		if (softwareUpdateZip == UNKNOWN_NUMBER) {
+			softwareUpdateZip = properties.getLongProperty("files.softwareUpdateZip");
+		}
+		return softwareUpdateZip;
 	}
 
 	public FileID toFid(long num) {

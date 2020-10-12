@@ -22,7 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.files.SpecialFileSystem;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -104,19 +104,20 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, JFileInfo> fileAttrs;
 	private final TokenStore tokenStore;
+	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private final PropertySource properties;
-	private SpecialFileSystem specialFileSystem;
+
 	public StateView(
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
-			SpecialFileSystem specialFileSystem
+			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, specialFileSystem, properties);
+		this(NOOP_TOKEN_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
 	public StateView(
@@ -124,19 +125,18 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			PropertySource properties,
-			SpecialFileSystem specialFileSystem
+			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, specialFileSystem, properties);
+		this(tokenStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
-	// TBD
 	public StateView(
 			TokenStore tokenStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
-			SpecialFileSystem specialFileSystem,
+			Supplier<MerkleDiskFs> diskFs,
 			PropertySource properties
 	) {
 		this.topics = topics;
@@ -151,7 +151,7 @@ public class StateView {
 		contractStorage = AddressKeyedMapFactory.storageMapFrom(blobStore);
 		contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
 		this.properties = properties;
-		this.specialFileSystem = specialFileSystem;
+		this.diskFs = diskFs;
 	}
 
 	public Optional<JFileInfo> attrOf(FileID id) {
@@ -159,8 +159,8 @@ public class StateView {
 	}
 
 	public Optional<byte[]> contentsOf(FileID id) {
-		if (specialFileSystem.isSpeicalFileID(id)) {
-			return Optional.ofNullable(specialFileSystem.getFileContent(id));
+		if (diskFs.get().contains(id)) {
+			return Optional.ofNullable(diskFs.get().contentsOf(id));
 		} else {
 			return Optional.ofNullable(fileContents.get(id));
 		}

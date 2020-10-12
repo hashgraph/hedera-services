@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.files.SpecialFileSystem;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.EntityIdUtils;
@@ -106,7 +106,7 @@ class HfsSystemFilesManagerTest {
 	AddressBook currentBook;
 	JFileInfo expectedInfo;
 	TieredHederaFs hfs;
-	SpecialFileSystem specialFileSystem;
+	MerkleDiskFs diskFs;
 	MockFileNumbers fileNumbers;
 	PropertySource properties;
 	Consumer<ServicesConfigurationList> propertiesCb;
@@ -153,14 +153,14 @@ class HfsSystemFilesManagerTest {
 		data = mock(Map.class);
 		metadata = mock(Map.class);
 		hfs = mock(TieredHederaFs.class);
-		specialFileSystem = mock(SpecialFileSystem.class);
+		diskFs = mock(MerkleDiskFs.class);
 		given(hfs.getData()).willReturn(data);
 		given(hfs.getMetadata()).willReturn(metadata);
-		given(hfs.getSpecialFileSystem()).willReturn(specialFileSystem);
+		given(hfs.diskFs()).willReturn(diskFs);
 		fileNumbers = new MockFileNumbers();
 		fileNumbers.setShard(1L);
 		fileNumbers.setRealm(22L);
-		given(specialFileSystem.isSpeicalFileID(fileNumbers.toFid(111))).willReturn(false);
+		given(diskFs.contains(fileNumbers.toFid(111))).willReturn(false);
 
 		properties = mock(PropertySource.class);
 		given(properties.getStringProperty("bootstrap.hapiPermissions.path"))
@@ -253,18 +253,18 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	public void createsEmptyUpdateFeatureFile() {
-		FileID file150 = fileNumbers.toFid(fileNumbers.getUpdateFeatureFile());
+		FileID file150 = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 
 		// setup:
 		given(hfs.exists(file150)).willReturn(false);
-		given(hfs.getSpecialFileSystem()).willReturn(specialFileSystem);
-		given(specialFileSystem.isSpeicalFileID(file150)).willReturn(true);
+		given(hfs.diskFs()).willReturn(diskFs);
+		given(diskFs.contains(file150)).willReturn(true);
 
 		// when:
-		subject.createEmptyUpdateFeatureFile();
+		subject.createUpdateZipFileIfMissing();
 
 		// then:
-		verify(specialFileSystem).put(file150, new byte[0]);
+		verify(diskFs).put(file150, new byte[0]);
 	}
 
 	@Test

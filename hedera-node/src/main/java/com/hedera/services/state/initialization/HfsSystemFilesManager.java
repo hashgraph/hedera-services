@@ -145,8 +145,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	@Override
-	public void createEmptyUpdateFeatureFile() {
-		var disFid = fileNumbers.toFid(fileNumbers.getUpdateFeatureFile());
+	public void createUpdateZipFileIfMissing() {
+		var disFid = fileNumbers.toFid(fileNumbers.softwareUpdateZip());
 		if (!hfs.exists(disFid)) {
 			materialize(disFid, systemFileInfo(), new byte[0]);
 		}
@@ -188,8 +188,8 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 
 	private void materialize(FileID fid, JFileInfo info, byte[] contents) {
 		hfs.getMetadata().put(fid, info);
-		if (hfs.getSpecialFileSystem().isSpeicalFileID(fid)) {
-			hfs.getSpecialFileSystem().put(fid, contents);
+		if (fileNumbers.softwareUpdateZip() == fid.getFileNum()) {
+			hfs.diskFs().put(fid, contents);
 		} else {
 			hfs.getData().put(fid, contents);
 		}

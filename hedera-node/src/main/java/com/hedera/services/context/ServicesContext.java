@@ -51,7 +51,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.files.EntityExpiryMapFactory;
-import com.hedera.services.files.SpecialFileSystem;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -492,7 +492,7 @@ public class ServicesContext {
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
 					() -> queryableTokenAssociations().get(),
-					specialFileSystem(),
+					this::diskFs,
 					properties());
 		}
 		return stateViews;
@@ -506,7 +506,7 @@ public class ServicesContext {
 					this::accounts,
 					this::storage,
 					this::tokenAssociations,
-					specialFileSystem(),
+					this::diskFs,
 					properties());
 		}
 		return currentView;
@@ -880,8 +880,8 @@ public class ServicesContext {
 		return hfs;
 	}
 
-	SpecialFileSystem getCurrentSpecialFileSystem() {
-		return this.state.getSpecialFileSystem();
+	MerkleDiskFs getCurrentSpecialFileSystem() {
+		return this.state.diskFs();
 	}
 	
 	public SoliditySigsVerifier soliditySigsVerifier() {
@@ -1229,7 +1229,7 @@ public class ServicesContext {
 
 	public FreezeServiceImpl freezeGrpc() {
 		if (freezeGrpc == null) {
-			freezeGrpc = new FreezeServiceImpl(txns(), submissionManager());
+			freezeGrpc = new FreezeServiceImpl(fileNums(), txns(), submissionManager());
 		}
 		return freezeGrpc;
 	}
@@ -1629,7 +1629,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public SpecialFileSystem specialFileSystem() {
-		return state.getSpecialFileSystem();
+	public MerkleDiskFs diskFs() {
+		return state.diskFs();
 	}
 }
