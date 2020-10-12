@@ -197,6 +197,7 @@ class ServicesStateTest {
 		// then:
 		assertNotNull(subject.tokens());
 		assertNotNull(subject.tokenAssociations());
+		assertNotNull(subject.diskFs());
 	}
 
 	@Test

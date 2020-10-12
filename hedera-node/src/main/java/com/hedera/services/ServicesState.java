@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.DiscardUnknownFieldsParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -150,6 +151,10 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
 					new FCMap<>(MerkleEntityAssociation.LEGACY_PROVIDER, MerkleTokenRelStatus.LEGACY_PROVIDER));
 			log.info("Created token associations FCMap after <=0.8.0 state restoration");
+		}
+		if (diskFs() == null) {
+			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
+			log.info("Created disk file system after <=0.9.0 state restoration");
 		}
 	}
 
