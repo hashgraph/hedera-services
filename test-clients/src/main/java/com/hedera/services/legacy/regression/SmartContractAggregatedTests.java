@@ -34,8 +34,6 @@ public class SmartContractAggregatedTests {
 
 	private static final List<LegacySmartContractTest> SCTests = List.of(
 			new SmartContractTestBitcarbon(),
-			new SmartContractTestInlineAssembly(),
-			new OCTokenIT(),
 			new SmartContractCreateContract()
 	);
 
