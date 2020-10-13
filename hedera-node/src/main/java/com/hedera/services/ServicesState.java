@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.exceptions.ContextNotFoundException;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -177,7 +178,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var bootstrapProps = new BootstrapProperties();
 		var diskFsBaseDirPath = bootstrapProps.getStringProperty("files.diskFsBaseDir.path");
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext(nodeId, platform, this, properties);
+		try {
+			ctx = CONTEXTS.lookup(nodeId.getId());
+		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
+			ctx = new ServicesContext(nodeId, platform, this, properties);
+		}
 		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
