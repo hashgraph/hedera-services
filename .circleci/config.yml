@@ -885,11 +885,11 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "15 17,4 * * *"
+          cron: "45 17 * * *"
           filters:
             branches:
               only:
-                - master
+                - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-basic-suiterunner-tests:
@@ -905,11 +905,11 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "30 17,4 * * *"
+          cron: "0 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-performance-regression:
@@ -925,11 +925,11 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "45 17,4 * * *"
+          cron: "15 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-network-error-regression:
@@ -945,11 +945,11 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "0 18,5 * * *"
+          cron: "30 18 * * *"
           filters:
             branches:
               only:
-                - master
+                - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-zero-stake-regression:
@@ -966,11 +966,11 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "15 18,5 * * *"
+              cron: "45 18 * * *"
               filters:
                 branches:
                   only:
-                    - master
+                    - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-testnet-migration-regression:
@@ -1009,11 +1009,11 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "30 18,5 * * *"
+          cron: "0 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - 662-M-create-payer-account-for-test
     jobs:
       - build-platform-and-services
       - run-software-update-regression:
@@ -1495,6 +1495,7 @@ workflows:
               ignore:
                 - /.*-PERF/
                 - /.*-REGRESSION/
+                - 662-M-create-payer-account-for-test
           workflow-name: "Continuous integration"
       - start-singlejob-testnet:
           context: Slack
@@ -1905,7 +1906,8 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests
+            cd hedera-services; git checkout 662-M-create-payer-account-for-test;
+            mvn --no-transfer-progress clean install -DskipTests
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
@@ -1913,7 +1915,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
+            cd /swirlds-platform/regression;   git checkout 662-services-M-create-payer-accounts;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
