@@ -631,7 +631,6 @@ public class HederaLedgerTest {
 
 		// when:
 		String summary = subject.currentChangeSet();
-		System.out.println(summary);
 
 		// then:
 		verify(accountsLedger).changeSetSoFar();
@@ -683,7 +682,6 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		subject.adjustBalance(genesis, -1L);
-		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
@@ -755,14 +753,10 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		System.out.println(accountsLedger.changeSetSoFar());
 		subject.commit();
-		System.out.println(accountsLedger.changeSetSoFar());
 		// and:
 		subject.begin();
-		System.out.println(accountsLedger.changeSetSoFar());
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
@@ -776,7 +770,6 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertEquals(0L, subject.netTransfersInTxn().getAccountAmountsList().size());
@@ -790,7 +783,6 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
-		System.out.println(accountsLedger.changeSetSoFar());
 
 		// then:
 		assertThrows(InconsistentAdjustmentsException.class, () -> subject.commit());
@@ -805,7 +797,6 @@ public class HederaLedgerTest {
 		AccountID a = asAccount("1.2.3");
 		subject.spawn(a, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.destroy(a);
-		System.out.println(accountsLedger.changeSetSoFar());
 		subject.commit();
 
 		// then:
@@ -821,7 +812,6 @@ public class HederaLedgerTest {
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		System.out.println(accountsLedger.changeSetSoFar());
 		int numNetTransfers = subject.netTransfersInTxn().getAccountAmountsCount();
 		subject.commit();
 
@@ -882,15 +872,10 @@ public class HederaLedgerTest {
 		// when:
 		subject.begin();
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
-		System.out.println(accountsLedger.changeSetSoFar());
 		subject.rollback();
-		System.out.println(accountsLedger.changeSetSoFar());
 		// and:
 		subject.begin();
-		System.out.println(accountsLedger.changeSetSoFar());
 		AccountID b = subject.create(genesis, 2_000L, new HederaAccountCustomizer().memo("b"));
-		System.out.println(accountsLedger.changeSetSoFar());
-		System.out.println(subject.netTransfersInTxn());
 
 		// then:
 		assertEquals(2L, subject.netTransfersInTxn().getAccountAmountsList().size());
@@ -910,11 +895,9 @@ public class HederaLedgerTest {
 		AccountID d = subject.create(genesis, 4_000L, new HederaAccountCustomizer().memo("d"));
 		// and:
 		var rA = tokenStore.createProvisionally(stdWith("MINE", "MINE", a), a, thisSecond);
-		System.out.println(rA.getStatus());
 		tA = rA.getCreated().get();
 		tokenStore.commitCreation();
 		var rB = tokenStore.createProvisionally(stdWith("YOURS", "YOURS", b), b, thisSecond);
-		System.out.println(rB.getStatus());
 		tB = rB.getCreated().get();
 		tokenStore.commitCreation();
 		// and:
@@ -928,8 +911,6 @@ public class HederaLedgerTest {
 		subject.adjustBalance(c, 1_000L);
 		subject.adjustBalance(genesis, -1_000L);
 		subject.doTransfers(TxnUtils.withAdjustments(a, -500L, b, 250L, c, 250L));
-		System.out.println(accountsLedger.changeSetSoFar());
-		System.out.println(tokenRelsLedger.changeSetSoFar());
 		// and:
 		subject.adjustTokenBalance(a, tA, +10_000);
 		subject.adjustTokenBalance(a, tA, -5_000);
@@ -941,9 +922,8 @@ public class HederaLedgerTest {
 		subject.adjustTokenBalance(c, tB, +50);
 		subject.adjustTokenBalance(c, tB, -50);
 		subject.adjustTokenBalance(c, tA, +5000);
-		System.out.println(subject.freeze(a, tB));
-		System.out.println(subject.adjustTokenBalance(a, tB, +1_000_000));
-		System.out.println(accountsLedger.changeSetSoFar());
+		subject.freeze(a, tB);
+		subject.adjustTokenBalance(a, tB, +1_000_000);
 
 		// then:
 		assertThat(
