@@ -29,7 +29,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
 public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GetAccountBalanceAfterReconnect.class);
@@ -46,17 +48,25 @@ public class GetAccountBalanceAfterReconnect extends HapiApiSuite {
 	}
 
 	private HapiApiSpec getAccountBalanceFromAllNodes() {
+		String sender = "0.0.1001";
+		String receiver = "0.0.1002";
 		return defaultHapiSpec("GetAccountBalanceFromAllNodes")
 				.given().when().then(
 						UtilVerbs.sleepFor(4 * 60 * 1000),
-						getAccountBalance("0.0.1001").logged().setNode("0.0.3"),
-						getAccountBalance("0.0.1002").logged().setNode("0.0.3"),
-						getAccountBalance("0.0.1001").logged().setNode("0.0.4"),
-						getAccountBalance("0.0.1002").logged().setNode("0.0.4"),
-						getAccountBalance("0.0.1001").logged().setNode("0.0.5"),
-						getAccountBalance("0.0.1002").logged().setNode("0.0.5"),
-						getAccountBalance("0.0.1001").logged().setNode("0.0.6"),
-						getAccountBalance("0.0.1002").logged().setNode("0.0.6")
+						balanceSnapshot("senderBalance", sender), // from default node 0.0.3
+						balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
+						getAccountBalance(sender).logged().setNode("0.0.4")
+								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
+						getAccountBalance(receiver).logged().setNode("0.0.4")
+								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
+						getAccountBalance(sender).logged().setNode("0.0.5")
+								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
+						getAccountBalance(receiver).logged().setNode("0.0.5")
+								.hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
+						getAccountBalance(sender).logged().setNode("0.0.6")
+								.hasTinyBars(changeFromSnapshot("senderBalance", 0)),
+						getAccountBalance(receiver).logged().setNode("0.0.6")
+								.hasTinyBars(changeFromSnapshot("receiverBalance", 0))
 				);
 	}
 
