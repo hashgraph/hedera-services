@@ -87,7 +87,6 @@ public class RepoNewCacheTest {
     try {
       keyByte = MiscUtils.commonsHexToBytes(key);
     } catch (DecoderException e) {
-      e.printStackTrace();
     }
     repository.addBalance(keyByte, BigInteger.TEN);
     System.out.println("Initial repo balance before commit ::" + repository.getBalance(keyByte));
@@ -205,7 +204,6 @@ public class RepoNewCacheTest {
     try {
       someKeyBytes = MiscUtils.commonsHexToBytes(someKey);
     } catch (DecoderException e) {
-      e.printStackTrace();
     }
 
     ledger.begin();

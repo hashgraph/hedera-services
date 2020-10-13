@@ -57,9 +57,6 @@ public class JKeyAdditionalTypeSupportTest {
     jkeyReborn = JKeySerializer.deserialize(dis);
     Key key1 = JKey.mapJKey(jkeyReborn);
 
-    System.out.println("initial key=" + key + "; key Reborn=" + key1);
-    System.out.println("initial jkey=" + ckey + "; jkey Reborn=" + jkeyReborn);
-
     // make sure jkey bytes the same
     byte[] ser1 = JKeySerializer.serialize(jkeyReborn);
     Assert.assertArrayEquals(ser, ser1);
@@ -86,9 +83,6 @@ public class JKeyAdditionalTypeSupportTest {
 
     jkeyReborn = JKeySerializer.deserialize(dis);
     Key key1 = JKey.mapJKey(jkeyReborn);
-
-    System.out.println("initial key=" + key + "; key Reborn=" + key1);
-    System.out.println("initial jkey=" + ckey + "; jkey Reborn=" + jkeyReborn);
 
     // make sure jkey bytes the same
     byte[] ser1 = JKeySerializer.serialize(jkeyReborn);

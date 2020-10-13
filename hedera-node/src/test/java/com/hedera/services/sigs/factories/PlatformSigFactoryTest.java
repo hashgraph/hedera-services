@@ -132,7 +132,6 @@ public class PlatformSigFactoryTest {
 				Hex.encodeHexString(sig),
 				Hex.encodeHexString(differentPk),
 				Hex.encodeHexString(differentSig));
-		System.out.println(expected);
 
 		// given:
 		var sigs = List.of(a, b);
