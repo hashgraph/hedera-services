@@ -218,11 +218,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 
 		CONTEXTS.store(ctx);
 
-		NotificationFactory.getEngine().register(ReconnectCompleteListener.class, (notification) -> {
-			ctx.update(this);
-			log.info("Finish reconnect for HederaNode#{}", ctx.id());
-		});
-
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
 
