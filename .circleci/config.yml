@@ -885,7 +885,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "35 17 * * *"
+          cron: "42 17 * * *"
           filters:
             branches:
               only:
@@ -1906,7 +1906,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-            cd hedera-services; git checkout 662-M-create-payer-account-for-test;
+            git checkout 662-M-create-payer-account-for-test;
             mvn --no-transfer-progress clean install -DskipTests
       - run:
           name: Checkout swirlds-platform repos and build
