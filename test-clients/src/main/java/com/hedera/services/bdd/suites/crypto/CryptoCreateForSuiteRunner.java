@@ -62,63 +62,75 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 		);
 	}
 
-//	private HapiApiSpec createAccount() {
-//		long initialBalance = 5_000_000_000_000L;
-//
-//		return customHapiSpec("CreatePayerAccountForEachClient")
-//				.withProperties(Map.of(
-//						"nodes", nodes,
-//						"default.node",  defaultNode
-//				)).given().when().then(
-//						withOpContext((spec, log) -> {
-//									var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
-//											.withRecharging()
-//											.rechargeWindow(3)
-//											.key(GENESIS)
-//											.payingWith(GENESIS)
-//											.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-//													PLATFORM_TRANSACTION_NOT_CREATED).
-//													via("txn");
-//									var payerAccountInfo = getAccountInfo("payerAccount")
-//											.saveToRegistry("payerAccountInfo").logged();
-//									CustomSpecAssert.allRunFor(spec, cryptoCreateOp, payerAccountInfo);
-//									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
-//											.getAccountInfo("payerAccountInfo").getAccountID().getAccountNum()));
-//								}
-//						));
-//	}
-
 	private HapiApiSpec createAccount() {
-		long initialBalance = 500_000_000_000L;
-		return defaultHapiSpec("CryptoCreate")
-				.given().when().then(
+		long initialBalance = 5_000_000_000_000L;
+
+		return customHapiSpec("CreatePayerAccountForEachClient")
+				.withProperties(Map.of(
+						"nodes", nodes,
+						"default.node",  defaultNode
+				)).given().when().then(
 						withOpContext((spec, log) -> {
-									while (true) {
-										var cryptoCreateOp = cryptoCreate("payerAccount")
-												.balance(initialBalance)
-												.withRecharging()
-												.rechargeWindow(3)
-												.key(GENESIS)
-												.payingWith(GENESIS)
-												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-														PLATFORM_TRANSACTION_NOT_CREATED).
-														via("txn");
-										var getRecordOp = getTxnRecord("txn")
-												.saveTxnRecordToRegistry("savedTxnRcd").logged();
-										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
-										if (spec.registry().getTransactionRecord(
-												"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
-											break;
-										}
-									}
-									var payerAccountInfo = getAccountInfo("payerAccount")
+							while(true){
+								var cryptoCreateOp = cryptoCreate("payerAccount")
+										.balance(initialBalance)
+										.withRecharging()
+										.rechargeWindow(3)
+										.key(GENESIS)
+										.payingWith(GENESIS)
+										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+												PLATFORM_TRANSACTION_NOT_CREATED).
+												via("txn");
+								var getRecordOp = getTxnRecord("txn")
+										.saveTxnRecordToRegistry("savedTxnRcd").logged();
+								CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
+								if (spec.registry().getTransactionRecord(
+										"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
+									break;
+								}
+							}
+
+							var payerAccountInfo = getAccountInfo("payerAccount")
 											.saveToRegistry("payerAccountInfo").logged();
-									CustomSpecAssert.allRunFor(spec, payerAccountInfo);
-									SuiteRunner.setPayerId(spec.registry()
-											.getAccountInfo("payerAccountInfo").getAccountID().toString());
+							CustomSpecAssert.allRunFor(spec, payerAccountInfo);
+							SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
+									.getAccountInfo("payerAccountInfo")
+									.getAccountID().getAccountNum()));
 								}
 						));
 	}
+
+//	private HapiApiSpec createAccount() {
+//		long initialBalance = 500_000_000_000L;
+//		return defaultHapiSpec("CryptoCreate")
+//				.given().when().then(
+//						withOpContext((spec, log) -> {
+//									while (true) {
+//										var cryptoCreateOp = cryptoCreate("payerAccount")
+//												.balance(initialBalance)
+//												.withRecharging()
+//												.rechargeWindow(3)
+//												.key(GENESIS)
+//												.payingWith(GENESIS)
+//												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+//														PLATFORM_TRANSACTION_NOT_CREATED).
+//														via("txn");
+//										var getRecordOp = getTxnRecord("txn")
+//												.saveTxnRecordToRegistry("savedTxnRcd").logged();
+//										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
+//										if (spec.registry().getTransactionRecord(
+//												"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
+//											break;
+//										}
+//									}
+//									var payerAccountInfo = getAccountInfo("payerAccount")
+//											.saveToRegistry("payerAccountInfo").logged();
+//									CustomSpecAssert.allRunFor(spec, payerAccountInfo);
+//									SuiteRunner.setPayerId(spec.registry()
+//											.getAccountInfo("payerAccountInfo").getAccountID().toString());
+//								}
+//						));
+//	}
 
 	@Override
 	protected Logger getResultsLogger() {
