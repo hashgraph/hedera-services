@@ -68,13 +68,13 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 //		return customHapiSpec("CreatePayerAccountForEachClient")
 //				.withProperties(Map.of(
 //						"nodes", nodes,
-//						"default.node", "0.0."+ defaultNode
+//						"default.node",  defaultNode
 //				)).given().when().then(
 //						withOpContext((spec, log) -> {
 //									var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
 //											.withRecharging()
 //											.rechargeWindow(3)
-//											.key(DEFAULT_PROPS.genesisStartupKey())
+//											.key(GENESIS)
 //											.payingWith(GENESIS)
 //											.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
 //													PLATFORM_TRANSACTION_NOT_CREATED).
@@ -98,16 +98,16 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 												.balance(initialBalance)
 												.withRecharging()
 												.rechargeWindow(3)
-//												.key(GENESIS)
+												.key(GENESIS)
 												.payingWith(GENESIS)
 												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
 														PLATFORM_TRANSACTION_NOT_CREATED).
 														via("txn");
 										var getRecordOp = getTxnRecord("txn")
-												.saveTxnRecordToRegistry("savedTxn");
+												.saveTxnRecordToRegistry("savedTxnRcd").logged();
 										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
 										if (spec.registry().getTransactionRecord(
-												"saveTxn").getReceipt().getStatus() == SUCCESS) {
+												"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
 											break;
 										}
 									}
