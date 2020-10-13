@@ -28,7 +28,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -39,42 +41,49 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 
 public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
+	private String nodes;
+	private String defaultNode;
+
+	public CryptoCreateForSuiteRunner(String nodes, String defaultNode) {
+		this.nodes = nodes;
+		this.defaultNode = defaultNode;
+	}
 
 	public static void main(String... args) {
-		new CryptoCreateForSuiteRunner().runSuiteSync();
+		new CryptoCreateForSuiteRunner("localhost", "0.0.3").runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
 		return List.of(
-				vanillaCreateSucceeds()
+				createAccount()
 		);
 	}
 
+	private HapiApiSpec createAccount() {
+		long initialBalance = 5_000_000_000_000L;
 
-	private HapiApiSpec vanillaCreateSucceeds() {
-		long initialBalance = 500_000_000_000L;
-		return defaultHapiSpec("CryptoCreate")
-				.given().when().then(
-						withOpContext((spec, log)-> {
-							var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
-									.withRecharging()
-									.rechargeWindow(3)
-									.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED).
-									via("txn");
-							var payerAccountInfo = getAccountInfo("payerAccount")
-									.saveToRegistry("payerAccountInfo").logged();
-							CustomSpecAssert.allRunFor(spec, cryptoCreateOp, payerAccountInfo);
-							SuiteRunner.setPayerId(spec.registry()
-									.getAccountInfo("payerAccountInfo").getAccountID().toString());
-						}
-				));
+		return customHapiSpec("CreatePayerAccountForEachClient")
+				.withProperties(Map.of(
+						"nodes", nodes,
+						"default.node", "0.0."+ defaultNode
+				)).given().when().then(
+						withOpContext((spec, log) -> {
+									var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
+											.withRecharging()
+											.rechargeWindow(3)
+											.key(GENESIS)
+											.payingWith(DEFAULT_PAYER)
+											.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+													PLATFORM_TRANSACTION_NOT_CREATED).
+													via("txn");
+									var payerAccountInfo = getAccountInfo("payerAccount")
+											.saveToRegistry("payerAccountInfo").logged();
+									CustomSpecAssert.allRunFor(spec, cryptoCreateOp, payerAccountInfo);
+									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
+											.getAccountInfo("payerAccountInfo").getAccountID().getAccountNum()));
+								}
+						));
 	}
 
 	@Override

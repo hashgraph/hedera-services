@@ -286,16 +286,16 @@ public class SuiteRunner {
 
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));
+
 		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());
-			expectedNetworkSize =  Integer.parseInt(overrideOrDefault(effArgs,
+			expectedNetworkSize = Integer.parseInt(overrideOrDefault(effArgs,
 					NETWORK_SIZE_ARG,
-					""+ EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
+					"" + EXPECTED_CI_NETWORK_SIZE).split("=")[1]);
 			var otherOverrides = arbitraryOverrides(effArgs);
-
-			createPayerAccount();
+			createPayerAccount(System.getenv("NODES"), args[1]);
 			HapiApiSpec.runInCiMode(
 					System.getenv("NODES"),
 					payerId,
@@ -325,8 +325,8 @@ public class SuiteRunner {
 		System.exit(globalPassFlag ? 0 : 1);
 	}
 
-	private static void createPayerAccount() {
-		new CryptoCreateForSuiteRunner().runSuiteAsync();
+	private static void createPayerAccount(String nodes, String defaultNode) {
+		new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
 	}
 
 	private static String overrideOrDefault(String[] effArgs, String argPrefix, String defaultValue) {
