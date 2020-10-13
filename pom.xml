@@ -175,6 +175,8 @@
           <version>${maven-surefire.version}</version>
           <configuration>
             <argLine>@{argLine} -Xmx2048m </argLine>
+            <useSystemClassLoader>false</useSystemClassLoader>
+            <forkCount>0</forkCount>
           </configuration>
         </plugin>
         <plugin>
