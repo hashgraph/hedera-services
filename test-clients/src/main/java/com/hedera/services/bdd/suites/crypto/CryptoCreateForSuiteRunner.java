@@ -33,11 +33,13 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
@@ -60,28 +62,60 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec createAccount() {
-		long initialBalance = 5_000_000_000_000L;
+//	private HapiApiSpec createAccount() {
+//		long initialBalance = 5_000_000_000_000L;
+//
+//		return customHapiSpec("CreatePayerAccountForEachClient")
+//				.withProperties(Map.of(
+//						"nodes", nodes,
+//						"default.node", "0.0."+ defaultNode
+//				)).given().when().then(
+//						withOpContext((spec, log) -> {
+//									var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
+//											.withRecharging()
+//											.rechargeWindow(3)
+//											.key(DEFAULT_PROPS.genesisStartupKey())
+//											.payingWith(GENESIS)
+//											.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+//													PLATFORM_TRANSACTION_NOT_CREATED).
+//													via("txn");
+//									var payerAccountInfo = getAccountInfo("payerAccount")
+//											.saveToRegistry("payerAccountInfo").logged();
+//									CustomSpecAssert.allRunFor(spec, cryptoCreateOp, payerAccountInfo);
+//									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
+//											.getAccountInfo("payerAccountInfo").getAccountID().getAccountNum()));
+//								}
+//						));
+//	}
 
-		return customHapiSpec("CreatePayerAccountForEachClient")
-				.withProperties(Map.of(
-						"nodes", nodes,
-						"default.node", "0.0."+ defaultNode
-				)).given().when().then(
+	private HapiApiSpec createAccount() {
+		long initialBalance = 500_000_000_000L;
+		return defaultHapiSpec("CryptoCreate")
+				.given().when().then(
 						withOpContext((spec, log) -> {
-									var cryptoCreateOp = cryptoCreate("payerAccount").balance(initialBalance)
-											.withRecharging()
-											.rechargeWindow(3)
-											.key(GENESIS)
-											.payingWith(DEFAULT_PAYER)
-											.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-													PLATFORM_TRANSACTION_NOT_CREATED).
-													via("txn");
+									while (true) {
+										var cryptoCreateOp = cryptoCreate("payerAccount")
+												.balance(initialBalance)
+												.withRecharging()
+												.rechargeWindow(3)
+												.key(DEFAULT_PROPS.genesisStartupKey())
+												.payingWith(GENESIS)
+												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+														PLATFORM_TRANSACTION_NOT_CREATED).
+														via("txn");
+										var getRecordOp = getTxnRecord("txn")
+												.saveTxnRecordToRegistry("savedTxn");
+										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
+										if (spec.registry().getTransactionRecord(
+												"saveTxn").getReceipt().getStatus() == SUCCESS) {
+											break;
+										}
+									}
 									var payerAccountInfo = getAccountInfo("payerAccount")
 											.saveToRegistry("payerAccountInfo").logged();
-									CustomSpecAssert.allRunFor(spec, cryptoCreateOp, payerAccountInfo);
-									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
-											.getAccountInfo("payerAccountInfo").getAccountID().getAccountNum()));
+									CustomSpecAssert.allRunFor(spec, payerAccountInfo);
+									SuiteRunner.setPayerId(spec.registry()
+											.getAccountInfo("payerAccountInfo").getAccountID().toString());
 								}
 						));
 	}
