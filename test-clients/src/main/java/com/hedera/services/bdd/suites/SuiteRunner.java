@@ -105,6 +105,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -326,7 +327,14 @@ public class SuiteRunner {
 	}
 
 	private static void createPayerAccount(String nodes, String defaultNode) {
-		new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
+		Random r = new Random();
+		try {
+			Thread.sleep(r.nextInt(5000));
+			new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static String overrideOrDefault(String[] effArgs, String argPrefix, String defaultValue) {
