@@ -73,7 +73,7 @@
     <mockito2.version>3.3.0</mockito2.version>
 
     <!-- SonarCloud properties -->
-    <jacoco.version>0.8.5</jacoco.version>
+    <jacoco.version>0.8.6</jacoco.version>
     <sonar.version>3.7.0.1746</sonar.version>
 
     <sonar.organization>hashgraph</sonar.organization>
@@ -175,7 +175,6 @@
           <version>${maven-surefire.version}</version>
           <configuration>
             <argLine>-Xmx2048m -XX:MaxPermSize=256m</argLine>
-            <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
           </configuration>
         </plugin>
         <plugin>
