@@ -59,6 +59,11 @@ public class MockFileNumbers extends FileNumbers {
 	}
 
 	@Override
+	public long softwareUpdateZip() {
+		return 150;
+	}
+
+	@Override
 	public FileID toFid(long num) {
 		return FileID.newBuilder()
 				.setRealmNum(0)

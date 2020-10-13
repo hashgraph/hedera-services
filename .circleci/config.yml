@@ -2648,7 +2648,6 @@ jobs:
           dsl-args: "TopicGetInfoSpecs"
       - run-eet-suites:
           dsl-args: "ConsensusThrottlesSpecs"
-
   run-consensus-and-crypto-scenarios:
     parameters:
       runner:

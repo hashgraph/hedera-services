@@ -38,6 +38,10 @@ public class FreezeTestHelper {
 			RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
 
 	public static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID) {
+		return createFreezeTransaction(paidBy58, valid, fileID, null);
+	}
+
+	public static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
 		FreezeTransactionBody freezeBody;
 		if (valid) {
 			int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
@@ -45,6 +49,7 @@ public class FreezeTestHelper {
 			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
 			if (fileID != null) {
 				builder.setUpdateFile(fileID);
+				builder.setFileHash(ByteString.copyFrom(fileHash));
 			}
 			freezeBody =  builder.build();
 		} else {
