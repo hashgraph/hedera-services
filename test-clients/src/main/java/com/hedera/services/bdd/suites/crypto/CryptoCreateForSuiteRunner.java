@@ -68,7 +68,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
 						"nodes", nodes,
-						"default.node",  defaultNode
+						"default.node",  "0.0."+defaultNode
 				)).given().when().then(
 						withOpContext((spec, log) -> {
 							while(true){
