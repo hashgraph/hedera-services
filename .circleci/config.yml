@@ -885,7 +885,7 @@ workflows:
   nightly-basic-suiterunner-regression:
     triggers:
       - schedule:
-          cron: "42 17 * * *"
+          cron: "15 18 * * *"
           filters:
             branches:
               only:
@@ -905,7 +905,7 @@ workflows:
   nightly-performance-regression:
     triggers:
       - schedule:
-          cron: "45 17 * * *"
+          cron: "25 18 * * *"
           filters:
             branches:
               only:
@@ -925,7 +925,7 @@ workflows:
   nightly-network-error-regression:
     triggers:
       - schedule:
-          cron: "55 17 * * *"
+          cron: "35 18  * * *"
           filters:
             branches:
               only:
@@ -945,7 +945,7 @@ workflows:
   nightly-zero-stake-regression:
     triggers:
       - schedule:
-          cron: "5 18 * * *"
+          cron: "45 18  * * *"
           filters:
             branches:
               only:
@@ -966,7 +966,7 @@ workflows:
   nightly-public-testnet-migration-regression:
     triggers:
           - schedule:
-              cron: "15 18 * * *"
+              cron: "55 18 * * *"
               filters:
                 branches:
                   only:
@@ -1009,7 +1009,7 @@ workflows:
   nightly-software-update-regression:
     triggers:
       - schedule:
-          cron: "25 18 * * *"
+          cron: "5 19 * * *"
           filters:
             branches:
               only:
