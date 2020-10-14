@@ -41,6 +41,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+/**
+ * When running JRS regression tests using SuiteRunner we need to create unique payer accounts for each test client.
+ * This class should be used only for that purpose and not be used in any other testing.
+ */
 public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
 	private String nodes;
@@ -68,34 +72,39 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
 						"nodes", nodes,
-						"default.node",  "0.0."+defaultNode
+						"default.node", "0.0." + defaultNode
 				)).given().when().then(
 						withOpContext((spec, log) -> {
-							while(true){
-								var cryptoCreateOp = cryptoCreate("payerAccount")
-										.balance(initialBalance)
-										.withRecharging()
-										.rechargeWindow(3)
-										.key(GENESIS)
-										.payingWith(GENESIS)
-										.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-												PLATFORM_TRANSACTION_NOT_CREATED).
-												via("txn");
-								var getRecordOp = getTxnRecord("txn")
-										.saveTxnRecordToRegistry("savedTxnRcd").logged();
-								CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
-								if (spec.registry().getTransactionRecord(
-										"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
-									break;
-								}
-							}
+									// If payer account creation is not success submits a new transaction for the
+									// creation
+									while (true) {
+										var cryptoCreateOp = cryptoCreate("payerAccount")
+												.balance(initialBalance)
+												.withRecharging()
+												.rechargeWindow(3)
+												.key(GENESIS)
+												.payingWith(GENESIS)
+												.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
+														PLATFORM_TRANSACTION_NOT_CREATED).
+														via("txn");
+										var getRecordOp = getTxnRecord("txn")
+												.saveTxnRecordToRegistry("savedTxnRcd").logged();
+										CustomSpecAssert.allRunFor(spec, cryptoCreateOp, getRecordOp);
+										if (spec.registry().getTransactionRecord(
+												"savedTxnRcd").getReceipt().getStatus() == SUCCESS) {
+											break;
+										}
+									}
 
-							var payerAccountInfo = getAccountInfo("payerAccount")
+									var payerAccountInfo = getAccountInfo("payerAccount")
 											.saveToRegistry("payerAccountInfo").logged();
-							CustomSpecAssert.allRunFor(spec, payerAccountInfo);
-							SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
-									.getAccountInfo("payerAccountInfo")
-									.getAccountID().getAccountNum()));
+									CustomSpecAssert.allRunFor(spec, payerAccountInfo);
+
+									//TODO Should be modified in a different way to avoid setting a static variable of
+							// other class
+									SuiteRunner.setPayerId(String.format("0.0.%s", spec.registry()
+											.getAccountInfo("payerAccountInfo")
+											.getAccountID().getAccountNum()));
 								}
 						));
 	}

@@ -326,6 +326,11 @@ public class SuiteRunner {
 		System.exit(globalPassFlag ? 0 : 1);
 	}
 
+	/**
+	 * Create a default payer account for each test client while running JRS regression tests
+	 * @param nodes
+	 * @param defaultNode
+	 */
 	private static void createPayerAccount(String nodes, String defaultNode) {
 		Random r = new Random();
 		try {
