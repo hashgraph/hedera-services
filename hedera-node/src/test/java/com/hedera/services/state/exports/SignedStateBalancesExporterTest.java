@@ -131,7 +131,7 @@ class SignedStateBalancesExporterTest {
 				.balance(secondNonNodeAccountBalance)
 				.tokens(theToken, theDeletedToken)
 				.get();
-		deletedAccount = MerkleAccountFactory.newAccount().accountDeleted(true).get();
+		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
 		accounts.put(fromAccountId(anotherNode), anotherNodeAccount);

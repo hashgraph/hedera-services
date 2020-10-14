@@ -395,7 +395,7 @@ class AccountOperations {
 	static void markDeleted(AccountID target, FCMap<MerkleEntityId, MerkleAccount> ledger) {
 		MerkleEntityId key = MerkleEntityId.fromAccountId(target);
 		MerkleAccount account = ledger.getForModify(key);
-		account.setAccountDeleted(true);
+		account.setDeleted(true);
 		ledger.replace(key, account);
 	}
 

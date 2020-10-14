@@ -21,10 +21,8 @@ package com.hedera.test.factories.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -32,11 +30,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -48,7 +43,7 @@ public class MerkleAccountFactory {
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
-	private Optional<Boolean> accountDeleted = Optional.empty();
+	private Optional<Boolean> deleted = Optional.empty();
 	private Optional<Long> expirationTime = Optional.empty();
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
@@ -60,7 +55,7 @@ public class MerkleAccountFactory {
 		memo.ifPresent(s -> value.setMemo(s));
 		proxy.ifPresent(p -> value.setProxy(EntityId.ofNullableAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
-		accountDeleted.ifPresent(b -> value.setAccountDeleted(b));
+		deleted.ifPresent(b -> value.setDeleted(b));
 		accountKeys.ifPresent(k -> value.setKey(k));
 		expirationTime.ifPresent(l -> value.setExpiry(l));
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
@@ -127,8 +122,8 @@ public class MerkleAccountFactory {
 		autoRenewPeriod = Optional.of(p);
 		return this;
 	}
-	public MerkleAccountFactory accountDeleted(boolean b) {
-		accountDeleted = Optional.of(b);
+	public MerkleAccountFactory deleted(boolean b) {
+		deleted = Optional.of(b);
 		return this;
 	}
 	public MerkleAccountFactory expirationTime(long l) {

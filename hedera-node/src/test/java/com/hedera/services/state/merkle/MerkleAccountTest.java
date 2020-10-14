@@ -230,7 +230,7 @@ public class MerkleAccountTest {
 		subject.setAutoRenewSecs(otherAutoRenewSecs);
 		subject.setSenderThreshold(otherSenderThreshold);
 		subject.setReceiverThreshold(otherReceiverThreshold);
-		subject.setAccountDeleted(otherDeleted);
+		subject.setDeleted(otherDeleted);
 		subject.setSmartContract(otherSmartContract);
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
 		subject.setMemo(otherMemo);
