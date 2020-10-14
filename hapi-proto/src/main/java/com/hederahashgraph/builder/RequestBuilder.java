@@ -82,7 +82,6 @@ import java.util.List;
 
 /**
  * @author Akshay
- * @Date : 7/2/2018
  */
 public class RequestBuilder {
 
@@ -339,7 +338,7 @@ public class RequestBuilder {
    *
    * @param fileData the content of the file
    * @param fileExpirationTime the expiration for the file
-   * @param waclKeyList WACL keys, as List<ThresholdKeys>
+   * @param waclKeyList WACL keys
    */
   public static Transaction getFileCreateBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
