@@ -100,12 +100,12 @@ public class ContextOptionValidatorTest {
 	final private AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID missingContract = ContractID.newBuilder().setContractNum(5_431L).build();
 	final private AccountID deleted = AccountID.newBuilder().setAccountNum(2_234L).build();
-	final private MerkleAccount deletedV = MerkleAccountFactory.newAccount().accountDeleted(true).get();
+	final private MerkleAccount deletedV = MerkleAccountFactory.newAccount().deleted(true).get();
 	final private ContractID contract = ContractID.newBuilder().setContractNum(5_432L).build();
 	final private MerkleAccount contractV = MerkleAccountFactory.newAccount().isSmartContract(true).get();
 	final private ContractID deletedContract = ContractID.newBuilder().setContractNum(4_432L).build();
 	final private MerkleAccount deletedContractV =
-			MerkleAccountFactory.newAccount().isSmartContract(true).accountDeleted(true).get();
+			MerkleAccountFactory.newAccount().isSmartContract(true).deleted(true).get();
 	final private TopicID missingTopicId = TopicID.newBuilder().setTopicNum(1_234L).build();
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();

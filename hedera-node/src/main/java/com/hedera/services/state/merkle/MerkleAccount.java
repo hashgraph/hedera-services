@@ -287,7 +287,7 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		return state().isDeleted();
 	}
 
-	public void setAccountDeleted(boolean deleted) {
+	public void setDeleted(boolean deleted) {
 		state().setDeleted(deleted);
 	}
 
