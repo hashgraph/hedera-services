@@ -760,7 +760,7 @@ public class SmartContractRequestHandler {
 	}
 
 	private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
-		ledger.customize(asAccount(cid), new HederaAccountCustomizer().isAccountDeleted(deleted));
+		ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
 		return getTransactionReceipt(SUCCESS, exchange.activeRates());
 	}
 

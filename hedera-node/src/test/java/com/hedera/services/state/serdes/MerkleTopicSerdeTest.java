@@ -162,7 +162,7 @@ class MerkleTopicSerdeTest {
 		assertFalse(topic.hasSubmitKey());
 		assertFalse(topic.hasAutoRenewAccountId());
 		assertFalse(topic.hasExpirationTimestamp());
-		assertFalse(topic.isTopicDeleted());
+		assertFalse(topic.isDeleted());
 		assertFalse(topic.hasRunningHash());
 		// and:
 		assertEquals(topic.getSequenceNumber(), seqNo);
@@ -188,7 +188,7 @@ class MerkleTopicSerdeTest {
 		assertTrue(topic.hasSubmitKey());
 		assertTrue(topic.hasAutoRenewAccountId());
 		assertTrue(topic.hasExpirationTimestamp());
-		assertTrue(topic.isTopicDeleted());
+		assertTrue(topic.isDeleted());
 		assertTrue(topic.hasRunningHash());
 		// and:
 		assertEquals(topic.getMemo(), memo);
@@ -230,7 +230,7 @@ class MerkleTopicSerdeTest {
 
 	private void withBasics(MerkleTopic t) {
 		given(t.getAutoRenewDurationSeconds()).willReturn(autoRenewSecs);
-		given(t.isTopicDeleted()).willReturn(true);
+		given(t.isDeleted()).willReturn(true);
 		given(t.getSequenceNumber()).willReturn(seqNo);
 	}
 

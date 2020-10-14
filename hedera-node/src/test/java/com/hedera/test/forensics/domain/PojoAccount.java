@@ -22,8 +22,6 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
@@ -106,7 +104,7 @@ public class PojoAccount {
 		pojo.setSendThreshold(value.getSenderThreshold());
 		pojo.setMemo(value.getMemo());
 		pojo.setReceiverSigRequired(value.isReceiverSigRequired());
-		pojo.setDeleted(value.isAccountDeleted());
+		pojo.setDeleted(value.isDeleted());
 		if (value.getProxy() != null) {
 			pojo.setProxyId(asString(value.getProxy()));
 		}

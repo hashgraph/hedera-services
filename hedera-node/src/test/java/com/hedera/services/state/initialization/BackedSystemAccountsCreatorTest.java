@@ -261,7 +261,7 @@ class BackedSystemAccountsCreatorTest {
 				.fundsReceivedRecordThreshold(recordThresholds)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
-				.isAccountDeleted(false)
+				.isDeleted(false)
 				.expiry(expiry)
 				.memo("")
 				.isSmartContract(false)

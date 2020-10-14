@@ -47,7 +47,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::isAccountDeleted;
+			return MerkleAccount::isDeleted;
 		}
 	},
 	IS_RECEIVER_SIG_REQUIRED {

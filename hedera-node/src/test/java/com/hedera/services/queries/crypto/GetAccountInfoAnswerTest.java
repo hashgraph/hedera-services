@@ -119,7 +119,7 @@ class GetAccountInfoAnswerTest {
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		deletedToken = mock(MerkleToken.class);
-		given(deletedToken.isTokenDeleted()).willReturn(true);
+		given(deletedToken.isDeleted()).willReturn(true);
 
 		tokenStore = mock(TokenStore.class);
 		given(tokenStore.exists(firstToken)).willReturn(true);

@@ -96,7 +96,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
     private long autoRenewDurationSeconds;
     private EntityId autoRenewAccountId;
     private RichInstant expirationTimestamp;
-    private boolean topicDeleted;
+    private boolean deleted;
 
     // Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is 48 bytes of '\0'
     private long sequenceNumber;
@@ -108,7 +108,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
                 .add("memo", memo)
                 .add("expiry",
                         String.format("%d.%d", expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
-                .add("topicDeleted", topicDeleted)
+                .add("deleted", deleted)
                 .add("adminKey", MiscUtils.describe(adminKey))
                 .add("submitKey", MiscUtils.describe(submitKey))
                 .add("runningHash", (runningHash != null) ? Hex.toHexString(runningHash) : "<N/A>")
@@ -152,7 +152,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
         this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
         this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
         this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
-        this.topicDeleted = other.topicDeleted;
+        this.deleted = other.deleted;
 
         this.sequenceNumber = other.sequenceNumber;
         this.runningHash = (null != other.runningHash)
@@ -191,7 +191,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
             if (in.readBoolean()) {
                 topic.setExpirationTimestamp(serdes.deserializeLegacyTimestamp(in));
             }
-            topic.setTopicDeleted(in.readBoolean());
+            topic.setDeleted(in.readBoolean());
             topic.setSequenceNumber(in.readLong());
             if (in.readBoolean()) {
                 topic.setRunningHash(in.readByteArray(RUNNING_HASH_BYTE_ARRAY_SIZE));
@@ -249,7 +249,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
                     && Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
                     && Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
                     && Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
-                    && (this.topicDeleted == that.topicDeleted)
+                    && (this.deleted == that.deleted)
                     && (this.sequenceNumber == that.sequenceNumber)
                     && Arrays.equals(this.runningHash, that.runningHash);
         } catch (IOException ex) {
@@ -266,7 +266,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
                 autoRenewDurationSeconds,
                 autoRenewAccountId,
                 expirationTimestamp,
-                topicDeleted,
+                deleted,
                 sequenceNumber,
                 runningHash);
     }
@@ -416,12 +416,12 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
         }
     }
 
-    public boolean isTopicDeleted() {
-        return topicDeleted;
+    public boolean isDeleted() {
+        return deleted;
     }
 
-    public void setTopicDeleted(boolean topicDeleted) {
-        this.topicDeleted = topicDeleted;
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     public long getSequenceNumber() {

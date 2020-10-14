@@ -71,7 +71,7 @@ public class NodeAccountsCreation {
 				.fundsReceivedRecordThreshold(INITIAL_GENESIS_COINS)
 				.isReceiverSigRequired(false)
 				.proxy(EntityId.MISSING_ENTITY_ID)
-				.isAccountDeleted(false)
+				.isDeleted(false)
 				.expiry(expiryTime)
 				.memo("")
 				.isSmartContract(false)

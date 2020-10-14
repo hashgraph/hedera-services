@@ -42,7 +42,7 @@ public class TopicSerde {
 		to.setAutoRenewDurationSeconds(in.readLong());
 		to.setAutoRenewAccountId(in.readBoolean() ? serdes.deserializeId(in) : null);
 		to.setExpirationTimestamp(in.readBoolean() ? serdes.deserializeTimestamp(in) : null);
-		to.setTopicDeleted(in.readBoolean());
+		to.setDeleted(in.readBoolean());
 		to.setSequenceNumber(in.readLong());
 		to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
 	}
@@ -85,7 +85,7 @@ public class TopicSerde {
 			out.writeBoolean(false);
 		}
 
-		out.writeBoolean(merkleTopic.isTopicDeleted());
+		out.writeBoolean(merkleTopic.isDeleted());
 		out.writeLong(merkleTopic.getSequenceNumber());
 
 		if (merkleTopic.hasRunningHash()) {

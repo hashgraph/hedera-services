@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
  */
 public interface TokenStore {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-	Consumer<MerkleToken> DELETION = token -> token.setTokenDeleted(true);
+	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 	void setHederaLedger(HederaLedger ledger);
@@ -85,7 +85,7 @@ public interface TokenStore {
 		if (token.adminKey().isEmpty()) {
 			return TOKEN_IS_IMMUTABLE;
 		}
-		if (token.isTokenDeleted()) {
+		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 

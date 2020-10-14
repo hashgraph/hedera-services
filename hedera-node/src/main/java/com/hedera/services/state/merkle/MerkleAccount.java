@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ServicesState;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -34,7 +33,6 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -285,12 +283,12 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 		state().setAutoRenewSecs(autoRenewSecs);
 	}
 
-	public boolean isAccountDeleted() {
-		return state().isAccountDeleted();
+	public boolean isDeleted() {
+		return state().isDeleted();
 	}
 
 	public void setAccountDeleted(boolean deleted) {
-		state().setAccountDeleted(deleted);
+		state().setDeleted(deleted);
 	}
 
 	public long getExpiry() {

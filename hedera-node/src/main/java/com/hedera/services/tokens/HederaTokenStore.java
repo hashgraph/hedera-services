@@ -159,7 +159,7 @@ public class HederaTokenStore implements TokenStore {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
-			int effectiveRelationships = accountTokens.purge(id -> !exists(id), id -> get(id).isTokenDeleted());
+			int effectiveRelationships = accountTokens.purge(id -> !exists(id), id -> get(id).isDeleted());
 			var validity = OK;
 			if ((effectiveRelationships + tokenIds.size()) > properties.maxTokensPerAccount()) {
 				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -593,7 +593,7 @@ public class HederaTokenStore implements TokenStore {
 				return INVALID_TOKEN_ID;
 			}
 			var token = get(id);
-			if (token.isTokenDeleted()) {
+			if (token.isDeleted()) {
 				return TOKEN_WAS_DELETED;
 			}
 			tokenIds.add(id);
@@ -667,7 +667,7 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
-		if (token.isTokenDeleted()) {
+		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 
@@ -689,7 +689,7 @@ public class HederaTokenStore implements TokenStore {
 		}
 
 		var token = get(tId);
-		if (token.isTokenDeleted()) {
+		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
 

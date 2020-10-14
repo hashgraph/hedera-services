@@ -187,7 +187,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var tokenAssociations = signedState.tokenAssociations();
 		for (MerkleEntityId id : accounts.keySet())	{
 			var account = accounts.get(id);
-			if (!account.isAccountDeleted()) {
+			if (!account.isDeleted()) {
 				var accountId = id.toAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
@@ -221,7 +221,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var tokenBalances = TokenBalances.newBuilder();
 			for (TokenID tokenId : accountTokens.asIds()) {
 				var token = tokens.get(fromTokenId(tokenId));
-				if (token != null && !token.isTokenDeleted()) {
+				if (token != null && !token.isDeleted()) {
 					var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
 					tokenBalances.addTokenBalances(tb(tokenId, relationship.getBalance()));
 				}
