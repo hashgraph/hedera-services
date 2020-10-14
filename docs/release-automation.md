@@ -94,7 +94,7 @@ When prompted for the release version, use the version suffixed
 with available `-rc1` and accept the resulting :
 
 <p>
-    <img src="./release-version-and-tag.png"/>
+    <img src="./release-version-tag.png"/>
 </p>
 
 This step will take some time. After it finishes, you can perform the release:
