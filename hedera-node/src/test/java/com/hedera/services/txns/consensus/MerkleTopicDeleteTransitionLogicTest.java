@@ -101,7 +101,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		inOrder.verify(deletableTopic).setTopicDeleted(true);
+		inOrder.verify(deletableTopic).setDeleted(true);
 		inOrder.verify(topics).put(topicFcKey, deletableTopic);
 		inOrder.verify(transactionContext).setStatus(SUCCESS);
 	}
@@ -131,7 +131,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 		// then:
 		var topic = topics.get(fromTopicId(asTopic(TOPIC_ID)));
 		assertNotNull(topic);
-		assertFalse(topic.isTopicDeleted());
+		assertFalse(topic.isDeleted());
 		verify(transactionContext).setStatus(UNAUTHORIZED);
 	}
 

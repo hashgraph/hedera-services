@@ -77,7 +77,7 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
 		}
 
 		var mutableTopic = topics.get().getForModify(topicMapKey);
-		mutableTopic.setTopicDeleted(true);
+		mutableTopic.setDeleted(true);
 		topics.get().put(topicMapKey, mutableTopic);
 
 		transactionContext.setStatus(SUCCESS);

@@ -25,7 +25,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -100,7 +99,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 					var optionalToken = view.tokenWith(tId);
 					if (optionalToken.isPresent()) {
 						var token = optionalToken.get();
-						if (!token.isTokenDeleted()) {
+						if (!token.isDeleted()) {
 							var relKey = fromAccountTokenRel(id, tId);
 							var relationship = view.tokenAssociations().get().get(relKey);
 							relationships.add(new RawTokenRelationship(

@@ -140,9 +140,9 @@ class SignedStateBalancesExporterTest {
 		accounts.put(fromAccountId(deleted), deletedAccount);
 
 		token = mock(MerkleToken.class);
-		given(token.isTokenDeleted()).willReturn(false);
+		given(token.isDeleted()).willReturn(false);
 		deletedToken = mock(MerkleToken.class);
-		given(deletedToken.isTokenDeleted()).willReturn(true);
+		given(deletedToken.isDeleted()).willReturn(true);
 		tokens.put(fromTokenId(theToken), token);
 		tokens.put(fromTokenId(theDeletedToken), deletedToken);
 

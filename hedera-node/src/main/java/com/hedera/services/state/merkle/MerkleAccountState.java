@@ -60,7 +60,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long senderThreshold;
 	private long receiverThreshold;
 	private String memo = DEFAULT_MEMO;
-	private boolean accountDeleted;
+	private boolean deleted;
 	private boolean smartContract;
 	private boolean receiverSigRequired;
 	private EntityId proxy;
@@ -75,7 +75,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			long senderThreshold,
 			long receiverThreshold,
 			String memo,
-			boolean accountDeleted,
+			boolean deleted,
 			boolean smartContract,
 			boolean receiverSigRequired,
 			EntityId proxy
@@ -87,7 +87,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.senderThreshold = senderThreshold;
 		this.receiverThreshold = receiverThreshold;
 		this.memo = Optional.ofNullable(memo).orElse(DEFAULT_MEMO);
-		this.accountDeleted = accountDeleted;
+		this.deleted = deleted;
 		this.smartContract = smartContract;
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
@@ -113,7 +113,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		senderThreshold = in.readLong();
 		receiverThreshold = in.readLong();
 		memo = in.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		accountDeleted = in.readBoolean();
+		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
@@ -131,7 +131,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeLong(senderThreshold);
 		out.writeLong(receiverThreshold);
 		out.writeNormalisedString(memo);
-		out.writeBoolean(accountDeleted);
+		out.writeBoolean(deleted);
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
@@ -147,7 +147,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				senderThreshold,
 				receiverThreshold,
 				memo,
-				accountDeleted,
+				deleted,
 				smartContract,
 				receiverSigRequired,
 				proxy);
@@ -170,7 +170,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.senderThreshold == that.senderThreshold &&
 				this.receiverThreshold == that.receiverThreshold &&
 				Objects.equals(this.memo, that.memo) &&
-				this.accountDeleted == that.accountDeleted &&
+				this.deleted == that.deleted &&
 				this.smartContract == that.smartContract &&
 				this.receiverSigRequired == that.receiverSigRequired &&
 				Objects.equals(this.proxy, that.proxy) &&
@@ -187,7 +187,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				senderThreshold,
 				receiverThreshold,
 				memo,
-				accountDeleted,
+				deleted,
 				smartContract,
 				receiverSigRequired,
 				proxy);
@@ -204,7 +204,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("senderThreshold", senderThreshold)
 				.add("receiverThreshold", receiverThreshold)
 				.add("memo", memo)
-				.add("deleted", accountDeleted)
+				.add("deleted", deleted)
 				.add("smartContract", smartContract)
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
@@ -239,8 +239,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return memo;
 	}
 
-	public boolean isAccountDeleted() {
-		return accountDeleted;
+	public boolean isDeleted() {
+		return deleted;
 	}
 
 	public boolean isSmartContract() {
@@ -283,8 +283,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.memo = memo;
 	}
 
-	public void setAccountDeleted(boolean accountDeleted) {
-		this.accountDeleted = accountDeleted;
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
 	}
 
 	public void setSmartContract(boolean smartContract) {

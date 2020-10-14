@@ -57,7 +57,7 @@ public class AccountCustomizerTest {
 		setupWithLiveChangeManager();
 
 		// given:
-		TestAccount ta = subject.isAccountDeleted(true)
+		TestAccount ta = subject.isDeleted(true)
 				.expiry(55L)
 				.memo("Something!")
 				.customizing(new TestAccount());
@@ -204,7 +204,7 @@ public class AccountCustomizerTest {
 		Boolean isDeleted = Boolean.TRUE;
 
 		// when:
-		subject.isAccountDeleted(isDeleted);
+		subject.isDeleted(isDeleted);
 
 		// expect:
 		verify(changeManager).update(

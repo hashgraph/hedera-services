@@ -114,7 +114,7 @@ public abstract class AccountCustomizer<
 		return self();
 	}
 
-	public T isAccountDeleted(boolean option) {
+	public T isDeleted(boolean option) {
 		changeManager.update(changes, optionProperties.get(IS_DELETED), option);
 		return self();
 	}

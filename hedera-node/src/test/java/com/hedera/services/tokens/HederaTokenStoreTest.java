@@ -276,7 +276,7 @@ class HederaTokenStoreTest {
 		TokenStore.DELETION.accept(token);
 
 		// then:
-		verify(token).setTokenDeleted(true);
+		verify(token).setDeleted(true);
 	}
 
 	@Test
@@ -306,7 +306,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void rejectsDeletionTokenAlreadyDeleted() {
 		// given:
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var outcome = subject.delete(misc);
@@ -377,7 +377,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void associatingRejectsDeletedTokens() {
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.associate(sponsor, List.of(misc));
@@ -1239,7 +1239,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void wipingRejectsDeletedToken() {
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.wipe(sponsor, misc, adjustment,false);
@@ -1250,7 +1250,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void mintingRejectsDeletedToken() {
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.mint(misc, 1L);
@@ -1334,7 +1334,7 @@ class HederaTokenStoreTest {
 	@Test
 	public void freezingRejectsDeletedToken() {
 		givenTokenWithFreezeKey(true);
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.freeze(treasury, misc);
@@ -1370,7 +1370,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void adjustingRejectsDeletedToken() {
-		given(token.isTokenDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.adjustBalance(treasury, misc, 1);

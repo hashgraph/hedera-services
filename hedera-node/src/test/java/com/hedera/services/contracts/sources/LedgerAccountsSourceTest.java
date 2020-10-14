@@ -20,10 +20,8 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -121,7 +119,7 @@ class LedgerAccountsSourceTest {
 		given(account.getSenderThreshold()).willReturn(sendThreshold);
 		given(account.getReceiverThreshold()).willReturn(receiveThreshold);
 		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
-		given(account.isAccountDeleted()).willReturn(deleted);
+		given(account.isDeleted()).willReturn(deleted);
 		given(account.isSmartContract()).willReturn(smartContract);
 		given(account.getBalance()).willReturn(balance);
 

@@ -85,7 +85,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 			evmState.setSenderThreshold(hederaAccount.getSenderThreshold());
 			evmState.setReceiverThreshold(hederaAccount.getReceiverThreshold());
 			evmState.setReceiverSigRequired(hederaAccount.isReceiverSigRequired());
-			evmState.setDeleted(hederaAccount.isAccountDeleted());
+			evmState.setDeleted(hederaAccount.isDeleted());
 			evmState.setExpirationTime(hederaAccount.getExpiry());
 			evmState.setSmartContract(hederaAccount.isSmartContract());
 
@@ -120,7 +120,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 		ledger.adjustBalance(id, adjustment);
 		HederaAccountCustomizer customizer = new HederaAccountCustomizer()
 				.expiry(evmState.getExpirationTime())
-				.isAccountDeleted(evmState.isDeleted());
+				.isDeleted(evmState.isDeleted());
 		ledger.customize(id, customizer);
 	}
 

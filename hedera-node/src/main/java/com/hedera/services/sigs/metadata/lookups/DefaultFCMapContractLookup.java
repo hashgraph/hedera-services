@@ -44,7 +44,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 	@Override
 	public SafeLookupResult<ContractSigningMetadata> safeLookup(ContractID id) {
 		var contract = accounts.get().get(fromContractId(id));
-		if (contract == null || contract.isAccountDeleted() || !contract.isSmartContract()) {
+		if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
 			JKey key;

@@ -41,7 +41,7 @@ public class DefaultFCMapTopicLookup implements TopicSigMetaLookup {
 	@Override
 	public SafeLookupResult<TopicSigningMetadata> safeLookup(TopicID id) {
 		var topic = topics.get().get(fromTopicId(id));
-		return (topic == null || topic.isTopicDeleted())
+		return (topic == null || topic.isDeleted())
 				? SafeLookupResult.failure(INVALID_TOPIC)
 				: new SafeLookupResult<>(
 				new TopicSigningMetadata(

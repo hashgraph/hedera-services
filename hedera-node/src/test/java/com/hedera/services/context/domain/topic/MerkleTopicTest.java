@@ -221,12 +221,12 @@ public class MerkleTopicTest {
 		// given:
 		var a = new MerkleTopic(aMemo, aAdminKey, aSubmitKey, aAutoRenewDurationSeconds, aAutoRenewAccountId,
 				aExpirationTimestamp);
-		a.setTopicDeleted(aDeleted);
+		a.setDeleted(aDeleted);
 		a.setSequenceNumber(aSequenceNumber);
 		a.setRunningHash(aRunningHash);
 		var b = new MerkleTopic(bMemo, bAdminKey, bSubmitKey, bAutoRenewDurationSeconds, bAutoRenewAccountId,
 				bExpirationTimestamp);
-		b.setTopicDeleted(bDeleted);
+		b.setDeleted(bDeleted);
 		b.setSequenceNumber(bSequenceNumber);
 		b.setRunningHash(bRunningHash);
 
@@ -318,7 +318,7 @@ public class MerkleTopicTest {
 		assertEquals(new EntityId(), merkleTopic.getAutoRenewAccountId());
 		assertFalse(merkleTopic.hasExpirationTimestamp());
 		assertEquals(new RichInstant(), merkleTopic.getExpirationTimestamp());
-		assertFalse(merkleTopic.isTopicDeleted());
+		assertFalse(merkleTopic.isDeleted());
 		assertEquals(0L, merkleTopic.getSequenceNumber());
 		assertFalse(merkleTopic.hasRunningHash());
 		assertArrayEquals(new byte[48], merkleTopic.getRunningHash());
@@ -353,6 +353,6 @@ public class MerkleTopicTest {
 		assertEquals(autoRenewAccountId, merkleTopic.getAutoRenewAccountId());
 		assertTrue(merkleTopic.hasExpirationTimestamp());
 		assertEquals(expirationTimestamp, merkleTopic.getExpirationTimestamp());
-		assertFalse(merkleTopic.isTopicDeleted());
+		assertFalse(merkleTopic.isDeleted());
 	}
 }
