@@ -255,6 +255,14 @@ class ServicesStateTest {
 	}
 
 	@Test
+	public void lookupForContext() {
+		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		CONTEXTS.store(ctx);
+
+		subject.init(platform, book);
+	}
+
+	@Test
 	public void catchesProtobufParseException() {
 		// setup:
 		var platformTxn = mock(Transaction.class);
