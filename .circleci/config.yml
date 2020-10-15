@@ -1029,11 +1029,11 @@ workflows:
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "45 18,5 * * *"
+          cron: "25 17 * * *"
           filters:
             branches:
               only:
-                - master
+                - 655-M-Create-Perf-SavedState-Tests
     jobs:
       - build-platform-and-services
       - run-start-from-saved-state-regression:
@@ -1918,7 +1918,7 @@ jobs:
       - run:
           name: Modify Payer account for Public testnet start from saved state test
           command: |
-            echo -n "$KEY_DevTestnetAccount" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
+            echo -n "$KEY_DevTestNetTreasury" > /repo/test-clients/src/main/resource/StartUpAccount.txt;
       - run:
           name: Run start from saved state regression tests
           no_output_timeout: 30m
@@ -1962,7 +1962,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
+            cd /swirlds-platform/regression;   git checkout 653-Services-D-Add-Tests-From-State;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
