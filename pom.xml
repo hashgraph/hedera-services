@@ -259,8 +259,7 @@ ${git.signoff}
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire.version}</version>
           <configuration>
-            <argLine>-Xmx2048m -XX:MaxPermSize=256m</argLine>
-            <forkedProcessExitTimeoutInSeconds>120</forkedProcessExitTimeoutInSeconds>
+            <argLine>@{argLine} -Xmx2048m</argLine>
           </configuration>
         </plugin>
         <plugin>
