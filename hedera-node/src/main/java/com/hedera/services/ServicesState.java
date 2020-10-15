@@ -183,6 +183,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
+		ctx.update(this);
 		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
