@@ -260,6 +260,7 @@ class ServicesStateTest {
 		CONTEXTS.store(ctx);
 
 		subject.init(platform, book);
+		verify(ctx).update(subject);
 	}
 
 	@Test
