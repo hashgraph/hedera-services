@@ -22,17 +22,14 @@ package com.hedera.services.queries.crypto;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.tokens.ExceptionalTokenStore;
 import com.hedera.services.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -55,8 +52,6 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import static org.mockito.BDDMockito.*;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;

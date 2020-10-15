@@ -22,12 +22,14 @@ package com.hedera.test.factories.sigs;
 
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
+
 import java.util.List;
 
 import static com.hedera.test.factories.sigs.SigWrappers.asInvalid;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 
 public class SyncVerifiers {
-	public static final SyncVerifier NEVER_VALID = l -> { List<Signature> lv = asInvalid(l); l.clear(); l.addAll(lv); };
-	public static final SyncVerifier ALWAYS_VALID = l -> { List<Signature> lv = asValid(l); l.clear(); l.addAll(lv); };
+	public static final SyncVerifier NEVER_VALID = l -> { List<TransactionSignature> lv = asInvalid(l); l.clear(); l.addAll(lv); };
+	public static final SyncVerifier ALWAYS_VALID = l -> { List<TransactionSignature> lv = asValid(l); l.clear(); l.addAll(lv); };
 }

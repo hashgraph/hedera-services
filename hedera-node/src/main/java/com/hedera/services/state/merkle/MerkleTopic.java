@@ -36,8 +36,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,7 +74,7 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, MerkleLeaf {
+public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
     public static Logger log = LogManager.getLogger(MerkleTopic.class);
 
     public static final int MAX_MEMO_BYTES = 1_024;
@@ -233,9 +232,6 @@ public final class MerkleTopic extends AbstractMerkleNode implements FCMValue, M
     public MerkleTopic copy() {
         return new MerkleTopic(this);
     }
-
-    @Override
-    public void delete() { }
 
     @Override
     public boolean equals(@Nullable Object o) {
