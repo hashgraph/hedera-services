@@ -402,7 +402,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@AfterAll
-	public static void removeDir() throws IOException {
+	public static void tearDown() throws IOException {
 		Files.walk(Path.of("src/test/resources/balance0.0.3"))
 				.sorted(Comparator.reverseOrder())
 				.map(Path::toFile)
