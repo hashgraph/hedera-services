@@ -108,7 +108,7 @@ class MerkleOptionalBlobTest {
 		subject.modify(newStuff);
 
 		// then:
-		verify(stuffDelegate).delete();
+		verify(stuffDelegate).release();
 		// and:
 		assertEquals(newStuffDelegate, subject.getDelegate());
 	}
@@ -274,10 +274,10 @@ class MerkleOptionalBlobTest {
 	@Test
 	public void deleteDelegatesIfAppropos() {
 		// when:
-		subject.delete();
+		subject.release();
 
 		// then:
-		verify(stuffDelegate).delete();
+		verify(stuffDelegate).release();
 	}
 
 	@Test
@@ -286,10 +286,10 @@ class MerkleOptionalBlobTest {
 		subject = new MerkleOptionalBlob();
 
 		// when:
-		subject.delete();
+		subject.release();
 
 		// then:
-		verify(stuffDelegate, never()).delete();
+		verify(stuffDelegate, never()).release();
 	}
 
 	@Test

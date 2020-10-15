@@ -26,8 +26,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -36,7 +35,7 @@ import java.util.Objects;
 
 import static com.swirlds.common.CommonUtils.getNormalisedStringBytes;
 
-public class MerkleBlobMeta extends AbstractMerkleNode implements FCMKey, MerkleLeaf {
+public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x9c19df177063b4caL;
 
@@ -91,9 +90,6 @@ public class MerkleBlobMeta extends AbstractMerkleNode implements FCMKey, Merkle
 	public MerkleBlobMeta copy() {
 		return new MerkleBlobMeta(path);
 	}
-
-	@Override
-	public void delete() { }
 
 	@Override
 	public boolean equals(Object o) {

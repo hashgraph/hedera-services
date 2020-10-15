@@ -30,15 +30,14 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.io.SerializedObjectProvider;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 
-public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, MerkleLeaf {
+public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd5dd2ebaa0bde03L;
 
@@ -144,9 +143,6 @@ public class MerkleEntityId extends AbstractMerkleNode implements FCMKey, Merkle
 	public MerkleEntityId copy() {
 		return new MerkleEntityId(shard, realm, num);
 	}
-
-	@Override
-	public void delete() { }
 
 	@Override
 	@Deprecated

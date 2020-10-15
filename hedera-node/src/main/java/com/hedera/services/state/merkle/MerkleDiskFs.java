@@ -5,8 +5,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.utility.AbstractMerkleNode;
+import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +28,7 @@ import static org.apache.commons.io.FileUtils.writeByteArrayToFile;
  * Save some special system files in local file system instead of database to improve access efficiency
  * File contents locate on local file system, but file hashes save in memory using a hash map
  */
-public class MerkleDiskFs extends AbstractMerkleNode implements MerkleLeaf {
+public class MerkleDiskFs extends AbstractMerkleLeaf {
 	static Logger log = LogManager.getLogger(MerkleDiskFs.class);
 
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8a59882c746d0a3L;

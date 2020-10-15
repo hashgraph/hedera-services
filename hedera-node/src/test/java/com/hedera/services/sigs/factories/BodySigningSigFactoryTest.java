@@ -22,6 +22,7 @@ package com.hedera.services.sigs.factories;
 
 import com.google.protobuf.ByteString;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -36,7 +37,7 @@ public class BodySigningSigFactoryTest {
 		BodySigningSigFactory subject = new BodySigningSigFactory(data);
 
 		// when:
-		Signature actualSig = subject.create(ByteString.copyFrom(pk), ByteString.copyFrom(sig));
+		TransactionSignature actualSig = subject.create(ByteString.copyFrom(pk), ByteString.copyFrom(sig));
 
 		// then:
 		Assertions.assertEquals(EXPECTED_SIG, actualSig);

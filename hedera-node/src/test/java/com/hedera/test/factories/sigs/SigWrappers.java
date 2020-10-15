@@ -21,6 +21,7 @@ package com.hedera.test.factories.sigs;
  */
 
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
@@ -31,22 +32,22 @@ import java.util.List;
 import java.util.Map;
 
 public class SigWrappers {
-	public static List<Signature> asValid(List<Signature> sigs) {
+	public static List<TransactionSignature> asValid(List<TransactionSignature> sigs) {
 		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, VALID)).collect(toList());
 	}
-	public static List<Signature> asInvalid(List<Signature> sigs) {
+	public static List<TransactionSignature> asInvalid(List<TransactionSignature> sigs) {
 		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, INVALID)).collect(toList());
 	}
-	public static List<Signature> asKind(List<Map.Entry<Signature, VerificationStatus>> sigToStatus) {
+	public static List<TransactionSignature> asKind(List<Map.Entry<TransactionSignature, VerificationStatus>> sigToStatus) {
 		return sigToStatus.stream()
 				.map(entry -> new SigWithKnownStatus(entry.getKey(), entry.getValue()))
 				.collect(toList());
 	}
 
-	private static class SigWithKnownStatus extends Signature {
+	private static class SigWithKnownStatus extends TransactionSignature {
 		private final VerificationStatus status;
 
-		public SigWithKnownStatus(Signature wrapped, VerificationStatus status) {
+		public SigWithKnownStatus(TransactionSignature wrapped, VerificationStatus status) {
 			super(wrapped);
 			this.status = status;
 		}

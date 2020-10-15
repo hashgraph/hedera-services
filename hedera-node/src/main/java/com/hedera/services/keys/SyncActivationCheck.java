@@ -28,6 +28,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -42,6 +43,6 @@ public interface SyncActivationCheck {
 			PlatformSigsFactory sigsFactory,
 			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
 			Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider,
-			BiPredicate<JKey, Function<byte[], Signature>> isActive,
-			Function<List<Signature>, Function<byte[], Signature>> sigsFnProvider);
+			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
+			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider);
 }

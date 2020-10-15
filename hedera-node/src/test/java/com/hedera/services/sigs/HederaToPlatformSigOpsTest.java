@@ -38,6 +38,7 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -241,7 +242,7 @@ public class HederaToPlatformSigOpsTest {
 		// given:
 		wellBehavedOrdersAndSigSourcesInHandle();
 		platformTxn.getPlatformTxn().addAll(
-			asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new Signature[0]));
+			asValid(expectedSigsWithNoErrors().subList(0, 1)).toArray(new TransactionSignature[0]));
 		// and:
 		SyncVerifier syncVerifier = l -> {
 			if (l.equals(expectedSigsWithNoErrors().subList(0, 1)))	{
@@ -264,7 +265,7 @@ public class HederaToPlatformSigOpsTest {
 	public void rationalizesSigsWithUnknownStatus() throws Exception {
 		// given:
 		wellBehavedOrdersAndSigSourcesInHandle();
-		platformTxn.getPlatformTxn().addAll(expectedSigsWithNoErrors().subList(0, 1).toArray(new Signature[0]));
+		platformTxn.getPlatformTxn().addAll(expectedSigsWithNoErrors().subList(0, 1).toArray(new TransactionSignature[0]));
 
 		// when:
 		SignatureStatus status = rationalizeIn(platformTxn, ALWAYS_VALID, keyOrdering, sigBytesProvider);
@@ -281,7 +282,7 @@ public class HederaToPlatformSigOpsTest {
 		wellBehavedOrdersAndSigSourcesInHandle();
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
 		platformTxn.getPlatformTxn().addAll(
-				asValid(expectedSigsWithNoErrors()).toArray(new Signature[0]));
+				asValid(expectedSigsWithNoErrors()).toArray(new TransactionSignature[0]));
 		// and:
 		SyncVerifier syncVerifier = l -> {
 			throw new AssertionError("All sigs were verified async!");
@@ -299,20 +300,22 @@ public class HederaToPlatformSigOpsTest {
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
 		return platformTxn.getPlatformTxn().getSignatures().stream()
-				.map(Signature::getSignatureStatus)
+				.map(TransactionSignature::getSignatureStatus)
 				.allMatch(statusPred);
 	}
 
-	private List<Signature> expectedSigsWithNoErrors() {
+	private List<TransactionSignature> expectedSigsWithNoErrors() {
 		return List.of(
 				dummyFor(payerKey.get(0), "1"),
 				dummyFor(otherKeys.get(0), "2"),
 				dummyFor(otherKeys.get(1), "3"));
 	}
-	private List<Signature> expectedSigsWithOtherPartiesCreationError() {
+
+	private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
 		return expectedSigsWithNoErrors().subList(0, 1);
 	}
-	private Signature dummyFor(JKey key, String sig) {
+
+	private TransactionSignature dummyFor(JKey key, String sig) {
 		return PlatformSigFactory.createEd25519(
 				key.getEd25519(),
 				sig.getBytes(),

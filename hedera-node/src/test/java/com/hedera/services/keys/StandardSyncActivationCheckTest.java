@@ -30,6 +30,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -53,7 +54,7 @@ class StandardSyncActivationCheckTest {
 	byte[] body = "Goodness".getBytes();
 	JKey key;
 	Transaction signedTxn;
-	List<Signature> sigs;
+	List<TransactionSignature> sigs;
 	PubKeyToSigBytes sigBytes;
 	PlatformSigsCreationResult result;
 
@@ -61,11 +62,11 @@ class StandardSyncActivationCheckTest {
 	PlatformTxnAccessor accessor;
 	PlatformSigsFactory sigsFactory;
 	TxnScopedPlatformSigFactory scopedSig;
-	Function<byte[], Signature> sigsFn;
+	Function<byte[], TransactionSignature> sigsFn;
 	Function<Transaction, PubKeyToSigBytes> sigBytesProvider;
 	Function<byte[], TxnScopedPlatformSigFactory> scopedSigProvider;
-	BiPredicate<JKey, Function<byte[], Signature>> isActive;
-	Function<List<Signature>, Function<byte[], Signature>> sigsFnProvider;
+	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
+	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
 
 	@BeforeEach
 	private void setup() throws Exception {

@@ -30,6 +30,7 @@ import com.hedera.services.legacy.exception.KeySignatureCountMismatchException;
 import com.swirlds.common.Address;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.Transaction;
+import com.swirlds.common.crypto.TransactionSignature;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -44,12 +45,13 @@ import java.util.Optional;
  * @author Michael Tinker
  */
 public class PlatformSigsCreationResult {
-	private List<Signature> platformSigs = new ArrayList<>();
+	private List<TransactionSignature> platformSigs = new ArrayList<>();
 	private Optional<Exception> terminatingEx = Optional.empty();
 
-	public List<Signature> getPlatformSigs() {
+	public List<TransactionSignature> getPlatformSigs() {
 		return platformSigs;
 	}
+
 	public boolean hasFailed() {
 		return terminatingEx.isPresent();
 	}
