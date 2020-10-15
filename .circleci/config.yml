@@ -1029,11 +1029,11 @@ workflows:
   nightly-start-from-saved-state-regression:
     triggers:
       - schedule:
-          cron: "25 17 * * *"
+          cron: "45 18,5 * * *"
           filters:
             branches:
               only:
-                - 655-M-Create-Perf-SavedState-Tests
+                - master
     jobs:
       - build-platform-and-services
       - run-start-from-saved-state-regression:
@@ -1044,7 +1044,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-          workflow-name: "nightly-software-update-regression"
+          workflow-name: "nightly-start-from-saved-state-regression"
 
   custom-migration:
     triggers:
@@ -1962,7 +1962,7 @@ jobs:
               git clone  --recurse-submodule ssh://git@github.com/swirlds/swirlds-platform.git
             cd /swirlds-platform; git checkout services-regression;
             git submodule update --init --recursive --checkout;
-            cd /swirlds-platform/regression;   git checkout 653-Services-D-Add-Tests-From-State;
+            cd /swirlds-platform/regression;   git checkout 334-D-Add-services-config;
             cd /swirlds-platform; mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
