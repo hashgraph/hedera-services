@@ -260,7 +260,9 @@ class ServicesStateTest {
 		CONTEXTS.store(ctx);
 
 		subject.init(platform, book);
-		verify(ctx).update(subject);
+		InOrder inOrder = inOrder(ctx);
+		inOrder.verify(ctx).nodeAccount();
+		inOrder.verify(ctx).update(subject);
 	}
 
 	@Test
