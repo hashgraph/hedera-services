@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.exceptions.ContextNotFoundException;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -49,7 +50,10 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
+import com.swirlds.common.notification.NotificationFactory;
+import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +71,7 @@ import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.swirlds.logging.LogMarker.RECONNECT;
 
 public class ServicesState extends AbstractMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -81,7 +86,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	static Supplier<AddressBook> legacyTmpBookSupplier = AddressBook::new;
 
 	NodeId nodeId = null;
-	boolean immutable = true;
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -157,10 +161,15 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		}
 	}
 
+	@Override
+	public void genesisInit(Platform platform, AddressBook addressBook) {
+		this.init(platform, addressBook);
+	}
+
 	/* --- SwirldState --- */
 	@Override
 	public void init(Platform platform, AddressBook addressBook) {
-		immutable = false;
+		setImmutable(false);
 		nodeId = platform.getSelfId();
 
 		/* Note this overrides the address book from the saved state if it is present. */
@@ -169,7 +178,11 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 		var bootstrapProps = new BootstrapProperties();
 		var diskFsBaseDirPath = bootstrapProps.getStringProperty("files.diskFsBaseDir.path");
 		var properties = new StandardizedPropertySources(bootstrapProps, loc -> new File(loc).exists());
-		ctx = new ServicesContext(nodeId, platform, this, properties);
+		try {
+			ctx = CONTEXTS.lookup(nodeId.getId());
+		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
+			ctx = new ServicesContext(nodeId, platform, this, properties);
+		}
 		if (getNumberOfChildren() < ChildIndices.NUM_090_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
@@ -203,7 +216,9 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 			printHashes();
 		}
 
+		ctx.update(this);
 		CONTEXTS.store(ctx);
+
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
 	}
 
@@ -243,6 +258,7 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 	/* --- FastCopyable --- */
 	@Override
 	public synchronized ServicesState copy() {
+		setImmutable(true);
 		return new ServicesState(ctx, nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
@@ -252,20 +268,6 @@ public class ServicesState extends AbstractMerkleInternal implements SwirldState
 				tokens().copy(),
 				tokenAssociations().copy(),
 				diskFs().copy()));
-	}
-
-	@Override
-	public synchronized void delete() {
-		storage().delete();
-		accounts().delete();
-		topics().delete();
-		tokens().delete();
-		tokenAssociations().delete();
-	}
-
-	@Override
-	public boolean isImmutable() {
-		return immutable;
 	}
 
 	@Override

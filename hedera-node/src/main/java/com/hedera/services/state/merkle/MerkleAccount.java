@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ServicesState;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.serdes.DomainSerdes;
@@ -34,7 +33,6 @@ import com.swirlds.common.io.SerializedObjectProvider;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractMerkleInternal;
-import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,11 +114,6 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 
 	/* --- FastCopyable --- */
 	@Override
-	public boolean isImmutable() {
-		return records().isImmutable() || payerRecords().isImmutable();
-	}
-
-	@Override
 	public MerkleAccount copy() {
 		if (isImmutable()) {
 			var msg = String.format("Copy called on an immutable MerkleAccount by thread '%s'! " +
@@ -134,17 +127,12 @@ public class MerkleAccount extends AbstractMerkleInternal implements FCMValue, M
 			throw new IllegalStateException("Tried to make a copy of an immutable MerkleAccount!");
 		}
 
+		setImmutable(true);
 		return new MerkleAccount(List.of(
 				state().copy(),
 				records().copy(),
 				payerRecords().copy(),
 				tokens().copy()));
-	}
-
-	@Override
-	public void delete() {
-		records().delete();
-		payerRecords().delete();
 	}
 
 	@Override

@@ -22,8 +22,6 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
@@ -67,8 +65,8 @@ public class PojoAccount {
 	private long autoRenewPeriod;
 	private long sendThreshold;
 	private long receiveThreshold;
-	private List<PojoRecord> records = Collections.EMPTY_LIST;
-	private List<PojoRecord> payerRecords = Collections.EMPTY_LIST;
+	private List<PojoRecord> records = Collections.emptyList();
+	private List<PojoRecord> payerRecords = Collections.emptyList();
 	private String id;
 	private String proxyId = "0.0.0";
 	private String memo;

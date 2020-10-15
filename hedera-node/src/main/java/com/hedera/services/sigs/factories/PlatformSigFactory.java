@@ -22,6 +22,7 @@ package com.hedera.services.sigs.factories;
 
 
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.Hex;
 
 import java.util.Arrays;
@@ -45,19 +46,19 @@ public class PlatformSigFactory {
 	 * @param data bytes of the data claimed to have been signed.
 	 * @return the platform signature representing the collective input parameters.
 	 */
-	public static Signature createEd25519(byte[] pk, byte[] sig, byte[] data) {
+	public static TransactionSignature createEd25519(byte[] pk, byte[] sig, byte[] data) {
 		byte[] contents = new byte[sig.length + data.length];
 		System.arraycopy(sig, 0, contents, 0, sig.length);
 		System.arraycopy(data, 0, contents, sig.length, data.length);
 
-		return new Signature(
+		return new TransactionSignature(
 				contents,
 				0, sig.length,
 				pk, 0, pk.length,
 				sig.length, data.length);
 	}
 
-	public static boolean varyingMaterialEquals(Signature a, Signature b) {
+	public static boolean varyingMaterialEquals(TransactionSignature a, TransactionSignature b) {
 		boolean isEqual = Arrays.equals(a.getExpandedPublicKeyDirect(), b.getExpandedPublicKeyDirect());
 		if (isEqual) {
 			int aOffset = a.getSignatureOffset(), aLen = a.getSignatureLength();
@@ -69,7 +70,7 @@ public class PlatformSigFactory {
 		return isEqual;
 	}
 
-	public static boolean allVaryingMaterialEquals(List<Signature> aSigs, List<Signature> bSigs) {
+	public static boolean allVaryingMaterialEquals(List<TransactionSignature> aSigs, List<TransactionSignature> bSigs) {
 		boolean isEqual = (aSigs.size() == bSigs.size());
 		if (isEqual) {
 			for (int i = 0, n = aSigs.size(); i < n; i++) {
@@ -81,7 +82,7 @@ public class PlatformSigFactory {
 		return isEqual;
 	}
 
-	public static String pkSigRepr(List<Signature> sigs) {
+	public static String pkSigRepr(List<TransactionSignature> sigs) {
 		return sigs.stream().map(sig -> String.format(
 				"(PK = %s | SIG = %s | %s)",
 				Hex.encodeHexString(sig.getExpandedPublicKeyDirect()),
