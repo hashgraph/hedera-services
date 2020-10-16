@@ -221,10 +221,7 @@ class IssListenerTest {
 		// given:
 		var badPath = "this/path/does/not/exist";
 
-		// when:
-		var fout = IssListener.merkleOutFn.apply(badPath);
-
 		// then:
-		assertDoesNotThrow(() -> fout.writeUTF("Here is something"));
+		assertDoesNotThrow(() -> IssListener.merkleOutFn.apply(badPath));
 	}
 }
