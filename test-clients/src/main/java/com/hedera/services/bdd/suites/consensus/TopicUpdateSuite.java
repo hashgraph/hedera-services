@@ -99,7 +99,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec topicUpdateSigReqsEnforcedAtConsensus() {
-		long PAYER_BALANCE = 1_999_999_999_999L;
+		long PAYER_BALANCE = 199_999_999_999L;
 		Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> {
 			return updateTopic("testTopic")
 					.payingWith("payer")

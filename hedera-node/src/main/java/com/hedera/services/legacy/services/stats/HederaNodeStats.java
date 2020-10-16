@@ -9,9 +9,9 @@ package com.hedera.services.legacy.services.stats;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,12 +24,14 @@ import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.NetworkController;
+import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
 import com.swirlds.platform.StatsRunningAverage;
 import com.swirlds.platform.StatsSpeedometer;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
-import org.apache.logging.log4j.Logger;
 
 /**
  * HederaNodeStats serves as a placeholder for all statistics in HGCApp
@@ -78,6 +78,24 @@ public class HederaNodeStats {
 			NetworkController.GET_VERSION_INFO_METRIC,
 			NetworkController.UNCHECKED_SUBMIT_METRIC
 
+	);
+	private static final List<String> tokenTransactionsList = List.of(
+			TokenController.TOKEN_MINT_METRIC,
+			TokenController.TOKEN_BURN_METRIC,
+			TokenController.TOKEN_CREATE_METRIC,
+			TokenController.TOKEN_DELETE_METRIC,
+			TokenController.TOKEN_UPDATE_METRIC,
+			TokenController.TOKEN_TRANSACT_METRIC,
+			TokenController.TOKEN_FREEZE_METRIC,
+			TokenController.TOKEN_UNFREEZE_METRIC,
+			TokenController.TOKEN_GRANT_KYC_METRIC,
+			TokenController.TOKEN_REVOKE_KYC_METRIC,
+			TokenController.TOKEN_WIPE_ACCOUNT_METRIC,
+			TokenController.TOKEN_ASSOCIATE_METRIC,
+			TokenController.TOKEN_DISSOCIATE_METRIC
+	);
+	private static final List<String> tokenQueriesList = List.of(
+			TokenController.TOKEN_GET_INFO_METRIC
 	);
 	private static final List<String> cryptoQueriesList = Arrays.asList(
 			CryptoController.GET_CLAIM_METRIC,
@@ -194,6 +212,8 @@ public class HederaNodeStats {
 		initializeInternalStatsForTransactions(smartContractTransactionsList, platform);
 		initializeInternalStats(smartContractQueriesList, platform);
 		initializeOneCountStat(THRESHOLD_RECORDS_IN_STATE, "", "Number of threshold records held in state", platform);
+		initializeInternalStats(tokenQueriesList, platform);
+		initializeInternalStatsForTransactions(tokenTransactionsList, platform);
 
 		initializeInternalStats(consensusQueryList, platform);
 		initializeInternalStatsForTransactions(consensusTransactionList, platform);
@@ -547,12 +567,12 @@ public class HederaNodeStats {
 	public String dumpHederaNodeStats() {
 		StringBuffer statsSB = new StringBuffer();
 		Iterator iterator = countStats.entrySet().iterator();
-		while(iterator.hasNext()) {
-			Map.Entry statElement = (Map.Entry)iterator.next();
+		while (iterator.hasNext()) {
+			Map.Entry statElement = (Map.Entry) iterator.next();
 			String thisStat = String.format("%s -> %s\n", statElement.getKey(), statElement.getValue().toString());
 			statsSB.append(thisStat);
 		}
-		log.info(String.format("Current services stats: \n %s", statsSB.toString()) );
+		log.info(String.format("Current services stats: \n %s", statsSB.toString()));
 		return statsSB.toString();
 	}
 }
