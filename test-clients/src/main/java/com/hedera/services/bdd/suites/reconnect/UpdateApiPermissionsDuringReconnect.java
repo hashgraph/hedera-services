@@ -56,13 +56,13 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
 				.given()
 				.when()
 				.then(
-						UtilVerbs.sleepFor(Duration.ofMinutes(6).toMillis()),
+						// UtilVerbs.sleepFor(Duration.ofMinutes(6).toMillis()),
 						// getFileContents(API_PERMISSIONS).logged().setNode("0.0.6")
 						fileUpdate(API_PERMISSIONS)
 								.overridingProps(Map.of("updateFile", "1-1011"))
 								.payingWith(MASTER)
 								.logged(),
-						UtilVerbs.sleepFor(Duration.ofMinutes(6).toMillis()),
+						//UtilVerbs.sleepFor(Duration.ofMinutes(6).toMillis()),
 						getFileInfo(API_PERMISSIONS)
 								.logged()
 								.setNode("0.0.6")

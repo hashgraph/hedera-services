@@ -75,6 +75,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
 import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
@@ -181,6 +182,7 @@ public class SuiteRunner {
 		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
 		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
 		/* Functional tests - RECONNECT */
+		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("GetAccountBalanceAfterReconnect", aof(new GetAccountBalanceAfterReconnect()));
 		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
 		/* Functional tests - CONSENSUS */
