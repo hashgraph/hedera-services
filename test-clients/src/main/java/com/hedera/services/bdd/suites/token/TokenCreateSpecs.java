@@ -36,6 +36,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -60,6 +61,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+						wtf(),
 						creationValidatesSymbol(),
 						treasuryHasCorrectBalance(),
 						creationRequiresAppropriateSigs(),
@@ -77,6 +79,13 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationValidatesExpiry(),
 						creationValidatesFreezeDefaultWithNoFreezeKey()
 		);
+	}
+
+	public HapiApiSpec wtf() {
+		return defaultHapiSpec("WhatAreTheApiPermissions??")
+				.given( ).when( ).then(
+						getFileContents(API_PERMISSIONS).logged()
+				);
 	}
 
 	public HapiApiSpec autoRenewValidationWorks() {
@@ -304,7 +313,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 				).then(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 						)),
 						tokenCreate(salted("secondary"))
