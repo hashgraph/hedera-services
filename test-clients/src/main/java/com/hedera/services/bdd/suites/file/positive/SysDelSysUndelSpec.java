@@ -78,6 +78,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
 								.payingWith(SYSTEM_DELETE_ADMIN)
 								.hasPrecheck(AUTHORIZATION_FAILED),
 						systemFileDelete(ADDRESS_BOOK)
+								.payingWith(GENESIS)
 								.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE)
 				);
 	}

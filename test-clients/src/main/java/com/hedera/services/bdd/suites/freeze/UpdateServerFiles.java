@@ -124,12 +124,12 @@ public class UpdateServerFiles extends HapiApiSuite {
 		final byte[] hash = UpdateFile150.sha384Digest(data);
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
-						fileUpdate(APP_PROPERTIES)
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
 								.overridingProps(Map.of("maxFileSize", "2048000")),
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(
 						freeze().setFileID(fileIDString)
-								.setFileHash(hash)
+								.setFileHash(hash).payingWith(GENESIS)
 								.startingIn(60).seconds().andLasting(10).minutes()
 				).then(
 				);

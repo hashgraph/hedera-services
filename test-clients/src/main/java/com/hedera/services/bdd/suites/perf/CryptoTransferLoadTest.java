@@ -77,7 +77,8 @@ public class CryptoTransferLoadTest extends LoadTest {
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						cryptoCreate("sender").balance(initialBalance.getAsLong())
+						cryptoCreate("sender")
+								.balance(initialBalance.getAsLong())
 								.withRecharging()
 								.rechargeWindow(3)
 								.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
