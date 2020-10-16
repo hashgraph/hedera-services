@@ -108,7 +108,9 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 				).then(
 						UtilVerbs.sleepFor(1_000L),
 						// cleanup:
-						fileUpdate(APP_PROPERTIES).contents(ignore -> defaultProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> defaultProps.get())
 				);
 	}
 

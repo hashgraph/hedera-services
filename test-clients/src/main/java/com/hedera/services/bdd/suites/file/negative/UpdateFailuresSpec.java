@@ -78,6 +78,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 						})
 				).when(
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents("NONSENSE".getBytes())
 								.extendingExpiryBy(extension)
 								.hasKnownStatus(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE)

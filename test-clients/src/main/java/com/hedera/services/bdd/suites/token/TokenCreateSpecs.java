@@ -295,9 +295,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cryptoCreate("payer").balance(A_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK
-						)),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of( "tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
 						tokenCreate(salted("primary"))
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(salted("secondary"))

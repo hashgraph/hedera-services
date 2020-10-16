@@ -155,7 +155,9 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 									spec.registry().saveBytes("newRates", newRates);
 									return newRates;
 								}
-						).payingWith(EXCHANGE_RATE_CONTROL).fee(1_000_000_000).hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
+						).payingWith(EXCHANGE_RATE_CONTROL)
+								.fee(1_000_000_000)
+								.hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.contents(

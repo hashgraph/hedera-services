@@ -98,7 +98,7 @@ public class FetchWithPem extends HapiApiSuite {
 							"client.feeSchedule.path", feeScheduleLoc
 					)).given(
 							getFileInfo(APP_PROPERTIES).logged(),
-							fileUpdate(APP_PROPERTIES).contents(propsFromDisk),
+							fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).contents(propsFromDisk),
 							getFileInfo(APP_PROPERTIES).logged()
 					).when().then(
 //							UtilVerbs.updateLargeFile(GENESIS, FEE_SCHEDULE, fromDisk)

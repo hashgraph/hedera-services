@@ -38,8 +38,8 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 import static junit.framework.TestCase.fail;
 
@@ -124,7 +124,8 @@ public class UpdateServerFiles extends HapiApiSuite {
 		final byte[] hash = UpdateFile150.sha384Digest(data);
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("maxFileSize", "2048000")),
 						UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data))
 				).when(

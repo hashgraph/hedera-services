@@ -128,9 +128,9 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
 						tokenDissociate("misc", "1.2.3", "1.2.3")
 								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + 1
-						)).payingWith(ADDRESS_BOOK_CONTROL),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of( "tokens.maxPerAccount", "" + 1 )),
 						tokenAssociate("misc", FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
