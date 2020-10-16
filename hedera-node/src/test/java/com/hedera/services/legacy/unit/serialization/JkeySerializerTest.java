@@ -321,7 +321,6 @@ public class JkeySerializerTest {
     try {
       serial_thkey = threshold.serialize();
     } catch (Exception ex) {
-      System.out.println("Serialization Failed " + ex.getMessage());
     }
     assertNotNull(serial_thkey);
     // Now take the bytearray and build it back
@@ -357,7 +356,6 @@ public class JkeySerializerTest {
       in.close();
 
     } catch (Exception ex) {
-      System.out.println("**EXCEPTION**" + ex.getMessage());
     } finally {
       dis = null;
       in = null;
@@ -376,7 +374,6 @@ public class JkeySerializerTest {
     try {
       serialized_jkey = jkeyList.serialize();
     } catch (Exception ex) {
-      System.out.println("Serialization Failed " + ex.getMessage());
     }
     assertNotNull(serialized_jkey);
 
@@ -412,7 +409,6 @@ public class JkeySerializerTest {
       in.close();
 
     } catch (Exception ex) {
-      System.out.println("**EXCEPTION**" + ex.getMessage());
     } finally {
       dis = null;
       in = null;
@@ -439,15 +435,11 @@ public class JkeySerializerTest {
       jListBef = jkey.getKeyList().getKeysList();
 
     } catch (Exception ex) {
-      System.out.println("Error Occurred" + ex.getMessage());
-      ex.printStackTrace();
     }
     byte[] serialized_jkey = null;
     try {
       serialized_jkey = jkey.serialize();
     } catch (Exception tex) {
-      System.out.println("Error Occurred" + tex.getMessage());
-      tex.printStackTrace();
     }
 
     ByteArrayInputStream in = null;
@@ -478,8 +470,6 @@ public class JkeySerializerTest {
       in.close();
 
     } catch (Exception ex) {
-      System.out.println("**EXCEPTION**" + ex.getMessage());
-      ex.printStackTrace();
     } finally {
       dis = null;
       in = null;

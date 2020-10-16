@@ -333,17 +333,11 @@ public class SmartContractRequestHandlerStorageTest {
     byte[] contractBytes = createFile(SIMPLE_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(0L, 250000L, adminPubKey);
 
-    System.out.println("Fetched balance BEFORE is " + repository.getBalance(payerKeyBytes));
-    System.out.println("Map value BEFORE is " + contracts.get(payerMerkleEntityId).getBalance());
-
     Instant consensusTime = new Date().toInstant();
     SequenceNumber seqNumber = new SequenceNumber(contractSequenceNumber);
     ledger.begin();
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-
-    System.out.println("Fetched balance AFTER is " + repository.getBalance(payerKeyBytes));
-    System.out.println("Map value AFTER is " + contracts.get(payerMerkleEntityId).getBalance());
 
     Assert.assertNotNull(record);
     Assert.assertNotNull(record.getTransactionID());
@@ -388,7 +382,6 @@ public class SmartContractRequestHandlerStorageTest {
     Assert.assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
     Assert.assertTrue(record.hasContractCreateResult());
     long gasUsed = record.getContractCreateResult().getGasUsed();
-    System.out.println("createContractInsufficientGas first attempt gas used = " + gasUsed);
     // Attempt to create a contract with a little less gas
     body = getCreateTransactionBody(0L, (long) Math.floor((double)gasUsed *0.9) , null);
     consensusTime = new Date().toInstant();
@@ -396,8 +389,6 @@ public class SmartContractRequestHandlerStorageTest {
     ledger.begin();
     record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
-    System.out.println("createContractInsufficientGas second attempt gas used = " +
-            record.getContractCreateResult().getGasUsed());
     Assert.assertNotNull(record.getReceipt());
     Assert.assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, record.getReceipt().getStatus());
   }
@@ -727,7 +718,6 @@ public class SmartContractRequestHandlerStorageTest {
     var createRecord = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     var childStorageId = createRecord.getReceipt().getContractID();
-    System.out.println("Created ChildStorage as 0.0." + childStorageId.getContractNum());
 
     var cclQuery = getCallLocalQuery(
             childStorageId,
@@ -735,13 +725,10 @@ public class SmartContractRequestHandlerStorageTest {
             250000L).getContractCallLocal();
     var response = smartHandler.contractCallLocal(cclQuery, System.currentTimeMillis());
     byte[] responseBytes = response.getFunctionResult().getContractCallResult().toByteArray();
-    System.out.println("Parent value is " + decodeSimpleResponseVia(GET_MY_VALUE_ABI, responseBytes, BigInteger.class));
 
     var callBytes = ByteString.copyFrom(encodeVia(GROW_CHILD_ABI, 0, 1, 17));
     body = getCallTransactionBody(childStorageId, callBytes, 250000L, 0L);
     seqNumber.getAndIncrement();
-    System.out.println("");
-    System.out.println("-----");
     ledger.begin();
     var callRecord = smartHandler.contractCall(body, Instant.now(), seqNumber);
     ledger.commit();

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,17 +24,20 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 /**
  * NOTE: 1. This test suite covers the test08UpdateFile() test scenarios from the legacy FileServiceIT test class after
@@ -61,7 +64,28 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //    	        vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
+				apiPermissionsChangeDynamically(),
 		});
+	}
+
+	private HapiApiSpec apiPermissionsChangeDynamically() {
+		return defaultHapiSpec("ApiPermissionsChangeDynamically")
+				.given(
+						cryptoCreate("civilian"),
+						getFileContents(API_PERMISSIONS).logged(),
+						tokenCreate("poc").payingWith("civilian")
+				).when(
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.erasingProps(Set.of("tokenCreate")),
+						getFileContents(API_PERMISSIONS).logged()
+				).then(
+						tokenCreate("poc").payingWith("civilian").hasPrecheck(NOT_SUPPORTED),
+						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokenCreate", "0-*")),
+						tokenCreate("secondPoc").payingWith("civilian")
+				);
 	}
 
 	private HapiApiSpec updateFeesCompatibleWithCreates() {

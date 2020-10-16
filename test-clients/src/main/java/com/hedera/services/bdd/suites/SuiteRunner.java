@@ -75,6 +75,7 @@ import com.hedera.services.bdd.suites.perf.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.MixedTransferAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.SubmitMessageLoadTest;
+import com.hedera.services.bdd.suites.perf.TokenTransfersLoadProvider;
 import com.hedera.services.bdd.suites.reconnect.GetAccountBalanceAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -172,6 +173,7 @@ public class SuiteRunner {
 		/* Umbrella Redux */
 		put("UmbrellaRedux", aof(new UmbrellaRedux()));
 		/* Load tests. */
+		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
 		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
 		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
 		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));

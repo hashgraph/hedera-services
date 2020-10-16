@@ -62,7 +62,6 @@ public class TestHelper {
       try {
         Thread.sleep(0, 1);
       } catch (InterruptedException e) {
-        e.printStackTrace();
       }
       rv = ProtoCommonUtils.getCurrentTimestampUTC(DEFAULT_WIND_SEC);
       lastNano = rv.getNanos();

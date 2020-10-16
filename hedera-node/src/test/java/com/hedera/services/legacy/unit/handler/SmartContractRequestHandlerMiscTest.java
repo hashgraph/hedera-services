@@ -611,14 +611,11 @@ public class SmartContractRequestHandlerMiscTest {
 
     // Validate that the artifacts are there for the created contract
     ContractID createdContractId = asContract(accountParsedFromSolidityAddress(retVal));
-    System.out.println("Created contract is: " + createdContractId);
 
     checkContractArtifactsExist(createdContractId);
     // Data storage should have been created for both contracts
     checkContractDataArtifactExists(newContractId);
     checkContractDataArtifactExists(createdContractId);
-
-    System.out.println("FCMap and FCFS artifacts exist for the contract-created contract");
   }
 
   @Test
