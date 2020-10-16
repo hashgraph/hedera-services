@@ -79,13 +79,6 @@ public class LegacyTopicsTest {
 			assertTrue(subject.containsKey(id));
 			var actual = subject.get(id);
 			var expected = topicFrom(s);
-
-			System.out.println("--- Expected ---");
-			System.out.println(expected.toString());
-			System.out.println("--- Actual ---");
-			System.out.println(actual.toString());
-
-//			assertEquals(expected, actual);
 		}
 	}
 

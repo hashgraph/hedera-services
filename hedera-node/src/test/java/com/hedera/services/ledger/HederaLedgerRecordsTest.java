@@ -23,15 +23,11 @@ package com.hedera.services.ledger;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.ledger.properties.AccountProperty.HISTORY_RECORDS;
@@ -41,9 +37,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
 public class HederaLedgerRecordsTest extends BaseHederaLedgerTest {

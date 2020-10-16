@@ -71,7 +71,6 @@ public class PropertyLoaderTest {
 		try {
 			delegate.load(Files.newInputStream(Paths.get(loc)));
 		} catch (IOException impossible) {
-			System.out.println("Sample properties file wasn't created?!");
 		}
 		return new CustomProperties(delegate);
 	}
@@ -97,11 +96,9 @@ public class PropertyLoaderTest {
       prop.setProperty("thresholdTxRecordTTL", thresholdTxRecordTTL);
       prop.setProperty("txMaximumDuration", txMaximumDuration);
       prop.store(output, null);
-      System.out.println(prop);
       output.flush();
       output.close();
     } catch (IOException io) {
-      io.printStackTrace();
     }
 
     // create test api property file
@@ -111,12 +108,10 @@ public class PropertyLoaderTest {
       prop.setProperty("createAccount", "0-*");
       prop.setProperty("cryptoTransfer", "0-*");
       prop.store(output, null);
-      System.out.println(prop);
       output.flush();
       output.close();
 
     } catch (IOException io) {
-      io.printStackTrace();
     }
   }
   
@@ -140,11 +135,9 @@ public class PropertyLoaderTest {
     File appApiProp = new File(API_CONFIG_FILE_PATH);
 
     if (appProp.delete()) {
-      System.out.println("testConfig.properties File deleted successfully");
     }
     if (appApiProp.delete()) {
-      System.out.println("testApi.properties File deleted successfully");
-    }    
+    }
 
   }
   
@@ -186,11 +179,9 @@ public class PropertyLoaderTest {
     File appApiProp = new File(API_CONFIG_FILE_PATH);
 
     if (appProp.delete()) {
-      System.out.println("testConfig.properties File deleted successfully");
     }
     if (appApiProp.delete()) {
-      System.out.println("testApi.properties File deleted successfully");
-    }    
+    }
 
   }
 
