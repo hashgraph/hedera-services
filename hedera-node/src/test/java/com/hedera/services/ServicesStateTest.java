@@ -198,6 +198,8 @@ class ServicesStateTest {
 		assertNotNull(subject.tokens());
 		assertNotNull(subject.tokenAssociations());
 		assertNotNull(subject.diskFs());
+		// and:
+		assertTrue(subject.skipDiskFsHashCheck);
 	}
 
 	@Test
@@ -274,6 +276,36 @@ class ServicesStateTest {
 
 		// expect:
 		assertDoesNotThrow(() -> subject.expandSignatures(platformTxn));
+	}
+
+	@Test
+	public void skipsHashCheckIfNotAppropriate() {
+		// setup:
+		var mockLog = mock(Logger.class);
+		ServicesMain.log = mockLog;
+		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		CONTEXTS.store(ctx);
+		// and:
+		subject.skipDiskFsHashCheck = true;
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+
+		// when:
+		subject.init(platform, book);
+
+		// then:
+		verify(diskFs, never()).checkHashesAgainstDiskContents();
+
+		// cleanup:
+		ServicesMain.log = LogManager.getLogger(ServicesMain.class);
+		ServicesState.merkleDigest = CryptoFactory.getInstance()::digestTreeSync;
 	}
 
 	@Test
