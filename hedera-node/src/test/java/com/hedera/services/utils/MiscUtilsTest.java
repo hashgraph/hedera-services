@@ -310,7 +310,7 @@ public class MiscUtilsTest {
 						.build()));
 
 		// expect:
-		Assertions.assertDoesNotThrow(() -> System.out.println(readableProperty(records)));
+		Assertions.assertDoesNotThrow(() -> readableProperty(records));
 	}
 
 	@Test

@@ -74,7 +74,6 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception e) {
-			System.out.println("Test falling back to default usage prices available for function :: " + function);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}

@@ -223,7 +223,6 @@ public class CryptoTxRecordTransferListTest {
 			txBody =
 			            com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(deleteTx);
 		} catch (InvalidProtocolBufferException e) {
-			e.printStackTrace();
 		}
 		 return txBody;
 

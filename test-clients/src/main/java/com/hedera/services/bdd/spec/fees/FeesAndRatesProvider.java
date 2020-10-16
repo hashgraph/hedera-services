@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -36,8 +37,10 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import org.junit.Assert;
+
+import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.*;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
@@ -52,6 +55,8 @@ import java.util.Arrays;
 
 public class FeesAndRatesProvider {
 	private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);
+
+	private static final int NUM_DOWNLOAD_ATTEMPTS = 10;
 
 	private TxnFactory txns;
 	private KeyFactory keys;
@@ -118,8 +123,7 @@ public class FeesAndRatesProvider {
 
 	private void downloadRateSet() throws Throwable {
 		long queryFee = lookupDownloadFee(setup.exchangeRatesId());
-		Transaction payment = genesisSponsored(queryFee);
-		FileGetContentsResponse response = downloadWith(payment,false, setup.exchangeRatesId());
+		FileGetContentsResponse response = downloadWith(queryFee,false, setup.exchangeRatesId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		rateSet = ExchangeRateSet.parseFrom(bytes);
 		lastRatesUpdate = Instant.now();
@@ -137,8 +141,7 @@ public class FeesAndRatesProvider {
 
 	private void downloadFeeSchedule() throws Throwable {
 		long queryFee = lookupDownloadFee(setup.feeScheduleId());
-		Transaction payment = genesisSponsored(queryFee);
-		FileGetContentsResponse response = downloadWith(payment,false, setup.feeScheduleId());
+		FileGetContentsResponse response = downloadWith(queryFee,false, setup.feeScheduleId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = wrapper.getCurrentFeeSchedule();
@@ -146,17 +149,39 @@ public class FeesAndRatesProvider {
 	}
 
 	private long lookupDownloadFee(FileID fileId) throws Throwable {
-		Transaction txn = genesisSponsored(setup.feeScheduleFetchFee());
-		return downloadWith(txn, true, fileId).getHeader().getCost();
+		return downloadWith(setup.feeScheduleFetchFee(), true, fileId).getHeader().getCost();
 	}
 
-	private FileGetContentsResponse downloadWith(Transaction payment, boolean costOnly, FileID fileId) {
-		Query query = downloadQueryWith(payment, costOnly, fileId);
-		FileGetContentsResponse response = clients
-				.getFileSvcStub(setup.defaultNode(), setup.getConfigTLS())
-				.getFileContent(query)
-				.getFileGetContents();
-		Assert.assertEquals(OK, response.getHeader().getNodeTransactionPrecheckCode());
+	private FileGetContentsResponse downloadWith(
+			long queryFee,
+			boolean costOnly,
+			FileID fid
+	) throws Throwable {
+		int attemptsLeft = NUM_DOWNLOAD_ATTEMPTS;
+		ResponseCodeEnum status;
+		FileGetContentsResponse response;
+		do {
+			var payment = genesisSponsored(queryFee);
+			var query = downloadQueryWith(payment, costOnly, fid);
+			response = clients
+					.getFileSvcStub(setup.defaultNode(), setup.getConfigTLS())
+					.getFileContent(query)
+					.getFileGetContents();
+			status = response.getHeader().getNodeTransactionPrecheckCode();
+			if (status == OK) {
+				break;
+			} else {
+				log.warn("'{}' download attempt paid with {} got status {}, retrying...",
+						asFileString(fid),
+						toReadableString(payment),
+						status);
+			}
+		} while (--attemptsLeft > 0);
+		if (status != OK) {
+			throw new IllegalStateException(String.format(
+					"Could not download '%s' final status %s",
+					asFileString(fid), status));
+		}
 		return response;
 	}
 

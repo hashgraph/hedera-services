@@ -242,7 +242,6 @@ public class RecordStreamCmp {
 		try {
 			return paidBy(pair.record(), suspect) || hasTransfersWith(pair.accessor(), suspect);
 		} catch (InvalidProtocolBufferException e) {
-			e.printStackTrace();
 			throw new IllegalStateException("Record stream has invalid body bytes!");
 		}
 	}

@@ -87,13 +87,9 @@ public class RepoNewCacheTest {
     try {
       keyByte = MiscUtils.commonsHexToBytes(key);
     } catch (DecoderException e) {
-      e.printStackTrace();
     }
     repository.addBalance(keyByte, BigInteger.TEN);
-    System.out.println("Initial repo balance before commit ::" + repository.getBalance(keyByte));
     repository.commit();
-
-    System.out.println("Initial repo balance aftre commit ::" + repository.getBalance(keyByte));
 
     Repository track1 = repository.startTracking();
 
@@ -137,31 +133,13 @@ public class RepoNewCacheTest {
     byte[] code = repository.getCode(keyByte);
     String codeStr = new String(code);
     assertEquals("Test Code for SmartContract", codeStr);
-    System.out.println("The code is " + codeStr);
     repository.commit();
-
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code is " + codeStr);
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is ===>> " + codeStr);
 
     repository.saveCode(keyByte, "Test Code for SmartContract..New".getBytes());
     repository.commit();
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
-    System.out.println("*****************************");
-    code = repository.getCode(keyByte);
-    codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
 
     code = repository.getCode(keyByte);
     codeStr = new String(code);
-    System.out.println("The code second is " + codeStr);
-
-
   }
 
   @Test
@@ -205,11 +183,9 @@ public class RepoNewCacheTest {
     try {
       someKeyBytes = MiscUtils.commonsHexToBytes(someKey);
     } catch (DecoderException e) {
-      e.printStackTrace();
     }
 
     ledger.begin();
-    System.out.println("Initial balance of some account ::" + repository.getBalance(someKeyBytes));
     repository.increaseNonce(someKeyBytes);
     ServicesRepositoryImpl track1 = repository.startTracking();
     track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
@@ -217,7 +193,6 @@ public class RepoNewCacheTest {
     // To show under debug that the two AccountStates are the same object.
     AccountState info1 = track1.getAccount(someKeyBytes);
     AccountState info2 = repository.getAccount(someKeyBytes);
-    System.out.println("Info1 is " + info1 + ", info2 is " + info2);
 
     assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
     assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());

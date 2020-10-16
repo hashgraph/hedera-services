@@ -280,9 +280,7 @@ class SignedStateBalancesExporterTest {
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(testExportLoc()));
-		System.out.println(lines);
 		var expected = theExpectedBalances();
-		System.out.println(expected);
 		assertEquals(expected.size() + 2, lines.size());
 		assertEquals(String.format("TimeStamp:%s", now), lines.get(0));
 		assertEquals("shardNum,realmNum,accountNum,balance", lines.get(1));
