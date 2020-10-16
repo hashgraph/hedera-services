@@ -43,8 +43,10 @@ import org.junit.Assert;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -138,16 +140,31 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		return hasContents(spec -> spec.registry().getBytes(registryEntry));
 	}
 
+	private boolean isConfigListFile(HapiApiSpec spec) {
+		return fileName.equals(spec.setup().apiPermissionsFile()) ||
+				fileName.equals(spec.setup().appPropertiesFile());
+	}
+
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getFileContentQuery(spec, payment, false);
 		response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
+		byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
 		if (verboseLoggingOn) {
 			var len = response.getFileGetContents().getFileContents().getContents().size();
 			log.info(String.format("%s contained %s bytes", fileName, len));
+			if (isConfigListFile(spec)) {
+				var configList = ServicesConfigurationList.parseFrom(bytes);
+				var msg = new StringBuilder("As a config list, contents are:");
+				List<String> entries = new ArrayList<>();
+				configList.getNameValueList().forEach(setting ->
+						entries.add(String.format("\n  %s=%s", setting.getName(), setting.getValue())));
+				Collections.sort(entries);
+				entries.forEach(msg::append);
+				log.info(msg.toString());
+			}
 		}
 		if (fileName.equals(spec.setup().appPropertiesFile()) && (props != IMMUTABLE_MAP)) {
-			byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
 			try {
 				var configList = ServicesConfigurationList.parseFrom(bytes);
 				configList.getNameValueList().forEach(setting -> props.put(setting.getName(), setting.getValue()));
@@ -157,7 +174,6 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 		}
 		if (snapshotPath.isPresent() || readablePath.isPresent()) {
 			try {
-				byte[] bytes = response.getFileGetContents().getFileContents().getContents().toByteArray();
 				if (snapshotPath.isPresent()) {
 					if (saveIn4kChunks) {
 						int i = 0;
