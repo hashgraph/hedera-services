@@ -28,7 +28,6 @@ import java.time.Instant;
 public class CommonUtilsTest {
 	@Test
 	public void isSameDayUTCTest() {
-		System.out.println(Instant.now());
 		Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
 		Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
 		Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");

@@ -218,18 +218,15 @@ public class FreezeServiceImplTest {
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
       @Override
       public void onNext(TransactionResponse response) {
-        System.out.println(response.getNodeTransactionPrecheckCode());
         Assertions.assertEquals( response.getNodeTransactionPrecheckCode() , OK);
       }
 
       @Override
       public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
       }
 
       @Override
       public void onCompleted() {
-        System.out.println("Freeze Completed");
       }
     };
 
@@ -255,20 +252,15 @@ public class FreezeServiceImplTest {
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
       @Override
       public void onNext(TransactionResponse response) {
-        System.out.println(
-                "Expecting NOT_SUPPORTED for freeze not paid by 58, got " +
-                        response.getNodeTransactionPrecheckCode());
         Assertions.assertEquals(response.getNodeTransactionPrecheckCode() , ResponseCodeEnum.NOT_SUPPORTED);
       }
 
       @Override
       public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
       }
 
       @Override
       public void onCompleted() {
-        System.out.println("Freeze Completed");
       }
     };
 
@@ -285,18 +277,15 @@ public class FreezeServiceImplTest {
     StreamObserver<TransactionResponse> responseObserver = new StreamObserver<>() {
       @Override
       public void onNext(TransactionResponse response) {
-        System.out.println(response.getNodeTransactionPrecheckCode());
         Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, response.getNodeTransactionPrecheckCode());
       }
 
       @Override
       public void onError(Throwable t) {
-        System.out.println("Error Happened " + t.getMessage());
       }
 
       @Override
       public void onCompleted() {
-        System.out.println("Freeze Completed");
       }
     };
 
@@ -361,7 +350,6 @@ public class FreezeServiceImplTest {
   public void tearDown() {
     try {
     } catch (Throwable tx) {
-      tx.printStackTrace();
     } finally {
     }
   }

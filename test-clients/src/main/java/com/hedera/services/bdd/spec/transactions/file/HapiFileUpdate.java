@@ -51,6 +51,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -221,10 +222,13 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			newContents = Optional.of(ByteString.copyFrom(Files.toByteArray(new File(newContentsPath.get()))));
 		} else if (contentFn.isPresent()) {
 			newContents = Optional.of(contentFn.get().apply(spec));
-		} else if (propOverrides.isPresent()) {
+		} else if (propOverrides.isPresent() || propDeletions.isPresent()) {
+			if (propOverrides.isEmpty()) {
+				propOverrides = Optional.of(Collections.emptyMap());
+			}
+
 			ServicesConfigurationList defaults = readBaseProps(spec);
 			ServicesConfigurationList.Builder list = ServicesConfigurationList.newBuilder();
-
 			Map<String, String> overrides = propOverrides.get();
 			Map<String, String> defaultPairs = defaults.getNameValueList()
 					.stream()
