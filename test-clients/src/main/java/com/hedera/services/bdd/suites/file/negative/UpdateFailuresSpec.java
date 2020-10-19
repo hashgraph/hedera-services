@@ -118,8 +118,9 @@ public class UpdateFailuresSpec extends HapiApiSuite {
 		return defaultHapiSpec("precheckAllowsMissing")
 				.given().when().then(
 						fileUpdate("1.2.3")
-								.fee(1_234_567L)
+								.payingWith(GENESIS)
 								.signedBy(GENESIS)
+								.fee(1_234_567L)
 								.hasPrecheck(OK)
 								.hasKnownStatus(INVALID_FILE_ID)
 				);
