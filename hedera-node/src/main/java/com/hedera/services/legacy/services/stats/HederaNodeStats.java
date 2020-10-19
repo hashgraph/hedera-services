@@ -21,11 +21,13 @@ package com.hedera.services.legacy.services.stats;
  */
 
 import com.hedera.services.grpc.controllers.ConsensusController;
+import com.hedera.services.grpc.controllers.ContractController;
 import com.hedera.services.grpc.controllers.CryptoController;
 import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
@@ -120,19 +122,19 @@ public class HederaNodeStats {
 			FileController.GET_FILE_INFO_METRIC
 	);
 	private static final List<String> smartContractTransactionsList = Arrays.asList(
-			"createContract",
-			"updateContract",
-			"contractCallMethod",
-			"deleteContract",
-			"smartContractSystemDelete",
-			"smartContractSystemUndelete"
+			ContractController.CREATE_CONTRACT_METRIC,
+			ContractController.UPDATE_CONTRACT_METRIC,
+			ContractController.CALL_CONTRACT_METRIC,
+			ContractController.DELETE_CONTRACT_METRIC,
+			ContractController.SYS_DELETE_CONTRACT_METRIC,
+			ContractController.SYS_UNDELETE_CONTRACT_METRIC
 	);
 	private static final List<String> smartContractQueriesList = Arrays.asList(
-			"getContractInfo",
-			"contractCallLocalMethod",
-			"ContractGetBytecode",
-			"getBySolidityID",
-			"getTxRecordByContractID"
+			ContractController.GET_CONTRACT_INFO_METRIC,
+			ContractController.LOCALCALL_CONTRACT_METRIC,
+			ContractController.GET_CONTRACT_BYTECODE_METRIC,
+			ContractController.GET_SOLIDITY_ADDRESS_INFO_METRIC,
+			ContractController.GET_CONTRACT_RECORDS_METRIC
 	);
 
 	private HashMap<String, AtomicLong> countStats = new HashMap<>();
