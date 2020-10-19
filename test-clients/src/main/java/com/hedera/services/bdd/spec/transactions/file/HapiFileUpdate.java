@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.file;
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessage;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -290,7 +291,13 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				throw new IllegalStateException("Property overrides make no sense for file '" + file + "'!");
 			}
 			HapiGetFileContents subOp = getFileContents(file);
-			payer.ifPresent(subOp::payingWith);
+			payer.ifPresent(name -> {
+				if (isPrivileged(name, spec)) {
+					subOp.payingWith(spec.setup().genesisAccountName());
+				} else {
+					subOp.payingWith(name);
+				}
+			});
 			allRunFor(spec, subOp);
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
@@ -311,6 +318,12 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				throw new IllegalStateException("Property overrides via fileUpdate must have available defaults!");
 			}
 		}
+	}
+
+	private boolean isPrivileged(String account, HapiApiSpec spec) {
+		return account.equals(spec.setup().addressBookControlName()) ||
+				account.equals(spec.setup().exchangeRatesControlName()) ||
+				account.equals(spec.setup().feeScheduleControlName());
 	}
 
 	@Override

@@ -74,20 +74,11 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						fundSpecialAccounts(),
 						treasuryAssociationIsAutomatic(),
 						associateHasExpectedSemantics(),
 						dissociateHasExpectedSemantics(),
 				}
 		);
-	}
-
-	public HapiApiSpec fundSpecialAccounts() {
-		return defaultHapiSpec("FundSpecialAccounts")
-				.given( ).when( ).then(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, A_HUNDRED_HBARS)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, A_HUNDRED_HBARS))
-				);
 	}
 
 	public HapiApiSpec dissociateHasExpectedSemantics() {
