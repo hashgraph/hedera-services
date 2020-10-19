@@ -1412,7 +1412,6 @@ jobs:
             if [[ ! -d "${JUNIT_PATH}" ]]; then
               mkdir -pv "${JUNIT_PATH}"
             fi
-
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp -v {} "${JUNIT_PATH}" \;
           when: always
       - store_test_results:
