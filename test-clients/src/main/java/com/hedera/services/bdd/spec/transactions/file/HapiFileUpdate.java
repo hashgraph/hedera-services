@@ -62,6 +62,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
 
@@ -286,8 +289,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			if (!file.equals(HapiApiSuite.API_PERMISSIONS) && !file.equals(HapiApiSuite.APP_PROPERTIES)) {
 				throw new IllegalStateException("Property overrides make no sense for file '" + file + "'!");
 			}
-			HapiGetFileContents subOp = QueryVerbs.getFileContents(file);
-			CustomSpecAssert.allRunFor(spec, subOp);
+			HapiGetFileContents subOp = getFileContents(file);
+			payer.ifPresent(subOp::payingWith);
+			allRunFor(spec, subOp);
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
 				ServicesConfigurationList defaults = ServicesConfigurationList.parseFrom(bytes);
@@ -348,7 +352,9 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 			oldExpiry = spec.registry().getTimestamp(file);
 		}
 		if (oldExpiry == null) {
-			oldExpiry = TxnUtils.currExpiry(file, spec);
+			oldExpiry = payer.isPresent()
+					? currExpiry(file, spec, payer.get())
+					: currExpiry(file, spec);
 		}
 		return oldExpiry;
 	}
