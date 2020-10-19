@@ -105,7 +105,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		var expiry = payer.isPresent()
-				? currExpiry(file, spec, payer.get())
+				? currExpiry(file, spec, payerToUse(payer.get(), spec))
 				: currExpiry(file, spec);
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
 				fileFees.getFileAppendTxFeeMatrices(txBody, expiry, sigUsage);
@@ -128,5 +128,16 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper().add("fileName", file);
+	}
+
+	private String payerToUse(String designated, HapiApiSpec spec) {
+		return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
+	}
+
+	private boolean isPrivileged(String account, HapiApiSpec spec) {
+		return account.equals(spec.setup().addressBookControlName()) ||
+				account.equals(spec.setup().exchangeRatesControlName()) ||
+				account.equals(spec.setup().feeScheduleControlName()) ||
+				account.equals(spec.setup().strongControlName());
 	}
 }

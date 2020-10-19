@@ -20,7 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 
