@@ -21,6 +21,7 @@ package com.hedera.services.stats;
  */
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsSpeedometer;
 
 import java.util.EnumMap;
@@ -63,5 +64,13 @@ public class HapiOpSpeedometers {
 		this.answeredSoFar = answeredSoFar;
 		this.receivedSoFar = receivedSoFar;
 		this.submittedSoFar = submittedSoFar;
+	}
+
+	public void registerWith(Platform platform) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public void updateAll() {
+		throw new AssertionError("Not implemented!");
 	}
 }

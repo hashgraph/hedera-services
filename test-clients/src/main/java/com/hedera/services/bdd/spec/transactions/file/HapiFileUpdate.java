@@ -381,6 +381,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 	private boolean isPrivileged(String account, HapiApiSpec spec) {
 		return account.equals(spec.setup().addressBookControlName()) ||
 				account.equals(spec.setup().exchangeRatesControlName()) ||
-				account.equals(spec.setup().feeScheduleControlName());
+				account.equals(spec.setup().feeScheduleControlName()) ||
+				account.equals(spec.setup().strongControlName());
 	}
 }

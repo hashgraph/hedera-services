@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.utils.SleepingPause.INSTANCE;
+import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -62,9 +62,9 @@ class RecordCacheFactoryTest {
 		// then:
 		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
 		assertNull(cache.getIfPresent(txnIdB));
-		INSTANCE.forMs(500L);
+		SLEEPING_PAUSE.forMs(500L);
 		assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
-		INSTANCE.forMs(500L);
+		SLEEPING_PAUSE.forMs(500L);
 		assertNull(cache.getIfPresent(txnIdA));
 	}
 
