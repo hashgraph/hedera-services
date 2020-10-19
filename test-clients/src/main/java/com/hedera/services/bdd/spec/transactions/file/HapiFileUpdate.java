@@ -291,13 +291,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				throw new IllegalStateException("Property overrides make no sense for file '" + file + "'!");
 			}
 			HapiGetFileContents subOp = getFileContents(file);
-			payer.ifPresent(name -> {
-				if (isPrivileged(name, spec)) {
-					subOp.payingWith(spec.setup().genesisAccountName());
-				} else {
-					subOp.payingWith(name);
-				}
-			});
+			payer.ifPresent(name -> subOp.payingWith(payerToUse(name, spec)));
 			allRunFor(spec, subOp);
 			try {
 				byte[] bytes = subOp.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
@@ -318,12 +312,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 				throw new IllegalStateException("Property overrides via fileUpdate must have available defaults!");
 			}
 		}
-	}
-
-	private boolean isPrivileged(String account, HapiApiSpec spec) {
-		return account.equals(spec.setup().addressBookControlName()) ||
-				account.equals(spec.setup().exchangeRatesControlName()) ||
-				account.equals(spec.setup().feeScheduleControlName());
 	}
 
 	@Override
@@ -366,7 +354,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		}
 		if (oldExpiry == null) {
 			oldExpiry = payer.isPresent()
-					? currExpiry(file, spec, payer.get())
+					? currExpiry(file, spec, payerToUse(payer.get(), spec))
 					: currExpiry(file, spec);
 		}
 		return oldExpiry;
@@ -384,5 +372,15 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
 		newContentsPath.ifPresent(p -> helper.add("path", p));
 		literalNewContents.ifPresent(l -> helper.add("contents", l));
 		return helper;
+	}
+
+	private String payerToUse(String designated, HapiApiSpec spec) {
+		return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
+	}
+
+	private boolean isPrivileged(String account, HapiApiSpec spec) {
+		return account.equals(spec.setup().addressBookControlName()) ||
+				account.equals(spec.setup().exchangeRatesControlName()) ||
+				account.equals(spec.setup().feeScheduleControlName());
 	}
 }
