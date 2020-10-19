@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -42,6 +43,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -69,20 +71,22 @@ public class KeyExport extends HapiApiSuite {
 
 	private HapiApiSpec updateTreasuryKey() {
 		return customHapiSpec("UpdateTreasuryKey").withProperties(Map.of(
-				"nodes", "52.15.75.9",
-				"startupAccounts.path", "src/main/resource/DevTestnetAccount2.txt"
+				"nodes", "34.74.191.8"
 		)).given(
 //				keyFromPem(PEM_FILE_NAME)
 //						.name("newKey")
 //						.passphrase("ya3Xlgxaz3D4IWZcnF")
 //						.simpleWacl()
 		).when(
-//				getFileContents(API_PERMISSIONS).logged()
 //				getAccountInfo(GENESIS).logged(),
 //				cryptoUpdate(GENESIS).key("newKey")
+				fileUpdate(API_PERMISSIONS)
+						.erasingProps(Set.of("tokenGetInfo"))
+						.overridingProps(Map.of("getTokenInfo", "0-*"))
 		).then(
+				getFileContents(API_PERMISSIONS).logged()
 //				getAccountInfo(GENESIS).signedBy("newKey").logged()
-				freeze().startingIn(60).seconds().andLasting(1).minutes()
+//				freeze().startingIn(60).seconds().andLasting(1).minutes()
 		);
 	}
 

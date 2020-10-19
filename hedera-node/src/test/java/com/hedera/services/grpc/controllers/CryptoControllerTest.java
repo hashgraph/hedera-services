@@ -112,7 +112,7 @@ class CryptoControllerTest {
 
 		// expect:
 		verify(cryptoAnswers).getLiveHash();
-		verify(queryResponseHelper).respondToCrypto(query, queryObserver, null, GET_CLAIM_METRIC);
+		verify(queryResponseHelper).respondToCrypto(query, queryObserver, null, GET_LIVE_HASH_METRIC);
 	}
 
 	@Test

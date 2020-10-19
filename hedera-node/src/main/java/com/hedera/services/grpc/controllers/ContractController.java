@@ -6,8 +6,8 @@ public class ContractController {
 	public static final String CREATE_CONTRACT_METRIC = "createContract";
 	public static final String UPDATE_CONTRACT_METRIC = "updateContract";
 	public static final String DELETE_CONTRACT_METRIC = "deleteContract";
-	public static final String SYS_DELETE_CONTRACT_METRIC = "smartContractSystemDelete";
-	public static final String SYS_UNDELETE_CONTRACT_METRIC = "smartContractSystemUndelete";
+	public static final String CONTRACT_SYSDEL_METRIC = "smartContractSystemDelete";
+	public static final String CONTRACT_SYSUNDEL_METRIC = "smartContractSystemUndelete";
 	/* Queries */
 	public static final String GET_CONTRACT_INFO_METRIC = "getContractInfo";
 	public static final String LOCALCALL_CONTRACT_METRIC = "contractCallLocalMethod";

@@ -27,7 +27,6 @@ import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.TokenController;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
@@ -100,7 +99,7 @@ public class HederaNodeStats {
 			TokenController.TOKEN_GET_INFO_METRIC
 	);
 	private static final List<String> cryptoQueriesList = Arrays.asList(
-			CryptoController.GET_CLAIM_METRIC,
+			CryptoController.GET_LIVE_HASH_METRIC,
 			CryptoController.GET_ACCOUNT_RECORDS_METRIC,
 			CryptoController.GET_ACCOUNT_BALANCE_METRIC,
 			CryptoController.GET_ACCOUNT_INFO_METRIC,
@@ -126,8 +125,8 @@ public class HederaNodeStats {
 			ContractController.UPDATE_CONTRACT_METRIC,
 			ContractController.CALL_CONTRACT_METRIC,
 			ContractController.DELETE_CONTRACT_METRIC,
-			ContractController.SYS_DELETE_CONTRACT_METRIC,
-			ContractController.SYS_UNDELETE_CONTRACT_METRIC
+			ContractController.CONTRACT_SYSDEL_METRIC,
+			ContractController.CONTRACT_SYSUNDEL_METRIC
 	);
 	private static final List<String> smartContractQueriesList = Arrays.asList(
 			ContractController.GET_CONTRACT_INFO_METRIC,
