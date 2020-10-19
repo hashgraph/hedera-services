@@ -21,11 +21,21 @@ package com.hedera.services.stats;
  */
 
 import com.swirlds.common.StatEntry;
+import com.swirlds.platform.StatsSpeedometer;
 
-import java.util.function.Supplier;
-
-public interface CounterFactory {
-	default StatEntry from(String name, String desc, Supplier<Object> sample) {
-		return new StatEntry( "app", name, desc, "%d", null, null, null, sample);
+public interface SpeedometerFactory {
+	default StatEntry from(String name, String desc, StatsSpeedometer speedometer) {
+		return new StatEntry(
+				"app",
+				name,
+				desc,
+				"%,13.2f",
+				speedometer,
+				newHalfLife -> {
+					speedometer.reset(newHalfLife);
+					return speedometer;
+				},
+				speedometer::reset,
+				speedometer::getCyclesPerSecond);
 	}
 }

@@ -63,20 +63,36 @@ public class HapiOpCounters {
 		});
 	}
 
-	public void received(HederaFunctionality op) {
+	public void countReceived(HederaFunctionality op) {
 		receivedOps.get(op).getAndIncrement();
 	}
 
-	public void submitted(HederaFunctionality txn) {
+	public long receivedSoFar(HederaFunctionality op) {
+		return receivedOps.get(op).get();
+	}
+
+	public void countSubmitted(HederaFunctionality txn) {
 		submittedTxns.get(txn).getAndIncrement();
 	}
 
-	public void handled(HederaFunctionality txn) {
+	public long submittedSoFar(HederaFunctionality txn) {
+		return submittedTxns.get(txn).get();
+	}
+
+	public void countHandled(HederaFunctionality txn) {
 		handledTxns.get(txn).getAndIncrement();
 	}
 
-	public void answered(HederaFunctionality query) {
+	public long handledSoFar(HederaFunctionality txn) {
+		return handledTxns.get(txn).get();
+	}
+
+	public void countAnswered(HederaFunctionality query) {
 		answeredQueries.get(query).getAndIncrement();
+	}
+
+	public long answeredSoFar(HederaFunctionality query) {
+		return answeredQueries.get(query).get();
 	}
 
 	public void registerWith(Platform platform) {

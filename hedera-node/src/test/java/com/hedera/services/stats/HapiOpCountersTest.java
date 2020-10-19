@@ -128,25 +128,25 @@ class HapiOpCountersTest {
 	@Test
 	public void updatesExpectedEntries() {
 		// when:
-		subject.received(CryptoTransfer);
-		subject.received(CryptoTransfer);
-		subject.received(CryptoTransfer);
-		subject.submitted(CryptoTransfer);
-		subject.submitted(CryptoTransfer);
-		subject.handled(CryptoTransfer);
+		subject.countReceived(CryptoTransfer);
+		subject.countReceived(CryptoTransfer);
+		subject.countReceived(CryptoTransfer);
+		subject.countSubmitted(CryptoTransfer);
+		subject.countSubmitted(CryptoTransfer);
+		subject.countHandled(CryptoTransfer);
 		// and:
-		subject.received(TokenGetInfo);
-		subject.received(TokenGetInfo);
-		subject.received(TokenGetInfo);
-		subject.answered(TokenGetInfo);
-		subject.answered(TokenGetInfo);
+		subject.countReceived(TokenGetInfo);
+		subject.countReceived(TokenGetInfo);
+		subject.countReceived(TokenGetInfo);
+		subject.countAnswered(TokenGetInfo);
+		subject.countAnswered(TokenGetInfo);
 
 		// then
-		assertEquals(3L, subject.receivedOps.get(CryptoTransfer).get());
-		assertEquals(2L, subject.submittedTxns.get(CryptoTransfer).get());
-		assertEquals(1L, subject.handledTxns.get(CryptoTransfer).get());
+		assertEquals(3L, subject.receivedSoFar(CryptoTransfer));
+		assertEquals(2L, subject.submittedSoFar(CryptoTransfer));
+		assertEquals(1L, subject.handledSoFar(CryptoTransfer));
 		// and:
-		assertEquals(3L, subject.receivedOps.get(TokenGetInfo).get());
-		assertEquals(2L, subject.answeredQueries.get(TokenGetInfo).get());
+		assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
+		assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
 	}
 }
