@@ -106,10 +106,10 @@ public class BucketThrottlingSpec extends HapiApiSuite {
 						UtilVerbs.sleepFor(1_000L),
 						sanityCheckReceiptThrottling()
 				).then(
-						UtilVerbs.sleepFor(1_000L),
+						UtilVerbs.sleepFor(2_000L),
 						// cleanup:
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.contents(ignore -> defaultProps.get())
 				);
 	}
