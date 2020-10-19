@@ -20,7 +20,6 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
@@ -32,16 +31,15 @@ import org.junit.runner.RunWith;
 
 import java.util.function.Function;
 
-import static com.hedera.services.utils.MiscUtils.*;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
 @RunWith(JUnitPlatform.class)
@@ -63,7 +61,7 @@ class HapiOpCountersTest {
 		factory = mock(CounterFactory.class);
 		statNameFn = HederaFunctionality::toString;
 
-		subject = new HapiOpCounters(factory, QUERY_FUNCTIONS::contains, statNameFn);
+		subject = new HapiOpCounters(factory, statNameFn);
 	}
 
 	@AfterEach

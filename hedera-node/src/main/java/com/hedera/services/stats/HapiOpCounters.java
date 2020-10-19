@@ -20,6 +20,7 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 
@@ -28,8 +29,9 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 public class HapiOpCounters {
 	public static final String FREEZE_METRIC = "freeze";
@@ -46,17 +48,13 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
 
-	public HapiOpCounters(
-			CounterFactory counter,
-			Predicate<HederaFunctionality> isQuery,
-			Function<HederaFunctionality, String> statNameFn
-	) {
+	public HapiOpCounters( CounterFactory counter, Function<HederaFunctionality, String> statNameFn) {
 		this.counter = counter;
 		this.statNameFn = statNameFn;
 
 		Arrays.stream(allFunctions.get()).forEach(function -> {
 			receivedOps.put(function, new AtomicLong());
-			if (isQuery.test(function)) {
+			if (QUERY_FUNCTIONS.contains(function)) {
 				answeredQueries.put(function, new AtomicLong());
 			} else {
 				submittedTxns.put(function, new AtomicLong());

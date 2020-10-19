@@ -6,6 +6,6 @@ import java.util.function.Supplier;
 
 public interface CounterFactory {
 	default StatEntry from(String name, String desc, Supplier<Object> sample) {
-		throw new AssertionError("Not implemented!");
+		return new StatEntry( "app", name, desc, "%d", null, null, null, sample);
 	}
 }
