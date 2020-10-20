@@ -47,7 +47,7 @@ public class HapiOpCounters {
 	EnumMap<HederaFunctionality, AtomicLong> submittedTxns = new EnumMap<>(HederaFunctionality.class);
 	EnumMap<HederaFunctionality, AtomicLong> answeredQueries = new EnumMap<>(HederaFunctionality.class);
 
-	public HapiOpCounters( CounterFactory counter, Function<HederaFunctionality, String> statNameFn) {
+	public HapiOpCounters(CounterFactory counter, Function<HederaFunctionality, String> statNameFn) {
 		this.counter = counter;
 		this.statNameFn = statNameFn;
 

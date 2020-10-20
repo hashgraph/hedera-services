@@ -24,11 +24,14 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsSpeedometer;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 public class HapiOpSpeedometers {
 	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
@@ -64,6 +67,16 @@ public class HapiOpSpeedometers {
 		this.answeredSoFar = answeredSoFar;
 		this.receivedSoFar = receivedSoFar;
 		this.submittedSoFar = submittedSoFar;
+
+//		Arrays.stream(allFunctions.get()).forEach(function -> {
+//			receivedOps.put(function, new AtomicLong());
+//			if (QUERY_FUNCTIONS.contains(function)) {
+//				answeredQueries.put(function, new AtomicLong());
+//			} else {
+//				submittedTxns.put(function, new AtomicLong());
+//				handledTxns.put(function, new AtomicLong());
+//			}
+//		});
 	}
 
 	public void registerWith(Platform platform) {

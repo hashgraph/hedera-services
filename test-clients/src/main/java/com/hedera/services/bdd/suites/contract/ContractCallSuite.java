@@ -134,7 +134,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						newKeyNamed("initialAdminKey").shape(initialKeyShape),
 						newKeyNamed("newAdminKey").shape(newKeyShape),
 						cryptoCreate("payer")
-								.balance(9999999999999999L),
+								.balance(10 * A_HUNDRED_HBARS),
 						fileCreate("bytecode")
 								.path(PATH_TO_SIMPLE_STORAGE_BYTECODE)
 								.payingWith("payer")

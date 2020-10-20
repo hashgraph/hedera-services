@@ -23,9 +23,9 @@ package com.hedera.services.stats;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
-import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -78,5 +78,25 @@ class HapiOpSpeedometersTest {
 				answeredSoFar,
 				submittedSoFar,
 				statNameFn);
+	}
+
+	@AfterEach
+	public void cleanup() {
+		HapiOpSpeedometers.allFunctions = HederaFunctionality.class::getEnumConstants;
+	}
+
+	@Test
+	@Disabled
+	public void beginsRationally() {
+		// expect:
+		assertTrue(subject.receivedOps.containsKey(CryptoTransfer));
+		assertTrue(subject.submittedTxns.containsKey(CryptoTransfer));
+		assertTrue(subject.handledTxns.containsKey(CryptoTransfer));
+		assertFalse(subject.answeredQueries.containsKey(CryptoTransfer));
+		// and:
+		assertTrue(subject.receivedOps.containsKey(TokenGetInfo));
+		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
+		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
+		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
 	}
 }

@@ -118,7 +118,8 @@ class BootstrapPropertiesTest {
 			entry("files.maxSizeKb", 1024),
 			entry("cache.records.ttl", 180),
 			entry("rates.intradayChangeLimitPercent", 25),
-			entry("stats.hapi.speedometerUpdateIntervalMs", 3_000L)
+			entry("stats.hapi.speedometerUpdateIntervalMs", 3_000L),
+			entry("stats.hapi.speedometerHalfLifeSecs", 10.0)
 	);
 
 	@BeforeEach
