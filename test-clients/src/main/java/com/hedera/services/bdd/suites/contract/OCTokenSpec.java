@@ -65,7 +65,7 @@ public class OCTokenSpec extends HapiApiSuite  {
 
 		return defaultHapiSpec("ocToken")
 				.given(
-						cryptoCreate("tokenIssuer").balance( 10_000_000_000_000L),
+						cryptoCreate("tokenIssuer").balance( 1_000_000_000_000L),
 						cryptoCreate("Alice").balance( 10_000_000_000L).payingWith("tokenIssuer"),
 						cryptoCreate("Bob").balance( 10_000_000_000L).payingWith("tokenIssuer"),
 						cryptoCreate("Carol").balance( 10_000_000_000L).payingWith("tokenIssuer"),
