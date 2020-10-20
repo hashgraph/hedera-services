@@ -32,7 +32,9 @@ import org.junit.runner.RunWith;
 import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,7 +56,8 @@ class HapiOpCountersTest {
 	public void setup() throws Exception {
 		HapiOpCounters.allFunctions = () -> new HederaFunctionality[] {
 				CryptoTransfer,
-				TokenGetInfo
+				TokenGetInfo,
+				NONE
 		};
 
 		platform = mock(Platform.class);
@@ -81,6 +84,11 @@ class HapiOpCountersTest {
 		assertTrue(subject.answeredQueries.containsKey(TokenGetInfo));
 		assertFalse(subject.submittedTxns.containsKey(TokenGetInfo));
 		assertFalse(subject.handledTxns.containsKey(TokenGetInfo));
+		// and:
+		assertFalse(subject.receivedOps.containsKey(NONE));
+		assertFalse(subject.submittedTxns.containsKey(NONE));
+		assertFalse(subject.answeredQueries.containsKey(NONE));
+		assertFalse(subject.handledTxns.containsKey(NONE));
 	}
 
 	@Test
@@ -92,19 +100,19 @@ class HapiOpCountersTest {
 		StatEntry tokenInfoRcv = mock(StatEntry.class);
 		StatEntry tokenInfoAns = mock(StatEntry.class);
 		// and:
-		var xferRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
-		var xferSubName = String.format(StatsNamingConventions.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
-		var xferHdlName = String.format(StatsNamingConventions.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
+		var xferRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
+		var xferSubName = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
+		var xferHdlName = String.format(ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
 		// and:
-		var xferRcvDesc = String.format(StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL, "CryptoTransfer");
-		var xferSubDesc = String.format(StatsNamingConventions.SUBMITTED_COUNTER_DESC_TPL, "CryptoTransfer");
-		var xferHdlDesc = String.format(StatsNamingConventions.HANDLED_COUNTER_DESC_TPL, "CryptoTransfer");
+		var xferRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "CryptoTransfer");
+		var xferSubDesc = String.format(ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL, "CryptoTransfer");
+		var xferHdlDesc = String.format(ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL, "CryptoTransfer");
 		// and:
-		var infoRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
-		var infoAnsName = String.format(StatsNamingConventions.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
+		var infoRcvName = String.format(ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
+		var infoAnsName = String.format(ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
 		// and:
-		var infoRcvDesc = String.format(StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL, "TokenGetInfo");
-		var infoAnsDesc = String.format(StatsNamingConventions.ANSWERED_COUNTER_DESC_TPL, "TokenGetInfo");
+		var infoRcvDesc = String.format(ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL, "TokenGetInfo");
+		var infoAnsDesc = String.format(ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL, "TokenGetInfo");
 
 		given(factory.from(
 				argThat(xferRcvName::equals),
@@ -162,5 +170,19 @@ class HapiOpCountersTest {
 		// and:
 		assertEquals(3L, subject.receivedSoFar(TokenGetInfo));
 		assertEquals(2L, subject.answeredSoFar(TokenGetInfo));
+	}
+
+	@Test
+	public void ignoredOpsAreNoops() {
+		// expect:
+		assertDoesNotThrow(() -> subject.countReceived(NONE));
+		assertDoesNotThrow(() -> subject.countSubmitted(NONE));
+		assertDoesNotThrow(() -> subject.countHandled(NONE));
+		assertDoesNotThrow(() -> subject.countAnswered(NONE));
+		// and:
+		assertEquals(0L, subject.receivedSoFar(NONE));
+		assertEquals(0L, subject.submittedSoFar(NONE));
+		assertEquals(0L, subject.handledSoFar(NONE));
+		assertEquals(0L, subject.answeredSoFar(NONE));
 	}
 }

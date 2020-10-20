@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 import com.swirlds.common.StatEntry;
+import com.swirlds.platform.StatsSpeedometer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,33 +111,40 @@ class HapiOpSpeedometersTest {
 		StatEntry tokenInfoRcv = mock(StatEntry.class);
 		StatEntry tokenInfoAns = mock(StatEntry.class);
 		// and:
-		var xferRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer") + "/sec";
-		var xferSubName = String.format(StatsNamingConventions.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer") + "/sec";
-		var xferHdlName = String.format(StatsNamingConventions.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer") + "/sec";
+		var xferRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "CryptoTransfer");
+		var xferSubName = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_NAME_TPL, "CryptoTransfer");
+		var xferHdlName = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_NAME_TPL, "CryptoTransfer");
 		// and:
-		var infoRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo") + "/sec";
-		var infoAnsName = String.format(StatsNamingConventions.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo") + "/sec";
+		var xferRcvDesc = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL, "CryptoTransfer");
+		var xferSubDesc = String.format(ServicesStatsConfig.SPEEDOMETER_SUBMITTED_DESC_TPL, "CryptoTransfer");
+		var xferHdlDesc = String.format(ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL, "CryptoTransfer");
+		// and:
+		var infoRcvName = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL, "TokenGetInfo");
+		var infoAnsName = String.format(ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL, "TokenGetInfo");
+		// and:
+		var infoRcvDesc = String.format(ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL, "TokenGetInfo");
+		var infoAnsDesc = String.format(ServicesStatsConfig.SPEEDOMETER_ANSWERED_DESC_TPL, "TokenGetInfo");
 
 		given(factory.from(
 				argThat(xferRcvName::equals),
-				argThat("number of CryptoTransfer received per second"::equals),
+				argThat(xferRcvDesc::equals),
 				any())).willReturn(transferRcv);
 		given(factory.from(
 				argThat(xferSubName::equals),
-				argThat("number of CryptoTransfer submitted per second"::equals),
+				argThat(xferSubDesc::equals),
 				any())).willReturn(transferSub);
 		given(factory.from(
 				argThat(xferHdlName::equals),
-				argThat("number of CryptoTransfer handled per second"::equals),
+				argThat(xferHdlDesc::equals),
 				any())).willReturn(transferHdl);
 		// and:
 		given(factory.from(
 				argThat(infoRcvName::equals),
-				argThat("number of TokenGetInfo received per second"::equals),
+				argThat(infoRcvDesc::equals),
 				any())).willReturn(tokenInfoRcv);
 		given(factory.from(
 				argThat(infoAnsName::equals),
-				argThat("number of TokenGetInfo answered per second"::equals),
+				argThat(infoAnsDesc::equals),
 				any())).willReturn(tokenInfoAns);
 
 		// when:
@@ -148,5 +156,50 @@ class HapiOpSpeedometersTest {
 		verify(platform).addAppStatEntry(transferHdl);
 		verify(platform).addAppStatEntry(tokenInfoRcv);
 		verify(platform).addAppStatEntry(tokenInfoAns);
+	}
+
+	@Test
+	void updatesSpeedometersAsExpected() {
+		// setup:
+		subject.lastReceivedOpsCount.put(CryptoTransfer, 1L);
+		subject.lastSubmittedTxnsCount.put(CryptoTransfer, 2L);
+		subject.lastHandledTxnsCount.put(CryptoTransfer, 3L);
+		// and:
+		subject.lastReceivedOpsCount.put(TokenGetInfo, 4L);
+		subject.lastAnsweredQueriesCount.put(TokenGetInfo, 5L);
+		// and:
+		StatsSpeedometer xferReceived = mock(StatsSpeedometer.class);
+		StatsSpeedometer xferSubmitted = mock(StatsSpeedometer.class);
+		StatsSpeedometer xferHandled = mock(StatsSpeedometer.class);
+		StatsSpeedometer infoReceived = mock(StatsSpeedometer.class);
+		StatsSpeedometer infoAnswered = mock(StatsSpeedometer.class);
+
+		given(counters.receivedSoFar(CryptoTransfer)).willReturn(2L);
+		given(counters.submittedSoFar(CryptoTransfer)).willReturn(4L);
+		given(counters.handledSoFar(CryptoTransfer)).willReturn(6L);
+		given(counters.receivedSoFar(TokenGetInfo)).willReturn(8L);
+		given(counters.answeredSoFar(TokenGetInfo)).willReturn(10L);
+		// and:
+		subject.receivedOps.put(CryptoTransfer, xferReceived);
+		subject.submittedTxns.put(CryptoTransfer, xferSubmitted);
+		subject.handledTxns.put(CryptoTransfer, xferHandled);
+		subject.receivedOps.put(TokenGetInfo, infoReceived);
+		subject.answeredQueries.put(TokenGetInfo, infoAnswered);
+
+		// when:
+		subject.updateAll();
+
+		// then:
+		assertEquals(2L, subject.lastReceivedOpsCount.get(CryptoTransfer));
+		assertEquals(4L, subject.lastSubmittedTxnsCount.get(CryptoTransfer));
+		assertEquals(6L, subject.lastHandledTxnsCount.get(CryptoTransfer));
+		assertEquals(8L, subject.lastReceivedOpsCount.get(TokenGetInfo));
+		assertEquals(10L, subject.lastAnsweredQueriesCount.get(TokenGetInfo));
+		// and:
+		verify(xferReceived).update(1);
+		verify(xferSubmitted).update(2);
+		verify(xferHandled).update(3);
+		verify(infoReceived).update(4);
+		verify(infoAnswered).update(5);
 	}
 }

@@ -29,10 +29,17 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_ANSWERED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_HANDLED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_HANDLED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_RECEIVED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_SUBMITTED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.SPEEDOMETER_SUBMITTED_NAME_TPL;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 public class HapiOpSpeedometers {
@@ -81,10 +88,44 @@ public class HapiOpSpeedometers {
 	}
 
 	public void registerWith(Platform platform) {
-		throw new AssertionError("Not implemented!");
+		registerSpeedometers(platform, receivedOps, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL);
+		registerSpeedometers(platform, submittedTxns, SPEEDOMETER_SUBMITTED_NAME_TPL, SPEEDOMETER_SUBMITTED_DESC_TPL);
+		registerSpeedometers(platform, handledTxns, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
+		registerSpeedometers(platform, answeredQueries, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+	}
+
+	private void registerSpeedometers(
+			Platform platform,
+			Map<HederaFunctionality, StatsSpeedometer> speedometers,
+			String nameTpl,
+			String descTpl
+	) {
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+			var baseName = statNameFn.apply(entry.getKey());
+			var fullName = String.format(nameTpl, baseName);
+			var description = String.format(descTpl, baseName);
+			platform.addAppStatEntry(speedometer.from(fullName, description, entry.getValue()));
+		}
 	}
 
 	public void updateAll() {
-		throw new AssertionError("Not implemented!");
+		updateSpeedometers(receivedOps, lastReceivedOpsCount, counters::receivedSoFar);
+		updateSpeedometers(submittedTxns, lastSubmittedTxnsCount, counters::submittedSoFar);
+		updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
+		updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
+	}
+
+	private void updateSpeedometers(
+			Map<HederaFunctionality, StatsSpeedometer> speedometers,
+			Map<HederaFunctionality, Long> lastMeasurements,
+			Function<HederaFunctionality, Long> currMeasurement
+	) {
+		for (Map.Entry<HederaFunctionality, StatsSpeedometer> entry : speedometers.entrySet())	{
+			var function = entry.getKey();
+			long last = lastMeasurements.get(function);
+			long curr = currMeasurement.apply(function);
+			entry.getValue().update(curr - last);
+			lastMeasurements.put(function, curr);
+		}
 	}
 }

@@ -30,14 +30,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.hedera.services.stats.StatsNamingConventions.ANSWERED_COUNTER_DESC_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.COUNTER_ANSWERED_NAME_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.HANDLED_COUNTER_DESC_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.COUNTER_HANDLED_NAME_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.SUBMITTED_COUNTER_DESC_TPL;
-import static com.hedera.services.stats.StatsNamingConventions.COUNTER_SUBMITTED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 public class HapiOpCounters {
@@ -55,7 +56,9 @@ public class HapiOpCounters {
 		this.counter = counter;
 		this.statNameFn = statNameFn;
 
-		Arrays.stream(allFunctions.get()).forEach(function -> {
+		Arrays.stream(allFunctions.get())
+				.filter(function -> !IGNORED_FUNCTIONS.contains(function))
+				.forEach(function -> {
 			receivedOps.put(function, new AtomicLong());
 			if (QUERY_FUNCTIONS.contains(function)) {
 				answeredQueries.put(function, new AtomicLong());
@@ -67,15 +70,15 @@ public class HapiOpCounters {
 	}
 
 	public void registerWith(Platform platform) {
-		registerCounters(platform, receivedOps, COUNTER_RECEIVED_NAME_TPL, RECEIVED_COUNTER_DESC_TPL);
-		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, SUBMITTED_COUNTER_DESC_TPL);
-		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, HANDLED_COUNTER_DESC_TPL);
-		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, ANSWERED_COUNTER_DESC_TPL);
+		registerCounters(platform, receivedOps, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
+		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL);
+		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
+		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
 	}
 
 	private void registerCounters(
 			Platform platform,
-			EnumMap<HederaFunctionality, AtomicLong> counters,
+			Map<HederaFunctionality, AtomicLong> counters,
 			String nameTpl,
 			String descTpl
 	) {
@@ -88,34 +91,43 @@ public class HapiOpCounters {
 	}
 
 	public void countReceived(HederaFunctionality op) {
-		receivedOps.get(op).getAndIncrement();
+		safeIncrement(receivedOps, op);
 	}
 
 	public long receivedSoFar(HederaFunctionality op) {
-		return receivedOps.get(op).get();
+		return IGNORED_FUNCTIONS.contains(op) ? 0 : receivedOps.get(op).get();
 	}
 
 	public void countSubmitted(HederaFunctionality txn) {
-		submittedTxns.get(txn).getAndIncrement();
+		safeIncrement(submittedTxns, txn);
 	}
 
 	public long submittedSoFar(HederaFunctionality txn) {
-		return submittedTxns.get(txn).get();
+		return IGNORED_FUNCTIONS.contains(txn) ? 0 : submittedTxns.get(txn).get();
 	}
 
 	public void countHandled(HederaFunctionality txn) {
-		handledTxns.get(txn).getAndIncrement();
+		safeIncrement(handledTxns, txn);
 	}
 
 	public long handledSoFar(HederaFunctionality txn) {
-		return handledTxns.get(txn).get();
+		return IGNORED_FUNCTIONS.contains(txn) ? 0 : handledTxns.get(txn).get();
 	}
 
 	public void countAnswered(HederaFunctionality query) {
-		answeredQueries.get(query).getAndIncrement();
+		safeIncrement(answeredQueries, query);
 	}
 
 	public long answeredSoFar(HederaFunctionality query) {
-		return answeredQueries.get(query).get();
+		return IGNORED_FUNCTIONS.contains(query) ? 0 : answeredQueries.get(query).get();
+	}
+
+	private void safeIncrement(
+			Map<HederaFunctionality, AtomicLong> counters,
+			HederaFunctionality function
+	) {
+		if (!IGNORED_FUNCTIONS.contains(function)) {
+			counters.get(function).getAndIncrement();
+		}
 	}
 }
