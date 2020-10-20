@@ -44,6 +44,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
+
 public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	static final Logger log = LogManager.getLogger(HapiFileAppend.class);
 	private final String file;
@@ -102,7 +104,9 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		Timestamp expiry = TxnUtils.currExpiry(file, spec);
+		var expiry = payer.isPresent()
+				? currExpiry(file, spec, payerToUse(payer.get(), spec))
+				: currExpiry(file, spec);
 		FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
 				fileFees.getFileAppendTxFeeMatrices(txBody, expiry, sigUsage);
 		return spec.fees().forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc,txn, numPayerKeys);
@@ -124,5 +128,16 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		return super.toStringHelper().add("fileName", file);
+	}
+
+	private String payerToUse(String designated, HapiApiSpec spec) {
+		return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
+	}
+
+	private boolean isPrivileged(String account, HapiApiSpec spec) {
+		return account.equals(spec.setup().addressBookControlName()) ||
+				account.equals(spec.setup().exchangeRatesControlName()) ||
+				account.equals(spec.setup().feeScheduleControlName()) ||
+				account.equals(spec.setup().strongControlName());
 	}
 }

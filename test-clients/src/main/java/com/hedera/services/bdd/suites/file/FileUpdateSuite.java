@@ -113,9 +113,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.extendingExpiryBy(origLifetime)
 								.via("extend"),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("maxFileSize", "1025"))
 								.via("special"),
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("maxFileSize", "1024"))
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {

@@ -57,7 +57,7 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class DelegatingSigMetadataLookup implements SigMetadataLookup {
-	private final static Pause pause = SleepingPause.INSTANCE;
+	private final static Pause pause = SleepingPause.SLEEPING_PAUSE;
 
 	private final FileSigMetaLookup fileSigMetaLookup;
 	private final AccountSigMetaLookup accountSigMetaLookup;

@@ -48,7 +48,7 @@ public class SmartContractFailFirstSpec extends HapiApiSuite  {
 
 		return defaultHapiSpec("smartContractFailFirst")
 				.given(
-						cryptoCreate("payer").balance( 10_000_000_000_000L).logged(),
+						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
 						fileCreate("bytecode")
 								.path(PATH_TO_SIMPLE_STORAGE_BYTECODE)
 

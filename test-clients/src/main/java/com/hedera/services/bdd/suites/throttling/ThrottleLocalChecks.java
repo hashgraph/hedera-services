@@ -122,7 +122,9 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 									String.format("%.3f", 1.0 * spec.finalAdhoc() / duration.get()),
 									EXPECTED_TOPIC_CREATE_TPS);
 						}),
-						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> legacyProps.get())
 				);
 	}
 
@@ -152,7 +154,9 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 									String.format("%.3f", 1.0 * spec.finalAdhoc() / duration.get()),
 									EXPECTED_SC_TPS);
 						}),
-						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> legacyProps.get())
 				);
 	}
 
@@ -182,7 +186,9 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 									String.format("%.3f", 1.0 * spec.finalAdhoc() / duration.get()),
 									EXPECTED_FILE_TPS);
 						}),
-						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> legacyProps.get())
 				);
 	}
 
@@ -212,7 +218,9 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 									String.format("%.3f", 1.0 * spec.finalAdhoc() / duration.get()),
 									EXPECTED_OTHER_HCS_TPS);
 						}),
-						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> legacyProps.get())
 				);
 	}
 
@@ -242,7 +250,9 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 									String.format("%.3f", 1.0 * spec.finalAdhoc() / duration.get()),
 									EXPECTED_CRYPTO_TPS);
 						}),
-						fileUpdate(APP_PROPERTIES).contents(ignore -> legacyProps.get())
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.contents(ignore -> legacyProps.get())
 				);
 	}
 
@@ -398,7 +408,7 @@ public class ThrottleLocalChecks extends HapiApiSuite {
 
 			return defaultHapiSpec("RestoreFromBkup")
 					.given().when().then(
-							fileUpdate(APP_PROPERTIES).contents(fromBkup)
+							fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).contents(fromBkup)
 					);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

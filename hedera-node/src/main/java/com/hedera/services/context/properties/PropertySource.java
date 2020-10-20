@@ -41,6 +41,7 @@ public interface PropertySource {
 
 	Function<String, Object> AS_INT = Integer::valueOf;
 	Function<String, Object> AS_LONG = Long::valueOf;
+	Function<String, Object> AS_DOUBLE = Double::valueOf;
 	Function<String, Object> AS_STRING = s -> s;
 	Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
 	Function<String, Object> AS_BOOLEAN = Boolean::valueOf;

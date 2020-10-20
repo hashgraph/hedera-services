@@ -105,6 +105,6 @@ public class PermissionFileUtils {
 		permissionKeys.put(TransactionGetReceipt, "getTransactionReceipts");
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
-		permissionKeys.put(TokenGetInfo, "getTokenInfo");
+		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 	}
 }
