@@ -258,7 +258,8 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
 						fileCreate("payableBytecode").path(PATH_TO_PAYABLE_CONTRACT_BYTECODE),
-						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD)
+						contractCreate("payableContract").bytecode("payableBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L)
 				)
 				.when()
 				.then(
@@ -312,6 +313,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L),
 						getContractInfo("parentDelegate").saveToRegistry("parentInfo")
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI).via("createChildTxn"),
@@ -340,10 +342,11 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec insufficientGas() {
-		return defaultHapiSpec("InsuffcientGas")
+		return defaultHapiSpec("InsufficientGas")
 				.given(
 						fileCreate("simpleStorageBytecode").path(PATH_TO_SIMPLE_STORAGE_BYTECODE),
 						contractCreate("simpleStorage").bytecode("simpleStorageBytecode").adminKey(THRESHOLD),
+						sleepFor(3_000L),
 						getContractInfo("simpleStorage").saveToRegistry("simpleStorageInfo")
 				).when().then(
 						contractCall("simpleStorage", CREATE_CHILD_ABI).via("simpleStorageTxn")
