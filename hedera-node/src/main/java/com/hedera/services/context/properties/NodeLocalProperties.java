@@ -29,6 +29,7 @@ public class NodeLocalProperties {
 	private int precheckLookupRetryBackoffMs;
 	private long statsHapiSpeedometerUpdateIntervalMs;
 	private Profile activeProfile;
+	private double statsHapiSpeedometerHalfLifeSecs;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -43,6 +44,7 @@ public class NodeLocalProperties {
 		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
 		statsHapiSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapi.speedometerUpdateIntervalMs");
+		statsHapiSpeedometerHalfLifeSecs = properties.getDoubleProperty("stats.hapi.speedometerHalfLifeSecs");
 	}
 
 	public int port() {
@@ -67,5 +69,9 @@ public class NodeLocalProperties {
 
 	public long statsHapiSpeedometerUpdateIntervalMs() {
 		return statsHapiSpeedometerUpdateIntervalMs;
+	}
+
+	public double statsHapiSpeedometerHalfLifeSecs() {
+		return statsHapiSpeedometerHalfLifeSecs;
 	}
 }

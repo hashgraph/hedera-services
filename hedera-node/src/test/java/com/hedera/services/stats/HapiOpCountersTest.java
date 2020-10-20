@@ -91,27 +91,41 @@ class HapiOpCountersTest {
 		StatEntry transferHdl = mock(StatEntry.class);
 		StatEntry tokenInfoRcv = mock(StatEntry.class);
 		StatEntry tokenInfoAns = mock(StatEntry.class);
+		// and:
+		var xferRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "CryptoTransfer");
+		var xferSubName = String.format(StatsNamingConventions.COUNTER_SUBMITTED_NAME_TPL, "CryptoTransfer");
+		var xferHdlName = String.format(StatsNamingConventions.COUNTER_HANDLED_NAME_TPL, "CryptoTransfer");
+		// and:
+		var xferRcvDesc = String.format(StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL, "CryptoTransfer");
+		var xferSubDesc = String.format(StatsNamingConventions.SUBMITTED_COUNTER_DESC_TPL, "CryptoTransfer");
+		var xferHdlDesc = String.format(StatsNamingConventions.HANDLED_COUNTER_DESC_TPL, "CryptoTransfer");
+		// and:
+		var infoRcvName = String.format(StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL, "TokenGetInfo");
+		var infoAnsName = String.format(StatsNamingConventions.COUNTER_ANSWERED_NAME_TPL, "TokenGetInfo");
+		// and:
+		var infoRcvDesc = String.format(StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL, "TokenGetInfo");
+		var infoAnsDesc = String.format(StatsNamingConventions.ANSWERED_COUNTER_DESC_TPL, "TokenGetInfo");
 
 		given(factory.from(
-				argThat("CryptoTransferRcv"::equals),
-				argThat("number of CryptoTransfer received"::equals),
+				argThat(xferRcvName::equals),
+				argThat(xferRcvDesc::equals),
 				any())).willReturn(transferRcv);
 		given(factory.from(
-				argThat("CryptoTransferSub"::equals),
-				argThat("number of CryptoTransfer submitted"::equals),
+				argThat(xferSubName::equals),
+				argThat(xferSubDesc::equals),
 				any())).willReturn(transferSub);
 		given(factory.from(
-				argThat("CryptoTransferHdl"::equals),
-				argThat("number of CryptoTransfer handled"::equals),
+				argThat(xferHdlName::equals),
+				argThat(xferHdlDesc::equals),
 				any())).willReturn(transferHdl);
 		// and:
 		given(factory.from(
-				argThat("TokenGetInfoRcv"::equals),
-				argThat("number of TokenGetInfo received"::equals),
+				argThat(infoRcvName::equals),
+				argThat(infoRcvDesc::equals),
 				any())).willReturn(tokenInfoRcv);
 		given(factory.from(
-				argThat("TokenGetInfoAns"::equals),
-				argThat("number of TokenGetInfo answered"::equals),
+				argThat(infoAnsName::equals),
+				argThat(infoAnsDesc::equals),
 				any())).willReturn(tokenInfoAns);
 
 		// when:

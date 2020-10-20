@@ -30,13 +30,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.stats.StatsNamingConventions.ANSWERED_COUNTER_DESC_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.COUNTER_ANSWERED_NAME_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.HANDLED_COUNTER_DESC_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.COUNTER_HANDLED_NAME_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.RECEIVED_COUNTER_DESC_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.COUNTER_RECEIVED_NAME_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.SUBMITTED_COUNTER_DESC_TPL;
+import static com.hedera.services.stats.StatsNamingConventions.COUNTER_SUBMITTED_NAME_TPL;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 public class HapiOpCounters {
-	public static final String FREEZE_METRIC = "freeze";
-	public static final String SYSTEM_DELETE_METRIC = "systemDelete";
-	public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";
-
 	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
 
 	private final CounterFactory counter;
@@ -60,6 +64,27 @@ public class HapiOpCounters {
 				handledTxns.put(function, new AtomicLong());
 			}
 		});
+	}
+
+	public void registerWith(Platform platform) {
+		registerCounters(platform, receivedOps, COUNTER_RECEIVED_NAME_TPL, RECEIVED_COUNTER_DESC_TPL);
+		registerCounters(platform, submittedTxns, COUNTER_SUBMITTED_NAME_TPL, SUBMITTED_COUNTER_DESC_TPL);
+		registerCounters(platform, handledTxns, COUNTER_HANDLED_NAME_TPL, HANDLED_COUNTER_DESC_TPL);
+		registerCounters(platform, answeredQueries, COUNTER_ANSWERED_NAME_TPL, ANSWERED_COUNTER_DESC_TPL);
+	}
+
+	private void registerCounters(
+			Platform platform,
+			EnumMap<HederaFunctionality, AtomicLong> counters,
+			String nameTpl,
+			String descTpl
+	) {
+		for (Map.Entry<HederaFunctionality, AtomicLong> entry : counters.entrySet())	{
+			var baseName = statNameFn.apply(entry.getKey());
+			var fullName = String.format(nameTpl, baseName);
+			var description = String.format(descTpl, baseName);
+			platform.addAppStatEntry(counter.from(fullName, description, entry.getValue()::get));
+		}
 	}
 
 	public void countReceived(HederaFunctionality op) {
@@ -92,30 +117,5 @@ public class HapiOpCounters {
 
 	public long answeredSoFar(HederaFunctionality query) {
 		return answeredQueries.get(query).get();
-	}
-
-	public void registerWith(Platform platform) {
-		registerCounters(
-				platform, receivedOps, "%sRcv", "number of %s received");
-		registerCounters(
-				platform, submittedTxns, "%sSub", "number of %s submitted");
-		registerCounters(
-				platform, handledTxns, "%sHdl", "number of %s handled");
-		registerCounters(
-				platform, answeredQueries, "%sAns", "number of %s answered");
-	}
-
-	private void registerCounters(
-			Platform platform,
-			EnumMap<HederaFunctionality, AtomicLong> counters,
-			String nameTpl,
-			String descTpl
-	) {
-		for (Map.Entry<HederaFunctionality, AtomicLong> entry : counters.entrySet())	{
-			var baseName = statNameFn.apply(entry.getKey());
-			var fullName = String.format(nameTpl, baseName);
-			var description = String.format(descTpl, baseName);
-			platform.addAppStatEntry(counter.from(fullName, description, entry.getValue()::get));
-		}
 	}
 }

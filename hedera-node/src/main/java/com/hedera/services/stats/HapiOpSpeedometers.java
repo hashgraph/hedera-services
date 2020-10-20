@@ -20,6 +20,7 @@ package com.hedera.services.stats;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.Platform;
 import com.swirlds.platform.StatsSpeedometer;
@@ -27,6 +28,7 @@ import com.swirlds.platform.StatsSpeedometer;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,17 +38,15 @@ import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 public class HapiOpSpeedometers {
 	static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
 
+	private final HapiOpCounters counters;
 	private final SpeedometerFactory speedometer;
+	private final NodeLocalProperties properties;
 	private final Function<HederaFunctionality, String> statNameFn;
-	private final Function<HederaFunctionality, Long> handledSoFar;
-	private final Function<HederaFunctionality, Long> receivedSoFar;
-	private final Function<HederaFunctionality, Long> answeredSoFar;
-	private final Function<HederaFunctionality, Long> submittedSoFar;
 
-	final HashMap<HederaFunctionality, Long> lastReceivedSoFar = new HashMap<>();
-	final HashMap<HederaFunctionality, Long> lastHandledSoFar = new HashMap<>();
-	final HashMap<HederaFunctionality, Long> lastSubmittedSoFar = new HashMap<>();
-	final HashMap<HederaFunctionality, Long> lastAnsweredSoFar = new HashMap<>();
+	final Map<HederaFunctionality, Long> lastReceivedOpsCount = new HashMap<>();
+	final Map<HederaFunctionality, Long> lastHandledTxnsCount = new HashMap<>();
+	final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new HashMap<>();
+	final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new HashMap<>();
 
 	final EnumMap<HederaFunctionality, StatsSpeedometer> receivedOps = new EnumMap<>(HederaFunctionality.class);
 	final EnumMap<HederaFunctionality, StatsSpeedometer> handledTxns = new EnumMap<>(HederaFunctionality.class);
@@ -54,29 +54,30 @@ public class HapiOpSpeedometers {
 	final EnumMap<HederaFunctionality, StatsSpeedometer> answeredQueries = new EnumMap<>(HederaFunctionality.class);
 
 	public HapiOpSpeedometers(
+			HapiOpCounters counters,
 			SpeedometerFactory speedometer,
-			Function<HederaFunctionality, Long> handledSoFar,
-			Function<HederaFunctionality, Long> receivedSoFar,
-			Function<HederaFunctionality, Long> answeredSoFar,
-			Function<HederaFunctionality, Long> submittedSoFar,
+			NodeLocalProperties properties,
 			Function<HederaFunctionality, String> statNameFn
 	) {
+		this.counters = counters;
 		this.statNameFn = statNameFn;
+		this.properties = properties;
 		this.speedometer = speedometer;
-		this.handledSoFar = handledSoFar;
-		this.answeredSoFar = answeredSoFar;
-		this.receivedSoFar = receivedSoFar;
-		this.submittedSoFar = submittedSoFar;
 
-//		Arrays.stream(allFunctions.get()).forEach(function -> {
-//			receivedOps.put(function, new AtomicLong());
-//			if (QUERY_FUNCTIONS.contains(function)) {
-//				answeredQueries.put(function, new AtomicLong());
-//			} else {
-//				submittedTxns.put(function, new AtomicLong());
-//				handledTxns.put(function, new AtomicLong());
-//			}
-//		});
+		double halfLife = properties.statsHapiSpeedometerHalfLifeSecs();
+		Arrays.stream(allFunctions.get()).forEach(function -> {
+			receivedOps.put(function, new StatsSpeedometer(halfLife));
+			lastReceivedOpsCount.put(function, 0L);
+			if (QUERY_FUNCTIONS.contains(function)) {
+				answeredQueries.put(function, new StatsSpeedometer(halfLife));
+				lastAnsweredQueriesCount.put(function, 0L);
+			} else {
+				submittedTxns.put(function, new StatsSpeedometer(halfLife));
+				lastSubmittedTxnsCount.put(function, 0L);
+				handledTxns.put(function, new StatsSpeedometer(halfLife));
+				lastHandledTxnsCount.put(function, 0L);
+			}
+		});
 	}
 
 	public void registerWith(Platform platform) {

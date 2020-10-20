@@ -69,9 +69,9 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.stats.HapiOpCounters.FREEZE_METRIC;
-import static com.hedera.services.stats.HapiOpCounters.SYSTEM_DELETE_METRIC;
-import static com.hedera.services.stats.HapiOpCounters.SYSTEM_UNDELETE_METRIC;
+import static com.hedera.services.stats.StatsNamingConventions.FREEZE_METRIC;
+import static com.hedera.services.stats.StatsNamingConventions.SYSTEM_DELETE_METRIC;
+import static com.hedera.services.stats.StatsNamingConventions.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
