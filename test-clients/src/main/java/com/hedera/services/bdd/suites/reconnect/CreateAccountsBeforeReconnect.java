@@ -44,7 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateAccountsBeforeReconnect.class);
 
-	private static final int ACCOUNT_CREATION_LIMIT = 3_500;
+	private static final int ACCOUNT_CREATION_LIMIT = 20_000;
 
 	public static void main(String... args) {
 		new CreateAccountsBeforeReconnect().runSuiteSync();
@@ -67,7 +67,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		}
 
 		return cryptoCreate("account" + accountNumber.getAndIncrement())
-				.balance(1_000L)
+				.balance(100L)
 				.noLogging()
 				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED);
 	}
