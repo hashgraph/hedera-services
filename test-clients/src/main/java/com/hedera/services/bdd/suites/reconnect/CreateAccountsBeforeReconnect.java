@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.reconnect;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -33,14 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
-import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -50,9 +44,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateAccountsBeforeReconnect.class);
 
+	private static final int ACCOUNT_CREATION_LIMIT = 3_500;
+
 	public static void main(String... args) {
 		new CreateAccountsBeforeReconnect().runSuiteSync();
 	}
+
+	private static final AtomicInteger accountNumber = new AtomicInteger();
+
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
@@ -61,19 +60,26 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		);
 	}
 
+	private synchronized HapiSpecOperation generateCreateAccountOperation() {
+		if (accountNumber.get() >= ACCOUNT_CREATION_LIMIT) {
+			return getVersionInfo()
+					.noLogging();
+		}
+
+		return cryptoCreate("account" + accountNumber.getAndIncrement())
+				.balance(1_000L)
+				.noLogging()
+				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED);
+	}
+
 	private HapiApiSpec runCreateAccounts() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
-		final AtomicInteger accountNumber = new AtomicInteger();
 
 		Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {
-				cryptoCreate("account" + accountNumber.getAndIncrement())
-						.balance(initialBalance.getAsLong())
-						.withRecharging()
-						.rechargeWindow(3)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+				generateCreateAccountOperation()
 		};
 
-		return defaultHapiSpec("RunCryptoTransfers")
+		return defaultHapiSpec("RunCreateAccounts")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
