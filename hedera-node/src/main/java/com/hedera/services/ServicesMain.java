@@ -112,8 +112,6 @@ public class ServicesMain implements SwirldMain {
 		} else if (status == MAINTENANCE) {
 			ctx.recordStream().setInFreeze(true);
 			ctx.updateFeature();
-		} else {
-			log.info("Platform {} status set to : {}", ctx.id(), status);
 		}
 	}
 
