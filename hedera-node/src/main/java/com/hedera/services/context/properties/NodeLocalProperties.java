@@ -27,6 +27,7 @@ public class NodeLocalProperties {
 	private int tlsPort;
 	private int precheckLookupRetries;
 	private int precheckLookupRetryBackoffMs;
+	private long statsHapiSpeedometerUpdateIntervalMs;
 	private Profile activeProfile;
 
 	public NodeLocalProperties(PropertySource properties) {
@@ -41,6 +42,7 @@ public class NodeLocalProperties {
 		precheckLookupRetries = properties.getIntProperty("precheck.account.maxLookupRetries");
 		precheckLookupRetryBackoffMs = properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs");
 		activeProfile = properties.getProfileProperty("hedera.profiles.active");
+		statsHapiSpeedometerUpdateIntervalMs = properties.getLongProperty("stats.hapi.speedometerUpdateIntervalMs");
 	}
 
 	public int port() {
@@ -61,5 +63,9 @@ public class NodeLocalProperties {
 
 	public Profile activeProfile() {
 		return activeProfile;
+	}
+
+	public long statsHapiSpeedometerUpdateIntervalMs() {
+		return statsHapiSpeedometerUpdateIntervalMs;
 	}
 }

@@ -21,8 +21,20 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+
+import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.CREATE_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.DELETE_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_BYTECODE_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_RECORDS_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_SOLIDITY_ADDRESS_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.LOCALCALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.UPDATE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.*;
 import static com.hedera.services.grpc.controllers.ConsensusController.*;
+import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.grpc.controllers.TokenController.*;
 import static com.hedera.services.grpc.controllers.FileController.*;
 
@@ -35,7 +47,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -50,6 +61,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +69,9 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.stats.HapiOpCounters.FREEZE_METRIC;
+import static com.hedera.services.stats.HapiOpCounters.SYSTEM_DELETE_METRIC;
+import static com.hedera.services.stats.HapiOpCounters.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
@@ -83,6 +98,24 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.stream.Collectors.toSet;
 
 public class MiscUtils {
+	public static final EnumSet<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+			ConsensusGetTopicInfo,
+			GetBySolidityID,
+			ContractCallLocal,
+			ContractGetInfo,
+			ContractGetBytecode,
+			ContractGetRecords,
+			CryptoGetAccountBalance,
+			CryptoGetAccountRecords,
+			CryptoGetInfo,
+			CryptoGetLiveHash,
+			FileGetContents,
+			FileGetInfo,
+			TransactionGetReceipt,
+			TransactionGetRecord,
+			GetVersionInfo,
+			TokenGetInfo
+	);
 	private static final EnumMap<Query.QueryCase, HederaFunctionality> queryFunctions =
 			new EnumMap<>(Query.QueryCase.class);
 	static {
@@ -103,6 +136,64 @@ public class MiscUtils {
 		queryFunctions.put(TRANSACTIONGETRECEIPT, TransactionGetReceipt);
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
 		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
+	}
+
+	public static final EnumMap<HederaFunctionality, String> COUNTER_STAT_NAMES =
+			new EnumMap<>(HederaFunctionality.class);
+	static {
+		/* Transactions */
+		COUNTER_STAT_NAMES.put(CryptoCreate, CRYPTO_CREATE_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoTransfer, CRYPTO_TRANSFER_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoUpdate, CRYPTO_UPDATE_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoDelete, CRYPTO_DELETE_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoAddLiveHash, ADD_LIVE_HASH_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
+		COUNTER_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
+		COUNTER_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
+		COUNTER_STAT_NAMES.put(FileDelete, DELETE_FILE_METRIC);
+		COUNTER_STAT_NAMES.put(FileAppend, FILE_APPEND_METRIC);
+		COUNTER_STAT_NAMES.put(ContractCreate, CREATE_CONTRACT_METRIC);
+		COUNTER_STAT_NAMES.put(ContractUpdate, UPDATE_CONTRACT_METRIC);
+		COUNTER_STAT_NAMES.put(ContractCall, CALL_CONTRACT_METRIC);
+		COUNTER_STAT_NAMES.put(ContractDelete, DELETE_CONTRACT_METRIC);
+		COUNTER_STAT_NAMES.put(ConsensusCreateTopic, CREATE_TOPIC_METRIC);
+		COUNTER_STAT_NAMES.put(ConsensusUpdateTopic, UPDATE_TOPIC_METRIC);
+		COUNTER_STAT_NAMES.put(ConsensusDeleteTopic, DELETE_TOPIC_METRIC);
+		COUNTER_STAT_NAMES.put(ConsensusSubmitMessage, SUBMIT_MESSAGE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenCreate, TOKEN_CREATE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenTransact, TOKEN_TRANSACT_METRIC);
+		COUNTER_STAT_NAMES.put(TokenFreezeAccount, TOKEN_FREEZE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenUnfreezeAccount, TOKEN_UNFREEZE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenGrantKycToAccount, TOKEN_GRANT_KYC_METRIC);
+		COUNTER_STAT_NAMES.put(TokenRevokeKycFromAccount, TOKEN_REVOKE_KYC_METRIC);
+		COUNTER_STAT_NAMES.put(TokenDelete, TOKEN_DELETE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenMint, TOKEN_MINT_METRIC);
+		COUNTER_STAT_NAMES.put(TokenBurn, TOKEN_BURN_METRIC);
+		COUNTER_STAT_NAMES.put(TokenAccountWipe, TOKEN_WIPE_ACCOUNT_METRIC);
+		COUNTER_STAT_NAMES.put(TokenUpdate, TOKEN_UPDATE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenAssociateToAccount, TOKEN_ASSOCIATE_METRIC);
+		COUNTER_STAT_NAMES.put(TokenDissociateFromAccount, TOKEN_DISSOCIATE_METRIC);
+		COUNTER_STAT_NAMES.put(UncheckedSubmit, UNCHECKED_SUBMIT_METRIC);
+		COUNTER_STAT_NAMES.put(Freeze, FREEZE_METRIC);
+		COUNTER_STAT_NAMES.put(SystemDelete, SYSTEM_DELETE_METRIC);
+		COUNTER_STAT_NAMES.put(SystemUndelete, SYSTEM_UNDELETE_METRIC);
+		/* Queries */
+		COUNTER_STAT_NAMES.put(ConsensusGetTopicInfo, GET_TOPIC_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(GetBySolidityID, GET_SOLIDITY_ADDRESS_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(ContractCallLocal, LOCALCALL_CONTRACT_METRIC);
+		COUNTER_STAT_NAMES.put(ContractGetInfo, GET_CONTRACT_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(ContractGetBytecode, GET_CONTRACT_BYTECODE_METRIC);
+		COUNTER_STAT_NAMES.put(ContractGetRecords, GET_CONTRACT_RECORDS_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoGetAccountBalance, GET_ACCOUNT_BALANCE_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoGetAccountRecords, GET_ACCOUNT_RECORDS_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoGetInfo, GET_ACCOUNT_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(CryptoGetLiveHash, GET_LIVE_HASH_METRIC);
+		COUNTER_STAT_NAMES.put(FileGetContents, GET_FILE_CONTENT_METRIC);
+		COUNTER_STAT_NAMES.put(FileGetInfo, GET_FILE_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(TransactionGetReceipt, GET_RECEIPT_METRIC);
+		COUNTER_STAT_NAMES.put(TransactionGetRecord, GET_RECORD_METRIC);
+		COUNTER_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
+		COUNTER_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
 	}
 
 	public static List<AccountAmount> canonicalDiffRepr(List<AccountAmount> a, List<AccountAmount> b) {
@@ -231,75 +322,9 @@ public class MiscUtils {
 	}
 
 	public static String getTxnStat(TransactionBody txn) {
-		if (txn.hasCryptoCreateAccount()) {
-			return CRYPTO_CREATE_METRIC;
-		} else if (txn.hasCryptoUpdateAccount()) {
-			return CRYPTO_UPDATE_METRIC;
-		} else if (txn.hasCryptoTransfer()) {
-			return CRYPTO_TRANSFER_METRIC;
-		} else if (txn.hasCryptoDelete()) {
-			return CRYPTO_DELETE_METRIC;
-		} else if (txn.hasContractCreateInstance()) {
-			return "createContract";
-		} else if (txn.hasContractCall()) {
-			return "contractCallMethod";
-		} else if (txn.hasContractUpdateInstance()) {
-			return "updateContract";
-		} else if (txn.hasContractDeleteInstance()) {
-			return "deleteContract";
-		} else if (txn.hasCryptoAddLiveHash()) {
-			return "addLiveHash";
-		} else if (txn.hasCryptoDeleteLiveHash()) {
-			return "deleteLiveHash";
-		} else if (txn.hasFileCreate()) {
-			return CREATE_FILE_METRIC;
-		} else if (txn.hasFileAppend()) {
-			return FILE_APPEND_METRIC;
-		} else if (txn.hasFileUpdate()) {
-			return UPDATE_FILE_METRIC;
-		} else if (txn.hasFileDelete()) {
-			return DELETE_FILE_METRIC;
-		} else if (txn.hasSystemDelete()) {
-			return "systemDelete";
-		} else if (txn.hasSystemUndelete()) {
-			return "systemUndelete";
-		} else if (txn.hasFreeze()) {
-			return "freeze";
-		} else if (txn.hasConsensusCreateTopic()) {
-			return CREATE_TOPIC_METRIC;
-		} else if (txn.hasConsensusUpdateTopic()) {
-			return UPDATE_TOPIC_METRIC;
-		} else if (txn.hasConsensusDeleteTopic()) {
-			return DELETE_TOPIC_METRIC;
-		} else if (txn.hasConsensusSubmitMessage()) {
-			return SUBMIT_MESSAGE_METRIC;
-		} else if (txn.hasTokenCreation()) {
-			return TOKEN_CREATE_METRIC;
-		} else if (txn.hasTokenTransfers()) {
-			return TOKEN_TRANSACT_METRIC;
-		} else if (txn.hasTokenFreeze()) {
-			return TOKEN_FREEZE_METRIC;
-		} else if (txn.hasTokenUnfreeze()) {
-			return TOKEN_UNFREEZE_METRIC;
-		} else if (txn.hasTokenGrantKyc()) {
-			return TOKEN_GRANT_KYC_METRIC;
-		} else if (txn.hasTokenRevokeKyc()) {
-			return TOKEN_REVOKE_KYC_METRIC;
-		} else if (txn.hasTokenDeletion()) {
-			return TOKEN_DELETE_METRIC;
-		} else if (txn.hasTokenUpdate()) {
-			return TOKEN_UPDATE_METRIC;
-		} else if (txn.hasTokenMint()) {
-			return TOKEN_MINT_METRIC;
-		} else if (txn.hasTokenBurn()) {
-			return TOKEN_BURN_METRIC;
-		} else if (txn.hasTokenWipe()) {
-			return TOKEN_WIPE_ACCOUNT_METRIC;
-		} else if (txn.hasTokenAssociate()) {
-			return TOKEN_ASSOCIATE_METRIC;
-		} else if (txn.hasTokenDissociate()) {
-			return TOKEN_DISSOCIATE_METRIC;
-		} else {
+		try {
+			return COUNTER_STAT_NAMES.get(functionOf(txn));
+		} catch (UnknownHederaFunctionality unknownHederaFunctionality) {
 			return "NotImplemented";
 		}
 	}

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,8 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
@@ -49,8 +51,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
 	final String PATH_TO_DELEGATING_CONTRACT_BYTECODE = "src/main/resource/testfiles/CreateTrivial.bin";
-	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\",\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+	final String CREATE_CHILD_ABI = "{\"constant\":false,\"inputs\":[],\"name\":\"create\",\"outputs\":[]," +
+			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	final String GET_CHILD_RESULT_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"getIndirect\"," +
+			"\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\"," +
+			"\"type\":\"function\"}";
 
 	public static void main(String... args) {
 		new ContractCallLocalSuite().runSuiteSync();
@@ -59,8 +64,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-			positiveSpecs(),
-			negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
@@ -75,7 +80,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> positiveSpecs() {
 		return Arrays.asList(
-			vanillaSuccess()
+				vanillaSuccess()
 		);
 	}
 
@@ -87,6 +92,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI)
 				).then(
+						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
 								.has(resultWith().resultThruAbi(
 										GET_CHILD_RESULT_ABI,
@@ -100,9 +106,11 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						fileCreate("parentDelegateBytecode").path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode").adminKey(THRESHOLD)
 				).when().then(
+						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", CREATE_CHILD_ABI)
 								.nodePayment(1_234_567)
-								.hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
+								.hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION)
+				);
 	}
 
 	private HapiApiSpec insufficientFeeFails() {
@@ -115,6 +123,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI)
 				).then(
+						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
 								.nodePayment(ADEQUATE_QUERY_PAYMENT)
 								.fee(0L)
@@ -129,17 +138,18 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 						fileCreate("parentDelegateBytecode")
 								.path(PATH_TO_DELEGATING_CONTRACT_BYTECODE),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
-						TxnVerbs.cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
+						cryptoCreate("payer").balance(ADEQUATE_QUERY_PAYMENT)
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI)
 				).then(
+						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
 								.logged()
 								.payingWith("payer")
 								.nodePayment(ADEQUATE_QUERY_PAYMENT)
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountBalance("payer").logged(),
-						UtilVerbs.sleepFor(1_000L),
+						sleepFor(1_000L),
 						getAccountBalance("payer").logged()
 				);
 	}
@@ -152,6 +162,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 				).when(
 						contractCall("parentDelegate", CREATE_CHILD_ABI)
 				).then(
+						sleepFor(3_000L),
 						contractCallLocal("parentDelegate", GET_CHILD_RESULT_ABI)
 								.maxResultSize(1L)
 								.nodePayment(1_234_567)

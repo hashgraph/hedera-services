@@ -338,7 +338,7 @@ public class ServicesContextTest {
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
 
 		// expect:
-		assertEquals(SleepingPause.INSTANCE, ctx.pause());
+		assertEquals(SleepingPause.SLEEPING_PAUSE, ctx.pause());
 		assertEquals(PlatformStatus.DISCONNECTED, ctx.platformStatus().get());
 		assertEquals("record_stream_0.0.3", ctx.recordStreamThread().getName());
 		assertEquals(ctx.properties(), properties);

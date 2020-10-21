@@ -74,7 +74,9 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 		);
 	}
 
-	final HapiFileUpdate resetRatesOp = fileUpdate(EXCHANGE_RATES).fee(ADEQUATE_FUNDS)
+	final HapiFileUpdate resetRatesOp = fileUpdate(EXCHANGE_RATES)
+			.payingWith(EXCHANGE_RATE_CONTROL)
+			.fee(ADEQUATE_FUNDS)
 			.contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
 	private HapiApiSpec acct57CanMakeSmallChanges() {
@@ -155,7 +157,9 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 									spec.registry().saveBytes("newRates", newRates);
 									return newRates;
 								}
-						).payingWith(EXCHANGE_RATE_CONTROL).fee(1_000_000_000).hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
+						).payingWith(EXCHANGE_RATE_CONTROL)
+								.fee(1_000_000_000)
+								.hasKnownStatus(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED)
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.contents(

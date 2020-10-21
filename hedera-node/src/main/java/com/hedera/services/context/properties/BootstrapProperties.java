@@ -219,7 +219,9 @@ public class BootstrapProperties implements PropertySource {
 			"grpc.tlsPort",
 			"hedera.profiles.active",
 			"precheck.account.maxLookupRetries",
-			"precheck.account.lookupRetryBackoffIncrementMs"
+			"precheck.account.lookupRetryBackoffIncrementMs",
+			"stats.hapi.speedometerHalfLifeSecs",
+			"stats.hapi.speedometerUpdateIntervalMs"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -290,6 +292,8 @@ public class BootstrapProperties implements PropertySource {
 			entry("contracts.defaultReceiveThreshold", AS_LONG),
 			entry("contracts.defaultSendThreshold", AS_LONG),
 			entry("contracts.maxStorageKb", AS_INT),
-			entry("rates.intradayChangeLimitPercent", AS_INT)
+			entry("rates.intradayChangeLimitPercent", AS_INT),
+			entry("stats.hapi.speedometerHalfLifeSecs", AS_DOUBLE),
+			entry("stats.hapi.speedometerUpdateIntervalMs", AS_LONG)
 	);
 }

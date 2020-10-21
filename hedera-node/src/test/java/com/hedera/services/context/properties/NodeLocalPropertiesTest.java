@@ -58,6 +58,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(3, subject.precheckLookupRetries());
 		assertEquals(4, subject.precheckLookupRetryBackoffMs());
 		assertEquals(TEST, subject.activeProfile());
+		assertEquals(6L, subject.statsHapiSpeedometerUpdateIntervalMs());
 	}
 
 	@Test
@@ -73,6 +74,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(4, subject.precheckLookupRetries());
 		assertEquals(5, subject.precheckLookupRetryBackoffMs());
 		assertEquals(DEV, subject.activeProfile());
+		assertEquals(7L, subject.statsHapiSpeedometerUpdateIntervalMs());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -81,5 +83,6 @@ class NodeLocalPropertiesTest {
 		given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
 		given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs")).willReturn(i + 3);
 		given(properties.getProfileProperty("hedera.profiles.active")).willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
+		given(properties.getLongProperty("stats.hapi.speedometerUpdateIntervalMs")).willReturn(i + 5L);
 	}
 }
