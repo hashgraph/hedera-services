@@ -29,6 +29,7 @@ public class MiscRunningAvgs {
 
 	StatsRunningAverage accountRetryWaitMs;
 	StatsRunningAverage accountLookupRetries;
+	StatsRunningAverage recordStreamQueueSize;
 	StatsRunningAverage handledSubmitMessageSize;
 
 	public MiscRunningAvgs(RunningAvgFactory runningAvg, NodeLocalProperties properties) {
@@ -38,6 +39,7 @@ public class MiscRunningAvgs {
 
 		accountRetryWaitMs = new StatsRunningAverage(halfLife);
 		accountLookupRetries = new StatsRunningAverage(halfLife);
+		recordStreamQueueSize = new StatsRunningAverage(halfLife);
 		handledSubmitMessageSize = new StatsRunningAverage(halfLife);
 	}
 
@@ -54,6 +56,11 @@ public class MiscRunningAvgs {
 						accountRetryWaitMs));
 		platform.addAppStatEntry(
 				runningAvg.from(
+						Names.RECORD_STREAM_QUEUE_SIZE,
+						Descriptions.RECORD_STREAM_QUEUE_SIZE,
+						handledSubmitMessageSize));
+		platform.addAppStatEntry(
+				runningAvg.from(
 						Names.HANDLED_SUBMIT_MESSAGE_SIZE,
 						Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE,
 						handledSubmitMessageSize));
@@ -67,6 +74,10 @@ public class MiscRunningAvgs {
 		accountRetryWaitMs.recordValue(time);
 	}
 
+	public void recordStreamQueueSize(int num) {
+		recordStreamQueueSize.recordValue(num);
+	}
+
 	public void recordHandledSubmitMessageSize(int bytes) {
 		handledSubmitMessageSize.recordValue(bytes);
 	}
@@ -74,6 +85,7 @@ public class MiscRunningAvgs {
 	static class Names {
 		public static final String ACCOUNT_RETRY_WAIT_MS = "avgAcctRetryWaitMs";
 		public static final String ACCOUNT_LOOKUP_RETRIES = "avgAcctLookupRetryAttempts";
+		public static final String RECORD_STREAM_QUEUE_SIZE = "recordStreamQueueSize";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE = "avgHdlSubMsgSize";
 	}
 
@@ -82,6 +94,8 @@ public class MiscRunningAvgs {
 				"average time is millis spent waiting to lookup the account number";
 		public static final String ACCOUNT_LOOKUP_RETRIES =
 				"average number of retry attempts made to lookup the account number";
+		public static final String RECORD_STREAM_QUEUE_SIZE =
+				"size of the queue from which we take records and write to RecordStream file";
 		public static final String HANDLED_SUBMIT_MESSAGE_SIZE =
 				"average size of the handled HCS submit message transaction";
 	}

@@ -36,33 +36,39 @@ public class ServicesStatsManager {
 		}
 	});
 
+	static final String SPEEDOMETER_UPDATE_THREAD_NAME_TPL = "SpeedometerUpdateThread%d";
+
 	private final HapiOpCounters opCounters;
 	private final MiscRunningAvgs runningAvgs;
+	private final MiscSpeedometers speedometers;
 	private final HapiOpSpeedometers opSpeedometers;
 	private final NodeLocalProperties properties;
 
 	public ServicesStatsManager(
 			HapiOpCounters opCounters,
 			MiscRunningAvgs runningAvgs,
+			MiscSpeedometers speedometers,
 			HapiOpSpeedometers opSpeedometers,
 			NodeLocalProperties properties
 	) {
 		this.properties = properties;
 		this.opCounters = opCounters;
 		this.runningAvgs = runningAvgs;
+		this.speedometers = speedometers;
 		this.opSpeedometers = opSpeedometers;
 	}
 
 	public void initializeFor(Platform platform) {
 		opCounters.registerWith(platform);
 		runningAvgs.registerWith(platform);
+		speedometers.registerWith(platform);
 		opSpeedometers.registerWith(platform);
 
 		var updateThread = loopFactory.apply(() -> {
 			pause.forMs(properties.statsHapiOpsSpeedometerUpdateIntervalMs());
 			opSpeedometers.updateAll();
 		});
-		updateThread.setName("StatsUpdateNode" + platform.getSelfId().getId());
+		updateThread.setName(String.format(SPEEDOMETER_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
 		updateThread.start();
 	}
 }

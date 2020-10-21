@@ -49,6 +49,7 @@ class ServicesStatsManagerTest {
 
 	HapiOpCounters counters;
 	MiscRunningAvgs runningAvgs;
+	MiscSpeedometers miscSpeedometers;
 	HapiOpSpeedometers speedometers;
 	NodeLocalProperties properties;
 
@@ -67,10 +68,11 @@ class ServicesStatsManagerTest {
 		counters = mock(HapiOpCounters.class);
 		runningAvgs = mock(MiscRunningAvgs.class);
 		speedometers = mock(HapiOpSpeedometers.class);
+		miscSpeedometers = mock(MiscSpeedometers.class);
 		properties = mock(NodeLocalProperties.class);
 		given(properties.statsHapiOpsSpeedometerUpdateIntervalMs()).willReturn(updateIntervalMs);
 
-		subject = new ServicesStatsManager(counters, runningAvgs, speedometers, properties);
+		subject = new ServicesStatsManager(counters, runningAvgs, miscSpeedometers, speedometers, properties);
 	}
 
 
@@ -99,9 +101,10 @@ class ServicesStatsManagerTest {
 		// then:
 		verify(counters).registerWith(platform);
 		verify(speedometers).registerWith(platform);
+		verify(miscSpeedometers).registerWith(platform);
 		verify(runningAvgs).registerWith(platform);
 		verify(thread).start();
-		verify(thread).setName("StatsUpdateNode123");
+		verify(thread).setName(String.format(ServicesStatsManager.SPEEDOMETER_UPDATE_THREAD_NAME_TPL, 123L));
 		// and when:
 		captor.getValue().run();
 		// then:

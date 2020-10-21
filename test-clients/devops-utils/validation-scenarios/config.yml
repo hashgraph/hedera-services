@@ -31,11 +31,17 @@ networks:
     - {account: 4, ipv4Addr: 35.199.15.177}
     - {account: 5, ipv4Addr: 35.225.201.195}
     - {account: 6, ipv4Addr: 35.247.109.135}
-    scenarioPayer: 6895
+    scenarioPayer: 7432
     scenarios:
+      feeSnapshots:
+        appendToSnapshotCsv: true
+        ignoreCostAnswer: true
+        opsConfig: {bytecode: 7490, memoLength: 32}
+        scheduleDesc: Bootstrap
+        tinyBarsToOffer: 10000000000
       sysFilesDown:
         evalMode: snapshot
-        numsToFetch: [121]
+        numsToFetch: [111]
   stabletestnet:
     bootstrap: 50
     defaultNode: 3
@@ -86,12 +92,15 @@ networks:
     - {account: 3, ipv4Addr: '127.0.0.1:50211'}
     scenarioPayer: 1001
     scenarios:
-      consensus: {persistent: 1007}
-      contract:
-        persistent: {bytecode: 1005, luckyNo: 42, num: 1006, source: Multipurpose.sol}
-      crypto: {receiver: 1003, sender: 1002}
-      file:
-        persistent: {contents: MrBleaney.txt, num: 1004}
+      feeSnapshots:
+        appendToSnapshotCsv: false
+        ignoreCostAnswer: true
+        opsConfig: {bytecode: 1002, memoLength: 32}
+        scheduleDesc: Bootstrap
+        tinyBarsToOffer: 10000000000
+      sysFilesDown:
+        evalMode: snapshot
+        numsToFetch: [111]
   staging:
     bootstrap: 2
     defaultNode: 3

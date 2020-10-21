@@ -42,23 +42,42 @@ public class MiscSpeedometers {
 	}
 
 	public void registerWith(Platform platform) {
-		throw new AssertionError("Not implemented!");
+		platform.addAppStatEntry(
+				speedometer.from(
+						Names.SYNC_VERIFICATIONS,
+						Descriptions.SYNC_VERIFICATIONS,
+						syncVerifications));
+		platform.addAppStatEntry(
+				speedometer.from(
+						Names.ASYNC_VERIFICATIONS,
+						Descriptions.ASYNC_VERIFICATIONS,
+						asyncVerifications));
+		platform.addAppStatEntry(
+				speedometer.from(
+						Names.ACCOUNT_LOOKUP_RETRIES,
+						Descriptions.ACCOUNT_LOOKUP_RETRIES,
+						accountLookupRetries));
+		platform.addAppStatEntry(
+				speedometer.from(
+						Names.PLATFORM_TXN_REJECTIONS,
+						Descriptions.PLATFORM_TXN_REJECTIONS,
+						platformTxnRejections));
 	}
 
 	public void cycleSyncVerifications() {
-		throw new AssertionError("Not implemented!");
+		syncVerifications.update(1);
 	}
 
 	public void cycleAsyncVerifications() {
-		throw new AssertionError("Not implemented!");
+		asyncVerifications.update(1);
 	}
 
 	public void cycleAccountLookupRetries() {
-		throw new AssertionError("Not implemented!");
+		accountLookupRetries.update(1);
 	}
 
 	public void cyclePlatformTxnRejections() {
-		throw new AssertionError("Not implemented!");
+		platformTxnRejections.update(1);
 	}
 
 	static class Names {

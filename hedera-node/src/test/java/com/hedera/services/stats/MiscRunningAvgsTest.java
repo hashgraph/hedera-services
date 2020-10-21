@@ -59,6 +59,7 @@ class MiscRunningAvgsTest {
 		// setup:
 		StatEntry retries = mock(StatEntry.class);
 		StatEntry waitMs = mock(StatEntry.class);
+		StatEntry queueSizes = mock(StatEntry.class);
 		StatEntry submitSizes = mock(StatEntry.class);
 
 		given(factory.from(
@@ -70,6 +71,10 @@ class MiscRunningAvgsTest {
 				argThat(MiscRunningAvgs.Descriptions.ACCOUNT_RETRY_WAIT_MS::equals),
 				any())).willReturn(waitMs);
 		given(factory.from(
+				argThat(MiscRunningAvgs.Names.RECORD_STREAM_QUEUE_SIZE::equals),
+				argThat(MiscRunningAvgs.Descriptions.RECORD_STREAM_QUEUE_SIZE::equals),
+				any())).willReturn(queueSizes);
+		given(factory.from(
 				argThat(MiscRunningAvgs.Names.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				argThat(MiscRunningAvgs.Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE::equals),
 				any())).willReturn(submitSizes);
@@ -80,6 +85,7 @@ class MiscRunningAvgsTest {
 		// then:
 		verify(platform).addAppStatEntry(retries);
 		verify(platform).addAppStatEntry(waitMs);
+		verify(platform).addAppStatEntry(queueSizes);
 		verify(platform).addAppStatEntry(submitSizes);
 	}
 
@@ -88,20 +94,24 @@ class MiscRunningAvgsTest {
 		// setup:
 		StatsRunningAverage retries = mock(StatsRunningAverage.class);
 		StatsRunningAverage waitMs = mock(StatsRunningAverage.class);
+		StatsRunningAverage queueSize = mock(StatsRunningAverage.class);
 		StatsRunningAverage submitSizes = mock(StatsRunningAverage.class);
 		// and:
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
+		subject.recordStreamQueueSize = queueSize;
 
 		// when:
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
+		subject.recordStreamQueueSize(4);
 
 		// then:
 		verify(retries).recordValue(1.0);
 		verify(waitMs).recordValue(2.0);
 		verify(submitSizes).recordValue(3.0);
+		verify(queueSize).recordValue(4.0);
 	}
 }
