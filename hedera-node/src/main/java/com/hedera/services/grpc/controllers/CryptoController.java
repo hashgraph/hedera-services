@@ -40,7 +40,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String GET_ACCOUNT_BALANCE_METRIC = "cryptoGetBalance";
 	public static final String GET_ACCOUNT_RECORDS_METRIC = "getAccountRecords";
 	public static final String GET_STAKERS_METRIC = "getStakersByAccountID";
-	public static final String GET_CLAIM_METRIC = "getClaim";
+	public static final String GET_LIVE_HASH_METRIC = "getClaim";
 	public static final String GET_RECEIPT_METRIC = "getTransactionReceipts";
 	public static final String GET_RECORD_METRIC = "getTxRecordByTxID";
 	public static final String GET_FAST_RECORD_METRIC = "getFastTransactionRecord";
@@ -90,7 +90,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 
 	@Override
 	public void getLiveHash(Query query, StreamObserver<Response> observer) {
-		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getLiveHash(), GET_CLAIM_METRIC);
+		queryHelper.respondToCrypto(query, observer, cryptoAnswers.getLiveHash(), GET_LIVE_HASH_METRIC);
 	}
 
 	@Override

@@ -104,7 +104,6 @@ public class FileServiceHandler {
         try {
             rv = str.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
         }
         return rv;
     }
@@ -427,14 +426,12 @@ public class FileServiceHandler {
           //check if allowed max size is not exceeded
   	      //compare size to allowable size
           long fileSize = 	fileData.toByteArray().length;
-          System.out.println("Going to update with " + fileSize + " bytes");
   	      if(1024*1024L < fileSize) {
   	        throw new MaxFileSizeExceeded(String.format("The file size %d (bytes) is greater than allowed %d (bytes) ",
                     fileSize,
                     1024*1024L));
   	      }
           validateCode = validateSystemFile(fid, gtx, fileData.toByteArray(), false);
-  	      System.out.println("ValidateCode = " + validateCode);
           if (validateCode.equals(ResponseCodeEnum.OK) || validateCode
               .equals(ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED)) {
             storageWrapper.fileCreate(fileDataPath, fileData.toByteArray(),
@@ -461,7 +458,6 @@ public class FileServiceHandler {
             } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 111) {
               feeScheduleInterceptor.update(storageWrapper, fid);
             } else if (validateCode.equals(ResponseCodeEnum.OK) && fid.getFileNum() == 121) {
-              System.out.println("Calling appProps interceptor");
             	ApplicationPropertiesInterceptor appPropertiesInterceptor = new ApplicationPropertiesInterceptor();
             	appPropertiesInterceptor.update(storageWrapper, fid);
              }else if (validateCode.equals(ResponseCodeEnum.OK)

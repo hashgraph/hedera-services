@@ -288,6 +288,7 @@ public class R5BugChecks extends HapiApiSuite {
 				).when(
 						balanceSnapshot("preUpdate", GENESIS),
 						fileUpdate(FEE_SCHEDULE)
+								.payingWith(FEE_SCHEDULE_CONTROL)
 								.fee(5_000_000_000L)
 								.contents(ignore -> schedulePart1.get())
 								.hasKnownStatus(FEE_SCHEDULE_FILE_PART_UPLOADED),

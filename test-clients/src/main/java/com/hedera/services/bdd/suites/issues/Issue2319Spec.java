@@ -73,8 +73,10 @@ public class Issue2319Spec extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
 				).when(
 						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.wacl("persistent"),
 						fileUpdate(API_PERMISSIONS)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.wacl("persistent")
 				).then(
 						fileUpdate(APP_PROPERTIES)
@@ -99,13 +101,16 @@ public class Issue2319Spec extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.useEmptyWacl()
 				).then(
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.wacl(GENESIS)
 								.payingWith(MASTER)
 								.signedBy(GENESIS),
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.useEmptyWacl(),
 						fileUpdate(EXCHANGE_RATES)
 								.wacl(GENESIS)
@@ -166,6 +171,7 @@ public class Issue2319Spec extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(GENESIS, MASTER, 1_000_000_000_000L))
 				).when(
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(EXCHANGE_RATE_CONTROL)
 								.wacl("persistent")
 				).then(
 						fileUpdate(EXCHANGE_RATES)
@@ -173,6 +179,7 @@ public class Issue2319Spec extends HapiApiSuite {
 								.signedBy(GENESIS)
 								.contents(ignore -> validRates.get()),
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(GENESIS)
 								.signedBy(GENESIS)
 								.contents(ignore -> validRates.get()),
 						fileUpdate(EXCHANGE_RATES)
@@ -181,6 +188,7 @@ public class Issue2319Spec extends HapiApiSuite {
 								.contents(ignore -> validRates.get())
 								.hasPrecheck(AUTHORIZATION_FAILED),
 						fileUpdate(EXCHANGE_RATES)
+								.payingWith(GENESIS)
 								.wacl(GENESIS)
 				);
 	}

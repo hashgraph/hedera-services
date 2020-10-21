@@ -428,9 +428,9 @@ public class ServicesContext {
 	private static LegacyEd25519KeyReader b64KeyReader;
 
 	static {
-		pause = SleepingPause.INSTANCE;
+		pause = SleepingPause.SLEEPING_PAUSE;
 		b64KeyReader = new LegacyEd25519KeyReader();
-		stateMigrations = new StdStateMigrations(SleepingPause.INSTANCE);
+		stateMigrations = new StdStateMigrations(SleepingPause.SLEEPING_PAUSE);
 		accountsExporter = new DefaultAccountsExporter();
 	}
 

@@ -145,7 +145,6 @@ class PreCheckValidationTest {
 					signatureSize);
 			feeToreturn = getTransactionFee(txBody, sigValueObj);
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 		return feeToreturn;
 	}

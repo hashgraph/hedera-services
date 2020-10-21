@@ -263,7 +263,6 @@ public class CryptoHandlerTestHelper extends CryptoHandler {
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.SUCCESS).build();
 			} catch (Exception e) {
-				e.printStackTrace();
 				transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId)
 						.setStatus(ResponseCodeEnum.FAIL_INVALID).build();
 			}

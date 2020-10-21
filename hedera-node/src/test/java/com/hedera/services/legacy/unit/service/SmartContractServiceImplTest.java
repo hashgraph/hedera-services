@@ -196,8 +196,6 @@ public class SmartContractServiceImplTest {
 		nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
 		feeCollectionAccountId = RequestBuilder.getAccountIdBuild(feeAccount, 0l, 0l);
 
-		System.out.println("Payer Account:" + payerAccountId);
-		System.out.println("Node Account:" + nodeAccountId);
 		senderAccountId = RequestBuilder.getAccountIdBuild(9999l, 0l, 0l);
 		receiverAccountId = RequestBuilder.getAccountIdBuild(8888l, 0l, 0l);
 		storageMap = new FCMap<>(new MerkleBlobMeta.Provider(), new MerkleOptionalBlob.Provider());
@@ -237,23 +235,18 @@ public class SmartContractServiceImplTest {
 				tResponse = response;
 
 				if (response.getNodeTransactionPrecheckCode() == OK) {
-					System.out.println("System OK");
 				} else if (response.getNodeTransactionPrecheckCode() == ResponseCodeEnum.BUSY) {
-					System.out.println("System BUSY");
 				} else {
-					System.out.println("System BAD");
 					Assert.assertNotNull(response.getNodeTransactionPrecheckCode());
 				}
 			}
 
 			@Override
 			public void onError(Throwable t) {
-				System.out.println("Error Happened " + t.getMessage());
 			}
 
 			@Override
 			public void onCompleted() {
-				System.out.println("Completed" + tResponse);
 			}
 
 		};
@@ -441,7 +434,6 @@ public class SmartContractServiceImplTest {
 		try {
 			repository.close();
 		} catch (Throwable tx) {
-			tx.printStackTrace();
 		} finally {
 			mockStorageWrapper = null;
 		}
@@ -474,20 +466,16 @@ public class SmartContractServiceImplTest {
 						GetBySolidityIDResponse res = response.getGetBySolidityID();
 						Assert.assertEquals(ResponseCodeEnum.NOT_SUPPORTED,
 								res.getHeader().getNodeTransactionPrecheckCode());
-						System.out.println("***RESPONSE***" + res);
 					} else {
-						System.out.println("***RESPONSE***" + response);
 					}
 				}
 
 				@Override
 				public void onError(Throwable t) {
-					System.out.println("Error Happened " + t.getMessage());
 				}
 
 				@Override
 				public void onCompleted() {
-					System.out.println("Completed");
 				}
 
 			};

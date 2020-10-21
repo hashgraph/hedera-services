@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @RunWith(JUnitPlatform.class)
 public class SleepingPauseTest {
-	final Pause subject = SleepingPause.INSTANCE;
+	final Pause subject = SleepingPause.SLEEPING_PAUSE;
 
 	@Test
 	public void returnsTrueWhenNotInterrupted() {
